@@ -132,6 +132,21 @@ def _cmd_verify(args: argparse.Namespace) -> int:
     return 1 if failed and args.strict else 0
 
 
+def _cmd_mirror(args: argparse.Namespace) -> int:
+    """Show what a mirror operation would copy, and what it would refuse."""
+    from .mirror import MirrorTarget, attribution_document, plan_mirror
+
+    reg = Registry.load()
+    sources = [reg.source(s) for s in args.source_id] if args.source_id else list(reg)
+    plan = plan_mirror(sources, MirrorTarget(args.target))
+    print(plan.summary())
+    if args.attribution:
+        with open(args.attribution, "w", encoding="utf-8") as fh:
+            fh.write(attribution_document(plan, sources))
+        print(f"\nwrote {args.attribution}")
+    return 0
+
+
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         prog="marinedata", description="Licence-aware marine dataset registry."
@@ -181,6 +196,19 @@ def build_parser() -> argparse.ArgumentParser:
         help="List sources whose layout has never been checked against real data",
     )
     p_verify.set_defaults(func=_cmd_verify)
+
+    p_mirror = sub.add_parser(
+        "mirror", help="Plan a copy into our own storage; reports what is refused and why"
+    )
+    p_mirror.add_argument("source_id", nargs="*")
+    p_mirror.add_argument(
+        "--target",
+        required=True,
+        choices=["private-cache", "public-mirror", "training-shard"],
+        help="Where the copy would live. This is the whole legal question.",
+    )
+    p_mirror.add_argument("--attribution", help="Write ATTRIBUTION.md to this path")
+    p_mirror.set_defaults(func=_cmd_mirror)
 
     return parser
 

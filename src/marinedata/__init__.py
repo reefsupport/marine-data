@@ -33,11 +33,20 @@ from .harmonize import HarmonizationError, Harmonized, Harmonizer
 from .labelindex import IGNORE_INDEX, AxisIndex, LabelIndex
 from .lineage import Lineage, build_lineage
 from .loaders import DataNotAvailable, LoaderError, build_loader, registered_layouts
+from .mirror import (
+    MirrorDecision,
+    MirrorPlan,
+    MirrorTarget,
+    MirrorViolation,
+    evaluate_mirror,
+    plan_mirror,
+)
 from .models import Licence, LoaderSpec, Profile, Source
 from .query import QueryResult, find
 from .registry import Registry, RegistryError
 from .sample import LabelValue, Sample
 from .schema import Axis, Crosswalk, Fidelity, LabelSchema
+from .shard import ShardResult, read_shard, write_shards
 
 __version__ = "0.1.0"
 
@@ -66,6 +75,10 @@ __all__ = [
     "Lineage",
     "LoaderError",
     "LoaderSpec",
+    "MirrorDecision",
+    "MirrorPlan",
+    "MirrorTarget",
+    "MirrorViolation",
     "Modality",
     "Profile",
     "Provenance",
@@ -74,6 +87,7 @@ __all__ = [
     "Registry",
     "RegistryError",
     "Sample",
+    "ShardResult",
     "Source",
     "Tier",
     "allowed",
@@ -81,6 +95,10 @@ __all__ = [
     "build_loader",
     "enforce",
     "evaluate",
+    "evaluate_mirror",
     "find",
+    "plan_mirror",
+    "read_shard",
     "registered_layouts",
+    "write_shards",
 ]

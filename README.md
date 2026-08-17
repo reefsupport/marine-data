@@ -259,6 +259,41 @@ Also available: `class_weights()` (reef data is severely long-tailed; unweighted
 optimises for sand), `class_counts()`, and `supervision_coverage()` — which answers
 "why is my growth-form head weak?" far faster than a loss curve.
 
+## Storage and sharding
+
+**Should everything go into a data lake?** Yes for some of it, never for other parts, and
+the licence tier decides which — because "upload to storage" is two different acts:
+
+| | Private cache | Public mirror |
+|---|---|---|
+| Legally | internal copying | **redistribution** |
+| Admits | T0, T1, T2, **and T3 non-commercial** | T0, T1, T2 only |
+
+Non-commercial material may be cached for our own research but never republished.
+Conflating those is the one mistake here with real legal consequence, so it is enforced in
+code:
+
+```bash
+marinedata mirror --target private-cache     # what may we cache?
+marinedata mirror --target public-mirror     # what may we publish?
+```
+
+Four bars apply to every target, checked before tier: `no_derivatives`,
+`provenance_defective`, TDM-basis (retention is time-limited by statute), and unknown
+basis. Sharding is itself a derivative act, so `write_shards()` goes through the same gate.
+
+```python
+from marinedata.shard import write_shards
+write_shards(dataset, "s3-staging/shards", split="train")   # WebDataset tar shards
+```
+
+Raw objects in cloud storage are the real training bottleneck — one GET per image starves
+a GPU. Shards are ~512 MB, deterministic (zeroed mtimes), and carry `SHARD_MANIFEST.json`
+with class lists, head widths and full lineage, plus a generated `ATTRIBUTION.md`.
+
+Full rationale, retention policy and where to physically put things:
+[`docs/STORAGE.md`](docs/STORAGE.md).
+
 ## Lineage — the audit artifact
 
 Every build emits a record of what contributed, under which tier and legal basis, what
