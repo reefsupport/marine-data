@@ -101,7 +101,9 @@ One-line perf change: `registry.py:28` `yaml.safe_load` → `yaml.load(fh, Loade
 
 ```python
 def test_registry_loads_with_network_hard_down(monkeypatch):
-    def _boom(*a, **k): raise AssertionError("network access at load time")
+    def _boom(*a, **k):
+        raise AssertionError("network access at load time")
+
     monkeypatch.setattr(urllib.request, "urlopen", _boom)
     monkeypatch.setattr(socket, "socket", _boom)
     reg = Registry.load()
@@ -165,8 +167,8 @@ This makes resolution idempotent and auditable. It matters operationally because
 **Homonyms: the resolver REFUSES, it does not pick.** `AphiaRecordsByName/Turbinaria` returns two accepted genera and returns the **brown alga (206630, Ochrophyta) first**; the coral is 206641. `HC_TURBINARIA` currently has no AphiaID and `coralscapes-39.yaml` maps the bare string `"turbinaria"` to it. First-hit resolution files a brown alga under Hard coral. Contract, tests first:
 
 ```python
-resolve("Turbinaria")                          # raises AmbiguousTaxon
-resolve("Turbinaria", expect_phylum="Cnidaria") # -> 206641
+resolve("Turbinaria")  # raises AmbiguousTaxon
+resolve("Turbinaria", expect_phylum="Cnidaria")  # -> 206641
 ```
 
 Disambiguation is committed as `(name, authority)` or `(name, expect_phylum)` in the node.

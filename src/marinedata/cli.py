@@ -147,6 +147,37 @@ def _cmd_mirror(args: argparse.Namespace) -> int:
     return 0
 
 
+def _cmd_taxa(args: argparse.Namespace) -> int:
+    """Re-resolve every anchored node against WoRMS/OBIS and report drift.
+
+    Network-bound and maintainer-run — never part of loading. Exits non-zero on drift so
+    a scheduled job can open an issue.
+    """
+    from .taxa import check_node, resolve_id
+
+    reg = Registry.load()
+    drifts, checked, missing = [], 0, []
+    for schema in reg.schemas:
+        for node in schema.nodes:
+            if node.worms_aphia_id is None:
+                if args.show_unanchored:
+                    missing.append(f"{schema.id}/{node.id}")
+                continue
+            checked += 1
+            record = resolve_id(node.worms_aphia_id)
+            found = check_node(node, record)
+            drifts.extend(found)
+            mark = "✗" if found else "✓"
+            print(f"{mark} {node.id:<24} {node.worms_aphia_id:>8}  {node.worms_scientificname}")
+
+    if missing:
+        print(f"\nunanchored ({len(missing)}): {', '.join(missing)}")
+    print(f"\nchecked {checked} anchored node(s), {len(drifts)} drift(s)")
+    for drift in drifts:
+        print(drift.line())
+    return 1 if drifts else 0
+
+
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         prog="marinedata", description="Licence-aware marine dataset registry."
@@ -209,6 +240,14 @@ def build_parser() -> argparse.ArgumentParser:
     )
     p_mirror.add_argument("--attribution", help="Write ATTRIBUTION.md to this path")
     p_mirror.set_defaults(func=_cmd_mirror)
+
+    p_taxa = sub.add_parser(
+        "taxa", help="Re-resolve anchored nodes against WoRMS/OBIS and report drift"
+    )
+    p_taxa.add_argument(
+        "--show-unanchored", action="store_true", help="also list nodes with no AphiaID"
+    )
+    p_taxa.set_defaults(func=_cmd_taxa)
 
     return parser
 
