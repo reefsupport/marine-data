@@ -425,6 +425,7 @@ sources:
         bucket: coral-reef-training
         endpoint: s3.amazonaws.com
         region: us-east-1
+        prefix: mermaid/
     modalities: [image, tabular]
     capabilities: [benthic-classification, coral-taxonomy]
     annotations:
@@ -434,16 +435,31 @@ sources:
     coverage:
       regions: [global]
     loader:
-      layout: metadata-only
+      layout: flat-images
+      verified_on: 2026-08-17
       verified_note: >
-        CHECKED 2026-08-17: the bucket root is anonymously listable but serves a website
-        index (index.html + assets), not the annotation corpus. The point data is
-        published as CSV/Parquet under a prefix we have not identified. NC blocks
-        commercial training anyway, so this stays metadata-only until someone maps the
-        prefix; the value here is the LabelMapping crosswalk, which is factual and
-        usable without the imagery.
+        Prefix mapped and listing verified anonymously. An earlier note said the prefix
+        was unidentified - it is `mermaid/`, flat, UUID-keyed. flat-images reads the
+        full-resolution PNGs; the per-image `_annotations.csv` files and precomputed
+        `_featurevector` blobs are NOT yet exposed by any layout and would need a
+        paired-sidecar reader.
     notes: >
-      NC-SA blocks commercial training. The LabelMapping *crosswalk* — the fact that
+      NOT CoralNet data. Verified 2026-08-17 by listing the bucket: it contains exactly
+      one top-level prefix, `mermaid/`, and no CoralNet prefix. CoralNet is a named
+      partner with write access to its own prefix but has not used it, so this corpus is
+      MERMAID's own confirmed annotations.
+
+      The related-but-separate fact: MERMAID AI's *classifier* is trained on ~16M public
+      CoralNet images and runs CoralNet's pyspacer engine. The model is CoralNet-derived;
+      this dataset is not. Do not treat one as evidence about the other.
+
+      Structure is flat under `mermaid/`, keyed by UUID, with four artefacts per image:
+      `<uuid>.png` (~1-2 MB), `_thumbnail.png`, `_annotations.csv` (present on a subset),
+      and `_featurevector` (~140 KB of PRECOMPUTED pyspacer features). Those feature
+      vectors are unusual and valuable: a linear probe can be trained on them with no GPU
+      and no image decoding at all.
+
+      NC-SA still blocks commercial training. The LabelMapping *crosswalk* — the fact that
       attribute X corresponds to CATAMI Y — is factual information, not copyrightable
       expression, and can inform our ontology without using the imagery.
     tags: [crosswalk, noncommercial]

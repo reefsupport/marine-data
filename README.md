@@ -172,6 +172,10 @@ marinedata verify                             # run every declared layout agains
 marinedata verify --unverified-only           # what has never been checked
 ```
 
+Sources that cannot be auto-fetched are not all the same problem — a missing sample URL,
+a gated form and a 5 GB Zenodo monolith need different answers. Per-source routes are in
+[`docs/ACCESS_PLANS.md`](docs/ACCESS_PLANS.md).
+
 This is not theoretical. The first full sweep caught two wrong declarations:
 **Coralscapes** was declared as `images/` + `masks/` directories and is in fact
 HuggingFace parquet with `image`/`label` columns; **MOUSS** was declared `coco-json`
