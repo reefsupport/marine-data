@@ -1,0 +1,46 @@
+name: ci
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  lint-and-test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install uv
+        run: curl -LsSf https://astral.sh/uv/install.sh | sh
+      - name: Sync
+        run: |
+          export PATH="$HOME/.local/bin:$PATH"
+          uv venv && uv pip install -e ".[dev]"
+      - name: Lint
+        run: |
+          export PATH="$HOME/.local/bin:$PATH"
+          uv run ruff check . && uv run ruff format --check .
+      - name: Test
+        run: |
+          export PATH="$HOME/.local/bin:$PATH"
+          uv run pytest -q
+
+  # Layout verification hits the network, so it runs nightly rather than per-commit.
+  # It is what catches a declared layout drifting from the real dataset.
+  verify-layouts:
+    if: github.event_name == 'schedule'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install uv
+        run: curl -LsSf https://astral.sh/uv/install.sh | sh
+      - name: Verify declared layouts against live samples
+        run: |
+          export PATH="$HOME/.local/bin:$PATH"
+          uv venv && uv pip install -e ".[dev]"
+          MARINEDATA_INTEGRATION=1 uv run pytest -q -m integration

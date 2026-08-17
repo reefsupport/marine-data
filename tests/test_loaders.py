@@ -1,0 +1,208 @@
+"""Loader tests.
+
+Two layers:
+
+1. **Functional** — each layout is exercised against a synthetic fixture. Every source
+   declaring that layout inherits the coverage, which is the only way ~40 loaders get
+   tested without terabytes of downloads.
+2. **Contract, per source** — every registered source is checked for a resolvable
+   layout, coherent params, a constructible loader, and (where declared) a crosswalk
+   that actually builds. These run over the real registry, so a broken entry fails CI.
+"""
+
+from __future__ import annotations
+
+from pathlib import Path
+
+import pytest
+from conftest import make_source
+
+from marinedata import Registry
+from marinedata.loaders import (
+    DataNotAvailable,
+    LoaderError,
+    build_loader,
+    registered_layouts,
+)
+from marinedata.schema import Axis
+
+# ── functional: one test per layout ───────────────────────────────────────
+
+
+def test_image_folder(image_folder_root: Path) -> None:
+    loader = build_loader(make_source("image-folder"), image_folder_root)
+    samples = list(loader)
+    assert len(samples) == 5
+    assert {s.meta["native_label"] for s in samples} == {"Hard Coral", "Soft Coral"}
+    assert all(Axis.TAXON in s.supervised for s in samples)
+    assert all(s.image is not None for s in samples)
+
+
+def test_image_folder_rejects_flat_directory(tmp_path: Path) -> None:
+    (tmp_path / "loose.jpg").write_bytes(b"\x89PNG")
+    loader = build_loader(make_source("image-folder"), tmp_path)
+    with pytest.raises(LoaderError, match="one directory per class"):
+        list(loader)
+
+
+def test_image_mask_pairs(image_mask_root: Path) -> None:
+    loader = build_loader(make_source("image-mask-pairs"), image_mask_root)
+    samples = list(loader)
+    assert len(samples) == 3
+    assert all(s.mask is not None for s in samples)
+    assert all(Path(s.mask).stem == Path(s.image).stem for s in samples)
+
+
+def test_image_mask_pairs_missing_mask_is_an_error(image_mask_root: Path) -> None:
+    """A missing mask in a segmentation set is a defect, not a sample to skip."""
+    next((image_mask_root / "masks").iterdir()).unlink()
+    loader = build_loader(make_source("image-mask-pairs"), image_mask_root)
+    with pytest.raises(LoaderError, match="no mask for image"):
+        list(loader)
+
+
+def test_coco_json(coco_root: Path) -> None:
+    loader = build_loader(make_source("coco-json"), coco_root)
+    samples = list(loader)
+    assert len(samples) == 2
+    first = next(s for s in samples if s.key == "im0.jpg")
+    assert len(first.boxes) == 2
+    assert first.meta["native_labels"] == ["Hard Coral", "fish"]
+
+
+def test_coco_json_malformed(coco_root: Path) -> None:
+    (coco_root / "annotations.json").write_text("{not json", encoding="utf-8")
+    loader = build_loader(make_source("coco-json"), coco_root)
+    with pytest.raises(LoaderError, match="malformed COCO JSON"):
+        list(loader)
+
+
+def test_yolo_txt(yolo_root: Path) -> None:
+    source = make_source("yolo-txt", {"names": "coral,fish"})
+    samples = list(build_loader(source, yolo_root))
+    assert len(samples) == 2
+    f0 = next(s for s in samples if s.key.endswith("f0.jpg"))
+    assert len(f0.boxes) == 2
+    assert f0.meta["native_labels"] == ["coral", "fish"]
+    assert f0.meta["normalised_boxes"] is True
+
+
+def test_yolo_txt_malformed_line(yolo_root: Path) -> None:
+    (yolo_root / "labels" / "f0.txt").write_text("0 0.5 0.5\n")
+    loader = build_loader(make_source("yolo-txt"), yolo_root)
+    with pytest.raises(LoaderError, match="malformed YOLO label"):
+        list(loader)
+
+
+def test_csv_points(csv_points_root: Path) -> None:
+    samples = list(build_loader(make_source("csv-points"), csv_points_root))
+    assert len(samples) == 2
+    a = next(s for s in samples if s.key == "a.jpg")
+    assert a.meta["n_points"] == 2
+    assert a.points == ((10.0, 20.0), (30.0, 40.0))
+
+
+def test_csv_points_missing_column(csv_points_root: Path) -> None:
+    (csv_points_root / "annotations.csv").write_text("Name,Row\na.jpg,1\n", encoding="utf-8")
+    loader = build_loader(make_source("csv-points"), csv_points_root)
+    with pytest.raises(LoaderError, match="missing columns"):
+        list(loader)
+
+
+def test_labelbox_ndjson(labelbox_root: Path) -> None:
+    source = make_source("labelbox-ndjson", {"geometry_labels": "SCALE"})
+    samples = list(build_loader(source, labelbox_root))
+    assert len(samples) == 2
+
+    s1 = next(s for s in samples if s.key == "s1.jpg")
+    assert s1.meta["native_labels"] == ["Hard Coral", "Hard Coral", "Soft Coral"]
+    assert s1.meta["geometry_labels"] == []
+
+    s2 = next(s for s in samples if s.key == "s2.jpg")
+    assert s2.meta["geometry_labels"] == ["SCALE"]
+    assert s2.meta["native_labels"] == []
+    # A scale bar is geometry, not biota — it must not become a taxon label.
+    assert s2.labels == {}
+
+
+def test_audio_clips(audio_root: Path) -> None:
+    samples = list(build_loader(make_source("audio-clips"), audio_root))
+    assert len(samples) == 2
+    assert all(s.audio is not None for s in samples)
+    assert {s.meta["native_label"] for s in samples} == {"fish_chorus", "snapping_shrimp"}
+
+
+def test_metadata_only_refuses_clearly(tmp_path: Path) -> None:
+    loader = build_loader(make_source("metadata-only"), tmp_path)
+    with pytest.raises(LoaderError, match="metadata-only"):
+        list(loader)
+
+
+# ── absence vs malformation ───────────────────────────────────────────────
+
+
+def test_missing_root_says_fetch_it(tmp_path: Path) -> None:
+    loader = build_loader(make_source("image-folder"), tmp_path / "nope")
+    with pytest.raises(DataNotAvailable, match="Fetch it from"):
+        list(loader)
+
+
+def test_empty_root_is_data_not_available(tmp_path: Path) -> None:
+    empty = tmp_path / "empty"
+    empty.mkdir()
+    loader = build_loader(make_source("image-folder"), empty)
+    with pytest.raises(DataNotAvailable, match="empty"):
+        list(loader)
+
+
+def test_unknown_layout_lists_known_ones() -> None:
+    with pytest.raises(LoaderError, match="No loader registered"):
+        build_loader(make_source("does-not-exist"), "/tmp")
+
+
+# ── contract, per registered source ───────────────────────────────────────
+
+
+def _sources_with_loaders(reg: Registry):
+    return [s for s in reg if s.loader is not None]
+
+
+def test_every_source_declares_a_loader(registry: Registry) -> None:
+    """A source with no loader is an unfinished entry. metadata-only is the honest
+    way to say 'this is a reference, not a training set'."""
+    missing = [s.id for s in registry if s.loader is None]
+    assert not missing, f"sources with no loader declared: {missing}"
+
+
+@pytest.mark.parametrize("source_id", [s.id for s in Registry.load()])
+def test_source_layout_is_registered(registry: Registry, source_id: str) -> None:
+    source = registry.source(source_id)
+    assert source.loader is not None
+    assert source.loader.layout in registered_layouts(), (
+        f"{source_id} declares unknown layout '{source.loader.layout}'"
+    )
+
+
+@pytest.mark.parametrize("source_id", [s.id for s in Registry.load()])
+def test_source_loader_constructs(registry: Registry, source_id: str, tmp_path: Path) -> None:
+    """Construction must succeed without the data present."""
+    loader = build_loader(registry.source(source_id), tmp_path / source_id)
+    assert loader.source.id == source_id
+
+
+@pytest.mark.parametrize(
+    "source_id",
+    [s.id for s in Registry.load() if s.loader and s.loader.crosswalk_id],
+)
+def test_declared_crosswalk_builds(registry: Registry, source_id: str) -> None:
+    """A crosswalk that targets a missing node must fail here, not at epoch 1."""
+    harmonizer = registry.harmonizer_for(source_id)
+    assert harmonizer is not None
+    assert harmonizer.coverage_report()
+
+
+def test_layouts_have_at_least_one_source(registry: Registry) -> None:
+    """Flags a layout implemented but never used — usually a rename that half-landed."""
+    declared = {s.loader.layout for s in _sources_with_loaders(registry)}
+    orphans = set(registered_layouts()) - declared
+    assert not orphans - {"metadata-only"}, f"layouts with no sources: {sorted(orphans)}"

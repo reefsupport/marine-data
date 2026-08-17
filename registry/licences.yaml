@@ -1,0 +1,110 @@
+# Licence definitions. Sources reference these by id.
+#
+# Tier answers "what class of permission?"; flags answer "what specific acts are barred?".
+# Both are needed — CC-BY-NC and CC-BY-NC-ND share a tier but ND additionally forbids
+# every derivative, which means masks, crops and augmentations. That is the difference
+# between "research only" and "unusable for training".
+#
+# NOT LEGAL ADVICE.
+
+licences:
+  - id: PROPRIETARY-OWN
+    name: Reef Support proprietary (rights held outright)
+    tier: T0_OWN
+
+  # ── Permissive ────────────────────────────────────────────────────────────
+  - id: CC0-1.0
+    name: Creative Commons Zero v1.0 Universal
+    tier: T1_PERMISSIVE
+    url: https://creativecommons.org/publicdomain/zero/1.0/
+
+  - id: CC-BY-4.0
+    name: Creative Commons Attribution 4.0
+    tier: T1_PERMISSIVE
+    url: https://creativecommons.org/licenses/by/4.0/
+    flags: { attribution_required: true }
+
+  - id: Apache-2.0
+    name: Apache License 2.0
+    tier: T1_PERMISSIVE
+    url: https://www.apache.org/licenses/LICENSE-2.0
+    flags: { attribution_required: true }
+
+  - id: MIT
+    name: MIT License
+    tier: T1_PERMISSIVE
+    flags: { attribution_required: true }
+
+  - id: CDLA-Permissive-2.0
+    name: Community Data License Agreement – Permissive 2.0
+    tier: T1_PERMISSIVE
+    flags: { attribution_required: true }
+
+  - id: US-GOV-PD
+    name: US Government work, public domain (17 U.S.C. §105)
+    tier: T1_PERMISSIVE
+    notes: >
+      No copyright in the United States. Outside the US the position can differ; NOAA
+      and NCCOS material is nonetheless distributed for unrestricted reuse.
+
+  # ── Copyleft ──────────────────────────────────────────────────────────────
+  - id: CC-BY-SA-4.0
+    name: Creative Commons Attribution-ShareAlike 4.0
+    tier: T2_COPYLEFT
+    url: https://creativecommons.org/licenses/by-sa/4.0/
+    flags: { attribution_required: true, share_alike: true }
+    notes: >
+      Permits commercial use. Whether trained weights are a derivative work is unsettled;
+      releasing the weights under the same terms discharges the obligation either way.
+
+  - id: GPL-3.0
+    name: GNU General Public License v3.0
+    tier: T2_COPYLEFT
+    flags: { attribution_required: true, share_alike: true }
+
+  # ── Non-commercial ────────────────────────────────────────────────────────
+  - id: CC-BY-NC-4.0
+    name: Creative Commons Attribution-NonCommercial 4.0
+    tier: T3_NONCOMMERCIAL
+    flags: { attribution_required: true }
+
+  - id: CC-BY-NC-SA-4.0
+    name: Creative Commons Attribution-NonCommercial-ShareAlike 4.0
+    tier: T3_NONCOMMERCIAL
+    url: https://creativecommons.org/licenses/by-nc-sa/4.0/
+    flags: { attribution_required: true, share_alike: true }
+
+  - id: CC-BY-NC-ND-4.0
+    name: Creative Commons Attribution-NonCommercial-NoDerivatives 4.0
+    tier: T3_NONCOMMERCIAL
+    url: https://creativecommons.org/licenses/by-nc-nd/4.0/
+    flags: { attribution_required: true, no_derivatives: true }
+    notes: >
+      ND blocks derivative works outright. Generating masks, crops, resizes or
+      augmentations from an ND source is a derivative act. Treat as untrainable, not
+      merely non-commercial — this is the most commonly missed restriction in the field.
+
+  # ── No grant ──────────────────────────────────────────────────────────────
+  - id: NO-LICENCE-STATED
+    name: No licence published
+    tier: T4_TDM_ONLY
+    notes: >
+      Publicly visible but with no grant of rights. Public visibility is not a licence.
+      Any use rests on a statutory exception (EU: Art. 15o Auteurswet / DSM Art. 4),
+      which requires lawful access and the absence of a machine-readable reservation.
+
+  - id: PER-SOURCE-VARIES
+    name: Licence varies per contributing source
+    tier: T4_TDM_ONLY
+    notes: >
+      Aggregations where each contributor set its own terms. Must be resolved per subset
+      before any shipping use; the aggregate tier is the floor, not the answer.
+
+  # ── Prohibited ────────────────────────────────────────────────────────────
+  - id: PROVENANCE-DEFECTIVE
+    name: Licensor grants rights it does not appear to hold
+    tier: TX_PROHIBITED
+    flags: { provenance_defective: true }
+    notes: >
+      Typically stock or platform imagery redistributed under a CC licence by a third
+      party. No permission from the redistributor can cure the underlying defect.

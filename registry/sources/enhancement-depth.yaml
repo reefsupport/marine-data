@@ -1,0 +1,112 @@
+# Underwater image enhancement, depth and stereo.
+#
+# A standing caution that belongs with every entry here: peer-reviewed evidence finds
+# blanket underwater image enhancement is neutral-to-slightly-harmful for downstream
+# detection and segmentation. Enhancement metrics (UIQM, UCIQE) measure how a human
+# perceives an image, not how a model performs on it. Validate on the actual task.
+
+sources:
+  - id: uieb
+    name: UIEB (Underwater Image Enhancement Benchmark)
+    version: "2019"
+    description: Reference-paired real underwater images — the standard enhancement benchmark.
+    licence: CC-BY-NC-4.0
+    legal_basis: licence
+    provenance: public
+    verification:
+      verified_on: 2026-08-17
+      verified_by: "Internal catalog 2026-07-24 sweep — flagged research/non-commercial; not re-checked at source"
+      method: secondary
+    access: { method: http, uri: https://li-chongyi.github.io/proj_benchmark.html }
+    modalities: [image]
+    capabilities: [image-enhancement]
+    items: 890
+    annotations: [{ kind: none, supervises: [] }]
+    coverage: { regions: [global] }
+    loader: { layout: image-mask-pairs, params: { images_dir: raw, masks_dir: reference } }
+    tags: [enhancement, noncommercial]
+
+  - id: squid
+    name: SQUID (Stereo Quantitative Underwater Image Dataset)
+    version: "2019"
+    description: Stereo underwater images with distance information and colour charts.
+    licence: CC-BY-4.0
+    legal_basis: licence
+    provenance: public
+    verification:
+      verified_on: 2026-08-17
+      verified_by: "Internal catalog 2026-07-24 sweep — permissive; csms.haifa.ac.il/profiles/tTreibitz/datasets"
+      method: secondary
+    access: { method: http, uri: https://csms.haifa.ac.il/profiles/tTreibitz/datasets/ambient_forwardlooking/index.html }
+    modalities: [image]
+    capabilities: [image-enhancement, depth-estimation]
+    items: 57
+    annotations: [{ kind: depth-map, supervises: [] }]
+    coverage: { regions: [mediterranean, red-sea] }
+    notes: "Tiny but carries in-scene colour charts and distances — one of the few sets with physical ground truth."
+    loader: { layout: image-mask-pairs, params: { images_dir: images, masks_dir: depth } }
+    tags: [stereo, physical-gt]
+
+  - id: varos
+    name: VAROS synthetic underwater dataset
+    version: "2021"
+    description: Physically-rendered synthetic sequences with depth, normals, poses and IMU.
+    licence: CC-BY-4.0
+    legal_basis: licence
+    provenance: public
+    verification:
+      verified_on: 2026-08-17
+      verified_by: "Zenodo record 5567209 — CC-BY 4.0"
+      method: dataset-card
+    access: { method: zenodo, uri: https://zenodo.org/records/5567209 }
+    modalities: [image, video]
+    capabilities: [depth-estimation, pose-slam]
+    annotations: [{ kind: depth-map, supervises: [] }]
+    coverage: { regions: [synthetic] }
+    domain_shift:
+      trained_regions: [synthetic]
+      caveats: ["Synthetic. Useful for pipeline validation with perfect ground truth; the sim-to-real gap underwater is large."]
+    loader: { layout: metadata-only }
+    tags: [synthetic, permissive]
+
+  - id: flsea
+    name: FLSea (visual-inertial and stereo)
+    version: "2022"
+    description: Forward-looking underwater depth ground truth with IMU and poses.
+    licence: CC-BY-NC-SA-4.0
+    legal_basis: licence
+    provenance: public
+    verification:
+      verified_on: 2026-08-17
+      verified_by: "Kaggle viseaonlab/flsea-vi — CC BY-NC-SA 4.0"
+      method: dataset-card
+    access: { method: http, uri: https://www.kaggle.com/datasets/viseaonlab/flsea-vi }
+    modalities: [image, video]
+    capabilities: [depth-estimation, pose-slam]
+    annotations: [{ kind: depth-map, supervises: [] }]
+    coverage: { regions: [mediterranean, red-sea] }
+    notes: "The reference benchmark for underwater monocular metric depth papers. NC blocks shipping use."
+    loader: { layout: metadata-only }
+    tags: [depth, benchmark, noncommercial]
+
+  - id: suim
+    name: SUIM (Semantic Segmentation of Underwater Imagery)
+    version: "2020"
+    description: 8-class underwater semantic segmentation — fish, reef, diver, wrecks, seafloor.
+    licence: CC-BY-4.0
+    legal_basis: licence
+    provenance: public
+    verification:
+      verified_on: 2026-08-17
+      verified_by: "Internal catalog 2026-07-24 sweep — conditional/attribution; irvlab.cs.umn.edu"
+      method: secondary
+    access: { method: http, uri: https://irvlab.cs.umn.edu/resources/suim-dataset }
+    modalities: [image]
+    capabilities: [benthic-segmentation, fish-detection, general-pretraining]
+    items: 1525
+    annotations: [{ kind: dense-mask, classes: 8, supervises: [taxon] }]
+    coverage: { regions: [global] }
+    domain_shift:
+      caveats: ["Coarse 8-class scheme — a scene-understanding baseline, not a benthic-cover asset."]
+    loader: { layout: image-mask-pairs, params: { images_dir: images, masks_dir: masks } }
+    tags: [scene-understanding, baseline]

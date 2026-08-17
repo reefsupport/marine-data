@@ -1,0 +1,40 @@
+# Release profiles — what a build is *for*.
+#
+# The gate refuses any source outside the declared profile. Adding a tier here is a
+# deliberate, reviewable act; it should require the same scrutiny as changing a licence.
+#
+# NOT LEGAL ADVICE. These encode Reef Support B.V.'s working policy as an EU (Dutch)
+# company. Other users must review them against their own jurisdiction and counsel.
+
+profiles:
+  - id: ship-commercial
+    description: >
+      Closed or proprietary weights in a paid product. The most restrictive profile and
+      the default for anything customer-facing.
+    allow_tiers: [T0_OWN, T1_PERMISSIVE]
+    deny_flags: [no_derivatives, provenance_defective, contract_gated]
+
+  - id: ship-open
+    description: >
+      Weights released publicly under a share-alike licence. Admits copyleft sources
+      because the share-alike obligation is discharged by the release itself.
+    allow_tiers: [T0_OWN, T1_PERMISSIVE, T2_COPYLEFT]
+    deny_flags: [no_derivatives, provenance_defective, contract_gated]
+    weights_licence: CC-BY-SA-4.0
+
+  - id: research
+    description: >
+      Papers, benchmarks and internal evaluation. Never shipped, never sold, never
+      embedded in a customer deliverable.
+    allow_tiers: [T0_OWN, T1_PERMISSIVE, T2_COPYLEFT, T3_NONCOMMERCIAL]
+    deny_flags: [no_derivatives, provenance_defective]
+
+  - id: pretrain-eu
+    description: >
+      Self-supervised pretraining only, under the EU commercial TDM exception
+      (Art. 15o Auteurswet / DSM Art. 4). Weights are not distributed outside the EU
+      without separate review. Requires a counsel opinion reference at build time.
+    allow_tiers: [T0_OWN, T1_PERMISSIVE, T2_COPYLEFT, T3_NONCOMMERCIAL, T4_TDM_ONLY]
+    deny_flags: [no_derivatives, provenance_defective, contract_gated]
+    require_legal_opinion: true
+    retention_days: 180   # Art. 4(2): retain only as long as necessary for the mining

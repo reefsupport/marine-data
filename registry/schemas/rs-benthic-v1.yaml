@@ -1,0 +1,117 @@
+# RS-Benthic v1 — the canonical benthic label schema.
+#
+# Three independent axes rather than one flat class list. Flattening is what produced
+# Coralscapes-39: a partially-enumerated taxon × form × condition cross-product whose
+# author never wrote a soft-coral row. Axes keep the questions separable, let a source
+# supervise only what it actually annotates, and let a model answer coarsely (HARD_CORAL)
+# instead of being forced to guess a leaf.
+#
+# The L2 layer is deliberately MariMap's shipped `CoralLabelCode` enum. We did not invent
+# a vocabulary — we adopted the one field ecologists already type on a slate, added a
+# hierarchy above it for abstention and below it for genus, and publish crosswalks out.
+
+schemas:
+  - id: rs-benthic-v1
+    name: RS-Benthic v1
+    canonical: true
+    description: >
+      Canonical benthic schema. L1 coarse groups, L2 = MariMap CoralLabelCode,
+      L3 region-scoped genera. Axes: taxon, form, condition.
+    axes: [taxon, form, condition]
+    nodes:
+      # ── L1 ────────────────────────────────────────────────────────────
+      - { id: BIOTIC,       name: Biotic,        axis: taxon }
+      - { id: ABIOTIC,      name: Abiotic,       axis: taxon }
+      - { id: TRANSITION,   name: Transition,    axis: taxon }
+      - { id: NON_BENTHIC,  name: Non-benthic,   axis: taxon }
+
+      - { id: CNIDARIA,   name: Cnidaria,   parent: BIOTIC, axis: taxon }
+      - { id: PORIFERA,   name: Porifera,   parent: BIOTIC, axis: taxon }
+      - { id: ALGAE,      name: Algae,      parent: BIOTIC, axis: taxon }
+      - { id: PLANTAE,    name: Plantae,    parent: BIOTIC, axis: taxon }
+      - { id: OTHER_FAUNA, name: Other fauna, parent: BIOTIC, axis: taxon }
+
+      # ── L2 — MariMap CoralLabelCode ───────────────────────────────────
+      - { id: HC,  name: Hard coral,      parent: CNIDARIA, axis: taxon, aliases: ["hard coral", "scleractinian", "stony coral"], worms_aphia_id: 1363 }
+      - { id: MIL, name: Fire coral (Millepora), parent: CNIDARIA, axis: taxon, aliases: ["millepora", "fire coral", "milleporid"], worms_aphia_id: 196197,
+          notes: "Hydrozoan, not scleractinian. Split out because it is visually distinct and abundant in the Caribbean." }
+      - { id: SC,  name: Soft coral,      parent: CNIDARIA, axis: taxon, aliases: ["soft coral", "octocoral", "gorgonian", "alcyonacea"], worms_aphia_id: 1341,
+          notes: "THE branch absent from every major public reef schema. ~24% of our Caribbean annotations." }
+      - { id: ZO,  name: Zoanthid,        parent: CNIDARIA, axis: taxon, aliases: ["zoanthid"] }
+      - { id: ANEM, name: Anemone,        parent: CNIDARIA, axis: taxon, aliases: ["anemone", "actiniaria"] }
+      - { id: SP,  name: Sponge,          parent: PORIFERA, axis: taxon, aliases: ["sponge", "porifera"], worms_aphia_id: 558 }
+      - { id: CCA, name: Crustose coralline algae, parent: ALGAE, axis: taxon, aliases: ["cca", "crustose coralline"] }
+      - { id: CA,  name: Coralline algae, parent: ALGAE, axis: taxon }
+      - { id: TA,  name: Turf algae,      parent: ALGAE, axis: taxon, aliases: ["turf", "turf algae"] }
+      - { id: HA,  name: Halimeda,        parent: ALGAE, axis: taxon, aliases: ["halimeda"] }
+      - { id: SW,  name: Seaweed / macroalgae, parent: ALGAE, axis: taxon, aliases: ["macroalgae", "seaweed", "fleshy algae"] }
+      - { id: NIA, name: Nutrient indicator algae, parent: ALGAE, axis: taxon }
+      - { id: SG,  name: Seagrass,        parent: PLANTAE, axis: taxon, aliases: ["seagrass"] }
+      - { id: OT,  name: Other biota,     parent: OTHER_FAUNA, axis: taxon, aliases: ["other biota", "other animal"] }
+      - { id: URCH, name: Urchin,         parent: OTHER_FAUNA, axis: taxon, aliases: ["sea urchin", "diadema"] }
+      - { id: CLAM, name: Clam,           parent: OTHER_FAUNA, axis: taxon, aliases: ["clam", "tridacna"] }
+      - { id: CUKE, name: Sea cucumber,   parent: OTHER_FAUNA, axis: taxon, aliases: ["sea cucumber", "holothurian"] }
+      - { id: COTS, name: Crown-of-thorns, parent: OTHER_FAUNA, axis: taxon, aliases: ["crown of thorn", "acanthaster"] }
+      - { id: FISH, name: Fish,           parent: OTHER_FAUNA, axis: taxon, aliases: ["fish"] }
+
+      - { id: RB, name: Rubble,          parent: ABIOTIC, axis: taxon, aliases: ["rubble"] }
+      - { id: SD, name: Sand,            parent: ABIOTIC, axis: taxon, aliases: ["sand"] }
+      - { id: SI, name: Silt,            parent: ABIOTIC, axis: taxon, aliases: ["silt", "mud"] }
+      - { id: RK, name: Rock / pavement, parent: ABIOTIC, axis: taxon, aliases: ["rock", "pavement", "unknown hard substrate", "hard substrate"] }
+      - { id: NL, name: Non-living other, parent: ABIOTIC, axis: taxon, aliases: ["non-living"] }
+      - { id: TRASH, name: Trash / debris, parent: ABIOTIC, axis: taxon, aliases: ["trash", "debris", "litter"] }
+
+      - { id: DC,  name: Recently dead coral,   parent: TRANSITION, axis: taxon, aliases: ["recently dead coral"] }
+      - { id: DCA, name: Dead coral with algae, parent: TRANSITION, axis: taxon, aliases: ["dead coral with algae", "algae covered substrate"] }
+
+      - { id: TWS, name: Tape / wand / shadow, parent: NON_BENTHIC, axis: taxon, aliases: ["transect tools", "quadrat"] }
+      - { id: TL,  name: Transect line,        parent: NON_BENTHIC, axis: taxon, aliases: ["transect line"] }
+      - { id: DIV, name: Diver / human,        parent: NON_BENTHIC, axis: taxon, aliases: ["human", "diver"] }
+      - { id: WC,  name: Water column / background, parent: NON_BENTHIC, axis: taxon, aliases: ["background", "water column"] }
+      - { id: DRK, name: Dark / unreadable,    parent: NON_BENTHIC, axis: taxon, aliases: ["dark", "shadow"] }
+      - { id: SCL, name: Scale reference,      parent: NON_BENTHIC, axis: taxon, aliases: ["scale", "scale bar"],
+          notes: "In-frame scale object. Detecting it is what recovers pixel_size_m and unlocks area, rugosity and growth rate." }
+
+      # ── L3 — Caribbean genera (region-scoped; extend per region) ───────
+      - { id: HC_ORBICELLA,     name: Orbicella,      parent: HC, axis: taxon, worms_aphia_id: 1400001 }
+      - { id: HC_PSEUDODIPLORIA, name: Pseudodiploria, parent: HC, axis: taxon }
+      - { id: HC_SIDERASTREA,   name: Siderastrea,    parent: HC, axis: taxon }
+      - { id: HC_AGARICIA,      name: Agaricia,       parent: HC, axis: taxon }
+      - { id: HC_PORITES,       name: Porites,        parent: HC, axis: taxon, worms_aphia_id: 206970 }
+      - { id: HC_ACROPORA,      name: Acropora,       parent: HC, axis: taxon, worms_aphia_id: 205469 }
+      - { id: HC_COLPOPHYLLIA,  name: Colpophyllia,   parent: HC, axis: taxon }
+      - { id: HC_MONTASTRAEA,   name: Montastraea,    parent: HC, axis: taxon }
+      - { id: HC_MEANDRINA,     name: Meandrina,      parent: HC, axis: taxon }
+      - { id: HC_POCILLOPORA,   name: Pocillopora,    parent: HC, axis: taxon, worms_aphia_id: 206938 }
+      - { id: HC_STYLOPHORA,    name: Stylophora,     parent: HC, axis: taxon }
+      - { id: HC_TURBINARIA,    name: Turbinaria,     parent: HC, axis: taxon }
+      # Soft-coral L3
+      - { id: SC_SEA_FAN,   name: Gorgonian sea fan, parent: SC, axis: taxon, aliases: ["sea fan", "gorgonia"] }
+      - { id: SC_SEA_ROD,   name: Sea rod,           parent: SC, axis: taxon }
+      - { id: SC_SEA_PLUME, name: Sea plume,         parent: SC, axis: taxon }
+      - { id: SC_SEA_WHIP,  name: Sea whip,          parent: SC, axis: taxon }
+
+      # ── FORM axis ─────────────────────────────────────────────────────
+      - { id: CB,  name: Branching,          axis: form, aliases: ["branching"] }
+      - { id: CE,  name: Encrusting,         axis: form, aliases: ["encrusting"] }
+      - { id: CF,  name: Foliose,            axis: form, aliases: ["foliose"] }
+      - { id: CM,  name: Massive,            axis: form, aliases: ["massive"] }
+      - { id: CS,  name: Submassive,         axis: form }
+      - { id: CMR, name: Mushroom,           axis: form, aliases: ["mushroom", "fungiidae"] }
+      - { id: CD,  name: Digitate,           axis: form }
+      - { id: CT,  name: Tabulate,           axis: form, aliases: ["tabulate", "table"] }
+      - { id: CMD, name: Meandering,         axis: form, aliases: ["meandering", "brain"] }
+      - { id: CMM, name: Massive/meandering, axis: form, aliases: ["massive/meandering"],
+          notes: "Compound bucket retained for the Coralscapes crosswalk, which does not separate the two." }
+      - { id: SF_FAN,   name: Fan,   axis: form }
+      - { id: SF_ROD,   name: Rod,   axis: form }
+      - { id: SF_PLUME, name: Plume, axis: form }
+      - { id: SF_WHIP,  name: Whip,  axis: form }
+
+      # ── CONDITION axis ────────────────────────────────────────────────
+      - { id: HEALTHY,       name: Healthy,        axis: condition, aliases: ["alive", "healthy"] }
+      - { id: PALE,          name: Pale,           axis: condition, aliases: ["pale", "paling"] }
+      - { id: BLEACHED,      name: Bleached,       axis: condition, aliases: ["bleached"] }
+      - { id: DISEASED,      name: Diseased,       axis: condition, aliases: ["diseased"] }
+      - { id: RECENTLY_DEAD, name: Recently dead,  axis: condition, aliases: ["recently dead"] }
+      - { id: OLD_DEAD,      name: Old dead,       axis: condition, aliases: ["dead", "old dead"] }

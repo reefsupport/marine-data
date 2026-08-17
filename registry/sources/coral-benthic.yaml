@@ -1,0 +1,486 @@
+# Public coral and benthic datasets.
+
+sources:
+  - id: coralscapes
+    name: Coralscapes
+    version: "1.0"
+    description: >
+      The first general-purpose dense semantic segmentation dataset for coral reefs —
+      "the Cityscapes of coral". 39 benthic classes, expert polygon annotations, Red Sea.
+      Pretrained SegFormer and DINOv2/DPT checkpoints are published alongside.
+    licence: CC-BY-SA-4.0
+    legal_basis: licence
+    provenance: public
+    verification:
+      verified_on: 2026-08-17
+      verified_by: "HuggingFace card EPFL-ECEO/coralscapes states apache-2.0; Zenodo 15061505 and the ICCV paper state CC-BY-SA-4.0"
+      method: dataset-card
+      disputed: true
+      dispute_note: >
+        Two authoritative sources disagree (HF: Apache-2.0; Zenodo/paper: CC-BY-SA-4.0).
+        Registered at the stricter of the two pending written confirmation from
+        EPFL-ECEO. If Apache-2.0 is confirmed, retier to T1_PERMISSIVE and the
+        share-alike obligation on derived weights disappears.
+    access:
+      method: huggingface
+      uri: https://huggingface.co/datasets/EPFL-ECEO/coralscapes
+      params:
+        hf_id: EPFL-ECEO/coralscapes
+        config: default
+        split: train
+        image_column: image
+        mask_column: label
+    modalities: [image]
+    capabilities:
+      - benthic-segmentation
+      - coral-taxonomy
+      - bleaching-assessment
+      - general-pretraining
+    loader:
+      layout: image-mask-pairs
+      schema_id: coralscapes-39
+      crosswalk_id: coralscapes-39
+      params: { images_dir: images, masks_dir: masks }
+    items: 2075
+    annotations:
+      - kind: dense-mask
+        count: 174000
+        schema_id: coralscapes-39
+        classes: 39
+        supervises: [taxon, form, condition]
+        depth: L3
+        notes: >
+          The 39 classes are a flattened, incomplete cross-product of
+          taxon × growth-form × condition (e.g. "massive/meandering bleached").
+          Decompose via crosswalks/coralscapes-39.yaml rather than treating as flat.
+    coverage:
+      regions: [red-sea]
+      ecoregions: ["Northern and Central Red Sea", "Southern Red Sea"]
+      sites: 5
+    domain_shift:
+      trained_regions: [red-sea]
+      missing_classes:
+        - "soft coral"
+        - "gorgonian / sea fan"
+        - "sea rod"
+        - "sea plume"
+        - "octocoral (any)"
+      known_drops:
+        - to_region: caribbean
+          metric: "live-coral cover fidelity"
+          delta: -30.0
+          source: >
+            Reef Support production runs 2026-08 — six rs-ai runs across three
+            segmentation backbones collapsed to ~50% "unknown hard substrate" and
+            ~32% "rubble" on non-Red-Sea footage, invariant to model capacity.
+      caveats:
+        - "CRITICAL: the schema contains no soft-coral class of any kind. On octocoral-dominated Caribbean reefs the model has no valid label and collapses into 'unknown hard substrate' and 'rubble'. Do not deploy on Caribbean imagery without re-heading to a schema that includes octocorals."
+        - "Several classes are Indo-Pacific/Red-Sea endemics absent from the Atlantic: table acropora, stylophora, turbinaria, pocillopora, crown-of-thorns."
+        - "Only 2,075 images — small for dense segmentation. Best used as a transfer base, not a sole training set."
+    citation: "Sauder et al., The Coralscapes Dataset, ICCV 2025 Marine Vision Workshop"
+    homepage: https://josauder.github.io/coralscapes/
+    tags: [dense-seg, transfer-base, red-sea]
+
+  - id: benthicnet-1m
+    name: BenthicNet (curated 1M subset)
+    version: "1.0"
+    description: >
+      The largest and most geographically diverse compilation of seafloor imagery.
+      11.4M images collected, 1.3M spatially deduplicated, 188,688 labelled with 2.6M
+      annotations translated to the CATAMI hierarchical scheme. Self-supervised
+      pretraining on this substantially outperforms ImageNet on small regional sets.
+    licence: CC-BY-4.0
+    legal_basis: licence
+    provenance: public
+    verification:
+      verified_on: 2026-08-17
+      verified_by: "arXiv 2405.05241 / Scientific Data 2025 — CC-BY-4.0 for metadata and models; most images CC-BY with per-source exceptions noted in Appendix C"
+      method: dataset-card
+    access:
+      method: http
+      uri: https://doi.org/10.20383/103.0614
+    modalities: [image]
+    capabilities:
+      - benthic-classification
+      - general-pretraining
+      - coral-taxonomy
+    items: 1300000
+    items_note: "11.4M raw; 1.3M deduplicated; 188,688 labelled."
+    annotations:
+      - kind: point-label
+        count: 2600000
+        schema_id: catami-1.4
+        supervises: [taxon]
+        depth: L3
+        notes: "Hierarchical CATAMI, ragged depth by source. Biota maps to WoRMS AphiaIDs."
+    coverage:
+      regions: [global, temperate, deep-sea, gbr-australia, western-atlantic]
+      depth_range_m: [0.0, 5500.0]
+      years: [1965, 2021]
+    domain_shift:
+      trained_regions: [global]
+      caveats:
+        - "Benthic-general, not coral-specific — much of it is temperate and soft-sediment seafloor. Tropical reef is a minority."
+        - "Per-source licence exceptions exist (Appendix C). Verify any subset before shipping use."
+        - "Annotations are sparse points, not masks."
+    citation: "Lowe, Misiuk et al., BenthicNet, Scientific Data 2025"
+    loader:
+      layout: csv-points
+      schema_id: catami-1.4
+    tags: [pretraining, catami, largest]
+
+  - id: reefnet
+    name: ReefNet
+    version: "2025"
+    description: >
+      Fine-grained hard-coral genus benchmark aggregating 76 CoralNet sources plus new
+      Red Sea (Al-Wajh) imagery, standardised to WoRMS taxonomy. The most honest
+      cross-source generalisation testbed available.
+    licence: CC-BY-4.0
+    legal_basis: licence
+    provenance: public
+    verification:
+      verified_on: 2026-08-17
+      verified_by: "arXiv 2510.16822 v3 states CC BY 4.0"
+      method: dataset-card
+    access:
+      method: request
+      uri: https://arxiv.org/abs/2510.16822
+      notes: "Code and data stated as released 'upon acceptance' — confirm availability."
+    modalities: [image]
+    capabilities: [coral-taxonomy, benthic-classification, general-pretraining]
+    items: 181223
+    items_note: "334,162 images total; 181,223 carry hard-coral annotations."
+    annotations:
+      - kind: point-label
+        count: 925000
+        schema_id: worms-genus
+        classes: 39
+        supervises: [taxon]
+        depth: L3
+        notes: "38 genera + Fungiidae. ~479k high-confidence at 92% expert agreement."
+    coverage:
+      regions: [global, central-pacific, red-sea, gbr-australia]
+      ecoregions: ["Hawaii", "Samoa", "Mariana", "Al-Wajh"]
+    domain_shift:
+      trained_regions: [central-pacific, red-sea]
+      known_drops:
+        - to_region: caribbean
+          metric: "macro recall (cross-source)"
+          delta: -28.0
+          source: "arXiv 2510.16822 — within-source 84% vs cross-source ~56% (MAE-ViT)"
+      caveats:
+        - "Severe Indo-Pacific bias: Hawaii 221k, Samoa 202k, Mariana 108k, but Caribbean and Brazil under 8k each."
+        - "Zero-shot BioCLIP2 reaches only 23.5% macro recall — foundation models are far from genus-level coral ID."
+        - "Point labels, not masks."
+    citation: "Felemban, Battach, Khan et al., ReefNet, KAUST + MIT, arXiv 2510.16822"
+    loader:
+      layout: csv-points
+      schema_id: worms-genus
+    tags: [genus, benchmark, domain-shift-testbed]
+
+  - id: deolhonoscorais
+    name: "#DeOlhoNosCorais"
+    version: "2023"
+    description: >
+      Polygon-annotated Brazilian reef imagery from a citizen-science programme. One of
+      very few Atlantic dense-annotation sets, and therefore disproportionately relevant
+      to Caribbean work despite its modest size.
+    licence: CC-BY-4.0
+    legal_basis: licence
+    provenance: public
+    verification:
+      verified_on: 2026-08-17
+      verified_by: "PeerJ 16219 / Zenodo 10.5281/zenodo.7338208 — CC-BY"
+      method: dataset-card
+    access:
+      method: zenodo
+      uri: https://doi.org/10.5281/zenodo.7338208
+    modalities: [image]
+    capabilities:
+      - benthic-segmentation
+      - coral-instance-segmentation
+      - coral-taxonomy
+    items: 1411
+    annotations:
+      - kind: dense-mask
+        schema_id: deolho-21
+        classes: 21
+        supervises: [taxon]
+        depth: L3
+        notes: "LabelMe polygons; supports semantic seg, instance seg and detection."
+    coverage:
+      regions: [western-atlantic]
+      years: [2014, 2021]
+    domain_shift:
+      trained_regions: [western-atlantic]
+      caveats:
+        - "Brazilian Atlantic fauna overlaps Caribbean only partially, but far more than any Indo-Pacific set."
+        - "Small (1,411 images) — a fine-tuning and validation asset, not a training corpus."
+    citation: "Soares et al., PeerJ 2023"
+    loader: { layout: image-mask-pairs }
+    tags: [atlantic, dense-seg, rare-region]
+
+  - id: heron-reef-benthic
+    name: Heron Reef benthic community time series
+    version: "2021"
+    description: 17-year georeferenced photoquadrat time series from the Great Barrier Reef.
+    licence: CC-BY-4.0
+    legal_basis: licence
+    provenance: public
+    verification:
+      verified_on: 2026-08-17
+      verified_by: "Nature Scientific Data s41597-021-00871-5 — CC-BY 4.0, metadata CC0"
+      method: dataset-card
+    access:
+      method: http
+      uri: https://www.nature.com/articles/s41597-021-00871-5
+    modalities: [image]
+    capabilities: [benthic-classification, general-pretraining]
+    items: 58941
+    annotations:
+      - kind: point-label
+        count: 108700
+        classes: 6
+        supervises: [taxon]
+        depth: L1
+    coverage:
+      regions: [gbr-australia]
+      years: [2002, 2018]
+    domain_shift:
+      trained_regions: [gbr-australia]
+      caveats:
+        - "Only 6 classes — coarse. Valuable for temporal-change work rather than fine taxonomy."
+    loader: { layout: csv-points }
+    tags: [time-series, gbr]
+
+  - id: coralvqa
+    name: CoralVQA
+    version: "2025"
+    description: Large-scale visual question answering dataset for coral reef understanding.
+    licence: CC-BY-4.0
+    legal_basis: licence
+    provenance: public
+    verification:
+      verified_on: 2026-08-17
+      verified_by: "HuggingFace card CoralReefData/CoralVQA states license:cc-by-4.0"
+      method: dataset-card
+    access:
+      method: huggingface
+      uri: https://huggingface.co/datasets/CoralReefData/CoralVQA
+      params:
+        hf_id: CoralReefData/CoralVQA
+        image_column: image
+      notes: >
+        The HF datasets-server currently returns "Server error while post-processing the
+        rows" for this dataset, so automated fetch fails upstream (checked 2026-08-17).
+        The columns are answer/id/image/question. Fetch manually until it recovers.
+    modalities: [image]
+    capabilities: [vqa-captioning, general-pretraining, benthic-classification]
+    items: 9682
+    annotations:
+      - kind: image-label
+        supervises: []
+        notes: "VQA pairs. Evidence suggests VLMs are unreliable for quantitative reef assessment — treat as a language/UX asset, not a measurement one."
+    coverage:
+      regions: [global]
+    citation: "arXiv 2507.10449"
+    loader: { layout: image-folder }
+    tags: [vqa, language]
+
+  - id: noaa-pifsc-bleaching
+    name: NOAA PIFSC-ESD coral bleaching dataset
+    version: "1"
+    description: Purpose-built bleached vs healthy classification set from NOAA Pacific Islands.
+    licence: US-GOV-PD
+    legal_basis: licence
+    provenance: public
+    verification:
+      verified_on: 2026-08-17
+      verified_by: "HuggingFace NMFS-OSI/NOAA-PIFSC-ESD-CORAL-Bleaching-Dataset (NOAA/NMFS)"
+      method: dataset-card
+    access:
+      method: huggingface
+      uri: https://huggingface.co/datasets/NMFS-OSI/NOAA-PIFSC-ESD-CORAL-Bleaching-Dataset
+      params:
+        hf_id: NMFS-OSI/NOAA-PIFSC-ESD-CORAL-Bleaching-Dataset
+        image_column: image
+        label_column: label
+    modalities: [image]
+    capabilities: [bleaching-assessment]
+    loader:
+      layout: image-folder
+    items: 10400
+    annotations:
+      - kind: image-label
+        classes: 2
+        supervises: [condition]
+        depth: L1
+    coverage:
+      regions: [central-pacific]
+    tags: [bleaching, public-domain]
+
+  - id: coralnet
+    name: CoralNet
+    version: "live"
+    description: >
+      The incumbent platform for point-count benthic classification: ~1.6M images and
+      16.5M point annotations across ~330 sources.
+    licence: NO-LICENCE-STATED
+    legal_basis: tdm
+    provenance: public
+    verification:
+      verified_on: 2026-08-17
+      verified_by: >
+        coralnet.ucsd.edu /about/ and /source/about/ read on 2026-08-17: the platform is
+        described as open source and free, sources may be public or private, and NO
+        licence, ownership or commercial-use terms are stated for imagery or annotations.
+        coralnet.ucsd.edu/robots.txt returned HTTP 404 — no site-level machine-readable
+        crawl reservation exists as of that date.
+      method: absent
+    access:
+      method: scrape
+      uri: https://coralnet.ucsd.edu/
+      notes: "No batch download. Per-source retrieval only; see CoralNet-Toolbox."
+    modalities: [image]
+    capabilities: [benthic-classification, general-pretraining, coral-taxonomy]
+    items: 1600000
+    annotations:
+      - kind: point-label
+        count: 16500000
+        schema_id: coralnet-labelset
+        classes: 1275
+        supervises: [taxon]
+        depth: L3
+        notes: "1,275 labels deduplicated from 4,489 user labels — taxonomy harmonisation is a real problem."
+    coverage:
+      regions: [global, caribbean, central-pacific]
+    domain_shift:
+      caveats:
+        - "Per-source accuracy varies widely; label soup across sources."
+    notes: >
+      NOT non-commercial — UNLICENSED, which is legally worse: public visibility is not a
+      grant. Any use rests on the EU TDM exception (Art. 15o Auteurswet). The absent
+      robots.txt is favourable but is not permission, and per-source terms may still
+      exist. Requires counsel sign-off before use; the pretrain-eu profile enforces this.
+      The CoralNet *labelset structure* is factual and usable regardless — see
+      docs/LEGAL.md on facts vs expression.
+    loader:
+      layout: csv-points
+      schema_id: coralnet-labelset
+    tags: [tdm, unlicensed, incumbent]
+
+  - id: seatizen-atlas
+    name: Seatizen Atlas
+    version: "2024"
+    description: >
+      1.6M geolocated underwater and aerial images from the SW Indian Ocean, 14,492
+      annotated with multilabel and instance segmentation across 38 classes.
+    licence: CC-BY-NC-ND-4.0
+    legal_basis: licence
+    provenance: public
+    verification:
+      verified_on: 2026-08-17
+      verified_by: "Nature Scientific Data s41597-024-04267-z / Zenodo 11125847 — CC-BY-NC-ND 4.0"
+      method: dataset-card
+    access:
+      method: zenodo
+      uri: https://zenodo.org/records/11125847
+    modalities: [image]
+    capabilities: [benthic-segmentation, general-pretraining, habitat-mapping-satellite]
+    items: 1600000
+    items_note: "14,492 annotated."
+    annotations:
+      - kind: instance-mask
+        classes: 38
+        supervises: [taxon, condition]
+    coverage:
+      regions: [western-indian]
+      ecoregions: ["Reunion", "Seychelles", "Mauritius"]
+    notes: >
+      ND — NoDerivatives. Generating masks, crops, resizes or augmentations are all
+      derivative acts, so this is untrainable, not merely non-commercial. Frequently
+      misused. Readable as a methods reference only.
+    loader: { layout: metadata-only }
+    tags: [no-derivatives, trap]
+
+  - id: mermaid-aws
+    name: MERMAID community coral reef image classification training data
+    version: "live"
+    description: >
+      Live, growing point-label corpus with a taxonomy crosswalk API (LabelMapping)
+      that harmonises partner label schemes.
+    licence: CC-BY-NC-SA-4.0
+    legal_basis: licence
+    provenance: public
+    verification:
+      verified_on: 2026-08-17
+      verified_by: "registry.opendata.aws/coralreef-image-classification-training — CC BY-NC-SA 4.0"
+      method: dataset-card
+    access:
+      method: s3
+      uri: s3://coral-reef-training
+      notes: "no-sign-request - anonymously listable, no credentials needed"
+      params:
+        bucket: coral-reef-training
+        endpoint: s3.amazonaws.com
+        region: us-east-1
+    modalities: [image, tabular]
+    capabilities: [benthic-classification, coral-taxonomy]
+    annotations:
+      - kind: point-label
+        schema_id: mermaid-attributes
+        supervises: [taxon, form]
+    coverage:
+      regions: [global]
+    loader:
+      layout: metadata-only
+      verified_note: >
+        CHECKED 2026-08-17: the bucket root is anonymously listable but serves a website
+        index (index.html + assets), not the annotation corpus. The point data is
+        published as CSV/Parquet under a prefix we have not identified. NC blocks
+        commercial training anyway, so this stays metadata-only until someone maps the
+        prefix; the value here is the LabelMapping crosswalk, which is factual and
+        usable without the imagery.
+    notes: >
+      NC-SA blocks commercial training. The LabelMapping *crosswalk* — the fact that
+      attribute X corresponds to CATAMI Y — is factual information, not copyrightable
+      expression, and can inform our ontology without using the imagery.
+    tags: [crosswalk, noncommercial]
+
+  - id: marineinst20m
+    name: MarineInst20M
+    version: "2024"
+    description: >
+      2.42M marine images with 19.2M instance masks, aggregated from ~50 sources —
+      the largest marine instance-segmentation corpus in existence.
+    licence: PROVENANCE-DEFECTIVE
+    legal_basis: unknown
+    provenance: public
+    verification:
+      verified_on: 2026-08-17
+      verified_by: "external/ai/MarineInst/LICENSE.txt — CC BY-NC-SA 4.0, HKUST VGD; source list in the ECCV 2024 supplementary names Flickr, Shutterstock, Getty Images, YouTube and 'private web images'"
+      method: licence-file
+    access:
+      method: http
+      uri: https://github.com/zhengziqiang/MarineInst20M
+    modalities: [image]
+    capabilities: [coral-instance-segmentation, general-pretraining]
+    items: 2420000
+    annotations:
+      - kind: instance-mask
+        count: 19200000
+        supervises: []
+    coverage:
+      regions: [global]
+    notes: >
+      PROHIBITED — not because of the CC-BY-NC-SA licence, but because HKUST cannot grant
+      a CC licence over Getty and Shutterstock imagery it scraped. The declared licence
+      exceeds the rights held, so the grant is void as to those works, and the stock
+      agencies maintain explicit machine-readable anti-scraping terms that would defeat
+      the TDM exception besides. No route reaches this dataset: not a licence, not
+      permission from HKUST, not open-sourcing the derivative, not a research entity.
+      Our own earlier catalog recorded this as "Mixed / Open" — that error is exactly
+      why verification requires a primary source.
+    loader: { layout: metadata-only }
+    tags: [prohibited, provenance-risk]

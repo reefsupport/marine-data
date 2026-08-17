@@ -1,0 +1,55 @@
+# Native (source) label schemas.
+#
+# Registered so that `loader.schema_id` references resolve and crosswalks have a named
+# origin. Nodes are listed only where we need them addressable; a schema may legitimately
+# declare no nodes and serve purely as an identifier for its crosswalk.
+
+schemas:
+  - id: coralscapes-39
+    name: Coralscapes 39-class
+    description: >
+      Flat 39-class scheme from the Coralscapes dataset. Not a taxonomy — a
+      partially-enumerated cross-product of taxon × growth-form × condition. See
+      crosswalks/coralscapes-39.yaml for the decomposition, and note that it contains
+      no soft-coral class of any kind.
+    axes: [taxon]
+
+  - id: reef-support-labelbox
+    name: Reef Support Labelbox scheme
+    description: >
+      The 5-label scheme used in our own annotation: Hard Coral, Soft Coral, Milleporid,
+      Other Sessile Invertebrates, SCALE. Only Tayrona carries all five.
+    axes: [taxon]
+    nodes:
+      - { id: "Hard Coral",                   name: Hard Coral,                   axis: taxon }
+      - { id: "Soft Coral",                   name: Soft Coral,                   axis: taxon }
+      - { id: "Milleporid",                   name: Milleporid,                   axis: taxon }
+      - { id: "Other Sessile Invertebrates",  name: Other Sessile Invertebrates,  axis: taxon }
+      - { id: "SCALE",                        name: Scale reference,              axis: taxon,
+          notes: "Geometry, not biota — a drawn line on an in-frame scale object." }
+
+  - id: catami-1.4
+    name: CATAMI v1.4
+    description: >
+      Hierarchical morphology-first vocabulary for benthic imagery: ~300 biota nodes,
+      24 substrate, 7 relief, 7 bedforms. The scheme BenthicNet standardises on.
+    axes: [taxon]
+
+  - id: coralnet-labelset
+    name: CoralNet labelset
+    description: >
+      ~1,275 labels deduplicated from 4,489 user-defined labels across ~330 sources.
+      Harmonisation is a genuine research problem, not a lookup.
+    axes: [taxon]
+
+  - id: worms-genus
+    name: WoRMS genus
+    description: World Register of Marine Species, genus rank, addressed by AphiaID.
+    axes: [taxon]
+
+  - id: agrra-benthic
+    name: AGRRA benthic categories
+    description: >
+      The Caribbean regional standard. Groups benthos by ecological interaction with
+      reef-building corals rather than by taxonomy alone.
+    axes: [taxon, condition]

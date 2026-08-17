@@ -1,0 +1,302 @@
+# Fish and mobile fauna.
+#
+# Most entries here are `method: secondary` — transcribed from our internal catalog's
+# 2026-07 web-verified sweep rather than re-checked at source. They are usable on the
+# research profile and blocked from shipping profiles until someone opens the primary
+# source. That backlog is deliberate and visible rather than assumed away.
+
+sources:
+  - id: ozfish
+    name: OzFish
+    version: "2020"
+    description: >
+      Stereo-BRUV reef fish dataset with bounding boxes and millimetre length
+      measurements — the most relevant public asset for length-based biomass.
+    licence: CC-BY-4.0
+    legal_basis: licence
+    provenance: public
+    verification:
+      verified_on: 2026-08-17
+      verified_by: "Internal external-dataset catalog 2026-07-24 web-verified sweep (CC-BY); not re-checked at source"
+      method: secondary
+    access:
+      method: http
+      uri: https://github.com/open-AIMS/ozfish
+    modalities: [image]
+    capabilities: [fish-detection, fish-classification, fish-biomass]
+    items: 80000
+    items_note: "~80k cropped detections across ~70 families."
+    annotations:
+      - kind: bbox
+        supervises: [taxon, size]
+        notes: "Stereo pairs with mm-accurate length — the supervision monocular sets cannot provide."
+    coverage:
+      regions: [gbr-australia]
+    domain_shift:
+      trained_regions: [gbr-australia]
+      caveats:
+        - "Australian species assemblage. Caribbean fish ID will need its own labels."
+        - "Length→weight conversion requires per-species a,b coefficients (FishBase); the dataset does not supply them."
+    loader: { layout: coco-json, params: { annotations: annotations.json, images_dir: images } }
+    tags: [stereo, biomass, length]
+
+  - id: deepfish
+    name: DeepFish
+    version: "2020"
+    description: Habitat-diverse fish imagery from turbid Australian waters, with segmentation and counts.
+    licence: CC-BY-4.0
+    legal_basis: licence
+    provenance: public
+    verification:
+      verified_on: 2026-08-17
+      verified_by: "Internal external-dataset catalog 2026-07-24 sweep; alzayats.github.io/DeepFish"
+      method: secondary
+    access: { method: http, uri: https://alzayats.github.io/DeepFish/ }
+    modalities: [image]
+    capabilities: [fish-detection, general-pretraining]
+    items: 40000
+    annotations:
+      - kind: dense-mask
+        supervises: []
+        notes: "Segmentation and counts only — no species or length labels."
+    coverage: { regions: [gbr-australia] }
+    domain_shift:
+      caveats: ["Turbid-water imagery — valuable precisely because most sets are clear-water."]
+    loader: { layout: image-mask-pairs, params: { images_dir: images, masks_dir: masks } }
+    tags: [turbid, weak-labels]
+
+  - id: seamapd21
+    name: SEAMAPD21
+    version: "2021"
+    description: Reef fish detection from Gulf of Mexico BRUV footage, 130 species.
+    licence: PER-SOURCE-VARIES
+    legal_basis: unknown
+    provenance: public
+    verification:
+      verified_on: 2026-08-17
+      verified_by: "Internal catalog 2026-07-24 sweep flagged as conditional; terms not located"
+      method: secondary
+    access: { method: request, uri: https://github.com/SEFSC/SEAMAPD21 }
+    modalities: [image]
+    capabilities: [fish-detection, fish-classification]
+    items: 90000
+    annotations: [{ kind: bbox, classes: 130, supervises: [taxon] }]
+    coverage: { regions: [western-atlantic] }
+    notes: "Gulf of Mexico — the closest large fish-detection set to Caribbean assemblages. Worth chasing the terms."
+    loader: { layout: coco-json }
+    tags: [caribbean-adjacent, needs-verification]
+
+  - id: fishnet-2023
+    name: FishNet (ICCV 2023)
+    version: "2023"
+    description: Largest species-labelled fish taxonomy benchmark — 17,357 species with traits.
+    licence: CC-BY-SA-4.0
+    legal_basis: licence
+    provenance: public
+    verification:
+      verified_on: 2026-08-17
+      verified_by: "Internal catalog 2026-07-24 sweep (CC-BY-SA 4.0); fishnet-2023.github.io"
+      method: secondary
+    access: { method: http, uri: https://fishnet-2023.github.io/ }
+    modalities: [image]
+    capabilities: [fish-classification, general-pretraining]
+    items: 94532
+    annotations: [{ kind: bbox, classes: 17357, supervises: [taxon] }]
+    coverage: { regions: [global] }
+    domain_shift:
+      caveats: ["Aggregated from many sources — not in-situ reef survey imagery, so appearance differs from transect footage."]
+    loader: { layout: coco-json }
+    tags: [taxonomy, copyleft]
+
+  - id: mft25
+    name: MFT25 (Multiple Fish Tracking 2025)
+    version: "2025"
+    description: >
+      The first proper underwater fish multi-object-tracking benchmark, released with
+      the SU-T tracker (AAAI 2026 Oral).
+    licence: NO-LICENCE-STATED
+    legal_basis: unknown
+    provenance: public
+    verification:
+      verified_on: 2026-08-17
+      verified_by: "arXiv 2507.06400 / github.com/vranlee/SU-T — licence not stated in the catalog sweep"
+      method: secondary
+    access: { method: http, uri: https://vranlee.github.io/SU-T/ }
+    modalities: [video]
+    capabilities: [fish-tracking, fish-detection]
+    items: 48066
+    items_note: "15 sequences, 48,066 frames, 408,578 boxes."
+    annotations: [{ kind: track, count: 408578, supervises: [taxon] }]
+    coverage: { regions: [unknown] }
+    domain_shift:
+      caveats: ["SOTA on this benchmark is 34.1 HOTA — underwater MOT is far from solved. Do not plan a product on tracking-based abundance."]
+    loader: { layout: metadata-only }
+    tags: [tracking, benchmark]
+
+  - id: deepsea-mot
+    name: DeepSea MOT (MBARI)
+    version: "2025"
+    description: First public deep-sea multi-object-tracking benchmark.
+    licence: CC-BY-SA-4.0
+    legal_basis: licence
+    provenance: public
+    verification:
+      verified_on: 2026-08-17
+      verified_by: "HuggingFace MBARI-org/DeepSea-MOT — CC-BY-SA 4.0"
+      method: dataset-card
+    access:
+      method: huggingface
+      uri: https://huggingface.co/datasets/MBARI-org/DeepSea-MOT
+      params:
+        hf_id: MBARI-org/DeepSea-MOT
+        image_column: image
+    modalities: [video]
+    capabilities: [fish-tracking, megafauna-id]
+    items: 4
+    items_note: "4 annotated deep-sea sequences."
+    annotations: [{ kind: track, supervises: [taxon] }]
+    coverage: { regions: [deep-sea] }
+    domain_shift:
+      caveats: ["Deep-sea, artificially lit — almost no visual overlap with sunlit reef. Reuse the evaluation tooling, not the data."]
+    loader:
+      layout: flat-images
+    tags: [tracking, tooling]
+
+  - id: fathomnet
+    name: FathomNet
+    version: "live"
+    description: Large deep-sea annotation ecosystem with a mature API and taxonomy backbone.
+    licence: CC-BY-4.0
+    legal_basis: licence
+    provenance: public
+    verification:
+      verified_on: 2026-08-17
+      verified_by: "Internal catalog 2026-07-24 sweep (CC-BY); fathomnet.org"
+      method: secondary
+    access: { method: api, uri: https://fathomnet.org/ }
+    modalities: [image]
+    capabilities: [fish-detection, megafauna-id, invertebrate-detection, general-pretraining]
+    items: 100000
+    annotations: [{ kind: bbox, count: 6600000, supervises: [taxon] }]
+    coverage: { regions: [deep-sea, eastern-pacific] }
+    domain_shift:
+      caveats: ["Excellent infrastructure, weak reef overlap."]
+    loader: { layout: coco-json }
+    tags: [deep-sea, api]
+
+  - id: mouss-detection
+    name: MOUSS fish imagery (NOAA PIFSC)
+    version: "2024"
+    description: Grayscale stationary-camera fish detection from Hawaiian BFISH surveys.
+    licence: US-GOV-PD
+    legal_basis: licence
+    provenance: public
+    verification:
+      verified_on: 2026-08-17
+      verified_by: "HuggingFace akridge/MOUSS_fish_imagery_dataset_grayscale_small — NOAA public domain"
+      method: dataset-card
+    access:
+      method: huggingface
+      uri: https://huggingface.co/datasets/akridge/MOUSS_fish_imagery_dataset_grayscale_small
+      params:
+        hf_id: akridge/MOUSS_fish_imagery_dataset_grayscale_small
+        image_column: image
+    modalities: [image]
+    capabilities: [fish-detection]
+    items: 1869
+    annotations: [{ kind: bbox, classes: 1, supervises: [] }]
+    coverage: { regions: [central-pacific] }
+    domain_shift:
+      caveats:
+        - "Grayscale, single class. A clean detection baseline, not a species asset."
+        - "The HuggingFace mirror ships IMAGES ONLY — the bounding boxes are in a separate release. Verified 2026-08-17."
+    loader:
+      layout: flat-images
+      verified_on: 2026-08-17
+      verified_note: "30 live rows fetched from HF; images only, no annotation file — coco-json was a wrong guess, corrected to flat-images"
+    tags: [public-domain, baseline]
+
+  - id: labeled-fishes-in-the-wild
+    name: Labeled Fishes in the Wild (NOAA SWFSC)
+    version: "2014"
+    description: Canonical NOAA benchmark for fish detection in cluttered rocky habitat.
+    licence: US-GOV-PD
+    legal_basis: licence
+    provenance: public
+    verification:
+      verified_on: 2026-08-17
+      verified_by: "Internal catalog 2026-07-24 sweep — NOAA public domain; fisheries.noaa.gov"
+      method: secondary
+    access: { method: http, uri: https://www.fisheries.noaa.gov/west-coast/science-data/labeled-fishes-wild }
+    modalities: [image]
+    capabilities: [fish-detection]
+    items: 929
+    items_note: "929 positive, 3,167 negative."
+    annotations: [{ kind: bbox, classes: 1, supervises: [] }]
+    coverage: { regions: [eastern-pacific, temperate] }
+    loader: { layout: coco-json }
+    tags: [public-domain, small]
+
+  - id: brackish-dataset
+    name: Brackish Dataset (AAU)
+    version: "2019"
+    description: The only major temperate/brackish underwater detection set — fish and crustaceans.
+    licence: CC-BY-4.0
+    legal_basis: licence
+    provenance: public
+    verification:
+      verified_on: 2026-08-17
+      verified_by: "Internal catalog 2026-07-24 sweep (CC-BY 4.0); vap.aau.dk/the-brackish-dataset"
+      method: secondary
+    access: { method: http, uri: https://vap.aau.dk/the-brackish-dataset/ }
+    modalities: [video, image]
+    capabilities: [fish-detection, invertebrate-detection]
+    items: 14674
+    annotations: [{ kind: bbox, classes: 6, supervises: [taxon] }]
+    coverage: { regions: [temperate] }
+    domain_shift:
+      caveats: ["Temperate brackish water — useful for turbidity robustness, not for reef taxa."]
+    loader: { layout: yolo-txt }
+    tags: [temperate, turbidity]
+
+  - id: fish4knowledge
+    name: Fish4Knowledge
+    version: "2013"
+    description: Classic imbalanced live-reef-fish recognition set with segmentation masks.
+    licence: CC-BY-4.0
+    legal_basis: licence
+    provenance: public
+    verification:
+      verified_on: 2026-08-17
+      verified_by: "Internal catalog 2026-07-24 sweep — permissive/public-domain style; homepages.inf.ed.ac.uk"
+      method: secondary
+    access: { method: http, uri: https://homepages.inf.ed.ac.uk/rbf/Fish4Knowledge/ }
+    modalities: [image]
+    capabilities: [fish-classification, fish-detection]
+    items: 27370
+    annotations: [{ kind: image-label, classes: 23, supervises: [taxon] }]
+    coverage: { regions: [coral-triangle] }
+    domain_shift:
+      caveats: ["Severe class imbalance — the long tail is the point of the benchmark."]
+    loader: { layout: image-folder }
+    tags: [classic, imbalanced]
+
+  - id: sea-urchin-detection
+    name: Sea Urchin detection (Roboflow)
+    version: "unversioned"
+    description: Multi-class urchin detection — relevant to herbivory and reef-state indicators.
+    licence: CC-BY-4.0
+    legal_basis: licence
+    provenance: public
+    verification:
+      verified_on: 2026-08-17
+      verified_by: "Internal catalog 2026-07-24 sweep (CC-BY 4.0); Roboflow Universe"
+      method: secondary
+    access: { method: http, uri: https://universe.roboflow.com/thesis-ztpwb/sea-urchin-10r8i }
+    modalities: [image]
+    capabilities: [invertebrate-detection]
+    items: 2475
+    annotations: [{ kind: bbox, classes: 9, supervises: [taxon] }]
+    coverage: { regions: [coral-triangle] }
+    loader: { layout: yolo-txt }
+    tags: [urchin, herbivory]

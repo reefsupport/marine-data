@@ -1,0 +1,157 @@
+# 3D reconstruction, photogrammetry, depth and pose datasets.
+
+sources:
+  - id: sweet-corals
+    name: wildflow/sweet-corals
+    version: "2025"
+    description: >
+      Raw GoPro survey imagery from 13 Indonesian reef patches with full photogrammetry
+      products: orthomosaics, point clouds, 3D Gaussian Splatting models, colour-corrected
+      frames, camera poses and COLMAP reconstructions. Georeferenced and scaled.
+    licence: CC-BY-4.0
+    legal_basis: licence
+    provenance: public
+    verification:
+      verified_on: 2026-08-17
+      verified_by: "HuggingFace card wildflow/sweet-corals states license:cc-by-4.0, DOI 10.57967/hf/5162"
+      method: dataset-card
+    access:
+      method: huggingface
+      uri: https://huggingface.co/datasets/wildflow/sweet-corals
+      size_bytes: 377957122048
+      params:
+        hf_id: wildflow/sweet-corals
+        fetch_style: files
+        subpath: indonesia_tabuhan_p2_20250210
+    modalities: [image, point-cloud, mesh, orthomosaic]
+    capabilities:
+      - 3d-reconstruction
+      - pose-slam
+      - structural-complexity
+      - depth-estimation
+      - general-pretraining
+    items: 90289
+    items_note: "352 GB raw GoPro imagery across 13 survey patches."
+    annotations:
+      - kind: camera-pose
+        supervises: []
+        notes: "COLMAP camera parameters and poses for most patches."
+      - kind: point-cloud-label
+        supervises: []
+        notes: "Geometry only, no semantics. Point clouds listed as awaiting upload for several sites — verify availability."
+    coverage:
+      regions: [coral-triangle]
+      ecoregions: ["Lesser Sunda", "Bali and Java"]
+      sites: 13
+    domain_shift:
+      trained_regions: [coral-triangle]
+      caveats:
+        - "Indonesia only — does not address the Caribbean gap. A pipeline-development and pretraining asset, not a moat asset."
+        - "No semantic labels. Value is the geometry, the poses and the fact that it is correctly scaled."
+    notes: >
+      Strategically important for three reasons beyond its size: (1) it is georeferenced
+      AND SCALED, giving ground truth to develop metric-scale recovery against;
+      (2) it ships camera poses and COLMAP output, so 3D-to-2D label propagation can be
+      built and tested without producing our own reconstructions first; (3) it is GoPro
+      diver-transect video — the same modality as our capture pipeline, unlike the
+      photo-quadrat sets. Under CC-BY it is the best in-modality pretraining corpus we
+      can legally use.
+    citation: "wildflow, Coral reefs 3D photogrammetry, DOI 10.57967/hf/5162"
+    loader:
+      layout: flat-images
+    tags: [3d, scaled, in-modality, gopro]
+
+  - id: deepreefmap-data
+    name: DeepReefMap reference data and checkpoints
+    version: "2024"
+    description: >
+      Red Sea GoPro transect videos with trained segmentation and SfM checkpoints for
+      real-time semantic 3D reef mapping.
+    licence: CC-BY-4.0
+    legal_basis: licence
+    provenance: public
+    verification:
+      verified_on: 2026-08-17
+      verified_by: "Zenodo record 10624794 — CC-BY-4.0"
+      method: dataset-card
+    access:
+      method: zenodo
+      uri: https://zenodo.org/records/10624794
+      size_bytes: 11060000000
+    modalities: [video, point-cloud]
+    capabilities: [3d-reconstruction, benthic-segmentation, pose-slam, depth-estimation]
+    items: 3
+    items_note: "3 videos plus segmentation_net.pth and sfm_net.pth."
+    annotations:
+      - kind: point-cloud-label
+        schema_id: coralscapes-39
+        supervises: [taxon, form, condition]
+    coverage:
+      regions: [red-sea]
+    domain_shift:
+      trained_regions: [red-sea]
+      caveats:
+        - "Inherits the Coralscapes-39 schema and therefore its missing soft-coral class."
+        - "Demo-scale: the checkpoints are larger than the data."
+    citation: "Sauder, Banc-Prandi, Meibom, Tuia, Methods in Ecology and Evolution 2024"
+    loader: { layout: metadata-only }
+    tags: [3d, reference-pipeline]
+
+  - id: noaa-ncrmp-structural-complexity
+    name: NOAA NCRMP structural complexity (SfM)
+    version: "live"
+    description: >
+      Structure-from-Motion derived rugosity and structural-complexity metrics with
+      paired adult and juvenile coral annotations.
+    licence: US-GOV-PD
+    legal_basis: licence
+    provenance: public
+    verification:
+      verified_on: 2026-08-17
+      verified_by: "NOAA InPort item 67851 — US Government work"
+      method: site-terms
+    access:
+      method: http
+      uri: https://www.fisheries.noaa.gov/inport/item/67851
+    modalities: [image, point-cloud, mesh]
+    capabilities: [structural-complexity, 3d-reconstruction, benthic-classification]
+    annotations:
+      - kind: point-cloud-label
+        supervises: [taxon]
+        notes: "Coral demographic annotations paired with SfM geometry."
+    coverage:
+      regions: [central-pacific]
+    notes: >
+      The only public reef dataset combining METRIC 3D geometry with ecological labels.
+      Directly relevant to rugosity and structural-complexity outputs. Volume unconfirmed.
+    loader: { layout: metadata-only }
+    tags: [metric-3d, rugosity, public-domain]
+
+  - id: atlantis-synthetic-depth
+    name: Atlantis (synthetic underwater depth)
+    version: "2024"
+    description: Synthetic underwater image/depth/text triplets for monocular depth training.
+    licence: MIT
+    legal_basis: licence
+    provenance: public
+    verification:
+      verified_on: 2026-08-17
+      verified_by: "github.com/zkawfanx/Atlantis — MIT licence"
+      method: licence-file
+    access:
+      method: http
+      uri: https://github.com/zkawfanx/Atlantis
+    modalities: [image]
+    capabilities: [depth-estimation, image-enhancement]
+    items: 3200
+    annotations:
+      - kind: depth-map
+        supervises: []
+    coverage:
+      regions: [synthetic]
+    domain_shift:
+      caveats:
+        - "Synthetic (Stable-Diffusion generated). Useful for domain-adaptation experiments; not a substitute for real metric ground truth."
+        - "Monocular depth underwater is not metric without an in-scene scale reference. Treat as a relative prior only."
+    loader: { layout: image-mask-pairs }
+    tags: [synthetic, depth, permissive]

@@ -1,0 +1,233 @@
+# Mangrove, seagrass, saltmarsh, bathymetry, debris — the non-reef coastal ecosystems.
+#
+# Mostly satellite and raster products. They are context layers rather than training
+# sets: habitat *extent* and environmental stress, not organism condition. Several are
+# `metadata-only` by design — declaring that is more honest than leaving `loader` unset
+# and implying an adapter is merely missing.
+
+sources:
+  - id: global-mangrove-watch-v3
+    name: Global Mangrove Watch v3.0
+    version: "3.0"
+    description: >
+      Definitive global mangrove extent and change, 11 epochs 1996–2020 at 25 m from
+      ALOS/JERS SAR classification.
+    licence: CC-BY-4.0
+    legal_basis: licence
+    provenance: public
+    verification:
+      verified_on: 2026-08-17
+      verified_by: "Zenodo record 6894273 — CC-BY-4.0"
+      method: dataset-card
+    access: { method: zenodo, uri: https://zenodo.org/records/6894273 }
+    modalities: [satellite]
+    capabilities: [habitat-mapping-satellite]
+    items_note: "~147,000 km² mapped (2020 epoch)."
+    annotations: [{ kind: tabular, supervises: [] }]
+    coverage: { regions: [global], years: [1996, 2020] }
+    domain_shift:
+      caveats: ["25 m pixels give extent, not condition. Cannot resolve individual trees or canopy health."]
+    loader: { layout: metadata-only }
+    tags: [mangrove, extent, context-layer]
+
+  - id: global-seagrass-10m
+    name: Global 10 m Seagrass Maps
+    version: "2026"
+    description: First high-resolution global seagrass extent map from Sentinel-2 deep learning.
+    licence: CC-BY-4.0
+    legal_basis: licence
+    provenance: public
+    verification:
+      verified_on: 2026-08-17
+      verified_by: "Zenodo record 18612239 — CC-BY-4.0 (Nature 2026)"
+      method: dataset-card
+    access: { method: zenodo, uri: https://zenodo.org/records/18612239 }
+    modalities: [satellite]
+    capabilities: [seagrass-mapping, habitat-mapping-satellite]
+    items_note: "~148,000 km² mapped."
+    annotations: [{ kind: tabular, supervises: [] }]
+    coverage: { regions: [global] }
+    loader: { layout: metadata-only }
+    tags: [seagrass, extent, context-layer]
+
+  - id: allen-coral-atlas
+    name: Allen Coral Atlas — Reef Habitat v2.0
+    version: "2.0"
+    description: >
+      Global shallow-reef benthic and geomorphic thematic maps at 5 m — the standard
+      satellite basemap for reef extent.
+    licence: CC-BY-4.0
+    legal_basis: licence
+    provenance: public
+    verification:
+      verified_on: 2026-08-17
+      verified_by: "allencoralatlas.org terms — CC-BY 4.0; GEE asset ACA/reef_habitat/v2_0"
+      method: site-terms
+    access: { method: api, uri: https://allencoralatlas.org }
+    modalities: [satellite]
+    capabilities: [habitat-mapping-satellite]
+    annotations:
+      - kind: tabular
+        classes: 17
+        supervises: []
+        notes: "6 benthic + 11 geomorphic classes."
+    coverage: { regions: [global] }
+    domain_shift:
+      caveats:
+        - "5 m pixels map habitat extent, not colony condition. Pair with in-water data; never use alone for cover."
+        - "Funding-fragile — mirror anything you depend on."
+    loader: { layout: metadata-only }
+    tags: [satellite, basemap, context-layer]
+
+  - id: noaa-nccos-benthic-habitat
+    name: NOAA NCCOS shallow-water benthic habitat maps
+    version: "live"
+    description: >
+      High-resolution photo-interpreted benthic habitat maps for US reefs including
+      Florida, Puerto Rico and the US Virgin Islands.
+    licence: US-GOV-PD
+    legal_basis: licence
+    provenance: public
+    verification:
+      verified_on: 2026-08-17
+      verified_by: "coastalscience.noaa.gov — US Government work, public domain"
+      method: site-terms
+    access: { method: http, uri: https://coastalscience.noaa.gov/science-areas/coral-ecosystem/shallow-water-corals/ }
+    modalities: [satellite]
+    capabilities: [habitat-mapping-satellite, benthic-classification]
+    coverage:
+      regions: [caribbean, western-atlantic, central-pacific]
+      ecoregions: ["Floridian", "Greater Antilles"]
+    annotations: [{ kind: tabular, supervises: [taxon] }]
+    notes: >
+      Zero licence risk and genuine Caribbean coverage — among the most valuable public
+      assets for our region. Hierarchical classification schemes vary by mapping campaign.
+    loader: { layout: metadata-only }
+    tags: [caribbean, public-domain, habitat]
+
+  - id: gebco-2024
+    name: GEBCO 2024 Grid
+    version: "2024"
+    description: Global bathymetry and topography at 15 arc-seconds.
+    licence: CC0-1.0
+    legal_basis: licence
+    provenance: public
+    verification:
+      verified_on: 2026-08-17
+      verified_by: "gebco.net terms — public domain, attribution requested"
+      method: site-terms
+    access: { method: http, uri: https://www.gebco.net/data-products-gridded-bathymetry-data/gebco2024-grid }
+    modalities: [satellite]
+    capabilities: [bathymetry]
+    coverage: { regions: [global] }
+    annotations: [{ kind: tabular, supervises: [] }]
+    domain_shift:
+      caveats: ["~450 m resolution — a regional context layer, far too coarse for reef-scale depth."]
+    loader: { layout: metadata-only }
+    tags: [bathymetry, context-layer]
+
+  - id: icesat2-atl24
+    name: ICESat-2 ATL24 coastal bathymetry
+    version: "2"
+    description: Photon-classified nearshore bathymetry — reference depths and SDB training labels.
+    licence: US-GOV-PD
+    legal_basis: licence
+    provenance: public
+    verification:
+      verified_on: 2026-08-17
+      verified_by: "NSIDC ATL24 v2 — NASA open data"
+      method: site-terms
+    access: { method: http, uri: https://nsidc.org/data/atl24/versions/2 }
+    modalities: [satellite]
+    capabilities: [bathymetry]
+    coverage: { regions: [global] }
+    annotations: [{ kind: tabular, supervises: [] }]
+    loader: { layout: metadata-only }
+    tags: [bathymetry, lidar]
+
+  - id: seaclear-marine-debris
+    name: SeaCLEAR Marine Debris
+    version: "2024"
+    description: Underwater debris and marine-life instance segmentation, 40 categories.
+    licence: CC-BY-4.0
+    legal_basis: licence
+    provenance: public
+    verification:
+      verified_on: 2026-08-17
+      verified_by: "Nature Scientific Data s41597-024-03759-2 — CC-BY 4.0"
+      method: dataset-card
+    access: { method: http, uri: https://www.nature.com/articles/s41597-024-03759-2 }
+    modalities: [image]
+    capabilities: [marine-debris, general-pretraining]
+    items: 8610
+    annotations: [{ kind: instance-mask, classes: 40, supervises: [taxon] }]
+    coverage: { regions: [mediterranean] }
+    domain_shift:
+      caveats: ["Mediterranean temperate — useful for the debris classes and for general underwater pretraining, not for reef taxa."]
+    loader: { layout: coco-json }
+    tags: [debris, permissive]
+
+  - id: floating-marine-debris
+    name: Floating Marine Debris spectral data
+    version: "2023"
+    description: Pixel-level spectral labels for floating debris detection from Sentinel-2.
+    licence: CC-BY-4.0
+    legal_basis: licence
+    provenance: public
+    verification:
+      verified_on: 2026-08-17
+      verified_by: "github.com/miguelmendesduarte/Floating-Marine-Debris-Data — CC-BY 4.0"
+      method: licence-file
+    access: { method: http, uri: https://github.com/miguelmendesduarte/Floating-Marine-Debris-Data }
+    modalities: [satellite]
+    capabilities: [marine-debris]
+    items: 60680
+    items_note: "60,680 real labelled pixels plus synthetic."
+    annotations: [{ kind: tabular, classes: 7, supervises: [taxon] }]
+    coverage: { regions: [global] }
+    loader: { layout: metadata-only }
+    tags: [debris, spectral]
+
+  - id: copernicus-globcolour
+    name: Copernicus-GlobColour Ocean Colour L4
+    version: "live"
+    description: Chlorophyll-a, turbidity and water-quality retrievals — reef stress context.
+    licence: CC-BY-4.0
+    legal_basis: licence
+    provenance: public
+    verification:
+      verified_on: 2026-08-17
+      verified_by: "Copernicus Marine Service data licence — free and open with attribution"
+      method: site-terms
+    access: { method: api, uri: https://data.marine.copernicus.eu/product/OCEANCOLOUR_GLO_BGC_L4_MY_009_104 }
+    modalities: [satellite, tabular]
+    capabilities: [habitat-mapping-satellite]
+    coverage: { regions: [global], years: [1997, 2026] }
+    annotations: [{ kind: tabular, supervises: [] }]
+    notes: "Environmental covariate layer — pairs with bleaching models rather than feeding vision directly."
+    loader: { layout: metadata-only }
+    tags: [environmental, covariate]
+
+  - id: obis
+    name: OBIS — Ocean Biodiversity Information System
+    version: "live"
+    description: ~200M marine species occurrence records with taxonomy and coordinates.
+    licence: CC-BY-4.0
+    legal_basis: licence
+    provenance: public
+    verification:
+      verified_on: 2026-08-17
+      verified_by: "obis.org terms — CC-BY 4.0 for the standardised aggregate"
+      method: site-terms
+    access: { method: api, uri: https://obis.org }
+    modalities: [tabular]
+    capabilities: [edna-taxonomy, coral-taxonomy]
+    items: 200000000
+    annotations: [{ kind: tabular, supervises: [taxon] }]
+    coverage: { regions: [global] }
+    notes: >
+      Not a vision dataset. Valuable as a geographic *prior*: it constrains which taxa are
+      plausible at a given site, which is a cheap and principled way to suppress
+      biogeographically impossible predictions — e.g. Indo-Pacific genera on a Caribbean reef.
+    loader: { layout: metadata-only }
+    tags: [occurrence, prior, taxonomy]

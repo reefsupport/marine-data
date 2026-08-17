@@ -1,0 +1,77 @@
+# Coralscapes-39 → RS-Benthic v1.
+#
+# This file is the evidence for a claim made throughout the project: Coralscapes-39 is
+# not a taxonomy but a flattened, incomplete cross-product of taxon × form × condition.
+# Decomposed below, 27 of its 39 classes resolve into two or three axes.
+#
+# ⚠️ Read the target column and note what is NOT there: **no edge maps to SC (soft coral)
+# or any of its children.** The schema has no soft-coral row at all — not "soft coral,
+# unspecified", not "octocoral", nothing. On Caribbean reefs, where octocorals are ~24%
+# of our annotations and 47% in SEAVIEW_ATL, a model trained on this has no valid label
+# for a quarter of what it sees, and resolves it into the nearest available substrate
+# class. That is the mechanism behind ~50% "unknown hard substrate" in production.
+#
+# A crosswalk cannot repair this. It can only make it visible.
+
+crosswalks:
+  - id: coralscapes-39
+    source_schema: coralscapes-39
+    target_schema: rs-benthic-v1
+    description: >
+      Decomposes the 39 flat Coralscapes classes onto RS-Benthic axes. Fidelity is
+      `coarsened` wherever the source names a compound bucket our schema separates,
+      and `approximate` where the concepts only partly overlap.
+    edges:
+      # ── substrate and abiotic ────────────────────────────────────────
+      - { source_label: "sand",                    targets: { taxon: SD } }
+      - { source_label: "rubble",                  targets: { taxon: RB } }
+      - { source_label: "unknown hard substrate",  targets: { taxon: RK }, fidelity: approximate,
+          note: "Coralscapes' dumping ground. On non-Red-Sea imagery this class absorbs unmapped octocorals, so treat it as low-confidence rather than genuine pavement." }
+      - { source_label: "algae covered substrate", targets: { taxon: DCA }, fidelity: approximate,
+          note: "DCA implies dead coral beneath; the source only asserts algal cover." }
+      - { source_label: "trash",                   targets: { taxon: TRASH } }
+
+      # ── non-benthic ─────────────────────────────────────────────────
+      - { source_label: "human",           targets: { taxon: DIV } }
+      - { source_label: "transect tools",  targets: { taxon: TWS } }
+      - { source_label: "transect line",   targets: { taxon: TL } }
+      - { source_label: "background",      targets: { taxon: WC } }
+      - { source_label: "dark",            targets: { taxon: DRK } }
+
+      # ── hard coral, form unspecified ────────────────────────────────
+      - { source_label: "other coral alive",    targets: { taxon: HC, condition: HEALTHY },  fidelity: coarsened, note: "Growth form not recorded." }
+      - { source_label: "other coral bleached", targets: { taxon: HC, condition: BLEACHED }, fidelity: coarsened }
+      - { source_label: "other coral dead",     targets: { taxon: HC, condition: OLD_DEAD }, fidelity: coarsened }
+
+      # ── hard coral × form × condition ───────────────────────────────
+      - { source_label: "branching alive",             targets: { taxon: HC, form: CB,  condition: HEALTHY } }
+      - { source_label: "branching bleached",          targets: { taxon: HC, form: CB,  condition: BLEACHED } }
+      - { source_label: "branching dead",              targets: { taxon: HC, form: CB,  condition: OLD_DEAD } }
+      - { source_label: "massive/meandering alive",    targets: { taxon: HC, form: CMM, condition: HEALTHY },  fidelity: coarsened, note: "Source conflates massive and meandering." }
+      - { source_label: "massive/meandering bleached", targets: { taxon: HC, form: CMM, condition: BLEACHED }, fidelity: coarsened }
+      - { source_label: "massive/meandering dead",     targets: { taxon: HC, form: CMM, condition: OLD_DEAD }, fidelity: coarsened }
+      - { source_label: "meandering alive",            targets: { taxon: HC, form: CMD, condition: HEALTHY } }
+      - { source_label: "meandering bleached",         targets: { taxon: HC, form: CMD, condition: BLEACHED } }
+      - { source_label: "meandering dead",             targets: { taxon: HC, form: CMD, condition: OLD_DEAD } }
+
+      # ── genus-level (all Indo-Pacific / Red Sea) ────────────────────
+      - { source_label: "acropora alive",       targets: { taxon: HC_ACROPORA, condition: HEALTHY } }
+      - { source_label: "table acropora alive", targets: { taxon: HC_ACROPORA, form: CT, condition: HEALTHY } }
+      - { source_label: "table acropora dead",  targets: { taxon: HC_ACROPORA, form: CT, condition: OLD_DEAD } }
+      - { source_label: "pocillopora alive",    targets: { taxon: HC_POCILLOPORA, condition: HEALTHY } }
+      - { source_label: "stylophora alive",     targets: { taxon: HC_STYLOPHORA, condition: HEALTHY } }
+      - { source_label: "turbinaria",           targets: { taxon: HC_TURBINARIA }, fidelity: coarsened, note: "Condition not recorded by the source." }
+      - { source_label: "millepora",            targets: { taxon: MIL },           fidelity: coarsened }
+
+      # ── other biota ─────────────────────────────────────────────────
+      - { source_label: "sponge",         targets: { taxon: SP } }
+      - { source_label: "anemone",        targets: { taxon: ANEM } }
+      - { source_label: "clam",           targets: { taxon: CLAM } }
+      - { source_label: "dead clam",      targets: { taxon: CLAM, condition: OLD_DEAD }, fidelity: approximate,
+          note: "Our condition axis is defined for coral; applying it to a bivalve is a stretch retained only for round-tripping." }
+      - { source_label: "sea urchin",     targets: { taxon: URCH } }
+      - { source_label: "sea cucumber",   targets: { taxon: CUKE } }
+      - { source_label: "crown of thorn", targets: { taxon: COTS } }
+      - { source_label: "other animal",   targets: { taxon: OT },   fidelity: coarsened }
+      - { source_label: "fish",           targets: { taxon: FISH } }
+      - { source_label: "seagrass",       targets: { taxon: SG } }

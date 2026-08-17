@@ -1,0 +1,246 @@
+# Reef Support's own and partner data.
+#
+# Counts are from a live rclone scan of the Hetzner buckets on 2026-08-17 and a full
+# parse of every Labelbox export-result.ndjson — not from prior documentation.
+
+sources:
+  - id: reef-support-benthic
+    name: Reef Support benthic instance masks
+    version: "2026-08"
+    description: >
+      Expert Labelbox instance masks over 8 survey sites. Four sites are our own
+      Caribbean imagery (Colombia: Seaflower, Tayrona, Providencia); four are our
+      annotations applied to public XL Catlin Seaview photographs, where the labels
+      are ours but the underlying pixels are not.
+    licence: PROPRIETARY-OWN
+    legal_basis: own
+    provenance: own
+    verification:
+      verified_on: 2026-08-17
+      verified_by: "Live rclone scan of s3://rs-storage-open/benthic_datasets/mask_labels/reef_support"
+      method: licence-file
+    access:
+      method: s3
+      uri: s3://rs-storage-open/benthic_datasets/mask_labels/reef_support
+      size_bytes: 8117000000
+      params:
+        bucket: rs-storage-open
+        endpoint: hel1.your-objectstorage.com
+        region: hel1
+        prefix: benthic_datasets/mask_labels/reef_support/SEAFLOWER_BOLIVAR/
+        credentials_env: S3
+    modalities: [image]
+    capabilities:
+      - benthic-segmentation
+      - coral-instance-segmentation
+      - general-pretraining
+    loader:
+      layout: labelbox-ndjson
+      schema_id: reef-support-labelbox
+      verified_on: 2026-08-17
+      verified_note: >
+        Verified against the live Hetzner bucket. The root is SITE-PARTITIONED - eight
+        site directories, each with images/ + masks/ + masks_stitched/ + one
+        export-result.ndjson. An earlier declaration assumed root == one site.
+      params:
+        annotations: export-result.ndjson
+        images_dir: images
+        geometry_labels: "SCALE"
+    items: 3957
+    items_note: >
+      63,955 annotations total. Only 1,250 images are our own pixels
+      (Tayrona 658, Bolivar 246, Courtown 241, Providencia 105).
+    annotations:
+      - kind: instance-mask
+        count: 63955
+        schema_id: reef-support-labelbox
+        classes: 5
+        supervises: [taxon]
+        depth: L2
+        notes: >
+          Hard Coral, Soft Coral, Milleporid, Other Sessile Invertebrates, SCALE.
+          Only Tayrona carries all five; the other seven sites are Hard/Soft Coral only.
+      - kind: polyline
+        count: 654
+        supervises: []
+        notes: >
+          SCALE line annotations (Tayrona only). In-frame scale references — the
+          supervision signal for automatic metric-scale recovery, which is the
+          blocking gap for area, rugosity and growth-rate outputs.
+    coverage:
+      regions: [caribbean, western-atlantic, coral-triangle, central-pacific, gbr-australia]
+      ecoregions: ["Southwestern Caribbean", "Southern Caribbean"]
+      sites: 8
+    domain_shift:
+      trained_regions: [caribbean]
+      caveats:
+        - "Soft coral is 24.4% of all Caribbean/Atlantic annotations here (46.9% in SEAVIEW_ATL) — the single most under-represented class in every public reef schema."
+        - "Only 1,250 images are our own pixels; the remainder are our labels on third-party Seaview imagery."
+    tags: [moat, caribbean, octocoral]
+
+  - id: reef-support-bleaching
+    name: Reef Support bleaching masks (Tayrona)
+    version: "2026-08"
+    description: >
+      Paired bleached / non-bleached masks over the same 658 Tayrona images that carry
+      benthic instance masks. The same pixels labelled on two axes — rare, and directly
+      usable for a multi-task condition head.
+    licence: PROPRIETARY-OWN
+    legal_basis: own
+    provenance: own
+    verification:
+      verified_on: 2026-08-17
+      verified_by: "Live rclone scan of s3://rs-storage-open/coral_bleaching/reef_support/UNAL_BLEACHING_TAYRONA"
+      method: licence-file
+    access:
+      method: s3
+      uri: s3://rs-storage-open/coral_bleaching/reef_support/UNAL_BLEACHING_TAYRONA
+      size_bytes: 1996000000
+      params:
+        bucket: rs-storage-open
+        endpoint: hel1.your-objectstorage.com
+        region: hel1
+        prefix: coral_bleaching/reef_support/UNAL_BLEACHING_TAYRONA/
+        credentials_env: S3
+    modalities: [image]
+    capabilities: [bleaching-assessment, benthic-segmentation]
+    loader:
+      layout: image-mask-pairs
+      verified_note: >
+        NOT VERIFIED. A live sample fetched images/, masks_bleached/ and
+        masks_non_bleached/ successfully, but no image/mask stems aligned within the
+        sample, so pairing could not be confirmed. Either the mask filenames differ
+        from the image stems, or the stratified sampler is not aligning them. Resolve
+        before relying on this loader.
+      params: { images_dir: images, masks_dir: masks_bleached }
+    items: 658
+    annotations:
+      - kind: dense-mask
+        count: 1316
+        supervises: [condition]
+        notes: "Two mask sets per image: masks_bleached and masks_non_bleached."
+    coverage:
+      regions: [caribbean]
+      ecoregions: ["Southern Caribbean"]
+      years: [2024, 2024]
+      sites: 1
+    tags: [multi-task, caribbean]
+
+  - id: reefolution
+    name: Reefolution partner imagery (Kenya)
+    version: "unversioned"
+    description: Partner point-labelled reef imagery from Reefolution, Kenya.
+    licence: NO-LICENCE-STATED
+    legal_basis: unknown
+    provenance: partner
+    verification:
+      verified_on: 2026-08-17
+      verified_by: "Bucket scan; no permission document located in the repo or bucket"
+      method: absent
+    access:
+      method: s3
+      uri: s3://rs-storage-open/benthic_datasets/point_labels/Reefolution
+      params:
+        bucket: rs-storage-open
+        endpoint: hel1.your-objectstorage.com
+        region: hel1
+        prefix: benthic_datasets/point_labels/Reefolution/
+        credentials_env: S3
+      size_bytes: 3617000000
+    modalities: [image]
+    capabilities: [benthic-classification, general-pretraining]
+    items: 872
+    annotations:
+      - kind: none
+        supervises: []
+        notes: >
+          CORRECTED 2026-08-17: no point-label files exist in the bucket. The prefix
+          holds images only, grouped into site directories.
+    coverage:
+      regions: [western-indian]
+    notes: >
+      BLOCKED PENDING PERMISSION. We hold the imagery but no written grant was found.
+      Partner data without a documented grant is the same class of problem as
+      unlicensed public data. Obtain a written licence before any training use.
+    loader:
+      layout: flat-images
+      verified_on: 2026-08-17
+      verified_note: "Verified against the live bucket: images only, no annotation files."
+    tags: [needs-permission]
+
+  - id: ibf
+    name: IBF partner imagery
+    version: "unversioned"
+    description: Partner point-labelled reef imagery.
+    licence: NO-LICENCE-STATED
+    legal_basis: unknown
+    provenance: partner
+    verification:
+      verified_on: 2026-08-17
+      verified_by: "Bucket scan; no permission document located in the repo or bucket"
+      method: absent
+    access:
+      method: s3
+      uri: s3://rs-storage-open/benthic_datasets/point_labels/IBF
+      params:
+        bucket: rs-storage-open
+        endpoint: hel1.your-objectstorage.com
+        region: hel1
+        prefix: benthic_datasets/point_labels/IBF/
+        credentials_env: S3
+      size_bytes: 2082000000
+    modalities: [image]
+    capabilities: [benthic-classification, general-pretraining]
+    items: 576
+    annotations:
+      - kind: none
+        supervises: []
+        notes: "CORRECTED 2026-08-17: images only, grouped by site. No point labels in the bucket."
+    coverage:
+      regions: [unknown]
+    notes: >
+      BLOCKED PENDING PERMISSION. As with reefolution — imagery held, no written grant found.
+    loader:
+      layout: flat-images
+      verified_on: 2026-08-17
+      verified_note: "Verified against the live bucket: images only, no annotation files."
+    tags: [needs-permission]
+
+  - id: coralscop-masks-rs
+    name: CoralSCOP pseudo-masks (our generation)
+    version: "unversioned"
+    description: >
+      Masks generated by the CoralSCOP model over an image pool. Model output, not
+      ground truth. Useful for weak supervision and pretraining only.
+    licence: CC-BY-NC-SA-4.0
+    legal_basis: licence
+    provenance: auto
+    verification:
+      verified_on: 2026-08-17
+      verified_by: "external/ai/CoralSCOP/LICENSE — CC BY-NC-SA 4.0, HKUST VGD"
+      method: licence-file
+    access:
+      method: s3
+      uri: s3://rs-storage-open/benthic_datasets/mask_labels/coralscop_masks
+      size_bytes: 7871000000
+      params:
+        bucket: rs-storage-open
+        endpoint: hel1.your-objectstorage.com
+        region: hel1
+        prefix: benthic_datasets/mask_labels/coralscop_masks/
+        credentials_env: S3
+    modalities: [image]
+    capabilities: [coral-instance-segmentation, general-pretraining]
+    items: 38928
+    annotations:
+      - kind: instance-mask
+        count: 38928
+        supervises: []
+        notes: "Machine-generated. MUST NOT enter an evaluation split."
+    coverage:
+      regions: [unknown]
+    notes: >
+      Derived from an NC-SA model, so the output inherits the restriction. Retained for
+      research and weak supervision; never in shipped weights.
+    loader: { layout: metadata-only }
+    tags: [pseudo-label, never-eval]

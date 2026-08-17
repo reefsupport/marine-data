@@ -1,0 +1,120 @@
+# Reef and marine bioacoustics.
+#
+# The cheapest continuous-monitoring modality, and the one place in marine ML where a
+# genuine foundation model already exists. The counter-intuitive finding worth knowing:
+# bird-pretrained networks outperform marine-specific ones on marine transfer, so the
+# leverage here is in adopting Perch rather than collecting marine-only audio.
+
+sources:
+  - id: reefset-v1
+    name: ReefSet v1.0
+    version: "1.0"
+    description: >
+      The reef-bioacoustics training set behind SurfPerch — labelled reef sound clips
+      from Indonesia, Australia and the "Calling in Our Corals" citizen-science project.
+    licence: CC-BY-4.0
+    legal_basis: licence
+    provenance: public
+    verification:
+      verified_on: 2026-08-17
+      verified_by: "Zenodo record 11071202 — CC-BY 4.0"
+      method: dataset-card
+    access: { method: zenodo, uri: https://zenodo.org/records/11071202 }
+    modalities: [audio]
+    capabilities: [bioacoustics]
+    items: 57084
+    items_note: "~26 hours of labelled clips."
+    annotations: [{ kind: audio-event, supervises: [taxon] }]
+    coverage: { regions: [coral-triangle, gbr-australia] }
+    domain_shift:
+      caveats: ["Indo-Pacific reef soundscapes. Caribbean reef acoustics are under-sampled everywhere."]
+    loader: { layout: audio-clips }
+    tags: [reef-audio, permissive]
+
+  - id: mbari-pacific-sound
+    name: MBARI Pacific Sound (MARS hydrophone)
+    version: "live"
+    description: Petabyte-scale continuous hydrophone archive from Monterey Bay.
+    licence: CC-BY-4.0
+    legal_basis: licence
+    provenance: public
+    verification:
+      verified_on: 2026-08-17
+      verified_by: "AWS Open Data registry 'pacific-sound' — CC-BY 4.0"
+      method: dataset-card
+    access: { method: s3, uri: s3://pacific-sound }
+    modalities: [audio]
+    capabilities: [bioacoustics, general-pretraining]
+    items_note: "~2 TB/month, unlabelled."
+    annotations: [{ kind: audio-event, supervises: [] }]
+    coverage: { regions: [eastern-pacific, temperate] }
+    domain_shift:
+      caveats: ["Temperate, unlabelled. Self-supervised pretraining material rather than a reef benchmark."]
+    loader: { layout: metadata-only }
+    tags: [unlabelled, pretraining]
+
+  - id: sanctsound
+    name: NOAA SanctSound passive acoustic archive
+    version: "2018-2021"
+    description: Multi-site US sanctuary passive acoustic monitoring with daily species detections.
+    licence: CC0-1.0
+    legal_basis: licence
+    provenance: public
+    verification:
+      verified_on: 2026-08-17
+      verified_by: "NOAA NCEI passive acoustic data products — US Government, CC0"
+      method: site-terms
+    access: { method: http, uri: https://www.ncei.noaa.gov/products/passive-acoustic-data }
+    modalities: [audio]
+    capabilities: [bioacoustics]
+    items_note: "30 sites, several including reef habitat."
+    annotations: [{ kind: audio-event, supervises: [taxon] }]
+    coverage: { regions: [western-atlantic, central-pacific, temperate], years: [2018, 2021] }
+    loader: { layout: metadata-only }
+    tags: [public-domain, multi-site]
+
+  - id: curacao-reef-soundscape
+    name: Curaçao reef soundscape with 360° video
+    version: "2025"
+    description: >
+      Spatially-resolved reef sound with paired 360° video linking fish sounds to source
+      species — rare Caribbean acoustic data, and rare multimodal grounding.
+    licence: CC0-1.0
+    legal_basis: licence
+    provenance: public
+    verification:
+      verified_on: 2026-08-17
+      verified_by: "Internal catalog 2026-07-24 sweep — Dryad doi:10.5061/dryad.mcvdnckcp, likely CC0; not re-checked"
+      method: secondary
+    access: { method: http, uri: https://datadryad.org/dataset/doi:10.5061/dryad.mcvdnckcp }
+    modalities: [audio, video]
+    capabilities: [bioacoustics, fish-classification]
+    items: 156
+    items_note: "156 media items, 46 fish species, 3.65 GB."
+    annotations: [{ kind: audio-event, classes: 46, supervises: [taxon] }]
+    coverage: { regions: [caribbean], ecoregions: ["Southern Caribbean"] }
+    notes: >
+      Caribbean AND multimodal AND sound-to-species grounded. Small, but there is very
+      little else like it — worth verifying the licence properly.
+    loader: { layout: metadata-only }
+    tags: [caribbean, multimodal, needs-verification]
+
+  - id: watkins-marine-mammal
+    name: Watkins Marine Mammal Sound Database
+    version: "2016"
+    description: The canonical marine-mammal reference sound library, 60+ species.
+    licence: CC-BY-NC-4.0
+    legal_basis: licence
+    provenance: public
+    verification:
+      verified_on: 2026-08-17
+      verified_by: "Internal catalog 2026-07-24 sweep — custom non-commercial with attribution; cis.whoi.edu"
+      method: secondary
+    access: { method: http, uri: https://cis.whoi.edu/science/B/whalesounds/ }
+    modalities: [audio]
+    capabilities: [bioacoustics, megafauna-id]
+    items: 10000
+    annotations: [{ kind: audio-event, classes: 60, supervises: [taxon] }]
+    coverage: { regions: [global] }
+    loader: { layout: audio-clips }
+    tags: [reference-library, noncommercial]
