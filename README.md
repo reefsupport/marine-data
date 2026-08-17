@@ -284,7 +284,8 @@ basis. Sharding is itself a derivative act, so `write_shards()` goes through the
 
 ```python
 from marinedata.shard import write_shards
-write_shards(dataset, "s3-staging/shards", split="train")   # WebDataset tar shards
+
+write_shards(dataset, "s3-staging/shards", split="train")  # WebDataset tar shards
 ```
 
 Raw objects in cloud storage are the real training bottleneck — one GET per image starves

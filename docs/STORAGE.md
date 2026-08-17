@@ -33,8 +33,9 @@ marinedata mirror --target public-mirror --attribution ATTRIBUTION.md
 
 ```python
 from marinedata.mirror import MirrorTarget, plan_mirror
+
 plan = plan_mirror(list(registry), MirrorTarget.PUBLIC_MIRROR)
-print(plan.summary())      # includes, excludes with reasons, and obligations carried
+print(plan.summary())  # includes, excludes with reasons, and obligations carried
 ```
 
 Four absolute bars apply to **every** target, checked before tier:
@@ -65,6 +66,7 @@ copy — which is why share-alike propagates through it to any released weights.
 
 ```python
 from marinedata.shard import write_shards
+
 result = write_shards(dataset, "s3-staging/shards", split="train")
 print(result.summary())
 ```
