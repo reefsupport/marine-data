@@ -1,0 +1,61 @@
+# Coralscapes-39 — the dataset's own label dictionary.
+#
+# Generated from registry/crosswalks/coralscapes-39.yaml, which is the authoritative
+# enumeration (cross-checked against external/deepreefmap/configs/classes_coralscapes.yaml,
+# the config the production pipeline actually loads).
+#
+# This is a FLAT vocabulary by design — the source has no hierarchy. Its structure is a
+# partially-enumerated taxon x form x condition cross-product, and the decomposition
+# lives in the crosswalk, not here. Recording it flat is the honest representation:
+# inventing a hierarchy the dataset does not have would be exactly the error that
+# produced the 39 classes in the first place.
+#
+# NOTE the absence: no soft coral, no gorgonian, no octocoral of any kind.
+
+schemas:
+  - id: coralscapes-39
+    name: Coralscapes 39-class
+    description: >
+      The flat 39-class scheme from the EPFL Coralscapes dataset (Red Sea). Not a
+      taxonomy. See crosswalks/coralscapes-39.yaml for the decomposition onto axes.
+    axes: [taxon]
+    nodes:
+      - { id: CS_SAND, name: "sand", axis: taxon, aliases: ["sand"] }
+      - { id: CS_RUBBLE, name: "rubble", axis: taxon, aliases: ["rubble"] }
+      - { id: CS_UNKNOWN_HARD_SUBSTRATE, name: "unknown hard substrate", axis: taxon, aliases: ["unknown hard substrate"] }
+      - { id: CS_ALGAE_COVERED_SUBSTRATE, name: "algae covered substrate", axis: taxon, aliases: ["algae covered substrate"] }
+      - { id: CS_TRASH, name: "trash", axis: taxon, aliases: ["trash"] }
+      - { id: CS_HUMAN, name: "human", axis: taxon, aliases: ["human"] }
+      - { id: CS_TRANSECT_TOOLS, name: "transect tools", axis: taxon, aliases: ["transect tools"] }
+      - { id: CS_TRANSECT_LINE, name: "transect line", axis: taxon, aliases: ["transect line"] }
+      - { id: CS_BACKGROUND, name: "background", axis: taxon, aliases: ["background"] }
+      - { id: CS_DARK, name: "dark", axis: taxon, aliases: ["dark"] }
+      - { id: CS_OTHER_CORAL_ALIVE, name: "other coral alive", axis: taxon, aliases: ["other coral alive"] }
+      - { id: CS_OTHER_CORAL_BLEACHED, name: "other coral bleached", axis: taxon, aliases: ["other coral bleached"] }
+      - { id: CS_OTHER_CORAL_DEAD, name: "other coral dead", axis: taxon, aliases: ["other coral dead"] }
+      - { id: CS_BRANCHING_ALIVE, name: "branching alive", axis: taxon, aliases: ["branching alive"] }
+      - { id: CS_BRANCHING_BLEACHED, name: "branching bleached", axis: taxon, aliases: ["branching bleached"] }
+      - { id: CS_BRANCHING_DEAD, name: "branching dead", axis: taxon, aliases: ["branching dead"] }
+      - { id: CS_MASSIVE_MEANDERING_ALIVE, name: "massive/meandering alive", axis: taxon, aliases: ["massive/meandering alive"] }
+      - { id: CS_MASSIVE_MEANDERING_BLEACHED, name: "massive/meandering bleached", axis: taxon, aliases: ["massive/meandering bleached"] }
+      - { id: CS_MASSIVE_MEANDERING_DEAD, name: "massive/meandering dead", axis: taxon, aliases: ["massive/meandering dead"] }
+      - { id: CS_MEANDERING_ALIVE, name: "meandering alive", axis: taxon, aliases: ["meandering alive"] }
+      - { id: CS_MEANDERING_BLEACHED, name: "meandering bleached", axis: taxon, aliases: ["meandering bleached"] }
+      - { id: CS_MEANDERING_DEAD, name: "meandering dead", axis: taxon, aliases: ["meandering dead"] }
+      - { id: CS_ACROPORA_ALIVE, name: "acropora alive", axis: taxon, aliases: ["acropora alive"] }
+      - { id: CS_TABLE_ACROPORA_ALIVE, name: "table acropora alive", axis: taxon, aliases: ["table acropora alive"] }
+      - { id: CS_TABLE_ACROPORA_DEAD, name: "table acropora dead", axis: taxon, aliases: ["table acropora dead"] }
+      - { id: CS_POCILLOPORA_ALIVE, name: "pocillopora alive", axis: taxon, aliases: ["pocillopora alive"] }
+      - { id: CS_STYLOPHORA_ALIVE, name: "stylophora alive", axis: taxon, aliases: ["stylophora alive"] }
+      - { id: CS_TURBINARIA, name: "turbinaria", axis: taxon, aliases: ["turbinaria"] }
+      - { id: CS_MILLEPORA, name: "millepora", axis: taxon, aliases: ["millepora"] }
+      - { id: CS_SPONGE, name: "sponge", axis: taxon, aliases: ["sponge"] }
+      - { id: CS_ANEMONE, name: "anemone", axis: taxon, aliases: ["anemone"] }
+      - { id: CS_CLAM, name: "clam", axis: taxon, aliases: ["clam"] }
+      - { id: CS_DEAD_CLAM, name: "dead clam", axis: taxon, aliases: ["dead clam"] }
+      - { id: CS_SEA_URCHIN, name: "sea urchin", axis: taxon, aliases: ["sea urchin"] }
+      - { id: CS_SEA_CUCUMBER, name: "sea cucumber", axis: taxon, aliases: ["sea cucumber"] }
+      - { id: CS_CROWN_OF_THORN, name: "crown of thorn", axis: taxon, aliases: ["crown of thorn"] }
+      - { id: CS_OTHER_ANIMAL, name: "other animal", axis: taxon, aliases: ["other animal"] }
+      - { id: CS_FISH, name: "fish", axis: taxon, aliases: ["fish"] }
+      - { id: CS_SEAGRASS, name: "seagrass", axis: taxon, aliases: ["seagrass"] }

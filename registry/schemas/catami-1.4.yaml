@@ -1,0 +1,96 @@
+# CATAMI v1.4 — the scheme BenthicNet standardises on.
+#
+# CATAMI (Collaborative and Automated Tools for Analysis of Marine Imagery) is a
+# hierarchical, MORPHOLOGY-first vocabulary: it describes what a thing looks like in an
+# image rather than what it is taxonomically, because an annotator scoring a photoquadrat
+# often cannot tell. That design choice is why it works across 11.4M images from every
+# ocean basin, and why it maps onto RS-Benthic's form axis unusually cleanly.
+#
+# SCOPE OF THIS FILE. CATAMI's full biota branch is ~300 nodes. Recorded here is the
+# upper hierarchy plus every node our registry actually needs to resolve a crosswalk
+# edge — which is the whole vocabulary at the depth BenthicNet annotations are scored at
+# for reef work. Extending it is additive; the ids are the CATAMI display names so new
+# nodes drop in without renumbering.
+#
+# Two things worth knowing before using it:
+#
+#   * Hydrocorals are a SIBLING of Corals, not a child. CATAMI puts Millepora outside
+#     the coral branch entirely, which is taxonomically right and operationally awkward:
+#     every reef protocol scores fire coral as hard coral. The crosswalk resolves this,
+#     and it is the concrete reason functional grouping cannot be tree traversal.
+#   * CATAMI scores the OVERGROWTH, not the underlying substrate. A dead coral skeleton
+#     covered in turf is scored as turf. Reef Check scores the substrate beneath. Same
+#     pixel, different answer, by rule rather than by disagreement.
+
+schemas:
+  - id: catami-1.4
+    name: CATAMI v1.4
+    description: >
+      Hierarchical morphology-first vocabulary for benthic imagery. Biota, substrate,
+      relief and bedforms branches; this file covers biota and substrate to the depth
+      reef annotations use.
+    axes: [taxon]
+    nodes:
+      # ── top level ─────────────────────────────────────────────────────
+      - { id: "Biota",     name: Biota,     axis: taxon }
+      - { id: "Substrate", name: Substrate, axis: taxon }
+
+      # ── Cnidaria ──────────────────────────────────────────────────────
+      - { id: "Cnidaria", name: Cnidaria, parent: "Biota", axis: taxon }
+      - { id: "Corals",   name: Corals,   parent: "Cnidaria", axis: taxon,
+          notes: "Scleractinia only. Hydrocorals are a sibling, not a child." }
+      - { id: "Hydrocorals", name: Hydrocorals, parent: "Cnidaria", axis: taxon,
+          notes: "Millepora and Stylaster. Sibling of Corals — the structural fact that defeats tree-based functional grouping." }
+      - { id: "Corals/Branching",   name: "Corals: branching",   parent: "Corals", axis: taxon }
+      - { id: "Corals/Massive",     name: "Corals: massive",     parent: "Corals", axis: taxon }
+      - { id: "Corals/Encrusting",  name: "Corals: encrusting",  parent: "Corals", axis: taxon }
+      - { id: "Corals/Plate",       name: "Corals: plate",       parent: "Corals", axis: taxon }
+      - { id: "Corals/Columnar",    name: "Corals: columnar",    parent: "Corals", axis: taxon }
+      - { id: "Corals/Mushroom",    name: "Corals: mushroom",    parent: "Corals", axis: taxon }
+      - { id: "Corals/Bleached",    name: "Corals: bleached",    parent: "Corals", axis: taxon }
+      - { id: "Corals/Dead",        name: "Corals: dead",        parent: "Corals", axis: taxon }
+      - { id: "Black & Octocorals", name: "Black & octocorals",  parent: "Cnidaria", axis: taxon }
+      - { id: "Black & Octocorals/Sea fans",    name: "Sea fans",    parent: "Black & Octocorals", axis: taxon }
+      - { id: "Black & Octocorals/Sea whips",   name: "Sea whips",   parent: "Black & Octocorals", axis: taxon }
+      - { id: "Black & Octocorals/Soft corals", name: "Soft corals", parent: "Black & Octocorals", axis: taxon }
+      - { id: "Anemones",  name: Anemones,  parent: "Cnidaria", axis: taxon }
+      - { id: "Zoanthids", name: Zoanthids, parent: "Cnidaria", axis: taxon }
+
+      # ── other biota ───────────────────────────────────────────────────
+      - { id: "Sponges",   name: Sponges,   parent: "Biota", axis: taxon }
+      - { id: "Sponges/Massive forms",    name: "Sponges: massive",    parent: "Sponges", axis: taxon }
+      - { id: "Sponges/Erect forms",      name: "Sponges: erect",      parent: "Sponges", axis: taxon }
+      - { id: "Sponges/Crusts",           name: "Sponges: crusts",     parent: "Sponges", axis: taxon }
+      - { id: "Macroalgae", name: Macroalgae, parent: "Biota", axis: taxon }
+      - { id: "Macroalgae/Filamentous",   name: "Macroalgae: filamentous / turf", parent: "Macroalgae", axis: taxon }
+      - { id: "Macroalgae/Encrusting",    name: "Macroalgae: encrusting",         parent: "Macroalgae", axis: taxon }
+      - { id: "Macroalgae/Articulated calcareous", name: "Macroalgae: articulated calcareous", parent: "Macroalgae", axis: taxon,
+          notes: "Halimeda sits here." }
+      - { id: "Macroalgae/Large canopy forming", name: "Macroalgae: large canopy forming", parent: "Macroalgae", axis: taxon }
+      - { id: "Seagrasses", name: Seagrasses, parent: "Biota", axis: taxon }
+      - { id: "Echinoderms", name: Echinoderms, parent: "Biota", axis: taxon }
+      - { id: "Echinoderms/Urchins",       name: Urchins,       parent: "Echinoderms", axis: taxon }
+      - { id: "Echinoderms/Sea cucumbers", name: "Sea cucumbers", parent: "Echinoderms", axis: taxon }
+      - { id: "Echinoderms/Seastars",      name: Seastars,      parent: "Echinoderms", axis: taxon }
+      - { id: "Molluscs",    name: Molluscs,    parent: "Biota", axis: taxon }
+      - { id: "Molluscs/Bivalves", name: Bivalves, parent: "Molluscs", axis: taxon }
+      - { id: "Fishes",      name: Fishes,      parent: "Biota", axis: taxon }
+      - { id: "Ascidians",   name: Ascidians,   parent: "Biota", axis: taxon }
+      - { id: "Worms",       name: Worms,       parent: "Biota", axis: taxon }
+      - { id: "Crustacea",   name: Crustacea,   parent: "Biota", axis: taxon }
+      - { id: "Bryozoa",     name: Bryozoa,     parent: "Biota", axis: taxon }
+
+      # ── substrate ─────────────────────────────────────────────────────
+      - { id: "Substrate/Consolidated",   name: "Consolidated (hard)",   parent: "Substrate", axis: taxon }
+      - { id: "Substrate/Unconsolidated", name: "Unconsolidated (soft)", parent: "Substrate", axis: taxon }
+      - { id: "Substrate/Consolidated/Rock",    name: Rock,    parent: "Substrate/Consolidated", axis: taxon }
+      - { id: "Substrate/Consolidated/Boulders", name: Boulders, parent: "Substrate/Consolidated", axis: taxon }
+      - { id: "Substrate/Consolidated/Cobbles", name: Cobbles, parent: "Substrate/Consolidated", axis: taxon }
+      - { id: "Substrate/Unconsolidated/Sand",   name: "Sand / mud",  parent: "Substrate/Unconsolidated", axis: taxon }
+      - { id: "Substrate/Unconsolidated/Pebble", name: Pebble,  parent: "Substrate/Unconsolidated", axis: taxon }
+      - { id: "Substrate/Unconsolidated/Gravel", name: Gravel,  parent: "Substrate/Unconsolidated", axis: taxon }
+      - { id: "Substrate/Unconsolidated/Rubble", name: Rubble,  parent: "Substrate/Unconsolidated", axis: taxon }
+
+      # ── anthropogenic (CATAMI extension used by BenthicNet) ───────────
+      - { id: "Anthropogenic", name: Anthropogenic, parent: "Biota", axis: taxon,
+          notes: "BenthicNet's extension for debris and gear. Filed under Biota in the source scheme, which is odd but faithful." }

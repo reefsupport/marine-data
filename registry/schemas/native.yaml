@@ -5,15 +5,6 @@
 # declare no nodes and serve purely as an identifier for its crosswalk.
 
 schemas:
-  - id: coralscapes-39
-    name: Coralscapes 39-class
-    description: >
-      Flat 39-class scheme from the Coralscapes dataset. Not a taxonomy — a
-      partially-enumerated cross-product of taxon × growth-form × condition. See
-      crosswalks/coralscapes-39.yaml for the decomposition, and note that it contains
-      no soft-coral class of any kind.
-    axes: [taxon]
-
   - id: reef-support-labelbox
     name: Reef Support Labelbox scheme
     description: >
@@ -27,13 +18,6 @@ schemas:
       - { id: "Other Sessile Invertebrates",  name: Other Sessile Invertebrates,  axis: taxon }
       - { id: "SCALE",                        name: Scale reference,              axis: taxon,
           notes: "Geometry, not biota — a drawn line on an in-frame scale object." }
-
-  - id: catami-1.4
-    name: CATAMI v1.4
-    description: >
-      Hierarchical morphology-first vocabulary for benthic imagery: ~300 biota nodes,
-      24 substrate, 7 relief, 7 bedforms. The scheme BenthicNet standardises on.
-    axes: [taxon]
 
   - id: coralnet-labelset
     name: CoralNet labelset

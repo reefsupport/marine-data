@@ -1,0 +1,103 @@
+# CATAMI v1.4 → RS-Benthic v1.
+#
+# The highest-value crosswalk in the registry: it is what makes BenthicNet's 2.6M
+# annotations across 188,688 labelled images usable, and BenthicNet self-supervised
+# pretraining beat ImageNet by 13 F1 points on a small regional set.
+#
+# CATAMI is morphology-first, so its coral children map onto RS-Benthic's FORM axis
+# rather than the taxon axis — which is the cleanest multi-axis mapping in the whole
+# registry, and vindicates keeping form separate from taxon.
+#
+# Two judgement calls, both recorded rather than hidden:
+#
+#   * Hydrocorals -> MIL is EXACT even though CATAMI files it outside Corals. Both refer
+#     to Millepora and relatives; the disagreement is about grouping, not identity.
+#   * "Macroalgae: filamentous" -> TA is APPROXIMATE. CATAMI scores the overgrowth while
+#     some protocols score the substrate beneath, so the same pixel legitimately gets
+#     different answers under different rules. That is a scoring-rule difference, not a
+#     mapping error, and it must not be laundered into an exact edge.
+
+crosswalks:
+  - id: catami-1.4
+    source_schema: catami-1.4
+    target_schema: rs-benthic-v1
+    description: >
+      Maps CATAMI's morphology-first hierarchy onto RS-Benthic taxon and form axes.
+      Covers the depth BenthicNet reef annotations are scored at.
+    edges:
+      # ── coral: taxon + form together ──────────────────────────────────
+      - { source_label: "Corals",              targets: { taxon: HC }, fidelity: coarsened,
+          note: "Scleractinia, growth form unrecorded at this level." }
+      - { source_label: "Corals/Branching",    targets: { taxon: HC, form: CB } }
+      - { source_label: "Corals/Massive",      targets: { taxon: HC, form: CM } }
+      - { source_label: "Corals/Encrusting",   targets: { taxon: HC, form: CE } }
+      - { source_label: "Corals/Plate",        targets: { taxon: HC, form: CT }, fidelity: approximate,
+          note: "CATAMI 'plate' spans tabulate and foliose; RS-Benthic separates CT and CF." }
+      - { source_label: "Corals/Columnar",     targets: { taxon: HC, form: CD }, fidelity: approximate,
+          note: "Columnar is nearer digitate than submassive, but the concepts only partly overlap." }
+      - { source_label: "Corals/Mushroom",     targets: { taxon: HC, form: CMR } }
+      - { source_label: "Corals/Bleached",     targets: { taxon: HC, condition: BLEACHED }, fidelity: coarsened }
+      - { source_label: "Corals/Dead",         targets: { taxon: HC, condition: OLD_DEAD }, fidelity: coarsened }
+
+      - { source_label: "Hydrocorals",         targets: { taxon: MIL },
+          note: "CATAMI files this OUTSIDE Corals — taxonomically correct (Hydrozoa), operationally awkward, and the reason functional grouping is a lookup not a tree walk." }
+
+      # ── octocorals ────────────────────────────────────────────────────
+      - { source_label: "Black & Octocorals",              targets: { taxon: SC }, fidelity: coarsened,
+          note: "Includes antipatharians (black corals), which RS-Benthic has no separate node for." }
+      - { source_label: "Black & Octocorals/Sea fans",     targets: { taxon: SC_SEA_FAN, form: SF_FAN } }
+      - { source_label: "Black & Octocorals/Sea whips",    targets: { taxon: SC_SEA_WHIP, form: SF_WHIP } }
+      - { source_label: "Black & Octocorals/Soft corals",  targets: { taxon: SC }, fidelity: coarsened }
+
+      - { source_label: "Anemones",  targets: { taxon: ANEM } }
+      - { source_label: "Zoanthids", targets: { taxon: ZO } }
+      - { source_label: "Cnidaria",  targets: { taxon: CNIDARIA }, fidelity: coarsened }
+
+      # ── sponges ───────────────────────────────────────────────────────
+      - { source_label: "Sponges",                     targets: { taxon: SP } }
+      - { source_label: "Sponges/Massive forms",       targets: { taxon: SP, form: CM }, fidelity: approximate,
+          note: "Reusing the coral form vocabulary for sponge morphology is a stretch; recorded as approximate rather than inventing sponge-specific forms nothing else uses." }
+      - { source_label: "Sponges/Erect forms",         targets: { taxon: SP }, fidelity: coarsened }
+      - { source_label: "Sponges/Crusts",              targets: { taxon: SP, form: CE }, fidelity: approximate }
+
+      # ── algae and plants ──────────────────────────────────────────────
+      - { source_label: "Macroalgae",                              targets: { taxon: SW }, fidelity: coarsened }
+      - { source_label: "Macroalgae/Filamentous",                  targets: { taxon: TA }, fidelity: approximate,
+          note: "CATAMI scores overgrowth; some protocols score the substrate beneath. Same pixel, different rule." }
+      - { source_label: "Macroalgae/Encrusting",                   targets: { taxon: CCA }, fidelity: approximate,
+          note: "Encrusting macroalgae is mostly but not only crustose coralline." }
+      - { source_label: "Macroalgae/Articulated calcareous",       targets: { taxon: HA }, fidelity: approximate,
+          note: "Halimeda dominates this category on Caribbean reefs but does not exhaust it." }
+      - { source_label: "Macroalgae/Large canopy forming",         targets: { taxon: SW } }
+      - { source_label: "Seagrasses",                              targets: { taxon: SG } }
+
+      # ── other fauna ───────────────────────────────────────────────────
+      - { source_label: "Echinoderms",                targets: { taxon: OT }, fidelity: coarsened }
+      - { source_label: "Echinoderms/Urchins",        targets: { taxon: URCH } }
+      - { source_label: "Echinoderms/Sea cucumbers",  targets: { taxon: CUKE } }
+      - { source_label: "Echinoderms/Seastars",       targets: { taxon: OT }, fidelity: coarsened,
+          note: "Only Acanthaster (COTS) has a dedicated node; other seastars coarsen to OT." }
+      - { source_label: "Molluscs",                   targets: { taxon: OT }, fidelity: coarsened }
+      - { source_label: "Molluscs/Bivalves",          targets: { taxon: CLAM } }
+      - { source_label: "Fishes",                     targets: { taxon: FISH } }
+      - { source_label: "Ascidians",                  targets: { taxon: OT }, fidelity: coarsened }
+      - { source_label: "Worms",                      targets: { taxon: OT }, fidelity: coarsened }
+      - { source_label: "Crustacea",                  targets: { taxon: OT }, fidelity: coarsened }
+      - { source_label: "Bryozoa",                    targets: { taxon: OT }, fidelity: coarsened }
+      - { source_label: "Biota",                      targets: { taxon: BIOTIC }, fidelity: coarsened }
+
+      # ── substrate ─────────────────────────────────────────────────────
+      - { source_label: "Substrate",                          targets: { taxon: ABIOTIC }, fidelity: coarsened }
+      - { source_label: "Substrate/Consolidated",             targets: { taxon: RK }, fidelity: coarsened }
+      - { source_label: "Substrate/Unconsolidated",           targets: { taxon: SD }, fidelity: coarsened }
+      - { source_label: "Substrate/Consolidated/Rock",        targets: { taxon: RK } }
+      - { source_label: "Substrate/Consolidated/Boulders",    targets: { taxon: RK }, fidelity: approximate }
+      - { source_label: "Substrate/Consolidated/Cobbles",     targets: { taxon: RB }, fidelity: approximate,
+          note: "Cobbles sit between pavement and rubble; RS-Benthic has no cobble node." }
+      - { source_label: "Substrate/Unconsolidated/Sand",      targets: { taxon: SD } }
+      - { source_label: "Substrate/Unconsolidated/Pebble",    targets: { taxon: RB }, fidelity: approximate }
+      - { source_label: "Substrate/Unconsolidated/Gravel",    targets: { taxon: RB }, fidelity: approximate }
+      - { source_label: "Substrate/Unconsolidated/Rubble",    targets: { taxon: RB } }
+
+      - { source_label: "Anthropogenic", targets: { taxon: TRASH }, fidelity: coarsened,
+          note: "BenthicNet extension; spans debris and deployed gear, which RS-Benthic splits between TRASH and TWS." }

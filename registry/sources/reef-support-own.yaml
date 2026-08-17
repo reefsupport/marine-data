@@ -35,6 +35,7 @@ sources:
     loader:
       layout: labelbox-ndjson
       schema_id: reef-support-labelbox
+      crosswalk_id: reef-support-labelbox
       verified_on: 2026-08-17
       verified_note: >
         Verified against the live Hetzner bucket. Site-partitioned - each site directory
@@ -109,6 +110,7 @@ sources:
     loader:
       layout: labelbox-ndjson
       schema_id: reef-support-labelbox
+      crosswalk_id: reef-support-labelbox
       params:
         annotations: export-result.ndjson
         images_dir: images

@@ -320,3 +320,68 @@ def test_millepora_is_a_hydrozoan_not_an_alga(registry: Registry) -> None:
 def test_frozen_worms_fields_require_an_id() -> None:
     with pytest.raises(ValueError, match="no worms_aphia_id"):
         LabelNode(id="X", name="X", worms_scientificname="Something")
+
+
+# ── the populated label dictionaries ──────────────────────────────────────
+
+
+def test_our_own_data_can_be_harmonised(registry: Registry) -> None:
+    """Until this crosswalk existed, our own Caribbean corpus — the only dense
+    octocoral labelling anywhere — could not enter a harmonised training set at all."""
+    harmonizer = registry.harmonizer_for("reef-support-benthic-own")
+    assert harmonizer is not None
+    assert harmonizer.map_label("Hard Coral").labels[Axis.TAXON].node_id == "HC"
+    assert harmonizer.map_label("Soft Coral").labels[Axis.TAXON].node_id == "SC"
+    assert harmonizer.map_label("Milleporid").labels[Axis.TAXON].node_id == "MIL"
+    assert harmonizer.map_label("SCALE").labels[Axis.TAXON].node_id == "SCL"
+
+
+def test_coralscapes_schema_matches_its_crosswalk(registry: Registry) -> None:
+    """The dataset's own dictionary and its crosswalk must enumerate the same labels."""
+    schema = registry.label_schema("coralscapes-39")
+    walk = registry.crosswalk("coralscapes-39")
+    assert len(schema.nodes) == 39
+    schema_labels = {n.name for n in schema.nodes}
+    walk_labels = {e.source_label for e in walk.edges}
+    assert schema_labels == walk_labels
+
+
+def test_catami_maps_multiple_axes_at_once(registry: Registry) -> None:
+    """CATAMI is morphology-first, so its coral children populate the FORM axis —
+    the cleanest multi-axis mapping in the registry, and the reason form is separate."""
+    harmonizer = registry.harmonizer_for("benthicnet-1m")
+    assert harmonizer is not None
+    branching = harmonizer.map_label("Corals/Branching")
+    assert branching.labels[Axis.TAXON].node_id == "HC"
+    assert branching.labels[Axis.FORM].node_id == "CB"
+
+    bleached = harmonizer.map_label("Corals/Bleached")
+    assert bleached.labels[Axis.CONDITION].node_id == "BLEACHED"
+
+
+def test_catami_hydrocorals_reach_millepora(registry: Registry) -> None:
+    """CATAMI files Hydrocorals OUTSIDE Corals — taxonomically right, operationally
+    awkward. The crosswalk is where that gets reconciled, which is precisely why
+    functional grouping is a lookup rather than a tree walk."""
+    harmonizer = registry.harmonizer_for("benthicnet-1m")
+    assert harmonizer.map_label("Hydrocorals").labels[Axis.TAXON].node_id == "MIL"
+
+
+def test_catami_reaches_soft_coral(registry: Registry) -> None:
+    """The class Coralscapes cannot express at all."""
+    harmonizer = registry.harmonizer_for("benthicnet-1m")
+    for label in ("Black & Octocorals", "Black & Octocorals/Sea fans"):
+        result = harmonizer.map_label(label)
+        assert result.labels[Axis.TAXON].node_id.startswith("SC")
+
+
+def test_every_crosswalk_declares_its_lossiness_honestly(registry: Registry) -> None:
+    """A crosswalk claiming 100% exact is almost certainly not being honest — these
+    vocabularies were designed independently and do not align perfectly."""
+    for walk in registry.crosswalks:
+        coverage = walk.coverage
+        if len(walk.edges) >= 20:
+            assert coverage[Fidelity.EXACT] < len(walk.edges), (
+                f"{walk.id}: every edge claims exact fidelity across {len(walk.edges)} "
+                f"independently-designed labels, which is not credible"
+            )

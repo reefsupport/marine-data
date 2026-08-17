@@ -127,6 +127,7 @@ sources:
     loader:
       layout: csv-points
       schema_id: catami-1.4
+      crosswalk_id: catami-1.4
     tags: [pretraining, catami, largest]
 
   - id: reefnet

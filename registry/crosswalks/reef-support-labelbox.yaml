@@ -1,0 +1,58 @@
+# Reef Support Labelbox scheme → RS-Benthic v1.
+#
+# Our own annotation vocabulary. Small, but it is the only dense Caribbean labelling
+# that exists anywhere, and without this crosswalk none of it could enter a
+# harmonised training set — the moat was unusable.
+#
+# Note what this mapping reveals: four of five labels are EXACT, because RS-Benthic's
+# L2 layer was deliberately built from the same field vocabulary. The one coarsening
+# is "Other Sessile Invertebrates", which is a genuine catch-all in the source.
+
+crosswalks:
+  - id: reef-support-labelbox
+    source_schema: reef-support-labelbox
+    target_schema: rs-benthic-v1
+    description: >
+      Maps our five Labelbox classes onto the canonical axes. Only UNAL_BLEACHING_TAYRONA
+      carries all five; the other seven sites are Hard Coral / Soft Coral only, which the
+      supervision mask handles per-sample rather than per-schema.
+    edges:
+      - source_label: "Hard Coral"
+        targets: { taxon: HC }
+        fidelity: coarsened
+        note: >
+          Scleractinia. Coarsened rather than exact because the annotator recorded no
+          growth form or condition, both of which RS-Benthic can express — the sample
+          simply leaves those axes unsupervised.
+
+      - source_label: "Soft Coral"
+        targets: { taxon: SC }
+        fidelity: coarsened
+        note: >
+          Octocorallia. THE class absent from every major public reef schema, and 24% of
+          our Caribbean annotations. Growth form (fan/rod/plume/whip) was not recorded.
+
+      - source_label: "Milleporid"
+        targets: { taxon: MIL }
+        fidelity: exact
+        note: >
+          Millepora, a hydrozoan. Recorded separately from Hard Coral by our annotators,
+          which is taxonomically correct and unusual — most schemes either fold it into
+          hard coral or omit it.
+
+      - source_label: "Other Sessile Invertebrates"
+        targets: { taxon: OT }
+        fidelity: coarsened
+        note: >
+          A genuine catch-all in the source: sponges, tunicates, zoanthids and anything
+          else sessile. Mapping to a more specific node would invent precision the
+          annotation does not carry.
+
+      - source_label: "SCALE"
+        targets: { taxon: SCL }
+        fidelity: exact
+        note: >
+          A drawn line on an in-frame scale object, not biota. 654 of these exist
+          (Tayrona only) and they are the supervision signal for metric-scale recovery —
+          the missing ingredient for area, rugosity and growth-rate outputs. The loader
+          also lists it under geometry_labels so it contributes no taxon supervision.
