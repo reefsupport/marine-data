@@ -207,6 +207,54 @@ unsupervised rather than being coerced into the nearest class.** Coercion is exa
 a Red-Sea schema with no soft-coral row produces "50% unknown hard substrate" on a
 Caribbean reef, and nothing in a training log reveals it.
 
+## Model development
+
+```python
+import marinedata as md
+
+reg = md.Registry.load()
+ds = md.DatasetBuilder(
+    reg,
+    profile="ship-commercial",
+    roots={"coralscapes": "/data/coralscapes", "reef-support-benthic": "/data/rs"},
+).build()
+
+ds.split(by="site")  # group-wise — see below
+print(ds.summary())
+
+frame = ds.to_pandas()  # exploration, stratification, leakage checks
+torch_ds = ds.to_torch(split="train")
+tf_ds = ds.to_tf(split="train", batch_size=8)
+```
+
+**Splits are group-wise by default.** Consecutive transect frames overlap heavily — the
+same colony appears in dozens of them — so a random split puts near-duplicates on both
+sides and inflates every metric. `by="random"` exists, but you have to ask for it, and
+`leakage_report(ds)` shows exactly what it costs.
+
+**Unsupervised axes encode to `-100`**, PyTorch's `CrossEntropyLoss` default
+`ignore_index`. So combining a 39-class dense set with our own 2-class masks needs no
+custom masking:
+
+```python
+loss = sum(F.cross_entropy(logits[a], batch["labels"][a]) for a in heads)
+```
+
+Rows from a source that never annotated an axis receive exactly zero gradient on that
+head — verified, not assumed (`tests/test_builder.py`). TensorFlow has no such
+convention, so the TF adapter emits an explicit mask and ships
+`masked_sparse_categorical_crossentropy` to match the torch behaviour rather than
+approximate it.
+
+**The builder refuses to mix vocabularies.** A source with no crosswalk into the target
+schema would inject native labels into the index — a class list of `["HC", "SC", "18",
+"47"]` is two vocabularies pretending to be one. That raises unless you pass
+`allow_unmapped=True`.
+
+Also available: `class_weights()` (reef data is severely long-tailed; unweighted training
+optimises for sand), `class_counts()`, and `supervision_coverage()` — which answers
+"why is my growth-form head weak?" far faster than a loss curve.
+
 ## Lineage — the audit artifact
 
 Every build emits a record of what contributed, under which tier and legal basis, what
@@ -248,7 +296,11 @@ See [`CONTRIBUTING.md`](CONTRIBUTING.md).
 
 ## Status
 
-**52 sources across 24 capabilities; 8 loader layouts; 175 tests.**
+**59 sources across 24 capabilities; 9 loader layouts; 208 unit + 10 live integration tests.**
+
+**14 sources verified against live fetched data** — including our own Hetzner buckets,
+Coralscapes, ReefNet species images, MARRS reef soundscapes and AIMS satellite coral
+mapping. `marinedata verify` re-checks them; `--unverified-only` lists the backlog.
 
 Coverage by domain: coral and benthic (deepest), fish and mobile fauna, 3D and
 photogrammetry, coastal ecosystems (mangrove, seagrass, bathymetry, debris),

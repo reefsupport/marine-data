@@ -1,0 +1,230 @@
+# Sources discovered on HuggingFace and confirmed loadable against live data.
+#
+# Every entry here was probed via the datasets-server before being written: features and
+# splits were read from the real dataset rather than from its documentation. That is the
+# difference between an entry that works and one that merely looks plausible.
+
+sources:
+  - id: reefnet-hf
+    name: ReefNet 1.0 (HuggingFace release)
+    version: "1.0"
+    description: >
+      The ReefNet fine-grained coral benchmark, published openly on HuggingFace as
+      tabular point annotations: CoralNet source, image name, row/column, CoralNet
+      label and a harmonised ReefNet label.
+    licence: CC-BY-4.0
+    legal_basis: licence
+    provenance: public
+    verification:
+      verified_on: 2026-08-17
+      verified_by: "HF dataset ReefNet/ReefNet-1.0 probed live; columns X, CoralNet_source, Image_name, Row, Column, CoralNet_label, CoralNet_label_short_code, Sorted_ReefNet_label"
+      method: dataset-card
+    access:
+      method: huggingface
+      uri: https://huggingface.co/datasets/ReefNet/ReefNet-1.0
+      params:
+        hf_id: ReefNet/ReefNet-1.0
+    modalities: [tabular]
+    capabilities: [coral-taxonomy, benthic-classification]
+    items: 181223
+    annotations:
+      - kind: point-label
+        count: 925000
+        schema_id: worms-genus
+        supervises: [taxon]
+        depth: L3
+    coverage:
+      regions: [global, central-pacific, red-sea]
+    domain_shift:
+      trained_regions: [central-pacific, red-sea]
+      caveats:
+        - "This release is the ANNOTATION TABLE, not the imagery. Images must be retrieved per CoralNet source."
+        - "Caribbean/Brazil under 8k annotations each - the bias that makes our region valuable."
+    loader:
+      layout: metadata-only
+      verified_note: >
+        Probed live 2026-08-17. Tabular annotations only, with no image column, so there
+        is no sample-level image loader. Supersedes the earlier 'request only' entry -
+        the data is open, just not as imagery.
+    citation: "Felemban, Battach, Khan et al., ReefNet, KAUST + MIT, arXiv 2510.16822"
+    tags: [genus, benchmark, tabular]
+
+  - id: reefnet-species-images
+    name: ReefNet species images
+    version: "unversioned"
+    description: Coral species image classification set derived from the ReefNet corpus.
+    licence: CC-BY-4.0
+    legal_basis: licence
+    provenance: public
+    verification:
+      verified_on: 2026-08-17
+      verified_by: "HF dataset BobDerBaum/reefnet_species_images probed live; features image:Image, label:ClassLabel"
+      method: dataset-card
+    access:
+      method: huggingface
+      uri: https://huggingface.co/datasets/BobDerBaum/reefnet_species_images
+      params: { hf_id: BobDerBaum/reefnet_species_images, image_column: image, label_column: label }
+    modalities: [image]
+    capabilities: [coral-taxonomy, benthic-classification, general-pretraining]
+    annotations: [{ kind: image-label, schema_id: worms-genus, supervises: [taxon], depth: L3 }]
+    coverage: { regions: [global] }
+    loader:
+      layout: image-folder
+      verified_on: 2026-08-17
+      verified_note: "12 live rows fetched from HF; image+ClassLabel materialise as class-per-directory"
+    tags: [species, classification]
+
+  - id: reef-guidance-system
+    name: QUT reef guidance system imagery
+    version: "unversioned"
+    description: >
+      Underwater reef imagery from the QUT Centre for Robotics underwater-perception
+      group - the lab behind the Raine & Fischer 2025 survey and the point-label-aware
+      superpixel line of work.
+    licence: CC-BY-4.0
+    legal_basis: licence
+    provenance: public
+    verification:
+      verified_on: 2026-08-17
+      verified_by: "HF dataset QCR-Underwater-Perception/reef-guidance-system probed live; feature image:Image"
+      method: dataset-card
+    access:
+      method: huggingface
+      uri: https://huggingface.co/datasets/QCR-Underwater-Perception/reef-guidance-system
+      params: { hf_id: QCR-Underwater-Perception/reef-guidance-system, image_column: image }
+    modalities: [image]
+    capabilities: [general-pretraining, benthic-segmentation]
+    annotations: [{ kind: none, supervises: [] }]
+    coverage: { regions: [gbr-australia] }
+    domain_shift:
+      caveats: ["Unlabelled in this release - a pretraining and robotics-perception corpus."]
+    loader:
+      layout: flat-images
+      verified_on: 2026-08-17
+      verified_note: "15 live rows fetched from HF; images only"
+    tags: [robotics, pretraining, qut]
+
+  - id: marrs-reef-soundscapes
+    name: MARRS global coral reef soundscapes
+    version: "unversioned"
+    description: >
+      Global reef soundscape detections with sonotype, country and confidence - the
+      largest openly available reef bioacoustics corpus we have found.
+    licence: CC-BY-4.0
+    legal_basis: licence
+    provenance: public
+    verification:
+      verified_on: 2026-08-17
+      verified_by: "HF dataset bens-bots/marrs-global-coral-reef-soundscapes probed live; config detections_australia, features audio:Audio, filename, country, sonotype, logit, start_s"
+      method: dataset-card
+    access:
+      method: huggingface
+      uri: https://huggingface.co/datasets/bens-bots/marrs-global-coral-reef-soundscapes
+      params:
+        hf_id: bens-bots/marrs-global-coral-reef-soundscapes
+        config: detections_australia
+        audio_column: audio
+        label_column: sonotype
+    modalities: [audio]
+    capabilities: [bioacoustics]
+    annotations: [{ kind: audio-event, supervises: [taxon] }]
+    coverage: { regions: [global, gbr-australia] }
+    domain_shift:
+      caveats:
+        - "Multi-config by country; `detections_australia` is one of several. Set `config` per region."
+        - "Labels are sonotypes (sound classes), not species - the mapping from sound to source organism is largely unsolved."
+    loader:
+      layout: audio-clips
+      verified_on: 2026-08-17
+      verified_note: "15 live audio clips fetched from HF config detections_australia; sonotype as class dir"
+    tags: [bioacoustics, reef-audio, multi-region]
+
+  - id: whoi-plankton-small
+    name: WHOI-Plankton (small)
+    version: "unversioned"
+    description: IFCB plankton imagery with expert class labels - the canonical plankton benchmark.
+    licence: MIT
+    legal_basis: licence
+    provenance: public
+    verification:
+      verified_on: 2026-08-17
+      verified_by: "HF dataset nf-whoi/whoi-plankton-small probed live; features image:Image, label:ClassLabel"
+      method: dataset-card
+    access:
+      method: huggingface
+      uri: https://huggingface.co/datasets/nf-whoi/whoi-plankton-small
+      params: { hf_id: nf-whoi/whoi-plankton-small, image_column: image, label_column: label }
+    modalities: [image]
+    capabilities: [general-pretraining]
+    annotations: [{ kind: image-label, supervises: [] }]
+    coverage: { regions: [western-atlantic, temperate] }
+    domain_shift:
+      caveats: ["Microscopy, not in-situ reef imagery. Included for completeness of the marine domain, not for benthic transfer."]
+    loader:
+      layout: image-folder
+      verified_on: 2026-08-17
+      verified_note: "15 live rows fetched from HF; image+ClassLabel"
+    tags: [plankton, microscopy, permissive]
+
+  - id: underwater-image-enhancement
+    name: Underwater image enhancement set
+    version: "unversioned"
+    description: Paired/labelled underwater imagery for enhancement and restoration work.
+    licence: CC-BY-4.0
+    legal_basis: licence
+    provenance: public
+    verification:
+      verified_on: 2026-08-17
+      verified_by: "HF dataset iamvastava/underwater_image_enhancement probed live; features image:Image, label:ClassLabel"
+      method: dataset-card
+    access:
+      method: huggingface
+      uri: https://huggingface.co/datasets/iamvastava/underwater_image_enhancement
+      params: { hf_id: iamvastava/underwater_image_enhancement, image_column: image, label_column: label }
+    modalities: [image]
+    capabilities: [image-enhancement, general-pretraining]
+    annotations: [{ kind: image-label, supervises: [] }]
+    coverage: { regions: [global] }
+    domain_shift:
+      caveats:
+        - "Blanket enhancement is neutral-to-harmful for downstream detection and segmentation. Validate on the task, not on UIQM/UCIQE."
+    loader:
+      layout: image-folder
+      verified_on: 2026-08-17
+      verified_note: "15 live rows fetched from HF; image+ClassLabel"
+    tags: [enhancement]
+
+  - id: satellite-coral-mapping
+    name: AIMS satellite coral mapping
+    version: "unversioned"
+    description: >
+      Paired Sentinel-2 / Landsat-8 reef scenes with label rasters, from AIMS - a rare
+      satellite reef set published with ground-truth labels rather than as a product.
+    licence: CC-BY-4.0
+    legal_basis: licence
+    provenance: public
+    verification:
+      verified_on: 2026-08-17
+      verified_by: "HF dataset aimsks/satellite-coral-mapping probed live; split test, features label:Image, Coral-Sea_S2_R2:Image, Coral-Sea_L8_R1:Image, Coral-Sea_S2_R1:Image"
+      method: dataset-card
+    access:
+      method: huggingface
+      uri: https://huggingface.co/datasets/aimsks/satellite-coral-mapping
+      params:
+        hf_id: aimsks/satellite-coral-mapping
+        split: test
+        image_column: Coral-Sea_S2_R1
+        mask_column: label
+    modalities: [satellite, image]
+    capabilities: [habitat-mapping-satellite, benthic-segmentation]
+    annotations: [{ kind: dense-mask, supervises: [taxon] }]
+    coverage: { regions: [gbr-australia] }
+    domain_shift:
+      caveats:
+        - "Coral Sea only. Satellite resolution maps habitat extent, not colony condition."
+        - "Multiple sensor columns (S2_R1, S2_R2, L8_R1) share one label raster - pick the sensor deliberately."
+    loader:
+      layout: image-mask-pairs
+      verified_on: 2026-08-17
+      verified_note: "15 live rows fetched from HF split=test; Coral-Sea_S2_R1 paired with label raster"
+    tags: [satellite, aims, paired-labels]

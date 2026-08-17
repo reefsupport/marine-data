@@ -17,6 +17,7 @@ The registry is metadata, not legal advice. See ``docs/LEGAL.md``.
 
 from __future__ import annotations
 
+from .builder import Dataset, DatasetBuilder
 from .enums import (
     AccessMethod,
     AnnotationKind,
@@ -29,6 +30,7 @@ from .enums import (
 )
 from .gate import Decision, LicenceViolation, allowed, enforce, evaluate
 from .harmonize import HarmonizationError, Harmonized, Harmonizer
+from .labelindex import IGNORE_INDEX, AxisIndex, LabelIndex
 from .lineage import Lineage, build_lineage
 from .loaders import DataNotAvailable, LoaderError, build_loader, registered_layouts
 from .models import Licence, LoaderSpec, Profile, Source
@@ -40,17 +42,22 @@ from .schema import Axis, Crosswalk, Fidelity, LabelSchema
 __version__ = "0.1.0"
 
 __all__ = [
+    "IGNORE_INDEX",
     "AccessMethod",
     "AnnotationKind",
     "Axis",
+    "AxisIndex",
     "Capability",
     "Crosswalk",
     "DataNotAvailable",
+    "Dataset",
+    "DatasetBuilder",
     "Decision",
     "Fidelity",
     "HarmonizationError",
     "Harmonized",
     "Harmonizer",
+    "LabelIndex",
     "LabelSchema",
     "LabelValue",
     "LegalBasis",

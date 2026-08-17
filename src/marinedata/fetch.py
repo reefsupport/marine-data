@@ -120,6 +120,7 @@ def _fetch_huggingface(source: Source, root: Path, limit: int) -> FetchResult:
     image_col = str(params.get("image_column", "image"))
     mask_col = params.get("mask_column")
     label_col = params.get("label_column")
+    audio_col = params.get("audio_column")
 
     # The rows endpoint caps `length` at 100 — which is the sample size we want anyway.
     query = urllib.parse.urlencode(
@@ -142,6 +143,21 @@ def _fetch_huggingface(source: Source, root: Path, limit: int) -> FetchResult:
     count = 0
     for index, entry in enumerate(rows):
         row = entry.get("row", {})
+
+        if audio_col:
+            # Audio rows expose a list of encodings; take the first playable one.
+            media = row.get(audio_col)
+            if isinstance(media, list) and media:
+                media = media[0]
+            audio_src = media.get("src") if isinstance(media, dict) else None
+            if not audio_src:
+                continue
+            label = str(row.get(label_col, "unlabelled")) if label_col else "unlabelled"
+            suffix = Path(urllib.parse.urlparse(audio_src).path).suffix or ".wav"
+            _write(root / label / f"{index:05d}{suffix}", _get(audio_src))
+            count += 1
+            continue
+
         image = row.get(image_col)
         src = image.get("src") if isinstance(image, dict) else None
         if not src:
@@ -164,12 +180,13 @@ def _fetch_huggingface(source: Source, root: Path, limit: int) -> FetchResult:
 
     if count == 0:
         available = sorted(rows[0].get("row", {}))
-        present = image_col in available
+        wanted_col = str(audio_col) if audio_col else image_col
+        present = wanted_col in available
         reason = (
-            f"column '{image_col}' exists but carries no resolvable image `src` "
+            f"column '{wanted_col}' exists but carries no resolvable media `src` "
             f"(the upstream datasets-server may be failing to post-process this dataset)"
             if present
-            else f"no column named '{image_col}'"
+            else f"no column named '{wanted_col}'"
         )
         raise FetchError(f"{source.id}: {reason} in {hf_id}. Columns: {available}")
 
