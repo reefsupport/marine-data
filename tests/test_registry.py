@@ -95,3 +95,35 @@ def test_source_ids_are_unique_and_slugged(registry: Registry) -> None:
     assert len(ids) == len(set(ids))
     for sid in ids:
         assert sid == sid.lower()
+
+
+def test_no_source_claims_own_tier_over_third_party_pixels(registry: Registry) -> None:
+    """Regression guard for a real defect found 2026-08-17.
+
+    A single `reef-support-benthic` entry was tiered PROPRIETARY-OWN across 3,957 images
+    of which only 1,250 were our pixels; the rest were our masks on XL Catlin Seaview
+    photographs. Every gate passed and minted a clean T0_OWN certificate over imagery we
+    do not own — the exact false-provenance failure this registry exists to prevent.
+
+    Rights now attach to (source, partition). This asserts the split stayed split.
+    """
+    own = registry.source("reef-support-benthic-own")
+    assert own.licence.tier is Tier.OWN
+    assert own.items == 1250, "T0_OWN must cover only pixels we actually own"
+
+    borrowed = registry.source("reef-support-seaview-labels")
+    assert borrowed.licence.tier is not Tier.OWN
+    assert borrowed.legal_basis is LegalBasis.UNKNOWN
+
+    ids = {s.id for s in registry}
+    assert "reef-support-benthic" not in ids, "the conflated entry must not return"
+
+
+def test_own_tier_sources_are_genuinely_ours(registry: Registry) -> None:
+    """T0_OWN asserts we hold the rights outright. Provenance must agree."""
+    for src in registry:
+        if src.licence.tier is Tier.OWN:
+            assert src.provenance.value == "own", (
+                f"{src.id}: tier T0_OWN but provenance={src.provenance.value}. "
+                f"T0_OWN over third-party pixels mints a false clean certificate."
+            )

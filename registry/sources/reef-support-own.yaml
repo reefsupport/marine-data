@@ -4,25 +4,23 @@
 # parse of every Labelbox export-result.ndjson — not from prior documentation.
 
 sources:
-  - id: reef-support-benthic
-    name: Reef Support benthic instance masks
+  - id: reef-support-benthic-own
+    name: Reef Support benthic instance masks — own imagery (Colombia)
     version: "2026-08"
     description: >
-      Expert Labelbox instance masks over 8 survey sites. Four sites are our own
-      Caribbean imagery (Colombia: Seaflower, Tayrona, Providencia); four are our
-      annotations applied to public XL Catlin Seaview photographs, where the labels
-      are ours but the underlying pixels are not.
+      Expert Labelbox instance masks over four Colombian sites where BOTH the imagery and
+      the annotations are ours: Tayrona (658), Seaflower Bolivar (246), Seaflower Courtown
+      (241), Tetes Providencia (105).
     licence: PROPRIETARY-OWN
     legal_basis: own
     provenance: own
     verification:
       verified_on: 2026-08-17
-      verified_by: "Live rclone scan of s3://rs-storage-open/benthic_datasets/mask_labels/reef_support"
+      verified_by: "Live rclone scan of s3://rs-storage-open/benthic_datasets/mask_labels/reef_support; per-site image counts parsed from the object manifest"
       method: licence-file
     access:
       method: s3
       uri: s3://rs-storage-open/benthic_datasets/mask_labels/reef_support
-      size_bytes: 8117000000
       params:
         bucket: rs-storage-open
         endpoint: hel1.your-objectstorage.com
@@ -39,44 +37,104 @@ sources:
       schema_id: reef-support-labelbox
       verified_on: 2026-08-17
       verified_note: >
-        Verified against the live Hetzner bucket. The root is SITE-PARTITIONED - eight
-        site directories, each with images/ + masks/ + masks_stitched/ + one
-        export-result.ndjson. An earlier declaration assumed root == one site.
+        Verified against the live Hetzner bucket. Site-partitioned - each site directory
+        holds images/ + masks/ + masks_stitched/ + one export-result.ndjson.
       params:
         annotations: export-result.ndjson
         images_dir: images
         geometry_labels: "SCALE"
-    items: 3957
+    items: 1250
     items_note: >
-      63,955 annotations total. Only 1,250 images are our own pixels
-      (Tayrona 658, Bolivar 246, Courtown 241, Providencia 105).
+      The only imagery whose pixels we own. THE moat, and it is small.
     annotations:
       - kind: instance-mask
-        count: 63955
         schema_id: reef-support-labelbox
         classes: 5
         supervises: [taxon]
         depth: L2
         notes: >
-          Hard Coral, Soft Coral, Milleporid, Other Sessile Invertebrates, SCALE.
-          Only Tayrona carries all five; the other seven sites are Hard/Soft Coral only.
+          Hard Coral, Soft Coral, Milleporid, Other Sessile Invertebrates, SCALE. Only
+          Tayrona carries all five.
       - kind: polyline
         count: 654
         supervises: []
         notes: >
-          SCALE line annotations (Tayrona only). In-frame scale references — the
-          supervision signal for automatic metric-scale recovery, which is the
-          blocking gap for area, rugosity and growth-rate outputs.
+          SCALE lines (Tayrona only) - the supervision signal for metric-scale recovery.
     coverage:
-      regions: [caribbean, western-atlantic, coral-triangle, central-pacific, gbr-australia]
+      regions: [caribbean]
       ecoregions: ["Southwestern Caribbean", "Southern Caribbean"]
-      sites: 8
+      sites: 4
     domain_shift:
       trained_regions: [caribbean]
+      missing_classes:
+        - "sand"
+        - "rubble"
+        - "rock / pavement"
+        - "turf algae"
+        - "crustose coralline algae"
       caveats:
-        - "Soft coral is 24.4% of all Caribbean/Atlantic annotations here (46.9% in SEAVIEW_ATL) — the single most under-represented class in every public reef schema."
-        - "Only 1,250 images are our own pixels; the remainder are our labels on third-party Seaview imagery."
-    tags: [moat, caribbean, octocoral]
+        - "CRITICAL SUPERVISION HOLE: this corpus labels BIOTA only. It contains no Caribbean substrate ground truth of any kind - no sand, rubble, pavement, turf or CCA. Fixing the ontology makes soft coral EXPRESSIBLE but supplies no substrate examples, so it cannot on its own repair the ~32% rubble / ~50% unknown-hard-substrate collapse. That needs funded substrate annotation."
+        - "Soft coral is ~24% of all our Caribbean/Atlantic annotations and absent from every major public reef schema."
+    tags: [moat, caribbean, octocoral, biota-only]
+
+  - id: reef-support-seaview-labels
+    name: Reef Support annotations on XL Catlin Seaview imagery
+    version: "2026-08"
+    description: >
+      Our expert instance masks drawn on PUBLIC XL Catlin Seaview photographs -
+      SEAVIEW_PAC_AUS (808), SEAVIEW_PAC_USA (728), SEAVIEW_ATL (705), SEAVIEW_IDN_PHL
+      (466). The annotation labour and the resulting masks are ours; the underlying pixels
+      are not.
+    licence: NO-LICENCE-STATED
+    legal_basis: unknown
+    provenance: partner
+    verification:
+      verified_on: 2026-08-17
+      verified_by: "Live bucket manifest: 2,707 images across four SEAVIEW_* site directories. No XL Catlin Seaview licence or permission document located in the repo or bucket."
+      method: absent
+    access:
+      method: s3
+      uri: s3://rs-storage-open/benthic_datasets/mask_labels/reef_support
+      params:
+        bucket: rs-storage-open
+        endpoint: hel1.your-objectstorage.com
+        region: hel1
+        prefix: benthic_datasets/mask_labels/reef_support/SEAVIEW_ATL/
+        credentials_env: S3
+    modalities: [image]
+    capabilities:
+      - benthic-segmentation
+      - coral-instance-segmentation
+      - general-pretraining
+    loader:
+      layout: labelbox-ndjson
+      schema_id: reef-support-labelbox
+      params:
+        annotations: export-result.ndjson
+        images_dir: images
+        geometry_labels: "SCALE"
+    items: 2707
+    annotations:
+      - kind: instance-mask
+        schema_id: reef-support-labelbox
+        classes: 2
+        supervises: [taxon]
+        depth: L2
+        notes: "Hard Coral / Soft Coral. SEAVIEW_ATL is 46.9% Soft Coral - our strongest octocoral evidence."
+    coverage:
+      regions: [western-atlantic, caribbean, coral-triangle, central-pacific, gbr-australia]
+      sites: 4
+    notes: >
+      SPLIT OUT 2026-08-17 after review. Previously these 2,707 images sat inside a single
+      `reef-support-benthic` entry tiered PROPRIETARY-OWN, which meant the gate minted a
+      clean T0_OWN certificate over imagery we do not own - precisely the false-provenance
+      failure this registry exists to prevent, in our own data.
+
+      Rights are now split at the partition level. Our MASKS are ours; the PIXELS are XL
+      Catlin Seaview's and their terms are unconfirmed, so legal_basis is `unknown` and the
+      gate blocks this everywhere until resolved. Resolve by confirming Seaview's terms in
+      writing; if permissive, retier and record the primary source.
+    tags: [needs-permission, annotation-ip, octocoral]
 
   - id: reef-support-bleaching
     name: Reef Support bleaching masks (Tayrona)
