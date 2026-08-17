@@ -194,3 +194,74 @@ def test_every_crosswalk_target_resolves(registry: Registry) -> None:
     for walk in registry.crosswalks:
         target = registry.label_schema(walk.target_schema)
         Harmonizer(walk, target)  # raises if any edge points at a missing node
+
+
+# ── schema validation: four holes found and closed 2026-08-17 ─────────────
+
+
+def test_self_parent_cycle_rejected_at_construction() -> None:
+    """Previously loaded clean; leaves() silently returned () and the cycle surfaced
+    only if someone happened to call ancestors()."""
+    with pytest.raises(ValueError, match="cycle in parent chain"):
+        LabelSchema(id="x", name="x", nodes=(LabelNode(id="A", name="A", parent="A"),))
+
+
+def test_multi_node_cycle_rejected() -> None:
+    with pytest.raises(ValueError, match="cycle in parent chain"):
+        LabelSchema(
+            id="x",
+            name="x",
+            nodes=(
+                LabelNode(id="X", name="X", parent="Y"),
+                LabelNode(id="Y", name="Y", parent="X"),
+            ),
+        )
+
+
+def test_cross_axis_parent_rejected() -> None:
+    """A taxon descending from a condition makes 'ancestor' meaningless and would
+    silently corrupt any rollup."""
+    with pytest.raises(ValueError, match="cross-axis parent"):
+        LabelSchema(
+            id="x",
+            name="x",
+            axes=(Axis.TAXON, Axis.CONDITION),
+            nodes=(
+                LabelNode(id="BLEACHED", name="Bleached", axis=Axis.CONDITION),
+                LabelNode(id="HC", name="Hard coral", axis=Axis.TAXON, parent="BLEACHED"),
+            ),
+        )
+
+
+def test_duplicate_node_ids_rejected() -> None:
+    """The second node was silently unreachable via node()."""
+    with pytest.raises(ValueError, match="duplicate node id"):
+        LabelSchema(
+            id="x",
+            name="x",
+            nodes=(LabelNode(id="D", name="first"), LabelNode(id="D", name="second")),
+        )
+
+
+def test_node_on_undeclared_axis_rejected() -> None:
+    with pytest.raises(ValueError, match="does not declare"):
+        LabelSchema(
+            id="x",
+            name="x",
+            axes=(Axis.TAXON,),
+            nodes=(LabelNode(id="Z", name="Z", axis=Axis.CONDITION),),
+        )
+
+
+def test_valid_deep_chain_still_works() -> None:
+    schema = LabelSchema(
+        id="ok",
+        name="ok",
+        nodes=(
+            LabelNode(id="ROOT", name="r"),
+            LabelNode(id="MID", name="m", parent="ROOT"),
+            LabelNode(id="LEAF", name="l", parent="MID"),
+        ),
+    )
+    assert schema.ancestors("LEAF") == ("MID", "ROOT")
+    assert [n.id for n in schema.leaves()] == ["LEAF"]

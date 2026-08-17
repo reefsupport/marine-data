@@ -88,14 +88,78 @@ class LabelSchema(_Frozen):
     """True for our target schemas; crosswalks map *into* these."""
 
     @model_validator(mode="after")
-    def _parents_exist(self) -> LabelSchema:
-        ids = {n.id for n in self.nodes}
+    def _validate_structure(self) -> LabelSchema:
+        """Validate the whole node set at construction.
+
+        An earlier version checked only that parents existed, which let four distinct
+        classes of malformed schema load clean — all four verified against real code:
+
+        * duplicate node ids (the second becomes silently unreachable via ``node()``)
+        * self-parent and multi-node cycles, caught only later and only if a caller
+          happened to call :meth:`ancestors`
+        * cross-axis parents — a ``taxon`` node could descend from a ``condition`` node,
+          which makes "ancestor" meaningless and would silently corrupt any rollup
+        * nodes on an axis the schema does not declare
+
+        A cycle also makes :meth:`leaves` return an empty tuple rather than raising,
+        which is the worst outcome available: a schema that reports no leaves looks like
+        a schema with nothing in it.
+        """
+        by_id: dict[str, LabelNode] = {}
         for node in self.nodes:
-            if node.parent is not None and node.parent not in ids:
+            if node.id in by_id:
+                raise ValueError(f"schema {self.id}: duplicate node id '{node.id}'")
+            by_id[node.id] = node
+
+        for node in self.nodes:
+            if node.axis not in self.axes:
+                raise ValueError(
+                    f"schema {self.id}: node '{node.id}' is on axis '{node.axis.value}' "
+                    f"which the schema does not declare "
+                    f"(declared: {[a.value for a in self.axes]})"
+                )
+            if node.parent is None:
+                continue
+            parent = by_id.get(node.parent)
+            if parent is None:
                 raise ValueError(
                     f"schema {self.id}: node '{node.id}' has unknown parent '{node.parent}'"
                 )
+            if parent.axis is not node.axis:
+                raise ValueError(
+                    f"schema {self.id}: node '{node.id}' ({node.axis.value}) has a "
+                    f"cross-axis parent '{parent.id}' ({parent.axis.value}). Ancestry is "
+                    f"only meaningful within one axis; use a crosswalk to relate axes."
+                )
+
+        self._assert_acyclic(by_id)
         return self
+
+    def _assert_acyclic(self, by_id: dict[str, LabelNode]) -> None:
+        """Iterative DFS with separate visited and on-stack sets.
+
+        Separate sets matter: a shared one cannot distinguish a cycle from a node
+        legitimately reached twice, which is precisely the bug that made a multi-parent
+        model unworkable here.
+        """
+        visited: set[str] = set()
+        for start in by_id:
+            if start in visited:
+                continue
+            path: list[str] = []
+            on_stack: set[str] = set()
+            current: str | None = start
+            while current is not None:
+                if current in on_stack:
+                    cycle = " -> ".join([*path[path.index(current) :], current])
+                    raise ValueError(f"schema {self.id}: cycle in parent chain: {cycle}")
+                if current in visited:
+                    break
+                visited.add(current)
+                on_stack.add(current)
+                path.append(current)
+                node = by_id.get(current)
+                current = node.parent if node else None
 
     def node(self, node_id: str) -> LabelNode | None:
         return next((n for n in self.nodes if n.id == node_id), None)
