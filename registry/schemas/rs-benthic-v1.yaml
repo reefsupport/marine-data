@@ -32,14 +32,16 @@ schemas:
       - { id: OTHER_FAUNA, name: Other fauna, parent: BIOTIC, axis: taxon }
 
       # ── L2 — MariMap CoralLabelCode ───────────────────────────────────
-      - { id: HC,  name: Hard coral,      parent: CNIDARIA, axis: taxon, aliases: ["hard coral", "scleractinian", "stony coral"], worms_aphia_id: 1363 }
-      - { id: MIL, name: Fire coral (Millepora), parent: CNIDARIA, axis: taxon, aliases: ["millepora", "fire coral", "milleporid"], worms_aphia_id: 196197,
-          notes: "Hydrozoan, not scleractinian. Split out because it is visually distinct and abundant in the Caribbean." }
-      - { id: SC,  name: Soft coral,      parent: CNIDARIA, axis: taxon, aliases: ["soft coral", "octocoral", "gorgonian", "alcyonacea"], worms_aphia_id: 1341,
-          notes: "THE branch absent from every major public reef schema. ~24% of our Caribbean annotations." }
+      - { id: HC,  name: Hard coral,      parent: CNIDARIA, axis: taxon, aliases: ["hard coral", "scleractinian", "stony coral"], worms_aphia_id: 1363, worms_scientificname: Scleractinia, worms_rank: Order, worms_status: accepted, worms_checked_on: 2026-08-17 }
+      - { id: MIL, name: Fire coral (Millepora), parent: CNIDARIA, axis: taxon, aliases: ["millepora", "fire coral", "milleporid"],
+          worms_aphia_id: 205902, worms_scientificname: Millepora, worms_rank: Genus, worms_status: accepted, worms_checked_on: 2026-08-17,
+          notes: "Hydrozoan (class Hydrozoa, order Anthoathecata), NOT scleractinian — every reef protocol scores it as hard coral anyway, which is why functional grouping cannot be a tree walk. CORRECTED 2026-08-17: previously carried AphiaID 196197, which is Cryptonemiaceae, an unaccepted RED ALGA family." }
+      - { id: SC,  name: Soft coral,      parent: CNIDARIA, axis: taxon, aliases: ["soft coral", "octocoral", "gorgonian", "alcyonacea"],
+          worms_aphia_id: 1341, worms_scientificname: Octocorallia, worms_rank: Class, worms_status: accepted, worms_checked_on: 2026-08-17,
+          notes: "THE branch absent from every major public reef schema. ~24% of our Caribbean annotations. Note Heliopora and Tubipora are octocorals WITH calcareous skeletons that protocols score as hard substrate — taxonomy and function genuinely diverge here." }
       - { id: ZO,  name: Zoanthid,        parent: CNIDARIA, axis: taxon, aliases: ["zoanthid"] }
       - { id: ANEM, name: Anemone,        parent: CNIDARIA, axis: taxon, aliases: ["anemone", "actiniaria"] }
-      - { id: SP,  name: Sponge,          parent: PORIFERA, axis: taxon, aliases: ["sponge", "porifera"], worms_aphia_id: 558 }
+      - { id: SP,  name: Sponge,          parent: PORIFERA, axis: taxon, aliases: ["sponge", "porifera"], worms_aphia_id: 558, worms_scientificname: Porifera, worms_rank: Phylum, worms_status: accepted, worms_checked_on: 2026-08-17 }
       - { id: CCA, name: Crustose coralline algae, parent: ALGAE, axis: taxon, aliases: ["cca", "crustose coralline"] }
       - { id: CA,  name: Coralline algae, parent: ALGAE, axis: taxon }
       - { id: TA,  name: Turf algae,      parent: ALGAE, axis: taxon, aliases: ["turf", "turf algae"] }
@@ -73,16 +75,16 @@ schemas:
           notes: "In-frame scale object. Detecting it is what recovers pixel_size_m and unlocks area, rugosity and growth rate." }
 
       # ── L3 — Caribbean genera (region-scoped; extend per region) ───────
-      - { id: HC_ORBICELLA,     name: Orbicella,      parent: HC, axis: taxon, worms_aphia_id: 1400001 }
+      - { id: HC_ORBICELLA,     name: Orbicella,      parent: HC, axis: taxon, worms_aphia_id: 758259, worms_scientificname: Orbicella, worms_rank: Genus, worms_status: accepted, worms_checked_on: 2026-08-17 }
       - { id: HC_PSEUDODIPLORIA, name: Pseudodiploria, parent: HC, axis: taxon }
       - { id: HC_SIDERASTREA,   name: Siderastrea,    parent: HC, axis: taxon }
       - { id: HC_AGARICIA,      name: Agaricia,       parent: HC, axis: taxon }
-      - { id: HC_PORITES,       name: Porites,        parent: HC, axis: taxon, worms_aphia_id: 206970 }
-      - { id: HC_ACROPORA,      name: Acropora,       parent: HC, axis: taxon, worms_aphia_id: 205469 }
+      - { id: HC_PORITES,       name: Porites,        parent: HC, axis: taxon, worms_aphia_id: 206485, worms_scientificname: Porites, worms_rank: Genus, worms_status: accepted, worms_checked_on: 2026-08-17 }
+      - { id: HC_ACROPORA,      name: Acropora,       parent: HC, axis: taxon, worms_aphia_id: 205469, worms_scientificname: Acropora, worms_rank: Genus, worms_status: accepted, worms_checked_on: 2026-08-17 }
       - { id: HC_COLPOPHYLLIA,  name: Colpophyllia,   parent: HC, axis: taxon }
       - { id: HC_MONTASTRAEA,   name: Montastraea,    parent: HC, axis: taxon }
       - { id: HC_MEANDRINA,     name: Meandrina,      parent: HC, axis: taxon }
-      - { id: HC_POCILLOPORA,   name: Pocillopora,    parent: HC, axis: taxon, worms_aphia_id: 206938 }
+      - { id: HC_POCILLOPORA,   name: Pocillopora,    parent: HC, axis: taxon, worms_aphia_id: 206938, worms_scientificname: Pocillopora, worms_rank: Genus, worms_status: accepted, worms_checked_on: 2026-08-17 }
       - { id: HC_STYLOPHORA,    name: Stylophora,     parent: HC, axis: taxon }
       - { id: HC_TURBINARIA,    name: Turbinaria,     parent: HC, axis: taxon }
       # Soft-coral L3

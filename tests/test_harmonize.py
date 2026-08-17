@@ -265,3 +265,58 @@ def test_valid_deep_chain_still_works() -> None:
     )
     assert schema.ancestors("LEAF") == ("MID", "ROOT")
     assert [n.id for n in schema.leaves()] == ["LEAF"]
+
+
+# ── taxonomic anchoring: OBIS/WoRMS ───────────────────────────────────────
+
+
+def test_every_aphia_id_carries_its_verified_facts(registry: Registry) -> None:
+    """A bare AphiaID cannot be reviewed, so it must not stand alone.
+
+    Three of the first eight AphiaIDs entered here by hand were wrong — one pointed at
+    Cryptonemiaceae (a red alga), one at Aspidostoma fallax (a bryozoan), one at a
+    species rather than the intended genus. Nothing in the system could tell, because
+    an integer looks the same whether it is right or wrong. Freezing the scientific
+    name, rank and status alongside makes a wrong id visible in review and detectable
+    by a drift check.
+    """
+    for schema in registry.schemas:
+        for node in schema.nodes:
+            if node.worms_aphia_id is None:
+                continue
+            assert node.worms_scientificname, f"{node.id}: AphiaID without a frozen name"
+            assert node.worms_rank, f"{node.id}: AphiaID without a frozen rank"
+            assert node.worms_status, f"{node.id}: AphiaID without a frozen status"
+            assert node.worms_checked_on, f"{node.id}: AphiaID never checked"
+
+
+def test_no_unaccepted_taxa_anchor_the_canonical_schema(registry: Registry) -> None:
+    """An unaccepted WoRMS record means the name has been superseded."""
+    for schema in registry.schemas:
+        if not schema.canonical:
+            continue
+        for node in schema.nodes:
+            if node.worms_status:
+                assert node.worms_status == "accepted", (
+                    f"{node.id}: anchored on a '{node.worms_status}' WoRMS record "
+                    f"({node.worms_scientificname}). Re-resolve to the accepted id."
+                )
+
+
+def test_millepora_is_a_hydrozoan_not_an_alga(registry: Registry) -> None:
+    """Regression guard for the specific corrected error, and for the design premise.
+
+    Millepora sits in Hydrozoa while Scleractinia sits in Hexacorallia, yet every reef
+    protocol scores both as hard coral. That is why functional grouping cannot be a
+    single-parent tree walk.
+    """
+    schema = registry.label_schema("rs-benthic-v1")
+    mil = schema.node("MIL")
+    assert mil.worms_aphia_id == 205902
+    assert mil.worms_scientificname == "Millepora"
+    assert mil.worms_rank == "Genus"
+
+
+def test_frozen_worms_fields_require_an_id() -> None:
+    with pytest.raises(ValueError, match="no worms_aphia_id"):
+        LabelNode(id="X", name="X", worms_scientificname="Something")

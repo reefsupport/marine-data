@@ -14,6 +14,11 @@ from typing import Any
 
 import yaml
 
+try:  # libyaml is ~4x faster and present in most environments
+    from yaml import CSafeLoader as _Loader
+except ImportError:  # pragma: no cover - pure-Python fallback
+    from yaml import SafeLoader as _Loader
+
 from .models import Licence, Profile, Source
 from .schema import Crosswalk, LabelSchema
 
@@ -25,7 +30,7 @@ class RegistryError(Exception):
 def _read_yaml(path: Path) -> dict[str, Any]:
     try:
         with path.open(encoding="utf-8") as fh:
-            data = yaml.safe_load(fh)
+            data = yaml.load(fh, Loader=_Loader)
     except yaml.YAMLError as exc:
         raise RegistryError(f"{path}: invalid YAML — {exc}") from exc
     if data is None:

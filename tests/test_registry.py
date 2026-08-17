@@ -127,3 +127,31 @@ def test_own_tier_sources_are_genuinely_ours(registry: Registry) -> None:
                 f"{src.id}: tier T0_OWN but provenance={src.provenance.value}. "
                 f"T0_OWN over third-party pixels mints a false clean certificate."
             )
+
+
+def test_registry_loads_with_the_network_hard_down(monkeypatch) -> None:
+    """Loading, harmonising and gating must never touch the network.
+
+    The taxonomy is anchored on WoRMS/OBIS identifiers, but resolution is CODEGEN — a
+    maintainer runs it and commits the result. If a network call ever crept into the
+    load path, CI would become flaky, offline work would break, and two builds on
+    different days could silently disagree about what a label means.
+
+    The committed YAML is the pin. This test is what keeps that true.
+    """
+    import socket
+    import urllib.request
+
+    def _boom(*args, **kwargs):
+        raise AssertionError("network access during registry load")
+
+    monkeypatch.setattr(urllib.request, "urlopen", _boom)
+    monkeypatch.setattr(socket, "socket", _boom)
+    monkeypatch.setattr(socket, "create_connection", _boom)
+
+    reg = Registry.load()
+    assert len(reg) > 0
+    node = reg.label_schema("rs-benthic-v1").node("HC_ORBICELLA")
+    assert node.worms_aphia_id == 758259, "frozen AphiaID must resolve offline"
+    harmonizer = reg.harmonizer_for("coralscapes")
+    assert harmonizer.map_label("massive/meandering bleached").labels

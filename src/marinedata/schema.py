@@ -19,6 +19,7 @@ precision.
 
 from __future__ import annotations
 
+from datetime import date
 from enum import Enum
 
 from pydantic import BaseModel, ConfigDict, Field, model_validator
@@ -72,8 +73,48 @@ class LabelNode(_Frozen):
     parent: str | None = None
     axis: Axis = Axis.TAXON
     aliases: tuple[str, ...] = ()
-    worms_aphia_id: int | None = None
     notes: str | None = None
+
+    # ── taxonomic anchor ──────────────────────────────────────────────
+    # AphiaID is an ATTRIBUTE, never the node id. Most of this library is
+    # substrate, morphology, condition and equipment, none of which has one —
+    # keying on AphiaID would orphan the majority of nodes.
+    #
+    # OBIS uses the WoRMS AphiaID as its `taxonID`, so this single integer joins
+    # us to OBIS occurrences, WoRMS classification and any other WoRMS-backed
+    # dataset, at every rank.
+
+    worms_aphia_id: int | None = None
+    """Accepted AphiaID."""
+
+    worms_aphia_id_asserted: int | None = None
+    """The AphiaID a source originally asserted, when it differs from the accepted one.
+
+    Taxa get reassigned: *Montastraea annularis* (207479) is now
+    *Orbicella annularis* (758260). Recording both means two datasets labelled a decade
+    apart unify automatically — WoRMS does the work, we just keep the trail.
+    """
+
+    # The four fields below are FROZEN AT RESOLVE TIME so that drift is detectable.
+    # Without them a wrong id is invisible: three of the first eight AphiaIDs entered
+    # here by hand were wrong, one pointing at a red alga and one at a bryozoan, and
+    # nothing in the system could tell. A bare integer cannot be reviewed.
+    worms_scientificname: str | None = None
+    worms_rank: str | None = None
+    worms_status: str | None = None
+    worms_checked_on: date | None = None
+
+    @model_validator(mode="after")
+    def _worms_fields_need_an_id(self) -> LabelNode:
+        frozen = (self.worms_scientificname, self.worms_rank, self.worms_status)
+        if any(f is not None for f in frozen) and self.worms_aphia_id is None:
+            raise ValueError(f"node {self.id}: carries frozen WoRMS fields but no worms_aphia_id")
+        return self
+
+    @property
+    def is_taxon(self) -> bool:
+        """True when this node denotes an organism rather than substrate or equipment."""
+        return self.worms_aphia_id is not None
 
 
 class LabelSchema(_Frozen):
