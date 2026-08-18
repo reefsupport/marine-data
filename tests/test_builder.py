@@ -232,3 +232,83 @@ def test_summary_is_informative(dataset: Dataset) -> None:
     dataset.split(by="site")
     text = dataset.summary()
     assert "samples" in text and "splits" in text and "LabelIndex" in text
+
+
+# ── split proportions: a live correctness bug found 2026-08-18 ────────────
+
+
+def _grouped(registry: Registry, groups: dict[str, int]) -> Dataset:
+    samples = [
+        Sample(
+            source_id=key.split("/")[0],
+            key=f"{key}/{i}",
+            image=Path(f"/x/{key}/{i}.jpg"),
+            labels={Axis.TAXON: LabelValue("HC")},
+            supervised=frozenset({Axis.TAXON}),
+            meta={"partition": key.split("/")[1]},
+        )
+        for key, count in groups.items()
+        for i in range(count)
+    ]
+    schema = registry.label_schema("rs-benthic-v1")
+    return Dataset(
+        samples=samples,
+        label_index=LabelIndex.from_samples(samples, schema),
+        lineage=build_lineage([], registry.profile("research")),
+    )
+
+
+def test_split_hits_requested_ratios_with_uneven_groups(registry: Registry) -> None:
+    """Groups always differ in size; the split must still land near the target.
+
+    The previous implementation sliced the group LIST proportionally, ignoring size.
+    Measured on a realistic corpus it turned a requested 70/15/15 into 95.8/1.0/3.2 —
+    and the empty-split guard did not fire, because no split was empty.
+    """
+    dataset = _grouped(registry, {f"rs/site{i}": 300 + i * 40 for i in range(14)})
+    dataset.split(by="site", ratios={"train": 0.7, "val": 0.15, "test": 0.15})
+
+    total = len(dataset)
+    for name, want in (("train", 0.70), ("val", 0.15), ("test", 0.15)):
+        got = len(dataset.splits[name]) / total
+        assert abs(got - want) < 0.10, f"{name}: wanted {want:.0%}, got {got:.1%}"
+
+
+def test_split_raises_when_group_sizes_make_ratios_unreachable(registry: Registry) -> None:
+    """One dominant group makes the target unreachable. Say so; do not pretend."""
+    dataset = _grouped(
+        registry,
+        {"benthicnet-1m/global": 60000, "coralscapes/red-sea": 2075, "rs/tayrona": 658},
+    )
+    with pytest.raises(ValueError, match="could not hit the requested ratios"):
+        dataset.split(by="site")
+
+
+def test_split_tolerance_none_accepts_what_group_sizes_allow(registry: Registry) -> None:
+    """Escape hatch: an unreachable target is a real constraint, not always an error."""
+    dataset = _grouped(
+        registry,
+        {"benthicnet-1m/global": 60000, "coralscapes/red-sea": 2075, "rs/tayrona": 658},
+    )
+    dataset.split(by="site", tolerance=None)
+    assert all(dataset.splits[name] for name in ("train", "val", "test"))
+
+
+def test_split_is_deterministic_across_runs(registry: Registry) -> None:
+    """Same corpus and seed must give byte-identical splits, or nothing is reproducible."""
+    groups = {f"rs/s{i}": 100 * (i + 1) for i in range(12)}
+    first = _grouped(registry, groups).split(by="site")
+    second = _grouped(registry, groups).split(by="site")
+    assert first.splits == second.splits
+
+
+def test_split_never_divides_a_group(registry: Registry) -> None:
+    """The whole point of grouping: a site lands entirely in one split."""
+    dataset = _grouped(registry, {f"rs/site{i}": 200 + i * 30 for i in range(12)})
+    dataset.split(by="site")
+    seen: dict[str, str] = {}
+    for name, positions in dataset.splits.items():
+        for position in positions:
+            sample = dataset.samples[position]
+            group = f"{sample.source_id}/{sample.meta['partition']}"
+            assert seen.setdefault(group, name) == name, f"{group} split across sets"

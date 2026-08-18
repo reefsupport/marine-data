@@ -82,6 +82,7 @@ class Dataset:
         by: str = "site",
         ratios: dict[SplitName, float] | None = None,
         seed: int = 0,
+        tolerance: float | None = 0.10,
     ) -> Dataset:
         """Assign splits. Returns self so it chains.
 
@@ -93,6 +94,8 @@ class Dataset:
             ratios: split name to fraction. Defaults to 70/15/15.
             seed: groups are hashed with this, so the assignment is deterministic and
                 stable when new samples arrive in an existing group.
+            tolerance: raise if any achieved split deviates from its requested ratio by
+                more than this. Set ``None`` to accept whatever the group sizes allow.
         """
         ratios = ratios or {"train": 0.7, "val": 0.15, "test": 0.15}
         total = sum(ratios.values())
@@ -108,25 +111,39 @@ class Dataset:
         else:
             raise ValueError(f"unknown split strategy '{by}' (site | source | random)")
 
-        # Order groups by a seeded hash, then slice proportionally. Bucketing each group
-        # independently by its hash is simpler but does not guarantee proportions: with
-        # a dozen sites a 15% split can easily draw zero groups. Slicing a deterministic
-        # ordering keeps assignment stable *and* guarantees every split gets its share
-        # whenever there are at least as many groups as splits.
-        groups = sorted(set(keys), key=lambda k: hashlib.sha256(f"{seed}:{k}".encode()).hexdigest())
-        ordered = sorted(ratios.items())
+        # Assign whole groups to splits, weighted by SAMPLE COUNT.
+        #
+        # An earlier version sliced the group *list* proportionally, which silently
+        # produced unusable splits whenever groups differed in size — and they always
+        # do. Measured with a realistic corpus (one 60k public set, six own sites of
+        # 105-2,075), a requested 70/15/15 returned 95.8/1.0/3.2, with test containing
+        # only Coralscapes and val only Tayrona: an "evaluation" over one site each.
+        # The empty-split guard below did not fire, because no split was empty.
+        #
+        # Groups are ordered by a seeded hash so assignment is deterministic and stable,
+        # then each is given to whichever split is furthest below its target share of
+        # samples. Groups are never divided — that is the whole point of grouping.
+        counts: dict[str, int] = {}
+        for key in keys:
+            counts[key] = counts.get(key, 0) + 1
 
+        groups = sorted(set(keys), key=lambda k: hashlib.sha256(f"{seed}:{k}".encode()).hexdigest())
+        # Largest first within the deterministic order: a greedy packer that places the
+        # big groups while every split is still empty gets far closer to target than one
+        # that meets them last with no room left.
+        groups.sort(key=lambda k: (-counts[k], hashlib.sha256(f"{seed}:{k}".encode()).hexdigest()))
+
+        total_samples = len(keys)
+        targets = {name: fraction * total_samples for name, fraction in ratios.items()}
+        filled = dict.fromkeys(ratios, 0)
         assignment: dict[str, SplitName] = {}
-        start = 0
-        for position, (name, fraction) in enumerate(ordered):
-            if position == len(ordered) - 1:
-                end = len(groups)  # last split absorbs the rounding remainder
-            else:
-                end = start + max(1, round(fraction * len(groups)))
-                end = min(end, len(groups) - (len(ordered) - position - 1))
-            for key in groups[start:end]:
-                assignment[key] = name
-            start = end
+
+        for key in groups:
+            # Deficit relative to target, so a split needing 15% of a large corpus is
+            # not starved by one needing 70%.
+            name = max(ratios, key=lambda n: (targets[n] - filled[n], n))
+            assignment[key] = name
+            filled[name] += counts[key]
 
         splits: dict[SplitName, list[int]] = {name: [] for name in ratios}
         for position, key in enumerate(keys):
@@ -142,6 +159,27 @@ class Dataset:
                 f"{len(set(keys))} group(s) available. Use more sources/sites, adjust "
                 f"ratios, or pass by='random' knowingly."
             )
+
+        # Whole groups cannot be divided, so a corpus dominated by one huge group may be
+        # unable to hit the requested ratios however well it is packed. That is a real
+        # constraint, not a bug — but it must be reported, because a test split that is
+        # 3% instead of 15% produces confident metrics over a fraction of the data.
+        if by != "random" and tolerance is not None:
+            skewed = {
+                name: len(positions) / total_samples
+                for name, positions in splits.items()
+                if abs(len(positions) / total_samples - ratios[name]) > tolerance
+            }
+            if skewed:
+                achieved = "  ".join(f"{n}={v:.1%}" for n, v in sorted(skewed.items()))
+                wanted = "  ".join(f"{n}={ratios[n]:.1%}" for n in sorted(skewed))
+                raise ValueError(
+                    f"split(by={by!r}) could not hit the requested ratios within "
+                    f"{tolerance:.0%}: wanted {wanted}, got {achieved}. Group sizes are "
+                    f"too uneven to divide this way — the largest group holds "
+                    f"{max(counts.values()):,} of {total_samples:,} samples. Rebalance "
+                    f"the corpus, relax `tolerance`, or split by a finer unit."
+                )
         return self
 
     # ── statistics ────────────────────────────────────────────────────────

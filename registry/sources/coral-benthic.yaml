@@ -8,19 +8,18 @@ sources:
       The first general-purpose dense semantic segmentation dataset for coral reefs —
       "the Cityscapes of coral". 39 benthic classes, expert polygon annotations, Red Sea.
       Pretrained SegFormer and DINOv2/DPT checkpoints are published alongside.
-    licence: CC-BY-SA-4.0
+    licence: Apache-2.0
     legal_basis: licence
     provenance: public
     verification:
-      verified_on: 2026-08-17
-      verified_by: "HuggingFace card EPFL-ECEO/coralscapes states apache-2.0; Zenodo 15061505 and the ICCV paper state CC-BY-SA-4.0"
+      verified_on: 2026-08-18
+      verified_by: >
+        RESOLVED against both distribution points directly. Zenodo REST API record
+        15061505 returns metadata.license = {"id": "apache2.0"}; the HuggingFace API for
+        EPFL-ECEO/coralscapes returns cardData.license = "apache-2.0" and the tag
+        "license:apache-2.0". The earlier CC-BY-SA-4.0 reading came from the ICCV paper
+        text, which is not where the data is licensed.
       method: dataset-card
-      disputed: true
-      dispute_note: >
-        Two authoritative sources disagree (HF: Apache-2.0; Zenodo/paper: CC-BY-SA-4.0).
-        Registered at the stricter of the two pending written confirmation from
-        EPFL-ECEO. If Apache-2.0 is confirmed, retier to T1_PERMISSIVE and the
-        share-alike obligation on derived weights disappears.
     access:
       method: huggingface
       uri: https://huggingface.co/datasets/EPFL-ECEO/coralscapes
