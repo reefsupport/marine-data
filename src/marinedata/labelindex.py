@@ -16,6 +16,7 @@ alongside; see ``integrations.tensorflow``.
 
 from __future__ import annotations
 
+from collections import Counter
 from dataclasses import dataclass, field
 
 from .sample import Sample
@@ -98,6 +99,28 @@ class LabelIndex:
                     axis, [n for n, c in counts.get(axis, {}).items() if c >= min_count]
                 )
                 for axis in wanted
+            },
+            schema_id=schema.id,
+        )
+
+    @classmethod
+    def from_counts(
+        cls,
+        counts: dict[Axis, Counter[str]],
+        schema: LabelSchema,
+        *,
+        min_count: int = 1,
+    ) -> LabelIndex:
+        """Build indices from pre-aggregated counts rather than from samples.
+
+        The streaming path needs this: it has counters from a scan and must not
+        materialise the corpus to derive a vocabulary. Equivalent to
+        :meth:`from_samples` given the same data.
+        """
+        return cls(
+            axes={
+                axis: AxisIndex.build(axis, [n for n, c in counter.items() if c >= min_count])
+                for axis, counter in counts.items()
             },
             schema_id=schema.id,
         )

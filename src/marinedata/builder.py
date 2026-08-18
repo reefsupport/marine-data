@@ -14,7 +14,6 @@ and ``by="random"`` exists only so that choosing it is deliberate and visible.
 
 from __future__ import annotations
 
-import hashlib
 from collections.abc import Iterator
 from dataclasses import dataclass, field
 from pathlib import Path
@@ -27,6 +26,13 @@ from .loaders import DataNotAvailable, LoaderError, build_loader
 from .models import Source
 from .registry import Registry
 from .sample import Sample
+from .scan import (
+    CorpusScan,
+    assign_splits,
+    check_ratios,
+    group_key,
+    scan,
+)
 from .schema import Axis
 
 SplitName = str
@@ -102,48 +108,16 @@ class Dataset:
         if abs(total - 1.0) > 1e-6:
             raise ValueError(f"split ratios must sum to 1.0, got {total}")
 
-        if by == "random":
-            keys = [str(i) for i in range(len(self.samples))]
-        elif by == "source":
-            keys = [s.source_id for s in self.samples]
-        elif by == "site":
-            keys = [f"{s.source_id}/{s.meta.get('partition', '')}" for s in self.samples]
-        else:
-            raise ValueError(f"unknown split strategy '{by}' (site | source | random)")
+        keys = [group_key(sample, by) for sample in self.samples]
 
-        # Assign whole groups to splits, weighted by SAMPLE COUNT.
-        #
-        # An earlier version sliced the group *list* proportionally, which silently
-        # produced unusable splits whenever groups differed in size — and they always
-        # do. Measured with a realistic corpus (one 60k public set, six own sites of
-        # 105-2,075), a requested 70/15/15 returned 95.8/1.0/3.2, with test containing
-        # only Coralscapes and val only Tayrona: an "evaluation" over one site each.
-        # The empty-split guard below did not fire, because no split was empty.
-        #
-        # Groups are ordered by a seeded hash so assignment is deterministic and stable,
-        # then each is given to whichever split is furthest below its target share of
-        # samples. Groups are never divided — that is the whole point of grouping.
         counts: dict[str, int] = {}
         for key in keys:
             counts[key] = counts.get(key, 0) + 1
 
-        groups = sorted(set(keys), key=lambda k: hashlib.sha256(f"{seed}:{k}".encode()).hexdigest())
-        # Largest first within the deterministic order: a greedy packer that places the
-        # big groups while every split is still empty gets far closer to target than one
-        # that meets them last with no room left.
-        groups.sort(key=lambda k: (-counts[k], hashlib.sha256(f"{seed}:{k}".encode()).hexdigest()))
-
-        total_samples = len(keys)
-        targets = {name: fraction * total_samples for name, fraction in ratios.items()}
-        filled = dict.fromkeys(ratios, 0)
-        assignment: dict[str, SplitName] = {}
-
-        for key in groups:
-            # Deficit relative to target, so a split needing 15% of a large corpus is
-            # not starved by one needing 70%.
-            name = max(ratios, key=lambda n: (targets[n] - filled[n], n))
-            assignment[key] = name
-            filled[name] += counts[key]
+        # Shared with the streaming path so the two cannot drift. A split that differed
+        # between them would be near-impossible to notice and would invalidate every
+        # comparison between runs.
+        assignment = assign_splits(counts, ratios, seed=seed)
 
         splits: dict[SplitName, list[int]] = {name: [] for name in ratios}
         for position, key in enumerate(keys):
@@ -152,34 +126,20 @@ class Dataset:
 
         empty = [name for name, positions in splits.items() if not positions]
         if empty and by != "random":
-            # Grouped splitting on few groups can leave a split empty. Better to say so
-            # than to hand back a silently unusable test set.
             raise ValueError(
                 f"split(by={by!r}) produced empty splits {empty} — only "
-                f"{len(set(keys))} group(s) available. Use more sources/sites, adjust "
+                f"{len(counts)} group(s) available. Use more sources/sites, adjust "
                 f"ratios, or pass by='random' knowingly."
             )
 
-        # Whole groups cannot be divided, so a corpus dominated by one huge group may be
-        # unable to hit the requested ratios however well it is packed. That is a real
-        # constraint, not a bug — but it must be reported, because a test split that is
-        # 3% instead of 15% produces confident metrics over a fraction of the data.
-        if by != "random" and tolerance is not None:
-            skewed = {
-                name: len(positions) / total_samples
-                for name, positions in splits.items()
-                if abs(len(positions) / total_samples - ratios[name]) > tolerance
-            }
-            if skewed:
-                achieved = "  ".join(f"{n}={v:.1%}" for n, v in sorted(skewed.items()))
-                wanted = "  ".join(f"{n}={ratios[n]:.1%}" for n in sorted(skewed))
-                raise ValueError(
-                    f"split(by={by!r}) could not hit the requested ratios within "
-                    f"{tolerance:.0%}: wanted {wanted}, got {achieved}. Group sizes are "
-                    f"too uneven to divide this way — the largest group holds "
-                    f"{max(counts.values()):,} of {total_samples:,} samples. Rebalance "
-                    f"the corpus, relax `tolerance`, or split by a finer unit."
-                )
+        check_ratios(
+            {name: len(positions) for name, positions in splits.items()},
+            ratios,
+            len(keys),
+            tolerance=tolerance,
+            by=by,
+            largest_group=max(counts.values(), default=0),
+        )
         return self
 
     # ── statistics ────────────────────────────────────────────────────────
@@ -310,6 +270,96 @@ class DatasetBuilder:
             )
         return allowed, denied
 
+    def stream_samples(self) -> Iterator[Sample]:
+        """Yield every permitted sample without materialising the corpus.
+
+        The licence gate and the crosswalk check both run BEFORE the first read, exactly
+        as in :meth:`build` — a disallowed source cannot reach the stream, so there is no
+        path by which a research-only sample arrives in a training batch.
+        """
+        allowed, denied = self._permitted()
+        if not allowed:
+            reasons = "\n  - ".join(d.reason for d in denied) or "no sources matched the task"
+            raise ValueError(
+                f"No permitted sources for profile '{self.profile.id}':\n  - {reasons}"
+            )
+        unmapped = self._check_mappable(allowed)
+        if unmapped and not self.allow_unmapped:
+            raise ValueError(
+                f"These sources emit labels but have no crosswalk into "
+                f"'{self.schema_id}': {', '.join(unmapped)}."
+            )
+
+        for source in allowed:
+            try:
+                loader = build_loader(source, self.roots[source.id])
+                harmonizer = self.registry.harmonizer_for(source.id)
+                if harmonizer is not None and hasattr(loader, "bind_harmonizer"):
+                    loader.bind_harmonizer(harmonizer)
+                yield from loader
+            except (LoaderError, DataNotAvailable):
+                if self.strict:
+                    raise
+                continue
+
+    def build_streaming(
+        self,
+        *,
+        by: str = "site",
+        ratios: dict[SplitName, float] | None = None,
+        seed: int = 0,
+        tolerance: float | None = 0.10,
+        min_count: int = 1,
+    ) -> StreamingDataset:
+        """Plan a corpus in constant memory, then stream it.
+
+        Makes one metadata pass to gather counters, computes the label index and split
+        assignment from those, and returns a plan. Nothing proportional to the corpus is
+        retained.
+
+        Use this when the corpus exceeds ~1M samples; :meth:`build` stays the simpler
+        choice below that.
+        """
+        ratios = ratios or {"train": 0.7, "val": 0.15, "test": 0.15}
+        if abs(sum(ratios.values()) - 1.0) > 1e-6:
+            raise ValueError(f"split ratios must sum to 1.0, got {sum(ratios.values())}")
+
+        corpus = scan(self.stream_samples(), by=by)
+        if not corpus.total:
+            raise ValueError("No samples found. Check `roots` point at fetched data.")
+
+        assignment = assign_splits(dict(corpus.groups), ratios, seed=seed)
+
+        achieved: dict[SplitName, int] = {}
+        for key, count in corpus.groups.items():
+            achieved[assignment[key]] = achieved.get(assignment[key], 0) + count
+        check_ratios(
+            achieved,
+            ratios,
+            corpus.total,
+            tolerance=tolerance,
+            by=by,
+            largest_group=max(corpus.groups.values(), default=0),
+        )
+
+        index = LabelIndex.from_counts(
+            corpus.labels, self.registry.label_schema(self.schema_id), min_count=min_count
+        )
+        allowed, denied = self._permitted()
+        return StreamingDataset(
+            builder=self,
+            label_index=index,
+            lineage=build_lineage(
+                allowed,
+                self.profile,
+                excluded=denied,
+                legal_opinion_ref=self.legal_opinion_ref,
+            ),
+            corpus=corpus,
+            assignment=assignment,
+            by=by,
+        )
+
     def build(self, *, min_count: int = 1) -> Dataset:
         """Gate, load, harmonise and index. Raises before reading anything disallowed."""
         allowed, denied = self._permitted()
@@ -360,3 +410,65 @@ class DatasetBuilder:
             used, self.profile, excluded=denied, legal_opinion_ref=self.legal_opinion_ref
         )
         return Dataset(samples=samples, label_index=index, lineage=lineage, skipped=skipped)
+
+
+@dataclass(frozen=True)
+class StreamingDataset:
+    """A corpus too large to hold in memory, described by a plan and streamed on demand.
+
+    ``build()`` returns a :class:`Dataset` holding every sample. That is correct and
+    simple, and it stops working at roughly one million samples — measured at 7,772 bytes
+    per Sample, BenthicNet-1M alone needs 7.8 GB resident just for the index, and it is
+    already in the registry under CC-BY.
+
+    This holds only the *plan*: a label index, a group-to-split assignment, and the
+    scan counters. All are O(groups + classes), never O(samples). Samples are produced by
+    re-reading the sources, so memory is flat regardless of corpus size.
+
+    The trade is a second pass over the data. That is the right trade: the first pass
+    reads metadata only (loaders yield references, not pixels), and the alternative is
+    not working at all.
+    """
+
+    builder: DatasetBuilder
+    label_index: LabelIndex
+    lineage: Lineage
+    corpus: CorpusScan
+    assignment: dict[str, SplitName]
+    by: str = "site"
+
+    def __iter__(self) -> Iterator[Sample]:
+        yield from self.builder.stream_samples()
+
+    def split_stream(self, name: SplitName) -> Iterator[Sample]:
+        """Stream only the samples belonging to one split.
+
+        Filtering happens during the stream, so a held-out test set never costs the
+        memory of the training set it was separated from.
+        """
+        if name not in set(self.assignment.values()):
+            known = ", ".join(sorted(set(self.assignment.values())))
+            raise KeyError(f"Unknown split '{name}'. Known: {known}")
+        for sample in self.builder.stream_samples():
+            if self.assignment.get(group_key(sample, self.by)) == name:
+                yield sample
+
+    def split_sizes(self) -> dict[SplitName, int]:
+        """Sample counts per split, from the scan — no second pass needed."""
+        sizes: dict[SplitName, int] = {}
+        for key, count in self.corpus.groups.items():
+            name = self.assignment.get(key)
+            if name is not None:
+                sizes[name] = sizes.get(name, 0) + count
+        return sizes
+
+    def summary(self) -> str:
+        sizes = self.split_sizes()
+        total = max(self.corpus.total, 1)
+        parts = "  ".join(f"{n}={c:,} ({c / total:.0%})" for n, c in sorted(sizes.items()))
+        return (
+            f"StreamingDataset  {self.corpus.total:,} samples  "
+            f"from {len(self.corpus.sources)} source(s)  profile={self.lineage.profile}\n"
+            f"  splits   {parts}\n"
+            f"  {self.label_index.summary()}"
+        )

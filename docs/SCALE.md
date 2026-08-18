@@ -1,10 +1,50 @@
-# Scale brief — should we train on TB of data?
+# Scale — preparing for growth
 
-> Produced 2026-08-18 by a 6-agent workflow: corpus survey, streaming-architecture
-> research, code scale analysis, then two adversarial critiques (one tasked with
-> arguing the whole direction is wrong). **Verdict: no.** Verified against the code
-> before adoption — its central claim was a live split bug, reproduced and fixed in
-> the same commit as this document.
+> **Read this first.** An earlier version of this document answered the question "is a
+> terabyte available today, and would SSL on it fix the production bug?" That was not the
+> question. The question was **how to build so nothing breaks as data grows**, and those
+> are separable. The analysis below is still useful about *today's* corpus and *today's*
+> failure — but the engineering answer is in §0, and it is: the ceiling is not bytes, it
+> is samples, and it has been raised.
+
+## §0 — What was actually built (2026-08-18)
+
+The blocker was never storage. Loaders were already generators; only the builder was
+eager. `build()` holds every `Sample` in a list, and measured deep-sized with realistic
+paths that is **7,772 bytes each**:
+
+| corpus | eager | streaming |
+|---|--:|--:|
+| 10,000 | 17 MB | 0.98 MB |
+| 100,000 | 171 MB | 1.93 MB |
+| **1,000,000** | **1,693 MB** | **1.93 MB** |
+
+So the real ceiling was about **one million samples** — and BenthicNet-1M is already in
+the registry, already CC-BY, and crosses it alone. Nothing to do with terabytes.
+
+`scan.py` fixes it. What genuinely needs whole-corpus knowledge is the label index and the
+split assignment, and both need only **counters**: one int per group, one per class. Both
+are O(groups + classes), never O(samples).
+
+```python
+plan = builder.build_streaming(by="site", ratios={"train": .7, "val": .15, "test": .15})
+print(plan.summary())              # counts and splits, from the scan — no second pass
+for sample in plan.split_stream("train"):
+    ...                            # streamed; memory flat
+```
+
+Memory is flat at 1.93 MB from 100k to 1M samples because it is bounded by group count.
+Splits land exactly 70/15/15, and the eager and streaming paths call the **same**
+`assign_splits`, so they cannot drift — a split that differed between them would be
+nearly impossible to notice and would invalidate every comparison between runs.
+
+`build()` stays the default below ~1M samples: simpler, random-access, and correct.
+
+**What is deliberately still not built:** a streaming *storage* system — MosaicML
+Streaming, LitData, Ray Data, a region-pinned shard volume. Those solve byte throughput,
+which is not the constraint at 0.6 TB and would not have been the constraint at 1M
+samples either. When a single epoch genuinely cannot read from local NVMe, revisit
+§2 below, which specs it.
 
 ---
 
