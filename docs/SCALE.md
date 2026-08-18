@@ -27,10 +27,10 @@ split assignment, and both need only **counters**: one int per group, one per cl
 are O(groups + classes), never O(samples).
 
 ```python
-plan = builder.build_streaming(by="site", ratios={"train": .7, "val": .15, "test": .15})
-print(plan.summary())              # counts and splits, from the scan — no second pass
+plan = builder.build_streaming(by="site", ratios={"train": 0.7, "val": 0.15, "test": 0.15})
+print(plan.summary())  # counts and splits, from the scan — no second pass
 for sample in plan.split_stream("train"):
-    ...                            # streamed; memory flat
+    ...  # streamed; memory flat
 ```
 
 Memory is flat at 1.93 MB from 100k to 1M samples because it is bounded by group count.

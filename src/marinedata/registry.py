@@ -21,6 +21,7 @@ except ImportError:  # pragma: no cover - pure-Python fallback
 
 from .models import Licence, Profile, Source
 from .schema import Crosswalk, LabelSchema
+from .task import TaskSpec
 
 
 class RegistryError(Exception):
@@ -67,12 +68,14 @@ class Registry:
         profiles: dict[str, Profile],
         schemas: dict[str, LabelSchema] | None = None,
         crosswalks: dict[str, Crosswalk] | None = None,
+        tasks: dict[str, TaskSpec] | None = None,
     ) -> None:
         self._sources = dict(sources)
         self._licences = dict(licences)
         self._profiles = dict(profiles)
         self._schemas = dict(schemas or {})
         self._crosswalks = dict(crosswalks or {})
+        self._tasks = dict(tasks or {})
 
     # ── construction ──────────────────────────────────────────────────────
 
@@ -87,9 +90,14 @@ class Registry:
         profiles = cls._load_profiles(base / "profiles.yaml")
         sources = cls._load_sources(base / "sources", licences)
         schemas = cls._load_collection(base / "schemas", "schemas", LabelSchema)
+        tasks = cls._load_collection(base / "tasks", "tasks", TaskSpec)
         crosswalks = cls._load_collection(base / "crosswalks", "crosswalks", Crosswalk)
         cls._check_references(sources, schemas, crosswalks)
-        return cls(sources, licences, profiles, schemas, crosswalks)
+        for task in tasks.values():
+            if task.schema_id not in schemas:
+                raise RegistryError(f"task '{task.id}' targets unknown schema '{task.schema_id}'")
+            task.validate_against(schemas[task.schema_id])
+        return cls(sources, licences, profiles, schemas, crosswalks, tasks)
 
     @staticmethod
     def _load_collection(base: Path, key: str, model: type) -> dict[str, object]:
@@ -231,6 +239,55 @@ class Registry:
     @property
     def crosswalks(self) -> tuple[Crosswalk, ...]:
         return tuple(self._crosswalks.values())
+
+    @property
+    def tasks(self) -> tuple[TaskSpec, ...]:
+        return tuple(self._tasks.values())
+
+    def task(self, task_id: str) -> TaskSpec:
+        try:
+            return self._tasks[task_id]
+        except KeyError:
+            known = ", ".join(sorted(self._tasks)) or "(none loaded)"
+            raise RegistryError(f"Unknown task '{task_id}'. Known: {known}") from None
+
+    def projector_for(self, task_id: str):
+        """Build the projector for a task, validated against its schema."""
+        from .task import TaskProjector
+
+        task = self.task(task_id)
+        return TaskProjector(task, self.label_schema(task.schema_id))
+
+    def sources_for_task(self, task_id: str, *, contributing_only: bool = True):
+        """Sources that can serve a task, with what each can actually contribute.
+
+        A source is *eligible* when it supervises the task's axis through a crosswalk
+        into the task's schema. It *contributes* only if some of its labels reach the
+        task's classes — Coralscapes is eligible for a Caribbean genus task and supplies
+        nothing to it, because its genera are Indo-Pacific.
+
+        Returns ``(Source, SourceFit)`` pairs. Set ``contributing_only=False`` to see the
+        eligible-but-useless ones too, which is the interesting case when a task looks
+        well-supported and is not.
+        """
+        from .task import fit_source
+
+        task = self.task(task_id)
+        projector = self.projector_for(task_id)
+        out = []
+        for source in self._sources.values():
+            spec = source.loader
+            if spec is None or not spec.crosswalk_id:
+                continue
+            walk = self.crosswalk(spec.crosswalk_id)
+            if walk.target_schema != task.schema_id:
+                continue
+            if not any(task.axis in ann.supervises for ann in source.annotations):
+                continue
+            fit = fit_source(projector, walk, source.id)
+            if fit.contributes or not contributing_only:
+                out.append((source, fit))
+        return tuple(out)
 
     def label_schema(self, schema_id: str) -> LabelSchema:
         try:

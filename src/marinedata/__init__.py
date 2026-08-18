@@ -47,6 +47,15 @@ from .registry import Registry, RegistryError
 from .sample import LabelValue, Sample
 from .schema import Axis, Crosswalk, Fidelity, LabelSchema
 from .shard import ShardResult, read_shard, write_shards
+from .task import (
+    Coarser,
+    Projection,
+    SourceFit,
+    TaskCoverage,
+    TaskProjector,
+    TaskSpec,
+    fit_source,
+)
 
 __version__ = "0.1.0"
 
@@ -57,6 +66,7 @@ __all__ = [
     "Axis",
     "AxisIndex",
     "Capability",
+    "Coarser",
     "Crosswalk",
     "DataNotAvailable",
     "Dataset",
@@ -81,6 +91,7 @@ __all__ = [
     "MirrorViolation",
     "Modality",
     "Profile",
+    "Projection",
     "Provenance",
     "QueryResult",
     "Region",
@@ -89,6 +100,10 @@ __all__ = [
     "Sample",
     "ShardResult",
     "Source",
+    "SourceFit",
+    "TaskCoverage",
+    "TaskProjector",
+    "TaskSpec",
     "Tier",
     "allowed",
     "build_lineage",
@@ -97,6 +112,7 @@ __all__ = [
     "evaluate",
     "evaluate_mirror",
     "find",
+    "fit_source",
     "plan_mirror",
     "read_shard",
     "registered_layouts",

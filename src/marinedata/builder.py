@@ -65,6 +65,10 @@ class Dataset:
     skipped: dict[str, str] = field(default_factory=dict)
     """Source id to reason, for sources that were permitted but could not be read."""
 
+    projector: object | None = None
+    """Task projector, when the dataset was built for a task. Framework adapters pass it
+    to ``LabelIndex.encode`` so genus labels roll up and coarser ones abstain."""
+
     def __len__(self) -> int:
         return len(self.samples)
 
@@ -215,6 +219,7 @@ class DatasetBuilder:
         legal_opinion_ref: str | None = None,
         strict: bool = False,
         allow_unmapped: bool = False,
+        task_id: str | None = None,
     ) -> None:
         """
         Args:
@@ -236,6 +241,17 @@ class DatasetBuilder:
         self.legal_opinion_ref = legal_opinion_ref
         self.strict = strict
         self.allow_unmapped = allow_unmapped
+        self.task_id = task_id
+        self.projector = registry.projector_for(task_id) if task_id else None
+        if self.projector is not None:
+            # The task fixes the schema; a mismatch would silently project onto the
+            # wrong vocabulary.
+            task_schema = self.projector.task.schema_id
+            if task_schema != schema_id:
+                raise ValueError(
+                    f"task '{task_id}' targets schema '{task_schema}' but the builder was "
+                    f"given '{schema_id}'"
+                )
 
     def _check_mappable(self, sources: list[Source]) -> list[str]:
         """Sources that produce labels but cannot map them into the target schema."""
@@ -342,8 +358,11 @@ class DatasetBuilder:
             largest_group=max(corpus.groups.values(), default=0),
         )
 
-        index = LabelIndex.from_counts(
-            corpus.labels, self.registry.label_schema(self.schema_id), min_count=min_count
+        schema = self.registry.label_schema(self.schema_id)
+        index = (
+            LabelIndex.for_task(self.projector.task, schema)
+            if self.projector is not None
+            else LabelIndex.from_counts(corpus.labels, schema, min_count=min_count)
         )
         allowed, denied = self._permitted()
         return StreamingDataset(
@@ -405,11 +424,21 @@ class DatasetBuilder:
             raise ValueError(f"No samples loaded. {detail}")
 
         schema = self.registry.label_schema(self.schema_id)
-        index = LabelIndex.from_samples(samples, schema, min_count=min_count)
+        index = (
+            LabelIndex.for_task(self.projector.task, schema)
+            if self.projector is not None
+            else LabelIndex.from_samples(samples, schema, min_count=min_count)
+        )
         lineage = build_lineage(
             used, self.profile, excluded=denied, legal_opinion_ref=self.legal_opinion_ref
         )
-        return Dataset(samples=samples, label_index=index, lineage=lineage, skipped=skipped)
+        return Dataset(
+            samples=samples,
+            label_index=index,
+            lineage=lineage,
+            skipped=skipped,
+            projector=self.projector,
+        )
 
 
 @dataclass(frozen=True)

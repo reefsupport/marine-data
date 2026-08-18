@@ -18,9 +18,13 @@ from __future__ import annotations
 
 from collections import Counter
 from dataclasses import dataclass, field
+from typing import TYPE_CHECKING
 
 from .sample import Sample
 from .schema import Axis, LabelSchema
+
+if TYPE_CHECKING:  # pragma: no cover
+    from .task import TaskProjector, TaskSpec
 
 IGNORE_INDEX = -100
 """PyTorch's ``CrossEntropyLoss`` default. Positions with this value are skipped."""
@@ -104,6 +108,27 @@ class LabelIndex:
         )
 
     @classmethod
+    def for_task(
+        cls,
+        task: TaskSpec,
+        schema: LabelSchema,
+    ) -> LabelIndex:
+        """Build an index whose vocabulary IS the task's, in declared order.
+
+        Unlike :meth:`from_samples`, the classes do not depend on what happened to appear
+        in the data — they are fixed by the objective. That matters for comparability: two
+        runs over different corpora produce the same head width and the same class ids, so
+        their checkpoints and metrics are directly comparable.
+        """
+        from .task import TaskProjector
+
+        TaskProjector(task, schema)  # validates the vocabulary against the schema
+        return cls(
+            axes={task.axis: AxisIndex.build(task.axis, list(task.classes))},
+            schema_id=schema.id,
+        )
+
+    @classmethod
     def from_counts(
         cls,
         counts: dict[Axis, Counter[str]],
@@ -125,15 +150,27 @@ class LabelIndex:
             schema_id=schema.id,
         )
 
-    def encode(self, sample: Sample) -> dict[Axis, int]:
-        """Encode one sample. Unsupervised axes yield ``IGNORE_INDEX``."""
+    def encode(
+        self,
+        sample: Sample,
+        projector: TaskProjector | None = None,
+    ) -> dict[Axis, int]:
+        """Encode one sample. Unsupervised axes yield ``IGNORE_INDEX``.
+
+        With a ``projector``, labels are first mapped onto the task vocabulary — a genus
+        rolls up to its L2 parent, and a label coarser than the target abstains rather
+        than being forced into a class it cannot justify.
+        """
         out: dict[Axis, int] = {}
         for axis, index in self.axes.items():
             if axis not in sample.supervised:
                 out[axis] = IGNORE_INDEX
                 continue
             value = sample.labels.get(axis)
-            out[axis] = index.index_of(value.node_id if value else None)
+            node_id = value.node_id if value else None
+            if projector is not None and node_id is not None and axis is projector.task.axis:
+                node_id = projector.project(node_id).target_class
+            out[axis] = index.index_of(node_id)
         return out
 
     def num_classes(self) -> dict[Axis, int]:

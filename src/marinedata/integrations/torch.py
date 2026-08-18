@@ -97,6 +97,7 @@ def to_torch_dataset(
 
     samples = dataset.split_samples(split) if split else dataset.samples
     index = dataset.label_index
+    projector = dataset.projector
     load_image = image_loader or default_image_loader
     load_mask = mask_loader or default_mask_loader
 
@@ -113,7 +114,7 @@ def to_torch_dataset(
 
         def __getitem__(self, position: int) -> dict[str, Any]:
             sample = self.samples[position]
-            encoded = index.encode(sample)
+            encoded = index.encode(sample, projector=projector)
 
             item: dict[str, Any] = {
                 "source_id": sample.source_id,

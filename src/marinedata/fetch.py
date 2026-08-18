@@ -16,8 +16,10 @@ source-specific unpacking and the loader stays generic.
 from __future__ import annotations
 
 import hashlib
+import http.client
 import json
 import os
+import time
 import urllib.error
 import urllib.parse
 import urllib.request
@@ -75,15 +77,40 @@ class FetchResult:
         }
 
 
-def _get(url: str, *, timeout: int = 60, headers: dict[str, str] | None = None) -> bytes:
-    request = urllib.request.Request(url, headers={"User-Agent": USER_AGENT, **(headers or {})})
-    try:
-        with urllib.request.urlopen(request, timeout=timeout) as response:
-            return response.read()
-    except urllib.error.HTTPError as exc:
-        raise FetchError(f"HTTP {exc.code} for {url}") from exc
-    except urllib.error.URLError as exc:
-        raise FetchError(f"network error for {url}: {exc.reason}") from exc
+def _get(
+    url: str,
+    *,
+    timeout: int = 60,
+    headers: dict[str, str] | None = None,
+    retries: int = 3,
+) -> bytes:
+    """GET with retries on transient faults.
+
+    Retrying is not optional at this scale. Fetching a few hundred images means a few
+    hundred connections, and some fraction of those will be dropped by the far end
+    mid-transfer — the first real multi-source build died on
+    ``http.client.RemoteDisconnected``, which is neither an ``HTTPError`` nor a
+    ``URLError`` and so escaped the original handler entirely.
+
+    4xx is not retried: a 404 will still be a 404. 5xx and connection-level faults are.
+    """
+    last: Exception | None = None
+    for attempt in range(retries):
+        request = urllib.request.Request(url, headers={"User-Agent": USER_AGENT, **(headers or {})})
+        try:
+            with urllib.request.urlopen(request, timeout=timeout) as response:
+                return response.read()
+        except urllib.error.HTTPError as exc:
+            if exc.code < 500:
+                raise FetchError(f"HTTP {exc.code} for {url}") from exc
+            last = exc
+        except (urllib.error.URLError, http.client.HTTPException, OSError) as exc:
+            # RemoteDisconnected, BadStatusLine, IncompleteRead, ConnectionReset, and
+            # socket timeouts all land here.
+            last = exc
+        if attempt < retries - 1:
+            time.sleep(1.5 * (attempt + 1))
+    raise FetchError(f"failed after {retries} attempt(s) for {url}: {last}")
 
 
 def _get_json(url: str, *, timeout: int = 60) -> dict:

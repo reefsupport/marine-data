@@ -53,7 +53,7 @@ def to_dataframe(dataset: Dataset, *, split: str | None = None) -> pd.DataFrame:
     rows: list[dict[str, Any]] = []
     for offset, sample in enumerate(samples):
         position = list(positions)[offset] if split else offset
-        encoded = dataset.label_index.encode(sample)
+        encoded = dataset.label_index.encode(sample, projector=dataset.projector)
         row: dict[str, Any] = {
             "source_id": sample.source_id,
             "key": sample.key,

@@ -1,0 +1,58 @@
+# Training objectives.
+#
+# A task fixes the PURPOSE: one axis, one vocabulary, one head. Sources annotate at
+# different depths — ReefNet at genus, our masks at L2, CoralNet's functional groups at
+# L1 — and the task is what reconciles them. Finer labels roll up; coarser ones abstain.
+#
+# Declaring the vocabulary explicitly (rather than "level 2 of the tree") is deliberate:
+# real objectives are not flat slices. `benthic-coarse` keeps MIL separate from HC even
+# though both sit at L2, because fire coral is a hydrozoan and worth distinguishing.
+
+tasks:
+  - id: benthic-coarse
+    schema_id: rs-benthic-v1
+    axis: taxon
+    description: >
+      Six-class benthic cover — the honest target given our Caribbean corpus labels biota
+      only. Every source in the registry that annotates benthos can contribute something
+      at this level, which is the point.
+    classes: [HC, MIL, SC, ALGAE, ABIOTIC, OTHER_FAUNA]
+    coarser: abstain
+
+  - id: benthic-l2
+    schema_id: rs-benthic-v1
+    axis: taxon
+    description: >
+      The MariMap CoralLabelCode vocabulary. Model output lands directly in the shipped
+      PIT/LIT data model with no translation layer.
+    classes: [HC, MIL, SC, ZO, SP, CCA, TA, HA, SW, SG, RB, SD, RK, DCA]
+    coarser: abstain
+
+  - id: coral-genus-caribbean
+    schema_id: rs-benthic-v1
+    axis: taxon
+    description: >
+      Caribbean scleractinian genera. Deliberately narrow: ReefNet's honest cross-source
+      number is ~56% macro recall, and its Caribbean coverage is under 8k annotations, so
+      this is a research target rather than a shipping one.
+    classes:
+      - HC_ORBICELLA
+      - HC_PSEUDODIPLORIA
+      - HC_SIDERASTREA
+      - HC_AGARICIA
+      - HC_PORITES
+      - HC_ACROPORA
+      - HC_COLPOPHYLLIA
+      - HC_MONTASTRAEA
+      - HC_MEANDRINA
+    coarser: abstain
+
+  - id: bleaching-condition
+    schema_id: rs-benthic-v1
+    axis: condition
+    description: >
+      Coral condition. AGRRA scores PALE and BLEACHED separately and our Tayrona masks
+      carry paired bleached/non-bleached, so the split is supported by real data rather
+      than being an aspiration.
+    classes: [HEALTHY, PALE, BLEACHED, DISEASED, RECENTLY_DEAD, OLD_DEAD]
+    coarser: abstain
