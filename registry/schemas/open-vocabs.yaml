@@ -1,0 +1,42 @@
+# Open vocabularies — schemas that are deliberately NOT enumerable.
+#
+# Three of our label spaces cannot be listed in full, and pretending otherwise would be
+# worse than admitting it. Each is registered so sources can declare what they speak,
+# and each resolves through an authority rather than a node list.
+
+schemas:
+  - id: worms-species
+    name: WoRMS species binomial
+    description: >
+      Species-rank scientific names resolved against WoRMS/OBIS. OPEN: ~240,000 accepted
+      marine species exist and any could appear as a label. Enumerating them here would
+      be a snapshot that is wrong within a month.
+
+      Sources declaring this speak binomials ("Sparisoma viride"). Harmonise with
+      `marinedata taxa resolve`, which returns the AphiaID and the full rank ladder — so
+      a species label rolls up to genus, family or order on demand without us storing
+      the intermediate nodes.
+    axes: [taxon]
+
+  - id: sonotype
+    name: Bioacoustic sonotype
+    description: >
+      Sound classes, NOT taxa. A sonotype is a repeatable acoustic signature; which
+      organism produces it is largely unknown for reef soundscapes, and that is an open
+      research problem rather than a mapping we can supply.
+
+      Registered explicitly so acoustic sources are not silently mapped onto a taxonomic
+      schema they do not actually speak. Any crosswalk from sonotype to taxon would be
+      inventing the very finding the field is still chasing.
+    axes: [taxon]
+
+  - id: dataset-native
+    name: Dataset-native vocabulary
+    description: >
+      A source whose label set is its own and has no published crosswalk yet. Declaring
+      this is an honest placeholder: it records that the vocabulary was examined and is
+      unmapped, as opposed to a source nobody has looked at.
+
+      Sources here load and train fine on their own; they simply cannot be pooled with
+      others until someone authors the crosswalk.
+    axes: [taxon]

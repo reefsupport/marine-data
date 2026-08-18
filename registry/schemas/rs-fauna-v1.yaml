@@ -1,0 +1,68 @@
+# RS-Fauna v1 — canonical mobile-fauna (fish) schema.
+#
+# The counterpart to rs-benthic-v1, and it answers "fish down to precise scientific
+# name" the same way: a taxonomic spine anchored on WoRMS AphiaIDs, with an INDEPENDENT
+# functional axis alongside it.
+#
+# Why trophic role is its own axis and not a parent in the tree: a parrotfish
+# (Scarinae) and a surgeonfish (Acanthuridae) are both herbivores but sit in different
+# families; a grouper and a moray are both piscivores across different orders. Trophic
+# role and phylogeny cross-cut each other exactly as functional groups and taxonomy do
+# on the benthic side. Forcing them into one tree is the Coralscapes-39 error again.
+#
+# Scope, stated honestly: this is a SPINE, not a species list. Reef monitoring protocols
+# score at family or trophic level (GCRMN Level 2 scores four families); ~80-100
+# Caribbean species are realistically identifiable from transect video. Species-rank
+# labels resolve through worms-species as an open vocabulary rather than being
+# enumerated here. FishNet's 17,357 species are a crosswalk INPUT, never nodes.
+#
+# Length-to-biomass coefficients (a, b in W=aL^b) deliberately do NOT live on these
+# nodes. They are per-species, per-region, and sourced from FishBase with its own
+# versioning; binding them to label nodes would make the label library a biological
+# parameter store and couple its release cadence to FishBase's.
+
+schemas:
+  - id: rs-fauna-v1
+    name: RS-Fauna v1
+    canonical: true
+    description: >
+      Canonical mobile-fauna schema. Taxonomic spine (class/order/family/genus) anchored
+      on WoRMS, plus an independent trophic-role axis. Species rank is open, via
+      worms-species.
+    axes: [taxon, trophic, size]
+    nodes:
+      - { id: FISH_ACTINOPT, name: Actinopterygii, axis: taxon, worms_aphia_id: 10194, worms_scientificname: Actinopterygii, worms_rank: Gigaclass, worms_status: accepted, worms_checked_on: 2026-08-17 }
+      - { id: FISH_ELASMO, name: Elasmobranchii, axis: taxon, worms_aphia_id: 10193, worms_scientificname: Elasmobranchii, worms_rank: Class, worms_status: accepted, worms_checked_on: 2026-08-17 }
+      - { id: ORD_PERCIF, name: Perciformes, parent: FISH_ACTINOPT, axis: taxon, worms_aphia_id: 11014, worms_scientificname: Perciformes, worms_rank: Order, worms_status: accepted, worms_checked_on: 2026-08-17 }
+      - { id: F_SCARIDAE, name: Scarinae, parent: ORD_PERCIF, axis: taxon, worms_aphia_id: 151787, worms_scientificname: Scarinae, worms_rank: Subfamily, worms_status: accepted, worms_checked_on: 2026-08-17 }
+      - { id: F_ACANTHURIDAE, name: Acanthuridae, parent: ORD_PERCIF, axis: taxon, worms_aphia_id: 125515, worms_scientificname: Acanthuridae, worms_rank: Family, worms_status: accepted, worms_checked_on: 2026-08-17 }
+      - { id: F_LABRIDAE, name: Labridae, parent: ORD_PERCIF, axis: taxon, worms_aphia_id: 125541, worms_scientificname: Labridae, worms_rank: Family, worms_status: accepted, worms_checked_on: 2026-08-17 }
+      - { id: F_POMACENTRIDAE, name: Pomacentridae, parent: ORD_PERCIF, axis: taxon, worms_aphia_id: 125553, worms_scientificname: Pomacentridae, worms_rank: Family, worms_status: accepted, worms_checked_on: 2026-08-17 }
+      - { id: F_SERRANIDAE, name: Serranidae, parent: ORD_PERCIF, axis: taxon, worms_aphia_id: 125561, worms_scientificname: Serranidae, worms_rank: Family, worms_status: accepted, worms_checked_on: 2026-08-17 }
+      - { id: F_LUTJANIDAE, name: Lutjanidae, parent: ORD_PERCIF, axis: taxon, worms_aphia_id: 151453, worms_scientificname: Lutjanidae, worms_rank: Family, worms_status: accepted, worms_checked_on: 2026-08-17 }
+      - { id: F_HAEMULIDAE, name: Haemulidae, parent: ORD_PERCIF, axis: taxon, worms_aphia_id: 125538, worms_scientificname: Haemulidae, worms_rank: Family, worms_status: accepted, worms_checked_on: 2026-08-17 }
+      - { id: F_CHAETODONTIDAE, name: Chaetodontidae, parent: ORD_PERCIF, axis: taxon, worms_aphia_id: 125528, worms_scientificname: Chaetodontidae, worms_rank: Family, worms_status: accepted, worms_checked_on: 2026-08-17 }
+      - { id: F_POMACANTHIDAE, name: Pomacanthidae, parent: ORD_PERCIF, axis: taxon, worms_aphia_id: 151470, worms_scientificname: Pomacanthidae, worms_rank: Family, worms_status: accepted, worms_checked_on: 2026-08-17 }
+      - { id: F_BALISTIDAE, name: Balistidae, parent: ORD_PERCIF, axis: taxon, worms_aphia_id: 125607, worms_scientificname: Balistidae, worms_rank: Family, worms_status: accepted, worms_checked_on: 2026-08-17 }
+      - { id: F_SCOMBRIDAE, name: Scombridae, parent: ORD_PERCIF, axis: taxon, worms_aphia_id: 125559, worms_scientificname: Scombridae, worms_rank: Family, worms_status: accepted, worms_checked_on: 2026-08-17 }
+      - { id: F_CARANGIDAE, name: Carangidae, parent: ORD_PERCIF, axis: taxon, worms_aphia_id: 125523, worms_scientificname: Carangidae, worms_rank: Family, worms_status: accepted, worms_checked_on: 2026-08-17 }
+      - { id: F_MURAENIDAE, name: Muraenidae, parent: ORD_PERCIF, axis: taxon, worms_aphia_id: 125431, worms_scientificname: Muraenidae, worms_rank: Family, worms_status: accepted, worms_checked_on: 2026-08-17 }
+      - { id: F_HOLOCENTRIDAE, name: Holocentridae, parent: ORD_PERCIF, axis: taxon, worms_aphia_id: 125458, worms_scientificname: Holocentridae, worms_rank: Family, worms_status: accepted, worms_checked_on: 2026-08-17 }
+      - { id: F_SPARISOMA, name: Sparisoma, parent: F_SCARIDAE, axis: taxon, worms_aphia_id: 126051, worms_scientificname: Sparisoma, worms_rank: Genus, worms_status: accepted, worms_checked_on: 2026-08-17 }
+      - { id: F_SCARUS, name: Scarus, parent: F_SCARIDAE, axis: taxon, worms_aphia_id: 159299, worms_scientificname: Scarus, worms_rank: Genus, worms_status: accepted, worms_checked_on: 2026-08-17 }
+      - { id: F_EPINEPHELUS, name: Epinephelus, parent: F_SERRANIDAE, axis: taxon, worms_aphia_id: 126068, worms_scientificname: Epinephelus, worms_rank: Genus, worms_status: accepted, worms_checked_on: 2026-08-17 }
+      - { id: F_LUTJANUS, name: Lutjanus, parent: F_LUTJANIDAE, axis: taxon, worms_aphia_id: 159791, worms_scientificname: Lutjanus, worms_rank: Genus, worms_status: accepted, worms_checked_on: 2026-08-17 }
+
+      # ── TROPHIC axis — functional, NOT taxonomic ─────────────────────
+      # These are ecological roles, not clades. A parrotfish is a scraper because of
+      # what it does to the reef, and that is what reef monitoring actually cares
+      # about. Membership is asserted per family below via the crosswalk, never
+      # inferred from ancestry — trophic role and phylogeny genuinely diverge.
+      - { id: HERBIVORE_SCRAPER, name: Herbivore - scraper/excavator, axis: trophic }
+      - { id: HERBIVORE_GRAZER,  name: Herbivore - grazer/detritivore, axis: trophic }
+      - { id: HERBIVORE_BROWSER, name: Herbivore - browser,          axis: trophic }
+      - { id: PLANKTIVORE,       name: Planktivore,                  axis: trophic }
+      - { id: INVERTIVORE,       name: Invertivore,                  axis: trophic }
+      - { id: CORALLIVORE,       name: Corallivore,                  axis: trophic }
+      - { id: PISCIVORE,         name: Piscivore,                    axis: trophic }
+      - { id: OMNIVORE,          name: Omnivore,                     axis: trophic }

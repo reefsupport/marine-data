@@ -37,7 +37,7 @@ sources:
       caveats:
         - "Australian species assemblage. Caribbean fish ID will need its own labels."
         - "Length→weight conversion requires per-species a,b coefficients (FishBase); the dataset does not supply them."
-    loader: { layout: coco-json, params: { annotations: annotations.json, images_dir: images } }
+    loader: { layout: coco-json, params: { annotations: annotations.json, images_dir: images }, schema_id: worms-species }
     tags: [stereo, biomass, length]
 
   - id: deepfish
@@ -83,7 +83,9 @@ sources:
     annotations: [{ kind: bbox, classes: 130, supervises: [taxon] }]
     coverage: { regions: [western-atlantic] }
     notes: "Gulf of Mexico — the closest large fish-detection set to Caribbean assemblages. Worth chasing the terms."
-    loader: { layout: coco-json }
+    loader:
+      layout: coco-json
+      schema_id: worms-species
     tags: [caribbean-adjacent, needs-verification]
 
   - id: fishnet-2023
@@ -105,7 +107,9 @@ sources:
     coverage: { regions: [global] }
     domain_shift:
       caveats: ["Aggregated from many sources — not in-situ reef survey imagery, so appearance differs from transect footage."]
-    loader: { layout: coco-json }
+    loader:
+      layout: coco-json
+      schema_id: worms-species
     tags: [taxonomy, copyleft]
 
   - id: mft25
@@ -160,6 +164,7 @@ sources:
       caveats: ["Deep-sea, artificially lit — almost no visual overlap with sunlit reef. Reuse the evaluation tooling, not the data."]
     loader:
       layout: flat-images
+      schema_id: worms-species
     tags: [tracking, tooling]
 
   - id: fathomnet
@@ -181,7 +186,9 @@ sources:
     coverage: { regions: [deep-sea, eastern-pacific] }
     domain_shift:
       caveats: ["Excellent infrastructure, weak reef overlap."]
-    loader: { layout: coco-json }
+    loader:
+      layout: coco-json
+      schema_id: worms-species
     tags: [deep-sea, api]
 
   - id: mouss-detection
@@ -256,7 +263,9 @@ sources:
     coverage: { regions: [temperate] }
     domain_shift:
       caveats: ["Temperate brackish water — useful for turbidity robustness, not for reef taxa."]
-    loader: { layout: yolo-txt }
+    loader:
+      layout: yolo-txt
+      schema_id: dataset-native
     tags: [temperate, turbidity]
 
   - id: fish4knowledge
@@ -278,7 +287,9 @@ sources:
     coverage: { regions: [coral-triangle] }
     domain_shift:
       caveats: ["Severe class imbalance — the long tail is the point of the benchmark."]
-    loader: { layout: image-folder }
+    loader:
+      layout: image-folder
+      schema_id: worms-species
     tags: [classic, imbalanced]
 
   - id: sea-urchin-detection
@@ -298,5 +309,7 @@ sources:
     items: 2475
     annotations: [{ kind: bbox, classes: 9, supervises: [taxon] }]
     coverage: { regions: [coral-triangle] }
-    loader: { layout: yolo-txt }
+    loader:
+      layout: yolo-txt
+      schema_id: dataset-native
     tags: [urchin, herbivory]

@@ -1,0 +1,40 @@
+# CoralNet labelset.
+#
+# An honest note about what this file is and is not.
+#
+# CoralNet holds ~1,275 deduplicated labels, themselves collapsed from ~4,489
+# user-defined labels across ~330 sources. There is no bulk download, the vocabulary is
+# per-source, and users invent labels freely. Enumerating all 1,275 here would be a
+# snapshot that is wrong within a month and unreviewable in a diff.
+#
+# What IS stable and worth encoding is CoralNet's FUNCTIONAL GROUP layer: every label
+# carries one, the set is small and fixed, and it is the level at which CoralNet data is
+# actually comparable across sources. So this schema encodes the functional groups plus
+# the handful of specific labels our registry references.
+#
+# Consequence, stated plainly: a CoralNet source harmonises reliably at functional-group
+# level and NOT at label level. Anything finer needs that source's own labelset fetched
+# and a per-source crosswalk. The registry should not pretend otherwise.
+#
+# CoralNet also holds contradictory assertions simultaneously — label `79 Millepora` maps
+# to Other Invertebrates (161k annotations) while `1976 Millepora spp.` maps to Hard
+# coral. That is not a bug to fix here; it is why membership is keyed on the source
+# label rather than on the scheme.
+
+schemas:
+  - id: coralnet-labelset
+    name: CoralNet functional groups
+    description: >
+      CoralNet's stable functional-group layer, not its full ~1,275-label vocabulary.
+      Harmonises at group level only; per-label mapping requires the source's own
+      labelset.
+    axes: [taxon]
+    nodes:
+      - { id: "Hard coral",           name: Hard coral,           axis: taxon, aliases: ["hard_coral", "HC"] }
+      - { id: "Soft coral",           name: Soft coral,           axis: taxon, aliases: ["soft_coral", "SC"] }
+      - { id: "Algae",                name: Algae,                axis: taxon }
+      - { id: "Crustose coralline algae", name: Crustose coralline algae, axis: taxon, aliases: ["CCA"] }
+      - { id: "Seagrass",             name: Seagrass,             axis: taxon }
+      - { id: "Other Invertebrates",  name: Other invertebrates,  axis: taxon, aliases: ["other_invertebrates"] }
+      - { id: "Bare substrate",       name: Bare substrate,       axis: taxon, aliases: ["substrate"] }
+      - { id: "Other",                name: Other,                axis: taxon }

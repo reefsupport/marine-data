@@ -164,7 +164,9 @@ sources:
     coverage: { regions: [mediterranean] }
     domain_shift:
       caveats: ["Mediterranean temperate — useful for the debris classes and for general underwater pretraining, not for reef taxa."]
-    loader: { layout: coco-json }
+    loader:
+      layout: coco-json
+      schema_id: dataset-native
     tags: [debris, permissive]
 
   - id: floating-marine-debris

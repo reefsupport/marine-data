@@ -1,0 +1,40 @@
+# WoRMS genus names as labels — an OPEN vocabulary.
+#
+# Unlike every other schema here, this one is not closed and never will be: WoRMS holds
+# ~240,000 accepted marine species and any of their genera could appear as a label. The
+# nodes below are the genera our registry actually anchors, each with a verified AphiaID.
+#
+# The right way to extend it is `marinedata taxa add <name>`, which resolves against
+# OBIS/WoRMS and writes the frozen fields. Do not hand-type AphiaIDs: three of the first
+# eight entered that way here were wrong, one pointing at a red alga and one at a
+# bryozoan, and a bare integer looks identical whether it is right or not.
+#
+# Sources labelled at genus rank (ReefNet, parts of CoralNet) harmonise through this.
+
+schemas:
+  - id: worms-genus
+    name: WoRMS genus
+    description: >
+      Genus-rank labels resolved against the World Register of Marine Species. Open
+      vocabulary; the node list is what we have anchored, not what exists.
+    axes: [taxon]
+    nodes:
+      - { id: "Acanthaster", name: Acanthaster, axis: taxon, worms_aphia_id: 205212, worms_scientificname: Acanthaster, worms_rank: Genus, worms_status: accepted, worms_checked_on: 2026-08-17 }
+      - { id: "Acropora", name: Acropora, axis: taxon, worms_aphia_id: 205469, worms_scientificname: Acropora, worms_rank: Genus, worms_status: accepted, worms_checked_on: 2026-08-17 }
+      - { id: "Agaricia", name: Agaricia, axis: taxon, worms_aphia_id: 204464, worms_scientificname: Agaricia, worms_rank: Genus, worms_status: accepted, worms_checked_on: 2026-08-17 }
+      - { id: "Colpophyllia", name: Colpophyllia, axis: taxon, worms_aphia_id: 267334, worms_scientificname: Colpophyllia, worms_rank: Genus, worms_status: accepted, worms_checked_on: 2026-08-17 }
+      - { id: "Ellisella", name: Ellisella, axis: taxon, worms_aphia_id: 125298, worms_scientificname: Ellisella, worms_rank: Genus, worms_status: accepted, worms_checked_on: 2026-08-17 }
+      - { id: "Gorgonia", name: Gorgonia, axis: taxon, worms_aphia_id: 267453, worms_scientificname: Gorgonia, worms_rank: Genus, worms_status: accepted, worms_checked_on: 2026-08-17 }
+      - { id: "Halimeda", name: Halimeda, axis: taxon, worms_aphia_id: 143820, worms_scientificname: Halimeda, worms_rank: Genus, worms_status: accepted, worms_checked_on: 2026-08-17 }
+      - { id: "Meandrina", name: Meandrina, axis: taxon, worms_aphia_id: 206740, worms_scientificname: Meandrina, worms_rank: Genus, worms_status: accepted, worms_checked_on: 2026-08-17 }
+      - { id: "Millepora", name: Millepora, axis: taxon, worms_aphia_id: 205902, worms_scientificname: Millepora, worms_rank: Genus, worms_status: accepted, worms_checked_on: 2026-08-17 }
+      - { id: "Montastraea", name: Montastraea, axis: taxon, worms_aphia_id: 204717, worms_scientificname: Montastraea, worms_rank: Genus, worms_status: accepted, worms_checked_on: 2026-08-17 }
+      - { id: "Orbicella", name: Orbicella, axis: taxon, worms_aphia_id: 758259, worms_scientificname: Orbicella, worms_rank: Genus, worms_status: accepted, worms_checked_on: 2026-08-17 }
+      - { id: "Plexaurella", name: Plexaurella, axis: taxon, worms_aphia_id: 267753, worms_scientificname: Plexaurella, worms_rank: Genus, worms_status: accepted, worms_checked_on: 2026-08-17 }
+      - { id: "Pocillopora", name: Pocillopora, axis: taxon, worms_aphia_id: 206938, worms_scientificname: Pocillopora, worms_rank: Genus, worms_status: accepted, worms_checked_on: 2026-08-17 }
+      - { id: "Porites", name: Porites, axis: taxon, worms_aphia_id: 206485, worms_scientificname: Porites, worms_rank: Genus, worms_status: accepted, worms_checked_on: 2026-08-17 }
+      - { id: "Pseudodiploria", name: Pseudodiploria, axis: taxon, worms_aphia_id: 718588, worms_scientificname: Pseudodiploria, worms_rank: Genus, worms_status: accepted, worms_checked_on: 2026-08-17 }
+      - { id: "Pseudopterogorgia", name: Pseudopterogorgia, axis: taxon, worms_aphia_id: 267781, worms_scientificname: Pseudopterogorgia, worms_rank: Genus, worms_status: accepted, worms_checked_on: 2026-08-17 }
+      - { id: "Siderastrea", name: Siderastrea, axis: taxon, worms_aphia_id: 204291, worms_scientificname: Siderastrea, worms_rank: Genus, worms_status: accepted, worms_checked_on: 2026-08-17 }
+      - { id: "Stylophora", name: Stylophora, axis: taxon, worms_aphia_id: 204068, worms_scientificname: Stylophora, worms_rank: Genus, worms_status: accepted, worms_checked_on: 2026-08-17 }
+      - { id: "Turbinaria", name: Turbinaria, axis: taxon, worms_aphia_id: 206641, worms_scientificname: Turbinaria, worms_rank: Genus, worms_status: accepted, worms_checked_on: 2026-08-17 }

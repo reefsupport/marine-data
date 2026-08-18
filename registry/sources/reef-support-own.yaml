@@ -173,6 +173,7 @@ sources:
         from the image stems, or the stratified sampler is not aligning them. Resolve
         before relying on this loader.
       params: { images_dir: images, masks_dir: masks_bleached }
+      schema_id: dataset-native
     items: 658
     annotations:
       - kind: dense-mask

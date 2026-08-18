@@ -108,5 +108,5 @@ sources:
     coverage: { regions: [global] }
     domain_shift:
       caveats: ["Coarse 8-class scheme — a scene-understanding baseline, not a benthic-cover asset."]
-    loader: { layout: image-mask-pairs, params: { images_dir: images, masks_dir: masks } }
+    loader: { layout: image-mask-pairs, params: { images_dir: images, masks_dir: masks }, schema_id: dataset-native }
     tags: [scene-understanding, baseline]

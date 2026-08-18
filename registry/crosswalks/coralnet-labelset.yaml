@@ -1,0 +1,20 @@
+crosswalks:
+  - id: coralnet-labelset
+    source_schema: coralnet-labelset
+    target_schema: rs-benthic-v1
+    description: >
+      CoralNet functional groups onto the canonical axes. Group level only — see the
+      schema header for why per-label mapping is not attempted.
+    edges:
+      - { source_label: "Hard coral", targets: { taxon: HC }, fidelity: coarsened,
+          note: "CoralNet's Hard coral group INCLUDES Millepora for some labels and excludes it for others. Rolling up to HC loses that distinction; a Millepora-sensitive analysis must go to the source labelset." }
+      - { source_label: "Soft coral", targets: { taxon: SC }, fidelity: coarsened }
+      - { source_label: "Algae",      targets: { taxon: ALGAE }, fidelity: coarsened,
+          note: "Maps to the L1 algae group, not a leaf: CoralNet's Algae spans turf, macroalgae and fleshy forms that RS-Benthic separates." }
+      - { source_label: "Crustose coralline algae", targets: { taxon: CCA }, fidelity: exact }
+      - { source_label: "Seagrass",   targets: { taxon: SG }, fidelity: exact }
+      - { source_label: "Other Invertebrates", targets: { taxon: OT }, fidelity: coarsened }
+      - { source_label: "Bare substrate", targets: { taxon: ABIOTIC }, fidelity: coarsened,
+          note: "Sand, rubble and pavement are one group in CoralNet. Rolls up to the ABIOTIC parent rather than guessing which." }
+      - { source_label: "Other",      fidelity: unmappable,
+          note: "A genuine catch-all with no canonical equivalent. Dropped, leaving the axis unsupervised, rather than forced into OT." }

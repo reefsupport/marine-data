@@ -43,6 +43,14 @@ class Axis(str, Enum):
     COUNT = "count"
     """Abundance."""
 
+    TROPHIC = "trophic"
+    """Feeding role — herbivore, piscivore, corallivore.
+
+    Independent of taxonomy on purpose: parrotfish and surgeonfish are both herbivores
+    in different families, groupers and morays both piscivores across different orders.
+    Trophic role cross-cuts phylogeny, and reef monitoring cares about the role.
+    """
+
 
 class Fidelity(str, Enum):
     """How faithfully a crosswalk edge maps."""

@@ -154,15 +154,36 @@ def test_unknown_strategy_rejected(dataset: Dataset) -> None:
 
 
 def test_builder_refuses_unmapped_sources(registry: Registry, tmp_path: Path) -> None:
-    """A source with no crosswalk would inject native labels into the canonical index."""
+    """A source with no crosswalk would inject native labels into the canonical index.
+
+    Uses `ozfish`, which emits SCALAR labels (bounding boxes with species names) and has
+    no crosswalk authored yet. Scalar labels are the ones that can pollute a shared label
+    index; dense-mask sources are exempt because their classes live in the raster, which
+    the index never sees.
+    """
     builder = DatasetBuilder(
         registry,
         profile="research",
-        roots={"reefnet-species-images": tmp_path},
+        roots={"ozfish": tmp_path},
         schema_id="rs-benthic-v1",
     )
     with pytest.raises(ValueError, match="no crosswalk"):
         builder.build()
+
+
+def test_builder_accepts_a_source_once_its_crosswalk_exists(registry: Registry) -> None:
+    """The complement: a source WITH a crosswalk passes the mapping guard.
+
+    Guards against the refusal above being unconditional — which would look identical
+    in a red/green run while blocking every source.
+    """
+    source = registry.source("reef-support-benthic-own")
+    assert source.loader is not None
+    assert source.loader.crosswalk_id == "reef-support-labelbox"
+    harmonizer = registry.harmonizer_for("reef-support-benthic-own")
+    assert harmonizer is not None
+    mapped = harmonizer.map_label("Soft Coral")
+    assert mapped.labels[Axis.TAXON].node_id == "SC"
 
 
 def test_builder_gate_runs_before_any_read(registry: Registry, tmp_path: Path) -> None:

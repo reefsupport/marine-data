@@ -1,0 +1,47 @@
+# AGRRA → RS-Benthic v1.
+#
+# This crosswalk is where AGRRA's internal inconsistency about Millepora becomes
+# visible. The protocol surveys fire coral as its own shape group (MILL/MCOM/MSQU) while
+# also listing M. alcicornis among "aggressive" invertebrates. We map the survey
+# category, because that is what a scored datasheet actually contains, and record the
+# conflict rather than silently picking a side.
+#
+# The turf/dead-coral boundary is a scoring RULE difference, not a vocabulary one: AGRRA
+# scores the overgrowth ("do not put RUB, DCS or PAVE" where turf is present) while Reef
+# Check scores the substrate beneath. The same pixel is legitimately a different class
+# under each protocol, which no crosswalk can reconcile — it has to be recorded on the
+# source.
+
+crosswalks:
+  - id: agrra-benthic
+    source_schema: agrra-benthic
+    target_schema: rs-benthic-v1
+    description: Caribbean AGRRA categories onto the canonical axes.
+    edges:
+      - { source_label: "CORAL", targets: { taxon: HC }, fidelity: coarsened, note: "Live scleractinian; growth form not recorded at point level." }
+      - { source_label: "FIRE",  targets: { taxon: MIL }, fidelity: exact,
+          note: "AGRRA surveys Millepora as a distinct shape group, and separately lists M. alcicornis under aggressive invertebrates. We follow the survey category." }
+      - { source_label: "GORG",  targets: { taxon: SC },  fidelity: coarsened }
+      - { source_label: "SPO",   targets: { taxon: SP },  fidelity: coarsened }
+      - { source_label: "CCA",   targets: { taxon: CCA }, fidelity: exact }
+      - { source_label: "MA",    targets: { taxon: SW },  fidelity: exact }
+      - { source_label: "TA",    targets: { taxon: TA },  fidelity: exact }
+      - { source_label: "CYAN",  targets: { taxon: NIA }, fidelity: approximate,
+          note: "Cyanobacteria are bacteria, not algae. NIA (nutrient indicator algae) is the nearest canonical node and is itself a functional category, so this is a functional match, not a taxonomic one." }
+      - { source_label: "PEY",   targets: { taxon: CA },  fidelity: approximate,
+          note: "Peyssonnelia is a red alga, crustose but not a coralline. CA is the closest node; the distinction matters ecologically and is lost here." }
+      - { source_label: "OINV",  targets: { taxon: OT },  fidelity: coarsened }
+      - { source_label: "RUB",   targets: { taxon: RB },  fidelity: exact }
+      - { source_label: "SAND",  targets: { taxon: SD },  fidelity: exact }
+      - { source_label: "PAVE",  targets: { taxon: RK },  fidelity: exact }
+      - { source_label: "DCS",   targets: { taxon: DCA }, fidelity: exact,
+          note: "Dead coral with turf — RS-Benthic's DCA. AGRRA's scoring rule prefers the overgrowth over the substrate; see the header." }
+      - { source_label: "SEAG",  targets: { taxon: SG },  fidelity: exact }
+
+      - { source_label: "C_NORMAL",   targets: { condition: HEALTHY },       fidelity: exact }
+      - { source_label: "C_PALE",     targets: { condition: PALE },          fidelity: exact,
+          note: "Vindicates splitting STRESSED into PALE/BLEACHED — AGRRA distinguishes them and a merged node would discard real signal." }
+      - { source_label: "C_BLEACHED", targets: { condition: BLEACHED },      fidelity: exact }
+      - { source_label: "C_OLD_MORT", targets: { condition: OLD_DEAD },      fidelity: exact }
+      - { source_label: "C_NEW_MORT", targets: { condition: RECENTLY_DEAD }, fidelity: exact }
+      - { source_label: "C_DISEASE",  targets: { condition: DISEASED },      fidelity: exact }

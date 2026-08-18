@@ -385,3 +385,100 @@ def test_every_crosswalk_declares_its_lossiness_honestly(registry: Registry) -> 
                 f"{walk.id}: every edge claims exact fidelity across {len(walk.edges)} "
                 f"independently-designed labels, which is not credible"
             )
+
+
+# ── coverage of the populated schemas and crosswalks ─────────────────────
+
+
+def test_every_declared_schema_has_a_vocabulary(registry: Registry) -> None:
+    """A schema registered as a bare id with no nodes is a placeholder, not a dictionary.
+
+    Five of seven schemas were in that state before this pass: coralscapes-39,
+    catami-1.4, coralnet-labelset, worms-genus and agrra-benthic were all registered
+    with zero label nodes, so no dataset actually had a label dictionary.
+
+    Open vocabularies are the deliberate exception — worms-species, sonotype and
+    dataset-native cannot be enumerated and say so in their descriptions.
+    """
+    OPEN = {"worms-species", "sonotype", "dataset-native"}
+    empty = [s.id for s in registry.schemas if not s.nodes and s.id not in OPEN]
+    assert not empty, f"schemas registered with no vocabulary: {empty}"
+
+
+def test_open_vocabularies_declare_why_they_are_open(registry: Registry) -> None:
+    """An empty schema must justify itself, or it is indistinguishable from an oversight."""
+    for schema_id in ("worms-species", "sonotype", "dataset-native"):
+        schema = registry.label_schema(schema_id)
+        assert not schema.nodes
+        assert len(schema.description) > 100, (
+            f"{schema_id}: an open vocabulary needs a description explaining why it "
+            f"cannot be enumerated"
+        )
+
+
+def test_every_source_with_labels_declares_a_schema(registry: Registry) -> None:
+    """54 of 59 sources had no schema at all before this pass."""
+    from marinedata.enums import AnnotationKind
+
+    gaps = [
+        s.id
+        for s in registry
+        if s.loader
+        and s.loader.layout != "metadata-only"
+        and not s.loader.schema_id
+        and any(a.supervises for a in s.annotations)
+    ]
+    assert not gaps, f"sources carrying labels but no declared vocabulary: {gaps}"
+    assert AnnotationKind  # imported for the reader's benefit
+
+
+def test_crosswalk_targets_resolve_in_the_canonical_schema(registry: Registry) -> None:
+    """Every crosswalk must build — a target node that does not exist fails here, not
+    at epoch 1."""
+    assert registry.crosswalks, "no crosswalks loaded"
+    for walk in registry.crosswalks:
+        target = registry.label_schema(walk.target_schema)
+        for edge in walk.edges:
+            for axis, node_id in edge.targets.items():
+                node = target.node(node_id)
+                assert node is not None, (
+                    f"{walk.id}: '{edge.source_label}' -> {axis.value}:{node_id} "
+                    f"is absent from {target.id}"
+                )
+                assert node.axis is axis, (
+                    f"{walk.id}: '{edge.source_label}' targets {node_id} on axis "
+                    f"{axis.value} but that node is on {node.axis.value}"
+                )
+
+
+def test_agrra_distinguishes_pale_from_bleached(registry: Registry) -> None:
+    """Evidence for splitting STRESSED into PALE/BLEACHED.
+
+    AGRRA — the Caribbean regional standard — scores them separately, so a merged
+    condition node would discard signal that practitioners in our own region record.
+    """
+    walk = registry.crosswalk("agrra-benthic")
+    pale = walk.edge("C_PALE")
+    bleached = walk.edge("C_BLEACHED")
+    assert pale and bleached
+    assert pale.targets[Axis.CONDITION] == "PALE"
+    assert bleached.targets[Axis.CONDITION] == "BLEACHED"
+
+
+def test_millepora_is_not_folded_into_hard_coral(registry: Registry) -> None:
+    """Fire coral is a hydrozoan, and the schemes disagree about it.
+
+    AGRRA surveys it as its own shape group; CoralNet holds both answers at once. Our
+    canonical schema keeps MIL distinct from HC so the distinction survives, rather than
+    being resolved by whichever crosswalk was written last.
+    """
+    rs = registry.label_schema("rs-benthic-v1")
+    mil, hc = rs.node("MIL"), rs.node("HC")
+    assert mil is not None and hc is not None
+    assert mil.parent != "HC", "MIL must not descend from HC — it is a different class"
+    assert mil.worms_aphia_id == 205902, "Millepora, verified against WoRMS"
+    assert hc.worms_aphia_id == 1363, "Scleractinia, verified against WoRMS"
+
+    agrra = registry.crosswalk("agrra-benthic")
+    assert agrra.edge("FIRE").targets[Axis.TAXON] == "MIL"
+    assert agrra.edge("CORAL").targets[Axis.TAXON] == "HC"

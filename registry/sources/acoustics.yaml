@@ -28,7 +28,9 @@ sources:
     coverage: { regions: [coral-triangle, gbr-australia] }
     domain_shift:
       caveats: ["Indo-Pacific reef soundscapes. Caribbean reef acoustics are under-sampled everywhere."]
-    loader: { layout: audio-clips }
+    loader:
+      layout: audio-clips
+      schema_id: sonotype
     tags: [reef-audio, permissive]
 
   - id: mbari-pacific-sound
@@ -116,5 +118,7 @@ sources:
     items: 10000
     annotations: [{ kind: audio-event, classes: 60, supervises: [taxon] }]
     coverage: { regions: [global] }
-    loader: { layout: audio-clips }
+    loader:
+      layout: audio-clips
+      schema_id: worms-species
     tags: [reference-library, noncommercial]

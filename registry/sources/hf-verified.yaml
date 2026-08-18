@@ -72,6 +72,8 @@ sources:
       layout: image-folder
       verified_on: 2026-08-17
       verified_note: "12 live rows fetched from HF; image+ClassLabel materialise as class-per-directory"
+      schema_id: worms-genus
+      crosswalk_id: worms-genus
     tags: [species, classification]
 
   - id: reef-guidance-system
@@ -137,6 +139,7 @@ sources:
       layout: audio-clips
       verified_on: 2026-08-17
       verified_note: "15 live audio clips fetched from HF config detections_australia; sonotype as class dir"
+      schema_id: sonotype
     tags: [bioacoustics, reef-audio, multi-region]
 
   - id: whoi-plankton-small
@@ -227,4 +230,5 @@ sources:
       layout: image-mask-pairs
       verified_on: 2026-08-17
       verified_note: "15 live rows fetched from HF split=test; Coral-Sea_S2_R1 paired with label raster"
+      schema_id: dataset-native
     tags: [satellite, aims, paired-labels]

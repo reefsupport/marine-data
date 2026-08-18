@@ -219,7 +219,9 @@ sources:
         - "Brazilian Atlantic fauna overlaps Caribbean only partially, but far more than any Indo-Pacific set."
         - "Small (1,411 images) — a fine-tuning and validation asset, not a training corpus."
     citation: "Soares et al., PeerJ 2023"
-    loader: { layout: image-mask-pairs }
+    loader:
+      layout: image-mask-pairs
+      schema_id: dataset-native
     tags: [atlantic, dense-seg, rare-region]
 
   - id: heron-reef-benthic
@@ -252,7 +254,10 @@ sources:
       trained_regions: [gbr-australia]
       caveats:
         - "Only 6 classes — coarse. Valuable for temporal-change work rather than fine taxonomy."
-    loader: { layout: csv-points }
+    loader:
+      layout: csv-points
+      schema_id: coralnet-labelset
+      crosswalk_id: coralnet-labelset
     tags: [time-series, gbr]
 
   - id: coralvqa
@@ -311,6 +316,7 @@ sources:
     capabilities: [bleaching-assessment]
     loader:
       layout: image-folder
+      schema_id: dataset-native
     items: 10400
     annotations:
       - kind: image-label
@@ -444,6 +450,8 @@ sources:
         full-resolution PNGs; the per-image `_annotations.csv` files and precomputed
         `_featurevector` blobs are NOT yet exposed by any layout and would need a
         paired-sidecar reader.
+      schema_id: coralnet-labelset
+      crosswalk_id: coralnet-labelset
     notes: >
       NOT CoralNet data. Verified 2026-08-17 by listing the bucket: it contains exactly
       one top-level prefix, `mermaid/`, and no CoralNet prefix. CoralNet is a named

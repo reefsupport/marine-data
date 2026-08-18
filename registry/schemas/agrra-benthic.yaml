@@ -1,0 +1,48 @@
+# AGRRA — Atlantic and Gulf Rapid Reef Assessment.
+#
+# The Caribbean regional monitoring standard, and the one that matters most for us:
+# every other scheme in this registry is Indo-Pacific or Red Sea in origin, and AGRRA is
+# what Caribbean practitioners actually score. Version 5.4 / Coral Protocol 2023.
+#
+# Two things about AGRRA are worth understanding before mapping it:
+#
+# 1. It groups benthos by ECOLOGICAL INTERACTION with reef-building corals rather than
+#    by taxonomy — "organisms that kill and overgrow corals" is a category. That is a
+#    functional scheme wearing taxonomic clothes.
+# 2. It is INTERNALLY INCONSISTENT about Millepora, surveying it under a FIRE CORALS
+#    shape group while also filing M. alcicornis under "aggressive" invertebrates. This
+#    is not a transcription error on our part; it is in the protocol. See the crosswalk.
+
+schemas:
+  - id: agrra-benthic
+    name: AGRRA benthic categories (v5.4)
+    description: >
+      Caribbean rapid-assessment benthic vocabulary. Point-intercept and quadrat scoring
+      of the substrate categories plus coral condition. The regional standard for the
+      Tropical Northwestern Atlantic.
+    axes: [taxon, condition]
+    nodes:
+      # ── substrate / cover categories (point intercept) ────────────────
+      - { id: CORAL,  name: Live stony coral,        axis: taxon, aliases: ["live coral", "hard coral"] }
+      - { id: FIRE,   name: Fire coral (Millepora),  axis: taxon, aliases: ["fire coral", "MILL"] }
+      - { id: GORG,   name: Gorgonian / octocoral,   axis: taxon, aliases: ["gorgonian", "soft coral", "octocoral"] }
+      - { id: SPO,    name: Sponge,                  axis: taxon, aliases: ["sponge"] }
+      - { id: CCA,    name: Crustose coralline algae, axis: taxon, aliases: ["CCA"] }
+      - { id: MA,     name: Macroalgae,              axis: taxon, aliases: ["macroalgae", "fleshy macroalgae"] }
+      - { id: TA,     name: Turf algae,              axis: taxon, aliases: ["turf"] }
+      - { id: CYAN,   name: Cyanobacteria,           axis: taxon, aliases: ["cyanobacteria", "cyano"] }
+      - { id: PEY,    name: Peyssonnelia,            axis: taxon, aliases: ["peyssonnelia"] }
+      - { id: OINV,   name: Other invertebrate,      axis: taxon, aliases: ["other invertebrates", "aggressive invertebrates"] }
+      - { id: RUB,    name: Rubble,                  axis: taxon, aliases: ["rubble", "RUB"] }
+      - { id: SAND,   name: Sand,                    axis: taxon, aliases: ["sand", "sediment"] }
+      - { id: PAVE,   name: Pavement,                axis: taxon, aliases: ["pavement", "PAVE"] }
+      - { id: DCS,    name: Dead coral with turf,    axis: taxon, aliases: ["DCS", "dead coral standing"] }
+      - { id: SEAG,   name: Seagrass,                axis: taxon, aliases: ["seagrass"] }
+
+      # ── coral condition (recorded per colony, not per point) ──────────
+      - { id: C_NORMAL,   name: Normal,            axis: condition, aliases: ["healthy"] }
+      - { id: C_PALE,     name: Pale,              axis: condition, aliases: ["P", "paling"] }
+      - { id: C_BLEACHED, name: Bleached,          axis: condition, aliases: ["BL", "white"] }
+      - { id: C_OLD_MORT, name: Old mortality,     axis: condition, aliases: ["old dead", "OM"] }
+      - { id: C_NEW_MORT, name: Recent mortality,  axis: condition, aliases: ["recent dead", "RM"] }
+      - { id: C_DISEASE,  name: Disease,           axis: condition, aliases: ["diseased", "SCTLD"] }

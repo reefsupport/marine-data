@@ -1,0 +1,31 @@
+# WoRMS genus → RS-Benthic v1.
+#
+# Every edge is EXACT: a genus name maps to the genus node with the same AphiaID. That
+# is the whole point of anchoring on AphiaID — harmonisation at genus rank stops being a
+# judgement call and becomes an identity check.
+
+crosswalks:
+  - id: worms-genus
+    source_schema: worms-genus
+    target_schema: rs-benthic-v1
+    description: Genus-rank identity mapping, keyed on verified AphiaIDs.
+    edges:
+      - { source_label: "Acanthaster", targets: { taxon: COTS }, fidelity: exact }
+      - { source_label: "Acropora", targets: { taxon: HC_ACROPORA }, fidelity: exact }
+      - { source_label: "Agaricia", targets: { taxon: HC_AGARICIA }, fidelity: exact }
+      - { source_label: "Colpophyllia", targets: { taxon: HC_COLPOPHYLLIA }, fidelity: exact }
+      - { source_label: "Ellisella", targets: { taxon: SC_SEA_WHIP }, fidelity: exact }
+      - { source_label: "Gorgonia", targets: { taxon: SC_SEA_FAN }, fidelity: exact }
+      - { source_label: "Halimeda", targets: { taxon: HA }, fidelity: exact }
+      - { source_label: "Meandrina", targets: { taxon: HC_MEANDRINA }, fidelity: exact }
+      - { source_label: "Millepora", targets: { taxon: MIL }, fidelity: exact }
+      - { source_label: "Montastraea", targets: { taxon: HC_MONTASTRAEA }, fidelity: exact }
+      - { source_label: "Orbicella", targets: { taxon: HC_ORBICELLA }, fidelity: exact }
+      - { source_label: "Plexaurella", targets: { taxon: SC_SEA_ROD }, fidelity: exact }
+      - { source_label: "Pocillopora", targets: { taxon: HC_POCILLOPORA }, fidelity: exact }
+      - { source_label: "Porites", targets: { taxon: HC_PORITES }, fidelity: exact }
+      - { source_label: "Pseudodiploria", targets: { taxon: HC_PSEUDODIPLORIA }, fidelity: exact }
+      - { source_label: "Pseudopterogorgia", targets: { taxon: SC_SEA_PLUME }, fidelity: exact }
+      - { source_label: "Siderastrea", targets: { taxon: HC_SIDERASTREA }, fidelity: exact }
+      - { source_label: "Stylophora", targets: { taxon: HC_STYLOPHORA }, fidelity: exact }
+      - { source_label: "Turbinaria", targets: { taxon: HC_TURBINARIA }, fidelity: exact }
