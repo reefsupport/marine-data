@@ -178,6 +178,31 @@ def _cmd_taxa(args: argparse.Namespace) -> int:
     return 1 if drifts else 0
 
 
+def _cmd_labels(args: argparse.Namespace) -> int:
+    """Audit crosswalk labels against the labels the data actually contains."""
+    from .fetch import FetchError, fetch_sample
+    from .labelcheck import audit_source, summarise
+
+    reg = Registry.load()
+    ids = args.source_id or [s.id for s in reg if s.loader and s.loader.layout != "metadata-only"]
+    audits = []
+    for source_id in ids:
+        try:
+            root = fetch_sample(reg.source(source_id), limit=args.limit).root
+        except FetchError as exc:
+            if args.verbose:
+                print(f"· {source_id:<30} unfetchable  {str(exc)[:60]}")
+            continue
+        audit = audit_source(reg, source_id, root, limit=args.limit * 5)
+        audits.append(audit)
+        print(audit.report() if audit.unmapped or args.verbose else audit.line())
+
+    if audits:
+        print(f"\n{summarise(audits)}")
+    drops = [a for a in audits if a.unmapped]
+    return 1 if drops and args.strict else 0
+
+
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         prog="marinedata", description="Licence-aware marine dataset registry."
@@ -248,6 +273,15 @@ def build_parser() -> argparse.ArgumentParser:
         "--show-unanchored", action="store_true", help="also list nodes with no AphiaID"
     )
     p_taxa.set_defaults(func=_cmd_taxa)
+
+    p_labels = sub.add_parser(
+        "labels", help="Audit crosswalk labels against the labels real data contains"
+    )
+    p_labels.add_argument("source_id", nargs="*")
+    p_labels.add_argument("--limit", type=int, default=50)
+    p_labels.add_argument("--strict", action="store_true", help="Exit 1 on any silent drop")
+    p_labels.add_argument("-v", "--verbose", action="store_true")
+    p_labels.set_defaults(func=_cmd_labels)
 
     return parser
 

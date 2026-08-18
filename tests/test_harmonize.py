@@ -482,3 +482,83 @@ def test_millepora_is_not_folded_into_hard_coral(registry: Registry) -> None:
     agrra = registry.crosswalk("agrra-benthic")
     assert agrra.edge("FIRE").targets[Axis.TAXON] == "MIL"
     assert agrra.edge("CORAL").targets[Axis.TAXON] == "HC"
+
+
+# ── label auditing: declared crosswalk edges vs labels in real data ───────
+
+
+def test_observed_labels_reads_both_meta_shapes() -> None:
+    """Loaders record native labels under two keys depending on cardinality."""
+    from marinedata.labelcheck import observed_labels
+    from marinedata.sample import Sample
+
+    single = Sample(source_id="s", key="k", meta={"native_label": "Hard Coral"})
+    many = Sample(source_id="s", key="k", meta={"native_labels": ["sand", "sand", "HC"]})
+    assert observed_labels(single) == ["Hard Coral"]
+    assert observed_labels(many) == ["sand", "sand", "HC"]
+    assert observed_labels(Sample(source_id="s", key="k")) == []
+
+
+def test_audit_flags_silent_drops_and_weights_them_by_instance() -> None:
+    """A label with no edge is a SILENT DROP — supervision discarded with no error.
+
+    Coverage is instance-weighted on purpose: one unmapped label covering 40% of
+    annotations matters far more than ten appearing once each, and a type count hides
+    exactly that.
+    """
+    from collections import Counter
+
+    from marinedata.labelcheck import LabelAudit
+
+    audit = LabelAudit(
+        source_id="x",
+        crosswalk_id="cw",
+        samples=10,
+        observed=Counter({"mapped": 60, "orphan": 40}),
+        unmapped=("orphan",),
+    )
+    assert audit.instances == 100
+    assert audit.coverage == pytest.approx(0.6)
+    assert "SILENT DROP" in audit.report()
+
+
+def test_audit_reports_unseen_edges_without_calling_them_errors() -> None:
+    """A bounded sample sees a bounded vocabulary.
+
+    Auditing 40 frames from one Colombian site reports SCALE and Milleporid as unseen,
+    because that site genuinely has neither. The crosswalk is right; the sample is
+    partial. The report must not present that as a defect.
+    """
+    from collections import Counter
+
+    from marinedata.labelcheck import LabelAudit
+
+    audit = LabelAudit(
+        source_id="reef-support-benthic-own",
+        crosswalk_id="reef-support-labelbox",
+        samples=40,
+        observed=Counter({"Hard Coral": 90, "Soft Coral": 10}),
+        dead_edges=("Milleporid", "SCALE"),
+    )
+    assert audit.coverage == 1.0
+    report = audit.report()
+    assert "unseen edge" in report
+    assert "prompt to look, not proof" in report
+    assert "SILENT DROP" not in report
+
+
+def test_audit_with_no_crosswalk_treats_every_label_as_unmapped() -> None:
+    """A source with no crosswalk cannot map anything — coverage must read 0, not 100%."""
+    from collections import Counter
+
+    from marinedata.labelcheck import LabelAudit
+
+    audit = LabelAudit(
+        source_id="y",
+        crosswalk_id=None,
+        samples=5,
+        observed=Counter({"a": 3, "b": 2}),
+        unmapped=("a", "b"),
+        detail="no crosswalk declared",
+    )
+    assert audit.coverage == 0.0

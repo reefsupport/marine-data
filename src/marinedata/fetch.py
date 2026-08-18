@@ -93,6 +93,21 @@ def _get_json(url: str, *, timeout: int = 60) -> dict:
         raise FetchError(f"non-JSON response from {url}") from exc
 
 
+def _class_dir(value: object, names: list[str] | None) -> str:
+    """Directory name for a class label, resolving ClassLabel integers to their names.
+
+    A label of ``74`` becomes ``Sparisoma_viride`` when the feature schema supplies the
+    names. Without this the on-disk vocabulary is a set of integers that no crosswalk can
+    match and no reviewer can read.
+    """
+    if names is not None and isinstance(value, int) and 0 <= value < len(names):
+        raw = str(names[value])
+    else:
+        raw = str(value)
+    # Directory-safe, but preserve the name — it IS the label.
+    return raw.replace("/", "_").replace("\\", "_").strip() or "unlabelled"
+
+
 def _write(path: Path, payload: bytes) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_bytes(payload)
@@ -136,6 +151,16 @@ def _fetch_huggingface(source: Source, root: Path, limit: int) -> FetchResult:
     if "error" in payload:
         raise FetchError(f"{source.id}: datasets-server error — {payload['error']}")
 
+    # ClassLabel columns come back as INTEGERS; the human-readable names live in the
+    # feature schema. Materialising the integer as a directory name produces label
+    # vocabularies like {"13", "74", "96"} — structurally valid, semantically useless,
+    # and impossible to crosswalk. Resolve them here.
+    class_names: dict[str, list[str]] = {}
+    for feature in payload.get("features", []):
+        ftype = feature.get("type", {})
+        if ftype.get("_type") == "ClassLabel" and ftype.get("names"):
+            class_names[feature["name"]] = list(ftype["names"])
+
     rows = payload.get("rows", [])
     if not rows:
         raise FetchError(f"{source.id}: datasets-server returned no rows for {hf_id}")
@@ -152,7 +177,11 @@ def _fetch_huggingface(source: Source, root: Path, limit: int) -> FetchResult:
             audio_src = media.get("src") if isinstance(media, dict) else None
             if not audio_src:
                 continue
-            label = str(row.get(label_col, "unlabelled")) if label_col else "unlabelled"
+            label = (
+                _class_dir(row.get(label_col), class_names.get(str(label_col)))
+                if label_col and row.get(label_col) is not None
+                else "unlabelled"
+            )
             suffix = Path(urllib.parse.urlparse(audio_src).path).suffix or ".wav"
             _write(root / label / f"{index:05d}{suffix}", _get(audio_src))
             count += 1
@@ -166,7 +195,10 @@ def _fetch_huggingface(source: Source, root: Path, limit: int) -> FetchResult:
         stem = f"{index:05d}"
         if label_col and row.get(label_col) is not None:
             # Class-per-directory at the root — the `image-folder` layout.
-            _write(root / str(row[label_col]) / f"{stem}.png", _get(src))
+            _write(
+                root / _class_dir(row[label_col], class_names.get(str(label_col))) / f"{stem}.png",
+                _get(src),
+            )
         else:
             # Parallel images/ + masks/ — the `image-mask-pairs` layout.
             _write(root / "images" / f"{stem}.png", _get(src))

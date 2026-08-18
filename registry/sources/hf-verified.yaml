@@ -65,16 +65,30 @@ sources:
       uri: https://huggingface.co/datasets/BobDerBaum/reefnet_species_images
       params: { hf_id: BobDerBaum/reefnet_species_images, image_column: image, label_column: label }
     modalities: [image]
-    capabilities: [coral-taxonomy, benthic-classification, general-pretraining]
-    annotations: [{ kind: image-label, schema_id: worms-genus, supervises: [taxon], depth: L3 }]
+    capabilities: [general-pretraining]
+    annotations:
+      - kind: image-label
+        classes: 2
+        supervises: []
+        notes: >
+          CORRECTED 2026-08-17 by a label audit against live data. This was registered as
+          genus-level species labels (schema worms-genus, depth L3). It is not. The
+          `label` column is a ClassLabel with TWO values - 'Cape Maeda2021' and
+          'Capstone 2023' - which are SURVEY/COLLECTION names, not taxa, and the value is
+          null on at least some rows.
+
+          The dataset name promises species; the data does not deliver them. Downgraded
+          to general-pretraining with no taxon supervision.
     coverage: { regions: [global] }
     loader:
       layout: image-folder
       verified_on: 2026-08-17
-      verified_note: "12 live rows fetched from HF; image+ClassLabel materialise as class-per-directory"
-      schema_id: worms-genus
-      crosswalk_id: worms-genus
-    tags: [species, classification]
+      verified_note: >
+        12 live rows fetched from HF; image+ClassLabel materialise as class-per-directory.
+        A label audit then showed the ClassLabel carries collection names, not species -
+        see the annotations note.
+      schema_id: dataset-native
+    tags: [pretraining, mis-registered-corrected]
 
   - id: reef-guidance-system
     name: QUT reef guidance system imagery

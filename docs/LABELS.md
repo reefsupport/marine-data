@@ -154,13 +154,13 @@ call cannot creep into loading, harmonisation or gating without a test failing.
 ```python
 import marinedata as md
 
-reg  = md.Registry.load()
+reg = md.Registry.load()
 harm = reg.harmonizer_for("coralscapes")
 
 harm.map_label("massive/meandering bleached")
 # taxon=HC, form=CMM, condition=BLEACHED   (fidelity: coarsened)
 
-print(harm.coverage_report())   # how lossy this crosswalk is, before you trust it
+print(harm.coverage_report())  # how lossy this crosswalk is, before you trust it
 ```
 
 ```bash
