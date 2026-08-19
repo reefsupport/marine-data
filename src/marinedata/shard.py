@@ -115,7 +115,7 @@ def write_shards(
     Raises:
         ShardError: if any contributing source may not be sharded, or nothing was written.
     """
-    from .registry import Registry
+    from .registry import Registry, RegistryError
 
     out = Path(output_dir)
     out.mkdir(parents=True, exist_ok=True)
@@ -130,7 +130,18 @@ def write_shards(
     for source_id in sorted({s.source_id for s in samples}):
         try:
             source = registry.source(source_id)
-        except Exception:
+        except RegistryError:
+            # FAIL CLOSED. An earlier version skipped unrecognised source ids, so any
+            # sample carrying an id absent from the registry bypassed the licence gate
+            # entirely — the exact failure this module exists to prevent. A source we
+            # cannot resolve is a source we cannot clear.
+            #
+            # This has now regressed once already, having been fixed without a test to
+            # pin it. See test_sharding_an_unregistered_source_fails_closed.
+            denied.append(
+                f"{source_id}: not in the registry, so its licence cannot be resolved. "
+                f"Register it, or shard a Dataset built from registry sources."
+            )
             continue
         decision = evaluate_mirror(source, MirrorTarget.TRAINING_SHARD)
         if not decision.allowed:

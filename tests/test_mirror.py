@@ -184,7 +184,7 @@ def shardable(registry: Registry, tmp_path: Path) -> Dataset:
         path.write_bytes(b"\xff\xd8\xff" + bytes([i]) * 512)
         samples.append(
             Sample(
-                source_id="reef-support-benthic",
+                source_id="reef-support-benthic-own",
                 key=f"f{i}.jpg",
                 image=path,
                 labels={Axis.TAXON: LabelValue("HC")},
@@ -224,7 +224,7 @@ def test_shard_keys_are_self_describing(shardable: Dataset, tmp_path: Path) -> N
     result = write_shards(shardable, tmp_path / "shards")
     with tarfile.open(result.output_dir / result.shards[0]) as tar:
         names = tar.getnames()
-    assert any(n.startswith("reef-support-benthic__site0__") for n in names)
+    assert any(n.startswith("reef-support-benthic-own__site0__") for n in names)
 
 
 def test_small_shard_target_produces_multiple_shards(shardable: Dataset, tmp_path: Path) -> None:
@@ -279,7 +279,7 @@ def test_sharding_a_prohibited_source_raises(registry: Registry, tmp_path: Path)
 def test_no_images_on_disk_gives_actionable_error(registry: Registry, tmp_path: Path) -> None:
     samples = [
         Sample(
-            source_id="reef-support-benthic",
+            source_id="reef-support-benthic-own",
             key="k",
             image=Path("/nope.jpg"),
             labels={},
@@ -294,3 +294,34 @@ def test_no_images_on_disk_gives_actionable_error(registry: Registry, tmp_path: 
     )
     with pytest.raises(ShardError, match="not present on disk"):
         write_shards(ds, tmp_path / "shards")
+
+
+def test_sharding_an_unregistered_source_fails_closed(registry: Registry, tmp_path: Path) -> None:
+    """⭐ Regression guard. This fix was made once and silently reverted.
+
+    An earlier version caught bare `Exception` around the registry lookup and
+    `continue`d, so any sample whose source_id was absent from the registry bypassed the
+    licence gate entirely — the exact failure this module exists to prevent. It was fixed,
+    had no test pinning it, and came back.
+
+    A source we cannot resolve is a source we cannot clear.
+    """
+    image = tmp_path / "x.jpg"
+    image.write_bytes(b"\xff\xd8\xff")
+    samples = [
+        Sample(
+            source_id="not-in-the-registry",
+            key="x.jpg",
+            image=image,
+            labels={},
+            supervised=frozenset(),
+        )
+    ]
+    schema = registry.label_schema("rs-benthic-v1")
+    dataset = Dataset(
+        samples=samples,
+        label_index=LabelIndex.from_samples(samples, schema),
+        lineage=build_lineage([], registry.profile("research")),
+    )
+    with pytest.raises(ShardError, match="cannot be resolved"):
+        write_shards(dataset, tmp_path / "shards")
