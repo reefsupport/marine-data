@@ -312,3 +312,78 @@ def test_split_never_divides_a_group(registry: Registry) -> None:
             sample = dataset.samples[position]
             group = f"{sample.source_id}/{sample.meta['partition']}"
             assert seen.setdefault(group, name) == name, f"{group} split across sets"
+
+
+# ── unlabelled and mixed corpora (T1) ───────────────────────────────────────
+
+
+@pytest.fixture
+def mixed_roots(tmp_path: Path) -> dict[str, Path]:
+    """A labelled source (coralscapes: real dense masks) and an unlabelled one
+    (sweet-corals: bare images), both real registry entries, faked on disk."""
+    labelled = tmp_path / "coralscapes"
+    for i in range(4):
+        (labelled / "images").mkdir(parents=True, exist_ok=True)
+        (labelled / "masks").mkdir(parents=True, exist_ok=True)
+        (labelled / "images" / f"f{i}.jpg").write_bytes(b"\x89PNG\r\n\x1a\n")
+        (labelled / "masks" / f"f{i}.png").write_bytes(b"\x89PNG\r\n\x1a\n")
+
+    unlabelled = tmp_path / "sweet-corals"
+    unlabelled.mkdir(parents=True, exist_ok=True)
+    for i in range(4):
+        (unlabelled / f"g{i}.jpg").write_bytes(b"\x89PNG\r\n\x1a\n")
+
+    return {"coralscapes": labelled, "sweet-corals": unlabelled}
+
+
+def test_mixed_build_combines_labelled_and_unlabelled_sources(
+    registry: Registry, mixed_roots: dict[str, Path]
+) -> None:
+    """⭐ Pins the property the brief calls most likely to regress silently: a build
+    spanning a labelled and an unlabelled source yields samples from both, and the
+    unlabelled ones abstain rather than being dropped or corrupting the label index."""
+    builder = DatasetBuilder(registry, profile="research", roots=mixed_roots)
+    dataset = builder.build()
+
+    by_source = {s.source_id for s in dataset.samples}
+    assert by_source == {"coralscapes", "sweet-corals"}
+
+    unlabelled_samples = [s for s in dataset.samples if s.source_id == "sweet-corals"]
+    assert unlabelled_samples and all(s.supervised == frozenset() for s in unlabelled_samples)
+
+    for sample in unlabelled_samples:
+        encoded = dataset.label_index.encode(sample)
+        assert all(value == IGNORE_INDEX for value in encoded.values())
+
+    labelled_samples = [s for s in dataset.samples if s.source_id == "coralscapes"]
+    assert labelled_samples and all(Axis.TAXON in s.supervised for s in labelled_samples)
+
+
+def test_self_supervised_build_needs_no_crosswalk(
+    registry: Registry, mixed_roots: dict[str, Path]
+) -> None:
+    """A `general-pretraining` build over the same roots must not demand a crosswalk —
+    that used to be exactly what a supervised `task_id` required."""
+    builder = DatasetBuilder(
+        registry, profile="research", roots=mixed_roots, task_id="general-pretraining"
+    )
+    assert builder.projector is None
+    dataset = builder.build()
+    assert {s.source_id for s in dataset.samples} == {"coralscapes", "sweet-corals"}
+    assert dataset.task_kind is not None and dataset.task_kind.value == "self_supervised"
+
+
+def test_self_supervised_split_defaults_to_train_probe(
+    registry: Registry, mixed_roots: dict[str, Path]
+) -> None:
+    """No val/test carved off a pretraining corpus by default — see
+    SELF_SUPERVISED_DEFAULT_RATIOS for why 70/15/15 would be the wrong default here."""
+    builder = DatasetBuilder(
+        registry, profile="research", roots=mixed_roots, task_id="general-pretraining"
+    )
+    dataset = builder.build()
+    # by="random" only to keep this fixture's 2 groups from tripping the "empty split"
+    # guard that group-wise splitting rightly enforces elsewhere — the point here is the
+    # *names and ratios* picked by default, not site-grouping fidelity.
+    dataset.split(by="random")
+    assert set(dataset.splits) == {"train", "probe"}

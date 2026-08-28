@@ -14,6 +14,7 @@ and ``by="random"`` exists only so that choosing it is deliberate and visible.
 
 from __future__ import annotations
 
+from collections import Counter
 from collections.abc import Iterator
 from dataclasses import dataclass, field
 from pathlib import Path
@@ -34,6 +35,18 @@ from .scan import (
     scan,
 )
 from .schema import Axis
+from .task import TaskKind
+
+SUPERVISED_DEFAULT_RATIOS = {"train": 0.7, "val": 0.15, "test": 0.15}
+
+SELF_SUPERVISED_DEFAULT_RATIOS = {"train": 0.95, "probe": 0.05}
+"""A self-supervised corpus has no ground truth to score a "val"/"test" split against —
+the 70/15/15 supervised default would carve off 30% of a pretraining corpus for nothing.
+The held-out slice here is named ``probe`` rather than ``val``/``test`` on purpose: its
+job is monitoring representation quality (e.g. a linear probe or k-NN check), not a task
+accuracy metric, and reusing supervised split names would suggest otherwise. Final
+evaluation of a self-supervised encoder happens on a separate, labelled downstream task
+— not inside the pretraining corpus itself."""
 
 SplitName = str
 
@@ -66,8 +79,13 @@ class Dataset:
     """Source id to reason, for sources that were permitted but could not be read."""
 
     projector: object | None = None
-    """Task projector, when the dataset was built for a task. Framework adapters pass it
-    to ``LabelIndex.encode`` so genus labels roll up and coarser ones abstain."""
+    """Task projector, when the dataset was built for a supervised task. Framework
+    adapters pass it to ``LabelIndex.encode`` so genus labels roll up and coarser ones
+    abstain."""
+
+    task_kind: TaskKind | None = None
+    """The task's kind, when built with ``task_id``. Drives ``split()``'s default
+    ratios — a self-supervised corpus doesn't want the supervised 70/15/15."""
 
     def __len__(self) -> int:
         return len(self.samples)
@@ -101,13 +119,20 @@ class Dataset:
                 one that gives a trustworthy generalisation estimate for transect data.
                 ``"source"`` holds out whole datasets, which measures cross-dataset
                 transfer. ``"random"`` is available but leaks; use it knowingly.
-            ratios: split name to fraction. Defaults to 70/15/15.
+            ratios: split name to fraction. Defaults to 70/15/15 for a supervised
+                dataset (or one built with no task at all); to 95/5 (``train``/``probe``)
+                for a self-supervised one — see ``SELF_SUPERVISED_DEFAULT_RATIOS``.
             seed: groups are hashed with this, so the assignment is deterministic and
                 stable when new samples arrive in an existing group.
             tolerance: raise if any achieved split deviates from its requested ratio by
                 more than this. Set ``None`` to accept whatever the group sizes allow.
         """
-        ratios = ratios or {"train": 0.7, "val": 0.15, "test": 0.15}
+        if ratios is None:
+            ratios = (
+                SELF_SUPERVISED_DEFAULT_RATIOS
+                if self.task_kind is TaskKind.SELF_SUPERVISED
+                else SUPERVISED_DEFAULT_RATIOS
+            )
         total = sum(ratios.values())
         if abs(total - 1.0) > 1e-6:
             raise ValueError(f"split ratios must sum to 1.0, got {total}")
@@ -242,7 +267,17 @@ class DatasetBuilder:
         self.strict = strict
         self.allow_unmapped = allow_unmapped
         self.task_id = task_id
-        self.projector = registry.projector_for(task_id) if task_id else None
+        self.task_spec = registry.task(task_id) if task_id else None
+
+        # A self-supervised task fixes no vocabulary, so there is nothing to build a
+        # projector for — the label index falls back to whatever supervision the roots
+        # actually carry, exactly as it does with no task_id at all. That is deliberate:
+        # see TaskSpec's docstring for why this is one type rather than two.
+        self.projector = (
+            registry.projector_for(task_id)
+            if self.task_spec is not None and self.task_spec.kind is TaskKind.SUPERVISED
+            else None
+        )
         if self.projector is not None:
             # The task fixes the schema; a mismatch would silently project onto the
             # wrong vocabulary.
@@ -334,9 +369,15 @@ class DatasetBuilder:
         retained.
 
         Use this when the corpus exceeds ~1M samples; :meth:`build` stays the simpler
-        choice below that.
+        choice below that. Defaults to 70/15/15 for a supervised (or task-less) corpus,
+        95/5 for a self-supervised one — see ``SELF_SUPERVISED_DEFAULT_RATIOS``.
         """
-        ratios = ratios or {"train": 0.7, "val": 0.15, "test": 0.15}
+        if ratios is None:
+            ratios = (
+                SELF_SUPERVISED_DEFAULT_RATIOS
+                if self.task_spec is not None and self.task_spec.kind is TaskKind.SELF_SUPERVISED
+                else SUPERVISED_DEFAULT_RATIOS
+            )
         if abs(sum(ratios.values()) - 1.0) > 1e-6:
             raise ValueError(f"split ratios must sum to 1.0, got {sum(ratios.values())}")
 
@@ -373,10 +414,13 @@ class DatasetBuilder:
                 self.profile,
                 excluded=denied,
                 legal_opinion_ref=self.legal_opinion_ref,
+                registry_commit=self.registry.commit,
+                items_consumed=dict(corpus.sources),
             ),
             corpus=corpus,
             assignment=assignment,
             by=by,
+            task_kind=self.task_spec.kind if self.task_spec is not None else None,
         )
 
     def build(self, *, min_count: int = 1) -> Dataset:
@@ -430,7 +474,12 @@ class DatasetBuilder:
             else LabelIndex.from_samples(samples, schema, min_count=min_count)
         )
         lineage = build_lineage(
-            used, self.profile, excluded=denied, legal_opinion_ref=self.legal_opinion_ref
+            used,
+            self.profile,
+            excluded=denied,
+            legal_opinion_ref=self.legal_opinion_ref,
+            registry_commit=self.registry.commit,
+            items_consumed=Counter(sample.source_id for sample in samples),
         )
         return Dataset(
             samples=samples,
@@ -438,6 +487,7 @@ class DatasetBuilder:
             lineage=lineage,
             skipped=skipped,
             projector=self.projector,
+            task_kind=self.task_spec.kind if self.task_spec is not None else None,
         )
 
 
@@ -465,6 +515,7 @@ class StreamingDataset:
     corpus: CorpusScan
     assignment: dict[str, SplitName]
     by: str = "site"
+    task_kind: TaskKind | None = None
 
     def __iter__(self) -> Iterator[Sample]:
         yield from self.builder.stream_samples()

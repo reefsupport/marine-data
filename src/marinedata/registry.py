@@ -21,7 +21,7 @@ except ImportError:  # pragma: no cover - pure-Python fallback
 
 from .models import Licence, Profile, Source
 from .schema import Crosswalk, LabelSchema
-from .task import TaskSpec
+from .task import TaskKind, TaskSpec
 
 
 class RegistryError(Exception):
@@ -54,6 +54,31 @@ def _default_root() -> Path:
     )
 
 
+def _git_commit(path: Path) -> str | None:
+    """The last commit that touched ``path``, or ``None`` outside a git checkout.
+
+    A packaged (pip-installed) registry has no ``.git`` at all — that is a normal,
+    expected case, not an error, so failures here are swallowed rather than raised.
+    Scoped to ``path`` rather than bare ``HEAD``: a code-only commit elsewhere in the
+    repo must not change what a lineage report claims about the registry's content.
+    """
+    import subprocess
+
+    try:
+        result = subprocess.run(
+            ["git", "log", "-1", "--format=%H", "--", str(path)],
+            cwd=path,
+            capture_output=True,
+            text=True,
+            timeout=5,
+            check=False,
+        )
+    except (OSError, subprocess.SubprocessError):
+        return None
+    commit = result.stdout.strip()
+    return commit or None
+
+
 class Registry:
     """An immutable, validated view over the registry files.
 
@@ -69,6 +94,7 @@ class Registry:
         schemas: dict[str, LabelSchema] | None = None,
         crosswalks: dict[str, Crosswalk] | None = None,
         tasks: dict[str, TaskSpec] | None = None,
+        commit: str | None = None,
     ) -> None:
         self._sources = dict(sources)
         self._licences = dict(licences)
@@ -76,6 +102,10 @@ class Registry:
         self._schemas = dict(schemas or {})
         self._crosswalks = dict(crosswalks or {})
         self._tasks = dict(tasks or {})
+        self.commit = commit
+        """The registry directory's last commit, or ``None`` outside a git checkout.
+        Threaded into every :class:`~marinedata.lineage.Lineage` this registry builds,
+        so the audit record can actually re-derive what it claims to bind."""
 
     # ── construction ──────────────────────────────────────────────────────
 
@@ -94,10 +124,12 @@ class Registry:
         crosswalks = cls._load_collection(base / "crosswalks", "crosswalks", Crosswalk)
         cls._check_references(sources, schemas, crosswalks)
         for task in tasks.values():
+            if task.kind is not TaskKind.SUPERVISED:
+                continue  # no schema to validate against
             if task.schema_id not in schemas:
                 raise RegistryError(f"task '{task.id}' targets unknown schema '{task.schema_id}'")
             task.validate_against(schemas[task.schema_id])
-        return cls(sources, licences, profiles, schemas, crosswalks, tasks)
+        return cls(sources, licences, profiles, schemas, crosswalks, tasks, _git_commit(base))
 
     @staticmethod
     def _load_collection(base: Path, key: str, model: type) -> dict[str, object]:
@@ -252,10 +284,19 @@ class Registry:
             raise RegistryError(f"Unknown task '{task_id}'. Known: {known}") from None
 
     def projector_for(self, task_id: str):
-        """Build the projector for a task, validated against its schema."""
+        """Build the projector for a task, validated against its schema.
+
+        Supervised tasks only — a self-supervised task has no vocabulary to project
+        labels onto.
+        """
         from .task import TaskProjector
 
         task = self.task(task_id)
+        if task.kind is not TaskKind.SUPERVISED:
+            raise RegistryError(
+                f"task '{task.id}' is self-supervised and has no projector — it fixes "
+                f"no target vocabulary, so nothing needs projecting"
+            )
         return TaskProjector(task, self.label_schema(task.schema_id))
 
     def sources_for_task(self, task_id: str, *, contributing_only: bool = True):
@@ -266,13 +307,28 @@ class Registry:
         task's classes — Coralscapes is eligible for a Caribbean genus task and supplies
         nothing to it, because its genera are Indo-Pacific.
 
+        For a self-supervised task there is no crosswalk or axis to check: any source
+        matching the task's ``modalities`` (or any modality, if unset) contributes —
+        labelled or not, since a pretraining corpus wants the images regardless.
+
         Returns ``(Source, SourceFit)`` pairs. Set ``contributing_only=False`` to see the
         eligible-but-useless ones too, which is the interesting case when a task looks
         well-supported and is not.
         """
-        from .task import fit_source
+        from .task import SourceFit, fit_source
 
         task = self.task(task_id)
+
+        if task.kind is not TaskKind.SUPERVISED:
+            return tuple(
+                (
+                    source,
+                    SourceFit(source_id=source.id, reachable=(), abstaining=(), unsupervised=True),
+                )
+                for source in self._sources.values()
+                if not task.modalities or any(m in task.modalities for m in source.modalities)
+            )
+
         projector = self.projector_for(task_id)
         out = []
         for source in self._sources.values():

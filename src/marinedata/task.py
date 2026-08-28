@@ -31,9 +31,25 @@ from __future__ import annotations
 from dataclasses import dataclass
 from enum import Enum
 
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel, ConfigDict, model_validator
 
+from .enums import Modality
 from .schema import Axis, LabelSchema
+
+
+class TaskKind(str, Enum):
+    """What a :class:`TaskSpec` is asking for.
+
+    Kept as one type rather than a separate ``PretrainSpec`` — see the note on
+    :class:`TaskSpec` for why.
+    """
+
+    SUPERVISED = "supervised"
+    """A fixed target vocabulary. Requires ``schema_id``, ``axis`` and ``classes``."""
+
+    SELF_SUPERVISED = "self_supervised"
+    """A pretraining corpus. No vocabulary to project onto — every permitted source
+    matching ``modalities`` (or any modality, if unset) qualifies, labelled or not."""
 
 
 class Coarser(str, Enum):
@@ -62,13 +78,37 @@ class Projection:
 
 
 class TaskSpec(BaseModel):
-    """A training objective: one axis, one fixed vocabulary, one head.
+    """A training objective.
+
+    Two shapes, one type. ``SUPERVISED`` (the default, and every task declared before
+    this field existed) fixes a target vocabulary: one axis, one fixed set of classes,
+    one head. ``SELF_SUPERVISED`` fixes nothing to project onto — it names a pretraining
+    corpus by ``modalities`` instead, and any permitted source matching qualifies,
+    labelled or not.
 
     Args:
-        classes: the target vocabulary, in the canonical schema. Every node that is one
-            of these, or a descendant of one, becomes supervision. Everything else
-            abstains.
-        coarser: policy for labels above the target level.
+        kind: ``SUPERVISED`` (default) or ``SELF_SUPERVISED``.
+        classes: the target vocabulary, in the canonical schema. Required and non-empty
+            for a supervised task; must be empty for a self-supervised one. Every node
+            that is one of these, or a descendant of one, becomes supervision.
+            Everything else abstains.
+        schema_id, axis: required for a supervised task; must be unset for a
+            self-supervised one, since there is no vocabulary to validate against.
+        modalities: for a self-supervised task, restricts which source modalities
+            qualify (empty means any). Ignored for a supervised task — its
+            eligibility already comes from the crosswalk.
+        coarser: policy for labels above the target level. Supervised only.
+
+    **Why one type instead of a separate ``PretrainSpec``.** Every entry point that
+    matters — ``registry.task(id)``, ``registry.tasks``, ``DatasetBuilder(task_id=...)``,
+    ``registry.sources_for_task()`` — is already keyed on a ``TaskSpec`` id. A parallel
+    spec type would need its own registry section, its own loader, and its own builder
+    entry point for what is fundamentally the same question ("what corpus does this
+    training run see"), and it would mean contributors learn two spec shapes instead of
+    one with an optional vocabulary. The asymmetry the self-supervised path actually
+    needs is narrow — no schema/axis/classes to validate, no projector to build — and is
+    cheaper to express as "these fields are optional for this one kind" than as a second
+    type threaded through every call site above.
 
     The class list is explicit rather than derived from a "level", because real
     vocabularies are not flat slices of a tree: a task may want `HC` and `SC` at L2 but
@@ -78,14 +118,55 @@ class TaskSpec(BaseModel):
     model_config = ConfigDict(frozen=True, extra="forbid")
 
     id: str
-    schema_id: str
-    axis: Axis
-    classes: tuple[str, ...]
+    kind: TaskKind = TaskKind.SUPERVISED
+    schema_id: str | None = None
+    axis: Axis | None = None
+    classes: tuple[str, ...] = ()
+    modalities: tuple[Modality, ...] = ()
     description: str = ""
     coarser: Coarser = Coarser.ABSTAIN
 
+    @model_validator(mode="after")
+    def _shape_matches_kind(self) -> TaskSpec:
+        if self.kind is TaskKind.SUPERVISED:
+            missing = [
+                name
+                for name, value in (("schema_id", self.schema_id), ("axis", self.axis))
+                if value is None
+            ]
+            if missing:
+                raise ValueError(f"task {self.id}: supervised task missing {missing}")
+            if not self.classes:
+                raise ValueError(f"task {self.id}: supervised task declares no classes")
+            if self.modalities:
+                raise ValueError(
+                    f"task {self.id}: 'modalities' only applies to self-supervised "
+                    f"tasks — a supervised task's eligibility comes from its crosswalk"
+                )
+        else:
+            set_anyway = [
+                name
+                for name, value in (
+                    ("schema_id", self.schema_id),
+                    ("axis", self.axis),
+                    ("classes", self.classes),
+                )
+                if value
+            ]
+            if set_anyway:
+                raise ValueError(
+                    f"task {self.id}: self-supervised task must not set {set_anyway} — "
+                    f"there is no vocabulary to project onto"
+                )
+        return self
+
     def validate_against(self, schema: LabelSchema) -> None:
-        """Check the target vocabulary against the schema. Raises on any problem."""
+        """Check the target vocabulary against the schema. Raises on any problem.
+
+        Supervised tasks only — a self-supervised task has no schema to check.
+        """
+        if self.kind is not TaskKind.SUPERVISED:
+            raise ValueError(f"task {self.id}: self-supervised, has no schema to validate")
         if schema.id != self.schema_id:
             raise ValueError(
                 f"task {self.id}: expects schema '{self.schema_id}', got '{schema.id}'"
@@ -250,11 +331,17 @@ class SourceFit:
     abstaining: tuple[str, ...]
     """Native labels that project to nothing — coarser than the target, or outside it."""
 
+    unsupervised: bool = False
+    """Set for a self-supervised task: there is no vocabulary to reach, so the source
+    contributes its images with no labels rather than some of ``reachable``."""
+
     @property
     def contributes(self) -> bool:
-        return bool(self.reachable)
+        return bool(self.reachable) or self.unsupervised
 
     def line(self) -> str:
+        if self.unsupervised:
+            return f"  ✓ {self.source_id:<28} unlabelled — contributes images, no supervision"
         mark = "✓" if self.contributes else "·"
         if not self.contributes:
             return f"  {mark} {self.source_id:<28} contributes nothing to this task"

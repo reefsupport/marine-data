@@ -20,7 +20,7 @@ from marinedata import Registry
 from marinedata.labelindex import IGNORE_INDEX, LabelIndex
 from marinedata.sample import LabelValue, Sample
 from marinedata.schema import Axis
-from marinedata.task import Coarser, TaskProjector, TaskSpec
+from marinedata.task import Coarser, TaskKind, TaskProjector, TaskSpec
 
 COARSE = TaskSpec(
     id="t", schema_id="rs-benthic-v1", axis=Axis.TAXON, classes=("HC", "SC", "ABIOTIC")
@@ -142,9 +142,15 @@ def test_coverage_flags_classes_with_no_examples(projector: TaskProjector) -> No
 
 
 def test_registry_tasks_all_validate(registry: Registry) -> None:
-    """Every declared task must be coherent with its schema — checked at load."""
+    """Every declared supervised task must be coherent with its schema — checked at load.
+
+    Self-supervised tasks have no schema to validate against; this is exactly what
+    ``Registry.load()`` itself skips for them (see the loop in ``registry.py``).
+    """
     assert registry.tasks
     for task in registry.tasks:
+        if task.kind is not TaskKind.SUPERVISED:
+            continue
         task.validate_against(registry.label_schema(task.schema_id))
 
 
@@ -166,3 +172,67 @@ def test_contributing_sources_are_reported_without_duplicates(registry: Registry
     ids = [fit.source_id for _, fit in pairs]
     assert len(ids) == len(set(ids)), f"duplicate source ids: {ids}"
     assert all(source.id == fit.source_id for source, fit in pairs)
+
+
+# ── self-supervised tasks ────────────────────────────────────────────────
+
+
+def test_self_supervised_task_forbids_a_vocabulary() -> None:
+    """The whole point: no schema, axis or classes to validate against."""
+    with pytest.raises(ValueError, match="must not set"):
+        TaskSpec(id="t", kind="self_supervised", schema_id="rs-benthic-v1")
+    with pytest.raises(ValueError, match="must not set"):
+        TaskSpec(id="t", kind="self_supervised", axis=Axis.TAXON)
+    with pytest.raises(ValueError, match="must not set"):
+        TaskSpec(id="t", kind="self_supervised", classes=("HC",))
+
+
+def test_supervised_task_requires_a_vocabulary() -> None:
+    """The complement: dropping schema/axis/classes on a supervised task is rejected."""
+    with pytest.raises(ValueError, match="missing"):
+        TaskSpec(id="t")
+    with pytest.raises(ValueError, match="no classes"):
+        TaskSpec(id="t", schema_id="rs-benthic-v1", axis=Axis.TAXON)
+
+
+def test_supervised_task_rejects_a_modality_filter() -> None:
+    """`modalities` only means something when there is no crosswalk to filter by."""
+    with pytest.raises(ValueError, match="only applies to self-supervised"):
+        TaskSpec(
+            id="t",
+            schema_id="rs-benthic-v1",
+            axis=Axis.TAXON,
+            classes=("HC",),
+            modalities=("image",),
+        )
+
+
+def test_self_supervised_task_has_no_projector(registry: Registry) -> None:
+    """There is no vocabulary to build a projector for."""
+    with pytest.raises(Exception, match="self-supervised"):
+        registry.projector_for("general-pretraining")
+
+
+def test_self_supervised_sources_for_task_needs_no_crosswalk(registry: Registry) -> None:
+    """⭐ The gap the brief named: `sources_for_task` used to require a crosswalk and an
+    axis, which is exactly wrong for a task that has neither. Any permitted-modality
+    source qualifies, labelled or not.
+    """
+    pairs = registry.sources_for_task("general-pretraining")
+    ids = {source.id for source, _fit in pairs}
+    # sweet-corals, deepfish, coralvqa carry no supervision at all; coralscapes and
+    # reef-support-benthic-own do. All five belong in a pretraining corpus.
+    for labelled_or_not in ("sweet-corals", "deepfish", "coralvqa", "coralscapes"):
+        assert labelled_or_not in ids, labelled_or_not
+    unsupervised_fit = next(fit for source, fit in pairs if source.id == "sweet-corals")
+    assert unsupervised_fit.unsupervised
+    assert unsupervised_fit.contributes
+    assert "unlabelled" in unsupervised_fit.line()
+
+
+def test_self_supervised_sources_for_task_respects_modality_filter(registry: Registry) -> None:
+    """`general-pretraining` restricts to `modalities: [image]` — audio-only sources
+    (e.g. `mbari-pacific-sound`, pure hydrophone recordings) must not appear."""
+    pairs = registry.sources_for_task("general-pretraining")
+    ids = {source.id for source, _fit in pairs}
+    assert "mbari-pacific-sound" not in ids

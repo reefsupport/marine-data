@@ -1,0 +1,18 @@
+# Self-supervised pretraining objectives.
+#
+# These fix no target vocabulary — there is nothing to project labels onto, and nothing
+# to validate against a schema. What they fix is which sources qualify: any permitted
+# source matching `modalities`, labelled or not. See TaskSpec's docstring in task.py for
+# why this lives on the same type as a supervised task rather than a separate one.
+
+tasks:
+  - id: general-pretraining
+    kind: self_supervised
+    modalities: [image]
+    description: >
+      An image pretraining corpus. Every permitted image-modality source qualifies,
+      whether it carries labels or not — sweet-corals, deepfish and coralvqa contribute
+      their images with zero supervision; reef-support-benthic-own and coralscapes
+      contribute the same images they always did, plus their real labels. One corpus,
+      not two: a labelled source under this task still keeps its labels (via the normal
+      min-count label index), it just isn't required to have any.
