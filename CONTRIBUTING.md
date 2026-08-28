@@ -47,7 +47,19 @@ Here is the whole path for a source whose labels are per-image or per-point stri
 (dense masks and point clouds skip step 2 entirely — their classes live in the raster,
 which the label index never sees, so `marinedata check` never asks for a crosswalk).
 
-1. **Add the source.** An entry under `registry/sources/<file>.yaml`:
+1. **Add the source.** For a HuggingFace dataset, start with a draft:
+
+   ```bash
+   marinedata add owner/my-new-source          # prints a draft to stdout
+   marinedata add owner/my-new-source -o draft.yaml
+   ```
+
+   This probes the Hub API and the datasets-server for a licence tag and column
+   schema, and infers a layout — but every value it prints is a starting point, not a
+   fact. In particular the licence is a dataset-card *claim*: rule #1 above still
+   applies, and the draft's `verified_by` says so explicitly. Fill in the `TODO`s
+   (description, capabilities, coverage, annotations — a probe cannot know what the
+   labels mean scientifically), then paste the result under `registry/sources/<file>.yaml`:
 
    ```yaml
    - id: my-new-source
