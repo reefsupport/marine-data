@@ -29,6 +29,18 @@ class LineageEntry:
     legal_basis: str
     provenance: str
     items: int | None
+    items_source: str
+    """``"consumed"`` when ``items`` counts samples this build actually read (from
+    ``build()``/``build_streaming()``), ``"declared"`` when it falls back to the
+    registry's own estimate because nothing was read yet (e.g. a CLI ``lineage`` report
+    built from ``find()`` alone). Without this, the field silently overstates what the
+    audit record proves — a source declared at 90k items but sampled to 100 for a
+    verification run would report 90k, unchanged."""
+    licence_flags: dict[str, bool]
+    """The specific acts barred (``no_derivatives``, ``share_alike``, ...), not just the
+    tier — without this the record can state a decision but not re-derive it: two tier-3
+    sources can carry different obligations, and the tier string alone cannot tell you
+    which."""
     attribution: str | None
 
 
@@ -103,6 +115,7 @@ def build_lineage(
     excluded: list[Decision] | None = None,
     legal_opinion_ref: str | None = None,
     registry_commit: str | None = None,
+    items_consumed: dict[str, int] | None = None,
     now: datetime | None = None,
 ) -> Lineage:
     """Build a lineage record for a completed dataset build.
@@ -113,8 +126,12 @@ def build_lineage(
         excluded: Gate decisions for sources that were considered and rejected.
         legal_opinion_ref: Counsel opinion id, where a TDM profile was used.
         registry_commit: Git SHA of the registry, for reproducibility.
+        items_consumed: source id to the number of samples this build actually read.
+            Omit when nothing was read yet (a registry-only report) — each entry then
+            falls back to the registry's declared estimate, marked as such.
         now: Timestamp override, for deterministic tests.
     """
+    items_consumed = items_consumed or {}
     entries = [
         LineageEntry(
             id=s.id,
@@ -124,7 +141,9 @@ def build_lineage(
             licence=s.licence.id,
             legal_basis=s.legal_basis.value,
             provenance=s.provenance.value,
-            items=s.items,
+            items=items_consumed.get(s.id, s.items),
+            items_source="consumed" if s.id in items_consumed else "declared",
+            licence_flags=s.licence.flags.model_dump(),
             attribution=s.citation,
         )
         for s in sorted(sources, key=lambda s: s.id)
