@@ -179,6 +179,31 @@ def _cmd_taxa(args: argparse.Namespace) -> int:
     return 1 if drifts else 0
 
 
+def _cmd_add(args: argparse.Namespace) -> int:
+    """Probe a HuggingFace dataset and print a draft registry entry.
+
+    Never writes into registry/ and never asserts a licence — see probe.py's module
+    docstring. Review, correct, and verify the licence primarily before committing it.
+    """
+    from .fetch import FetchError
+    from .probe import probe_huggingface
+
+    try:
+        result = probe_huggingface(args.hf_id)
+    except FetchError as exc:
+        print(f"probe failed: {exc}", file=sys.stderr)
+        return 1
+    if args.output:
+        with open(args.output, "w", encoding="utf-8") as fh:
+            fh.write(result.yaml_draft)
+        print(f"wrote draft to {args.output} — review every TODO before committing it")
+    else:
+        print(result.yaml_draft)
+    for warning in result.warnings:
+        print(f"⚠ {warning}", file=sys.stderr)
+    return 0
+
+
 def _cmd_doctor(args: argparse.Namespace) -> int:
     """Per-source completeness: layout verified, licence primary, crosswalk, fetchable.
 
@@ -291,6 +316,14 @@ def build_parser() -> argparse.ArgumentParser:
         "--show-unanchored", action="store_true", help="also list nodes with no AphiaID"
     )
     p_taxa.set_defaults(func=_cmd_taxa)
+
+    p_add = sub.add_parser(
+        "add",
+        help="Probe a HuggingFace dataset and print a draft registry entry for review",
+    )
+    p_add.add_argument("hf_id", help="owner/name, or a full huggingface.co/datasets/... URL")
+    p_add.add_argument("-o", "--output", help="Write the draft to this path instead of stdout")
+    p_add.set_defaults(func=_cmd_add)
 
     p_doctor = sub.add_parser(
         "doctor",
