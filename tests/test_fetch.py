@@ -28,12 +28,15 @@ from marinedata.enums import AccessMethod
 from marinedata.fetch import MAX_DOWNLOAD_WITHOUT_RANGE, FetchError, FetchNotSupported, fetch_sample
 
 
-def _http_source(sample_url: str):
+def _http_source(sample_url: str, **extra_params: str):
     base = make_source("image-mask-pairs")
     return base.model_copy(
         update={
             "access": base.access.model_copy(
-                update={"method": AccessMethod.HTTP, "params": {"sample_url": sample_url}}
+                update={
+                    "method": AccessMethod.HTTP,
+                    "params": {"sample_url": sample_url, **extra_params},
+                }
             )
         }
     )
@@ -65,6 +68,25 @@ def test_bare_file_still_works(tmp_path: Path) -> None:
     result = fetch_sample(_http_source(_file_url(sample)), root=tmp_path / "dest", force=True)
     assert result.items == 1
     assert (tmp_path / "dest" / "one.jpg").read_bytes() == b"\xff\xd8\xff"
+
+
+def test_extra_sample_url_is_extracted_alongside_the_primary(tmp_path: Path) -> None:
+    """UIEB ships raw/ and reference/ as two independent Kaggle archives — no single
+    file contains both, so a second URL has to land in the same root as the first."""
+    primary = tmp_path / "raw.zip"
+    _make_zip(primary, {"raw-890/a.jpg": b"RAW"})
+    secondary = tmp_path / "reference.zip"
+    _make_zip(secondary, {"reference-890/a.jpg": b"REF"})
+
+    dest = tmp_path / "dest"
+    result = fetch_sample(
+        _http_source(_file_url(primary), extra_sample_url=_file_url(secondary)),
+        root=dest,
+        force=True,
+    )
+    assert result.items == 2
+    assert (dest / "raw-890" / "a.jpg").read_bytes() == b"RAW"
+    assert (dest / "reference-890" / "a.jpg").read_bytes() == b"REF"
 
 
 def test_zip_archive_is_extracted_with_directory_structure(tmp_path: Path) -> None:

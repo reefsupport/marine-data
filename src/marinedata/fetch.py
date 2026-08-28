@@ -523,7 +523,14 @@ def _fetch_http(source: Source, root: Path, limit: int) -> FetchResult:
             members — e.g. #DeOlhoNosCorais publishes one 5.15GB zip containing two
             multi-GB zips-of-zips; the real image/mask pairs are one level deeper than
             Zenodo's own file listing reaches. Requires Range support on the outer
-            file (the nested member is windowed, never downloaded to find).
+            file (the nested member is windowed, never downloaded to find). Applies
+            to ``sample_url`` only.
+        extra_sample_url: a second file or archive, extracted into the same ``root``
+            alongside ``sample_url`` — for a source split across two independent
+            downloads, e.g. UIEB's paired raw/reference halves ship as separate
+            Kaggle archives with no single file containing both. Point the loader's
+            own ``images_dir``/``masks_dir`` at whatever each archive's real internal
+            folder is named; nothing here renames them.
     """
     sample_url = str(source.access.params.get("sample_url") or "")
     if not sample_url:
@@ -531,50 +538,59 @@ def _fetch_http(source: Source, root: Path, limit: int) -> FetchResult:
             f"{source.id}: no `sample_url` declared. Add one pointing at a small "
             f"downloadable sample, or fetch the data manually."
         )
-    name = Path(urllib.parse.urlparse(sample_url).path).name or "sample.bin"
     nested_archive = source.access.params.get("nested_archive")
+    count = _fetch_one(source.id, sample_url, root, limit, nested_archive=nested_archive)
+
+    extra_url = source.access.params.get("extra_sample_url")
+    if extra_url:
+        count += _fetch_one(source.id, str(extra_url), root, limit)
+
+    return FetchResult(source.id, root, count, "http", truncated=True)
+
+
+def _fetch_one(
+    source_id: str, url: str, root: Path, limit: int, *, nested_archive: object = None
+) -> int:
+    """Retrieve one declared file or archive into ``root``. The single-URL body of
+    :func:`_fetch_http`, factored out so a second URL (``extra_sample_url``) can reuse
+    the exact same archive/size/Range handling rather than a parallel copy of it.
+    """
+    name = Path(urllib.parse.urlparse(url).path).name or "sample.bin"
 
     if nested_archive:
-        size, supports_range = _head(sample_url)
+        size, supports_range = _head(url)
         if not (supports_range and size):
             raise FetchNotSupported(
-                f"{source.id}: nested_archive is set but {sample_url} does not support "
+                f"{source_id}: nested_archive is set but {url} does not support "
                 f"Range requests (or its size could not be determined) — reading a "
                 f"member out of it without downloading the whole outer archive needs "
                 f"Range support."
             )
-        with zipfile.ZipFile(_RemoteFile(sample_url, size)) as outer:
+        with zipfile.ZipFile(_RemoteFile(url, size)) as outer:
             offset, member_size = _nested_zip_window(outer, str(nested_archive))
-        inner = _RemoteFile(sample_url, size, window_offset=offset, window_size=member_size)
-        count = _extract_remote_zip(inner, root, limit, label=f"{name}:{nested_archive}")
-        return FetchResult(source.id, root, count, "http", truncated=True)
+        inner = _RemoteFile(url, size, window_offset=offset, window_size=member_size)
+        return _extract_remote_zip(inner, root, limit, label=f"{name}:{nested_archive}")
 
     if name.lower().endswith(".zip"):
-        size, supports_range = _head(sample_url)
+        size, supports_range = _head(url)
         if size and size <= MAX_DOWNLOAD_WITHOUT_RANGE:
-            payload = _get(sample_url)
-            count = _extract_archive(payload, root, name, limit)
-            return FetchResult(source.id, root, count, "http", truncated=True)
+            return _extract_archive(_get(url), root, name, limit)
         if supports_range and size:
-            count = _extract_remote_zip(_RemoteFile(sample_url, size), root, limit, label=name)
-            return FetchResult(source.id, root, count, "http", truncated=True)
+            return _extract_remote_zip(_RemoteFile(url, size), root, limit, label=name)
         if size and size > MAX_DOWNLOAD_WITHOUT_RANGE:
             raise FetchNotSupported(
-                f"{source.id}: sample_url is a {size / 1e9:.1f} GB zip and the host does "
+                f"{source_id}: {url} is a {size / 1e9:.1f} GB zip and the host does "
                 f"not support Range requests, so a bounded sample cannot be read from it "
                 f"without downloading the whole archive. Find a smaller published subset, "
                 f"or fetch it manually."
             )
-        payload = _get(sample_url)
-        count = _extract_archive(payload, root, name, limit)
-        return FetchResult(source.id, root, count, "http", truncated=True)
+        return _extract_archive(_get(url), root, name, limit)
 
-    payload = _get(sample_url)
+    payload = _get(url)
     if name.lower().endswith(_ARCHIVE_SUFFIXES):
-        count = _extract_archive(payload, root, name, limit)
-        return FetchResult(source.id, root, count, "http", truncated=True)
+        return _extract_archive(payload, root, name, limit)
     _write(root / name, payload)
-    return FetchResult(source.id, root, 1, "http", truncated=True)
+    return 1
 
 
 def _fetch_hf(source: Source, root: Path, limit: int) -> FetchResult:

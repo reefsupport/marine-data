@@ -18,21 +18,31 @@ sources:
       verified_by: "Internal catalog 2026-07-24 sweep — flagged research/non-commercial; not re-checked at source"
       method: secondary
     access:
-      method: http
-      uri: https://li-chongyi.github.io/proj_benchmark.html
+      method: huggingface
+      uri: https://huggingface.co/datasets/Hikari0608/UIEB
+      params:
+        hf_id: Hikari0608/UIEB
+        image_column: raw
+        mask_column: gt
       notes: >
         Checked 2026-08-28: the official page only offers Google Drive/Baidu links.
-        Two working Kaggle mirrors exist (larjeck/uieb-dataset-raw, 634MB;
-        .../uieb-dataset-reference, 785MB) but split the raw/reference halves into
-        SEPARATE archives with non-matching internal folder names (raw-890/,
-        reference-890/) — this source needs two sample_urls plus a rename, and our
-        fetcher takes exactly one sample_url. Not fetchable automatically as declared.
+        Kaggle mirrors (larjeck/uieb-dataset-raw / -reference) exist but, like
+        brackish-dataset, require an authenticated account+API-key for the actual
+        file download despite being publicly listed — confirmed by testing the
+        download endpoint directly (404 unauthenticated, both with and without a
+        version number). Hikari0608/UIEB on HuggingFace is the working alternative:
+        train (800) + val (90) = 890, matching the original count exactly, with both
+        halves as columns (raw, gt) in one parquet — no multi-URL fetch needed at all.
     modalities: [image]
     capabilities: [image-enhancement]
     items: 890
     annotations: [{ kind: none, supervises: [] }]
     coverage: { regions: [global] }
-    loader: { layout: image-mask-pairs, params: { images_dir: raw, masks_dir: reference } }
+    loader:
+      layout: image-mask-pairs
+      params: { images_dir: images, masks_dir: masks }
+      verified_on: 2026-08-28
+      verified_note: "Live HF fetch confirms paired raw/gt images, images/ + masks/ on disk."
     tags: [enhancement, noncommercial]
 
   - id: squid
