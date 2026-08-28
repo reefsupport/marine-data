@@ -130,6 +130,26 @@ class ImageMaskPairLoader(_HarmonizingLoader):
         masks = self.root / str(self._param("masks_dir", "masks"))
         return images, masks
 
+    def _supervised_axes(self) -> frozenset[Axis]:
+        """Which axes this mask actually supervises, per the registry — not a guess.
+
+        A dense mask's classes live in the raster, invisible from here, so unlike a
+        scalar label there is no native value to fall back on. The registry's declared
+        ``annotations[].supervises`` is the only honest source of truth: a crosswalked
+        source (coralscapes: ``[taxon, form, condition]``) keeps its claim, and a source
+        with no real supervision (deepfish, uieb: ``supervises: []``) gets an
+        unsupervised sample instead of a false TAXON claim. Getting this wrong silently
+        corrupts ``supervision_coverage()`` and every shard's metadata sidecar.
+        """
+        axes: set[Axis] = set()
+        for annotation in self.source.annotations:
+            for name in annotation.supervises:
+                try:
+                    axes.add(Axis(name))
+                except ValueError:
+                    continue
+        return frozenset(axes)
+
     def validate(self) -> None:
         super().validate()
         images, masks = self._dirs()
@@ -143,6 +163,7 @@ class ImageMaskPairLoader(_HarmonizingLoader):
         images, masks = self._dirs()
         suffix = str(self._param("mask_suffix", ""))
         by_stem = {p.stem: p for p in masks.rglob("*") if p.is_file()}
+        supervised = self._supervised_axes()
 
         for image in _images_under(images):
             mask = by_stem.get(f"{image.stem}{suffix}") or by_stem.get(image.stem)
@@ -158,7 +179,7 @@ class ImageMaskPairLoader(_HarmonizingLoader):
                 image=image,
                 mask=mask,
                 labels={},
-                supervised=frozenset({Axis.TAXON}),
+                supervised=supervised,
                 licence_tier=self.source.licence.tier,
                 split=self.split,
                 meta={"mask_is_dense": True},

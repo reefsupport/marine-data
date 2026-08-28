@@ -61,6 +61,43 @@ def test_image_mask_pairs_missing_mask_is_an_error(image_mask_root: Path) -> Non
         list(loader)
 
 
+def test_image_mask_pairs_with_no_crosswalk_is_genuinely_unsupervised(
+    image_mask_root: Path,
+) -> None:
+    """A dense mask with `supervises: []` (deepfish, uieb, ...) must not claim TAXON.
+
+    Found while verifying the "unlabelled data already flows through correctly" claim:
+    this loader used to hardcode `supervised={TAXON}` regardless of what the source
+    actually declares, so a source with a segmentation mask but no crosswalk (real
+    examples: deepfish, uieb, squid, suim, atlantis-synthetic-depth) silently reported
+    100% TAXON supervision in `supervision_coverage()` and every shard sidecar, with an
+    empty `labels` dict underneath. Encoding happened to still yield IGNORE_INDEX (since
+    `index_of(None)` does that too), so no loss curve ever caught it — exactly the class
+    of silent defect this codebase's design principles warn about.
+    """
+    from marinedata.models import Annotation
+
+    source = make_source(
+        "image-mask-pairs",
+        annotations=(Annotation(kind="dense-mask", supervises=()),),
+    )
+    samples = list(build_loader(source, image_mask_root))
+    assert all(s.supervised == frozenset() for s in samples)
+    assert all(s.labels == {} for s in samples)
+
+
+def test_image_mask_pairs_respects_declared_supervised_axes(image_mask_root: Path) -> None:
+    """The complement: a source that DOES declare supervision keeps it."""
+    from marinedata.models import Annotation
+
+    source = make_source(
+        "image-mask-pairs",
+        annotations=(Annotation(kind="dense-mask", supervises=("taxon", "condition")),),
+    )
+    samples = list(build_loader(source, image_mask_root))
+    assert all(s.supervised == frozenset({Axis.TAXON, Axis.CONDITION}) for s in samples)
+
+
 def test_coco_json(coco_root: Path) -> None:
     loader = build_loader(make_source("coco-json"), coco_root)
     samples = list(loader)

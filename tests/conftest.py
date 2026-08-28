@@ -24,7 +24,15 @@ from marinedata.enums import (
     Region,
     Tier,
 )
-from marinedata.models import Access, Coverage, Licence, LoaderSpec, Source, Verification
+from marinedata.models import (
+    Access,
+    Annotation,
+    Coverage,
+    Licence,
+    LoaderSpec,
+    Source,
+    Verification,
+)
 
 
 @pytest.fixture(scope="session")
@@ -32,7 +40,13 @@ def registry() -> Registry:
     return Registry.load()
 
 
-def make_source(layout: str, params: dict | None = None, source_id: str = "fixture") -> Source:
+def make_source(
+    layout: str,
+    params: dict | None = None,
+    source_id: str = "fixture",
+    annotations: tuple[Annotation, ...] = (),
+    modalities: tuple[Modality, ...] = (Modality.IMAGE,),
+) -> Source:
     """A minimal source declaring a given layout."""
     return Source(
         id=source_id,
@@ -47,10 +61,11 @@ def make_source(layout: str, params: dict | None = None, source_id: str = "fixtu
         legal_basis=LegalBasis.LICENCE,
         provenance=Provenance.PUBLIC,
         access=Access(method=AccessMethod.HTTP, uri="https://example.invalid"),
-        modalities=(Modality.IMAGE,),
+        modalities=modalities,
         capabilities=(Capability.BENTHIC_SEGMENTATION,),
         coverage=Coverage(regions=(Region.GLOBAL,)),
         loader=LoaderSpec(layout=layout, params=params or {}),
+        annotations=annotations,
     )
 
 

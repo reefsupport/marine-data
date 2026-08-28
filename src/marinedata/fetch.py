@@ -348,9 +348,16 @@ def fetch_sample(
 
 
 def sample_digest(root: Path) -> str:
-    """Stable digest of a fetched sample, for reproducibility in test reports."""
+    """Stable digest of a fetched sample, for reproducibility in test reports.
+
+    Hashes file *content*, not just name and size — a same-size edit (a relabelled mask,
+    a re-exported image) used to pass undetected, since two files of equal size hashed
+    identically regardless of their bytes. These are bounded verification samples
+    (~100 items, per ``fetch_sample``'s ``limit``), so reading them in full costs
+    nothing worth trading correctness for.
+    """
     digest = hashlib.sha256()
     for path in sorted(p for p in root.rglob("*") if p.is_file() and p.name != "_fetch.json"):
         digest.update(path.name.encode())
-        digest.update(str(path.stat().st_size).encode())
+        digest.update(path.read_bytes())
     return "sha256:" + digest.hexdigest()[:16]
