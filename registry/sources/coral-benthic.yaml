@@ -392,13 +392,20 @@ sources:
       uri: https://huggingface.co/datasets/NMFS-OSI/NOAA-PIFSC-ESD-CORAL-Bleaching-Dataset
       params:
         hf_id: NMFS-OSI/NOAA-PIFSC-ESD-CORAL-Bleaching-Dataset
-        image_column: image
-        label_column: label
+        fetch_style: files
+        subpath: train
+      notes: >
+        Checked 2026-08-28: the datasets-server rows API exposes only an `image`
+        column for this repo — no label, despite it being an imagefolder-built
+        dataset. The repo's own file tree has the class as the directory itself
+        (train/CORAL/, train/CORAL_BL/), so fetch_style: files (which now preserves
+        relative paths instead of flattening into images/) reaches it correctly.
     modalities: [image]
     capabilities: [bleaching-assessment]
     loader:
       layout: image-folder
       schema_id: dataset-native
+      crosswalk_id: noaa-pifsc-bleaching-condition
     items: 10400
     annotations:
       - kind: image-label

@@ -218,6 +218,15 @@ def fetch_s3(source: Source, root: Path, limit: int) -> FetchResult:
 def fetch_hf_files(source: Source, root: Path, limit: int) -> FetchResult:
     """Download files from a HuggingFace repo published as a file tree.
 
+    Listed recursively and written preserving each file's path relative to
+    ``subpath`` — not flattened into one ``images/`` directory — so a repo using
+    directory structure to carry the label (an ``imagefolder``-built dataset whose
+    class subdirectories, for whatever reason, never made it into the datasets-server
+    schema as a queryable column) still produces a real ``image-folder`` layout on
+    disk. NOAA's PIFSC bleaching dataset is exactly this: its rows API exposes only an
+    ``image`` column — no label at all, checked 2026-08-28 — while the repo's own file
+    tree has the class right there as ``train/CORAL/`` vs ``train/CORAL_BL/``.
+
     Params:
         hf_id, repo_type (``datasets`` default), subpath, revision (``main`` default)
     """
@@ -233,6 +242,7 @@ def fetch_hf_files(source: Source, root: Path, limit: int) -> FetchResult:
     api = f"https://huggingface.co/api/{repo_type}/{hf_id}/tree/{revision}"
     if subpath:
         api = f"{api}/{urllib.parse.quote(subpath)}"
+    api += "?recursive=true"
 
     import json
 
@@ -258,7 +268,8 @@ def fetch_hf_files(source: Source, root: Path, limit: int) -> FetchResult:
             f"https://huggingface.co/{repo_type}/{hf_id}/resolve/{revision}/"
             f"{urllib.parse.quote(path)}"
         )
-        _write(root / "images" / Path(path).name, _get(url))
+        relative = Path(path).relative_to(subpath) if subpath else Path(path)
+        _write(root / relative, _get(url))
 
     return FetchResult(source.id, root, len(files), "hf-files", truncated=True)
 

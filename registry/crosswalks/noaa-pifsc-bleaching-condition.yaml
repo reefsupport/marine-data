@@ -1,0 +1,16 @@
+# NOAA PIFSC-ESD coral bleaching dataset → RS-Benthic v1, condition axis.
+#
+# Binary classification: CORAL (not bleached) vs CORAL_BL (bleached) — the two class
+# directories the repo's own file tree carries (confirmed live 2026-08-28; the
+# datasets-server rows API exposes no label column for this repo at all, so this is
+# read from the directory structure via fetch_style: files).
+
+crosswalks:
+  - id: noaa-pifsc-bleaching-condition
+    source_schema: dataset-native
+    target_schema: rs-benthic-v1
+    description: Directory-name labels onto RS-Benthic's condition axis.
+    edges:
+      - { source_label: "CORAL_BL", targets: { condition: BLEACHED }, fidelity: exact }
+      - { source_label: "CORAL", targets: { condition: HEALTHY }, fidelity: coarsened,
+          note: "The source only distinguishes bleached-vs-not; PALE, DISEASED, RECENTLY_DEAD and OLD_DEAD were never assessed, so 'CORAL' can only map to the coarsest true statement." }
