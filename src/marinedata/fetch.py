@@ -252,12 +252,81 @@ def _fetch_huggingface(source: Source, root: Path, limit: int) -> FetchResult:
     return FetchResult(source.id, root, count, "huggingface", truncated=True)
 
 
+_ARCHIVE_SUFFIXES = (".tar.gz", ".tar.bz2", ".tar.xz", ".tgz", ".tar", ".zip")
+
+
+def _safe_extract_path(root: Path, member_name: str) -> Path | None:
+    """Resolve an archive member's target path, refusing to leave ``root``.
+
+    Archive members are attacker-influenced input in general (here, a maintainer-chosen
+    URL, but the extraction code itself does not know that) — an absolute path or a
+    ``../`` traversal in a member name must not write outside the sample directory.
+    Returns ``None`` for a member that would escape, so the caller can skip it.
+    """
+    target = (root / member_name).resolve()
+    if target != root and root not in target.parents:
+        return None
+    return target
+
+
+def _extract_archive(payload: bytes, root: Path, name: str, limit: int) -> int:
+    """Extract a small archive in place, bounded to ``limit`` files.
+
+    Handles ``.zip`` and ``.tar`` (optionally ``.gz``/``.bz2``/``.xz``) — the two
+    conventions every dataset host in this registry actually uses. Bounded because a
+    verification sample is meant to stay small even when the upstream archive is not.
+    """
+    import io
+
+    count = 0
+    lower = name.lower()
+    if lower.endswith(".zip"):
+        import zipfile
+
+        with zipfile.ZipFile(io.BytesIO(payload)) as archive:
+            members = [m for m in archive.infolist() if not m.is_dir()]
+            for member in members[:limit] if limit else members:
+                target = _safe_extract_path(root, member.filename)
+                if target is None:
+                    continue
+                target.parent.mkdir(parents=True, exist_ok=True)
+                target.write_bytes(archive.read(member))
+                count += 1
+    else:
+        import tarfile
+
+        mode = "r:*"  # autodetect gz/bz2/xz/plain from the stream itself
+        with tarfile.open(fileobj=io.BytesIO(payload), mode=mode) as archive:
+            members = [m for m in archive.getmembers() if m.isfile()]
+            for member in members[:limit] if limit else members:
+                target = _safe_extract_path(root, member.name)
+                if target is None:
+                    continue
+                extracted = archive.extractfile(member)
+                if extracted is None:
+                    continue
+                target.parent.mkdir(parents=True, exist_ok=True)
+                target.write_bytes(extracted.read())
+                count += 1
+
+    if count == 0:
+        raise FetchError(f"archive '{name}' contained no extractable files")
+    return count
+
+
 def _fetch_http(source: Source, root: Path, limit: int) -> FetchResult:
-    """Retrieve a single declared sample archive or file.
+    """Retrieve a single declared sample — a bare file, or a small archive extracted
+    in place.
 
     Params:
-        sample_url: a small, directly-downloadable file. Required — we deliberately do
-            not crawl arbitrary pages looking for data.
+        sample_url: a small, directly-downloadable file or archive (``.zip``, ``.tar``,
+            ``.tar.gz``, ...). Required — we deliberately do not crawl arbitrary pages
+            looking for data.
+
+    Most multi-file layouts (``image-mask-pairs``, ``coco-json``, ``yolo-txt``) need
+    more than one file, which is why this extracts archives rather than only writing
+    the raw bytes: a bare-file fetch cannot satisfy any layout needing an ``images/`` +
+    ``masks/`` pair, no matter how correct the URL is.
     """
     sample_url = source.access.params.get("sample_url")
     if not sample_url:
@@ -267,6 +336,9 @@ def _fetch_http(source: Source, root: Path, limit: int) -> FetchResult:
         )
     payload = _get(str(sample_url))
     name = Path(urllib.parse.urlparse(str(sample_url)).path).name or "sample.bin"
+    if name.lower().endswith(_ARCHIVE_SUFFIXES):
+        count = _extract_archive(payload, root, name, limit)
+        return FetchResult(source.id, root, count, "http", truncated=True)
     _write(root / name, payload)
     return FetchResult(source.id, root, 1, "http", truncated=True)
 
