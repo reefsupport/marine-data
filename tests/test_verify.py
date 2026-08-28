@@ -42,10 +42,19 @@ def test_crosswalked_source_reports_present(registry: Registry) -> None:
 
 
 def test_real_supervision_without_a_crosswalk_is_missing(registry: Registry) -> None:
-    """reefnet has genus annotations (925k, per the brief) but no crosswalk yet — this
-    is exactly the gap `doctor` exists to surface."""
-    row = next(r for r in doctor(registry) if r.source_id == "reefnet")
+    """fathomnet declares real taxon supervision (6.6M bbox annotations) but has no
+    crosswalk — this is exactly the gap `doctor` exists to surface. (reefnet was this
+    example until its worms-genus crosswalk was wired up — see coral-benthic.yaml.)"""
+    row = next(r for r in doctor(registry) if r.source_id == "fathomnet")
     assert row.crosswalk_status == "missing"
+
+
+def test_reefnet_crosswalk_is_wired(registry: Registry) -> None:
+    """The one crosswalk this pass actually added: reefnet's genus labels already
+    speak worms-genus vocabulary, so it reuses that existing identity crosswalk rather
+    than needing a new one."""
+    row = next(r for r in doctor(registry) if r.source_id == "reefnet")
+    assert row.crosswalk_status == "ok"
 
 
 def test_complete_requires_every_column_to_clear(registry: Registry) -> None:

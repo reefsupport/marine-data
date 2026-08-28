@@ -185,6 +185,20 @@ sources:
     loader:
       layout: csv-points
       schema_id: worms-genus
+      crosswalk_id: worms-genus
+      verified_note: >
+        Wired to the existing worms-genus → rs-benthic-v1 identity crosswalk (exact
+        AphiaID matches), which already anchors 12 of ReefNet's genera (Acropora,
+        Porites, Pocillopora, Stylophora, Turbinaria, Millepora, plus the 9 Caribbean
+        genera). NOT extended to ReefNet's other ~27 genera: the paper (arXiv
+        2510.16822) states 39 hard-coral classes but does not list them by name in
+        the abstract, and code/data are "released upon acceptance" — not yet public,
+        so there is no primary source to check candidate genus names or AphiaIDs
+        against. Adding nodes from a guessed genus list is exactly the mistake this
+        project's own history warns about (3 of the first 8 hand-entered AphiaIDs
+        were wrong). Unmapped genera correctly abstain via the existing crosswalk
+        machinery rather than being forced onto a coarser or unrelated node — revisit
+        once the actual label list is public.
     tags: [genus, benchmark, domain-shift-testbed]
 
   - id: deolhonoscorais
