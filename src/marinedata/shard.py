@@ -38,7 +38,7 @@ from .mirror import MirrorTarget, evaluate_mirror
 from .sample import Sample
 
 if TYPE_CHECKING:  # pragma: no cover
-    from .builder import Dataset
+    from .builder import Dataset, StreamingDataset
 
 DEFAULT_SHARD_BYTES = 512 * 1024 * 1024
 """512 MB. Large enough to amortise request latency, small enough to redistribute work
@@ -76,7 +76,7 @@ def _sample_key(sample: Sample, position: int) -> str:
     return "__".join(p for p in parts if p)
 
 
-def _metadata(sample: Sample, dataset: Dataset) -> dict:
+def _metadata(sample: Sample, dataset: Dataset | StreamingDataset) -> dict:
     encoded = dataset.label_index.encode(sample)
     return {
         "source_id": sample.source_id,
@@ -93,7 +93,7 @@ def _metadata(sample: Sample, dataset: Dataset) -> dict:
 
 
 def write_shards(
-    dataset: Dataset,
+    dataset: Dataset | StreamingDataset,
     output_dir: str | Path,
     *,
     split: str | None = None,
@@ -103,6 +103,14 @@ def write_shards(
     strict: bool = False,
 ) -> ShardResult:
     """Write a dataset (or one split) to WebDataset tar shards.
+
+    Accepts a :class:`~marinedata.builder.StreamingDataset` as well as an eager
+    :class:`~marinedata.builder.Dataset` — sharding a corpus too large to hold in memory
+    should not require holding it in memory a second time to write it out. The
+    contributing source ids come from the scan's counters (``corpus.sources``), which
+    cost nothing extra: the licence gate still runs before any byte is written, it just
+    no longer needs `{s.source_id for s in samples}` over a materialised list to know
+    what to check.
 
     Args:
         shard_bytes: target size per shard. Shards close *after* crossing it, so the
@@ -115,19 +123,29 @@ def write_shards(
     Raises:
         ShardError: if any contributing source may not be sharded, or nothing was written.
     """
+    from .builder import StreamingDataset as _StreamingDataset
     from .registry import Registry, RegistryError
 
     out = Path(output_dir)
     out.mkdir(parents=True, exist_ok=True)
 
-    samples = dataset.split_samples(split) if split else dataset.samples
-    if not samples:
-        raise ShardError(f"No samples to shard for split={split!r}")
+    if isinstance(dataset, _StreamingDataset):
+        expected = dataset.split_sizes().get(split, 0) if split else dataset.corpus.total
+        if not expected:
+            raise ShardError(f"No samples to shard for split={split!r}")
+        contributing_source_ids = sorted(dataset.corpus.sources)
+        samples: Iterator[Sample] = dataset.split_stream(split) if split else iter(dataset)
+    else:
+        materialised = dataset.split_samples(split) if split else dataset.samples
+        if not materialised:
+            raise ShardError(f"No samples to shard for split={split!r}")
+        contributing_source_ids = sorted({s.source_id for s in materialised})
+        samples = iter(materialised)
 
     # Sharding is a derivative act. Check every contributing source before writing a byte.
     registry = Registry.load()
     denied = []
-    for source_id in sorted({s.source_id for s in samples}):
+    for source_id in contributing_source_ids:
         try:
             source = registry.source(source_id)
         except RegistryError:

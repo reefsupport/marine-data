@@ -39,6 +39,20 @@ The `.json` sidecar carries everything the training loop needs:
 human reads; `ignore_index` is PyTorch's `CrossEntropyLoss` default, so an axis this
 source never annotated contributes zero gradient with no special-casing.
 
+An unlabelled source's sidecar looks the same, just mostly empty — provenance still
+matters even when supervision does not:
+
+```json
+{
+  "source_id": "sweet-corals",
+  "partition": null,
+  "labels":      {},
+  "label_index": {},
+  "supervised":  [],
+  "ignore_index": -100
+}
+```
+
 ### Why tar, rather than reading images directly
 
 Latency, not size. A training run reading 500,000 individual objects from S3 pays one
@@ -52,7 +66,11 @@ you add. One sequential read of a 512 MB shard serves a couple of thousand sampl
 - **`mtime` is zeroed.** Identical content produces a byte-identical tar, so shards are
   content-addressable and a rebuild is verifiable rather than merely plausible.
 - **Shards are derivatives, not copies.** `write_shards()` runs the licence gate before
-  writing a byte, so a no-derivatives source cannot be sharded even by accident.
+  writing a byte, so a no-derivatives source cannot be sharded even by accident. That
+  check runs before any sample is read whether you pass it an eager `Dataset` or a
+  `StreamingDataset` (`DatasetBuilder.build_streaming()`) — the streaming path knows its
+  contributing sources from the scan's counters, so sharding a corpus too large to hold
+  in memory does not require holding it in memory a second time.
 
 Written with the standard library — requiring the `webdataset` package to *produce*
 shards would be a dependency for nothing. Reading works with `webdataset`, `torchdata`,

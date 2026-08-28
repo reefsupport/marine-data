@@ -219,6 +219,50 @@ def test_write_and_read_shards_round_trip(shardable: Dataset, tmp_path: Path) ->
     assert first["metadata"]["supervised"] == ["taxon"]
 
 
+@pytest.fixture
+def unlabelled_shardable(registry: Registry, tmp_path: Path) -> Dataset:
+    """A dataset built entirely from an unlabelled, permissively-licensed source."""
+    images = tmp_path / "img"
+    images.mkdir()
+    samples = []
+    for i in range(4):
+        path = images / f"g{i}.jpg"
+        path.write_bytes(b"\xff\xd8\xff" + bytes([i]) * 512)
+        samples.append(
+            Sample(
+                source_id="sweet-corals",
+                key=f"g{i}.jpg",
+                image=path,
+                labels={},
+                supervised=frozenset(),
+            )
+        )
+    schema = registry.label_schema("rs-benthic-v1")
+    return Dataset(
+        samples=samples,
+        label_index=LabelIndex.from_samples(samples, schema),
+        lineage=build_lineage([], registry.profile("research")),
+    )
+
+
+def test_unlabelled_shard_sidecar_has_empty_labels(
+    unlabelled_shardable: Dataset, tmp_path: Path
+) -> None:
+    """T1 item 4: confirm the reader tolerates a sidecar with no real labels, rather than
+    assuming one. Provenance (source id, key, licence tier) survives regardless."""
+    result = write_shards(unlabelled_shardable, tmp_path / "shards")
+    assert result.samples == 4
+
+    entries = list(read_shard(result.output_dir / result.shards[0]))
+    assert len(entries) == 4
+    for entry in entries:
+        metadata = entry["metadata"]
+        assert metadata["labels"] == {}
+        assert metadata["label_index"] == {}
+        assert metadata["supervised"] == []
+        assert metadata["source_id"] == "sweet-corals"
+
+
 def test_shard_keys_are_self_describing(shardable: Dataset, tmp_path: Path) -> None:
     """A shard found detached from its manifest should still say where it came from."""
     result = write_shards(shardable, tmp_path / "shards")
@@ -251,6 +295,96 @@ def test_strict_mode_raises_on_missing_image(shardable: Dataset, tmp_path: Path)
     Path(shardable.samples[0].image).unlink()
     with pytest.raises(ShardError, match="image missing"):
         write_shards(shardable, tmp_path / "shards", strict=True)
+
+
+@pytest.fixture
+def coralscapes_root(tmp_path: Path) -> Path:
+    root = tmp_path / "coralscapes"
+    for i in range(8):
+        (root / "images").mkdir(parents=True, exist_ok=True)
+        (root / "masks").mkdir(parents=True, exist_ok=True)
+        (root / "images" / f"f{i}.jpg").write_bytes(b"\xff\xd8\xff" + bytes([i]) * 512)
+        (root / "masks" / f"f{i}.png").write_bytes(bytes([i]) * 64)
+    return root
+
+
+def test_streaming_write_shards_matches_eager(
+    registry: Registry, coralscapes_root: Path, tmp_path: Path
+) -> None:
+    """⭐ T3: `write_shards` must accept a StreamingDataset and produce the same corpus
+    as the eager path over identical roots — sharding a corpus too large to hold in
+    memory should not silently drop or duplicate samples relative to `build()`."""
+    from marinedata.builder import DatasetBuilder
+
+    roots = {"coralscapes": coralscapes_root}
+    eager = DatasetBuilder(registry, profile="research", roots=roots).build()
+    streaming = DatasetBuilder(registry, profile="research", roots=roots).build_streaming(
+        by="site", tolerance=None
+    )
+
+    eager_result = write_shards(eager, tmp_path / "eager")
+    streaming_result = write_shards(streaming, tmp_path / "streaming")
+
+    assert streaming_result.samples == eager_result.samples == 8
+    assert streaming_result.skipped == eager_result.skipped == 0
+
+    def keys(result) -> set[str]:
+        with tarfile.open(result.output_dir / result.shards[0]) as tar:
+            return {n.split(".")[0] for n in tar.getnames()}
+
+    assert keys(streaming_result) == keys(eager_result)
+
+
+def test_streaming_write_shards_is_constant_memory(
+    registry: Registry, coralscapes_root: Path, tmp_path: Path
+) -> None:
+    """The point of accepting a StreamingDataset at all: memory must not scale with
+    corpus size. Proven the same way scan.py proves it — measured, not asserted."""
+    import tracemalloc
+
+    from marinedata.builder import DatasetBuilder
+
+    streaming = DatasetBuilder(
+        registry, profile="research", roots={"coralscapes": coralscapes_root}
+    ).build_streaming(by="site", tolerance=None)
+
+    tracemalloc.start()
+    write_shards(streaming, tmp_path / "streaming")
+    peak = tracemalloc.get_traced_memory()[1]
+    tracemalloc.stop()
+
+    # 8 tiny fixture samples: peak should be a handful of KB of bookkeeping, nowhere
+    # near what materialising a sample list at scale would cost.
+    assert peak < 2_000_000, f"streaming write_shards peaked at {peak / 1e6:.2f} MB"
+
+
+def test_streaming_gate_runs_before_any_byte_is_written(registry: Registry, tmp_path: Path) -> None:
+    """The streaming path must fail closed exactly like the eager one — before writing,
+    using only the scan's counters (never materialising the disallowed source's samples).
+    """
+    from marinedata.builder import StreamingDataset
+    from marinedata.scan import scan
+
+    image = tmp_path / "x.jpg"
+    image.write_bytes(b"\xff\xd8\xff")
+    samples = [
+        Sample(
+            source_id="marineinst20m", key="x.jpg", image=image, labels={}, supervised=frozenset()
+        )
+    ]
+    schema = registry.label_schema("rs-benthic-v1")
+    corpus = scan(iter(samples), by="site")
+    streaming = StreamingDataset(
+        builder=None,  # never reached: the gate check raises before iterating samples
+        label_index=LabelIndex.from_samples(samples, schema),
+        lineage=build_lineage([], registry.profile("research")),
+        corpus=corpus,
+        assignment={},
+    )
+    out = tmp_path / "shards"
+    with pytest.raises(ShardError, match="may not be sharded"):
+        write_shards(streaming, out)
+    assert not any(out.glob("*.tar"))
 
 
 def test_sharding_a_prohibited_source_raises(registry: Registry, tmp_path: Path) -> None:
