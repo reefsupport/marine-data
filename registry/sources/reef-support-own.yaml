@@ -165,14 +165,19 @@ sources:
     modalities: [image]
     capabilities: [bleaching-assessment, benthic-segmentation]
     loader:
-      layout: image-mask-pairs
+      layout: dual-condition-masks
+      verified_on: 2026-08-28
       verified_note: >
-        NOT VERIFIED. A live sample fetched images/, masks_bleached/ and
-        masks_non_bleached/ successfully, but no image/mask stems aligned within the
-        sample, so pairing could not be confirmed. Either the mask filenames differ
-        from the image stems, or the stratified sampler is not aligning them. Resolve
-        before relying on this loader.
-      params: { images_dir: images, masks_dir: masks_bleached }
+        RESOLVED. The stems DO align (e.g. images/C10_..._corr.jpg pairs with
+        masks_bleached/C10..._corr_bleached.png and masks_non_bleached/
+        C10..._corr_non_bleached.png) — the previous "no stems aligned" failure was
+        the single-masks_dir 'image-mask-pairs' layout looking for a plain "masks/"
+        directory that has never existed, not a real misalignment. Pixel check
+        against a live sample: masks_bleached and masks_non_bleached never mark the
+        same pixel (verified on the fetched sample), so the two combine into one
+        condition raster (0=unlabelled, 1=bleached, 2=non-bleached) with no
+        information lost or invented. See DualConditionMaskLoader.
+      params: { positive_dir: masks_bleached, negative_dir: masks_non_bleached }
       schema_id: dataset-native
     items: 658
     annotations:

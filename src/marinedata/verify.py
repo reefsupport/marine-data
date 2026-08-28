@@ -18,7 +18,6 @@ from .fetch import FetchError, FetchNotSupported, auto_fetchable, fetch_sample, 
 from .loaders import LoaderError, build_loader
 from .models import Source
 from .registry import Registry
-from .schema import Axis
 
 
 @dataclass(frozen=True)
@@ -136,19 +135,6 @@ def summarise(results: list[VerifyResult]) -> str:
     return "  ".join(parts)
 
 
-def _declared_supervision(source: Source) -> frozenset[Axis]:
-    """Axes this source's registry entry actually claims — same rule as the loader's,
-    kept in one place so `doctor` and `ImageMaskPairLoader` cannot drift apart."""
-    axes: set[Axis] = set()
-    for annotation in source.annotations:
-        for name in annotation.supervises:
-            try:
-                axes.add(Axis(name))
-            except ValueError:
-                continue
-    return frozenset(axes)
-
-
 _STATUS_MARK = {"ok": "✓", "n/a": "·", "missing": "✗"}
 
 
@@ -199,7 +185,7 @@ def doctor(registry: Registry) -> tuple[DoctorRow, ...]:
     """
     rows = []
     for source in registry:
-        supervises = _declared_supervision(source)
+        supervises = source.declared_supervision()
         has_crosswalk = source.loader is not None and bool(source.loader.crosswalk_id)
         is_metadata_only = source.loader is not None and source.loader.layout == "metadata-only"
 

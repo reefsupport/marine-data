@@ -21,6 +21,7 @@ from .enums import (
     Region,
     Tier,
 )
+from .schema import Axis
 
 
 class _Frozen(BaseModel):
@@ -258,6 +259,25 @@ class Source(_Frozen):
     homepage: str | None = None
     tags: tuple[str, ...] = ()
     notes: str | None = None
+
+    def declared_supervision(self) -> frozenset[Axis]:
+        """Axes this source's registry entry actually claims, across all annotations.
+
+        The one honest source of truth for a dense mask or point cloud, whose real
+        classes live in the raster/geometry and are otherwise invisible to a loader —
+        there is no native label string to fall back on the way a scalar-label loader
+        has. Shared by ``ImageMaskPairLoader``/``DualConditionMaskLoader`` (what a
+        `Sample` should claim) and ``marinedata doctor`` (what the registry claims),
+        so the two cannot silently drift apart.
+        """
+        axes: set[Axis] = set()
+        for annotation in self.annotations:
+            for name in annotation.supervises:
+                try:
+                    axes.add(Axis(name))
+                except ValueError:
+                    continue
+        return frozenset(axes)
 
     @model_validator(mode="after")
     def _prohibited_needs_reason(self) -> Source:

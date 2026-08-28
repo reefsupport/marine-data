@@ -145,26 +145,6 @@ class ImageMaskPairLoader(_HarmonizingLoader):
         masks = self.root / str(self._param("masks_dir", "masks"))
         return images, masks
 
-    def _supervised_axes(self) -> frozenset[Axis]:
-        """Which axes this mask actually supervises, per the registry — not a guess.
-
-        A dense mask's classes live in the raster, invisible from here, so unlike a
-        scalar label there is no native value to fall back on. The registry's declared
-        ``annotations[].supervises`` is the only honest source of truth: a crosswalked
-        source (coralscapes: ``[taxon, form, condition]``) keeps its claim, and a source
-        with no real supervision (deepfish, uieb: ``supervises: []``) gets an
-        unsupervised sample instead of a false TAXON claim. Getting this wrong silently
-        corrupts ``supervision_coverage()`` and every shard's metadata sidecar.
-        """
-        axes: set[Axis] = set()
-        for annotation in self.source.annotations:
-            for name in annotation.supervises:
-                try:
-                    axes.add(Axis(name))
-                except ValueError:
-                    continue
-        return frozenset(axes)
-
     def validate(self) -> None:
         super().validate()
         images, masks = self._dirs()
@@ -178,7 +158,7 @@ class ImageMaskPairLoader(_HarmonizingLoader):
         images, masks = self._dirs()
         suffix = str(self._param("mask_suffix", ""))
         by_stem = {p.stem: p for p in masks.rglob("*") if p.is_file()}
-        supervised = self._supervised_axes()
+        supervised = self.source.declared_supervision()
 
         for image in _images_under(images):
             mask = by_stem.get(f"{image.stem}{suffix}") or by_stem.get(image.stem)
@@ -199,6 +179,150 @@ class ImageMaskPairLoader(_HarmonizingLoader):
                 split=self.split,
                 meta={"mask_is_dense": True},
             )
+
+
+@register_loader
+class DualConditionMaskLoader(_HarmonizingLoader):
+    """Two mutually-exclusive binary masks per image, combined into one dense mask.
+
+    Built for ``reef-support-bleaching``: the annotation tool exports "bleached" and
+    "non-bleached" as two separate 0/255 rasters rather than one indexed mask, so
+    ``ImageMaskPairLoader`` — which reads exactly one ``masks_dir`` — cannot represent
+    it without discarding one side of the pair. Guessing which side to keep, or
+    treating them as independent axes, would either drop half the labels or invent an
+    overlap policy nobody asked for.
+
+    Verified against real data (2026-08-28) that the two masks never mark the same
+    pixel: ``positive`` and ``negative`` are a true partition, not two axes that could
+    disagree. That is what makes a single combined raster the honest representation
+    rather than a simplification — there is no ambiguity being thrown away. A source
+    where the two masks *can* overlap needs a different, deliberate policy, not this
+    loader; :meth:`_iter_samples` raises if it ever finds one, rather than silently
+    picking a side.
+
+    The combined raster (0 = unlabelled, 1 = positive, 2 = negative) is written once
+    per pair into ``combined_dir`` and reused on subsequent loads; the two source mask
+    directories are only ever read, never modified.
+
+    Params:
+        images_dir: default ``"images"``
+        positive_dir: default ``"masks_bleached"``
+        negative_dir: default ``"masks_non_bleached"``
+        positive_suffix: appended to the image stem to find the positive mask,
+            default ``"_bleached"``
+        negative_suffix: default ``"_non_bleached"``
+        combined_dir: default ``"masks_combined"``
+    """
+
+    layout = "dual-condition-masks"
+
+    def _dirs(self) -> tuple[Path, Path, Path, Path]:
+        images = self.root / str(self._param("images_dir", "images"))
+        positive = self.root / str(self._param("positive_dir", "masks_bleached"))
+        negative = self.root / str(self._param("negative_dir", "masks_non_bleached"))
+        combined = self.root / str(self._param("combined_dir", "masks_combined"))
+        return images, positive, negative, combined
+
+    def validate(self) -> None:
+        super().validate()
+        images, positive, negative, _combined = self._dirs()
+        for label, path in (
+            ("images_dir", images),
+            ("positive_dir", positive),
+            ("negative_dir", negative),
+        ):
+            if not path.is_dir():
+                raise LoaderError(
+                    f"{self.source.id}: layout 'dual-condition-masks' expects {label} at {path}"
+                )
+
+    def _iter_samples(self) -> Iterator[Sample]:
+        images, positive_dir, negative_dir, combined_dir = self._dirs()
+        positive_suffix = str(self._param("positive_suffix", "_bleached"))
+        negative_suffix = str(self._param("negative_suffix", "_non_bleached"))
+        by_stem_positive = {p.stem: p for p in positive_dir.rglob("*") if p.is_file()}
+        by_stem_negative = {p.stem: p for p in negative_dir.rglob("*") if p.is_file()}
+        supervised = self.source.declared_supervision()
+
+        for image in _images_under(images):
+            positive = by_stem_positive.get(f"{image.stem}{positive_suffix}")
+            negative = by_stem_negative.get(f"{image.stem}{negative_suffix}")
+            missing = [
+                name
+                for name, mask in (("positive", positive), ("negative", negative))
+                if mask is None
+            ]
+            if missing:
+                if self.partial:
+                    continue  # sampled sets are legitimately incomplete
+                raise LoaderError(
+                    f"{self.source.id}: no {'/'.join(missing)} mask for image "
+                    f"'{image.name}' in {positive_dir if 'positive' in missing else negative_dir}"
+                )
+
+            combined = combined_dir / f"{image.stem}.png"
+            if not combined.is_file():
+                combined.parent.mkdir(parents=True, exist_ok=True)
+                _write_combined_condition_mask(
+                    positive, negative, combined, source_id=self.source.id, key=image.name
+                )
+
+            yield Sample(
+                source_id=self.source.id,
+                key=self._relative(image),
+                image=image,
+                mask=combined,
+                labels={},
+                supervised=supervised,
+                licence_tier=self.source.licence.tier,
+                split=self.split,
+                meta={
+                    "mask_is_dense": True,
+                    "mask_values": {"0": "unlabelled", "1": "positive", "2": "negative"},
+                },
+            )
+
+
+def _require_pillow_and_numpy():
+    try:
+        import numpy as np
+        from PIL import Image
+    except ImportError as exc:  # pragma: no cover
+        raise ImportError(
+            "Combining dual-condition masks needs Pillow and numpy: pip install 'marinedata[torch]'"
+        ) from exc
+    return Image, np
+
+
+def _write_combined_condition_mask(
+    positive: Path, negative: Path, out: Path, *, source_id: str, key: str
+) -> None:
+    """0 = unlabelled, 1 = positive, 2 = negative. Raises on any pixel marked in both —
+    see :class:`DualConditionMaskLoader` for why that must not be silently resolved."""
+    Image, _np = _require_pillow_and_numpy()
+
+    positive_arr = _binary_mask_array(positive)
+    negative_arr = _binary_mask_array(negative)
+    if positive_arr.shape != negative_arr.shape:
+        raise LoaderError(
+            f"{source_id}/{key}: positive mask {positive_arr.shape} and negative mask "
+            f"{negative_arr.shape} have different dimensions"
+        )
+    if (positive_arr & negative_arr).any():
+        raise LoaderError(
+            f"{source_id}/{key}: positive and negative masks overlap — this loader "
+            f"assumes they partition the image; an overlapping pair needs a different, "
+            f"deliberate policy, not a silent pick-one"
+        )
+
+    combined = positive_arr.astype("uint8") * 1 + negative_arr.astype("uint8") * 2
+    Image.fromarray(combined, mode="L").save(out)
+
+
+def _binary_mask_array(path: Path):
+    Image, np = _require_pillow_and_numpy()
+    with Image.open(path) as handle:
+        return np.asarray(handle.convert("L")) > 127
 
 
 @register_loader

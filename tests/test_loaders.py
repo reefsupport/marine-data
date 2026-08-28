@@ -15,7 +15,7 @@ from __future__ import annotations
 from pathlib import Path
 
 import pytest
-from conftest import make_source
+from conftest import _touch_image, make_source
 
 from marinedata import Registry
 from marinedata.loaders import (
@@ -110,6 +110,74 @@ def test_image_mask_pairs_respects_declared_supervised_axes(image_mask_root: Pat
     )
     samples = list(build_loader(source, image_mask_root))
     assert all(s.supervised == frozenset({Axis.TAXON, Axis.CONDITION}) for s in samples)
+
+
+@pytest.fixture
+def dual_condition_root(tmp_path: Path) -> Path:
+    np = pytest.importorskip("numpy")
+    PIL_Image = pytest.importorskip("PIL.Image")
+    root = tmp_path / "dual-condition"
+    for i in range(2):
+        _touch_image(root / "images" / f"f{i}.jpg")
+        positive = np.zeros((4, 4), dtype="uint8")
+        positive[0, 0] = 255
+        negative = np.zeros((4, 4), dtype="uint8")
+        negative[1, 1] = 255
+        (root / "masks_bleached").mkdir(parents=True, exist_ok=True)
+        (root / "masks_non_bleached").mkdir(parents=True, exist_ok=True)
+        PIL_Image.fromarray(positive, mode="L").save(root / "masks_bleached" / f"f{i}_bleached.png")
+        PIL_Image.fromarray(negative, mode="L").save(
+            root / "masks_non_bleached" / f"f{i}_non_bleached.png"
+        )
+    return root
+
+
+def test_dual_condition_masks_combines_into_one_raster(dual_condition_root: Path) -> None:
+    np = pytest.importorskip("numpy")
+    PIL_Image = pytest.importorskip("PIL.Image")
+    samples = list(build_loader(make_source("dual-condition-masks"), dual_condition_root))
+    assert len(samples) == 2
+    for sample in samples:
+        combined = np.asarray(PIL_Image.open(sample.mask))
+        assert combined[0, 0] == 1  # positive
+        assert combined[1, 1] == 2  # negative
+        assert combined[2, 2] == 0  # unlabelled
+    assert (dual_condition_root / "masks_combined" / "f0.png").is_file()
+
+
+def test_dual_condition_masks_respects_declared_supervised_axes(dual_condition_root: Path) -> None:
+    from marinedata.models import Annotation
+
+    source = make_source(
+        "dual-condition-masks",
+        annotations=(Annotation(kind="dense-mask", supervises=("condition",)),),
+    )
+    samples = list(build_loader(source, dual_condition_root))
+    assert all(s.supervised == frozenset({Axis.CONDITION}) for s in samples)
+
+
+def test_dual_condition_masks_rejects_overlap(tmp_path: Path) -> None:
+    np = pytest.importorskip("numpy")
+    PIL_Image = pytest.importorskip("PIL.Image")
+    root = tmp_path / "overlap"
+    _touch_image(root / "images" / "f0.jpg")
+    overlap = np.zeros((4, 4), dtype="uint8")
+    overlap[0, 0] = 255
+    (root / "masks_bleached").mkdir(parents=True)
+    (root / "masks_non_bleached").mkdir(parents=True)
+    PIL_Image.fromarray(overlap, mode="L").save(root / "masks_bleached" / "f0_bleached.png")
+    PIL_Image.fromarray(overlap, mode="L").save(root / "masks_non_bleached" / "f0_non_bleached.png")
+
+    loader = build_loader(make_source("dual-condition-masks"), root)
+    with pytest.raises(LoaderError, match="overlap"):
+        list(loader)
+
+
+def test_dual_condition_masks_missing_pair_is_an_error(dual_condition_root: Path) -> None:
+    next((dual_condition_root / "masks_bleached").iterdir()).unlink()
+    loader = build_loader(make_source("dual-condition-masks"), dual_condition_root)
+    with pytest.raises(LoaderError, match="no positive mask"):
+        list(loader)
 
 
 def test_coco_json(coco_root: Path) -> None:
