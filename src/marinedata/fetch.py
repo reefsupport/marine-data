@@ -254,17 +254,142 @@ def _fetch_huggingface(source: Source, root: Path, limit: int) -> FetchResult:
 
 _ARCHIVE_SUFFIXES = (".tar.gz", ".tar.bz2", ".tar.xz", ".tgz", ".tar", ".zip")
 
+MAX_DOWNLOAD_WITHOUT_RANGE = 200 * 1024 * 1024
+"""A full-body GET is only safe up to this size. CoralVQA's real image archive is a
+single 26.7 GB zip with no smaller subset published anywhere — downloading that just to
+read 100 verification images would be absurd, and it is exactly the shape of "large
+upstream archive, needs a bounded sample" that this registry expects to hit again."""
 
-def _safe_extract_path(root: Path, member_name: str) -> Path | None:
-    """Resolve an archive member's target path, refusing to leave ``root``.
+
+def _head(url: str, *, timeout: int = 30) -> tuple[int | None, bool]:
+    """Content-Length and whether the server advertises Range support, via HEAD.
+
+    Follows redirects like any other urllib request (HF's resolve URLs 302 to a signed
+    CDN URL; the redirected response is what carries the real headers). Returns
+    ``(None, False)`` on any failure — callers treat that as "cannot be range-read" and
+    fall back to a plain full download when the size is small enough to make that safe.
+    """
+    try:
+        request = urllib.request.Request(url, method="HEAD", headers={"User-Agent": USER_AGENT})
+        with urllib.request.urlopen(request, timeout=timeout) as response:
+            length = response.headers.get("Content-Length")
+            accepts_ranges = response.headers.get("Accept-Ranges", "").lower() == "bytes"
+            return (int(length) if length is not None else None, accepts_ranges)
+    except (urllib.error.URLError, http.client.HTTPException, OSError, ValueError):
+        return (None, False)
+
+
+def _get_range(url: str, start: int, end: int, *, timeout: int = 60, retries: int = 3) -> bytes:
+    """Ranged GET, ``bytes=start-end`` inclusive. Raises rather than silently returning
+    the wrong bytes if the server does not honour the range (some proxies strip the
+    header and return 200 with the whole body) — a caller parsing a zip's central
+    directory from what it thinks is a 4 KB slice would otherwise get garbage from the
+    front of a 26 GB file and fail in a confusing way far from the actual cause.
+    """
+    last: Exception | None = None
+    for attempt in range(retries):
+        request = urllib.request.Request(
+            url, headers={"User-Agent": USER_AGENT, "Range": f"bytes={start}-{end}"}
+        )
+        try:
+            with urllib.request.urlopen(request, timeout=timeout) as response:
+                if response.status != 206:
+                    raise FetchError(
+                        f"{url} did not honour the Range request (status "
+                        f"{response.status}) — cannot safely read a slice of it"
+                    )
+                return response.read()
+        except urllib.error.HTTPError as exc:
+            if exc.code < 500:
+                raise FetchError(f"HTTP {exc.code} for ranged GET of {url}") from exc
+            last = exc
+        except (urllib.error.URLError, http.client.HTTPException, OSError) as exc:
+            last = exc
+        if attempt < retries - 1:
+            time.sleep(1.5 * (attempt + 1))
+    raise FetchError(f"failed after {retries} attempt(s) for ranged GET of {url}: {last}")
+
+
+class _RemoteFile:
+    """A read-only, seekable view over a remote resource, fetched lazily via HTTP Range
+    requests — lets :class:`zipfile.ZipFile` read a multi-gigabyte archive's central
+    directory and individual members without ever downloading the whole thing.
+
+    ``zipfile`` reads a central directory near the *end* of the file and then seeks
+    around to each member's local header, so this needs real seek support, not just
+    sequential reads — a plain streaming GET could not do this.
+    """
+
+    def __init__(self, url: str, size: int) -> None:
+        self._url = url
+        self._size = size
+        self._pos = 0
+
+    def seekable(self) -> bool:
+        return True
+
+    def seek(self, offset: int, whence: int = 0) -> int:
+        if whence == 1:
+            offset += self._pos
+        elif whence == 2:
+            offset += self._size
+        self._pos = max(0, offset)
+        return self._pos
+
+    def tell(self) -> int:
+        return self._pos
+
+    def read(self, size: int | None = -1) -> bytes:
+        if self._pos >= self._size:
+            return b""
+        end = self._size - 1 if size is None or size < 0 else min(self._pos + size, self._size) - 1
+        data = _get_range(self._url, self._pos, end)
+        self._pos += len(data)
+        return data
+
+
+def _extract_remote_zip(url: str, size: int, root: Path, limit: int) -> int:
+    """Extract up to ``limit`` members from a remote zip without downloading it.
+
+    The counterpart to :func:`_extract_archive` for archives too large to pull in full —
+    see ``MAX_DOWNLOAD_WITHOUT_RANGE``.
+    """
+    import zipfile
+
+    resolved_root = root.resolve()
+    count = 0
+    with zipfile.ZipFile(_RemoteFile(url, size)) as archive:
+        members = [m for m in archive.infolist() if not m.is_dir()]
+        for member in members[:limit] if limit else members:
+            target = _safe_extract_path(resolved_root, member.filename)
+            if target is None:
+                continue
+            target.parent.mkdir(parents=True, exist_ok=True)
+            target.write_bytes(archive.read(member))
+            count += 1
+
+    if count == 0:
+        raise FetchError(f"archive at {url} contained no extractable files")
+    return count
+
+
+def _safe_extract_path(resolved_root: Path, member_name: str) -> Path | None:
+    """Resolve an archive member's target path, refusing to leave ``resolved_root``.
 
     Archive members are attacker-influenced input in general (here, a maintainer-chosen
     URL, but the extraction code itself does not know that) — an absolute path or a
     ``../`` traversal in a member name must not write outside the sample directory.
     Returns ``None`` for a member that would escape, so the caller can skip it.
+
+    ``resolved_root`` must already be ``.resolve()``d by the caller, once, before the
+    extraction loop. Resolving it fresh on every call here — comparing an *unresolved*
+    root against a *resolved* target — used to reject every single member as "escaping"
+    whenever the destination sat under a symlink, which on macOS ``/tmp`` always does:
+    caught by a live verification run against a real archive, silently invisible to
+    every synthetic-fixture test because pytest's ``tmp_path`` is never symlinked.
     """
-    target = (root / member_name).resolve()
-    if target != root and root not in target.parents:
+    target = (resolved_root / member_name).resolve()
+    if target != resolved_root and resolved_root not in target.parents:
         return None
     return target
 
@@ -278,6 +403,7 @@ def _extract_archive(payload: bytes, root: Path, name: str, limit: int) -> int:
     """
     import io
 
+    resolved_root = root.resolve()
     count = 0
     lower = name.lower()
     if lower.endswith(".zip"):
@@ -286,7 +412,7 @@ def _extract_archive(payload: bytes, root: Path, name: str, limit: int) -> int:
         with zipfile.ZipFile(io.BytesIO(payload)) as archive:
             members = [m for m in archive.infolist() if not m.is_dir()]
             for member in members[:limit] if limit else members:
-                target = _safe_extract_path(root, member.filename)
+                target = _safe_extract_path(resolved_root, member.filename)
                 if target is None:
                     continue
                 target.parent.mkdir(parents=True, exist_ok=True)
@@ -299,7 +425,7 @@ def _extract_archive(payload: bytes, root: Path, name: str, limit: int) -> int:
         with tarfile.open(fileobj=io.BytesIO(payload), mode=mode) as archive:
             members = [m for m in archive.getmembers() if m.isfile()]
             for member in members[:limit] if limit else members:
-                target = _safe_extract_path(root, member.name)
+                target = _safe_extract_path(resolved_root, member.name)
                 if target is None:
                     continue
                 extracted = archive.extractfile(member)
@@ -327,15 +453,39 @@ def _fetch_http(source: Source, root: Path, limit: int) -> FetchResult:
     more than one file, which is why this extracts archives rather than only writing
     the raw bytes: a bare-file fetch cannot satisfy any layout needing an ``images/`` +
     ``masks/`` pair, no matter how correct the URL is.
+
+    A ``.zip`` whose host advertises Range support is read directly over the network —
+    only the central directory and the first ``limit`` members are ever transferred,
+    regardless of how large the archive is. Without Range support, anything over
+    ``MAX_DOWNLOAD_WITHOUT_RANGE`` is refused outright rather than silently downloaded
+    in full: a "bounded verification sample" that pulls 26 GB to read 100 images is not
+    bounded.
     """
-    sample_url = source.access.params.get("sample_url")
+    sample_url = str(source.access.params.get("sample_url") or "")
     if not sample_url:
         raise FetchNotSupported(
             f"{source.id}: no `sample_url` declared. Add one pointing at a small "
             f"downloadable sample, or fetch the data manually."
         )
-    payload = _get(str(sample_url))
-    name = Path(urllib.parse.urlparse(str(sample_url)).path).name or "sample.bin"
+    name = Path(urllib.parse.urlparse(sample_url).path).name or "sample.bin"
+
+    if name.lower().endswith(".zip"):
+        size, supports_range = _head(sample_url)
+        if supports_range and size:
+            count = _extract_remote_zip(sample_url, size, root, limit)
+            return FetchResult(source.id, root, count, "http", truncated=True)
+        if size and size > MAX_DOWNLOAD_WITHOUT_RANGE:
+            raise FetchNotSupported(
+                f"{source.id}: sample_url is a {size / 1e9:.1f} GB zip and the host does "
+                f"not support Range requests, so a bounded sample cannot be read from it "
+                f"without downloading the whole archive. Find a smaller published subset, "
+                f"or fetch it manually."
+            )
+        payload = _get(sample_url)
+        count = _extract_archive(payload, root, name, limit)
+        return FetchResult(source.id, root, count, "http", truncated=True)
+
+    payload = _get(sample_url)
     if name.lower().endswith(_ARCHIVE_SUFFIXES):
         count = _extract_archive(payload, root, name, limit)
         return FetchResult(source.id, root, count, "http", truncated=True)
