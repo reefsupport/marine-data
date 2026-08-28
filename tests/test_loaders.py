@@ -38,6 +38,20 @@ def test_image_folder(image_folder_root: Path) -> None:
     assert all(s.image is not None for s in samples)
 
 
+def test_image_folder_with_nested_images_dir(tmp_path: Path) -> None:
+    """Fish4Knowledge's tar extracts to fish_image/<class>/*.png, not <class>/*.png."""
+    root = tmp_path / "f4k"
+    for name, count in (("fish_01", 2), ("fish_02", 1)):
+        for i in range(count):
+            _touch = root / "fish_image" / name / f"img_{i}.jpg"
+            _touch.parent.mkdir(parents=True, exist_ok=True)
+            _touch.write_bytes(b"\x89PNG")
+    loader = build_loader(make_source("image-folder", {"images_dir": "fish_image"}), root)
+    samples = list(loader)
+    assert len(samples) == 3
+    assert {s.meta["native_label"] for s in samples} == {"fish_01", "fish_02"}
+
+
 def test_image_folder_rejects_flat_directory(tmp_path: Path) -> None:
     (tmp_path / "loose.jpg").write_bytes(b"\x89PNG")
     loader = build_loader(make_source("image-folder"), tmp_path)

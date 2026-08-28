@@ -279,7 +279,17 @@ sources:
       verified_on: 2026-08-17
       verified_by: "Internal catalog 2026-07-24 sweep — permissive/public-domain style; homepages.inf.ed.ac.uk"
       method: secondary
-    access: { method: http, uri: https://homepages.inf.ed.ac.uk/rbf/Fish4Knowledge/ }
+    access:
+      method: http
+      uri: https://homepages.inf.ed.ac.uk/rbf/Fish4Knowledge/
+      size_bytes: 510912000
+      params:
+        sample_url: https://homepages.inf.ed.ac.uk/rbf/Fish4Knowledge/GROUNDTRUTH/RECOG/Archive/fishRecognition_GT.tar
+      notes: >
+        487 MB — above the ~200MB verification-sample guideline, but it is the only
+        self-contained multi-class archive this host publishes (per-class tars also
+        exist under fish_image/fish_NN.tar but each holds one class, so none alone
+        satisfies the image-folder layout's "one directory per class" requirement).
     modalities: [image]
     capabilities: [fish-classification, fish-detection]
     items: 27370
@@ -290,6 +300,7 @@ sources:
     loader:
       layout: image-folder
       schema_id: worms-species
+      params: { images_dir: fish_image }
     tags: [classic, imbalanced]
 
   - id: sea-urchin-detection

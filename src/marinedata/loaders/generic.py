@@ -52,21 +52,36 @@ class ImageFolderLoader(_HarmonizingLoader):
     """``root/<class_name>/<image>`` — one directory per class.
 
     The most common layout for classification sets (bleaching, species, coral health).
+
+    Params:
+        images_dir: subdirectory holding the per-class folders. Default: the root
+            itself. Needed when an archive nests them under a top-level folder — e.g.
+            Fish4Knowledge's tar extracts to ``fish_image/<class>/*.png``, not
+            ``<class>/*.png`` directly.
     """
 
     layout = "image-folder"
 
+    def _classes_dir(self) -> Path:
+        sub = self._param("images_dir")
+        return self.root / str(sub) if sub else self.root
+
     def validate(self) -> None:
         super().validate()
-        subdirs = [d for d in self.root.iterdir() if d.is_dir()]
+        classes_dir = self._classes_dir()
+        if not classes_dir.is_dir():
+            raise LoaderError(
+                f"{self.source.id}: layout 'image-folder' expects images_dir at {classes_dir}"
+            )
+        subdirs = [d for d in classes_dir.iterdir() if d.is_dir()]
         if not subdirs:
             raise LoaderError(
                 f"{self.source.id}: layout 'image-folder' expects one directory per class "
-                f"under {self.root}, found none."
+                f"under {classes_dir}, found none."
             )
 
     def _iter_samples(self) -> Iterator[Sample]:
-        for class_dir in sorted(d for d in self.root.iterdir() if d.is_dir()):
+        for class_dir in sorted(d for d in self._classes_dir().iterdir() if d.is_dir()):
             for image in _images_under(class_dir):
                 labels, supervised = self._resolve(class_dir.name)
                 yield Sample(
