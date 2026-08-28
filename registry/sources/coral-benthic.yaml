@@ -98,6 +98,14 @@ sources:
     access:
       method: http
       uri: https://doi.org/10.20383/103.0614
+      notes: >
+        Checked 2026-08-28: the DOI resolves to a Federated Research Data Repository
+        (FRDR) record whose only file-transfer path is Globus Connect (an OAuth login
+        button gates the file listing itself — /repo/userfiles 400s without an
+        authenticated Globus session). No anonymous single-GET path exists, at any
+        size. A HuggingFace mirror (ndotm/benthicnet_labelled) exists but is a 1.09GB
+        label CSV with zero images, so it cannot satisfy the images/+csv layout
+        either. Needs a human with a Globus account to fetch a sample manually.
     modalities: [image]
     capabilities:
       - benthic-classification
@@ -196,6 +204,16 @@ sources:
     access:
       method: zenodo
       uri: https://doi.org/10.5281/zenodo.7338208
+      size_bytes: 5151053696
+      notes: >
+        Checked 2026-08-28: the Zenodo record has exactly two files, full_dataset.zip
+        (5.15GB) and experiments.zip (7.7GB) — no smaller subset. Confirmed via remote
+        central-directory parsing (no download needed) that full_dataset.zip is itself
+        a zip-of-zips: classification.zip (2.16GB) + segmentation_map.zip (2.99GB), and
+        the actual image+mask pairs this entry's image-mask-pairs layout expects live
+        one extraction step INSIDE segmentation_map.zip, not at the top level Zenodo
+        exposes. Our archive extraction reads one level only; a second, nested
+        extraction pass would be needed. Fetch and unpack manually.
     modalities: [image]
     capabilities:
       - benthic-segmentation
@@ -237,6 +255,16 @@ sources:
     access:
       method: http
       uri: https://www.nature.com/articles/s41597-021-00871-5
+      notes: >
+        Checked 2026-08-28: the paper's data lives on PANGAEA as a 32-file "tab"
+        collection (doi.pangaea.de/10.1594/PANGAEA.894801?format=zip, ~2.8MB,
+        downloaded and inspected directly). It is genuinely small but does NOT
+        contain image bytes — it is metadata only: per-survey-year point-label CSVs
+        plus a column of individually-addressable HTTPS image URLs
+        (hs.pangaea.de/Images/Benthos/Heron_Reef/<year>/<file>.jpg, spot-checked
+        working). Filling this source's csv-points layout needs a two-stage fetch
+        (download the manifest, then GET each referenced image up to the sample
+        limit) that this project's single-sample_url fetcher does not support.
     modalities: [image]
     capabilities: [benthic-classification, general-pretraining]
     items: 58941

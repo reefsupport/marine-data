@@ -22,6 +22,14 @@ sources:
     access:
       method: http
       uri: https://github.com/open-AIMS/ozfish
+      notes: >
+        Checked 2026-08-28: the repo's README points at two AIMS-operated data
+        portals (storage.pawsey.org.au, data.pawsey.org.au), both single-page apps
+        that return only a JS shell on a plain GET — no data without executing the
+        page's JS, which this project deliberately does not do. A GitHub issue
+        (open-AIMS/ozfish#1) confirms other users hit the same wall. No Kaggle/HF/
+        Zenodo mirror with matching annotations was found. Needs a human to
+        download via browser and re-host, or an AIMS-provided static mirror.
     modalities: [image]
     capabilities: [fish-detection, fish-classification, fish-biomass]
     items: 80000
@@ -51,7 +59,17 @@ sources:
       verified_on: 2026-08-17
       verified_by: "Internal external-dataset catalog 2026-07-24 sweep; alzayats.github.io/DeepFish"
       method: secondary
-    access: { method: http, uri: https://alzayats.github.io/DeepFish/ }
+    access:
+      method: http
+      uri: https://alzayats.github.io/DeepFish/
+      size_bytes: 7269000000
+      notes: >
+        Checked 2026-08-28: only one archive exists (QLD data repository,
+        DeepFish.tar, 7.1GB, Range-capable but nowhere near a "sample" size). A
+        genuinely small (2.45MB) sample exists on Dataset Ninja but its download
+        URL is generated client-side by JS with no stable static form found —
+        fetching it would mean executing the page's JS, which this project
+        deliberately does not do. Fetch the full 7.1GB manually.
     modalities: [image]
     capabilities: [fish-detection, general-pretraining]
     items: 40000
@@ -99,7 +117,18 @@ sources:
       verified_on: 2026-08-17
       verified_by: "Internal catalog 2026-07-24 sweep (CC-BY-SA 4.0); fishnet-2023.github.io"
       method: secondary
-    access: { method: http, uri: https://fishnet-2023.github.io/ }
+    access:
+      method: http
+      uri: https://fishnet-2023.github.io/
+      notes: >
+        Checked 2026-08-28: the only image source is a Google Drive file
+        ("all 94,532 images") that serves an interstitial virus-scan confirmation
+        page rather than the file itself, since it is too large to scan — no plain
+        GET reaches the actual bytes. The linked GitHub repo (faixan-khan/FishNet)
+        contains only per-image trait .txt files, not the images, and its
+        README-referenced "bbox.zip" annotation archive has no working URL at all
+        (a dead reference). No usable download path exists today for either half
+        of this source's declared coco-json layout.
     modalities: [image]
     capabilities: [fish-classification, general-pretraining]
     items: 94532
@@ -255,7 +284,17 @@ sources:
       verified_on: 2026-08-17
       verified_by: "Internal catalog 2026-07-24 sweep (CC-BY 4.0); vap.aau.dk/the-brackish-dataset"
       method: secondary
-    access: { method: http, uri: https://vap.aau.dk/the-brackish-dataset/ }
+    access:
+      method: http
+      uri: https://vap.aau.dk/the-brackish-dataset/
+      notes: >
+        Checked 2026-08-28: the AAU page's only real data host is Kaggle
+        (aalborguniversity/brackish-dataset, ~173MB per its public listing API,
+        YOLO-format annotations confirmed available — would otherwise be an ideal
+        size). Kaggle requires an account + API key for the actual file download,
+        even anonymously-listable metadata; confirmed both the web and API download
+        endpoints reject unauthenticated requests. Not fetchable without credentials
+        this project does not hold.
     modalities: [video, image]
     capabilities: [fish-detection, invertebrate-detection]
     items: 14674
@@ -319,7 +358,15 @@ sources:
       verified_on: 2026-08-17
       verified_by: "Internal catalog 2026-07-24 sweep (CC-BY 4.0); Roboflow Universe"
       method: secondary
-    access: { method: http, uri: https://universe.roboflow.com/thesis-ztpwb/sea-urchin-10r8i }
+    access:
+      method: http
+      uri: https://universe.roboflow.com/thesis-ztpwb/sea-urchin-10r8i
+      notes: >
+        Checked 2026-08-28: confirmed via direct interaction with the live project
+        page (Dataset tab, each download-format link including YOLO Darknet) that
+        Roboflow Universe exports require a signed-in account to mint an export/API
+        key first — there is no public unauthenticated export endpoint. Not
+        fetchable without a Roboflow account this project does not hold.
     modalities: [image]
     capabilities: [invertebrate-detection]
     items: 2475

@@ -141,6 +141,16 @@ sources:
     access:
       method: http
       uri: https://github.com/zkawfanx/Atlantis
+      size_bytes: 1962319455
+      notes: >
+        Checked 2026-08-28: sole distribution is Kaggle (zkawfanx/atlantis, 1.96GB,
+        no smaller subset; verified as a real zip by reading local file headers, not
+        just HTTP headers). Confirmed a real declared-layout problem beyond size: the
+        pairing is NOT one depth map per image — `depth/0000.png` corresponds to
+        MULTIPLE renderings `underwater/0000_00.png` .. `underwater/0000_07.png` (one
+        depth map, several water-type variants), a one-to-many relationship this
+        registry's stem/suffix-matching image-mask-pairs convention cannot express as
+        declared. Needs both a smaller host and a different pairing rule.
     modalities: [image]
     capabilities: [depth-estimation, image-enhancement]
     items: 3200

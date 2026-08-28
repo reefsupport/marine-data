@@ -156,7 +156,19 @@ sources:
       verified_on: 2026-08-17
       verified_by: "Nature Scientific Data s41597-024-03759-2 — CC-BY 4.0"
       method: dataset-card
-    access: { method: http, uri: https://www.nature.com/articles/s41597-024-03759-2 }
+    access:
+      method: http
+      uri: https://www.nature.com/articles/s41597-024-03759-2
+      size_bytes: 1711829309
+      notes: >
+        Checked 2026-08-28: the paper's Data Availability statement points to 4TU
+        ResearchData (DOI 10.4121/4f1dff25-...), reachable and unauthenticated — but
+        the only file is a single 1.7GB .rar (per the publisher's own description:
+        images/ organised one folder per site-camera pair, plus a COCO annotations.json
+        — matches this entry's coco-json layout in principle). Not fetchable
+        automatically: this project reads .zip/.tar via the standard library only, and
+        adding RAR support means a new external dependency (rarfile + a system
+        unrar/unar binary) for exactly one source. Fetch manually, or re-host as .zip.
     modalities: [image]
     capabilities: [marine-debris, general-pretraining]
     items: 8610

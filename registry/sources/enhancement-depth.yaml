@@ -17,7 +17,16 @@ sources:
       verified_on: 2026-08-17
       verified_by: "Internal catalog 2026-07-24 sweep — flagged research/non-commercial; not re-checked at source"
       method: secondary
-    access: { method: http, uri: https://li-chongyi.github.io/proj_benchmark.html }
+    access:
+      method: http
+      uri: https://li-chongyi.github.io/proj_benchmark.html
+      notes: >
+        Checked 2026-08-28: the official page only offers Google Drive/Baidu links.
+        Two working Kaggle mirrors exist (larjeck/uieb-dataset-raw, 634MB;
+        .../uieb-dataset-reference, 785MB) but split the raw/reference halves into
+        SEPARATE archives with non-matching internal folder names (raw-890/,
+        reference-890/) — this source needs two sample_urls plus a rename, and our
+        fetcher takes exactly one sample_url. Not fetchable automatically as declared.
     modalities: [image]
     capabilities: [image-enhancement]
     items: 890
@@ -37,7 +46,14 @@ sources:
       verified_on: 2026-08-17
       verified_by: "Internal catalog 2026-07-24 sweep — permissive; csms.haifa.ac.il/profiles/tTreibitz/datasets"
       method: secondary
-    access: { method: http, uri: https://csms.haifa.ac.il/profiles/tTreibitz/datasets/ambient_forwardlooking/index.html }
+    access:
+      method: http
+      uri: https://csms.haifa.ac.il/profiles/tTreibitz/datasets/ambient_forwardlooking/index.html
+      notes: >
+        Checked 2026-08-28: the original Haifa page's Dropbox links are flaky; the
+        dataset is more reliably hosted on Zenodo (record 5744037), one .zip per site
+        (Satil.zip 6.2GB, the smallest of four; the others run 10.5–16.9GB). No
+        subset is published anywhere. Fetch a site archive manually.
     modalities: [image]
     capabilities: [image-enhancement, depth-estimation]
     items: 57
