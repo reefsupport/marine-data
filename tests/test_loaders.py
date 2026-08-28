@@ -183,6 +183,20 @@ def test_audio_clips(audio_root: Path) -> None:
     assert {s.meta["native_label"] for s in samples} == {"fish_chorus", "snapping_shrimp"}
 
 
+def test_audio_clips_with_nested_images_dir_and_extra_files(tmp_path: Path) -> None:
+    """The Watkins IA mirror extracts to <top>/<species>/sound/*.wav plus a sibling
+    metadata/*.csv per species — rglob must find clips and ignore the metadata."""
+    root = tmp_path / "watkins"
+    for species in ("orca", "beluga"):
+        (root / "top" / species / "sound").mkdir(parents=True)
+        (root / "top" / species / "sound" / "clip1.wav").write_bytes(b"RIFF")
+        (root / "top" / species / "metadata").mkdir(parents=True)
+        (root / "top" / species / "metadata" / "info.csv").write_text("x")
+    samples = list(build_loader(make_source("audio-clips", {"images_dir": "top"}), root))
+    assert len(samples) == 2
+    assert {s.meta["native_label"] for s in samples} == {"orca", "beluga"}
+
+
 def test_metadata_only_refuses_clearly(tmp_path: Path) -> None:
     loader = build_loader(make_source("metadata-only"), tmp_path)
     with pytest.raises(LoaderError, match="metadata-only"):

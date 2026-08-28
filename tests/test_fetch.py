@@ -240,11 +240,17 @@ def test_remote_zip_reads_only_what_it_needs(range_server, tmp_path: Path) -> No
         return original(url, start, end, **kwargs)
 
     fetch_module._get_range = spying_get_range
+    # A full download is faster and just as safe for a small archive, so the dispatch
+    # in _fetch_http only takes the ranged path once size exceeds this threshold — lower
+    # it here so a small test archive still exercises the ranged path being tested.
+    original_threshold = fetch_module.MAX_DOWNLOAD_WITHOUT_RANGE
+    fetch_module.MAX_DOWNLOAD_WITHOUT_RANGE = 1
     try:
         url = _serve(range_server, payload)
         result = fetch_sample(_http_source(url), root=tmp_path / "dest", limit=3, force=True)
     finally:
         fetch_module._get_range = original
+        fetch_module.MAX_DOWNLOAD_WITHOUT_RANGE = original_threshold
 
     assert result.items == 3
     total_ranged = sum(end - start + 1 for start, end in ranges_requested)

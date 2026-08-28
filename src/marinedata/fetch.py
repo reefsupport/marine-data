@@ -454,12 +454,14 @@ def _fetch_http(source: Source, root: Path, limit: int) -> FetchResult:
     the raw bytes: a bare-file fetch cannot satisfy any layout needing an ``images/`` +
     ``masks/`` pair, no matter how correct the URL is.
 
-    A ``.zip`` whose host advertises Range support is read directly over the network —
-    only the central directory and the first ``limit`` members are ever transferred,
-    regardless of how large the archive is. Without Range support, anything over
-    ``MAX_DOWNLOAD_WITHOUT_RANGE`` is refused outright rather than silently downloaded
-    in full: a "bounded verification sample" that pulls 26 GB to read 100 images is not
-    bounded.
+    A ``.zip`` over ``MAX_DOWNLOAD_WITHOUT_RANGE`` is read via HTTP Range when the host
+    supports it — only the central directory and the first ``limit`` members are ever
+    transferred, regardless of how large the archive is — and refused outright when it
+    does not, rather than silently downloaded in full: a "bounded verification sample"
+    that pulls 26 GB to read 100 images is not bounded. A zip small enough to download
+    safely is downloaded whole even when Range is available: a few hundred tiny ranged
+    reads (roughly two per member — a local-header read, then the payload) is *slower*
+    than one bulk transfer once the whole thing already fits comfortably in memory.
     """
     sample_url = str(source.access.params.get("sample_url") or "")
     if not sample_url:
@@ -471,6 +473,10 @@ def _fetch_http(source: Source, root: Path, limit: int) -> FetchResult:
 
     if name.lower().endswith(".zip"):
         size, supports_range = _head(sample_url)
+        if size and size <= MAX_DOWNLOAD_WITHOUT_RANGE:
+            payload = _get(sample_url)
+            count = _extract_archive(payload, root, name, limit)
+            return FetchResult(source.id, root, count, "http", truncated=True)
         if supports_range and size:
             count = _extract_remote_zip(sample_url, size, root, limit)
             return FetchResult(source.id, root, count, "http", truncated=True)

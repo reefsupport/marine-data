@@ -389,12 +389,25 @@ class CsvPointsLoader(_HarmonizingLoader):
 
 @register_loader
 class AudioClipsLoader(_HarmonizingLoader):
-    """``root/<class_name>/<clip>`` for bioacoustic sets."""
+    """``root/<class_name>/<clip>`` for bioacoustic sets.
+
+    Params:
+        images_dir: subdirectory holding the per-class folders. Default: the root
+            itself. Same purpose as the identically-named param on ``image-folder`` and
+            ``image-mask-pairs`` — an archive's real content is often nested under a
+            top-level folder (the Watkins "best of" mirror extracts to
+            ``watkins_best_of_whales/<species>/sound/*.wav``, so clips are found via
+            ``rglob`` under each species directory rather than requiring them flat).
+    """
 
     layout = "audio-clips"
 
+    def _classes_dir(self) -> Path:
+        sub = self._param("images_dir")
+        return self.root / str(sub) if sub else self.root
+
     def _iter_samples(self) -> Iterator[Sample]:
-        for class_dir in sorted(d for d in self.root.iterdir() if d.is_dir()):
+        for class_dir in sorted(d for d in self._classes_dir().iterdir() if d.is_dir()):
             for clip in sorted(class_dir.rglob("*")):
                 if not clip.is_file() or clip.suffix.lower() not in AUDIO_SUFFIXES:
                     continue
