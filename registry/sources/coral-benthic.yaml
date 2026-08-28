@@ -218,16 +218,20 @@ sources:
     access:
       method: zenodo
       uri: https://doi.org/10.5281/zenodo.7338208
-      size_bytes: 5151053696
+      size_bytes: 2985845243
+      params:
+        sample_url: https://zenodo.org/records/7338208/files/full_dataset.zip
+        nested_archive: segmentation_map.zip
       notes: >
-        Checked 2026-08-28: the Zenodo record has exactly two files, full_dataset.zip
-        (5.15GB) and experiments.zip (7.7GB) — no smaller subset. Confirmed via remote
-        central-directory parsing (no download needed) that full_dataset.zip is itself
-        a zip-of-zips: classification.zip (2.16GB) + segmentation_map.zip (2.99GB), and
-        the actual image+mask pairs this entry's image-mask-pairs layout expects live
-        one extraction step INSIDE segmentation_map.zip, not at the top level Zenodo
-        exposes. Our archive extraction reads one level only; a second, nested
-        extraction pass would be needed. Fetch and unpack manually.
+        The Zenodo record has exactly two files, full_dataset.zip (5.15GB) and
+        experiments.zip (7.7GB) — no smaller subset. full_dataset.zip is a zip-of-zips
+        (classification.zip 2.16GB + segmentation_map.zip 2.99GB, both stored
+        uncompressed), and the real per-image annotations live inside
+        segmentation_map.zip. Zenodo honours HTTP Range on GET but never advertises
+        Accept-Ranges on HEAD or GET (checked 2026-08-28) — nested_archive reads
+        segmentation_map.zip by windowing into the outer file's Range-addressable
+        bytes, so neither the 5.15GB outer zip nor the 2.99GB inner one is ever
+        downloaded in full just to pull a verification sample.
     modalities: [image]
     capabilities:
       - benthic-segmentation
@@ -251,8 +255,19 @@ sources:
         - "Small (1,411 images) — a fine-tuning and validation asset, not a training corpus."
     citation: "Soares et al., PeerJ 2023"
     loader:
-      layout: image-mask-pairs
+      layout: labelme-json
       schema_id: dataset-native
+      params: { partition_glob: "*" }
+      verified_on: 2026-08-28
+      verified_note: >
+        The declared image-mask-pairs layout was wrong — there are no mask PNGs at
+        all. Live-read (via nested_archive, see access.notes) confirms
+        train/test/val/<stem>.jpg + <stem>.json sidecars, LabelMe polygon format,
+        with real Brazilian scleractinian species names as labels (e.g. "Mussismilia
+        hispida", "Siderastrea stellata") — not the annotations.schema_id: deolho-21
+        this entry also declares, which does not exist as a registered schema
+        (nothing currently checks that annotations[].schema_id resolves, unlike
+        loader.schema_id/crosswalk_id — a real registry gap, separate from this fix).
     tags: [atlantic, dense-seg, rare-region]
 
   - id: heron-reef-benthic

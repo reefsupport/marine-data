@@ -196,6 +196,59 @@ def test_coco_json_malformed(coco_root: Path) -> None:
         list(loader)
 
 
+@pytest.fixture
+def labelme_root(tmp_path: Path) -> Path:
+    import json as _json
+
+    root = tmp_path / "labelme"
+    _touch_image(root / "a.jpg")
+    (root / "a.json").write_text(
+        _json.dumps(
+            {
+                "shapes": [
+                    {
+                        "label": "Mussismilia hispida",
+                        "points": [[0, 0], [10, 0], [10, 10], [0, 10]],
+                    },
+                    {"label": "Siderastrea stellata", "points": [[20, 20], [30, 20], [30, 30]]},
+                ]
+            }
+        )
+    )
+    _touch_image(root / "b.jpg")
+    (root / "b.json").write_text(_json.dumps({"shapes": []}))
+    return root
+
+
+def test_labelme_json(labelme_root: Path) -> None:
+    samples = list(build_loader(make_source("labelme-json"), labelme_root))
+    assert len(samples) == 2
+    a = next(s for s in samples if s.key.endswith("a.jpg"))
+    assert len(a.boxes) == 2
+    assert a.boxes[0] == (0, 0, 10, 10)
+    assert a.meta["native_labels"] == ["Mussismilia hispida", "Siderastrea stellata"]
+    assert len(a.meta["polygons"]) == 2
+    assert a.meta["polygons"][0]["points"] == [[0, 0], [10, 0], [10, 10], [0, 10]]
+
+    b = next(s for s in samples if s.key.endswith("b.jpg"))
+    assert b.boxes == ()
+    assert b.supervised == frozenset()
+
+
+def test_labelme_json_missing_sidecar_is_an_error(labelme_root: Path) -> None:
+    (labelme_root / "a.json").unlink()
+    loader = build_loader(make_source("labelme-json"), labelme_root)
+    with pytest.raises(LoaderError, match=r"no a\.json sidecar"):
+        list(loader)
+
+
+def test_labelme_json_malformed_sidecar(labelme_root: Path) -> None:
+    (labelme_root / "a.json").write_text("{not json")
+    loader = build_loader(make_source("labelme-json"), labelme_root)
+    with pytest.raises(LoaderError, match="malformed LabelMe JSON"):
+        list(loader)
+
+
 def test_yolo_txt(yolo_root: Path) -> None:
     source = make_source("yolo-txt", {"names": "coral,fish"})
     samples = list(build_loader(source, yolo_root))

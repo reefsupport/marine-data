@@ -261,3 +261,89 @@ def fetch_hf_files(source: Source, root: Path, limit: int) -> FetchResult:
         _write(root / "images" / Path(path).name, _get(url))
 
     return FetchResult(source.id, root, len(files), "hf-files", truncated=True)
+
+
+FATHOMNET_API = "https://database.fathomnet.org/api"
+"""fathomnet.org itself is now a Wix marketing site (301s away from any API path) —
+the real host, confirmed live and matching the official fathomnet-py client
+(github.com/fathomnet/fathomnet-py, src/fathomnet/api/images.py), is database.fathomnet.org."""
+
+
+def fetch_fathomnet(source: Source, root: Path, limit: int) -> FetchResult:
+    """Sample images with bounding-box annotations from the FathomNet REST API.
+
+    No auth needed for reads: ``GET /api/images/list/all`` is the same paginated bulk
+    endpoint the official client calls. Writes a COCO-style ``images/`` +
+    ``annotations.json`` — CocoJsonLoader reads it directly, so this fetcher exists to
+    normalise the source into that convention, same as every other fetcher here.
+
+    Only images that carry at least one bounding box are kept — FathomNet hosts plenty
+    of unannotated imagery too, which is out of scope for a source declared as
+    detection data.
+
+    Params: ``page`` (default 0), useful for sampling past the same images twice.
+    """
+    import json as _json
+
+    page = int(source.access.params.get("page", 0))
+    query = urllib.parse.urlencode({"page": page, "size": limit})
+    payload = _json.loads(_get(f"{FATHOMNET_API}/images/list/all?{query}"))
+    entries = payload.get("content", [])
+    if not entries:
+        raise FetchError(f"{source.id}: FathomNet returned no images for page={page}")
+
+    coco_images: list[dict] = []
+    coco_annotations: list[dict] = []
+    category_ids: dict[str, int] = {}
+    written = 0
+
+    for index, entry in enumerate(entries):
+        url = entry.get("url")
+        boxes = entry.get("boundingBoxes") or []
+        if not url or not boxes:
+            continue
+
+        suffix = Path(urllib.parse.urlparse(url).path).suffix or ".png"
+        filename = f"{index:05d}{suffix}"
+        _write(root / "images" / filename, _get(url))
+        coco_images.append(
+            {
+                "id": index,
+                "file_name": filename,
+                "width": entry.get("width"),
+                "height": entry.get("height"),
+            }
+        )
+        for box in boxes:
+            concept = box.get("concept")
+            if not concept:
+                continue
+            category_id = category_ids.setdefault(concept, len(category_ids) + 1)
+            coco_annotations.append(
+                {
+                    "id": len(coco_annotations),
+                    "image_id": index,
+                    "category_id": category_id,
+                    "bbox": [
+                        box.get("x", 0),
+                        box.get("y", 0),
+                        box.get("width", 0),
+                        box.get("height", 0),
+                    ],
+                }
+            )
+        written += 1
+
+    if written == 0:
+        raise FetchError(
+            f"{source.id}: none of the {len(entries)} images on page={page} carried a "
+            f"bounding box — try a different page"
+        )
+
+    coco = {
+        "images": coco_images,
+        "annotations": coco_annotations,
+        "categories": [{"id": cid, "name": name} for name, cid in category_ids.items()],
+    }
+    _write(root / "annotations.json", _json.dumps(coco).encode())
+    return FetchResult(source.id, root, written, "fathomnet-api", truncated=True)

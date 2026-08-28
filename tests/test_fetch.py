@@ -278,6 +278,12 @@ def test_large_zip_without_range_support_is_refused(tmp_path: Path) -> None:
     outright rather than silently downloaded in full."""
 
     class _NoRangeHandler(http.server.BaseHTTPRequestHandler):
+        """Simulates a host that ignores Range entirely: any request (probed with a
+        ranged GET, per _head's real-probe design) gets a plain 200 with the full
+        declared Content-Length, but only a token body — nothing here ever calls
+        .read() on it, matching production, so a real multi-GB body is never needed
+        to prove the "don't download it" behaviour."""
+
         def log_message(self, *args: object) -> None:
             pass
 
@@ -286,8 +292,11 @@ def test_large_zip_without_range_support_is_refused(tmp_path: Path) -> None:
             self.send_header("Content-Length", str(MAX_DOWNLOAD_WITHOUT_RANGE * 2))
             self.end_headers()
 
-        def do_GET(self) -> None:  # pragma: no cover - must never be reached
-            raise AssertionError("a full GET must not be attempted for a huge, non-ranged zip")
+        def do_GET(self) -> None:
+            self.send_response(200)
+            self.send_header("Content-Length", str(MAX_DOWNLOAD_WITHOUT_RANGE * 2))
+            self.end_headers()
+            self.wfile.write(b"x")
 
     server = http.server.HTTPServer(("127.0.0.1", 0), _NoRangeHandler)
     thread = threading.Thread(target=server.serve_forever, daemon=True)
@@ -296,6 +305,146 @@ def test_large_zip_without_range_support_is_refused(tmp_path: Path) -> None:
         url = f"http://127.0.0.1:{server.server_port}/huge.zip"
         with pytest.raises(FetchNotSupported, match="does not support Range"):
             fetch_sample(_http_source(url), root=tmp_path / "dest", force=True)
+    finally:
+        server.shutdown()
+        thread.join(timeout=5)
+
+
+# ── _head: probed, not trusted from headers ─────────────────────────────────
+
+
+class _RangeButNoAcceptRangesHeaderHandler(http.server.BaseHTTPRequestHandler):
+    """Zenodo, confirmed 2026-08-28: honours a real Range GET with a 206, but never
+    sends Accept-Ranges on HEAD *or* GET. A detector trusting that header alone
+    reports "no Range support" for a host that has supported it the whole time."""
+
+    body: bytes = b""
+
+    def log_message(self, *args: object) -> None:
+        pass
+
+    def do_HEAD(self) -> None:
+        self.send_response(200)
+        self.send_header("Content-Length", str(len(self.body)))
+        self.end_headers()  # deliberately no Accept-Ranges
+
+    def do_GET(self) -> None:
+        range_header = self.headers.get("Range")
+        if not range_header:
+            self.send_response(200)
+            self.send_header("Content-Length", str(len(self.body)))
+            self.end_headers()
+            self.wfile.write(self.body)
+            return
+        start, end = (int(x) for x in range_header.removeprefix("bytes=").split("-"))
+        chunk = self.body[start : end + 1]
+        self.send_response(206)
+        self.send_header("Content-Length", str(len(chunk)))
+        self.send_header("Content-Range", f"bytes {start}-{end}/{len(self.body)}")
+        self.end_headers()  # still no Accept-Ranges
+        self.wfile.write(chunk)
+
+
+def test_head_probes_for_range_rather_than_trusting_the_header(tmp_path: Path) -> None:
+    """⭐ The Zenodo bug, pinned directly: _head must report Range support from an
+    actual 206 response, not from an Accept-Ranges header the host never sends."""
+    from marinedata.fetch import _head
+
+    payload = b"0123456789" * 50
+    server = http.server.HTTPServer(("127.0.0.1", 0), _RangeButNoAcceptRangesHeaderHandler)
+    server.RequestHandlerClass.body = payload
+    thread = threading.Thread(target=server.serve_forever, daemon=True)
+    thread.start()
+    try:
+        size, supports_range = _head(f"http://127.0.0.1:{server.server_port}/x.zip")
+        assert size == len(payload)
+        assert supports_range is True
+    finally:
+        server.shutdown()
+        thread.join(timeout=5)
+
+
+# ── nested archives: a zip stored uncompressed inside another zip ───────────
+
+
+def _build_nested_zip(inner_files: dict[str, bytes]) -> bytes:
+    """An outer zip containing one member, 'inner.zip', itself a zip — stored
+    uncompressed, the shape #DeOlhoNosCorais actually publishes."""
+    inner_buf = io.BytesIO()
+    with zipfile.ZipFile(inner_buf, "w") as inner_zf:
+        for name, content in inner_files.items():
+            inner_zf.writestr(name, content)
+
+    outer_buf = io.BytesIO()
+    with zipfile.ZipFile(outer_buf, "w") as outer_zf:
+        info = zipfile.ZipInfo("inner.zip")
+        outer_zf.writestr(info, inner_buf.getvalue(), compress_type=zipfile.ZIP_STORED)
+    return outer_buf.getvalue()
+
+
+def test_nested_archive_reads_inner_zip_without_full_download(tmp_path: Path) -> None:
+    payload = _build_nested_zip({"images/a.jpg": b"A", "masks/a.png": b"M"})
+    server = http.server.HTTPServer(("127.0.0.1", 0), _RangeButNoAcceptRangesHeaderHandler)
+    server.RequestHandlerClass.body = payload
+    thread = threading.Thread(target=server.serve_forever, daemon=True)
+    thread.start()
+    try:
+        base = make_source("image-mask-pairs")
+        source = base.model_copy(
+            update={
+                "access": base.access.model_copy(
+                    update={
+                        "method": AccessMethod.HTTP,
+                        "params": {
+                            "sample_url": f"http://127.0.0.1:{server.server_port}/outer.zip",
+                            "nested_archive": "inner.zip",
+                        },
+                    }
+                )
+            }
+        )
+        dest = tmp_path / "dest"
+        result = fetch_sample(source, root=dest, force=True)
+        assert result.items == 2
+        assert (dest / "images" / "a.jpg").read_bytes() == b"A"
+        assert (dest / "masks" / "a.png").read_bytes() == b"M"
+    finally:
+        server.shutdown()
+        thread.join(timeout=5)
+
+
+def test_nested_archive_rejects_a_compressed_member(tmp_path: Path) -> None:
+    """A DEFLATEd nested member cannot be windowed — must raise clearly, not silently
+    produce a corrupt read."""
+    inner_buf = io.BytesIO()
+    with zipfile.ZipFile(inner_buf, "w") as inner_zf:
+        inner_zf.writestr("a.txt", b"hello")
+
+    outer_buf = io.BytesIO()
+    with zipfile.ZipFile(outer_buf, "w", compression=zipfile.ZIP_DEFLATED) as outer_zf:
+        outer_zf.writestr("inner.zip", inner_buf.getvalue())  # compressed, not stored
+
+    server = http.server.HTTPServer(("127.0.0.1", 0), _RangeButNoAcceptRangesHeaderHandler)
+    server.RequestHandlerClass.body = outer_buf.getvalue()
+    thread = threading.Thread(target=server.serve_forever, daemon=True)
+    thread.start()
+    try:
+        base = make_source("image-mask-pairs")
+        source = base.model_copy(
+            update={
+                "access": base.access.model_copy(
+                    update={
+                        "method": AccessMethod.HTTP,
+                        "params": {
+                            "sample_url": f"http://127.0.0.1:{server.server_port}/outer.zip",
+                            "nested_archive": "inner.zip",
+                        },
+                    }
+                )
+            }
+        )
+        with pytest.raises(FetchError, match="compressed"):
+            fetch_sample(source, root=tmp_path / "dest", force=True)
     finally:
         server.shutdown()
         thread.join(timeout=5)

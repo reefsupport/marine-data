@@ -23,6 +23,7 @@ import time
 import urllib.error
 import urllib.parse
 import urllib.request
+import zipfile
 from dataclasses import dataclass
 from datetime import datetime, timezone
 from pathlib import Path
@@ -262,7 +263,14 @@ upstream archive, needs a bounded sample" that this registry expects to hit agai
 
 
 def _head(url: str, *, timeout: int = 30) -> tuple[int | None, bool]:
-    """Content-Length and whether the server advertises Range support, via HEAD.
+    """Content-Length and whether the server actually honours Range, probed with a
+    real 1-byte ranged GET rather than trusted from the ``Accept-Ranges`` header.
+
+    Zenodo (confirmed 2026-08-28, deolhonoscorais) returns 206 to a real Range request
+    while never sending ``Accept-Ranges`` on either HEAD or GET — trusting the header
+    alone wrongly refused every large Zenodo zip as "no Range support", when the
+    server was honouring Range the whole time. A live probe is the only reliable
+    signal; it costs one extra small request, once, per fetch.
 
     Follows redirects like any other urllib request (HF's resolve URLs 302 to a signed
     CDN URL; the redirected response is what carries the real headers). Returns
@@ -270,11 +278,15 @@ def _head(url: str, *, timeout: int = 30) -> tuple[int | None, bool]:
     fall back to a plain full download when the size is small enough to make that safe.
     """
     try:
-        request = urllib.request.Request(url, method="HEAD", headers={"User-Agent": USER_AGENT})
+        request = urllib.request.Request(
+            url, headers={"User-Agent": USER_AGENT, "Range": "bytes=0-0"}
+        )
         with urllib.request.urlopen(request, timeout=timeout) as response:
+            if response.status == 206:
+                total = response.headers.get("Content-Range", "").rsplit("/", 1)[-1]
+                return (int(total) if total.isdigit() else None, True)
             length = response.headers.get("Content-Length")
-            accepts_ranges = response.headers.get("Accept-Ranges", "").lower() == "bytes"
-            return (int(length) if length is not None else None, accepts_ranges)
+            return (int(length) if length is not None else None, False)
     except (urllib.error.URLError, http.client.HTTPException, OSError, ValueError):
         return (None, False)
 
@@ -318,11 +330,21 @@ class _RemoteFile:
     ``zipfile`` reads a central directory near the *end* of the file and then seeks
     around to each member's local header, so this needs real seek support, not just
     sequential reads — a plain streaming GET could not do this.
+
+    ``window_offset``/``window_size`` present a byte range of a larger remote resource
+    as if it were its own zero-based file — used to read a zip nested *uncompressed*
+    (``ZIP_STORED``) inside an outer zip without downloading either one. This only
+    works because STORED bytes are the nested file's real bytes verbatim; a DEFLATEd
+    nested archive cannot be windowed this way, since compressed bytes are not
+    arbitrarily seekable into.
     """
 
-    def __init__(self, url: str, size: int) -> None:
+    def __init__(
+        self, url: str, size: int, *, window_offset: int = 0, window_size: int | None = None
+    ) -> None:
         self._url = url
-        self._size = size
+        self._window_offset = window_offset
+        self._size = size if window_size is None else window_size
         self._pos = 0
 
     def seekable(self) -> bool:
@@ -343,22 +365,56 @@ class _RemoteFile:
         if self._pos >= self._size:
             return b""
         end = self._size - 1 if size is None or size < 0 else min(self._pos + size, self._size) - 1
-        data = _get_range(self._url, self._pos, end)
+        data = _get_range(self._url, self._window_offset + self._pos, self._window_offset + end)
         self._pos += len(data)
         return data
 
 
-def _extract_remote_zip(url: str, size: int, root: Path, limit: int) -> int:
+def _nested_zip_window(outer: zipfile.ZipFile, member_name: str) -> tuple[int, int]:
+    """Byte range of a member stored *uncompressed* inside an already-open zip.
+
+    Returns ``(data_offset, size)`` — where the member's own bytes begin within the
+    outer file, and how many there are. Only valid when the member's
+    ``compress_type`` is ``ZIP_STORED``: those bytes are the member's real content
+    verbatim, so if the member is itself a zip, this range can be opened as one
+    without extracting it first. Raises for anything else — a DEFLATEd nested archive
+    cannot be windowed this way, and guessing would produce a file that mysteriously
+    fails to parse instead of a clear error naming the actual cause.
+    """
+    import struct
+
+    info = outer.getinfo(member_name)
+    if info.compress_type != zipfile.ZIP_STORED:
+        raise FetchError(
+            f"'{member_name}' is compressed (not stored) inside its outer archive — "
+            f"it cannot be read as a nested zip without extracting the whole thing "
+            f"first, which defeats the point of a bounded sample."
+        )
+
+    # header_offset points at the LOCAL file header, not the data — the local header
+    # can carry different filename/extra-field lengths than the central directory
+    # entry does, so its size has to be read, not assumed.
+    fp = outer.fp
+    fp.seek(info.header_offset)
+    header = fp.read(30)
+    if header[:4] != b"PK\x03\x04":
+        raise FetchError(f"'{member_name}': malformed local file header in outer archive")
+    filename_len, extra_len = struct.unpack("<HH", header[26:30])
+    data_offset = info.header_offset + 30 + filename_len + extra_len
+    return data_offset, info.compress_size
+
+
+def _extract_remote_zip(file_obj: _RemoteFile, root: Path, limit: int, *, label: str) -> int:
     """Extract up to ``limit`` members from a remote zip without downloading it.
 
-    The counterpart to :func:`_extract_archive` for archives too large to pull in full —
-    see ``MAX_DOWNLOAD_WITHOUT_RANGE``.
+    ``file_obj`` is whatever :class:`_RemoteFile` (or compatible) view the caller
+    already built — a whole remote archive, or a window into one nested inside
+    another. The counterpart to :func:`_extract_archive` for archives too large to
+    pull in full — see ``MAX_DOWNLOAD_WITHOUT_RANGE``.
     """
-    import zipfile
-
     resolved_root = root.resolve()
     count = 0
-    with zipfile.ZipFile(_RemoteFile(url, size)) as archive:
+    with zipfile.ZipFile(file_obj) as archive:
         members = [m for m in archive.infolist() if not m.is_dir()]
         for member in members[:limit] if limit else members:
             target = _safe_extract_path(resolved_root, member.filename)
@@ -369,7 +425,7 @@ def _extract_remote_zip(url: str, size: int, root: Path, limit: int) -> int:
             count += 1
 
     if count == 0:
-        raise FetchError(f"archive at {url} contained no extractable files")
+        raise FetchError(f"archive at {label} contained no extractable files")
     return count
 
 
@@ -407,8 +463,6 @@ def _extract_archive(payload: bytes, root: Path, name: str, limit: int) -> int:
     count = 0
     lower = name.lower()
     if lower.endswith(".zip"):
-        import zipfile
-
         with zipfile.ZipFile(io.BytesIO(payload)) as archive:
             members = [m for m in archive.infolist() if not m.is_dir()]
             for member in members[:limit] if limit else members:
@@ -462,6 +516,14 @@ def _fetch_http(source: Source, root: Path, limit: int) -> FetchResult:
     safely is downloaded whole even when Range is available: a few hundred tiny ranged
     reads (roughly two per member — a local-header read, then the payload) is *slower*
     than one bulk transfer once the whole thing already fits comfortably in memory.
+
+    Params:
+        nested_archive: name of a member, stored uncompressed inside the outer zip,
+            to read as a zip of its own rather than extracting the outer zip's direct
+            members — e.g. #DeOlhoNosCorais publishes one 5.15GB zip containing two
+            multi-GB zips-of-zips; the real image/mask pairs are one level deeper than
+            Zenodo's own file listing reaches. Requires Range support on the outer
+            file (the nested member is windowed, never downloaded to find).
     """
     sample_url = str(source.access.params.get("sample_url") or "")
     if not sample_url:
@@ -470,6 +532,22 @@ def _fetch_http(source: Source, root: Path, limit: int) -> FetchResult:
             f"downloadable sample, or fetch the data manually."
         )
     name = Path(urllib.parse.urlparse(sample_url).path).name or "sample.bin"
+    nested_archive = source.access.params.get("nested_archive")
+
+    if nested_archive:
+        size, supports_range = _head(sample_url)
+        if not (supports_range and size):
+            raise FetchNotSupported(
+                f"{source.id}: nested_archive is set but {sample_url} does not support "
+                f"Range requests (or its size could not be determined) — reading a "
+                f"member out of it without downloading the whole outer archive needs "
+                f"Range support."
+            )
+        with zipfile.ZipFile(_RemoteFile(sample_url, size)) as outer:
+            offset, member_size = _nested_zip_window(outer, str(nested_archive))
+        inner = _RemoteFile(sample_url, size, window_offset=offset, window_size=member_size)
+        count = _extract_remote_zip(inner, root, limit, label=f"{name}:{nested_archive}")
+        return FetchResult(source.id, root, count, "http", truncated=True)
 
     if name.lower().endswith(".zip"):
         size, supports_range = _head(sample_url)
@@ -478,7 +556,7 @@ def _fetch_http(source: Source, root: Path, limit: int) -> FetchResult:
             count = _extract_archive(payload, root, name, limit)
             return FetchResult(source.id, root, count, "http", truncated=True)
         if supports_range and size:
-            count = _extract_remote_zip(sample_url, size, root, limit)
+            count = _extract_remote_zip(_RemoteFile(sample_url, size), root, limit, label=name)
             return FetchResult(source.id, root, count, "http", truncated=True)
         if size and size > MAX_DOWNLOAD_WITHOUT_RANGE:
             raise FetchNotSupported(
@@ -517,11 +595,26 @@ def _fetch_s3(source: Source, root: Path, limit: int) -> FetchResult:
     return fetch_s3(source, root, limit)
 
 
+def _fetch_api(source: Source, root: Path, limit: int) -> FetchResult:
+    """Dispatches ``method: api`` sources to their specific fetcher.
+
+    Only one API-backed source exists in the registry today (FathomNet), so this maps
+    the whole ``AccessMethod.API`` value to it directly. A second ``api`` source with a
+    genuinely different API would need this to dispatch on an ``access.params`` field
+    (e.g. ``api_provider``) instead of the access method alone — don't generalise
+    before there is a second case to generalise from.
+    """
+    from .fetchers_remote import fetch_fathomnet
+
+    return fetch_fathomnet(source, root, limit)
+
+
 _FETCHERS = {
     AccessMethod.HUGGINGFACE: _fetch_hf,
     AccessMethod.HTTP: _fetch_http,
     AccessMethod.ZENODO: _fetch_http,
     AccessMethod.S3: _fetch_s3,
+    AccessMethod.API: _fetch_api,
 }
 
 

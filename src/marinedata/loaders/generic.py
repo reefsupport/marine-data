@@ -381,6 +381,74 @@ class CocoJsonLoader(_HarmonizingLoader):
 
 
 @register_loader
+class LabelMeJsonLoader(_HarmonizingLoader):
+    """LabelMe-style polygon annotations: one ``<stem>.json`` sidecar per image, in
+    the same directory, holding ``shapes: [{label, points: [[x, y], ...]}]``.
+
+    Built for #DeOlhoNosCorais: its real annotation format turned out to be this, not
+    the ``image-mask-pairs`` PNG masks originally declared — found by actually opening
+    a sidecar after reaching the data (see the source's ``verified_note``), the same
+    class of surprise that ``docs/`` warns synthetic fixtures cannot catch.
+
+    Polygons are summarised as their bounding box (``sample.boxes``) so this source is
+    usable by the same box-based tooling as ``coco-json``/``yolo-txt``, without adding
+    a first-class polygon field to :class:`Sample` for what only one source needs so
+    far. Nothing is discarded: the full vertex list survives in
+    ``meta["polygons"]`` for anyone who does want the exact shape.
+
+    Params:
+        images_dir: default the root itself (this layout is normally used per-
+            partition, e.g. ``partition_glob: "*"`` over ``train``/``test``/``val``).
+    """
+
+    layout = "labelme-json"
+
+    def _images_dir(self) -> Path:
+        sub = self._param("images_dir")
+        return self.root / str(sub) if sub else self.root
+
+    def _iter_samples(self) -> Iterator[Sample]:
+        for image in _images_under(self._images_dir()):
+            sidecar = image.with_suffix(".json")
+            if not sidecar.is_file():
+                if self.partial:
+                    continue
+                raise LoaderError(f"{self.source.id}: no {sidecar.name} sidecar for {image.name}")
+            try:
+                doc = json.loads(sidecar.read_text(encoding="utf-8"))
+            except json.JSONDecodeError as exc:
+                raise LoaderError(f"{self.source.id}: malformed LabelMe JSON at {sidecar}") from exc
+
+            shapes = doc.get("shapes", [])
+            boxes: list[tuple[float, float, float, float]] = []
+            native: list[str] = []
+            polygons: list[dict] = []
+            for shape in shapes:
+                points = shape.get("points") or []
+                label = shape.get("label")
+                if not points or not label:
+                    continue
+                xs = [p[0] for p in points]
+                ys = [p[1] for p in points]
+                boxes.append((min(xs), min(ys), max(xs) - min(xs), max(ys) - min(ys)))
+                native.append(label)
+                polygons.append({"label": label, "points": points})
+
+            resolved, supervised = self._resolve(native[0]) if native else ({}, frozenset())
+            yield Sample(
+                source_id=self.source.id,
+                key=self._relative(image),
+                image=image,
+                boxes=tuple(boxes),
+                labels=resolved,
+                supervised=supervised,
+                licence_tier=self.source.licence.tier,
+                split=self.split,
+                meta={"native_labels": native, "polygons": polygons},
+            )
+
+
+@register_loader
 class YoloTxtLoader(_HarmonizingLoader):
     """YOLO layout: ``images/`` and ``labels/`` with one ``.txt`` per image.
 
