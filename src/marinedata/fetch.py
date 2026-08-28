@@ -531,7 +531,16 @@ def _fetch_http(source: Source, root: Path, limit: int) -> FetchResult:
             Kaggle archives with no single file containing both. Point the loader's
             own ``images_dir``/``masks_dir`` at whatever each archive's real internal
             folder is named; nothing here renames them.
+        fetch_style: ``"manifest"`` dispatches to :func:`fetch_pangaea_manifest`
+            instead of the archive logic below — for a source whose real images are
+            individually addressable URLs inside a small metadata manifest, rather
+            than embedded in the archive itself (e.g. Heron Reef's PANGAEA export).
     """
+    if str(source.access.params.get("fetch_style", "")) == "manifest":
+        from .fetchers_remote import fetch_pangaea_manifest
+
+        return fetch_pangaea_manifest(source, root, limit)
+
     sample_url = str(source.access.params.get("sample_url") or "")
     if not sample_url:
         raise FetchNotSupported(

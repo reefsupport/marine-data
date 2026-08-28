@@ -347,3 +347,78 @@ def fetch_fathomnet(source: Source, root: Path, limit: int) -> FetchResult:
     }
     _write(root / "annotations.json", _json.dumps(coco).encode())
     return FetchResult(source.id, root, written, "fathomnet-api", truncated=True)
+
+
+def _parse_pangaea_tab(text: str) -> list[dict[str, str]]:
+    """PANGAEA ``.tab`` exports carry a metadata preamble (citation, parameters,
+    licence) ending in a bare ``*/`` line, then a normal tab-delimited table. Nothing
+    in the standard library reads this directly, and it is common enough across
+    PANGAEA-hosted marine monitoring archives to be worth a small, reusable parser
+    rather than one-off string slicing in the fetcher itself.
+    """
+    import csv
+
+    lines = text.splitlines()
+    try:
+        header_index = next(i for i, line in enumerate(lines) if line.strip() == "*/") + 1
+    except StopIteration:
+        raise FetchError(
+            "not a recognised PANGAEA .tab file (no '*/' preamble terminator)"
+        ) from None
+    return list(csv.DictReader(lines[header_index:], delimiter="\t"))
+
+
+def fetch_pangaea_manifest(source: Source, root: Path, limit: int) -> FetchResult:
+    """Fetch a PANGAEA dataset-collection manifest and download the images its
+    ``*_links-to-photos.tab`` tables individually address.
+
+    PANGAEA (and older marine-monitoring archives generally) often publish field-photo
+    metadata as tab-delimited tables carrying a URL per image rather than embedding the
+    bytes — the ``?format=zip`` export bundling every child dataset in a collection is
+    itself tiny (a few MB) even when it describes tens of thousands of photos. Built
+    for Heron Reef's 17-year GBR time series; written generically enough (configurable
+    column names) to serve another PANGAEA photo-link manifest without new code.
+
+    Params:
+        sample_url: the manifest zip (a PANGAEA collection's ``?format=zip`` export).
+        url_column: default ``"URL thumb"`` — PANGAEA publishes a full-resolution
+            ``"URL image"`` and a small ``"URL thumb"`` per photo; thumbnails keep a
+            verification sample a verification sample.
+        filename_column: default ``"File name"``.
+    """
+    import io
+    import zipfile
+
+    params = source.access.params
+    manifest_url = str(params.get("sample_url") or "")
+    if not manifest_url:
+        raise FetchError(f"{source.id}: no sample_url declared for the manifest")
+    url_column = str(params.get("url_column", "URL thumb"))
+    filename_column = str(params.get("filename_column", "File name"))
+
+    payload = _get(manifest_url)
+    written = 0
+    with zipfile.ZipFile(io.BytesIO(payload)) as zf:
+        tab_files = sorted(n for n in zf.namelist() if n.endswith("links-to-photos.tab"))
+        if not tab_files:
+            raise FetchError(
+                f"{source.id}: manifest at {manifest_url} has no *links-to-photos.tab files"
+            )
+
+        for tab_name in tab_files:
+            if written >= limit:
+                break
+            rows = _parse_pangaea_tab(zf.read(tab_name).decode("utf-8", errors="replace"))
+            for row in rows:
+                if written >= limit:
+                    break
+                image_url = row.get(url_column)
+                filename = row.get(filename_column)
+                if not image_url or not filename:
+                    continue
+                _write(root / "images" / filename, _get(image_url))
+                written += 1
+
+    if written == 0:
+        raise FetchError(f"{source.id}: no images referenced by the manifest at {manifest_url}")
+    return FetchResult(source.id, root, written, "pangaea-manifest", truncated=True)

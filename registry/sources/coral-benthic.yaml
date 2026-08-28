@@ -284,25 +284,34 @@ sources:
     access:
       method: http
       uri: https://www.nature.com/articles/s41597-021-00871-5
+      params:
+        sample_url: https://doi.pangaea.de/10.1594/PANGAEA.894801?format=zip
+        fetch_style: manifest
       notes: >
-        Checked 2026-08-28: the paper's data lives on PANGAEA as a 32-file "tab"
-        collection (doi.pangaea.de/10.1594/PANGAEA.894801?format=zip, ~2.8MB,
-        downloaded and inspected directly). It is genuinely small but does NOT
-        contain image bytes — it is metadata only: per-survey-year point-label CSVs
-        plus a column of individually-addressable HTTPS image URLs
-        (hs.pangaea.de/Images/Benthos/Heron_Reef/<year>/<file>.jpg, spot-checked
-        working). Filling this source's csv-points layout needs a two-stage fetch
-        (download the manifest, then GET each referenced image up to the sample
-        limit) that this project's single-sample_url fetcher does not support.
+        The paper's data lives on PANGAEA as a 32-file "tab" collection
+        (?format=zip, ~2.8MB). It does NOT contain image bytes — each
+        *_links-to-photos.tab carries a "URL thumb" column of individually-
+        addressable HTTPS image URLs (hs.pangaea.de/Images/Benthos/Heron_Reef/
+        <year>/<file>.jpg, live-verified) — fetch_style: manifest downloads the
+        manifest, then GETs the referenced thumbnails up to the sample limit.
     modalities: [image]
     capabilities: [benthic-classification, general-pretraining]
     items: 58941
     annotations:
-      - kind: point-label
+      - kind: tabular
         count: 108700
-        classes: 6
-        supervises: [taxon]
-        depth: L1
+        supervises: []
+        notes: >
+          A SEPARATE *_benthic_substrate_cover_<year>.tab per year carries the real
+          annotation: percent cover across 62 named categories (AIMS/GBR LTMP-style
+          codes, e.g. ACR_BRA, not CATAMI or CoralNet) for EACH photoquadrat, joined
+          to the photo by "File name" — one row per image, not one row per point,
+          despite this entry's original "point-label"/coralnet-labelset declaration
+          (never checked against real data; corrected 2026-08-28). Fetching and
+          joining this second table, and deciding how a 62-way percent-cover vector
+          becomes a Sample-level label (a dominant class? kept as a soft
+          distribution?), is real further work — left undone here rather than
+          guessed. supervises is honestly empty until that decision is made.
     coverage:
       regions: [gbr-australia]
       years: [2002, 2018]
@@ -311,9 +320,13 @@ sources:
       caveats:
         - "Only 6 classes — coarse. Valuable for temporal-change work rather than fine taxonomy."
     loader:
-      layout: csv-points
-      schema_id: coralnet-labelset
-      crosswalk_id: coralnet-labelset
+      layout: flat-images
+      schema_id: dataset-native
+      verified_on: 2026-08-28
+      verified_note: >
+        Live fetch confirms the manifest → thumbnail-URL → images/ path works.
+        flat-images because no per-image label is extracted yet (see
+        annotations[].notes) — general-pretraining value only, for now.
     tags: [time-series, gbr]
 
   - id: coralvqa

@@ -470,3 +470,101 @@ def test_nested_archive_rejects_a_compressed_member(tmp_path: Path) -> None:
     finally:
         server.shutdown()
         thread.join(timeout=5)
+
+
+# ── manifest-driven fetch: a PANGAEA-style photo-links table ─────────────────
+
+
+def _make_pangaea_manifest(tmp_path: Path, rows: list[dict[str, str]]) -> Path:
+    """A minimal .tab file with PANGAEA's real preamble-then-'*/'-then-table shape,
+    zipped the way its ?format=zip collection export is."""
+    columns = ["Date/Time", "Longitude", "Latitude", "File name", "URL image", "URL thumb"]
+    lines = [
+        "/* Some citation preamble PANGAEA prepends to every export */",
+        "/* Parameter(s): ... */",
+        "*/",
+        "\t".join(columns),
+        *("\t".join(row.get(c, "") for c in columns) for row in rows),
+    ]
+    tab_path = tmp_path / "manifest_source.tab"
+    tab_path.write_text("\n".join(lines), encoding="utf-8")
+
+    zip_path = tmp_path / "manifest.zip"
+    with zipfile.ZipFile(zip_path, "w") as zf:
+        zf.write(tab_path, arcname="datasets/Site_2020_links-to-photos.tab")
+    return zip_path
+
+
+def test_manifest_fetch_downloads_referenced_images(tmp_path: Path) -> None:
+    thumb_dir = tmp_path / "thumbs"
+    thumb_dir.mkdir()
+    for name, content in (("a.jpg", b"THUMB_A"), ("b.jpg", b"THUMB_B")):
+        (thumb_dir / name).write_bytes(content)
+
+    manifest = _make_pangaea_manifest(
+        tmp_path,
+        [
+            {"File name": "a.jpg", "URL thumb": _file_url(thumb_dir / "a.jpg")},
+            {"File name": "b.jpg", "URL thumb": _file_url(thumb_dir / "b.jpg")},
+        ],
+    )
+    base = make_source("flat-images")
+    source = base.model_copy(
+        update={
+            "access": base.access.model_copy(
+                update={
+                    "method": AccessMethod.HTTP,
+                    "params": {"sample_url": _file_url(manifest), "fetch_style": "manifest"},
+                }
+            )
+        }
+    )
+    dest = tmp_path / "dest"
+    result = fetch_sample(source, root=dest, force=True)
+    assert result.items == 2
+    assert (dest / "images" / "a.jpg").read_bytes() == b"THUMB_A"
+    assert (dest / "images" / "b.jpg").read_bytes() == b"THUMB_B"
+
+
+def test_manifest_fetch_respects_limit(tmp_path: Path) -> None:
+    thumb_dir = tmp_path / "thumbs"
+    thumb_dir.mkdir()
+    rows = []
+    for i in range(5):
+        (thumb_dir / f"{i}.jpg").write_bytes(f"img{i}".encode())
+        rows.append({"File name": f"{i}.jpg", "URL thumb": _file_url(thumb_dir / f"{i}.jpg")})
+    manifest = _make_pangaea_manifest(tmp_path, rows)
+
+    base = make_source("flat-images")
+    source = base.model_copy(
+        update={
+            "access": base.access.model_copy(
+                update={
+                    "method": AccessMethod.HTTP,
+                    "params": {"sample_url": _file_url(manifest), "fetch_style": "manifest"},
+                }
+            )
+        }
+    )
+    result = fetch_sample(source, root=tmp_path / "dest", limit=3, force=True)
+    assert result.items == 3
+
+
+def test_manifest_fetch_with_no_links_table_is_an_error(tmp_path: Path) -> None:
+    empty_zip = tmp_path / "empty.zip"
+    with zipfile.ZipFile(empty_zip, "w") as zf:
+        zf.writestr("datasets/readme.txt", "nothing useful here")
+
+    base = make_source("flat-images")
+    source = base.model_copy(
+        update={
+            "access": base.access.model_copy(
+                update={
+                    "method": AccessMethod.HTTP,
+                    "params": {"sample_url": _file_url(empty_zip), "fetch_style": "manifest"},
+                }
+            )
+        }
+    )
+    with pytest.raises(FetchError, match="links-to-photos"):
+        fetch_sample(source, root=tmp_path / "dest", force=True)
