@@ -271,15 +271,21 @@ sources:
       verified_by: "HuggingFace card CoralReefData/CoralVQA states license:cc-by-4.0"
       method: dataset-card
     access:
-      method: huggingface
+      method: http
       uri: https://huggingface.co/datasets/CoralReefData/CoralVQA
+      size_bytes: 26694403050
       params:
-        hf_id: CoralReefData/CoralVQA
-        image_column: image
+        sample_url: https://huggingface.co/datasets/CoralReefData/CoralVQA/resolve/main/CoralVQA_Image.zip
       notes: >
-        The HF datasets-server currently returns "Server error while post-processing the
-        rows" for this dataset, so automated fetch fails upstream (checked 2026-08-17).
-        The columns are answer/id/image/question. Fetch manually until it recovers.
+        Re-checked 2026-08-28: the datasets-server rows API no longer errors, but the
+        default parquet's `image` column is null for every row — the repo's auto-built
+        table never actually embedded images. The real 12,805 images live only in
+        CoralVQA_Image.zip, a single 26.7GB archive with no smaller subset (the
+        question/answer pairs are a separate, much smaller structure entirely — see
+        CoralVQA_train.jsonl / CoralVQA_test.jsonl in the same repo, not fetched here).
+        sample_url points at the image zip directly; HF's CDN supports Range requests,
+        so only the layout-verification sample is ever transferred, not the whole 26.7GB.
+
     modalities: [image]
     capabilities: [vqa-captioning, general-pretraining, benthic-classification]
     items: 9682
@@ -290,7 +296,14 @@ sources:
     coverage:
       regions: [global]
     citation: "arXiv 2507.10449"
-    loader: { layout: image-folder }
+    loader:
+      layout: flat-images
+      verified_on: 2026-08-28
+      verified_note: >
+        Live fetch of CoralVQA_Image.zip (via Range) shows a flat pool of numbered
+        .jpg files at the archive root — no class subdirectories. The previously
+        declared 'image-folder' layout would have raised "found none" on any real
+        attempt to load this source; it had never actually been checked.
     tags: [vqa, language]
 
   - id: noaa-pifsc-bleaching

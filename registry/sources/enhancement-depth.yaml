@@ -100,7 +100,16 @@ sources:
       verified_on: 2026-08-17
       verified_by: "Internal catalog 2026-07-24 sweep — conditional/attribution; irvlab.cs.umn.edu"
       method: secondary
-    access: { method: http, uri: https://irvlab.cs.umn.edu/resources/suim-dataset }
+    access:
+      method: http
+      uri: https://irvlab.cs.umn.edu/resources/suim-dataset
+      size_bytes: 173794160
+      params:
+        sample_url: https://huggingface.co/datasets/SatwikKambham/suim/resolve/main/SUIM.zip
+      notes: >
+        The official host only offers a 2.85GB Google Drive link. sample_url is a
+        third-party HuggingFace re-host of the same archive (166MB) — the full
+        train_val split, not a trimmed sample, but small enough to fetch whole.
     modalities: [image]
     capabilities: [benthic-segmentation, fish-detection, general-pretraining]
     items: 1525
@@ -108,5 +117,13 @@ sources:
     coverage: { regions: [global] }
     domain_shift:
       caveats: ["Coarse 8-class scheme — a scene-understanding baseline, not a benthic-cover asset."]
-    loader: { layout: image-mask-pairs, params: { images_dir: images, masks_dir: masks }, schema_id: dataset-native }
+    loader:
+      layout: image-mask-pairs
+      params: { images_dir: SUIM/train_val/images, masks_dir: SUIM/train_val/masks }
+      schema_id: dataset-native
+      verified_on: 2026-08-28
+      verified_note: >
+        Live fetch confirms SUIM/train_val/{images,masks}/ (1488 pairs; a handful of
+        images have no matching mask in the re-host, consistent with the original
+        dataset's own known gaps) and a separate SUIM/TEST/ split.
     tags: [scene-understanding, baseline]

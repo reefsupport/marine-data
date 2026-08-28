@@ -112,7 +112,18 @@ sources:
       verified_on: 2026-08-17
       verified_by: "Internal catalog 2026-07-24 sweep — custom non-commercial with attribution; cis.whoi.edu"
       method: secondary
-    access: { method: http, uri: https://cis.whoi.edu/science/B/whalesounds/ }
+    access:
+      method: http
+      uri: https://cis.whoi.edu/science/B/whalesounds/
+      size_bytes: 646056677
+      params:
+        sample_url: https://archive.org/download/watkins_best_of_whales_202008/watkins_best_of_whales.zip
+      notes: >
+        cis.whoi.edu is down (checked 2026-08-28; redirects to a WHOI maintenance
+        page). sample_url is the Internet Archive "Best of" mirror (item
+        watkins_best_of_whales_202008, 1,694 clips / 32 species, same CC
+        personal/academic-use terms) — a curated SUBSET of the full ~10,000-item
+        corpus this entry describes, used here only to confirm the on-disk layout.
     modalities: [audio]
     capabilities: [bioacoustics, megafauna-id]
     items: 10000
@@ -121,4 +132,9 @@ sources:
     loader:
       layout: audio-clips
       schema_id: worms-species
+      params: { images_dir: watkins_best_of_whales }
+      verified_on: 2026-08-28
+      verified_note: >
+        Live fetch confirms watkins_best_of_whales/<species>/sound/*.wav (found via
+        rglob; a sibling metadata/*.csv per species is correctly ignored by suffix).
     tags: [reference-library, noncommercial]
