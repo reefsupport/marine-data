@@ -1,0 +1,26 @@
+# Reef Support bleaching masks (Tayrona) → RS-Benthic v1, condition axis.
+#
+# Not a taxonomy crosswalk — a pixel-value one. DualConditionMaskLoader combines two
+# mutually-exclusive binary rasters into one dense mask and writes their meaning into
+# each sample's `meta["mask_values"]` (source-configured via positive_label/
+# negative_label, set to "bleached"/"non_bleached" for this source). Verified against
+# real data (2026-08-28) that the two source masks never mark the same pixel, so this
+# is an exact partition, not an approximation: every pixel is unambiguously one of
+# unlabelled / bleached / non_bleached, never both.
+#
+# "non_bleached" maps to HEALTHY rather than being split further (PALE / DISEASED /
+# etc.) because the source only ever recorded the binary bleached/not-bleached
+# distinction — RS-Benthic's finer condition states were never assessed here, and
+# claiming otherwise would fabricate precision the annotation never had.
+
+crosswalks:
+  - id: reef-support-bleaching-condition
+    source_schema: dataset-native
+    target_schema: rs-benthic-v1
+    description: >
+      Pixel-value labels from DualConditionMaskLoader's combined condition mask onto
+      RS-Benthic's condition axis.
+    edges:
+      - { source_label: "bleached", targets: { condition: BLEACHED }, fidelity: exact }
+      - { source_label: "non_bleached", targets: { condition: HEALTHY }, fidelity: coarsened,
+          note: "The source only recorded bleached-vs-not; PALE, DISEASED, RECENTLY_DEAD and OLD_DEAD were never distinguished, so 'not bleached' can only map to the coarsest true statement (HEALTHY), not be split further." }

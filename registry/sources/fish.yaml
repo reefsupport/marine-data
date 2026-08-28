@@ -225,6 +225,10 @@ sources:
     loader:
       layout: coco-json
       schema_id: worms-species
+      verified_on: 2026-08-28
+      verified_note: >
+        Live fetch of 100 images via GET /api/images/list/all confirms bounding-box
+        concept labels (e.g. "feather star") and a working images/ + annotations.json.
     tags: [deep-sea, api]
 
   - id: mouss-detection

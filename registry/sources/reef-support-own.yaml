@@ -177,8 +177,13 @@ sources:
         same pixel (verified on the fetched sample), so the two combine into one
         condition raster (0=unlabelled, 1=bleached, 2=non-bleached) with no
         information lost or invented. See DualConditionMaskLoader.
-      params: { positive_dir: masks_bleached, negative_dir: masks_non_bleached }
+      params:
+        positive_dir: masks_bleached
+        negative_dir: masks_non_bleached
+        positive_label: bleached
+        negative_label: non_bleached
       schema_id: dataset-native
+      crosswalk_id: reef-support-bleaching-condition
     items: 658
     annotations:
       - kind: dense-mask

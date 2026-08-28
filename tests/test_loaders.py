@@ -145,6 +145,20 @@ def test_dual_condition_masks_combines_into_one_raster(dual_condition_root: Path
     assert (dual_condition_root / "masks_combined" / "f0.png").is_file()
 
 
+def test_dual_condition_masks_meta_uses_configured_labels(dual_condition_root: Path) -> None:
+    """A crosswalk needs real words to key on, not the generic positive/negative."""
+    source = make_source(
+        "dual-condition-masks",
+        {"positive_label": "bleached", "negative_label": "non_bleached"},
+    )
+    samples = list(build_loader(source, dual_condition_root))
+    assert samples[0].meta["mask_values"] == {
+        "0": "unlabelled",
+        "1": "bleached",
+        "2": "non_bleached",
+    }
+
+
 def test_dual_condition_masks_respects_declared_supervised_axes(dual_condition_root: Path) -> None:
     from marinedata.models import Annotation
 

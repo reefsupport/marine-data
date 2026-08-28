@@ -212,6 +212,11 @@ class DualConditionMaskLoader(_HarmonizingLoader):
             default ``"_bleached"``
         negative_suffix: default ``"_non_bleached"``
         combined_dir: default ``"masks_combined"``
+        positive_label / negative_label: names written into ``meta["mask_values"]``
+            for pixel values 1/2 — default ``"positive"``/``"negative"``, but a
+            crosswalk needs real words to key on (a source-specific ``source_label``,
+            not a generic one two other dual-condition sources would also produce).
+            reef-support-bleaching sets these to ``"bleached"``/``"non_bleached"``.
     """
 
     layout = "dual-condition-masks"
@@ -267,6 +272,8 @@ class DualConditionMaskLoader(_HarmonizingLoader):
                     positive, negative, combined, source_id=self.source.id, key=image.name
                 )
 
+            positive_label = str(self._param("positive_label", "positive"))
+            negative_label = str(self._param("negative_label", "negative"))
             yield Sample(
                 source_id=self.source.id,
                 key=self._relative(image),
@@ -278,7 +285,7 @@ class DualConditionMaskLoader(_HarmonizingLoader):
                 split=self.split,
                 meta={
                     "mask_is_dense": True,
-                    "mask_values": {"0": "unlabelled", "1": "positive", "2": "negative"},
+                    "mask_values": {"0": "unlabelled", "1": positive_label, "2": negative_label},
                 },
             )
 
