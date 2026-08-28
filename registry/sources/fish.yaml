@@ -301,6 +301,11 @@ sources:
       layout: image-folder
       schema_id: worms-species
       params: { images_dir: fish_image }
+      verified_on: 2026-08-28
+      verified_note: >
+        Live fetch of fishRecognition_GT.tar (487 MB, Apache, Range-capable) confirms
+        fish_image/<class>/*.png — 23 class directories, images-only, no separate
+        annotation file needed beyond the directory name.
     tags: [classic, imbalanced]
 
   - id: sea-urchin-detection
