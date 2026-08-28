@@ -29,6 +29,14 @@ def test_metadata_only_source_is_not_a_layout_defect(registry: Registry) -> None
     assert row.fetchable_status == "n/a"
 
 
+def test_metadata_only_source_needs_no_crosswalk_either(registry: Registry) -> None:
+    """⭐ obis declares `supervises: [taxon]` (it genuinely has taxonomic data) but is
+    `metadata-only` — no loader will ever emit a Sample for it, so there is nothing a
+    crosswalk could harmonise. Reporting it as "missing" was noise, not a real gap."""
+    row = next(r for r in doctor(registry) if r.source_id == "obis")
+    assert row.crosswalk_status == "n/a"
+
+
 def test_unlabelled_source_needs_no_crosswalk(registry: Registry) -> None:
     """sweet-corals declares no supervision at all — a missing crosswalk would be a
     false positive here, not a real gap."""

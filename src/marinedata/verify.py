@@ -202,7 +202,9 @@ def doctor(registry: Registry) -> tuple[DoctorRow, ...]:
                 layout_status=layout_status,
                 licence_status="ok" if source.verification.is_primary else "missing",
                 crosswalk_status=(
-                    "n/a" if not supervises else ("ok" if has_crosswalk else "missing")
+                    "n/a"
+                    if not supervises or is_metadata_only
+                    else ("ok" if has_crosswalk else "missing")
                 ),
                 fetchable_status="n/a"
                 if is_metadata_only
