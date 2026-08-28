@@ -85,6 +85,7 @@ def _cmd_lineage(args: argparse.Namespace) -> int:
         reg.profile(args.profile),
         excluded=list(result.excluded),
         legal_opinion_ref=args.legal_opinion_ref,
+        registry_commit=reg.commit,
     )
     payload = lineage.to_json()
     if args.output:
@@ -176,6 +177,23 @@ def _cmd_taxa(args: argparse.Namespace) -> int:
     for drift in drifts:
         print(drift.line())
     return 1 if drifts else 0
+
+
+def _cmd_doctor(args: argparse.Namespace) -> int:
+    """Per-source completeness: layout verified, licence primary, crosswalk, fetchable.
+
+    No network — everything here comes from the registry alone. Run this first when
+    picking up unfinished work; run ``verify``/``labels`` for the parts that need real
+    data to check.
+    """
+    from .verify import doctor, doctor_totals
+
+    reg = Registry.load()
+    rows = doctor(reg)
+    shown = tuple(r for r in rows if not r.complete) if args.incomplete_only else rows
+    print("\n".join(row.line() for row in shown))
+    print(f"\n{doctor_totals(rows)}")
+    return 0
 
 
 def _cmd_labels(args: argparse.Namespace) -> int:
@@ -273,6 +291,15 @@ def build_parser() -> argparse.ArgumentParser:
         "--show-unanchored", action="store_true", help="also list nodes with no AphiaID"
     )
     p_taxa.set_defaults(func=_cmd_taxa)
+
+    p_doctor = sub.add_parser(
+        "doctor",
+        help="Per-source completeness — layout, licence, crosswalk, fetchable. No network.",
+    )
+    p_doctor.add_argument(
+        "--incomplete-only", action="store_true", help="Only list sources missing something"
+    )
+    p_doctor.set_defaults(func=_cmd_doctor)
 
     p_labels = sub.add_parser(
         "labels", help="Audit crosswalk labels against the labels real data contains"

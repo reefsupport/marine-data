@@ -40,6 +40,84 @@ An honest gap is more useful than a confident guess:
   it on shipping profiles until resolved, which is the correct outcome.
 - Unknown item counts → leave `items` unset rather than estimating.
 
+### Worked example: a source with scalar labels
+
+Most of the friction in adding a dataset is the crosswalk, not the source entry itself.
+Here is the whole path for a source whose labels are per-image or per-point strings
+(dense masks and point clouds skip step 2 entirely — their classes live in the raster,
+which the label index never sees, so `marinedata check` never asks for a crosswalk).
+
+1. **Add the source.** An entry under `registry/sources/<file>.yaml`:
+
+   ```yaml
+   - id: my-new-source
+     name: My New Source
+     licence: CC-BY-4.0
+     legal_basis: licence
+     provenance: public
+     verification:
+       verified_on: 2026-08-28
+       verified_by: "HuggingFace card owner/my-new-source states license:cc-by-4.0"
+       method: dataset-card
+     access: { method: huggingface, uri: https://huggingface.co/datasets/owner/my-new-source,
+               params: { hf_id: owner/my-new-source } }
+     modalities: [image]
+     capabilities: [benthic-classification]
+     annotations:
+       - kind: image-label
+         supervises: [taxon]
+     loader: { layout: image-folder }
+   ```
+
+   Run `marinedata doctor --incomplete-only` — it will list `my-new-source` with
+   `layout=✗ crosswalk=✗`, which is exactly right: nothing has been verified against
+   real data yet, and there is no crosswalk.
+
+2. **Verify the layout against real data.**
+
+   ```bash
+   marinedata verify my-new-source
+   ```
+
+   This fetches a small bounded sample and confirms the declared layout actually reads
+   it. If it fails, fix `loader.params` (or the layout itself) until it passes — do not
+   guess twice; `marinedata fetch my-new-source` alone will show you what is really on
+   disk.
+
+3. **Add the crosswalk.** One entry under `registry/crosswalks/<file>.yaml` mapping the
+   source's native label strings onto canonical node ids:
+
+   ```yaml
+   crosswalks:
+     - id: my-new-source
+       source_schema: dataset-native
+       target_schema: rs-benthic-v1
+       edges:
+         - { source_label: "Hard Coral", targets: { taxon: HC }, fidelity: exact }
+         - { source_label: "Soft Coral", targets: { taxon: SC }, fidelity: exact }
+   ```
+
+   Reference it from the source entry: `loader: { layout: image-folder, schema_id:
+   dataset-native, crosswalk_id: my-new-source }`.
+
+   An edge that cannot map cleanly is not a blocker — see "Record what you don't know"
+   below and `docs/LABELS.md` for `fidelity` and abstention.
+
+4. **Verify the crosswalk against real data.**
+
+   ```bash
+   marinedata labels my-new-source
+   ```
+
+   This audits the crosswalk's edges against the labels a real fetched sample actually
+   contains — catching a mis-registered label string before it silently drops
+   supervision. It has already caught two mis-registrations in this registry.
+
+5. **Done.** `marinedata doctor --incomplete-only` should no longer list
+   `my-new-source`, and `pytest` should still pass. If the source has no annotations at
+   all (a pretraining-only image dump), skip steps 3–4 entirely — `doctor` reports
+   `crosswalk=·` (not applicable) rather than asking for one that would be fictional.
+
 ### Domain shift is part of the entry
 
 If a source is regionally biased, say so. `missing_classes` in particular: a schema that

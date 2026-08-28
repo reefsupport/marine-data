@@ -14,10 +14,11 @@ from __future__ import annotations
 from dataclasses import dataclass
 from pathlib import Path
 
-from .fetch import FetchError, FetchNotSupported, fetch_sample, sample_digest
+from .fetch import FetchError, FetchNotSupported, auto_fetchable, fetch_sample, sample_digest
 from .loaders import LoaderError, build_loader
 from .models import Source
 from .registry import Registry
+from .schema import Axis
 
 
 @dataclass(frozen=True)
@@ -133,3 +134,107 @@ def summarise(results: list[VerifyResult]) -> str:
         counts[result.status] = counts.get(result.status, 0) + 1
     parts = [f"{status}={count}" for status, count in sorted(counts.items())]
     return "  ".join(parts)
+
+
+def _declared_supervision(source: Source) -> frozenset[Axis]:
+    """Axes this source's registry entry actually claims — same rule as the loader's,
+    kept in one place so `doctor` and `ImageMaskPairLoader` cannot drift apart."""
+    axes: set[Axis] = set()
+    for annotation in source.annotations:
+        for name in annotation.supervises:
+            try:
+                axes.add(Axis(name))
+            except ValueError:
+                continue
+    return frozenset(axes)
+
+
+_STATUS_MARK = {"ok": "✓", "n/a": "·", "missing": "✗"}
+
+
+@dataclass(frozen=True)
+class DoctorRow:
+    """What is and is not done for one source, at a glance.
+
+    Every status is one of ``"ok"`` | ``"missing"`` | ``"n/a"`` — the same three-way
+    shape throughout, so nothing needs its own boolean-vs-string special case. ``n/a``
+    means the question genuinely does not apply (a ``metadata-only`` layout has nothing
+    to verify; a source with no declared supervision has nothing to cross), which is
+    different from ``missing`` and must not read as equally incomplete.
+    """
+
+    source_id: str
+    layout_status: str
+    licence_status: str
+    crosswalk_status: str
+    fetchable_status: str
+
+    @property
+    def complete(self) -> bool:
+        return "missing" not in (
+            self.layout_status,
+            self.licence_status,
+            self.crosswalk_status,
+            self.fetchable_status,
+        )
+
+    def line(self) -> str:
+        return (
+            f"{'✓' if self.complete else ' '} {self.source_id:<34} "
+            f"layout={_STATUS_MARK[self.layout_status]}  "
+            f"licence={_STATUS_MARK[self.licence_status]}  "
+            f"crosswalk={_STATUS_MARK[self.crosswalk_status]}  "
+            f"fetchable={_STATUS_MARK[self.fetchable_status]}"
+        )
+
+
+def doctor(registry: Registry) -> tuple[DoctorRow, ...]:
+    """One row per source: exactly what is incomplete, no network required.
+
+    Complements ``verify_all`` (which actually fetches) with the questions answerable
+    from the registry alone: is the layout verified, is the licence primary-sourced,
+    does a source that claims real supervision have a crosswalk to use it, and is a
+    sample even reachable without a human. Run before ``verify --unverified-only`` to
+    see the whole gap in one table instead of one source at a time.
+    """
+    rows = []
+    for source in registry:
+        supervises = _declared_supervision(source)
+        has_crosswalk = source.loader is not None and bool(source.loader.crosswalk_id)
+        is_metadata_only = source.loader is not None and source.loader.layout == "metadata-only"
+
+        if source.loader is None:
+            layout_status = "missing"
+        elif is_metadata_only:
+            layout_status = "n/a"  # nothing to fetch or verify against
+        else:
+            layout_status = "ok" if source.loader.is_verified else "missing"
+
+        rows.append(
+            DoctorRow(
+                source_id=source.id,
+                layout_status=layout_status,
+                licence_status="ok" if source.verification.is_primary else "missing",
+                crosswalk_status=(
+                    "n/a" if not supervises else ("ok" if has_crosswalk else "missing")
+                ),
+                fetchable_status="n/a"
+                if is_metadata_only
+                else ("ok" if auto_fetchable(source) else "missing"),
+            )
+        )
+    return tuple(sorted(rows, key=lambda r: r.source_id))
+
+
+def doctor_totals(rows: tuple[DoctorRow, ...]) -> str:
+    """The trailing counts block: how many rows, and by which column they fall short."""
+    complete = sum(1 for r in rows if r.complete)
+    return "\n".join(
+        [
+            f"{complete}/{len(rows)} sources fully complete",
+            f"layout unverified:      {sum(1 for r in rows if r.layout_status == 'missing')}",
+            f"licence not primary:    {sum(1 for r in rows if r.licence_status == 'missing')}",
+            f"crosswalk missing:      {sum(1 for r in rows if r.crosswalk_status == 'missing')}",
+            f"not auto-fetchable:     {sum(1 for r in rows if r.fetchable_status == 'missing')}",
+        ]
+    )

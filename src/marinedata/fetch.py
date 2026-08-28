@@ -297,6 +297,17 @@ _FETCHERS = {
 }
 
 
+def auto_fetchable(source: Source) -> bool:
+    """Whether ``fetch_sample`` could run without a human — no network required to ask.
+
+    Gated, request-only and scrape sources need a human regardless of access method,
+    which is exactly what ``fetch_sample`` itself checks before actually fetching; this
+    exposes that same static answer for reporting (``marinedata doctor``) without
+    reaching for the network.
+    """
+    return not source.access.gated and source.access.method in _FETCHERS
+
+
 def fetch_sample(
     source: Source,
     *,
