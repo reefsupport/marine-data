@@ -174,6 +174,16 @@ class DoctorRow:
         )
 
 
+_OPEN_VOCABULARY_SCHEMAS = frozenset({"worms-species", "sonotype"})
+"""Schemas declaring zero nodes *by design*, not because nobody has populated them yet
+— see their descriptions in registry/schemas/open-vocabs.yaml. A static crosswalk_id
+is the wrong mechanism for these (worms-species is resolved via WoRMS at genus/family
+rank through worms-genus or a fauna schema instead; sonotype explicitly has no
+taxonomic mapping to supply). ``dataset-native`` is deliberately excluded: its own
+description says "no published crosswalk *yet*" — that is a real, closeable gap, not
+an open vocabulary."""
+
+
 def doctor(registry: Registry) -> tuple[DoctorRow, ...]:
     """One row per source: exactly what is incomplete, no network required.
 
@@ -188,6 +198,9 @@ def doctor(registry: Registry) -> tuple[DoctorRow, ...]:
         supervises = source.declared_supervision()
         has_crosswalk = source.loader is not None and bool(source.loader.crosswalk_id)
         is_metadata_only = source.loader is not None and source.loader.layout == "metadata-only"
+        is_open_vocabulary = (
+            source.loader is not None and source.loader.schema_id in _OPEN_VOCABULARY_SCHEMAS
+        )
 
         if source.loader is None:
             layout_status = "missing"
@@ -203,7 +216,7 @@ def doctor(registry: Registry) -> tuple[DoctorRow, ...]:
                 licence_status="ok" if source.verification.is_primary else "missing",
                 crosswalk_status=(
                     "n/a"
-                    if not supervises or is_metadata_only
+                    if not supervises or is_metadata_only or is_open_vocabulary
                     else ("ok" if has_crosswalk else "missing")
                 ),
                 fetchable_status="n/a"

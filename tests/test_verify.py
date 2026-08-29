@@ -37,6 +37,28 @@ def test_metadata_only_source_needs_no_crosswalk_either(registry: Registry) -> N
     assert row.crosswalk_status == "n/a"
 
 
+def test_open_vocabulary_schema_needs_no_static_crosswalk(registry: Registry) -> None:
+    """⭐ worms-species and sonotype declare zero nodes BY DESIGN (see
+    registry/schemas/open-vocabs.yaml) — a source using them is meant to resolve
+    species/sonotypes dynamically, not via a hand-authored crosswalk YAML. Reporting
+    fish4knowledge/watkins-marine-mammal/etc. as crosswalk="missing" for this reason
+    was the same false-positive class as the metadata-only one, just for a different
+    root cause: real supervision the registry's own design says needs no crosswalk_id
+    to be complete.
+    """
+    for source_id in ("fish4knowledge", "watkins-marine-mammal", "marrs-reef-soundscapes"):
+        row = next(r for r in doctor(registry) if r.source_id == source_id)
+        assert row.crosswalk_status == "n/a", source_id
+
+
+def test_dataset_native_with_zero_nodes_still_needs_a_crosswalk(registry: Registry) -> None:
+    """The complement: dataset-native ALSO has zero nodes, but its own description
+    says "no published crosswalk yet" — a real, closeable gap, not an open vocabulary.
+    Must not be swept into the same n/a bucket as worms-species/sonotype."""
+    row = next(r for r in doctor(registry) if r.source_id == "suim")
+    assert row.crosswalk_status == "missing"
+
+
 def test_unlabelled_source_needs_no_crosswalk(registry: Registry) -> None:
     """sweet-corals declares no supervision at all — a missing crosswalk would be a
     false positive here, not a real gap."""
@@ -50,10 +72,12 @@ def test_crosswalked_source_reports_present(registry: Registry) -> None:
 
 
 def test_real_supervision_without_a_crosswalk_is_missing(registry: Registry) -> None:
-    """fathomnet declares real taxon supervision (6.6M bbox annotations) but has no
-    crosswalk — this is exactly the gap `doctor` exists to surface. (reefnet was this
-    example until its worms-genus crosswalk was wired up — see coral-benthic.yaml.)"""
-    row = next(r for r in doctor(registry) if r.source_id == "fathomnet")
+    """suim declares real taxon supervision but has no crosswalk (dataset-native, "no
+    published crosswalk yet") — this is exactly the gap `doctor` exists to surface.
+    (reefnet was this example until its worms-genus crosswalk was wired up; fathomnet
+    was until its worms-species schema was recognised as an open vocabulary needing no
+    static crosswalk_id — see the two tests below.)"""
+    row = next(r for r in doctor(registry) if r.source_id == "suim")
     assert row.crosswalk_status == "missing"
 
 
