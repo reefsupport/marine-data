@@ -10,13 +10,27 @@ sources:
     name: UIEB (Underwater Image Enhancement Benchmark)
     version: "2019"
     description: Reference-paired real underwater images — the standard enhancement benchmark.
-    licence: CC-BY-NC-4.0
-    legal_basis: licence
+    licence: PROVENANCE-DEFECTIVE
+    legal_basis: unknown
     provenance: public
     verification:
-      verified_on: 2026-08-17
-      verified_by: "Internal catalog 2026-07-24 sweep — flagged research/non-commercial; not re-checked at source"
-      method: secondary
+      verified_on: 2026-08-29
+      verified_by: >
+        li-chongyi.github.io/proj_benchmark.html — the author's own project page —
+        states in terms that leave no room for the "flagged non-commercial" secondary
+        reading this previously relied on: "This UIEB dataset is used only for
+        academic purposes. The re-distribution of this dataset is forbidden!!!" (their
+        emphasis), with access gated behind a stated password and "one and only
+        download port". The registry's access path is `Hikari0608/UIEB` on Hugging
+        Face — an unrelated uploader with no dataset card, no licence statement, and no
+        visible connection to the original authors (Chongyi Li's team). Given the
+        author's own explicit prohibition on redistribution, this mirror is very
+        likely exactly the unauthorized-redistribution pattern MarineInst20M was
+        caught on: a rights holder who forbids redistribution does not stop meaning it
+        because a third party did it anyway. Corrected from CC-BY-NC-4.0 (which
+        permits redistribution with attribution) to provenance-defective — no
+        redistribution channel this registry can point at is known to be authorized.
+      method: site-terms
     access:
       method: huggingface
       uri: https://huggingface.co/datasets/Hikari0608/UIEB
@@ -25,19 +39,26 @@ sources:
         image_column: raw
         mask_column: gt
       notes: >
-        Checked 2026-08-28: the official page only offers Google Drive/Baidu links.
-        Kaggle mirrors (larjeck/uieb-dataset-raw / -reference) exist but, like
-        brackish-dataset, require an authenticated account+API-key for the actual
-        file download despite being publicly listed — confirmed by testing the
-        download endpoint directly (404 unauthenticated, both with and without a
-        version number). Hikari0608/UIEB on HuggingFace is the working alternative:
-        train (800) + val (90) = 890, matching the original count exactly, with both
-        halves as columns (raw, gt) in one parquet — no multi-URL fetch needed at all.
+        Checked 2026-08-28 (prior pass): the official page only offers Google
+        Drive/Baidu links gated behind a password; Kaggle mirrors also require an
+        authenticated account+API-key. Hikari0608/UIEB matched the original count
+        (890) exactly, which is why it was adopted — but a matching count is not
+        evidence of authorization, and the author's own page explicitly forbids
+        redistribution. Retained here only as a factual record of what this access
+        path is; the licence gate now blocks it regardless of profile.
     modalities: [image]
     capabilities: [image-enhancement]
     items: 890
     annotations: [{ kind: none, supervises: [] }]
     coverage: { regions: [global] }
+    notes: >
+      PROHIBITED — not for a defective licence GRANT (the author's own terms are
+      clear: personal/academic use, no redistribution), but because the only working
+      access path in this registry is a third-party Hugging Face mirror with no
+      visible authorization from the author, whose page explicitly forbids reposting.
+      We cannot receive better title than that mirror had. If data is obtained
+      directly from the author (li-chongyi.github.io, password-gated), that channel
+      would be RESEARCH-ONLY-NO-REDIST, not this.
     loader:
       layout: image-mask-pairs
       params: { images_dir: images, masks_dir: masks }
@@ -49,13 +70,18 @@ sources:
     name: SQUID (Stereo Quantitative Underwater Image Dataset)
     version: "2019"
     description: Stereo underwater images with distance information and colour charts.
-    licence: CC-BY-4.0
+    licence: CC-BY-NC-SA-4.0
     legal_basis: licence
     provenance: public
     verification:
-      verified_on: 2026-08-17
-      verified_by: "Internal catalog 2026-07-24 sweep — permissive; csms.haifa.ac.il/profiles/tTreibitz/datasets"
-      method: secondary
+      verified_on: 2026-08-29
+      verified_by: >
+        zenodo.org/api/records/5744037 (the dataset's own official host, Zenodo API
+        metadata) — `"license": "cc-by-nc-sa-4.0"`. Corrected from CC-BY-4.0: this
+        reproduces the exact NC+SA-missed pattern already caught once on
+        MarineInst20M — a plain CC-BY reading would have let a NonCommercial,
+        ShareAlike-restricted source through as if it were unrestricted.
+      method: dataset-card
     access:
       method: http
       uri: https://csms.haifa.ac.il/profiles/tTreibitz/datasets/ambient_forwardlooking/index.html
@@ -119,13 +145,18 @@ sources:
     name: SUIM (Semantic Segmentation of Underwater Imagery)
     version: "2020"
     description: 8-class underwater semantic segmentation — fish, reef, diver, wrecks, seafloor.
-    licence: CC-BY-4.0
+    licence: MIT
     legal_basis: licence
     provenance: public
     verification:
-      verified_on: 2026-08-17
-      verified_by: "Internal catalog 2026-07-24 sweep — conditional/attribution; irvlab.cs.umn.edu"
-      method: secondary
+      verified_on: 2026-08-29
+      verified_by: >
+        raw.githubusercontent.com/IRVLab/SUIM/master/LICENSE — the dataset's own repo
+        LICENSE file, headed "SUIM-Net: Semantic Segmentation of Underwater Imagery:
+        Dataset and Benchmark" (naming the dataset explicitly, not just generic
+        "Software"), covering the whole repo including its `data/` directory.
+        Corrected from CC-BY-4.0, which had no supporting primary source.
+      method: licence-file
     access:
       method: http
       uri: https://irvlab.cs.umn.edu/resources/suim-dataset
@@ -147,9 +178,12 @@ sources:
       layout: image-mask-pairs
       params: { images_dir: SUIM/train_val/images, masks_dir: SUIM/train_val/masks }
       schema_id: dataset-native
+      crosswalk_id: suim-8class
       verified_on: 2026-08-28
       verified_note: >
         Live fetch confirms SUIM/train_val/{images,masks}/ (1488 pairs; a handful of
         images have no matching mask in the re-host, consistent with the original
-        dataset's own known gaps) and a separate SUIM/TEST/ split.
+        dataset's own known gaps) and a separate SUIM/TEST/ split. Masks are
+        single-channel index images (mode 'L', values 0-7), not RGB-encoded in this
+        distribution — see registry/crosswalks/suim-8class.yaml for the index table.
     tags: [scene-understanding, baseline]

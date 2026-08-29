@@ -24,6 +24,18 @@ licences:
     url: https://creativecommons.org/licenses/by/4.0/
     flags: { attribution_required: true }
 
+  - id: CC-BY-3.0-AU
+    name: Creative Commons Attribution 3.0 Australia
+    tier: T1_PERMISSIVE
+    url: https://creativecommons.org/licenses/by/3.0/au/
+    flags: { attribution_required: true }
+    notes: >
+      Same permissions as CC-BY-4.0 for this registry's purposes (attribution only,
+      no other restriction) — kept distinct for accurate citation, since OzFish's own
+      repo README links the 3.0 AU port specifically, not 4.0 (its badge alt-text
+      says "4.0" but the badge image and the link both say 3.0 — the source of the
+      original mis-entry).
+
   - id: Apache-2.0
     name: Apache License 2.0
     tier: T1_PERMISSIVE
@@ -83,6 +95,21 @@ licences:
       ND blocks derivative works outright. Generating masks, crops, resizes or
       augmentations from an ND source is a derivative act. Treat as untrainable, not
       merely non-commercial — this is the most commonly missed restriction in the field.
+
+  - id: RESEARCH-ONLY-NO-REDIST
+    name: Custom research/academic-only grant, redistribution forbidden
+    tier: T3_NONCOMMERCIAL
+    flags: { attribution_required: true, no_derivatives: true }
+    notes: >
+      Not a Creative Commons licence — a bespoke first-party terms-of-use statement
+      (UIEB, Watkins Marine Mammal Sound Database) granting personal/academic,
+      non-commercial use with credit, and explicitly forbidding reposting or
+      redistribution in any form. Modelled with `no_derivatives` even though the
+      source text is about redistribution rather than derivative works specifically,
+      because the practical effect is the same for this registry's purposes: it blocks
+      mirroring, sharding and any downstream act broader than reading the original
+      files in place for research. Citing this as CC-BY-NC-4.0 (which permits
+      redistribution with attribution) would overstate the grant.
 
   # ── No grant ──────────────────────────────────────────────────────────────
   - id: NO-LICENCE-STATED

@@ -1,0 +1,52 @@
+# SUIM's 8-class scene-segmentation scheme → RS-Benthic v1, taxon axis.
+#
+# SUIM is a scene-understanding baseline (fish, reef, diver, wrecks, seafloor), not a
+# benthic-cover taxonomy — most of its classes are coarser than anything RS-Benthic v1
+# separates, several are non-benthic entirely (diver, robot, water column), and one
+# ("reefs/invertebrates") flattens hard coral, soft coral and other fauna into a single
+# bucket the source cannot itself disaggregate. Every edge below is `coarsened` for
+# exactly that reason, not because the mapping is uncertain.
+#
+# Pixel values, not names: SUIM masks are single-channel index images (mode 'L') in
+# this dataset's actual distribution, 0-7. The index packs (R,G,B) — each 0 or 1 — as
+# a 3-bit number, per the source repo's own decoder (utils/data_utils.py):
+#   HD=(0,0,1)=1  RO=(1,0,0)=4  FV=(1,1,0)=6  WR=(0,1,1)=3  RI=(1,0,1)=5
+# BW, PF and SR have no explicit branch in that decoder (an `else: pass` catches them)
+# — their indices (0, 2, 7 respectively) are inferred from the standard SUIM colour
+# legend (black=background, green=plants, white=sand), not confirmed in code. Verified
+# empirically 2026-08-29 against 3 real masks from the registry's own sample_url: all
+# of {0,1,3,4,5,7} were observed with mode='L', consistent with this packing.
+#
+# `source_label` here is the descriptive code (BW/HD/...), matching this registry's
+# convention for named labels rather than raw integers — no loader currently decodes
+# SUIM's pixel values into these codes automatically (image-mask-pairs treats masks as
+# opaque paths), so this crosswalk is discovery/audit metadata today, not yet wired
+# into a runtime pixel-remapping step. See the index table above if building one.
+
+crosswalks:
+  - id: suim-8class
+    source_schema: dataset-native
+    target_schema: rs-benthic-v1
+    description: SUIM's 8 scene classes onto RS-Benthic's taxon axis, all necessarily coarsened.
+    edges:
+      - { source_label: "BW", targets: { taxon: WC }, fidelity: exact,
+          note: "Background/waterbody — index 0, inferred (no explicit branch in the source decoder)." }
+      - { source_label: "HD", targets: { taxon: DIV }, fidelity: exact,
+          note: "Human divers — index 1, code-confirmed." }
+      - { source_label: "PF", targets: { taxon: PLANTAE }, fidelity: coarsened,
+          note: "Aquatic plants AND sea-grass combined — index 2, inferred. Cannot
+                 resolve to SG alone without claiming precision the class doesn't have." }
+      - { source_label: "WR", targets: { taxon: NON_BENTHIC }, fidelity: coarsened,
+          note: "Wrecks/ruins — index 3, code-confirmed. Artificial structure, not natural substrate." }
+      - { source_label: "RO", targets: { taxon: NON_BENTHIC }, fidelity: coarsened,
+          note: "Robots/instruments — index 4, code-confirmed." }
+      - { source_label: "RI", targets: { taxon: BIOTIC }, fidelity: coarsened,
+          note: "Reefs/invertebrates — index 5, code-confirmed. Flattens hard coral,
+                 soft coral and other fauna into one bucket; BIOTIC is the coarsest
+                 honest answer, not HC or OTHER_FAUNA specifically." }
+      - { source_label: "FV", targets: { taxon: FISH }, fidelity: coarsened,
+          note: "Fish AND vertebrates — index 6, code-confirmed. Broader than fish
+                 alone (could include e.g. turtles), FISH is the closest available node." }
+      - { source_label: "SR", targets: { taxon: ABIOTIC }, fidelity: coarsened,
+          note: "Sand/rocks/seafloor — index 7, inferred. Cannot resolve to SD vs RK
+                 without the disaggregation the source class doesn't carry." }

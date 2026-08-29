@@ -55,7 +55,7 @@ def test_dataset_native_with_zero_nodes_still_needs_a_crosswalk(registry: Regist
     """The complement: dataset-native ALSO has zero nodes, but its own description
     says "no published crosswalk yet" — a real, closeable gap, not an open vocabulary.
     Must not be swept into the same n/a bucket as worms-species/sonotype."""
-    row = next(r for r in doctor(registry) if r.source_id == "suim")
+    row = next(r for r in doctor(registry) if r.source_id == "satellite-coral-mapping")
     assert row.crosswalk_status == "missing"
 
 
@@ -72,12 +72,16 @@ def test_crosswalked_source_reports_present(registry: Registry) -> None:
 
 
 def test_real_supervision_without_a_crosswalk_is_missing(registry: Registry) -> None:
-    """suim declares real taxon supervision but has no crosswalk (dataset-native, "no
-    published crosswalk yet") — this is exactly the gap `doctor` exists to surface.
-    (reefnet was this example until its worms-genus crosswalk was wired up; fathomnet
-    was until its worms-species schema was recognised as an open vocabulary needing no
-    static crosswalk_id — see the two tests below.)"""
-    row = next(r for r in doctor(registry) if r.source_id == "suim")
+    """satellite-coral-mapping declares real taxon supervision (a dense label raster)
+    but has no crosswalk (dataset-native, "no published crosswalk yet" — the raster's
+    pixel values have no documented legend anywhere, unlike suim's, so guessing one
+    would be exactly the kind of unverified crosswalk this registry's own history
+    warns against) — this is exactly the gap `doctor` exists to surface. (reefnet was
+    this example until its worms-genus crosswalk was wired up; fathomnet was until its
+    worms-species schema was recognised as an open vocabulary needing no static
+    crosswalk_id; suim was until its 8-class scene scheme was decoded and crosswalked
+    — see the two tests below and registry/crosswalks/suim-8class.yaml.)"""
+    row = next(r for r in doctor(registry) if r.source_id == "satellite-coral-mapping")
     assert row.crosswalk_status == "missing"
 
 

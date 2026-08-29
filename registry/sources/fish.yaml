@@ -12,13 +12,19 @@ sources:
     description: >
       Stereo-BRUV reef fish dataset with bounding boxes and millimetre length
       measurements — the most relevant public asset for length-based biomass.
-    licence: CC-BY-4.0
+    licence: CC-BY-3.0-AU
     legal_basis: licence
     provenance: public
     verification:
-      verified_on: 2026-08-17
-      verified_by: "Internal external-dataset catalog 2026-07-24 web-verified sweep (CC-BY); not re-checked at source"
-      method: secondary
+      verified_on: 2026-08-29
+      verified_by: >
+        raw.githubusercontent.com/open-AIMS/ozfish/master/README.md — "This work is
+        licensed under a [Creative Commons Attribution 3.0 Australian License]", link
+        target creativecommons.org/licenses/by/3.0/au/. Corrected from CC-BY-4.0: the
+        repo's own badge alt-text misleadingly reads "CC BY 4.0" while the badge image
+        and the link both say 3.0 AU — the likely source of the original mis-entry.
+        Same practical permissions either way (attribution only).
+      method: licence-file
     access:
       method: http
       uri: https://github.com/open-AIMS/ozfish
@@ -56,9 +62,15 @@ sources:
     legal_basis: licence
     provenance: public
     verification:
-      verified_on: 2026-08-17
-      verified_by: "Internal external-dataset catalog 2026-07-24 sweep; alzayats.github.io/DeepFish"
-      method: secondary
+      verified_on: 2026-08-29
+      verified_by: >
+        researchdata.jcu.edu.au/published/48fcdde6576ee929325b01fca4207914 (JCU's own
+        institutional research-data repository, DOI 10.25903/5f617fb6d6e0e — the
+        canonical host cited by both the GitHub repo and the Scientific Reports paper)
+        states "CC BY 4.0: Attribution 4.0 International". Note for future reviewers:
+        the GitHub repo's own LICENSE file is MIT — that covers the repo's *code*, not
+        the imagery/annotations, which live at JCU under CC-BY-4.0 as recorded here.
+      method: dataset-card
     access:
       method: http
       uri: https://alzayats.github.io/DeepFish/
@@ -87,13 +99,23 @@ sources:
     name: SEAMAPD21
     version: "2021"
     description: Reef fish detection from Gulf of Mexico BRUV footage, 130 species.
-    licence: PER-SOURCE-VARIES
+    licence: NO-LICENCE-STATED
     legal_basis: unknown
     provenance: public
     verification:
-      verified_on: 2026-08-17
-      verified_by: "Internal catalog 2026-07-24 sweep flagged as conditional; terms not located"
-      method: secondary
+      verified_on: 2026-08-29
+      verified_by: >
+        github.com/SEFSC/SEAMAPD21/blob/master/License.txt — NOAA's standard
+        boilerplate ("Software code created by U.S. Government employees is not
+        subject to copyright... the Department of Commerce hereby grants... a
+        royalty-free, nonexclusive license to use, copy, and create derivative works
+        of the Software"), explicitly scoped to "Software" throughout and never
+        mentioning the dataset, images, or annotations. The README has no data-
+        licensing section either. Corrected from PER-SOURCE-VARIES, which implied a
+        per-contributor breakdown that does not exist here — this is one NOAA-
+        authored dataset with no licence stated for the data at all, not an
+        aggregation of independently-licensed subsets.
+      method: absent
     access: { method: request, uri: https://github.com/SEFSC/SEAMAPD21 }
     modalities: [image]
     capabilities: [fish-detection, fish-classification]
@@ -110,13 +132,20 @@ sources:
     name: FishNet (ICCV 2023)
     version: "2023"
     description: Largest species-labelled fish taxonomy benchmark — 17,357 species with traits.
-    licence: CC-BY-SA-4.0
-    legal_basis: licence
+    licence: NO-LICENCE-STATED
+    legal_basis: unknown
     provenance: public
     verification:
-      verified_on: 2026-08-17
-      verified_by: "Internal catalog 2026-07-24 sweep (CC-BY-SA 4.0); fishnet-2023.github.io"
-      method: secondary
+      verified_on: 2026-08-29
+      verified_by: >
+        fishnet-2023.github.io's "Creative Commons Attribution-ShareAlike 4.0" text is
+        the boilerplate footer of the Academic Project Page Template ("This page was
+        built using the Academic Project Page Template... we just ask that you link
+        back") — it licenses the WEBSITE, not the dataset, and is the exact same
+        template-vs-content confusion already caught once on MarineInst20M. Checked
+        the GitHub API for faixan-khan/FishNet 2026-08-29: `license: null`. No licence
+        statement exists anywhere for the actual images/annotations.
+      method: absent
     access:
       method: http
       uri: https://fishnet-2023.github.io/
@@ -147,13 +176,27 @@ sources:
     description: >
       The first proper underwater fish multi-object-tracking benchmark, released with
       the SU-T tracker (AAAI 2026 Oral).
-    licence: NO-LICENCE-STATED
-    legal_basis: unknown
+    licence: Apache-2.0
+    legal_basis: licence
     provenance: public
     verification:
-      verified_on: 2026-08-17
-      verified_by: "arXiv 2507.06400 / github.com/vranlee/SU-T — licence not stated in the catalog sweep"
-      method: secondary
+      verified_on: 2026-08-29
+      verified_by: >
+        huggingface.co/datasets/Vranlee/MFT25 dataset card YAML declares
+        `license: apache-2.0`. Flagged disputed rather than accepted outright: Apache
+        2.0 is a software licence, an unusual and likely-mistaken choice for a
+        video/annotation dataset (HF's license picklist has no better-fitting option,
+        and uploaders often default to it) — arXiv 2507.06400 and
+        github.com/vranlee/SU-T state no licence at all for the data. A primary source
+        does say Apache-2.0; another primary channel (the paper/code repo) is silent,
+        which is not the same as contradicting it, but is not confirmation either.
+      method: dataset-card
+      disputed: true
+      dispute_note: >
+        HF dataset card declares apache-2.0; the paper and code repo carry no
+        licence statement for the data at all. Apache-2.0 is written for software,
+        not imagery/annotations — plausibly a placeholder default rather than a
+        considered choice. Confirm with the authors before shipping on this basis.
     access: { method: http, uri: https://vranlee.github.io/SU-T/ }
     modalities: [video]
     capabilities: [fish-tracking, fish-detection]
@@ -200,13 +243,23 @@ sources:
     name: FathomNet
     version: "live"
     description: Large deep-sea annotation ecosystem with a mature API and taxonomy backbone.
-    licence: CC-BY-4.0
-    legal_basis: licence
+    licence: PER-SOURCE-VARIES
+    legal_basis: unknown
     provenance: public
     verification:
-      verified_on: 2026-08-17
-      verified_by: "Internal catalog 2026-07-24 sweep (CC-BY); fathomnet.org"
-      method: secondary
+      verified_on: 2026-08-29
+      verified_by: >
+        fathomnet.org/terms (the database's own Terms of Use, not the catalog sweep
+        this previously cited): "contributors can select from one of four Creative
+        Commons licenses: CC0, CC-BY, CC-BY-NC, and CC-BY-NC-ND" per image submitted.
+        Confirmed 2026-08-29 the `/api/images/list/all` response carries no per-image
+        licence field at all — only `contributorsEmail` and imaging metadata — so
+        there is no machine-readable way to select only the CC0/CC-BY subset. The
+        previously-recorded CC-BY-4.0 was a blanket inference with no primary
+        support and is corrected: some images in this exact API response are
+        CC-BY-NC-ND, which a blanket CC-BY-4.0 claim would have let straight through
+        the licence gate.
+      method: site-terms
     access:
       method: api
       uri: https://database.fathomnet.org/api
@@ -271,9 +324,15 @@ sources:
     legal_basis: licence
     provenance: public
     verification:
-      verified_on: 2026-08-17
-      verified_by: "Internal catalog 2026-07-24 sweep — NOAA public domain; fisheries.noaa.gov"
-      method: secondary
+      verified_on: 2026-08-29
+      verified_by: >
+        fisheries.noaa.gov/national/about-us/website-policies-and-disclaimers — NOAA
+        Fisheries' own copyright policy: "Information created by the U.S. government
+        and presented on U.S. government websites is not subject to copyright in the
+        United States." Authored by NOAA/NMFS SWFSC employees (Cutter, Stierhoff,
+        Zeng) and hosted directly on the agency's own domain, consistent with 17
+        U.S.C. §105.
+      method: site-terms
     access:
       method: http
       uri: https://www.fisheries.noaa.gov/west-coast/science-data/labeled-fishes-wild
@@ -317,13 +376,17 @@ sources:
     name: Brackish Dataset (AAU)
     version: "2019"
     description: The only major temperate/brackish underwater detection set — fish and crustaceans.
-    licence: CC-BY-4.0
+    licence: CC-BY-SA-4.0
     legal_basis: licence
     provenance: public
     verification:
-      verified_on: 2026-08-17
-      verified_by: "Internal catalog 2026-07-24 sweep (CC-BY 4.0); vap.aau.dk/the-brackish-dataset"
-      method: secondary
+      verified_on: 2026-08-29
+      verified_by: >
+        Kaggle's own dataset metadata for aalborguniversity/brackish-dataset (the
+        dataset's actual host — the AAU project page itself states no licence at
+        all) records `"licenseName":"CC BY-SA 4.0"`. Corrected from CC-BY-4.0: the
+        real licence adds a ShareAlike requirement a plain CC-BY does not have.
+      method: dataset-card
     access:
       method: http
       uri: https://vap.aau.dk/the-brackish-dataset/
@@ -351,13 +414,20 @@ sources:
     name: Fish4Knowledge
     version: "2013"
     description: Classic imbalanced live-reef-fish recognition set with segmentation masks.
-    licence: CC-BY-4.0
-    legal_basis: licence
+    licence: NO-LICENCE-STATED
+    legal_basis: unknown
     provenance: public
     verification:
-      verified_on: 2026-08-17
-      verified_by: "Internal catalog 2026-07-24 sweep — permissive/public-domain style; homepages.inf.ed.ac.uk"
-      method: secondary
+      verified_on: 2026-08-29
+      verified_by: >
+        Searched homepages.inf.ed.ac.uk/rbf/Fish4Knowledge/ (homepage, overview.htm,
+        resources.htm, the GROUNDTRUTH archive tree) and the FP7 project deliverable
+        PDFs 2026-08-29: no licence, terms-of-use, copyright or usage-permission
+        statement of any kind exists anywhere. This is an EU FP7 (2010-2013) academic
+        project site with no formal data licence ever published. The previously-
+        recorded CC-BY-4.0 had no supporting primary source — the same failure mode
+        already caught once on MarineInst20M — and is corrected to the honest gap.
+      method: absent
     access:
       method: http
       uri: https://homepages.inf.ed.ac.uk/rbf/Fish4Knowledge/
@@ -395,9 +465,12 @@ sources:
     legal_basis: licence
     provenance: public
     verification:
-      verified_on: 2026-08-17
-      verified_by: "Internal catalog 2026-07-24 sweep (CC-BY 4.0); Roboflow Universe"
-      method: secondary
+      verified_on: 2026-08-29
+      verified_by: >
+        universe.roboflow.com/thesis-ztpwb/sea-urchin-10r8i — this exact project page
+        (the one `access.uri` already points at, confirmed the same project) — states
+        "LICENSE: CC BY 4.0" directly, shown twice including in its citation block.
+      method: dataset-card
     access:
       method: http
       uri: https://universe.roboflow.com/thesis-ztpwb/sea-urchin-10r8i

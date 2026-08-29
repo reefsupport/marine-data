@@ -256,7 +256,7 @@ sources:
     citation: "Soares et al., PeerJ 2023"
     loader:
       layout: labelme-json
-      schema_id: dataset-native
+      schema_id: worms-species
       params: { partition_glob: "*" }
       verified_on: 2026-08-28
       verified_note: >
@@ -264,10 +264,16 @@ sources:
         all. Live-read (via nested_archive, see access.notes) confirms
         train/test/val/<stem>.jpg + <stem>.json sidecars, LabelMe polygon format,
         with real Brazilian scleractinian species names as labels (e.g. "Mussismilia
-        hispida", "Siderastrea stellata") — not the annotations.schema_id: deolho-21
-        this entry also declares, which does not exist as a registered schema
-        (nothing currently checks that annotations[].schema_id resolves, unlike
-        loader.schema_id/crosswalk_id — a real registry gap, separate from this fix).
+        hispida", "Siderastrea stellata", "Agaricia spp") — not the
+        annotations.schema_id: deolho-21 this entry also declares, which does not
+        exist as a registered schema. Corrected 2026-08-29: loader.schema_id was
+        `dataset-native` (implying a hand-authored crosswalk is the missing piece);
+        the real labels are open-vocabulary genus/species binomials, exactly what
+        worms-species exists for, needing no static crosswalk_id at all. Note that
+        annotations[].schema_id (`deolho-21`) is documentation only — nothing checks
+        it resolves, unlike loader.schema_id/crosswalk_id which are checked at load —
+        a real but lower-stakes registry gap, left as `deolho-21` rather than fixed
+        here since it changes nothing about how the source loads or crosswalks.
     tags: [atlantic, dense-seg, rare-region]
 
   - id: heron-reef-benthic

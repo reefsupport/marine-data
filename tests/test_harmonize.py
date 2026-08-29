@@ -196,6 +196,23 @@ def test_every_crosswalk_target_resolves(registry: Registry) -> None:
         Harmonizer(walk, target)  # raises if any edge points at a missing node
 
 
+def test_suim_scene_classes_are_all_coarsened_or_exact_by_design(registry: Registry) -> None:
+    """SUIM's 8 scene classes never claim precision the source doesn't have.
+
+    HD (divers) and BW (background) map exactly onto their own dedicated non-benthic
+    nodes. Every other class is necessarily coarser: RI ("reefs/invertebrates")
+    flattens hard coral, soft coral and other fauna into one bucket the source cannot
+    itself disaggregate, so it must land on BIOTIC rather than guessing HC.
+    """
+    harmonizer = registry.harmonizer_for("suim")
+    assert harmonizer is not None
+    assert harmonizer.map_label("HD").labels[Axis.TAXON].node_id == "DIV"
+    assert harmonizer.map_label("BW").labels[Axis.TAXON].node_id == "WC"
+    result = harmonizer.map_label("RI")
+    assert result.labels[Axis.TAXON].node_id == "BIOTIC"
+    assert result.labels[Axis.TAXON].fidelity is Fidelity.COARSENED
+
+
 # ── schema validation: four holes found and closed 2026-08-17 ─────────────
 
 
