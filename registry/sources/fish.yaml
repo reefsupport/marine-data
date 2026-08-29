@@ -274,14 +274,43 @@ sources:
       verified_on: 2026-08-17
       verified_by: "Internal catalog 2026-07-24 sweep — NOAA public domain; fisheries.noaa.gov"
       method: secondary
-    access: { method: http, uri: https://www.fisheries.noaa.gov/west-coast/science-data/labeled-fishes-wild }
+    access:
+      method: http
+      uri: https://www.fisheries.noaa.gov/west-coast/science-data/labeled-fishes-wild
+      size_bytes: 443365962
+      params:
+        sample_url: "https://storage.googleapis.com/nmfs_odp_swfsc/Fisheries%20Resources%20Division/Labeled_Fishes_In_The_Wild.zip"
+      notes: >
+        The dataset landing page itself 301-redirects nowhere useful
+        (swfscdata.nmfs.noaa.gov has moved); the real v1.1 distribution is this GCS
+        bucket, found by fetching fisheries.noaa.gov's own page text 2026-08-29, not
+        by following the broken canonical link. Confirmed live and Range-fetchable.
     modalities: [image]
     capabilities: [fish-detection]
-    items: 929
-    items_note: "929 positive, 3,167 negative."
+    items: 578
+    items_note: >
+      Corrected 2026-08-29 from the paper's headline "929 positive" figure: the
+      delivered archive has 1,326 files under Positive_fish/ but only 578 carry a bbox
+      line in the .dat annotation file — the rest are additional crops with no
+      independent annotation. 578 is what a loader actually yields. 3,167 negatives
+      (unannotated background) are also in the archive but not counted here.
     annotations: [{ kind: bbox, classes: 1, supervises: [] }]
     coverage: { regions: [eastern-pacific, temperate] }
-    loader: { layout: coco-json }
+    loader:
+      layout: opencv-cascade-dat
+      params:
+        images_dir: "_LABELED-FISHES-IN-THE-WILD/Training_and_validation/Positive_fish"
+        annotations: "_LABELED-FISHES-IN-THE-WILD/Training_and_validation/Positive_fish/Positive_fish_(ALL)-MARKS_DATA.dat"
+      verified_on: 2026-08-29
+      verified_note: >
+        coco-json was a wrong guess, never checked against real data. The real
+        distribution (fetched from the GCS mirror 2026-08-29 — the canonical
+        swfscdata.nmfs.noaa.gov link is dead, 301s to a generic page) carries a single
+        flat OpenCV `opencv_createsamples` .dat file: 578 of the 1,326 positive-fish
+        images have a bbox line (`filename n x y w h`), the rest are additional crops
+        with no separate annotation. No native class string exists in this format —
+        every box is implicitly "fish" — so this loader emits geometry only, no label,
+        matching the `supervises: []` already declared above.
     tags: [public-domain, small]
 
   - id: brackish-dataset

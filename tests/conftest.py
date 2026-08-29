@@ -124,6 +124,17 @@ def yolo_root(tmp_path: Path) -> Path:
 
 
 @pytest.fixture
+def opencv_cascade_root(tmp_path: Path) -> Path:
+    root = tmp_path / "cascade"
+    for name in ("a.jpg", "b.jpg"):
+        _touch_image(root / name)
+    (root / "annotations.dat").write_text(
+        "a.jpg 2 10 20 30 40 50 60 70 80\nb.jpg 1 1 2 3 4\n", encoding="utf-8"
+    )
+    return root
+
+
+@pytest.fixture
 def csv_points_root(tmp_path: Path) -> Path:
     root = tmp_path / "points"
     for name in ("a.jpg", "b.jpg"):

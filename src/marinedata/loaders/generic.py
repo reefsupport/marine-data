@@ -456,6 +456,98 @@ class LabelMeJsonLoader(_HarmonizingLoader):
 
 
 @register_loader
+class OpenCVCascadeDatLoader(SourceLoader):
+    """OpenCV ``opencv_createsamples``-style bbox annotations: one flat text file,
+    one line per image, ``filename num_boxes x y w h [x y w h ...]`` in absolute pixels.
+
+    Built for ``labeled-fishes-in-the-wild``: its real annotation format turned out to
+    be this decades-old Haar-cascade training format, not COCO JSON as originally
+    declared — found by actually reading the ``.dat`` file after fetching it, the same
+    class of surprise ``verified_note`` fields throughout this registry exist to catch.
+
+    Deliberately not a :class:`_HarmonizingLoader`: the format carries no label string
+    at all, only geometry — every box is implicitly the source's one class. Inventing a
+    native label to resolve (e.g. hardcoding ``"fish"``) would silently turn an
+    unsupervised source into a supervised one the moment a crosswalk happened to exist
+    for that string, which is exactly the fabricated-supervision failure mode this
+    registry's abstention machinery exists to prevent. If this source ever gets a real
+    species/genus breakdown, that annotation lives elsewhere and deserves its own axis.
+
+    Params:
+        images_dir: default the root itself.
+        annotations: path to the ``.dat``/``.info`` file, relative to root. Default
+            ``"annotations.dat"``.
+    """
+
+    layout = "opencv-cascade-dat"
+
+    def _images_dir(self) -> Path:
+        sub = self._param("images_dir")
+        return self.root / str(sub) if sub else self.root
+
+    def _annotation_path(self) -> Path:
+        return self.root / str(self._param("annotations", "annotations.dat"))
+
+    def validate(self) -> None:
+        super().validate()
+        path = self._annotation_path()
+        if not path.is_file():
+            raise LoaderError(
+                f"{self.source.id}: layout 'opencv-cascade-dat' expects annotations at {path}"
+            )
+
+    def _iter_samples(self) -> Iterator[Sample]:
+        images_dir = self._images_dir()
+        by_name = {p.name: p for p in _images_under(images_dir)}
+        path = self._annotation_path()
+
+        for lineno, line in enumerate(path.read_text(encoding="utf-8").splitlines(), start=1):
+            parts = line.split()
+            if not parts:
+                continue
+            filename, rest = parts[0], parts[1:]
+            if not rest:
+                raise LoaderError(
+                    f"{self.source.id}: {path}:{lineno} has a filename but no box count"
+                )
+            count = int(rest[0])
+            coords = rest[1:]
+            if len(coords) != count * 4:
+                raise LoaderError(
+                    f"{self.source.id}: {path}:{lineno} declares {count} box(es) but "
+                    f"has {len(coords)} coordinate value(s), not {count * 4}"
+                )
+            image = by_name.get(filename)
+            if image is None:
+                if self.partial:
+                    continue  # sampled sets are legitimately incomplete
+                raise LoaderError(
+                    f"{self.source.id}: {path}:{lineno} references '{filename}', not "
+                    f"found under {images_dir}"
+                )
+            boxes = tuple(
+                (
+                    float(coords[i]),
+                    float(coords[i + 1]),
+                    float(coords[i + 2]),
+                    float(coords[i + 3]),
+                )
+                for i in range(0, len(coords), 4)
+            )
+            yield Sample(
+                source_id=self.source.id,
+                key=self._relative(image),
+                image=image,
+                boxes=boxes,
+                labels={},
+                supervised=frozenset(),
+                licence_tier=self.source.licence.tier,
+                split=self.split,
+                meta={"n_annotations": count},
+            )
+
+
+@register_loader
 class YoloTxtLoader(_HarmonizingLoader):
     """YOLO layout: ``images/`` and ``labels/`` with one ``.txt`` per image.
 

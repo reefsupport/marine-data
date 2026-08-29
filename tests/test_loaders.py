@@ -280,6 +280,36 @@ def test_yolo_txt_malformed_line(yolo_root: Path) -> None:
         list(loader)
 
 
+def test_opencv_cascade_dat(opencv_cascade_root: Path) -> None:
+    samples = list(build_loader(make_source("opencv-cascade-dat"), opencv_cascade_root))
+    assert len(samples) == 2
+    a = next(s for s in samples if s.key == "a.jpg")
+    assert a.boxes == ((10.0, 20.0, 30.0, 40.0), (50.0, 60.0, 70.0, 80.0))
+    assert a.meta["n_annotations"] == 2
+
+
+def test_opencv_cascade_dat_declares_no_supervision(opencv_cascade_root: Path) -> None:
+    """⭐ The format has no class string at all — every box is implicitly the source's
+    one class. Emitting a guessed label the moment a crosswalk happened to exist for it
+    would fabricate supervision this source never declared."""
+    samples = list(build_loader(make_source("opencv-cascade-dat"), opencv_cascade_root))
+    assert all(s.labels == {} and s.supervised == frozenset() for s in samples)
+
+
+def test_opencv_cascade_dat_box_count_mismatch(opencv_cascade_root: Path) -> None:
+    (opencv_cascade_root / "annotations.dat").write_text("a.jpg 2 10 20 30 40\n")
+    loader = build_loader(make_source("opencv-cascade-dat"), opencv_cascade_root)
+    with pytest.raises(LoaderError, match="declares 2 box"):
+        list(loader)
+
+
+def test_opencv_cascade_dat_unknown_image_fails_closed(opencv_cascade_root: Path) -> None:
+    (opencv_cascade_root / "annotations.dat").write_text("missing.jpg 1 1 2 3 4\n")
+    loader = build_loader(make_source("opencv-cascade-dat"), opencv_cascade_root)
+    with pytest.raises(LoaderError, match="not found under"):
+        list(loader)
+
+
 def test_csv_points(csv_points_root: Path) -> None:
     samples = list(build_loader(make_source("csv-points"), csv_points_root))
     assert len(samples) == 2
