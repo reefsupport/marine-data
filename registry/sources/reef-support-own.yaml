@@ -115,6 +115,8 @@ sources:
         annotations: export-result.ndjson
         images_dir: images
         geometry_labels: "SCALE"
+      verified_on: 2026-08-29
+      verified_note: "Live S3 fetch confirms images/ and export-result.ndjson at the declared prefix, matching the layout."
     items: 2707
     annotations:
       - kind: instance-mask

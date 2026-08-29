@@ -237,6 +237,8 @@ sources:
     loader:
       layout: flat-images
       schema_id: worms-species
+      verified_on: 2026-08-29
+      verified_note: "Live HF fetch confirms flat image files under the image column, no directory structure to break."
     tags: [tracking, tooling]
 
   - id: fathomnet

@@ -40,6 +40,8 @@ sources:
       schema_id: coralscapes-39
       crosswalk_id: coralscapes-39
       params: { images_dir: images, masks_dir: masks }
+      verified_on: 2026-08-29
+      verified_note: "Live HF fetch confirms images/ and masks/ columns write to matching-stem files, as the layout declares."
     items: 2075
     annotations:
       - kind: dense-mask
@@ -412,6 +414,8 @@ sources:
       layout: image-folder
       schema_id: dataset-native
       crosswalk_id: noaa-pifsc-bleaching-condition
+      verified_on: 2026-08-29
+      verified_note: "Live fetch confirms train/CORAL/ and train/CORAL_BL/ class directories, matching the declared layout."
     items: 10400
     annotations:
       - kind: image-label

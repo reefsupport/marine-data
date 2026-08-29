@@ -59,6 +59,8 @@ sources:
     citation: "wildflow, Coral reefs 3D photogrammetry, DOI 10.57967/hf/5162"
     loader:
       layout: flat-images
+      verified_on: 2026-08-29
+      verified_note: "Live HF fetch of the declared subpath confirms flat GoPro frame files, no directory structure to break."
     tags: [3d, scaled, in-modality, gopro]
 
   - id: deepreefmap-data
