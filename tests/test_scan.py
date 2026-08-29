@@ -28,13 +28,27 @@ from marinedata.schema import Axis
 RATIOS = {"train": 0.7, "val": 0.15, "test": 0.15}
 
 
+_SYNTH_IMAGE = Path("/data/big/placeholder.jpg")
+"""Shared by every synthetic sample below — deliberately not one `Path(...)` per
+sample. `scan()` never reads `.image`; only `key`, `meta`, `supervised` and `labels`
+matter to it. But `pathlib` interns every *new* path component for the life of the
+process and never frees it, so a memory test running late in a large, growing suite
+pays for whatever a prior test's `Path()` calls left the global intern table primed to
+do next: even a handful of genuinely new components can trigger a table resize whose
+size depends on the table's accumulated state, not on this test's own sample count —
+bounding this test's *own* cardinality doesn't fix that, since the trigger isn't under
+its control. Constructing zero new `Path` objects per sample removes the coupling
+entirely, which is the only way to keep this test's signal about `scan()` and not
+about whatever ran before it."""
+
+
 def synth(count: int, *, sites: int = 40) -> Iterator[Sample]:
     for i in range(count):
         site = f"site{i % sites}"
         yield Sample(
             source_id="big",
             key=f"{site}/{i}",
-            image=Path(f"/data/big/{site}/img_{i:08d}.jpg"),
+            image=_SYNTH_IMAGE,
             labels={Axis.TAXON: LabelValue("HC" if i % 3 else "SC")},
             supervised=frozenset({Axis.TAXON}),
             meta={"partition": site},
