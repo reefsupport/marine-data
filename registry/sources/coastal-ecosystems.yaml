@@ -179,6 +179,7 @@ sources:
     loader:
       layout: coco-json
       schema_id: dataset-native
+      crosswalk_id: seaclear-marine-debris
       params:
         recursive_images: true
       verified_on: 2026-08-30

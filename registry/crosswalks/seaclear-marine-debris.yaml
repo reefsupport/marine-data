@@ -1,0 +1,75 @@
+# SeaClear's 40-class marine-debris/incidental-biota scheme → RS-Benthic v1, taxon axis.
+#
+# The scheme is not a debris taxonomy alone: alongside can/tarp/bottle/etc., annotators
+# also marked the biota and ROV hardware incidentally visible in the same frames (Table
+# from dataset.json, confirmed live 2026-08-30). Three groups result:
+#   - genuine litter (plastic/metal/glass/rubber/ceramic/paper/fibre/wood/cement items)
+#     → TRASH, coarsened: the scheme distinguishes material and object type, RS-Benthic
+#     only distinguishes "is this debris" at all.
+#   - incidental biota → their own taxon nodes where one exists (sponge, urchin, fish),
+#     OTHER_FAUNA where the scheme's bucket is broader than any single RS-Benthic node
+#     (shells, starfish, "etc"), PLANTAE for the single plant class.
+#   - ROV hardware (cable, chassis, legs, the vehicle itself) → NON_BENTHIC: it is
+#     neither substrate nor biota, present only because the platform that captured the
+#     image is sometimes in its own frame.
+#   - unknown_instance is a genuine "cannot tell" bucket in the source's own scheme —
+#     mapping it to anything would fabricate a determination the annotators explicitly
+#     declined to make, so it has no target at all (unmappable, not coarsened).
+
+crosswalks:
+  - id: seaclear-marine-debris
+    source_schema: dataset-native
+    target_schema: rs-benthic-v1
+    description: SeaClear's 40 debris/biota/hardware classes onto RS-Benthic's taxon axis.
+    edges:
+      - { source_label: "can_metal", targets: { taxon: TRASH }, fidelity: coarsened }
+      - { source_label: "tarp_plastic", targets: { taxon: TRASH }, fidelity: coarsened }
+      - { source_label: "container_plastic", targets: { taxon: TRASH }, fidelity: coarsened }
+      - { source_label: "bottle_plastic", targets: { taxon: TRASH }, fidelity: coarsened }
+      - { source_label: "tube_cement", targets: { taxon: TRASH }, fidelity: coarsened }
+      - { source_label: "plant", targets: { taxon: PLANTAE }, fidelity: coarsened,
+          note: "No further detail (species, algae vs. seagrass) recorded." }
+      - { source_label: "container_middle_size_metal", targets: { taxon: TRASH }, fidelity: coarsened }
+      - { source_label: "animal_etc", targets: { taxon: OTHER_FAUNA }, fidelity: coarsened,
+          note: "Explicit catch-all for fauna not covered by the scheme's other animal_* classes." }
+      - { source_label: "animal_sponge", targets: { taxon: PORIFERA }, fidelity: exact }
+      - { source_label: "bottle_glass", targets: { taxon: TRASH }, fidelity: coarsened }
+      - { source_label: "wreckage_metal", targets: { taxon: TRASH }, fidelity: coarsened }
+      - { source_label: "unknown_instance", fidelity: unmappable,
+          note: "A genuine 'cannot tell' bucket in the source's own scheme — mapping it
+                 to anything would fabricate a determination the annotators declined to make." }
+      - { source_label: "pipe_plastic", targets: { taxon: TRASH }, fidelity: coarsened }
+      - { source_label: "net_plastic", targets: { taxon: TRASH }, fidelity: coarsened }
+      - { source_label: "animal_shells", targets: { taxon: OTHER_FAUNA }, fidelity: coarsened,
+          note: "Molluscs/shells — no dedicated node in rs-benthic-v1." }
+      - { source_label: "rope_fiber", targets: { taxon: TRASH }, fidelity: coarsened }
+      - { source_label: "animal_urchin", targets: { taxon: URCH }, fidelity: exact }
+      - { source_label: "cup_plastic", targets: { taxon: TRASH }, fidelity: coarsened }
+      - { source_label: "brick_clay", targets: { taxon: TRASH }, fidelity: coarsened }
+      - { source_label: "bag_plastic", targets: { taxon: TRASH }, fidelity: coarsened }
+      - { source_label: "sanitaries_plastic", targets: { taxon: TRASH }, fidelity: coarsened }
+      - { source_label: "clothing_fiber", targets: { taxon: TRASH }, fidelity: coarsened }
+      - { source_label: "cup_ceramic", targets: { taxon: TRASH }, fidelity: coarsened }
+      - { source_label: "boot_rubber", targets: { taxon: TRASH }, fidelity: coarsened }
+      - { source_label: "tire_rubber", targets: { taxon: TRASH }, fidelity: coarsened }
+      - { source_label: "jar_glass", targets: { taxon: TRASH }, fidelity: coarsened }
+      - { source_label: "rov_cable", targets: { taxon: NON_BENTHIC }, fidelity: coarsened,
+          note: "Survey hardware incidentally in frame, not substrate or biota." }
+      - { source_label: "rov_tortuga", targets: { taxon: NON_BENTHIC }, fidelity: coarsened,
+          note: "The Mini-Tortuga ROV itself." }
+      - { source_label: "branch_wood", targets: { taxon: TRASH }, fidelity: approximate,
+          note: "Driftwood is natural, not litter, but the source groups it with debris
+                 rather than biota; TRASH is the closer of the two available buckets." }
+      - { source_label: "furniture_wood", targets: { taxon: TRASH }, fidelity: coarsened }
+      - { source_label: "snack_wrapper_plastic", targets: { taxon: TRASH }, fidelity: coarsened }
+      - { source_label: "lid_plastic", targets: { taxon: TRASH }, fidelity: coarsened }
+      - { source_label: "cardboard_paper", targets: { taxon: TRASH }, fidelity: coarsened }
+      - { source_label: "rope_plastic", targets: { taxon: TRASH }, fidelity: coarsened }
+      - { source_label: "cable_metal", targets: { taxon: TRASH }, fidelity: coarsened }
+      - { source_label: "animal_fish", targets: { taxon: FISH }, fidelity: exact }
+      - { source_label: "snack_wrapper_paper", targets: { taxon: TRASH }, fidelity: coarsened }
+      - { source_label: "rov_vehicle_leg", targets: { taxon: NON_BENTHIC }, fidelity: coarsened }
+      - { source_label: "rov_bluerov", targets: { taxon: NON_BENTHIC }, fidelity: coarsened,
+          note: "The BlueROV platform itself." }
+      - { source_label: "animal_starfish", targets: { taxon: OTHER_FAUNA }, fidelity: coarsened,
+          note: "No dedicated echinoderm node beyond urchin in rs-benthic-v1." }

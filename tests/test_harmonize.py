@@ -213,6 +213,23 @@ def test_suim_scene_classes_are_all_coarsened_or_exact_by_design(registry: Regis
     assert result.labels[Axis.TAXON].fidelity is Fidelity.COARSENED
 
 
+def test_seaclear_separates_debris_biota_and_hardware(registry: Registry) -> None:
+    """⭐ The scheme mixes three unrelated things — litter, incidental biota, and ROV
+    hardware — and only the abstention machinery keeps them from colliding on one axis.
+    """
+    harmonizer = registry.harmonizer_for("seaclear-marine-debris")
+    assert harmonizer is not None
+    assert harmonizer.map_label("can_metal").labels[Axis.TAXON].node_id == "TRASH"
+    assert harmonizer.map_label("animal_sponge").labels[Axis.TAXON].node_id == "PORIFERA"
+    assert harmonizer.map_label("animal_fish").labels[Axis.TAXON].node_id == "FISH"
+    assert harmonizer.map_label("rov_bluerov").labels[Axis.TAXON].node_id == "NON_BENTHIC"
+    unknown = harmonizer.map_label("unknown_instance")
+    assert Axis.TAXON not in unknown.supervised, (
+        "unknown_instance is the source's own 'cannot tell' bucket — mapping it to "
+        "anything would fabricate a determination the annotators declined to make."
+    )
+
+
 # ── schema validation: four holes found and closed 2026-08-17 ─────────────
 
 
