@@ -576,6 +576,16 @@ def _fetch_http(source: Source, root: Path, limit: int) -> FetchResult:
             instead of the archive logic below — for a source whose real images are
             individually addressable URLs inside a small metadata manifest, rather
             than embedded in the archive itself (e.g. Heron Reef's PANGAEA export).
+        tar_start_offset: byte offset to start reading a remote ``.tar`` from,
+            instead of 0 — a tar has no index, so reaching a section that sits deep
+            inside a huge archive (e.g. DeepFish's Segmentation/ folder, the last
+            ~1.4% of a 7.6GB tar behind Classification/ and Localization/) would
+            otherwise mean reading every header sequentially from the start, which
+            is many thousands of round trips. Found once by binary-searching the
+            remote file for a real tar header near a candidate byte offset (see
+            ``_extract_remote_tar``'s docstring for why this only works for tar,
+            never a compressed variant) and pinned here so every later fetch skips
+            straight to it. Requires Range support; applies to ``sample_url`` only.
     """
     if str(source.access.params.get("fetch_style", "")) == "manifest":
         from .fetchers_remote import fetch_pangaea_manifest
@@ -589,7 +599,15 @@ def _fetch_http(source: Source, root: Path, limit: int) -> FetchResult:
             f"downloadable sample, or fetch the data manually."
         )
     nested_archive = source.access.params.get("nested_archive")
-    count = _fetch_one(source.id, sample_url, root, limit, nested_archive=nested_archive)
+    tar_start_offset = int(source.access.params.get("tar_start_offset", 0) or 0)
+    count = _fetch_one(
+        source.id,
+        sample_url,
+        root,
+        limit,
+        nested_archive=nested_archive,
+        tar_start_offset=tar_start_offset,
+    )
 
     extra_url = source.access.params.get("extra_sample_url")
     if extra_url:
@@ -599,7 +617,13 @@ def _fetch_http(source: Source, root: Path, limit: int) -> FetchResult:
 
 
 def _fetch_one(
-    source_id: str, url: str, root: Path, limit: int, *, nested_archive: object = None
+    source_id: str,
+    url: str,
+    root: Path,
+    limit: int,
+    *,
+    nested_archive: object = None,
+    tar_start_offset: int = 0,
 ) -> int:
     """Retrieve one declared file or archive into ``root``. The single-URL body of
     :func:`_fetch_http`, factored out so a second URL (``extra_sample_url``) can reuse
@@ -638,10 +662,13 @@ def _fetch_one(
 
     if name.lower().endswith(".tar"):
         size, supports_range = _head(url)
-        if size and size <= MAX_DOWNLOAD_WITHOUT_RANGE:
+        if size and size <= MAX_DOWNLOAD_WITHOUT_RANGE and not tar_start_offset:
             return _extract_archive(_get(url), root, name, limit)
         if supports_range and size:
-            return _extract_remote_tar(_RemoteFile(url, size), root, limit, label=name)
+            remote = _RemoteFile(
+                url, size, window_offset=tar_start_offset, window_size=size - tar_start_offset
+            )
+            return _extract_remote_tar(remote, root, limit, label=name)
         if size and size > MAX_DOWNLOAD_WITHOUT_RANGE:
             raise FetchNotSupported(
                 f"{source_id}: {url} is a {size / 1e9:.1f} GB tar and the host does "

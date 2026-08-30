@@ -211,6 +211,51 @@ def test_coco_json_malformed(coco_root: Path) -> None:
         list(loader)
 
 
+def test_coco_json_recursive_images_across_site_subdirectories(tmp_path: Path) -> None:
+    """⭐ SeaClear's real shape: one COCO JSON spans several site/camera
+    subdirectories, and `file_name` is the bare filename with no sub-path — a flat
+    `images_dir / file_name` join would resolve to the wrong site's same-named file,
+    or nothing at all, depending on which (if any) site happens to sit at images_dir.
+    """
+    import json as _json
+
+    root = tmp_path / "seaclear"
+    _touch_image(root / "images" / "SiteA" / "Cam1" / "1.jpg")
+    _touch_image(root / "images" / "SiteB" / "Cam1" / "2.jpg")
+    doc = {
+        "images": [
+            {"id": 0, "file_name": "1.jpg"},
+            {"id": 1, "file_name": "2.jpg"},
+        ],
+        "categories": [{"id": 1, "name": "can_metal"}],
+        "annotations": [{"id": 1, "image_id": 1, "category_id": 1, "bbox": [0, 0, 1, 1]}],
+    }
+    (root / "annotations.json").write_text(_json.dumps(doc), encoding="utf-8")
+
+    source = make_source("coco-json", {"recursive_images": True})
+    samples = list(build_loader(source, root))
+    assert len(samples) == 2
+    by_key = {s.key: s for s in samples}
+    assert by_key["1.jpg"].image == root / "images" / "SiteA" / "Cam1" / "1.jpg"
+    assert by_key["2.jpg"].image == root / "images" / "SiteB" / "Cam1" / "2.jpg"
+
+
+def test_coco_json_recursive_images_missing_file_fails_closed(tmp_path: Path) -> None:
+    import json as _json
+
+    root = tmp_path / "seaclear-missing"
+    _touch_image(root / "images" / "SiteA" / "1.jpg")
+    doc = {
+        "images": [{"id": 0, "file_name": "not-there.jpg"}],
+        "categories": [],
+        "annotations": [],
+    }
+    (root / "annotations.json").write_text(_json.dumps(doc), encoding="utf-8")
+    loader = build_loader(make_source("coco-json", {"recursive_images": True}), root)
+    with pytest.raises(LoaderError, match="not found anywhere under"):
+        list(loader)
+
+
 @pytest.fixture
 def labelme_root(tmp_path: Path) -> Path:
     import json as _json

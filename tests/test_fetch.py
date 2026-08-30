@@ -422,6 +422,61 @@ def test_large_tar_without_range_support_is_refused(tmp_path: Path) -> None:
         thread.join(timeout=5)
 
 
+def test_tar_start_offset_skips_straight_to_it(range_server, tmp_path: Path) -> None:
+    """⭐ The whole point of `tar_start_offset`: a target section deep inside a huge
+    tar (DeepFish's Segmentation/, 98%+ into a 7.6GB archive) must be reachable
+    without reading every header before it. Built here as two back-to-back tars
+    concatenated into one byte stream — the "junk" tar stands in for everything
+    before the real target, and the test asserts none of its bytes are ever
+    requested."""
+    junk_buf = io.BytesIO()
+    with tarfile.open(fileobj=junk_buf, mode="w") as tf:
+        for i in range(50):
+            data = b"J" * 2000
+            info = tarfile.TarInfo(name=f"junk/before/f{i:04d}.jpg")
+            info.size = len(data)
+            tf.addfile(info, io.BytesIO(data))
+    junk_bytes = junk_buf.getvalue()
+
+    real_buf = io.BytesIO()
+    with tarfile.open(fileobj=real_buf, mode="w") as tf:
+        data = b"R" * 100
+        info = tarfile.TarInfo(name="images/target.jpg")
+        info.size = len(data)
+        tf.addfile(info, io.BytesIO(data))
+    real_bytes = real_buf.getvalue()
+
+    payload = junk_bytes + real_bytes
+    offset = len(junk_bytes)
+
+    import marinedata.fetch as fetch_module
+
+    ranges_requested: list[tuple[int, int]] = []
+    original = fetch_module._get_range
+
+    def spying_get_range(url, start, end, **kwargs):
+        ranges_requested.append((start, end))
+        return original(url, start, end, **kwargs)
+
+    fetch_module._get_range = spying_get_range
+    original_threshold = fetch_module.MAX_DOWNLOAD_WITHOUT_RANGE
+    fetch_module.MAX_DOWNLOAD_WITHOUT_RANGE = 1
+    try:
+        url = _serve_tar(range_server, payload)
+        result = fetch_sample(
+            _http_source(url, tar_start_offset=offset), root=tmp_path / "dest", force=True
+        )
+    finally:
+        fetch_module._get_range = original
+        fetch_module.MAX_DOWNLOAD_WITHOUT_RANGE = original_threshold
+
+    assert result.items == 1
+    assert (tmp_path / "dest" / "images" / "target.jpg").read_bytes() == b"R" * 100
+    assert all(start >= offset for start, _end in ranges_requested), (
+        f"a ranged read touched bytes before tar_start_offset={offset}: {ranges_requested}"
+    )
+
+
 # ── _head: probed, not trusted from headers ─────────────────────────────────
 
 

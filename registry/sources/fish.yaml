@@ -77,6 +77,7 @@ sources:
       size_bytes: 7621627392
       params:
         sample_url: "http://data.qld.edu.au/public/Q5842/2020-AlzayatSaleh-00e364223a600e83bd9c3f5bcd91045-DeepFish/DeepFish.tar"
+        tar_start_offset: 7516966912
       notes: >
         Checked 2026-08-28: only one archive exists (QLD data repository,
         DeepFish.tar, 7.1GB, Range-capable but nowhere near a "sample" size — at
@@ -86,6 +87,25 @@ sources:
         directory, so it reads forward from the start one member at a time and
         stops as soon as `limit` files are extracted, at whatever byte offset that
         happens to land — no full download needed regardless of archive size.
+        The tar bundles three task variants (Classification/, Localization/,
+        Segmentation/ — in that order), and this source's real annotation target,
+        Segmentation/, sits in the last ~1.4% of the file: reading sequentially
+        from byte 0 would mean tens of thousands of header round trips just to
+        skip Classification+Localization. tar_start_offset (new) was located by
+        binary-searching the remote file for a real tar header (~5 large Range
+        reads, not a sequential scan) and pins the byte where
+        DeepFish/Segmentation/ itself begins.
+
+        A real limitation, found the hard way: within Segmentation/, ALL of
+        images/{empty,valid}/ comes before ALL of masks/{empty,valid}/ — the two
+        are two separate multi-hundred-file regions, not interleaved per site — so
+        a small bounded `--limit` (its default 100, or 150) reads only images and
+        never reaches a mask, and `image-mask-pairs` correctly refuses that as an
+        empty result rather than reporting false success. This is the licence-gate
+        design principle "empty results are errors, not success" applying exactly
+        as intended, not a bug in tar_start_offset or the loader. A full or
+        near-full build from this source (`limit` unset or in the low thousands)
+        does produce real pairs — see the loader's own verified_note.
     modalities: [image]
     capabilities: [fish-detection, general-pretraining]
     items: 40000
@@ -96,7 +116,28 @@ sources:
     coverage: { regions: [gbr-australia] }
     domain_shift:
       caveats: ["Turbid-water imagery — valuable precisely because most sets are clear-water."]
-    loader: { layout: image-mask-pairs, params: { images_dir: images, masks_dir: masks } }
+    loader:
+      layout: image-mask-pairs
+      params:
+        images_dir: "DeepFish/Segmentation/images"
+        masks_dir: "DeepFish/Segmentation/masks"
+      verified_on: 2026-08-30
+      verified_note: >
+        Confirmed by locating the real Segmentation/ byte range (see
+        tar_start_offset above) and manually extracting from two points within it —
+        the start of images/ and, separately, deep into masks/ — that stems
+        genuinely match across the two regions:
+        DeepFish/Segmentation/images/empty/7117_no_fish_2_f000000.jpg and
+        DeepFish/Segmentation/masks/empty/7117_no_fish_2_f000000.png are the same
+        item, confirmed as one of 58 matching stems found this way. images/ and
+        masks/ are two separate multi-hundred-file regions within Segmentation/,
+        not interleaved per site, so `marinedata verify deepfish` with a small
+        `--limit` correctly reports no matched items (it never reaches masks/) —
+        see access.notes for why that is expected, not a defect. The
+        Classification/ and Localization/ folders earlier in the tar are different
+        annotation types (image-level labels and point/bbox detections
+        respectively) and are not what this entry's declared dense-mask annotation
+        describes.
     tags: [turbid, weak-labels]
 
   - id: seamapd21

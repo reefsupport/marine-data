@@ -179,6 +179,22 @@ sources:
     loader:
       layout: coco-json
       schema_id: dataset-native
+      params:
+        recursive_images: true
+      verified_on: 2026-08-30
+      verified_note: >
+        Confirmed by extracting dataset.json and a real image from the archive
+        (2026-08-30, using `unar` for manual inspection only — RAR support was
+        deliberately not added to fetch.py, see access.notes): the COCO JSON's
+        `file_name` fields are bare filenames ("1.jpg"), not the real sub-paths —
+        images actually live under per-site-camera directories
+        (Bistrina/Bluerobotics HD/1.jpg, Lokrum/SIP-E323CV/2.jpg, ...). All 8,610
+        filenames are globally unique across every site, so `recursive_images`
+        (new) resolves each one by searching the whole tree rather than joining a
+        single images_dir directly, which would have silently pointed at the wrong
+        site's same-named file or found nothing. 40 categories, 31,555 bbox+polygon
+        annotations confirmed in the JSON, matching this entry's declared
+        instance-mask/40-class annotation.
     tags: [debris, permissive]
 
   - id: floating-marine-debris

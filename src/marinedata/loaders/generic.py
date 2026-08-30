@@ -339,6 +339,14 @@ class CocoJsonLoader(_HarmonizingLoader):
     Params:
         annotations: path to the JSON, relative to root. Default ``"annotations.json"``
         images_dir: image directory, relative to root. Default ``"images"``
+        recursive_images: when true, ``file_name`` is resolved by searching under
+            ``images_dir`` recursively rather than joined to it directly — for a
+            source whose one COCO JSON spans several site/camera subdirectories
+            (e.g. SeaClear's ``<Site>/<Camera>/<n>.jpg``) with ``file_name`` recorded
+            as the bare filename, not the sub-path. Only safe when filenames are
+            unique across the whole tree, which is exactly the case this exists for
+            — a flat join would either miss the file entirely or, worse, silently
+            resolve to a same-named file from a different site.
     """
 
     layout = "coco-json"
@@ -355,6 +363,8 @@ class CocoJsonLoader(_HarmonizingLoader):
     def _iter_samples(self) -> Iterator[Sample]:
         path = self._annotation_path()
         images_dir = self.root / str(self._param("images_dir", "images"))
+        recursive = bool(self._param("recursive_images", False))
+        by_filename = {p.name: p for p in _images_under(images_dir)} if recursive else None
         try:
             doc = json.loads(path.read_text(encoding="utf-8"))
         except json.JSONDecodeError as exc:
@@ -366,6 +376,18 @@ class CocoJsonLoader(_HarmonizingLoader):
             by_image.setdefault(ann["image_id"], []).append(ann)
 
         for image in doc.get("images", []):
+            file_name = image["file_name"]
+            if by_filename is not None:
+                resolved_image = by_filename.get(Path(file_name).name)
+                if resolved_image is None:
+                    if self.partial:
+                        continue  # sampled sets are legitimately incomplete
+                    raise LoaderError(
+                        f"{self.source.id}: '{file_name}' not found anywhere under {images_dir}"
+                    )
+            else:
+                resolved_image = images_dir / file_name
+
             anns = by_image.get(image["id"], [])
             boxes = tuple(
                 (float(a["bbox"][0]), float(a["bbox"][1]), float(a["bbox"][2]), float(a["bbox"][3]))
@@ -376,8 +398,8 @@ class CocoJsonLoader(_HarmonizingLoader):
             labels, supervised = self._resolve(native[0]) if native else ({}, frozenset())
             yield Sample(
                 source_id=self.source.id,
-                key=image["file_name"],
-                image=images_dir / image["file_name"],
+                key=file_name,
+                image=resolved_image,
                 boxes=boxes,
                 labels=labels,
                 supervised=supervised,
