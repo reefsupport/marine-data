@@ -243,6 +243,11 @@ def _serve(server, zip_bytes: bytes) -> str:
     return f"http://127.0.0.1:{server.server_port}/sample.zip"
 
 
+def _serve_tar(server, tar_bytes: bytes) -> str:
+    server.RequestHandlerClass.body = tar_bytes
+    return f"http://127.0.0.1:{server.server_port}/sample.tar"
+
+
 def test_remote_zip_reads_only_what_it_needs(range_server, tmp_path: Path) -> None:
     """⭐ The whole point: a zip served with Range support must never be downloaded in
     full — only its central directory and the requested members travel over the wire."""
@@ -325,6 +330,91 @@ def test_large_zip_without_range_support_is_refused(tmp_path: Path) -> None:
     thread.start()
     try:
         url = f"http://127.0.0.1:{server.server_port}/huge.zip"
+        with pytest.raises(FetchNotSupported, match="does not support Range"):
+            fetch_sample(_http_source(url), root=tmp_path / "dest", force=True)
+    finally:
+        server.shutdown()
+        thread.join(timeout=5)
+
+
+def test_remote_tar_reads_only_what_it_needs(range_server, tmp_path: Path) -> None:
+    """⭐ The tar counterpart to the zip test above. Tar has no central directory, so
+    the only way to avoid downloading the whole thing is to stop reading forward the
+    moment enough members have been extracted — this pins that it actually does."""
+    buf = io.BytesIO()
+    with tarfile.open(fileobj=buf, mode="w") as tf:
+        for i in range(200):
+            data = bytes([i % 256]) * 2000
+            info = tarfile.TarInfo(name=f"images/f{i:04d}.jpg")
+            info.size = len(data)
+            tf.addfile(info, io.BytesIO(data))
+    payload = buf.getvalue()
+
+    import marinedata.fetch as fetch_module
+
+    ranges_requested: list[tuple[int, int]] = []
+    original = fetch_module._get_range
+
+    def spying_get_range(url, start, end, **kwargs):
+        ranges_requested.append((start, end))
+        return original(url, start, end, **kwargs)
+
+    fetch_module._get_range = spying_get_range
+    original_threshold = fetch_module.MAX_DOWNLOAD_WITHOUT_RANGE
+    fetch_module.MAX_DOWNLOAD_WITHOUT_RANGE = 1
+    try:
+        url = _serve_tar(range_server, payload)
+        result = fetch_sample(_http_source(url), root=tmp_path / "dest", limit=3, force=True)
+    finally:
+        fetch_module._get_range = original
+        fetch_module.MAX_DOWNLOAD_WITHOUT_RANGE = original_threshold
+
+    assert result.items == 3
+    total_ranged = sum(end - start + 1 for start, end in ranges_requested)
+    assert total_ranged < len(payload) / 4, (
+        f"ranged reads pulled {total_ranged} bytes of a {len(payload)}-byte, 200-member "
+        f"tar to extract only 3 members — should be a small fraction of the whole"
+    )
+
+
+def test_remote_tar_extraction_matches_content(range_server, tmp_path: Path) -> None:
+    buf = io.BytesIO()
+    with tarfile.open(fileobj=buf, mode="w") as tf:
+        for name, data in (("images/a.jpg", b"AAAA"), ("masks/a.png", b"MMMM")):
+            info = tarfile.TarInfo(name=name)
+            info.size = len(data)
+            tf.addfile(info, io.BytesIO(data))
+    url = _serve_tar(range_server, buf.getvalue())
+    dest = tmp_path / "dest"
+    result = fetch_sample(_http_source(url), root=dest, force=True)
+    assert result.items == 2
+    assert (dest / "images" / "a.jpg").read_bytes() == b"AAAA"
+    assert (dest / "masks" / "a.png").read_bytes() == b"MMMM"
+
+
+def test_large_tar_without_range_support_is_refused(tmp_path: Path) -> None:
+    """Same fail-closed behaviour as the zip case, for tar."""
+
+    class _NoRangeHandler(http.server.BaseHTTPRequestHandler):
+        def log_message(self, *args: object) -> None:
+            pass
+
+        def do_HEAD(self) -> None:
+            self.send_response(200)
+            self.send_header("Content-Length", str(MAX_DOWNLOAD_WITHOUT_RANGE * 2))
+            self.end_headers()
+
+        def do_GET(self) -> None:
+            self.send_response(200)
+            self.send_header("Content-Length", str(MAX_DOWNLOAD_WITHOUT_RANGE * 2))
+            self.end_headers()
+            self.wfile.write(b"x")
+
+    server = http.server.HTTPServer(("127.0.0.1", 0), _NoRangeHandler)
+    thread = threading.Thread(target=server.serve_forever, daemon=True)
+    thread.start()
+    try:
+        url = f"http://127.0.0.1:{server.server_port}/huge.tar"
         with pytest.raises(FetchNotSupported, match="does not support Range"):
             fetch_sample(_http_source(url), root=tmp_path / "dest", force=True)
     finally:

@@ -186,3 +186,22 @@ def audio_root(tmp_path: Path) -> Path:
         d.mkdir(parents=True, exist_ok=True)
         (d / "clip0.wav").write_bytes(b"RIFF")
     return root
+
+
+@pytest.fixture
+def json_manifest_audio_root(tmp_path: Path) -> Path:
+    root = tmp_path / "manifest-audio"
+    clips = root / "clips"
+    clips.mkdir(parents=True, exist_ok=True)
+    for name in ("1.bermuda.bioph.wav", "2.mozambique.bioph_whup.wav"):
+        (clips / name).write_bytes(b"RIFF")
+    (root / "annotations.json").write_text(
+        json.dumps(
+            [
+                {"file_name": "1.bermuda.bioph.wav", "label": "bioph"},
+                {"file_name": "2.mozambique.bioph_whup.wav", "label": "bioph_whup"},
+            ]
+        ),
+        encoding="utf-8",
+    )
+    return root

@@ -24,15 +24,15 @@ sources:
       uri: https://zenodo.org/records/11071202
       size_bytes: 1708000000
       notes: >
-        Checked 2026-08-28: ReefSet_v1.0.zip (1.6GB, no smaller subset; the record's
-        other files are SurfPerch_v1.0.zip, pretrained model weights, and an
-        unrelated tutorial.zip — neither is the audio). The host does not honour
-        Range requests on this file (returns full 200, not 206), so it is all-or-
-        nothing at 1.6GB. Separately, a real layout mismatch: the 57,084 clips are
-        NOT pre-sorted into per-class directories — class comes from a JSON sidecar
-        (reefset_annotations.json) — so the declared audio-clips layout would not
-        match reality even with a working sample_url; a JSON-driven loader would be
-        needed, not this one.
+        Checked 2026-08-28 and re-confirmed 2026-08-30 by downloading the full
+        archive once for verification: ReefSet_v1.0.zip (1.6GB, no smaller subset;
+        the record's other files are SurfPerch_v1.0.zip, pretrained model weights,
+        and an unrelated tutorial.zip — neither is the audio). The host does not
+        honour Range requests on this file (returns full 200, not 206), so it stays
+        all-or-nothing at 1.6GB even after the streaming-tar work below — this is a
+        zip with no Range support, not a tar, so the new streaming reader does not
+        apply, and `fetch_sample` correctly refuses it rather than pulling 1.6GB for
+        a "bounded" sample. Fetch manually for a full corpus build.
     modalities: [audio]
     capabilities: [bioacoustics]
     items: 57084
@@ -42,8 +42,25 @@ sources:
     domain_shift:
       caveats: ["Indo-Pacific reef soundscapes. Caribbean reef acoustics are under-sampled everywhere."]
     loader:
-      layout: audio-clips
+      layout: json-manifest-labels
       schema_id: sonotype
+      params:
+        manifest: "ReefSet_v1.0/reefset_annotations.json"
+        media_dir: "ReefSet_v1.0/full_dataset"
+        media: audio
+      verified_on: 2026-08-30
+      verified_note: >
+        The declared audio-clips layout was wrong — clips are NOT pre-sorted into
+        per-class directories. Confirmed by downloading and inspecting the full
+        archive: 57,077 flat .wav files under full_dataset/, each named
+        `<id>.<site>.<sharer>.<label>[_<sub>].wav` (e.g.
+        `10002.mozambique.conservation_metrics.bioph_megnov.wav`), plus a
+        reefset_annotations.json array of {id, file_name, label, data_sharer,
+        dataset, recorder} — 57,074 records, matching file count within a handful.
+        The label IS also embedded in the filename (confirmed against the JSON),
+        but the manifest is the dataset's own documented source of truth, so the new
+        json-manifest-labels loader reads that rather than re-deriving it from
+        filename parsing.
     tags: [reef-audio, permissive]
 
   - id: mbari-pacific-sound

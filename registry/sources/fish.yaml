@@ -74,14 +74,18 @@ sources:
     access:
       method: http
       uri: https://alzayats.github.io/DeepFish/
-      size_bytes: 7269000000
+      size_bytes: 7621627392
+      params:
+        sample_url: "http://data.qld.edu.au/public/Q5842/2020-AlzayatSaleh-00e364223a600e83bd9c3f5bcd91045-DeepFish/DeepFish.tar"
       notes: >
         Checked 2026-08-28: only one archive exists (QLD data repository,
-        DeepFish.tar, 7.1GB, Range-capable but nowhere near a "sample" size). A
-        genuinely small (2.45MB) sample exists on Dataset Ninja but its download
-        URL is generated client-side by JS with no stable static form found —
-        fetching it would mean executing the page's JS, which this project
-        deliberately does not do. Fetch the full 7.1GB manually.
+        DeepFish.tar, 7.1GB, Range-capable but nowhere near a "sample" size — at
+        the time, this project had no way to read a remote tar without downloading
+        it whole, so Range support didn't help). Fixed 2026-08-30 with a streaming
+        remote-tar reader (see fetch._extract_remote_tar): tar has no central
+        directory, so it reads forward from the start one member at a time and
+        stops as soon as `limit` files are extracted, at whatever byte offset that
+        happens to land — no full download needed regardless of archive size.
     modalities: [image]
     capabilities: [fish-detection, general-pretraining]
     items: 40000

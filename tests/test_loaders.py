@@ -12,6 +12,7 @@ Two layers:
 
 from __future__ import annotations
 
+import json
 from pathlib import Path
 
 import pytest
@@ -360,6 +361,54 @@ def test_audio_clips_with_nested_images_dir_and_extra_files(tmp_path: Path) -> N
     samples = list(build_loader(make_source("audio-clips", {"images_dir": "top"}), root))
     assert len(samples) == 2
     assert {s.meta["native_label"] for s in samples} == {"orca", "beluga"}
+
+
+def test_json_manifest_labels(json_manifest_audio_root: Path) -> None:
+    source = make_source(
+        "json-manifest-labels", {"manifest": "annotations.json", "media_dir": "clips"}
+    )
+    samples = list(build_loader(source, json_manifest_audio_root))
+    assert len(samples) == 2
+    assert all(s.audio is not None for s in samples)
+    assert {s.meta["native_label"] for s in samples} == {"bioph", "bioph_whup"}
+
+
+def test_json_manifest_labels_missing_manifest(tmp_path: Path) -> None:
+    (tmp_path / "irrelevant.txt").write_text("x")  # root must be non-empty to reach this check
+    loader = build_loader(make_source("json-manifest-labels"), tmp_path)
+    with pytest.raises(LoaderError, match="expects a manifest"):
+        list(loader)
+
+
+def test_json_manifest_labels_malformed_json(json_manifest_audio_root: Path) -> None:
+    (json_manifest_audio_root / "annotations.json").write_text("{not json")
+    loader = build_loader(
+        make_source("json-manifest-labels", {"media_dir": "clips"}), json_manifest_audio_root
+    )
+    with pytest.raises(LoaderError, match="malformed manifest JSON"):
+        list(loader)
+
+
+def test_json_manifest_labels_missing_key(json_manifest_audio_root: Path) -> None:
+    (json_manifest_audio_root / "annotations.json").write_text(
+        json.dumps([{"file_name": "1.bermuda.bioph.wav"}])
+    )
+    loader = build_loader(
+        make_source("json-manifest-labels", {"media_dir": "clips"}), json_manifest_audio_root
+    )
+    with pytest.raises(LoaderError, match="manifest record missing"):
+        list(loader)
+
+
+def test_json_manifest_labels_missing_file_fails_closed(json_manifest_audio_root: Path) -> None:
+    (json_manifest_audio_root / "annotations.json").write_text(
+        json.dumps([{"file_name": "missing.wav", "label": "bioph"}])
+    )
+    loader = build_loader(
+        make_source("json-manifest-labels", {"media_dir": "clips"}), json_manifest_audio_root
+    )
+    with pytest.raises(LoaderError, match="not found at"):
+        list(loader)
 
 
 def test_metadata_only_refuses_clearly(tmp_path: Path) -> None:

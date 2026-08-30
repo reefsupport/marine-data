@@ -716,6 +716,91 @@ class AudioClipsLoader(_HarmonizingLoader):
 
 
 @register_loader
+class JsonManifestLabelLoader(_HarmonizingLoader):
+    """A flat directory of files with a scalar label per item, declared in a JSON
+    manifest rather than encoded in directory structure.
+
+    Built for ReefSet (57k reef-soundscape clips): its class comes from a JSON array
+    (``[{"file_name": "...", "label": "..."}, ...]``) alongside a flat clips
+    directory, not per-class subfolders — the ``audio-clips`` layout this source was
+    originally declared as cannot represent that, since it has no manifest concept at
+    all. ReefSet's own filenames also embed the label (``<id>.<site>.<sharer>.<label>
+    [_<sub>].wav``), confirmed by its own README, but the manifest is the documented,
+    unambiguous source of truth — parsing filenames would be re-deriving what the
+    dataset's own authors already computed and shipped.
+
+    Params:
+        manifest: JSON path relative to root. Default ``"annotations.json"``.
+        media_dir: subdirectory holding the files. Default: the root itself.
+        filename_field / label_field: manifest keys. Default ``"file_name"`` /
+            ``"label"``.
+        media: which :class:`~marinedata.sample.Sample` field the file path fills —
+            ``"audio"`` (default) or ``"image"``.
+    """
+
+    layout = "json-manifest-labels"
+
+    def _manifest_path(self) -> Path:
+        return self.root / str(self._param("manifest", "annotations.json"))
+
+    def _media_dir(self) -> Path:
+        sub = self._param("media_dir")
+        return self.root / str(sub) if sub else self.root
+
+    def validate(self) -> None:
+        super().validate()
+        path = self._manifest_path()
+        if not path.is_file():
+            raise LoaderError(
+                f"{self.source.id}: layout 'json-manifest-labels' expects a manifest at {path}"
+            )
+
+    def _iter_samples(self) -> Iterator[Sample]:
+        path = self._manifest_path()
+        media_dir = self._media_dir()
+        media = str(self._param("media", "audio"))
+        filename_field = str(self._param("filename_field", "file_name"))
+        label_field = str(self._param("label_field", "label"))
+
+        try:
+            records = json.loads(path.read_text(encoding="utf-8"))
+        except json.JSONDecodeError as exc:
+            raise LoaderError(
+                f"{self.source.id}: malformed manifest JSON at {path} — {exc}"
+            ) from exc
+
+        for record in records:
+            try:
+                filename = record[filename_field]
+                native_label = record[label_field]
+            except KeyError as exc:
+                raise LoaderError(
+                    f"{self.source.id}: manifest record missing {exc} — expected keys "
+                    f"'{filename_field}'/'{label_field}', found {sorted(record)}"
+                ) from exc
+
+            item = media_dir / filename
+            if not item.is_file():
+                if self.partial:
+                    continue  # sampled sets are legitimately incomplete
+                raise LoaderError(
+                    f"{self.source.id}: manifest references '{filename}', not found at {item}"
+                )
+
+            resolved, supervised = self._resolve(native_label)
+            yield Sample(
+                source_id=self.source.id,
+                key=self._relative(item),
+                **{media: item},
+                labels=resolved,
+                supervised=supervised,
+                licence_tier=self.source.licence.tier,
+                split=self.split,
+                meta={"native_label": native_label},
+            )
+
+
+@register_loader
 class MetadataOnlyLoader(SourceLoader):
     """For reference material that is not a training set.
 

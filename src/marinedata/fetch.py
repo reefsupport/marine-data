@@ -19,6 +19,7 @@ import hashlib
 import http.client
 import json
 import os
+import tarfile
 import time
 import urllib.error
 import urllib.parse
@@ -429,6 +430,48 @@ def _extract_remote_zip(file_obj: _RemoteFile, root: Path, limit: int, *, label:
     return count
 
 
+def _extract_remote_tar(file_obj: _RemoteFile, root: Path, limit: int, *, label: str) -> int:
+    """Extract up to ``limit`` members from a remote **uncompressed** tar without
+    downloading it.
+
+    Unlike zip, tar has no central directory to read upfront — the only way to know
+    what is in it is to read forward from the start, one 512-byte header block at a
+    time. ``tarfile.TarFile`` is iterable exactly this way, and critically,
+    :meth:`TarFile.getmembers` must never be called here: it exhausts the *whole*
+    stream to build its list, which for a multi-GB archive means downloading all of
+    it — the exact cost this function exists to avoid. Iterating the archive object
+    itself and stopping after ``limit`` members only ever reads as far as the last
+    member's data, because :class:`_RemoteFile` treats an unread gap as a cheap
+    ``seek`` (no request) rather than bytes that must be fetched.
+
+    Compressed tars (``.tar.gz``/``.tar.bz2``/``.tar.xz``) are not supported this way:
+    decompression is inherently sequential from the very start, so a compressed
+    stream cannot skip past an unwanted member's data without decompressing it
+    anyway, which defeats the point of a bounded sample.
+    """
+    resolved_root = root.resolve()
+    count = 0
+    with tarfile.open(fileobj=file_obj, mode="r:") as archive:
+        for member in archive:
+            if limit and count >= limit:
+                break
+            if not member.isfile():
+                continue
+            target = _safe_extract_path(resolved_root, member.name)
+            if target is None:
+                continue
+            extracted = archive.extractfile(member)
+            if extracted is None:
+                continue
+            target.parent.mkdir(parents=True, exist_ok=True)
+            target.write_bytes(extracted.read())
+            count += 1
+
+    if count == 0:
+        raise FetchError(f"archive at {label} contained no extractable files")
+    return count
+
+
 def _safe_extract_path(resolved_root: Path, member_name: str) -> Path | None:
     """Resolve an archive member's target path, refusing to leave ``resolved_root``.
 
@@ -473,8 +516,6 @@ def _extract_archive(payload: bytes, root: Path, name: str, limit: int) -> int:
                 target.write_bytes(archive.read(member))
                 count += 1
     else:
-        import tarfile
-
         mode = "r:*"  # autodetect gz/bz2/xz/plain from the stream itself
         with tarfile.open(fileobj=io.BytesIO(payload), mode=mode) as archive:
             members = [m for m in archive.getmembers() if m.isfile()]
@@ -592,6 +633,21 @@ def _fetch_one(
                 f"not support Range requests, so a bounded sample cannot be read from it "
                 f"without downloading the whole archive. Find a smaller published subset, "
                 f"or fetch it manually."
+            )
+        return _extract_archive(_get(url), root, name, limit)
+
+    if name.lower().endswith(".tar"):
+        size, supports_range = _head(url)
+        if size and size <= MAX_DOWNLOAD_WITHOUT_RANGE:
+            return _extract_archive(_get(url), root, name, limit)
+        if supports_range and size:
+            return _extract_remote_tar(_RemoteFile(url, size), root, limit, label=name)
+        if size and size > MAX_DOWNLOAD_WITHOUT_RANGE:
+            raise FetchNotSupported(
+                f"{source_id}: {url} is a {size / 1e9:.1f} GB tar and the host does "
+                f"not support Range requests, so a bounded sample cannot be read from "
+                f"it without downloading the whole archive. Find a smaller published "
+                f"subset, or fetch it manually."
             )
         return _extract_archive(_get(url), root, name, limit)
 
