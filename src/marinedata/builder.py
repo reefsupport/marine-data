@@ -103,6 +103,31 @@ def _to_pretrain_vocabulary(
     return new_assignment, new_ratios
 
 
+class SourcesDroppedError(RuntimeError):
+    """Raised when the build completed but one or more permitted sources contributed
+    nothing.
+
+    The full pass still runs — every source is attempted, so this lists every drop
+    rather than stopping at the first — but a build that silently lost a source and
+    still returned as if nothing had happened would be the same failure class as
+    reporting a denied source as included. Letting this propagate is the point: an
+    uncaught exception exits the process non-zero, so a caller cannot read "no error"
+    as "every source was included."
+
+    The build that *did* complete is attached as ``.dataset`` (a :class:`Dataset` or
+    :class:`StreamingDataset`) for a caller who deliberately wants the partial result
+    anyway — catch this, read ``.dropped`` to decide, and pull ``.dataset`` back out.
+    """
+
+    def __init__(self, dropped: dict[str, str], dataset: object) -> None:
+        self.dropped = dict(dropped)
+        self.dataset = dataset
+        detail = "; ".join(f"{k}: {v}" for k, v in sorted(dropped.items()))
+        super().__init__(
+            f"{len(dropped)} permitted source(s) contributed nothing and were dropped: {detail}"
+        )
+
+
 _SCALAR_LABEL_KINDS = frozenset(
     {
         AnnotationKind.IMAGE_LABEL,
@@ -503,7 +528,7 @@ class DatasetBuilder:
         )
         return kept, excluded
 
-    def stream_samples(self) -> Iterator[Sample]:
+    def stream_samples(self, *, dropped: dict[str, str] | None = None) -> Iterator[Sample]:
         """Yield every permitted sample without materialising the corpus.
 
         The licence gate and the crosswalk check both run BEFORE the first read, exactly
@@ -517,6 +542,12 @@ class DatasetBuilder:
         exclusion list — e.g. before shipping anything derived from this stream — must
         go through :meth:`build_streaming`, whose returned ``lineage.excluded`` carries
         it, exactly like :meth:`build`.
+
+        Args:
+            dropped: if given, a source that is permitted but fails to load (and
+                ``strict`` is False) records its id and exception here rather than
+                vanishing silently — the caller (:meth:`build_streaming`) reads this
+                back once the stream is exhausted to build an honest lineage record.
         """
         allowed, denied = self._permitted()
         if not allowed:
@@ -541,9 +572,11 @@ class DatasetBuilder:
                 if harmonizer is not None and hasattr(loader, "bind_harmonizer"):
                     loader.bind_harmonizer(harmonizer)
                 yield from loader
-            except (LoaderError, DataNotAvailable):
+            except (LoaderError, DataNotAvailable) as exc:
                 if self.strict:
                     raise
+                if dropped is not None:
+                    dropped[source.id] = str(exc)[:200]
                 continue
 
     def build_streaming(
@@ -583,7 +616,8 @@ class DatasetBuilder:
         if abs(sum(ratios.values()) - 1.0) > 1e-6:
             raise ValueError(f"split ratios must sum to 1.0, got {sum(ratios.values())}")
 
-        corpus = scan(self.stream_samples(), by=by)
+        dropped: dict[str, str] = {}
+        corpus = scan(self.stream_samples(dropped=dropped), by=by)
         if not corpus.total:
             raise ValueError("No samples found. Check `roots` point at fetched data.")
 
@@ -615,13 +649,19 @@ class DatasetBuilder:
         allowed, denied = self._permitted()
         excluded_ids = {e.source_id for e in self.partial_abstain_excluded}
         allowed = [s for s in allowed if s.id not in excluded_ids]
-        return StreamingDataset(
+        # Only sources that actually yielded a sample belong in the lineage's `datasets`
+        # — `allowed` is what the gate let through, not what contributed. A source that
+        # raised while loading is in `dropped`, never in `used`, so the audit record
+        # cannot claim it as a contributor.
+        used = [s for s in allowed if s.id not in dropped]
+        streaming_dataset = StreamingDataset(
             builder=self,
             label_index=index,
             lineage=build_lineage(
-                allowed,
+                used,
                 self.profile,
                 excluded=denied,
+                dropped=dropped,
                 legal_opinion_ref=self.legal_opinion_ref,
                 registry_commit=self.registry.commit,
                 items_consumed=dict(corpus.sources),
@@ -632,6 +672,13 @@ class DatasetBuilder:
             task_kind=self.task_spec.kind if self.task_spec is not None else None,
             partial_abstain_excluded=self.partial_abstain_excluded,
         )
+        if dropped:
+            # D2: complete the run, report every drop by name, then fail loud — a
+            # caller must not be able to read a clean return as "all sources included".
+            # The dataset just built is attached so a caller who deliberately wants the
+            # partial result can still recover it.
+            raise SourcesDroppedError(dropped, streaming_dataset)
+        return streaming_dataset
 
     def build(self, *, min_count: int = 1) -> Dataset:
         """Gate, load, harmonise and index. Raises before reading anything disallowed."""
@@ -690,11 +737,12 @@ class DatasetBuilder:
             used,
             self.profile,
             excluded=denied,
+            dropped=skipped,
             legal_opinion_ref=self.legal_opinion_ref,
             registry_commit=self.registry.commit,
             items_consumed=Counter(sample.source_id for sample in samples),
         )
-        return Dataset(
+        dataset = Dataset(
             samples=samples,
             label_index=index,
             lineage=lineage,
@@ -703,6 +751,13 @@ class DatasetBuilder:
             task_kind=self.task_spec.kind if self.task_spec is not None else None,
             partial_abstain_excluded=partial_abstain_excluded,
         )
+        if skipped:
+            # D2: the run completed and every source was attempted — this is the
+            # loud, non-zero-exit report of what got dropped, not a fail-fast abort.
+            # `dataset` is attached so a caller who deliberately wants the partial
+            # result anyway can catch this and pull it back out.
+            raise SourcesDroppedError(skipped, dataset)
+        return dataset
 
 
 @dataclass(frozen=True)

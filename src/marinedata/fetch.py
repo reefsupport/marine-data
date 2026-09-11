@@ -937,7 +937,9 @@ def sample_digest(root: Path) -> str:
     """
     digest = hashlib.sha256()
     for path in sorted(p for p in root.rglob("*") if p.is_file() and p.name != "_fetch.json"):
-        digest.update(path.name.encode())
+        # Relative to `root`, not just the basename: otherwise moving `a/img.jpg` to
+        # `b/img.jpg` (a declared-layout change) leaves the digest unchanged.
+        digest.update(path.relative_to(root).as_posix().encode())
         stream_into(digest, path)
     return "sha256:" + digest.hexdigest()[:16]
 

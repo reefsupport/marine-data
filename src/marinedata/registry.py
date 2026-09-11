@@ -61,6 +61,13 @@ def _git_commit(path: Path) -> str | None:
     expected case, not an error, so failures here are swallowed rather than raised.
     Scoped to ``path`` rather than bare ``HEAD``: a code-only commit elsewhere in the
     repo must not change what a lineage report claims about the registry's content.
+
+    A dirty working tree under ``path`` (staged, unstaged, or untracked changes — e.g.
+    a locally edited licence YAML that was never committed) means this hash no longer
+    describes what is actually on disk. Rather than silently returning a clean-looking
+    commit for content that is not what that commit contains, the return value is
+    suffixed with ``+dirty`` in that case, so any consumer — the lineage record, in
+    particular — carries the caveat without needing a second signal threaded through.
     """
     import subprocess
 
@@ -76,7 +83,23 @@ def _git_commit(path: Path) -> str | None:
     except (OSError, subprocess.SubprocessError):
         return None
     commit = result.stdout.strip()
-    return commit or None
+    if not commit:
+        return None
+
+    try:
+        status = subprocess.run(
+            ["git", "status", "--porcelain", "--", str(path)],
+            cwd=path,
+            capture_output=True,
+            text=True,
+            timeout=5,
+            check=False,
+        )
+    except (OSError, subprocess.SubprocessError):
+        return commit
+    if status.returncode == 0 and status.stdout.strip():
+        return f"{commit}+dirty"
+    return commit
 
 
 class Registry:
