@@ -509,6 +509,14 @@ class DatasetBuilder:
         The licence gate and the crosswalk check both run BEFORE the first read, exactly
         as in :meth:`build` — a disallowed source cannot reach the stream, so there is no
         path by which a research-only sample arrives in a training batch.
+
+        Training-only, never a compliance record: this yields bare samples with **no
+        lineage object**, so a denied source's exclusion reason is never surfaced here.
+        Iterating this directly is for feeding a training loop, not for producing (or
+        standing in for) an audit artifact. Callers who need the recorded, reasoned
+        exclusion list — e.g. before shipping anything derived from this stream — must
+        go through :meth:`build_streaming`, whose returned ``lineage.excluded`` carries
+        it, exactly like :meth:`build`.
         """
         allowed, denied = self._permitted()
         if not allowed:

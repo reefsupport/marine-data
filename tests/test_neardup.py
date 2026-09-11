@@ -109,7 +109,10 @@ def _registry(sources: dict[str, Source]) -> Registry:
         licences={},
         profiles={
             "research": Profile(
-                id="research", description="fixture", allow_tiers=(Tier.OWN, Tier.PERMISSIVE)
+                id="research",
+                description="fixture",
+                allow_tiers=(Tier.OWN, Tier.PERMISSIVE),
+                ships=True,
             )
         },
         schemas={

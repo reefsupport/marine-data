@@ -71,10 +71,9 @@ def evaluate(source: Source, profile: Profile, *, legal_opinion_ref: str | None 
         )
 
     # 2. Disputed verification blocks anything that ships.
-    ships = profile.public_release or (
-        any(t in profile.allow_tiers for t in (Tier.PERMISSIVE, Tier.COPYLEFT))
-        and Tier.NONCOMMERCIAL not in profile.allow_tiers
-    )
+    # `ships` is declared per profile (never inferred from tier composition: md1). A profile
+    # that sets `public_release` ships by definition (WP-L1b/R2), whatever `ships` says.
+    ships = profile.ships or profile.public_release
     if source.verification.disputed and ships:
         note = " ".join((source.verification.dispute_note or "").split())
         return Decision(

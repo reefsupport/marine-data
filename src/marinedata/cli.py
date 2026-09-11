@@ -94,7 +94,11 @@ def _cmd_show(args: argparse.Namespace) -> int:
 
 
 def _cmd_check(args: argparse.Namespace) -> int:
-    """Evaluate every source against a profile. Exit 1 if any would be denied."""
+    """Evaluate every source against a profile. Exits non-zero if any is denied.
+
+    Unconditional — there is no flag to make a denial exit 0. A caller must not be
+    able to read a zero exit as "everything is permitted".
+    """
     reg = Registry.load()
     profile = reg.profile(args.profile)
     denied = 0
@@ -106,10 +110,13 @@ def _cmd_check(args: argparse.Namespace) -> int:
             denied += 1
             print(f"    {' '.join(decision.reason.split())}")
     print(f"\n{len(reg) - denied} permitted, {denied} denied under '{profile.id}'")
-    return 1 if denied and args.strict else 0
+    return 1 if denied else 0
 
 
 def _cmd_lineage(args: argparse.Namespace) -> int:
+    """Emit a LINEAGE.json. Completes the run, then exits non-zero if any source was
+    excluded — the exclusions are always in the JSON (`excluded`), but a zero exit
+    must mean nothing was dropped, not merely that the file was written."""
     reg = Registry.load()
     result = find(
         profile=args.profile,
@@ -132,6 +139,14 @@ def _cmd_lineage(args: argparse.Namespace) -> int:
         print(lineage.attribution_text())
     else:
         print(payload)
+    if lineage.excluded:
+        print(
+            f"\n{len(lineage.excluded)} source(s) excluded from this lineage:",
+            file=sys.stderr,
+        )
+        for entry in lineage.excluded:
+            print(f"  ✗ {entry['id']}: {entry['reason']}", file=sys.stderr)
+        return 1
     return 0
 
 
@@ -353,7 +368,6 @@ def build_parser() -> argparse.ArgumentParser:
 
     p_check = sub.add_parser("check", help="Evaluate every source against a profile")
     add_common(p_check)
-    p_check.add_argument("--strict", action="store_true", help="Exit 1 if anything is denied")
     p_check.set_defaults(func=_cmd_check)
 
     p_lin = sub.add_parser("lineage", help="Emit a LINEAGE.json for a build")

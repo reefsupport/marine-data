@@ -262,6 +262,24 @@ def test_builder_gate_runs_before_any_read(registry: Registry, tmp_path: Path) -
         builder.build()
 
 
+def test_permitted_records_every_denial_with_its_reason(registry: Registry, tmp_path: Path) -> None:
+    """A partial build (some sources denied, at least one allowed) never drops a denial
+
+    silently. ``reef-support-benthic-own`` is T0_OWN, permitted under ship-commercial;
+    ``coralscop-masks-rs`` is T3_NONCOMMERCIAL, denied. Both are named in the result —
+    9-of-10 denied must never look identical to a clean build.
+    """
+    builder = DatasetBuilder(
+        registry,
+        profile="ship-commercial",
+        roots={"reef-support-benthic-own": tmp_path, "coralscop-masks-rs": tmp_path},
+    )
+    allowed, denied = builder._permitted()
+    assert {s.id for s in allowed} == {"reef-support-benthic-own"}
+    assert {d.source_id for d in denied} == {"coralscop-masks-rs"}
+    assert denied[0].reason and "coralscop-masks-rs" in denied[0].reason
+
+
 # ── pandas adapter ────────────────────────────────────────────────────────
 
 

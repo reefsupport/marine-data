@@ -83,6 +83,7 @@ def _registry(sources: dict[str, Source]) -> Registry:
         id="research",
         description="fixture",
         allow_tiers=(Tier.OWN, Tier.PERMISSIVE, Tier.COPYLEFT, Tier.NONCOMMERCIAL),
+        ships=False,
     )
     return Registry(
         sources=sources, licences={}, profiles={"research": profile}, schemas={}, tasks={}

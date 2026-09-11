@@ -72,6 +72,7 @@ def _registry() -> Registry:
         description="fixture",
         allow_tiers=(Tier.OWN, Tier.PERMISSIVE, Tier.COPYLEFT),
         allow_access_classes=("open",),
+        ships=True,
     )
     return Registry(
         sources={SOURCE_ID: _source()},
@@ -84,6 +85,7 @@ def _registry() -> Registry:
                 allow_tiers=(Tier.OWN, Tier.PERMISSIVE, Tier.COPYLEFT, Tier.NONCOMMERCIAL),
                 allow_access_classes=("open", "restricted-nc"),
                 public_release=True,
+                ships=True,
             ),
         },
         schemas={"rs-benthic-v1": schema},

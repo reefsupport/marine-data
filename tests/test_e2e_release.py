@@ -112,6 +112,7 @@ def _registry() -> Registry:
         description="fixture",
         allow_tiers=(Tier.OWN, Tier.PERMISSIVE, Tier.COPYLEFT),
         allow_access_classes=("open",),
+        ships=True,
     )
     return Registry(
         sources={sid: _source(sid) for sid in SOURCES},
@@ -124,6 +125,7 @@ def _registry() -> Registry:
                 allow_tiers=(Tier.OWN, Tier.PERMISSIVE, Tier.COPYLEFT, Tier.NONCOMMERCIAL),
                 allow_access_classes=("open", "restricted-nc"),
                 public_release=True,
+                ships=True,
             ),
         },
         schemas={"rs-benthic-v1": schema},
@@ -160,6 +162,7 @@ def _stage_all(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> dict[str, Pat
                 id="research",
                 description="fixture",
                 allow_tiers=(Tier.OWN, Tier.PERMISSIVE, Tier.COPYLEFT, Tier.NONCOMMERCIAL),
+                ships=False,
             ),
         )
         assert result.images == n

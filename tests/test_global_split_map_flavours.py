@@ -34,12 +34,17 @@ def _registry(sources) -> Registry:  # type: ignore[no-untyped-def]
     both = (Tier.OWN, Tier.PERMISSIVE, Tier.COPYLEFT)
     profiles = {
         "ship-open": Profile(
-            id="ship-open", description="f", allow_tiers=both, allow_access_classes=("open",)
+            id="ship-open",
+            description="f",
+            allow_tiers=both,
+            ships=True,
+            allow_access_classes=("open",),
         ),
         "ship-noncommercial": Profile(
             id="ship-noncommercial",
             description="f",
             allow_tiers=both,
+            ships=True,
             allow_access_classes=("open", "restricted-nc"),
         ),
     }

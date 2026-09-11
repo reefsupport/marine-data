@@ -77,7 +77,21 @@ VERIFICATION_METHODS = frozenset(
     }
 )
 
-PRIMARY_METHODS = VERIFICATION_METHODS - {"secondary"}
+PRIMARY_METHODS = frozenset(
+    {
+        "licence-file",
+        "dataset-card",
+        "written-permission",
+        "site-terms",
+    }
+)
+"""Explicit allowlist, not ``VERIFICATION_METHODS - {"secondary"}``.
+
+A set subtraction only excludes what it names — add a new non-primary method to
+``VERIFICATION_METHODS`` (as ``absent`` was) and it falls through to "primary" by
+default. An allowlist fails closed instead: a new method is non-primary until someone
+deliberately adds it here.
+"""
 
 
 class Verification(_Frozen):
@@ -472,6 +486,13 @@ class Profile(_Frozen):
     id: str
     description: str
     allow_tiers: tuple[Tier, ...]
+    ships: bool
+    """Does this profile produce something distributed outside the org (weights,
+    a public release)? Declared, not inferred from ``allow_tiers`` — the dispute and
+    primary-verification checks below key off this, and tier composition (e.g. adding
+    T3_NONCOMMERCIAL) must never silently flip it. Required, no default: every profile
+    author states it on purpose."""
+
     deny_flags: tuple[str, ...] = ()
     require_legal_opinion: bool = False
     """TDM-based profiles cannot be instantiated without a counsel opinion reference."""
@@ -488,3 +509,20 @@ class Profile(_Frozen):
     weights_licence: str | None = None
     """If set, derivative weights must be released under this licence for the profile
     to be honoured. Recorded in lineage so the obligation is not merely intended."""
+
+    @model_validator(mode="after")
+    def _deny_flags_are_known(self) -> Profile:
+        """A typo'd flag must fail the load, not silently resolve to "not denied".
+
+        ``gate.py`` reads a flag via ``getattr(lic.flags, flag, False)`` — an unknown
+        name defaults to ``False`` there, so a misspelled ``deny_flags`` entry would
+        otherwise load cleanly and simply never fire.
+        """
+        known = set(LicenceFlags.model_fields)
+        unknown = [f for f in self.deny_flags if f not in known]
+        if unknown:
+            raise ValueError(
+                f"profile '{self.id}': deny_flags names unknown flag(s) "
+                f"{unknown!r}. Known flags: {', '.join(sorted(known))}."
+            )
+        return self
