@@ -3,7 +3,7 @@ name = "marinedata"
 version = "1.0.0"
 description = "Licence-aware registry and dataloaders for marine and coral-reef datasets"
 readme = "README.md"
-requires-python = ">=3.10"
+requires-python = ">=3.12"
 license = { text = "Apache-2.0" }
 authors = [{ name = "Reef Support B.V." }]
 keywords = ["marine", "coral-reef", "benthic", "dataset", "licence", "croissant"]

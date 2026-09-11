@@ -166,8 +166,13 @@ def _cmd_fetch(args: argparse.Namespace) -> int:
 
 
 def _cmd_verify(args: argparse.Namespace) -> int:
-    """Fetch a small sample per source and confirm the declared layout reads it."""
-    from .verify import summarise, unverified, verify_all
+    """Fetch a small sample per source and confirm the declared layout reads it.
+
+    A ``verified`` result is written back to the source's YAML (``loader.verified_on``
+    / ``loader.verified_note``) — this is what makes the field mean something a human
+    checked, rather than a date nobody writes.
+    """
+    from .verify import summarise, unverified, verify_all, write_verification
 
     reg = Registry.load()
     if args.unverified_only:
@@ -180,6 +185,10 @@ def _cmd_verify(args: argparse.Namespace) -> int:
     results = verify_all(reg, limit=args.limit, only=args.source_id or None)
     for result in results:
         print(result.line())
+        if result.ok:
+            written = write_verification(reg, result)
+            if written is not None:
+                print(f"    wrote verified_on → {written}")
     print(f"\n{summarise(results)}")
     failed = [r for r in results if r.status == "failed"]
     return 1 if failed and args.strict else 0

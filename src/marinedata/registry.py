@@ -118,6 +118,7 @@ class Registry:
         crosswalks: dict[str, Crosswalk] | None = None,
         tasks: dict[str, TaskSpec] | None = None,
         commit: str | None = None,
+        root: Path | None = None,
     ) -> None:
         self._sources = dict(sources)
         self._licences = dict(licences)
@@ -129,6 +130,10 @@ class Registry:
         """The registry directory's last commit, or ``None`` outside a git checkout.
         Threaded into every :class:`~marinedata.lineage.Lineage` this registry builds,
         so the audit record can actually re-derive what it claims to bind."""
+        self.root = root
+        """The directory this registry was loaded from, or ``None`` if constructed
+        directly rather than via :meth:`load`. ``marinedata verify``'s write-back
+        uses this to find the YAML file a given source came from."""
 
     # ── construction ──────────────────────────────────────────────────────
 
@@ -163,7 +168,13 @@ class Registry:
         if not base.is_dir():
             return out
         for path in sorted(base.rglob("*.yaml")):
-            for entry in _read_yaml(path).get(key, []):
+            doc = _read_yaml(path)
+            if key not in doc:
+                raise RegistryError(
+                    f"{path}: expected top-level key '{key}', found {sorted(doc.keys())} — "
+                    f"a wrong or missing key loads as zero entries with no error otherwise"
+                )
+            for entry in doc[key]:
                 try:
                     obj = model.model_validate(entry)
                 except Exception as exc:
@@ -243,7 +254,12 @@ class Registry:
         out: dict[str, Source] = {}
         for path in sorted(base.rglob("*.yaml")):
             doc = _read_yaml(path)
-            for entry in doc.get("sources", []):
+            if "sources" not in doc:
+                raise RegistryError(
+                    f"{path}: expected top-level key 'sources', found {sorted(doc.keys())} — "
+                    f"a wrong or missing key loads as zero entries with no error otherwise"
+                )
+            for entry in doc["sources"]:
                 resolved = Registry._resolve_licence(entry, licences, path)
                 try:
                     src = Source.model_validate(resolved)
