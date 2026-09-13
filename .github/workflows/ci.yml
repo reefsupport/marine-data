@@ -32,19 +32,15 @@ jobs:
   # Layout verification hits the network, so it runs nightly rather than per-commit.
   # It is what catches a declared layout drifting from the real dataset.
   #
-  # Failure policy: `continue-on-error` because `test_declared_layout_matches_reality`
-  # (tests/test_integration.py) asserts per-source, one dead upstream fails that test
-  # and turns pytest's exit code non-zero — `verify_source` itself already reports a
-  # dead fetch as a "failed" VerifyResult rather than raising, so the fetch layer is
-  # already per-source-tolerant, but the test's assertion is not. `continue-on-error`
-  # stops that non-zero from reddening the scheduled run: the job still executes, still
-  # prints every source's status in the log, but reports as a neutral/warning check
-  # rather than blocking anything on the default branch. An upstream outage should be
-  # investigated, not trained-around by ignoring a routinely-red job.
+  # Failure policy: `test_declared_layout_matches_reality` (tests/test_integration.py)
+  # distinguishes the two ways a source can come back not-verified. A network/fetch
+  # failure (host unreachable, timeout, 5xx, DNS) skips — that is an upstream blip, not
+  # a declaration bug. A fetch that succeeds but whose declared layout does not match
+  # reality fails — that is exactly the signal this job exists to carry, so it is
+  # allowed to redden the scheduled run rather than being trained around.
   verify-layouts:
     if: github.event_name == 'schedule'
     runs-on: ubuntu-latest
-    continue-on-error: true
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
