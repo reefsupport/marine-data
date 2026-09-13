@@ -114,9 +114,18 @@ def _cmd_check(args: argparse.Namespace) -> int:
 
 
 def _cmd_lineage(args: argparse.Namespace) -> int:
-    """Emit a LINEAGE.json. Completes the run, then exits non-zero if any source was
-    excluded — the exclusions are always in the JSON (`excluded`), but a zero exit
-    must mean nothing was dropped, not merely that the file was written."""
+    """Emit a LINEAGE.json and exit 0 as long as it was written — a denial is the gate
+    working, not a failure.
+
+    ``ship-commercial`` denies most of the registry by construction; an exit code that
+    fires on nearly every normal run gets suppressed within a week, and then it protects
+    nothing. What matters is that a denial leaves a trace, and it does: every excluded
+    source is recorded loudly here (one ``✗ id: reason`` line on stderr) *and* in the
+    JSON (`excluded`), regardless of exit code. A non-zero exit is reserved for a source
+    that was allowed in and then failed to load — that is `build()`'s ``dropped``, a
+    different failure this command never sees, since it resolves the registry without
+    loading any samples.
+    """
     reg = Registry.load()
     result = find(
         profile=args.profile,
@@ -146,7 +155,6 @@ def _cmd_lineage(args: argparse.Namespace) -> int:
         )
         for entry in lineage.excluded:
             print(f"  ✗ {entry['id']}: {entry['reason']}", file=sys.stderr)
-        return 1
     return 0
 
 

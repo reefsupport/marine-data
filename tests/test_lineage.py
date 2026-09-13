@@ -11,6 +11,7 @@ used to catch a wrong declared layout could not see a content change at all.
 
 from __future__ import annotations
 
+import json
 import subprocess
 from datetime import datetime, timezone
 from pathlib import Path
@@ -19,8 +20,10 @@ import pytest
 
 from marinedata import Registry
 from marinedata.builder import DatasetBuilder, SourcesDroppedError
+from marinedata.cli import main as cli_main
 from marinedata.fetch import sample_digest
 from marinedata.lineage import build_lineage
+from marinedata.query import find
 
 
 @pytest.fixture
@@ -276,3 +279,25 @@ def test_sample_digest_changes_when_a_file_moves_between_subdirectories(
     after = sample_digest(root)
 
     assert before != after
+
+
+def test_lineage_cli_exits_zero_on_denials_but_still_traces_them(
+    registry: Registry, capsys: pytest.CaptureFixture[str]
+) -> None:
+    """E7: a denial is the gate working, not a failure. `ship-commercial` denies most of
+    the registry by construction, so an exit code that fires on nearly every normal run
+    gets suppressed within a week — the CLI must exit 0 here. A test that only checks
+    `== 0` would also pass on a version that deleted the warning, so this pins the trace
+    too: the denied ids must still show up on stderr *and* in the JSON `excluded`."""
+    result = find(profile="ship-commercial", registry=registry)
+    denied_ids = [d.source_id for d in result.excluded]
+    assert denied_ids, "fixture assumption: ship-commercial denies at least one source"
+
+    code = cli_main(["lineage", "--profile", "ship-commercial"])
+    captured = capsys.readouterr()
+
+    assert code == 0
+    for source_id in denied_ids:
+        assert f"✗ {source_id}:" in captured.err
+    payload = json.loads(captured.out)
+    assert {e["id"] for e in payload["excluded"]} == set(denied_ids)
