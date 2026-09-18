@@ -90,7 +90,9 @@ def _build_zip(specs: dict[str, dict]) -> bytes:
     return buf.getvalue()
 
 
-def _suim_plan(*, expected_images: int, expected_masks: int, classes: int = 4) -> ArchivePlan:
+def _suim_plan(
+    *, expected_images: int, expected_masks: int, classes: int = 4, ignore_index: int | None = None
+) -> ArchivePlan:
     return ArchivePlan(
         image_pattern=re.compile(r"^SUIM/(?P<split>train_val|TEST)/images/(?P<stem>[^/]+)\.jpg$"),
         mask_pattern=re.compile(r"^SUIM/(?P<split>train_val|TEST)/masks/(?P<stem>[^/]+)\.bmp$"),
@@ -100,6 +102,7 @@ def _suim_plan(*, expected_images: int, expected_masks: int, classes: int = 4) -
         version="v1",
         classes=classes,
         license_text="MIT License (fixture)\n",
+        ignore_index=ignore_index,
     )
 
 
@@ -453,3 +456,48 @@ def test_wrong_member_count_raises_and_stages_nothing(
         )
 
     assert not (out_root / "sources" / source.id).exists()
+
+
+# ------------------------------------------------------------------------- D2c: manifest truth
+
+
+def test_ignore_index_written_from_plan(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    """``ANNOTATIONS.json``'s ``raster_ignore_value`` comes from ``plan.ignore_index``,
+    not a hardcoded ``255`` (the defect D2c fixes)."""
+    result, _source_obj, _plan = _stage(tmp_path, monkeypatch, {"a": {}, "b": {}}, ignore_index=7)
+
+    import json
+
+    counts = json.loads((result.root / "ANNOTATIONS.json").read_text(encoding="utf-8"))
+    assert counts["geometries"][0]["raster_ignore_value"] == 7
+
+
+def test_ignore_index_none_writes_null(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    """A plan with no reserved ignore index writes JSON ``null``, not a made-up value."""
+    result, _source_obj, _plan = _stage(
+        tmp_path, monkeypatch, {"a": {}, "b": {}}, ignore_index=None
+    )
+
+    import json
+
+    counts = json.loads((result.root / "ANNOTATIONS.json").read_text(encoding="utf-8"))
+    assert counts["geometries"][0]["raster_ignore_value"] is None
+
+
+def test_source_json_has_fetched_uri(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    """``SOURCE.json`` names the URL bytes were actually requested from, so a re-host
+    fetch is visible in the manifest rather than only in the registry's prose."""
+    result, source, _plan = _stage(tmp_path, monkeypatch, {"a": {}, "b": {}})
+
+    import json
+
+    payload = json.loads((result.root / "SOURCE.json").read_text(encoding="utf-8"))
+    assert payload["_ingest"]["fetched_uri"] == source.access.params["sample_url"]
+
+
+def test_suim_plan_ignore_index_is_none() -> None:
+    """The real (non-fixture) suim plan: BW 0-7 are all real classes, 255 never
+    occurs — no ignore index."""
+    from marinedata.ingest import _PLANS
+
+    assert _PLANS["suim"].ignore_index is None

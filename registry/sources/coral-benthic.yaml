@@ -54,8 +54,12 @@ sources:
         exact stem match, no unlabelled or unpaired files. Images are 8-bit PNG
         (2075/2075); masks are palette-indexed PNG (mode P, 2075/2075), observed
         indices 0-39, matching ANNOTATIONS.json's declared 40-class
-        observed_indices range — raster_ignore_value 255 is the ignore value,
-        not index 0. Index 0 alone covers ~17.1% of all mask pixels.
+        observed_indices range. Corrected 2026-09-18 (brief D2c): raster_ignore_value
+        is index 0 (the upstream unlabelled/ignore value, matching upstream model
+        config semantic_loss_ignore_index: 0) — 255 never occurs in the archive at
+        all. Index 0 alone covers ~17.1% of all mask pixels; a consumer that trusted
+        the prior (wrong) note trained on "unlabelled" as class 255-that-never-occurs
+        and left index 0 uncovered as a real class.
     items: 2075
     annotations:
       - kind: dense-mask

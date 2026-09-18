@@ -87,6 +87,13 @@ class ArchivePlan:
     D1 §5's ArchivePlan field list (which names only the member patterns, expected
     counts, partition, version and class count) — noted in the I2 report."""
 
+    ignore_index: int | None = None
+    """The upstream raster's unlabelled/ignore class index, written verbatim into
+    ``ANNOTATIONS.json``'s ``raster_ignore_value`` (D2c). ``None`` when the source has
+    no reserved ignore index and every observed value is a real class — writing a
+    hardcoded ``255`` regardless of whether it ever occurs is exactly the defect this
+    field exists to close."""
+
 
 _SANITIZE = re.compile(r"[^A-Za-z0-9._-]")
 
@@ -144,35 +151,16 @@ def fetch_archive(source: Source, *, cache_root: Path) -> tuple[Path, str, int]:
     return work, archive_sha256, len(payload)
 
 
-_SUIM_LICENSE = """MIT License
+def _mit_suim_text() -> str:
+    """Verbatim upstream text fetched 2026-09-18 from
+    raw.githubusercontent.com/IRVLab/SUIM/master/LICENSE (byte-for-byte, copyright
+    line included). Moved out of a module constant (D2c) to keep this module at or
+    under the 400-line cap — ``src/marinedata/licenses/mit-suim.txt`` carries the
+    text, loaded the same way :func:`marinedata.ingest_parquet._apache_2_0_text`
+    loads ``apache-2.0.txt``."""
+    from importlib.resources import files
 
-Copyright (c) [2020] [Md Jahidul Islam]
-
-SUIM-Net: Semantic Segmentation of Underwater Imagery: Dataset and Benchmark
-Paper: https://arxiv.org/pdf/2004.01241.pdf
-Original repository: https://github.com/xahidbuffon/SUIM-Net
-
-Permission is hereby granted, free of charge, to any person obtaining a copy
-of this software and associated documentation files (the "Software"), to deal
-in the Software without restriction, including without limitation the rights
-to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-copies of the Software, and to permit persons to whom the Software is
-furnished to do so, subject to the following conditions:
-
-The above copyright notice and this permission notice shall be included in all
-copies or substantial portions of the Software.
-
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-SOFTWARE.
-"""
-"""Verbatim upstream text fetched 2026-09-18 from
-raw.githubusercontent.com/IRVLab/SUIM/master/LICENSE (byte-for-byte, copyright
-line included)."""
+    return files("marinedata").joinpath("licenses", "mit-suim.txt").read_text(encoding="utf-8")
 
 
 _PLANS: Mapping[str, ArchivePlan] = MappingProxyType(
@@ -187,7 +175,8 @@ _PLANS: Mapping[str, ArchivePlan] = MappingProxyType(
             partition="default",
             version="2020",
             classes=8,
-            license_text=_SUIM_LICENSE,
+            license_text=_mit_suim_text(),
+            ignore_index=None,  # D2c: BW 0-7 are all real classes; 255 never occurs.
         ),
     }
 )
@@ -339,6 +328,7 @@ def _stage_with_plan(
         "partition_rule": f"literal:{plan.partition}",
         "mask_encoder": "pillow/11.0.0",
         "upstream": [{"url": sample_url, "sha256": archive_sha256, "bytes": archive_bytes}],
+        "fetched_uri": sample_url,
         "gate": {"profile": profile.id, "allowed": decision.allowed, "reason": decision.reason},
     }
     source_json_path = version_root / "SOURCE.json"
@@ -356,7 +346,7 @@ def _stage_with_plan(
                 "schema_id": source.loader.schema_id if source.loader else "dataset-native",
                 "crosswalk_id": source.loader.crosswalk_id if source.loader else None,
                 "classes": plan.classes,
-                "raster_ignore_value": 255,
+                "raster_ignore_value": plan.ignore_index,
                 "images_covered": len(mask_members),
                 "rows": None,
                 "supervises": list(annotation.supervises) if annotation else [],

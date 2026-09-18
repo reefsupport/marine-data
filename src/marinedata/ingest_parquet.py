@@ -75,6 +75,11 @@ class ParquetPlan:
     classes: int
     license_text: str
 
+    ignore_index: int | None = None
+    """The upstream raster's unlabelled/ignore class index, written verbatim into
+    ``ANNOTATIONS.json``'s ``raster_ignore_value`` (D2c) — the parquet-path
+    counterpart of :attr:`marinedata.ingest.ArchivePlan.ignore_index`."""
+
 
 def _image_extension(payload: bytes, *, label: str) -> str:
     """Extension from the magic bytes, never from the struct's ``path`` — a row's
@@ -84,6 +89,16 @@ def _image_extension(payload: bytes, *, label: str) -> str:
     if payload.startswith(_JPEG_MAGIC):
         return "jpg"
     raise IngestError(f"{label}: image bytes are neither PNG nor JPEG (magic {payload[:8]!r})")
+
+
+def _resolve_hf_id(source: Source) -> str:
+    """``access.params['hf_id']``, else derived from ``access.uri`` (D2a) — shared by
+    :func:`fetch_parquet_shards` and the ``fetched_uri`` D2c writes into ``SOURCE.json``
+    (both must name the same dataset)."""
+    hf_id = str(source.access.params.get("hf_id") or "")
+    if not hf_id and source.access.uri:
+        hf_id = urllib.parse.urlparse(source.access.uri).path.removeprefix("/datasets/").strip("/")
+    return hf_id
 
 
 def fetch_parquet_shards(source: Source, plan: ParquetPlan, cache_dir: Path) -> list[Path]:
@@ -97,9 +112,7 @@ def fetch_parquet_shards(source: Source, plan: ParquetPlan, cache_dir: Path) -> 
     "get_stream", ...)`` takes effect — the no-network path every test in this package
     uses.
     """
-    hf_id = str(source.access.params.get("hf_id") or "")
-    if not hf_id and source.access.uri:
-        hf_id = urllib.parse.urlparse(source.access.uri).path.removeprefix("/datasets/").strip("/")
+    hf_id = _resolve_hf_id(source)
     if not hf_id:
         raise IngestError(f"{source.id}: cannot determine the HuggingFace dataset id")
 
@@ -256,6 +269,7 @@ def _stage_with_parquet_plan(
                 )
                 row_idx += 1
 
+    hf_id = _resolve_hf_id(source)
     return _finish_staging(
         version_root,
         source,
@@ -269,6 +283,8 @@ def _stage_with_parquet_plan(
         images_without_annotation=images_without_annotation,
         observed_indices=frozenset(observed_indices),
         upstream=upstream,
+        ignore_index=plan.ignore_index,
+        fetched_uri=f"https://huggingface.co/datasets/{hf_id}" if hf_id else "",
     )
 
 
@@ -286,6 +302,8 @@ def _finish_staging(
     images_without_annotation: int,
     observed_indices: frozenset[int],
     upstream: list[Mapping[str, object]],
+    ignore_index: int | None,
+    fetched_uri: str,
 ) -> StagedVersion:
     """Write ``metadata.parquet``, the three metadata files, then the checksum
     manifest last — the parquet-path equivalent of D1 §7 f-g."""
@@ -301,6 +319,7 @@ def _finish_staging(
         "partition_rule": f"literal:{partition}",
         "mask_encoder": "pillow/11.0.0",
         "upstream": upstream,
+        "fetched_uri": fetched_uri,
         "gate": {"profile": profile.id, "allowed": decision.allowed, "reason": decision.reason},
     }
     source_json_path = version_root / "SOURCE.json"
@@ -319,7 +338,7 @@ def _finish_staging(
                 "schema_id": source.loader.schema_id if source.loader else "dataset-native",
                 "crosswalk_id": source.loader.crosswalk_id if source.loader else None,
                 "classes": classes,
-                "raster_ignore_value": 255,
+                "raster_ignore_value": ignore_index,
                 "images_covered": mask_count,
                 "rows": None,
                 "supervises": list(annotation.supervises) if annotation else [],
@@ -363,6 +382,9 @@ _PARQUET_PLANS: Mapping[str, ParquetPlan] = MappingProxyType(
             version="1.0",
             classes=40,
             license_text=_apache_2_0_text(),
+            # D2c: 255 never occurs (observed range 0-39); index 0 is the upstream
+            # unlabelled/ignore value (17.15% of pixels; semantic_loss_ignore_index: 0).
+            ignore_index=0,
         ),
     }
 )

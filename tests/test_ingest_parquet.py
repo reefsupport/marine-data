@@ -285,3 +285,11 @@ def test_shasum_c_passes(tmp_path: Path) -> None:
         text=True,
     )
     assert proc.returncode == 0, proc.stdout + proc.stderr
+
+
+def test_coralscapes_plan_ignore_index_is_zero() -> None:
+    """The real (non-fixture) coralscapes plan: index 0 is the upstream
+    unlabelled/ignore value (17.15% of pixels), not the 255 that never occurs."""
+    from marinedata.ingest_parquet import _PARQUET_PLANS
+
+    assert _PARQUET_PLANS["coralscapes"].ignore_index == 0

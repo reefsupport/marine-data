@@ -182,6 +182,12 @@ sources:
         The official host only offers a 2.85GB Google Drive link. sample_url is a
         third-party HuggingFace re-host of the same archive (166MB) — the full
         train_val split, not a trimmed sample, but small enough to fetch whole.
+        2026-09-18 (brief D2c): staged bytes come from this re-host
+        (huggingface.co/datasets/SatwikKambham/suim), not the authors' own release
+        (irvlab.cs.umn.edu → Google Drive) — SOURCE.json now records this as
+        fetched_uri. The re-host converted the authors' RGB masks to the 0-7 class
+        indices this pipeline consumes; its jpg re-encoding of the images is
+        unverified.
     modalities: [image]
     capabilities: [benthic-segmentation, fish-detection, general-pretraining]
     items: 1598

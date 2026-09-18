@@ -26,11 +26,17 @@ from .checksums import write_digest
 if TYPE_CHECKING:
     from .models import Source
 
-_TIMESTAMP_KEY = re.compile(r"_at$|^fetched|^staged_at$")
-"""D1 §3/step 6: a key ending in ``_at``, or starting with ``fetched`` (e.g. the
-``fetched_at``/``fetched_bytes`` shape ``FetchResult.manifest()`` writes), or exactly
-``staged_at``. ``^staged_at$`` is redundant with ``_at$`` but named explicitly in the
-design, so it stays explicit here too rather than being "simplified" away."""
+_TIMESTAMP_KEY = re.compile(r"_at$|^fetched_bytes$|^staged_at$")
+"""D1 §3/step 6: a key ending in ``_at`` (catches ``fetched_at`` too), or exactly
+``fetched_bytes`` (the ``FetchResult.manifest()`` shape) or ``staged_at``.
+``^staged_at$`` is redundant with ``_at$`` but named explicitly in the design, so it
+stays explicit here too rather than being "simplified" away.
+
+Narrowed from a blanket ``^fetched`` prefix match (D2c): that also caught
+``fetched_uri`` — a deterministic string naming where bytes were actually requested
+from, not a timestamp, and exactly what D2c's manifest-truth fix needs ``SOURCE.json``
+to carry. The two keys this guard exists to block, ``fetched_at`` and
+``fetched_bytes``, are matched explicitly instead."""
 
 
 @dataclass(frozen=True)
