@@ -740,6 +740,11 @@ _API_CLIENTS: Mapping[str, Callable[[Source, Path, int], FetchResult]] = Mapping
     }
 )
 
+# Clients in `_API_CLIENTS` that actually fetch rather than raise `NotImplementedError`.
+# `auto_fetchable` consults this instead of calling the client, so it stays a predicate
+# and never raises.
+_IMPLEMENTED_API_CLIENTS: frozenset[str] = frozenset({"fathomnet"})
+
 
 def _fetch_api(source: Source, root: Path, limit: int) -> FetchResult:
     """Dispatches ``method: api`` sources to the client their ``access.params.client``
@@ -781,9 +786,17 @@ def auto_fetchable(source: Source) -> bool:
     Gated, request-only and scrape sources need a human regardless of access method,
     which is exactly what ``fetch_sample`` itself checks before actually fetching; this
     exposes that same static answer for reporting (``marinedata doctor``) without
-    reaching for the network.
+    reaching for the network. For ``method: api`` this also checks that the declared
+    ``access.params.client`` is a known, implemented client — a client that is only
+    registered as a ``NotImplementedError`` stub is not auto-fetchable. This is a pure
+    predicate: unlike ``_fetch_api`` it never raises on a missing or unknown client.
     """
-    return not source.access.gated and source.access.method in _FETCHERS
+    if source.access.gated or source.access.method not in _FETCHERS:
+        return False
+    if source.access.method is AccessMethod.API:
+        client = source.access.params.get("client")
+        return client is not None and str(client) in _IMPLEMENTED_API_CLIENTS
+    return True
 
 
 def fetch_sample(

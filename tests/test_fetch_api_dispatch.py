@@ -15,7 +15,14 @@ from conftest import make_source
 from marinedata import Registry
 from marinedata import fetch as fetch_module
 from marinedata.enums import AccessMethod
-from marinedata.fetch import _API_CLIENTS, FetchError, FetchResult, _fetch_api
+from marinedata.fetch import (
+    _API_CLIENTS,
+    _IMPLEMENTED_API_CLIENTS,
+    FetchError,
+    FetchResult,
+    _fetch_api,
+    auto_fetchable,
+)
 
 
 def _api_source(client: str | None, source_id: str = "fixture"):
@@ -86,3 +93,46 @@ def test_coralnet_and_atlantis_are_api_method(registry: Registry) -> None:
     assert coralnet.access.params.get("client") == "coralnet"
     assert atlantis.access.method is AccessMethod.API
     assert atlantis.access.params.get("client") == "atlantis"
+
+
+def test_auto_fetchable_true_for_fathomnet(registry: Registry) -> None:
+    assert auto_fetchable(registry.source("fathomnet"))
+
+
+def test_auto_fetchable_false_for_stubbed_api_clients(registry: Registry) -> None:
+    stubbed = {
+        source.id
+        for source in registry
+        if source.access.method is AccessMethod.API and not auto_fetchable(source)
+    }
+    assert stubbed == {
+        "obis",
+        "allen-coral-atlas",
+        "copernicus-globcolour",
+        "coralnet",
+        "atlantis-synthetic-depth",
+    }
+
+
+def test_auto_fetchable_false_for_missing_or_unknown_client_does_not_raise(
+    tmp_path,
+) -> None:
+    missing = _api_source(None, source_id="no-client-source")
+    unknown = _api_source("made-up-client", source_id="unknown-client-source")
+
+    assert auto_fetchable(missing) is False
+    assert auto_fetchable(unknown) is False
+
+
+def test_auto_fetchable_unchanged_for_non_api_methods() -> None:
+    http_source = make_source("image-mask-pairs", source_id="http-fixture")
+    assert auto_fetchable(http_source)
+
+    gated_source = http_source.model_copy(
+        update={"access": http_source.access.model_copy(update={"gated": True, "notes": "x"})}
+    )
+    assert not auto_fetchable(gated_source)
+
+
+def test_implemented_api_clients_is_subset_of_api_clients() -> None:
+    assert set(_API_CLIENTS) >= _IMPLEMENTED_API_CLIENTS
