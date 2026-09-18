@@ -543,7 +543,7 @@ sources:
 
   - id: mermaid-aws
     name: MERMAID community coral reef image classification training data
-    version: "2026-09-18-8c6d8be8f097"
+    version: "2026-09-19-bc53d5a2c0b6"
     description: >
       Live, growing point-label corpus with a taxonomy crosswalk API (LabelMapping)
       that harmonises partner label schemes.
