@@ -146,7 +146,11 @@ def fetch_archive(source: Source, *, cache_root: Path) -> tuple[Path, str, int]:
 
 _SUIM_LICENSE = """MIT License
 
-Copyright (c) IRVLab
+Copyright (c) [2020] [Md Jahidul Islam]
+
+SUIM-Net: Semantic Segmentation of Underwater Imagery: Dataset and Benchmark
+Paper: https://arxiv.org/pdf/2004.01241.pdf
+Original repository: https://github.com/xahidbuffon/SUIM-Net
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -166,9 +170,9 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 """
-"""Standard MIT template text, NOT fetched from upstream (I3, the real run, has
-network access; this module deliberately does not). Verify against
-raw.githubusercontent.com/IRVLab/SUIM/master/LICENSE before I3 ships this source."""
+"""Verbatim upstream text fetched 2026-09-18 from
+raw.githubusercontent.com/IRVLab/SUIM/master/LICENSE (byte-for-byte, copyright
+line included)."""
 
 
 _PLANS: Mapping[str, ArchivePlan] = MappingProxyType(
