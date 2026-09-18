@@ -8,8 +8,11 @@ that makes re-running over a mutated version fatal rather than quietly correctiv
 
 from __future__ import annotations
 
+import hashlib
+import http.server
 import shutil
 import subprocess
+import threading
 from collections.abc import Callable
 from pathlib import Path
 
@@ -19,6 +22,7 @@ from conftest import make_source
 from marinedata.checksums import (
     CHECKSUM_FILE,
     ChecksumError,
+    download_digest,
     file_digest,
     iter_lines,
     parse_checksums,
@@ -294,3 +298,68 @@ def test_a_valid_checksums_block_is_accepted() -> None:
 
     assert source.checksums is not None
     assert source.checksums.root_digest == A_SHA256
+
+
+# ── download_digest: a real HTTP server, no mocks ───────────────────────────
+
+
+class _BodyHandler(http.server.BaseHTTPRequestHandler):
+    body: bytes = b""
+    status: int = 200
+
+    def log_message(self, *args: object) -> None:  # quiet the test output
+        pass
+
+    def do_GET(self) -> None:
+        if self.status != 200:
+            self.send_response(self.status)
+            self.end_headers()
+            return
+        self.send_response(200)
+        self.send_header("Content-Length", str(len(self.body)))
+        self.end_headers()
+        self.wfile.write(self.body)
+
+
+@pytest.fixture
+def body_server():
+    server = http.server.HTTPServer(("127.0.0.1", 0), _BodyHandler)
+    thread = threading.Thread(target=server.serve_forever, daemon=True)
+    thread.start()
+    try:
+        yield server
+    finally:
+        server.shutdown()
+        thread.join(timeout=5)
+
+
+def test_download_digest_matches_hashlib(body_server, tmp_path: Path) -> None:
+    """The digest returned is exactly ``hashlib.sha256`` of the bytes landed on disk —
+    one streamed pass, not a second read to verify."""
+    payload = b"reef" * 5000
+    body_server.RequestHandlerClass.body = payload
+    body_server.RequestHandlerClass.status = 200
+    url = f"http://127.0.0.1:{body_server.server_port}/blob.bin"
+    dest = tmp_path / "blob.bin"
+
+    digest = download_digest(url, dest)
+
+    assert digest == hashlib.sha256(payload).hexdigest()
+    assert dest.read_bytes() == payload
+    assert not dest.with_suffix(dest.suffix + ".part").exists()
+
+
+def test_download_digest_leaves_no_part_file_on_error(body_server, tmp_path: Path) -> None:
+    """A 5xx mid-download must not leave a ``.part`` file, or a partial ``dest``, behind."""
+    body_server.RequestHandlerClass.body = b""
+    body_server.RequestHandlerClass.status = 500
+    url = f"http://127.0.0.1:{body_server.server_port}/blob.bin"
+    dest = tmp_path / "blob.bin"
+
+    import urllib.error
+
+    with pytest.raises(urllib.error.HTTPError):
+        download_digest(url, dest)
+
+    assert not dest.exists()
+    assert not dest.with_suffix(dest.suffix + ".part").exists()

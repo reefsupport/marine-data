@@ -42,6 +42,7 @@ from __future__ import annotations
 import hashlib
 import os
 import re
+import urllib.request
 from collections.abc import Iterable, Iterator, Mapping
 from dataclasses import dataclass
 from pathlib import Path
@@ -131,6 +132,49 @@ def copy_digest(src: Path, dest: Path) -> str:
         while chunk := source.read(CHUNK_SIZE):
             digest.update(chunk)
             target.write(chunk)
+    return digest.hexdigest()
+
+
+_DOWNLOAD_USER_AGENT = "marinedata/0.1 (+https://github.com/reefsupport/marine-data)"
+"""Matches :data:`marinedata.fetch.USER_AGENT` by value. :mod:`marinedata.fetch`
+already imports :data:`CHUNK_SIZE` from this module, so the reverse import — this
+module calling :func:`marinedata.fetch.get_stream` to avoid a second HTTP stack — would
+be circular. This module is where both call sites can reach a shared opener without
+that cycle (:func:`download_digest` lives here now); the two ``User-Agent`` literals
+still have to be kept in sync by hand until ``fetch.py`` is changed to import this one
+instead of defining its own, which is out of this change's scope."""
+
+
+def download_digest(url: str, dest: str | Path, *, timeout: int = 60) -> str:
+    """GET ``url``, streaming the body to ``dest`` and sha256-ing it in the SAME pass.
+
+    Same request plumbing as :func:`marinedata.fetch.get_stream` — a ``User-Agent``
+    header, redirects handled by ``urlopen`` itself, :data:`CHUNK_SIZE` pieces (the
+    same constant ``fetch.py`` imports from here) — without importing it back, which
+    would be circular (see :data:`_DOWNLOAD_USER_AGENT`).
+
+    Writes to ``dest.with_suffix(dest.suffix + ".part")`` first and ``os.replace``s it
+    into place only once the whole body has landed, so a failed or interrupted transfer
+    never leaves a partial file at ``dest`` — and the ``.part`` file itself is removed
+    on any error rather than left behind.
+    """
+    dest = Path(dest)
+    dest.parent.mkdir(parents=True, exist_ok=True)
+    part = dest.with_suffix(dest.suffix + ".part")
+    digest = hashlib.sha256()
+    request = urllib.request.Request(url, headers={"User-Agent": _DOWNLOAD_USER_AGENT})
+    try:
+        with (
+            urllib.request.urlopen(request, timeout=timeout) as response,
+            part.open("wb") as handle,
+        ):
+            while chunk := response.read(CHUNK_SIZE):
+                handle.write(chunk)
+                digest.update(chunk)
+    except Exception:
+        part.unlink(missing_ok=True)
+        raise
+    os.replace(part, dest)
     return digest.hexdigest()
 
 

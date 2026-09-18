@@ -50,7 +50,13 @@ class StagedImage:
 
 @dataclass(frozen=True)
 class PointRow:
-    """One ``labels/points.parquet`` row — pixel coords, 0-based, top-left origin."""
+    """One ``labels/points.parquet`` row — pixel coords, 0-based, top-left origin.
+
+    ``label_id``, ``form`` and ``region`` (D3a1) are nullable string extras for
+    sources whose point annotations carry a stable label id, a sparse growth-form
+    tag, or a biogeographic region alongside the label name — ``None`` for every
+    caller that does not have one. No timestamp column, ever.
+    """
 
     stem: str
     partition: str
@@ -58,6 +64,9 @@ class PointRow:
     col: int
     label: str
     schema_id: str
+    label_id: str | None = None
+    form: str | None = None
+    region: str | None = None
 
 
 @dataclass(frozen=True)
@@ -122,6 +131,9 @@ def write_points_table(path: Path, rows: Sequence[PointRow]) -> str:
             pa.field("col", pa.int32(), nullable=False),
             pa.field("label", pa.string(), nullable=False),
             pa.field("schema_id", pa.string(), nullable=False),
+            pa.field("label_id", pa.string(), nullable=True),
+            pa.field("form", pa.string(), nullable=True),
+            pa.field("region", pa.string(), nullable=True),
         ]
     )
     ordered = sorted(rows, key=lambda r: (r.partition, r.stem, r.row, r.col))
@@ -133,6 +145,9 @@ def write_points_table(path: Path, rows: Sequence[PointRow]) -> str:
             "col": [r.col for r in ordered],
             "label": [r.label for r in ordered],
             "schema_id": [r.schema_id for r in ordered],
+            "label_id": [r.label_id for r in ordered],
+            "form": [r.form for r in ordered],
+            "region": [r.region for r in ordered],
         },
         schema=schema,
     )

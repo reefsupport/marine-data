@@ -9,6 +9,7 @@ module nor D2b), so there is nothing to monkeypatch for these tests to stay offl
 from __future__ import annotations
 
 import io
+import json
 import re
 import subprocess
 from datetime import date
@@ -19,6 +20,7 @@ import pyarrow.parquet as pq
 import pytest
 from PIL import Image
 
+from marinedata import gate
 from marinedata.enums import (
     AccessMethod,
     AnnotationKind,
@@ -30,7 +32,7 @@ from marinedata.enums import (
     Tier,
 )
 from marinedata.ingest import IngestError
-from marinedata.ingest_parquet import ParquetPlan, _stage_with_parquet_plan
+from marinedata.ingest_parquet import ParquetPlan, _finish_staging, _stage_with_parquet_plan
 from marinedata.models import (
     Access,
     Annotation,
@@ -293,3 +295,93 @@ def test_coralscapes_plan_ignore_index_is_zero() -> None:
     from marinedata.ingest_parquet import _PARQUET_PLANS
 
     assert _PARQUET_PLANS["coralscapes"].ignore_index == 0
+
+
+# ---------------------------------------------------------- _finish_staging (D3a1)
+
+
+def _call_finish_staging(tmp_path: Path, *, mask_count: int, geometries=None):
+    """Call :func:`_finish_staging` directly with the minimal fixture arguments it
+    needs — no shard/plan machinery, since ``geometries`` and ``mask_encoder`` are its
+    own concerns, not the staging loop's."""
+    version_root = tmp_path / "out"
+    version_root.mkdir(parents=True, exist_ok=True)
+    source = _source(classes=4)
+    decision = gate.Decision(source_id=source.id, allowed=True, reason="fixture")
+    result = _finish_staging(
+        version_root,
+        source,
+        _profile(),
+        decision,
+        staged_rows=[],
+        recorded={},
+        classes=4,
+        license_text="Apache License 2.0 fixture text",
+        mask_count=mask_count,
+        images_without_annotation=0,
+        observed_indices=frozenset(),
+        upstream=[],
+        ignore_index=None,
+        fetched_uri="",
+        geometries=geometries,
+    )
+    return result, version_root
+
+
+def test_finish_staging_writes_given_geometries(tmp_path: Path) -> None:
+    """A caller-supplied ``geometries`` sequence is written to ``ANNOTATIONS.json``
+    verbatim — the points path: no mask-derived geometry is built or mixed in."""
+    given = [
+        {
+            "kind": "point",
+            "path": "labels/points.parquet",
+            "format": "parquet-points",
+            "schema_id": "mermaid-attributes",
+            "crosswalk_id": None,
+            "classes": 0,
+            "raster_ignore_value": None,
+            "images_covered": 3,
+            "rows": 25,
+            "supervises": ["taxon", "form"],
+            "observed_indices": [],
+        }
+    ]
+    _, root = _call_finish_staging(tmp_path, mask_count=0, geometries=given)
+
+    payload = json.loads((root / "ANNOTATIONS.json").read_text(encoding="utf-8"))
+    assert payload["geometries"] == given
+
+
+def test_finish_staging_omits_mask_encoder_without_masks(tmp_path: Path) -> None:
+    """``mask_encoder`` would be false provenance on a path that never ran pillow over
+    anything — a points-only stage with ``mask_count == 0``."""
+    _, root = _call_finish_staging(tmp_path, mask_count=0, geometries=None)
+
+    payload = json.loads((root / "SOURCE.json").read_text(encoding="utf-8"))
+    assert "mask_encoder" not in payload["_ingest"]
+
+
+def test_finish_staging_default_geometries_unchanged(tmp_path: Path) -> None:
+    """``geometries=None`` with masks present reproduces today's mask-derived
+    geometry byte-for-byte — including that ``mask_encoder`` IS present here."""
+    _, root = _call_finish_staging(tmp_path, mask_count=3, geometries=None)
+
+    payload = json.loads((root / "ANNOTATIONS.json").read_text(encoding="utf-8"))
+    assert payload["geometries"] == [
+        {
+            "kind": "dense-mask",
+            "path": "labels/masks/",
+            "format": "png-indexed",
+            "schema_id": "dataset-native",
+            "crosswalk_id": "fixture-40class",
+            "classes": 4,
+            "raster_ignore_value": None,
+            "images_covered": 3,
+            "rows": None,
+            "supervises": ["taxon"],
+            "observed_indices": [],
+        }
+    ]
+
+    source_payload = json.loads((root / "SOURCE.json").read_text(encoding="utf-8"))
+    assert source_payload["_ingest"]["mask_encoder"] == "pillow/11.0.0"

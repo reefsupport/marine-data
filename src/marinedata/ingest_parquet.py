@@ -12,8 +12,10 @@ and writes the same ``images/``, ``labels/masks/``, ``metadata.parquet``,
 
 ``ingest.py`` is capped at 400 lines (D2a brief) and its ``_stage_with_plan`` must not
 be touched, so the write-metadata-files-then-checksum tail — which would otherwise be
->15 lines duplicated from that function — is its own private helper here
-(:func:`_finish_staging`) rather than a shared one split across both modules.
+>15 lines duplicated from that function — is its own private helper
+(:func:`marinedata.staging_finish._finish_staging`) imported here under its original
+name; it moved out of this module (D3a1) once a ``geometries`` parameter pushed this
+file's own line count past 400.
 """
 
 from __future__ import annotations
@@ -28,10 +30,10 @@ from types import MappingProxyType
 
 from . import checksums, fetch, gate
 from .ingest import IngestError, StagedVersion
-from .manifests import AnnotationCounts, write_annotations_json, write_license, write_source_json
 from .models import Profile, Source
 from .normalise import mask_bytes_to_indexed_png
-from .tables import StagedImage, write_metadata_table
+from .staging_finish import _finish_staging
+from .tables import StagedImage
 
 _PNG_MAGIC = b"\x89PNG\r\n\x1a\n"
 _JPEG_MAGIC = b"\xff\xd8\xff"
@@ -286,83 +288,6 @@ def _stage_with_parquet_plan(
         ignore_index=plan.ignore_index,
         fetched_uri=f"https://huggingface.co/datasets/{hf_id}" if hf_id else "",
     )
-
-
-def _finish_staging(
-    version_root: Path,
-    source: Source,
-    profile: Profile,
-    decision: gate.Decision,
-    *,
-    staged_rows: list[StagedImage],
-    recorded: dict[str, str],
-    classes: int,
-    license_text: str,
-    mask_count: int,
-    images_without_annotation: int,
-    observed_indices: frozenset[int],
-    upstream: list[Mapping[str, object]],
-    ignore_index: int | None,
-    fetched_uri: str,
-) -> StagedVersion:
-    """Write ``metadata.parquet``, the three metadata files, then the checksum
-    manifest last — the parquet-path equivalent of D1 §7 f-g."""
-    metadata_path = version_root / "metadata.parquet"
-    recorded[metadata_path.relative_to(version_root).as_posix()] = write_metadata_table(
-        metadata_path, staged_rows
-    )
-
-    partition = staged_rows[0].partition if staged_rows else "default"
-    ingest_meta = {
-        "ingest_version": 1,
-        "stem_rule": "hf-struct-path-basename-else-split-shard-row",
-        "partition_rule": f"literal:{partition}",
-        "mask_encoder": "pillow/11.0.0",
-        "upstream": upstream,
-        "fetched_uri": fetched_uri,
-        "gate": {"profile": profile.id, "allowed": decision.allowed, "reason": decision.reason},
-    }
-    source_json_path = version_root / "SOURCE.json"
-    recorded[source_json_path.relative_to(version_root).as_posix()] = write_source_json(
-        source_json_path, source, ingest_meta
-    )
-
-    annotation = source.annotations[0] if source.annotations else None
-    geometries: list[Mapping[str, object]] = []
-    if mask_count:
-        geometries.append(
-            {
-                "kind": annotation.kind.value if annotation else "dense-mask",
-                "path": "labels/masks/",
-                "format": "png-indexed",
-                "schema_id": source.loader.schema_id if source.loader else "dataset-native",
-                "crosswalk_id": source.loader.crosswalk_id if source.loader else None,
-                "classes": classes,
-                "raster_ignore_value": ignore_index,
-                "images_covered": mask_count,
-                "rows": None,
-                "supervises": list(annotation.supervises) if annotation else [],
-                "observed_indices": sorted(observed_indices),
-            }
-        )
-
-    counts = AnnotationCounts(
-        images=len(staged_rows),
-        images_without_annotation=images_without_annotation,
-        geometries=tuple(geometries),
-    )
-    annotations_json_path = version_root / "ANNOTATIONS.json"
-    recorded[annotations_json_path.relative_to(version_root).as_posix()] = write_annotations_json(
-        annotations_json_path, source, counts
-    )
-
-    license_path = version_root / "LICENSE"
-    recorded[license_path.relative_to(version_root).as_posix()] = write_license(
-        license_path, source, license_text
-    )
-
-    manifest = checksums.write_checksums(version_root, recorded=recorded)
-    return StagedVersion(source.id, source.version, version_root, len(staged_rows), manifest)
 
 
 def _apache_2_0_text() -> str:

@@ -337,3 +337,100 @@ def test_missing_ingest_extra_error_names_the_extra(
 
     with pytest.raises(ImportError, match="ingest"):
         write_metadata_table(tmp_path / "unused.parquet", [])
+
+
+# ---------------------------------------------------------- PointRow extras (D3a1)
+
+
+def test_points_table_nullable_extras_roundtrip(tmp_path: Path) -> None:
+    """``label_id``/``form``/``region`` round-trip through the parquet file, nullable,
+    while the rest of the row shape is untouched."""
+    import pyarrow.parquet as pq
+
+    rows = [
+        PointRow(
+            stem="s0",
+            partition="default",
+            row=10,
+            col=20,
+            label="Porites",
+            schema_id="mermaid-attributes",
+            label_id="attr-1",
+            form="Branching",
+            region="Pacific",
+        ),
+        PointRow(
+            stem="s1",
+            partition="default",
+            row=5,
+            col=6,
+            label="Sand",
+            schema_id="mermaid-attributes",
+        ),
+    ]
+    path = tmp_path / "points.parquet"
+    write_points_table(path, rows)
+
+    table = pq.read_table(path)
+    assert table.column_names == [
+        "stem",
+        "partition",
+        "row",
+        "col",
+        "label",
+        "schema_id",
+        "label_id",
+        "form",
+        "region",
+    ]
+    by_stem = dict(zip(table.column("stem").to_pylist(), range(table.num_rows), strict=True))
+    row0 = by_stem["s0"]
+    assert table.column("label_id")[row0].as_py() == "attr-1"
+    assert table.column("form")[row0].as_py() == "Branching"
+    assert table.column("region")[row0].as_py() == "Pacific"
+    row1 = by_stem["s1"]
+    assert table.column("label_id")[row1].as_py() is None
+    assert table.column("form")[row1].as_py() is None
+    assert table.column("region")[row1].as_py() is None
+    assert table.field("label_id").nullable
+    assert table.field("form").nullable
+    assert table.field("region").nullable
+
+
+def test_points_table_two_writes_byte_identical(tmp_path: Path) -> None:
+    """Writing the same rows twice — including the new nullable extras — yields the
+    same digest, matching the determinism the other two tables already guarantee."""
+    rows = [
+        PointRow(
+            stem=f"s{i % 3}",
+            partition="default",
+            row=i,
+            col=i * 2,
+            label="HC",
+            schema_id="mermaid-attributes",
+            label_id=f"attr-{i}" if i % 2 else None,
+            form="Branching" if i % 2 else None,
+            region="Pacific",
+        )
+        for i in range(6)
+    ]
+    d1 = write_points_table(tmp_path / "a.parquet", rows)
+    d2 = write_points_table(tmp_path / "b.parquet", rows)
+    assert d1 == d2
+
+
+def test_points_table_existing_callers_unaffected(tmp_path: Path) -> None:
+    """A caller that only knows the old six fields — no ``label_id``/``form``/
+    ``region`` keyword — still constructs and writes exactly as before."""
+    rows = [
+        PointRow(
+            stem="s0",
+            partition="default",
+            row=1,
+            col=2,
+            label="HC",
+            schema_id="dataset-native",
+        )
+    ]
+    digest = write_points_table(tmp_path / "points.parquet", rows)
+    assert digest == file_digest(tmp_path / "points.parquet")
