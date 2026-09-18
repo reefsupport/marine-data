@@ -62,6 +62,7 @@ sources:
         but the manifest is the dataset's own documented source of truth, so the new
         json-manifest-labels loader reads that rather than re-deriving it from
         filename parsing.
+    citation: "Williams, B. (2024). Leveraging tropical reef, bird and unrelated sounds for superior transfer learning in marine bioacoustics. Zenodo. https://doi.org/10.5281/ZENODO.11071202"
     tags: [reef-audio, permissive]
 
   - id: mbari-pacific-sound

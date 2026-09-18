@@ -32,6 +32,7 @@ sources:
     domain_shift:
       caveats: ["25 m pixels give extent, not condition. Cannot resolve individual trees or canopy health."]
     loader: { layout: metadata-only }
+    citation: "Bunting, P., Rosenqvist, A., Hilarides, L., Lucas, R., Thomas, N., Tadono, T., Worthington, T., Spalding, M., Murray, N., & Rebelo, L.-M. (2022). Global Mangrove Watch (1996 - 2020) Version 3.0 Dataset (Version 3.0) [Dataset]. Zenodo. https://doi.org/10.5281/ZENODO.6894273"
     tags: [mangrove, extent, context-layer]
 
   - id: global-seagrass-10m
@@ -56,6 +57,7 @@ sources:
     annotations: [{ kind: tabular, supervises: [] }]
     coverage: { regions: [global] }
     loader: { layout: metadata-only }
+    citation: "Peng, J., Li, J., Krause, J., Lyons, M., Murray, N., Schill, S., Roelfsema, C., & Asner, G. (2026). Global 10-meter seagrass maps [Dataset]. Zenodo. https://doi.org/10.5281/ZENODO.18612240"
     tags: [seagrass, extent, context-layer]
 
   - id: allen-coral-atlas
@@ -86,6 +88,7 @@ sources:
         - "5 m pixels map habitat extent, not colony condition. Pair with in-water data; never use alone for cover."
         - "Funding-fragile — mirror anything you depend on."
     loader: { layout: metadata-only }
+    citation: "Allen Coral Atlas (2022). Imagery, maps and monitoring of the world's tropical coral reefs. https://doi.org/10.5281/zenodo.3833242"
     tags: [satellite, basemap, context-layer]
 
   - id: noaa-nccos-benthic-habitat
@@ -212,6 +215,7 @@ sources:
         site's same-named file or found nothing. 40 categories, 31,555 bbox+polygon
         annotations confirmed in the JSON, matching this entry's declared
         instance-mask/40-class annotation.
+    citation: "Đuraš, A., Wolf, B. J., Ilioudi, A., Palunko, I., & De Schutter, B. (2024). A Dataset for Detection and Segmentation of Underwater Marine Debris in Shallow Waters. Scientific Data, 11(1). https://doi.org/10.1038/s41597-024-03759-2"
     tags: [debris, permissive]
 
   - id: floating-marine-debris
@@ -237,6 +241,7 @@ sources:
     annotations: [{ kind: tabular, classes: 7, supervises: [taxon] }]
     coverage: { regions: [global] }
     loader: { layout: metadata-only }
+    citation: 'M. M. Duarte and L. Azevedo, "Automatic Detection and Identification of Floating Marine Debris Using Multispectral Satellite Imagery," in IEEE Transactions on Geoscience and Remote Sensing, vol. 61, pp. 1-15, 2023, Art no. 2002315, doi: 10.1109/TGRS.2023.3283607.'
     tags: [debris, spectral]
 
   - id: copernicus-globcolour

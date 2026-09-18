@@ -101,6 +101,7 @@ sources:
     coverage: { regions: [mediterranean, red-sea] }
     notes: "Tiny but carries in-scene colour charts and distances — one of the few sets with physical ground truth."
     loader: { layout: image-mask-pairs, params: { images_dir: images, masks_dir: depth } }
+    citation: 'Berman, Dana, Deborah Levy, Shai Avidan, and Tali Treibitz. "Underwater Single Image Color Restoration Using Haze-Lines and a New Quantitative Dataset." IEEE Transactions on Pattern Analysis and Machine Intelligence (2020).'
     tags: [stereo, physical-gt]
 
   - id: varos
@@ -127,6 +128,7 @@ sources:
       trained_regions: [synthetic]
       caveats: ["Synthetic. Useful for pipeline validation with perfect ground truth; the sim-to-real gap underwater is large."]
     loader: { layout: metadata-only }
+    citation: "Peder Georg Olofsson Zwilgmeyer, Mauhing Yip, Andreas Langeland Teigen, Rudolf Mester, & Annette Stahl. (2021). The VAROS Synthetic Underwater Data Set: Towards realistic multi-sensor underwater data with ground truth (Version Varos - version 1 (currently only downloadable from windows systems)) [Dataset]. Zenodo. https://doi.org/10.5281/ZENODO.5567209"
     tags: [synthetic, permissive]
 
   - id: flsea
@@ -148,6 +150,7 @@ sources:
     coverage: { regions: [mediterranean, red-sea] }
     notes: "The reference benchmark for underwater monocular metric depth papers. NC blocks shipping use."
     loader: { layout: metadata-only }
+    citation: "Yelena Randall, Ori Lifschitz, Tali Treibitz. FLSea: Underwater Visual-Inertial and Stereo-Vision Forward-Looking Datasets. Authorea. DOI: 10.22541/au.175434035.54074686/v1. August 04, 2025. https://www.authorea.com/users/952772/articles/1322072-flsea-underwater-visual-inertial-and-stereo-vision-forward-looking-datasets"
     tags: [depth, benchmark, noncommercial]
 
   - id: suim

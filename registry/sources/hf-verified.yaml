@@ -92,6 +92,7 @@ sources:
         A label audit then showed the ClassLabel carries collection names, not species -
         see the annotations note.
       schema_id: dataset-native
+    citation: "@article{reefnet2024, title={ReefNet: A Large-Scale Coral Reef Annotation Dataset}, year={2024}, note={https://huggingface.co/datasets/ReefNet/ReefNet-1.0}}"
     tags: [pretraining, mis-registered-corrected]
 
   - id: reef-guidance-system
@@ -124,6 +125,7 @@ sources:
       layout: flat-images
       verified_on: 2026-08-17
       verified_note: "15 live rows fetched from HF; images only"
+    citation: "Raine, S., Olivastri, E., Moshirian, B., & Fischer, T. (2026). AI-driven dispensing of coral reseeding devices for broad-scale restoration of the Great Barrier Reef. IEEE/RSJ International Conference on Intelligent Robots and Systems."
     tags: [robotics, pretraining, qut]
 
   - id: marrs-reef-soundscapes
@@ -165,6 +167,7 @@ sources:
       verified_on: 2026-08-17
       verified_note: "15 live audio clips fetched from HF config detections_australia; sonotype as class dir"
       schema_id: sonotype
+    citation: "Williams et al. (2025) Evidence of ecosystem process recovery across a large-scale coral reef restoration programme using AI accelerated soundscape analysis, https://doi.org/10.1101/2025.09.24.678197 || Williams, Ben; Jones, Kate (2025). Coral Reef Soundscapes from a Global Restoration Programme. University College London. Dataset. https://doi.org/10.5522/04/29958062.v2"
     tags: [bioacoustics, reef-audio, multi-region]
 
   - id: whoi-plankton-small

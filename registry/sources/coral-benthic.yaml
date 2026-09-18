@@ -357,6 +357,7 @@ sources:
         Live fetch confirms the manifest → thumbnail-URL → images/ path works.
         flat-images because no per-image label is extracted yet (see
         annotations[].notes) — general-pretraining value only, for now.
+    citation: "Roelfsema, C., Kovacs, E. M., Markey, K., Vercelloni, J., Rodriguez-Ramirez, A., Lopez-Marcano, S., Gonzalez-Rivero, M., Hoegh-Guldberg, O., & Phinn, S. R. (2021). Benthic and coral reef community field data for Heron Reef, Southern Great Barrier Reef, Australia, 2002-2018. Scientific Data, 8(1). https://doi.org/10.1038/s41597-021-00871-5"
     tags: [time-series, gbr]
 
   - id: coralvqa
@@ -537,6 +538,7 @@ sources:
       derivative acts, so this is untrainable, not merely non-commercial. Frequently
       misused. Readable as a methods reference only.
     loader: { layout: metadata-only }
+    citation: "Matteo Contini, Julien Barde, Sylvain Bonhommeau, Victor Illien, Alexis Joly, & Anne-Elise Nieblas. (2026). Seatizen Atlas (Version v1.2.6) [Dataset]. Zenodo. https://doi.org/10.5281/ZENODO.11125847"
     tags: [no-derivatives, trap]
 
   - id: mermaid-aws

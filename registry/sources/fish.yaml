@@ -53,6 +53,7 @@ sources:
         - "Australian species assemblage. Caribbean fish ID will need its own labels."
         - "Length→weight conversion requires per-species a,b coefficients (FishBase); the dataset does not supply them."
     loader: { layout: coco-json, params: { annotations: annotations.json, images_dir: images }, schema_id: worms-species }
+    citation: "Australian Institute of Marine Science (AIMS), University of Western Australia (UWA) and Curtin University. (2019), OzFish Dataset - Machine learning dataset for Baited Remote Underwater Video Stations, https://doi.org/10.25845/5e28f062c5097"
     tags: [stereo, biomass, length]
 
   - id: deepfish
@@ -140,6 +141,7 @@ sources:
         annotation types (image-level labels and point/bbox detections
         respectively) and are not what this entry's declared dense-mask annotation
         describes.
+    citation: "Saleh, A., Laradji, I. H., Konovalov, D. A., Bradley, M., Vazquez, D., & Sheaves, M. (2020). A realistic fish-habitat dataset to evaluate algorithms for underwater visual analysis. Scientific Reports, 10(1). https://doi.org/10.1038/s41598-020-71639-x"
     tags: [turbid, weak-labels]
 
   - id: seamapd21
@@ -306,6 +308,7 @@ sources:
       schema_id: worms-species
       verified_on: 2026-08-29
       verified_note: "Live HF fetch confirms flat image files under the image column, no directory structure to break."
+    citation: "Barnard, K., Liu, E., Walz, K., Schlining, B., Stout, N. J., & Lundsten, L. (2025). DeepSea MOT: A benchmark dataset for multi-object tracking on deep-sea video (Version 1). arXiv. https://doi.org/10.48550/ARXIV.2509.03499"
     tags: [tracking, tooling]
 
   - id: fathomnet
@@ -491,6 +494,7 @@ sources:
     loader:
       layout: yolo-txt
       schema_id: dataset-native
+    citation: "@InProceedings{pedersen2019brackish, title={Detection of Marine Animals in a New Underwater Dataset with Varying Visibility}, author={Pedersen, Malte and Haurum, Joakim Bruslund and Gade, Rikke and Moeslund, Thomas B. and Madsen, Niels}, booktitle = {The IEEE Conference on Computer Vision and Pattern Recognition (CVPR) Workshops}, month = {June}, year = {2019}}"
     tags: [temperate, turbidity]
 
   - id: fish4knowledge
