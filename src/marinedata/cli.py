@@ -115,7 +115,7 @@ def _cmd_fetch(args: argparse.Namespace) -> int:
 
 
 def _cmd_ingest(args: argparse.Namespace) -> int:
-    """Stage one source's declared version into ``<out>/<source_id>/<version>/``."""
+    """Stage one source's declared version into ``<out>/sources/<source_id>/<version>/``."""
     from .fetch import cache_root
     from .gate import LicenceViolation
     from .ingest import IngestError, stage_source
@@ -130,7 +130,11 @@ def _cmd_ingest(args: argparse.Namespace) -> int:
     except (IngestError, LicenceViolation) as exc:
         print(f"ingest failed: {exc}", file=sys.stderr)
         return 1
-    print(f"{result.source_id}@{result.version}  {result.images} images  → {result.root}")
+    m = result.manifest
+    print(
+        f"{result.source_id}@{result.version}  {result.images} images  → {result.root}  "
+        f"root_digest={m.root_digest}  files={m.files}  size_bytes={m.size_bytes}"
+    )
     return 0
 
 

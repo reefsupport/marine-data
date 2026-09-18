@@ -184,6 +184,14 @@ def test_reingesting_identical_bytes_is_a_no_op(
     assert v1.images == v2.images == 3
 
 
+def test_staged_root_is_out_sources_id_version(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    result, source, _plan = _stage(tmp_path, monkeypatch, {"a": {}, "b": {}})
+
+    assert result.root == tmp_path / "out" / "sources" / source.id / source.version
+
+
 def test_a_changed_file_raises(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     result, source, plan = _stage(tmp_path, monkeypatch, {"a": {}, "b": {}})
     jpg = next((result.root / "images" / "default").glob("*.jpg"))
@@ -444,4 +452,4 @@ def test_wrong_member_count_raises_and_stages_nothing(
             source, plan, cache_root=tmp_path / "cache", out_root=out_root, profile=_profile()
         )
 
-    assert not (out_root / source.id).exists()
+    assert not (out_root / "sources" / source.id).exists()

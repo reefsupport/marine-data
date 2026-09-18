@@ -228,7 +228,7 @@ def _stage_with_plan(
     decision = gate.evaluate(source, profile)
     decision.raise_if_denied()
 
-    version_root = out_root / source.id / source.version
+    version_root = out_root / "sources" / source.id / source.version
     manifest_path = version_root / checksums.CHECKSUM_FILE
 
     if manifest_path.is_file():
