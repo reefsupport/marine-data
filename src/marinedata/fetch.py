@@ -31,7 +31,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 from types import MappingProxyType
 
-from .checksums import stream_into
+from .checksums import CHUNK_SIZE, stream_into
 from .enums import AccessMethod
 from .models import Source
 
@@ -116,6 +116,42 @@ def _get(
         if attempt < retries - 1:
             time.sleep(1.5 * (attempt + 1))
     raise FetchError(f"failed after {retries} attempt(s) for {url}: {last}")
+
+
+def _get_stream(url: str, dest: Path, *, timeout: int = 60, retries: int = 3) -> int:
+    """GET ``url``, writing the response body straight to ``dest`` in
+    :data:`marinedata.checksums.CHUNK_SIZE` pieces rather than buffering it whole in
+    memory the way :func:`_get` does (D2a: an HF parquet shard is ~450 MB, and every
+    shard would otherwise be held in RAM at once).
+
+    Same retry policy as :func:`_get`: a 4xx raises immediately; a 5xx or a
+    connection-level fault retries a fresh GET from the start, so ``dest`` is truncated
+    and rewritten on each attempt rather than appended to. Returns the number of bytes
+    written.
+    """
+    last: Exception | None = None
+    dest.parent.mkdir(parents=True, exist_ok=True)
+    for attempt in range(retries):
+        request = urllib.request.Request(url, headers={"User-Agent": USER_AGENT})
+        try:
+            with (
+                urllib.request.urlopen(request, timeout=timeout) as response,
+                dest.open("wb") as handle,
+            ):
+                written = 0
+                while chunk := response.read(CHUNK_SIZE):
+                    handle.write(chunk)
+                    written += len(chunk)
+            return written
+        except urllib.error.HTTPError as exc:
+            if exc.code < 500:
+                raise FetchError(f"HTTP {exc.code} for {url}") from exc
+            last = exc
+        except (urllib.error.URLError, http.client.HTTPException, OSError) as exc:
+            last = exc
+        if attempt < retries - 1:
+            time.sleep(1.5 * (attempt + 1))
+    raise FetchError(f"failed after {retries} attempt(s) for streaming GET of {url}: {last}")
 
 
 def _get_json(url: str, *, timeout: int = 60) -> dict:
@@ -877,3 +913,7 @@ For :mod:`marinedata.ingest`, which needs the full archive rather than a sample.
 extract_archive = _extract_archive
 """Public alias for :func:`_extract_archive` — extract an in-memory archive to a
 directory, bounded to ``limit`` files (``0`` means every member)."""
+
+get_stream = _get_stream
+"""Public alias for :func:`_get_stream` — a retrying GET that streams straight to a
+file (D2a), for :mod:`marinedata.ingest_parquet`, which downloads ~450 MB shards."""

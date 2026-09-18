@@ -196,16 +196,23 @@ _PLANS: Mapping[str, ArchivePlan] = MappingProxyType(
 def stage_source(
     source: Source, *, cache_root: Path, out_root: Path, profile: Profile
 ) -> StagedVersion:
-    """Stage one source's declared version into ``<out_root>/<source_id>/<version>/``.
-
-    Looks up ``source.id`` in the module-level ``_PLANS`` and delegates to
-    :func:`_stage_with_plan`; raises :class:`IngestError` when no plan is registered
-    rather than guessing at archive layout facts nothing has verified.
-    """
+    """``_PLANS`` (archive) first, else ``_PARQUET_PLANS`` (D2a HF-parquet), else
+    :class:`IngestError`. Gate check happens once, inside whichever stage fn runs."""
     plan = _PLANS.get(source.id)
-    if plan is None:
+    if plan is not None:
+        return _stage_with_plan(
+            source, plan, cache_root=cache_root, out_root=out_root, profile=profile
+        )
+
+    from . import ingest_parquet
+
+    parquet_plan = ingest_parquet._PARQUET_PLANS.get(source.id)
+    if parquet_plan is None:
         raise IngestError(f"no ingest plan for {source.id!r}")
-    return _stage_with_plan(source, plan, cache_root=cache_root, out_root=out_root, profile=profile)
+    shards = ingest_parquet.fetch_parquet_shards(source, parquet_plan, cache_root)
+    return ingest_parquet._stage_with_parquet_plan(
+        source, parquet_plan, shards, out_root=out_root, profile=profile
+    )
 
 
 def _stage_with_plan(

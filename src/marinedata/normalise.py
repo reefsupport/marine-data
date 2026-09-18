@@ -86,44 +86,74 @@ def _rgb_bitpacked_indices(im) -> bytes:
     return combined.tobytes()
 
 
-def bmp_mask_to_indexed_png(src: Path, dest: Path, *, classes: int) -> tuple[str, frozenset[int]]:
-    """Re-encode a SUIM ``.bmp`` mask as an indexed (mode ``'P'``) PNG.
+def _encode_indexed_png(im, dest: Path, *, classes: int, label: str) -> tuple[str, frozenset[int]]:
+    """Shared body of :func:`bmp_mask_to_indexed_png` and :func:`mask_bytes_to_indexed_png`
+    (D2a): given an already-opened PIL image, validate its mode and pixel range and
+    write ``dest`` as an indexed PNG with the deterministic palette. ``label`` is only
+    used in error messages, so a path source and a bytes source can share this one copy
+    of the index-validation logic rather than duplicating it.
 
-    The one unavoidable re-encode in the pipeline (D1 §3) — ``.bmp`` is not a format we
-    ship. Accepts single-channel ``'L'``/already-indexed ``'P'`` masks unchanged, and
-    24-bit ``'RGB'`` masks via :func:`_rgb_bitpacked_indices` (I2 override — see its
+    Accepts single-channel ``'L'``/already-indexed ``'P'`` masks unchanged, and 24-bit
+    ``'RGB'`` masks via :func:`_rgb_bitpacked_indices` (I2 override — see its
     docstring). Raises for any other mode, and if any observed pixel index is ``>=
     classes``: an out-of-range index is a crosswalk error, not a warning, and must not
     be staged silently.
 
     Returns ``(sha256 of the written PNG, the set of pixel indices actually observed)``.
     """
+    if im.mode == "RGB":
+        raw = _rgb_bitpacked_indices(im)
+    elif im.mode in {"L", "P"}:
+        # Both 'L' and 'P' store one byte per pixel; ``tobytes()`` on either
+        # returns those raw bytes verbatim (for 'P' it is the palette *index*,
+        # never the resolved RGB). Building the target image from those bytes —
+        # rather than ``Image.convert("P")``, which quantises/dithers by default —
+        # is what keeps each pixel's integer value exactly what it was in the
+        # source mask.
+        raw = im.tobytes()
+    else:
+        raise ValueError(
+            f"{label}: mode {im.mode!r} is not a supported mask mode (need 'L', 'P' or 'RGB')"
+        )
+    observed = frozenset(raw)
+    if observed and max(observed) >= classes:
+        raise ValueError(
+            f"{label}: observed pixel index {max(observed)} is out of range for "
+            f"{classes} declared classes"
+        )
     Image = _require_pillow()
-    with Image.open(src) as im:
-        if im.mode == "RGB":
-            raw = _rgb_bitpacked_indices(im)
-        elif im.mode in {"L", "P"}:
-            # Both 'L' and 'P' store one byte per pixel; ``tobytes()`` on either
-            # returns those raw bytes verbatim (for 'P' it is the palette *index*,
-            # never the resolved RGB). Building the target image from those bytes —
-            # rather than ``Image.convert("P")``, which quantises/dithers by default —
-            # is what keeps each pixel's integer value exactly what it was in the
-            # source mask.
-            raw = im.tobytes()
-        else:
-            raise ValueError(
-                f"{src}: mode {im.mode!r} is not a supported mask mode (need 'L', 'P' or 'RGB')"
-            )
-        observed = frozenset(raw)
-        if observed and max(observed) >= classes:
-            raise ValueError(
-                f"{src}: observed pixel index {max(observed)} is out of range for "
-                f"{classes} declared classes"
-            )
-        paletted = Image.frombytes("P", im.size, raw)
-        paletted.putpalette(_palette_bytes(classes))
+    paletted = Image.frombytes("P", im.size, raw)
+    paletted.putpalette(_palette_bytes(classes))
 
-        buffer = io.BytesIO()
-        paletted.save(buffer, format="PNG", optimize=False, compress_level=6)
+    buffer = io.BytesIO()
+    paletted.save(buffer, format="PNG", optimize=False, compress_level=6)
 
     return write_digest(dest, buffer.getvalue()), observed
+
+
+def bmp_mask_to_indexed_png(src: Path, dest: Path, *, classes: int) -> tuple[str, frozenset[int]]:
+    """Re-encode a SUIM ``.bmp`` mask as an indexed (mode ``'P'``) PNG.
+
+    The one unavoidable re-encode in the pipeline (D1 §3) — ``.bmp`` is not a format we
+    ship. See :func:`_encode_indexed_png` for the mode handling and validation this
+    delegates to.
+
+    Returns ``(sha256 of the written PNG, the set of pixel indices actually observed)``.
+    """
+    Image = _require_pillow()
+    with Image.open(src) as im:
+        return _encode_indexed_png(im, dest, classes=classes, label=str(src))
+
+
+def mask_bytes_to_indexed_png(
+    payload: bytes, dest: Path, *, classes: int
+) -> tuple[str, frozenset[int]]:
+    """Re-encode an already-decoded mask (D2a: an HF parquet mask cell's ``bytes``) as
+    an indexed PNG. Bytes-input sibling of :func:`bmp_mask_to_indexed_png` — shares
+    :func:`_encode_indexed_png` so the index-validation/palette logic is not duplicated.
+
+    Returns ``(sha256 of the written PNG, the set of pixel indices actually observed)``.
+    """
+    Image = _require_pillow()
+    with Image.open(io.BytesIO(payload)) as im:
+        return _encode_indexed_png(im, dest, classes=classes, label="<bytes>")
