@@ -72,7 +72,7 @@ sources:
       verified_on: 2026-08-17
       verified_by: "allencoralatlas.org terms — CC-BY 4.0; GEE asset ACA/reef_habitat/v2_0"
       method: site-terms
-    access: { method: api, uri: https://allencoralatlas.org }
+    access: { method: api, uri: https://allencoralatlas.org, params: { client: allen-coral-atlas } }
     modalities: [satellite]
     capabilities: [habitat-mapping-satellite]
     annotations:
@@ -251,7 +251,10 @@ sources:
       verified_on: 2026-08-17
       verified_by: "Copernicus Marine Service data licence — free and open with attribution"
       method: site-terms
-    access: { method: api, uri: https://data.marine.copernicus.eu/product/OCEANCOLOUR_GLO_BGC_L4_MY_009_104 }
+    access:
+      method: api
+      uri: https://data.marine.copernicus.eu/product/OCEANCOLOUR_GLO_BGC_L4_MY_009_104
+      params: { client: copernicus-marine }
     modalities: [satellite, tabular]
     capabilities: [habitat-mapping-satellite]
     coverage: { regions: [global], years: [1997, 2026] }
@@ -272,7 +275,7 @@ sources:
       verified_on: 2026-08-17
       verified_by: "obis.org terms — CC-BY 4.0 for the standardised aggregate"
       method: site-terms
-    access: { method: api, uri: https://obis.org }
+    access: { method: api, uri: https://obis.org, params: { client: obis } }
     modalities: [tabular]
     capabilities: [edna-taxonomy, coral-taxonomy]
     items: 200000000

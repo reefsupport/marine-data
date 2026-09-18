@@ -25,9 +25,11 @@ import urllib.error
 import urllib.parse
 import urllib.request
 import zipfile
+from collections.abc import Callable, Mapping
 from dataclasses import dataclass
 from datetime import datetime, timezone
 from pathlib import Path
+from types import MappingProxyType
 
 from .checksums import stream_into
 from .enums import AccessMethod
@@ -704,18 +706,64 @@ def _fetch_s3(source: Source, root: Path, limit: int) -> FetchResult:
     return fetch_s3(source, root, limit)
 
 
-def _fetch_api(source: Source, root: Path, limit: int) -> FetchResult:
-    """Dispatches ``method: api`` sources to their specific fetcher.
-
-    Only one API-backed source exists in the registry today (FathomNet), so this maps
-    the whole ``AccessMethod.API`` value to it directly. A second ``api`` source with a
-    genuinely different API would need this to dispatch on an ``access.params`` field
-    (e.g. ``api_provider``) instead of the access method alone — don't generalise
-    before there is a second case to generalise from.
-    """
+def _fetch_fathomnet_client(source: Source, root: Path, limit: int) -> FetchResult:
     from .fetchers_remote import fetch_fathomnet
 
     return fetch_fathomnet(source, root, limit)
+
+
+def _unimplemented_client(client: str) -> Callable[[Source, Path, int], FetchResult]:
+    """One stub factory shared by every registered-but-unbuilt api client.
+
+    Each of the bespoke clients below (obis, allen-coral-atlas, copernicus-marine,
+    coralnet, atlantis) is a separate workstream (master brief WS-D: 7 non-bulk
+    sources) — this raises rather than silently reusing another source's client.
+    """
+
+    def _fetch(source: Source, root: Path, limit: int) -> FetchResult:
+        raise NotImplementedError(
+            f"{source.id}: api client '{client}' is known but not yet implemented — "
+            "building it is a separate workstream (master brief WS-D: 7 non-bulk sources)."
+        )
+
+    return _fetch
+
+
+_API_CLIENTS: Mapping[str, Callable[[Source, Path, int], FetchResult]] = MappingProxyType(
+    {
+        "fathomnet": _fetch_fathomnet_client,
+        "obis": _unimplemented_client("obis"),
+        "allen-coral-atlas": _unimplemented_client("allen-coral-atlas"),
+        "copernicus-marine": _unimplemented_client("copernicus-marine"),
+        "coralnet": _unimplemented_client("coralnet"),
+        "atlantis": _unimplemented_client("atlantis"),
+    }
+)
+
+
+def _fetch_api(source: Source, root: Path, limit: int) -> FetchResult:
+    """Dispatches ``method: api`` sources to the client their ``access.params.client``
+    names.
+
+    Six ``api`` sources exist in the registry today — fathomnet, obis,
+    allen-coral-atlas, copernicus-globcolour and (once re-valued) coralnet and
+    atlantis-synthetic-depth — each backed by a genuinely different upstream API.
+    Dispatch is explicit on ``client`` so a source can never be silently routed to
+    another source's client; there is no default and no fallback.
+    """
+    client = source.access.params.get("client")
+    if client is None:
+        raise FetchError(
+            f"{source.id}: access.params.client is not set — known clients: "
+            f"{', '.join(sorted(_API_CLIENTS))}"
+        )
+    fetcher = _API_CLIENTS.get(str(client))
+    if fetcher is None:
+        raise FetchError(
+            f"{source.id}: unknown api client '{client}' — known clients: "
+            f"{', '.join(sorted(_API_CLIENTS))}"
+        )
+    return fetcher(source, root, limit)
 
 
 _FETCHERS = {

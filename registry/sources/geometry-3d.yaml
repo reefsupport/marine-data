@@ -145,9 +145,10 @@ sources:
       verified_by: "github.com/zkawfanx/Atlantis — MIT licence"
       method: licence-file
     access:
-      method: http
+      method: api
       uri: https://github.com/zkawfanx/Atlantis
       size_bytes: 1962319455
+      params: { client: atlantis }
       notes: >
         Checked 2026-08-28: sole distribution is Kaggle (zkawfanx/atlantis, 1.96GB,
         no smaller subset; verified as a real zip by reading local file headers, not

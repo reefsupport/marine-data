@@ -455,8 +455,9 @@ sources:
         crawl reservation exists as of that date.
       method: absent
     access:
-      method: scrape
+      method: api
       uri: https://coralnet.ucsd.edu/
+      params: { client: coralnet }
       notes: "No batch download. Per-source retrieval only; see CoralNet-Toolbox."
     modalities: [image]
     capabilities: [benthic-classification, general-pretraining, coral-taxonomy]

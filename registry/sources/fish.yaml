@@ -333,6 +333,7 @@ sources:
     access:
       method: api
       uri: https://database.fathomnet.org/api
+      params: { client: fathomnet }
       notes: >
         fathomnet.org itself is now a Wix marketing site (redirects away from any API
         path, checked 2026-08-28). The real API — confirmed live and matching the
