@@ -29,6 +29,7 @@ from dataclasses import dataclass
 from datetime import datetime, timezone
 from pathlib import Path
 
+from .checksums import stream_into
 from .enums import AccessMethod
 from .models import Source
 
@@ -795,9 +796,14 @@ def sample_digest(root: Path) -> str:
     identically regardless of their bytes. These are bounded verification samples
     (~100 items, per ``fetch_sample``'s ``limit``), so reading them in full costs
     nothing worth trading correctness for.
+
+    Bytes reach the hash through :func:`marinedata.checksums.stream_into`, the one
+    chunked reader in this package — the same value as before, since the same bytes
+    arrive in the same order, but a sample holding one oversized file no longer has
+    to fit in memory.
     """
     digest = hashlib.sha256()
     for path in sorted(p for p in root.rglob("*") if p.is_file() and p.name != "_fetch.json"):
         digest.update(path.name.encode())
-        digest.update(path.read_bytes())
+        stream_into(digest, path)
     return "sha256:" + digest.hexdigest()[:16]

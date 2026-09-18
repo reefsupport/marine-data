@@ -233,6 +233,26 @@ class DomainShift(_Frozen):
     caveats: tuple[str, ...] = ()
 
 
+class Checksums(_Frozen):
+    """What a stored version's ``CHECKSUMS.sha256`` covers, pinned by one digest.
+
+    Set only once a version has actually been ingested into our storage — it records a
+    fact about bytes we hold, not a claim about upstream, so it stays ``None`` for every
+    source until then. ``root_digest`` is the sha256 of the ``CHECKSUMS.sha256`` file
+    itself (see :mod:`marinedata.checksums`): one short value that transitively pins
+    every file in the version, cheap to compare and cheap to store here.
+    """
+
+    version: str
+    """The version this covers. Carried explicitly so that bumping ``Source.version``
+    without re-ingesting fails loudly instead of leaving a digest that silently
+    describes the previous version's bytes."""
+
+    root_digest: str = Field(pattern=r"^[0-9a-f]{64}$")
+    files: int = Field(gt=0)
+    size_bytes: int = Field(gt=0)
+
+
 class Source(_Frozen):
     """A single dataset entry."""
 
@@ -256,6 +276,10 @@ class Source(_Frozen):
     coverage: Coverage
     domain_shift: DomainShift | None = None
     loader: LoaderSpec | None = None
+
+    checksums: Checksums | None = None
+    """Set once this source's declared version is stored. ``None`` means not ingested
+    yet, which is every source today — never "ingested but unverified"."""
 
     items: int | None = Field(default=None, description="Primary unit count (images/clips)")
     items_note: str | None = None
@@ -282,6 +306,18 @@ class Source(_Frozen):
                 except ValueError:
                     continue
         return frozenset(axes)
+
+    @model_validator(mode="after")
+    def _checksums_pin_the_declared_version(self) -> Source:
+        """A digest that names a different version is worse than no digest at all: it
+        would pass every automated check while describing bytes nobody is serving."""
+        if self.checksums is not None and self.checksums.version != self.version:
+            raise ValueError(
+                f"{self.id}: checksums cover version {self.checksums.version!r} but the "
+                f"source declares {self.version!r} — re-ingest and re-checksum, or drop "
+                "the stale checksums block."
+            )
+        return self
 
     @model_validator(mode="after")
     def _prohibited_needs_reason(self) -> Source:
