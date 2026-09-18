@@ -126,7 +126,12 @@ def _cmd_ingest(args: argparse.Namespace) -> int:
     out, cap = Path(args.out), args.slice_cap_bytes
     try:
         result = stage_source(
-            source, cache_root=cache_root(), out_root=out, profile=profile, slice_cap_bytes=cap
+            source,
+            cache_root=cache_root(),
+            out_root=out,
+            profile=profile,
+            slice_cap_bytes=cap,
+            workers=args.workers,
         )
     except (IngestError, LicenceViolation) as exc:
         print(f"ingest failed: {exc}", file=sys.stderr)
@@ -317,6 +322,12 @@ def build_parser() -> argparse.ArgumentParser:
     p_ingest.add_argument("--profile", required=True, help="Release profile (see profiles.yaml)")
     p_ingest.add_argument(
         "--slice-cap-bytes", type=int, default=None, help="S3 sources only: cap staged bytes"
+    )
+    p_ingest.add_argument(
+        "--workers",
+        type=int,
+        default=None,
+        help="S3 sources only: concurrent image downloads (default 8)",
     )
     p_ingest.set_defaults(func=_cmd_ingest)
 

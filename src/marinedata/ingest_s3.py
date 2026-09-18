@@ -12,8 +12,8 @@ under its 400-line cap.
 
 from __future__ import annotations
 
+import json
 import re
-import time
 from collections.abc import Mapping
 from pathlib import Path
 from types import MappingProxyType
@@ -21,6 +21,7 @@ from types import MappingProxyType
 from . import checksums, gate
 from .ingest import IngestError, StagedVersion
 from .models import Profile, Source
+from .s3_download import DEFAULT_WORKERS, download_images
 from .s3_listing import (
     S3Plan,
     _object_url,
@@ -30,11 +31,7 @@ from .s3_listing import (
     select_stems,
 )
 from .staging_finish import _finish_staging
-from .tables import PointRow, StagedImage, write_points_table
-
-_RETRY_SLEEPS = (1, 2, 4)
-"""Seconds slept before each of up to 3 retries of a failed image GET (D3a2
-brief §2) — 4 attempts total, the last of which raises rather than sleeping."""
+from .tables import PointRow, write_points_table
 
 _VERSION_PATTERN = re.compile(r"^\d{4}-\d{2}-\d{2}-([0-9a-f]{12})$")
 
@@ -47,16 +44,6 @@ def _require_pyarrow():
             "pyarrow is not installed. Install it with: pip install 'marinedata[ingest]'"
         ) from exc
     return pa
-
-
-def _require_pillow():
-    try:
-        from PIL import Image
-    except ImportError as exc:  # pragma: no cover — exercised via sys.modules patch
-        raise ImportError(
-            "pillow is not installed. Install it with: pip install 'marinedata[ingest]'"
-        ) from exc
-    return Image
 
 
 def fetch_points(plan: S3Plan, cache_dir: Path):
@@ -105,19 +92,12 @@ def points_for_stems(table, stems, plan: S3Plan) -> list[PointRow]:
     return rows
 
 
-def _download_with_retry(url: str, dest: Path) -> str:
-    """``download_digest``, retried up to 3x with 1/2/4s sleeps, then raised
-    (D3a2 brief §2) — a dropped mid-transfer connection across thousands of
-    images is expected, not exceptional."""
-    last: Exception | None = None
-    for attempt in range(len(_RETRY_SLEEPS) + 1):
-        try:
-            return checksums.download_digest(url, dest)
-        except Exception as exc:  # retried, then re-raised verbatim
-            last = exc
-            if attempt < len(_RETRY_SLEEPS):
-                time.sleep(_RETRY_SLEEPS[attempt])
-    raise IngestError(f"{url}: failed after {len(_RETRY_SLEEPS) + 1} attempt(s): {last}")
+def _read_staged_ingest(version_root: Path) -> Mapping[str, object]:
+    """The ``_ingest`` block of an already-staged ``SOURCE.json``, read directly off
+    disk rather than through the registry — the registry only knows a source as
+    declared, never as it was actually staged (2026-09-18-D3d fix B)."""
+    payload = json.loads((version_root / "SOURCE.json").read_text(encoding="utf-8"))
+    return payload["_ingest"]
 
 
 def _assert_version_pinned(source: Source, digest: str) -> None:
@@ -156,16 +136,34 @@ def stage_s3_source(
     out_root: Path,
     profile: Profile,
     slice_cap_bytes: int | None = None,
+    workers: int | None = None,
 ) -> StagedVersion:
     """List -> digest -> version gate -> select -> stream images -> points
     table -> ``_finish_staging`` (D3a2 brief §2). Re-staging an already-staged
-    tree never re-lists (same contract as the archive and parquet paths)."""
+    tree never re-lists (same contract as the archive and parquet paths), but
+    only when the request matches what is actually staged (2026-09-18-D3d fix
+    B): slice and full share a version string, so a full ingest after a slice
+    must never silently return the slice.
+
+    ``workers`` (D3d §C) is ``None`` -> :data:`marinedata.s3_download.DEFAULT_WORKERS`
+    — the same "not specified" sentinel shape as ``slice_cap_bytes``.
+    """
     decision = gate.evaluate(source, profile)
     decision.raise_if_denied()
 
     version_root = out_root / "sources" / source.id / source.version
     manifest_path = version_root / checksums.CHECKSUM_FILE
     if manifest_path.is_file():
+        staged = _read_staged_ingest(version_root)
+        staged_cap = staged.get("slice_cap_bytes")
+        staged_annotated_only = staged.get("annotated_only")
+        if staged_cap != slice_cap_bytes or staged_annotated_only != plan.annotated_only:
+            raise IngestError(
+                f"{source.id}: {version_root} is already staged with "
+                f"slice_cap_bytes={staged_cap!r} annotated_only={staged_annotated_only!r}, "
+                f"but this request asked for slice_cap_bytes={slice_cap_bytes!r} "
+                f"annotated_only={plan.annotated_only!r} — move it aside or use another --out"
+            )
         manifest = checksums.write_checksums(version_root)
         images = len(list((version_root / "images" / plan.partition).glob("*")))
         return StagedVersion(source.id, source.version, version_root, images, manifest)
@@ -193,27 +191,10 @@ def stage_s3_source(
         cap_bytes=slice_cap_bytes,
     )
 
-    Image = _require_pillow()
-    recorded: dict[str, str] = {}
-    staged_rows: list[StagedImage] = []
-    for stem in selected:
-        key, _size, _etag = image_groups[stem]
-        dest = version_root / "images" / plan.partition / f"{stem}{plan.image_suffix}"
-        recorded[dest.relative_to(version_root).as_posix()] = _download_with_retry(
-            _object_url(plan, key), dest
-        )
-        with Image.open(dest) as im:
-            width, height = im.size
-        staged_rows.append(
-            StagedImage(
-                stem=stem,
-                partition=plan.partition,
-                upstream_path=key,
-                upstream_split=None,
-                width=width,
-                height=height,
-            )
-        )
+    effective_workers = DEFAULT_WORKERS if workers is None else workers
+    recorded, staged_rows = download_images(
+        selected, image_groups, plan, version_root, effective_workers
+    )
 
     points = points_for_stems(points_table, selected, plan)
     counts: dict[str, int] = {}
@@ -264,6 +245,7 @@ def stage_s3_source(
         upstream=[],
         ignore_index=None,
         fetched_uri=f"https://{plan.bucket}.{plan.endpoint}/{plan.prefix}",
+        stem_rule="s3-key-basename-minus-image-suffix",
         geometries=[geometry],
         extra_ingest={
             "listing_digest": digest,

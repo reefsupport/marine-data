@@ -36,11 +36,17 @@ def _finish_staging(
     upstream: list[Mapping[str, object]],
     ignore_index: int | None,
     fetched_uri: str,
+    stem_rule: str,
     geometries: Sequence[Mapping[str, object]] | None = None,
     extra_ingest: Mapping[str, object] | None = None,
 ) -> StagedVersion:
     """Write ``metadata.parquet``, the three metadata files, then the checksum
     manifest last — the parquet-path equivalent of D1 §7 f-g.
+
+    ``stem_rule`` (2026-09-18-D3d fix A) is supplied by the caller rather than
+    hardcoded here: the parquet path's HF-struct rule is not true of the S3
+    path's ``s3-key-basename-minus-image-suffix``, and a shared constant had
+    silently mislabelled every S3-sourced ``SOURCE.json``.
 
     ``geometries`` lets a caller (the points path) supply the ``ANNOTATIONS.json``
     geometry list verbatim instead of the mask-derived one built here by default.
@@ -60,7 +66,7 @@ def _finish_staging(
     partition = staged_rows[0].partition if staged_rows else "default"
     ingest_meta = {
         "ingest_version": 1,
-        "stem_rule": "hf-struct-path-basename-else-split-shard-row",
+        "stem_rule": stem_rule,
         "partition_rule": f"literal:{partition}",
         "upstream": upstream,
         "fetched_uri": fetched_uri,

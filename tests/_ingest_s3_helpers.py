@@ -7,6 +7,7 @@ under its own 400-line norm.
 
 from __future__ import annotations
 
+import hashlib
 import http.server
 import io
 import re
@@ -105,6 +106,9 @@ POINTS_PER_STEM = {STEMS[0]: 3, STEMS[1]: 2, STEMS[2]: 5}
 class _S3Handler(http.server.BaseHTTPRequestHandler):
     pages: ClassVar[dict[str | None, bytes]] = {}
     objects: ClassVar[dict[str, bytes]] = {}
+    requested: ClassVar[list[str]] = []
+    """Object paths (not listing requests) actually GETed — a resume test's way of
+    proving a kept file was NOT re-fetched, without a real network to eavesdrop on."""
 
     def log_message(self, *_args: object) -> None:  # quiet the test output
         pass
@@ -121,6 +125,7 @@ class _S3Handler(http.server.BaseHTTPRequestHandler):
                 return
             self._send(body, "application/xml")
             return
+        type(self).requested.append(parsed.path)
         body = type(self).objects.get(parsed.path)
         if body is None:
             self.send_response(404)
@@ -140,6 +145,7 @@ class _S3Handler(http.server.BaseHTTPRequestHandler):
 def s3_server():
     _S3Handler.pages = {}
     _S3Handler.objects = {}
+    _S3Handler.requested = []
     server = http.server.HTTPServer(("127.0.0.1", 0), _S3Handler)
     thread = threading.Thread(target=server.serve_forever, daemon=True)
     thread.start()
@@ -173,11 +179,19 @@ def _listing_xml(
     return "".join(parts).encode("utf-8")
 
 
-def build_corpus(s3_server: http.server.HTTPServer, *, extra_key: str | None = None) -> Corpus:
+def build_corpus(
+    s3_server: http.server.HTTPServer,
+    *,
+    extra_key: str | None = None,
+    real_md5_etags: bool = False,
+) -> Corpus:
     """Populate ``s3_server`` with a 5-stem corpus (s0..s2 annotated, s3/s4 not),
     4 objects each (image + 3 sidecars) plus one annotations parquet, paginated
     into exactly 2 ``ListObjectsV2`` pages. ``extra_key`` optionally injects one
-    more listed key with an unrecognised suffix (the "unknown key" test)."""
+    more listed key with an unrecognised suffix (the "unknown key" test).
+    ``real_md5_etags`` (D3d §4) makes each image's listed ETag its actual plain
+    32-hex md5 — the resume-integrity tests need a real one to check against,
+    every other test only needs a stable, distinguishable string."""
     port = s3_server.server_address[1]
     endpoint = f"http://127.0.0.1:{port}"
     entries: list[tuple[str, int, str]] = []
@@ -188,7 +202,8 @@ def build_corpus(s3_server: http.server.HTTPServer, *, extra_key: str | None = N
         payload = _png_bytes(color)
         image_sizes[stem] = len(payload)
         _S3Handler.objects[f"/{BUCKET}/{PREFIX}{stem}.png"] = payload
-        entries.append((f"{PREFIX}{stem}.png", len(payload), f"etag-{stem}-img"))
+        image_etag = hashlib.md5(payload).hexdigest() if real_md5_etags else f"etag-{stem}-img"
+        entries.append((f"{PREFIX}{stem}.png", len(payload), image_etag))
         for suffix, body in (
             ("_thumbnail.png", b"thumb"),
             ("_featurevector", b"feat"),

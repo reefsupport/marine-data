@@ -189,12 +189,16 @@ def stage_source(
     out_root: Path,
     profile: Profile,
     slice_cap_bytes: int | None = None,
+    workers: int | None = None,
 ) -> StagedVersion:
-    """``_PLANS``, then ``_PARQUET_PLANS``, then ``_S3_PLANS`` (D3a2); cap is S3-only."""
+    """``_PLANS``, then ``_PARQUET_PLANS``, then ``_S3_PLANS`` (D3a2); cap and
+    ``workers`` (D3d) are both S3-only, same refusal pattern for each."""
     from . import ingest_parquet, ingest_s3
 
     if slice_cap_bytes is not None and source.id not in ingest_s3._S3_PLANS:
         raise IngestError(f"{source.id}: --slice-cap-bytes only applies to an S3 source")
+    if workers is not None and source.id not in ingest_s3._S3_PLANS:
+        raise IngestError(f"{source.id}: --workers only applies to an S3 source")
     if (plan := _PLANS.get(source.id)) is not None:
         return _stage_with_plan(
             source, plan, cache_root=cache_root, out_root=out_root, profile=profile
@@ -206,7 +210,9 @@ def stage_source(
         )
     if (s3 := ingest_s3._S3_PLANS.get(source.id)) is None:
         raise IngestError(f"no ingest plan for {source.id!r}")
-    return ingest_s3.stage_s3_source(source, s3, cache_root, out_root, profile, slice_cap_bytes)
+    return ingest_s3.stage_s3_source(
+        source, s3, cache_root, out_root, profile, slice_cap_bytes, workers
+    )
 
 
 def _stage_with_plan(

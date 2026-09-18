@@ -323,6 +323,7 @@ def _call_finish_staging(tmp_path: Path, *, mask_count: int, geometries=None):
         upstream=[],
         ignore_index=None,
         fetched_uri="",
+        stem_rule="hf-struct-path-basename-else-split-shard-row",
         geometries=geometries,
     )
     return result, version_root

@@ -14,6 +14,7 @@ from _ingest_s3_helpers import (
     POINTS_PER_STEM,
     PREFIX,
     STEMS,
+    _S3Handler,
     build_corpus,
     make_profile,
     make_source,
@@ -205,3 +206,112 @@ def test_unknown_key_in_prefix_raises(s3_server):
     with pytest.raises(IngestError) as exc:
         group_by_stem(corpus.entries, corpus.plan)
     assert "badfile.xyz" in str(exc.value)
+
+
+# 15. slice-safe no-op (D3d fix B): same request -> no-op (no further network); a
+# different one (mismatched slice_cap_bytes) raises, naming both values and the tree.
+def test_slice_safe_noop_equal_then_mismatch_raises(s3_server, tmp_path):
+    corpus = build_corpus(s3_server)
+    digest = listing_digest(list(list_prefix(corpus.plan)))
+    source = _versioned_source(digest)
+    cache_root, out_root = tmp_path / "cache", tmp_path / "out"
+    cap = corpus.image_sizes[STEMS[0]]
+    first = stage_s3_source(source, corpus.plan, cache_root, out_root, make_profile(), cap)
+
+    s3_server.shutdown()  # both branches below must read only the staged SOURCE.json
+
+    same_cap = stage_s3_source(source, corpus.plan, cache_root, out_root, make_profile(), cap)
+    assert same_cap.manifest.root_digest == first.manifest.root_digest
+
+    with pytest.raises(IngestError) as exc:
+        stage_s3_source(source, corpus.plan, cache_root, out_root, make_profile(), None)
+    msg = str(exc.value)
+    assert str(cap) in msg
+    assert "None" in msg
+    assert str(first.root) in msg
+
+
+# 16. concurrency (D3d §C): workers=1 and workers=4 stage the same tree.
+def test_workers_1_and_4_give_same_root_digest(s3_server, tmp_path):
+    corpus = build_corpus(s3_server)
+    digest = listing_digest(list(list_prefix(corpus.plan)))
+    r1 = stage_s3_source(
+        _versioned_source(digest),
+        corpus.plan,
+        tmp_path / "c1",
+        tmp_path / "o1",
+        make_profile(),
+        None,
+        1,
+    )
+    r4 = stage_s3_source(
+        _versioned_source(digest),
+        corpus.plan,
+        tmp_path / "c2",
+        tmp_path / "o2",
+        make_profile(),
+        None,
+        4,
+    )
+    assert r1.manifest.root_digest == r4.manifest.root_digest
+    assert r1.manifest.files == r4.manifest.files
+
+
+# 17. resume (D3d §4): a correct final-named file is kept (never re-requested), a
+# wrong-size one is removed and re-fetched, a stray .part is removed — and the
+# resumed tree matches an uninterrupted run's root_digest exactly.
+def test_resume_kept_file_not_refetched_and_matches_uninterrupted(s3_server, tmp_path):
+    corpus = build_corpus(s3_server, real_md5_etags=True)
+    digest = listing_digest(list(list_prefix(corpus.plan)))
+    full = stage_s3_source(
+        _versioned_source(digest),
+        corpus.plan,
+        tmp_path / "cache-full",
+        tmp_path / "out-full",
+        make_profile(),
+    )
+
+    source_resume = _versioned_source(digest)
+    out_root = tmp_path / "out-resume"
+    version_root = out_root / "sources" / source_resume.id / source_resume.version
+    images_dir = version_root / "images" / "default"
+    images_dir.mkdir(parents=True)
+
+    kept_bytes = (full.root / "images" / "default" / f"{STEMS[0]}.png").read_bytes()
+    (images_dir / f"{STEMS[0]}.png").write_bytes(kept_bytes)  # correct — must be KEPT
+    (images_dir / f"{STEMS[1]}.png").write_bytes(b"short")  # wrong size — re-fetched
+    (images_dir / f"{STEMS[2]}.png.part").write_bytes(b"partial")  # stray — removed
+
+    before = len(_S3Handler.requested)
+    resumed = stage_s3_source(
+        source_resume, corpus.plan, tmp_path / "cache-resume", out_root, make_profile()
+    )
+    requested_during_resume = _S3Handler.requested[before:]
+
+    assert resumed.manifest.root_digest == full.manifest.root_digest
+    assert f"/{corpus.plan.bucket}/{PREFIX}{STEMS[0]}.png" not in requested_during_resume
+    assert not list(images_dir.glob("*.part"))
+
+
+# 18. a kept file whose content does not match a plain-md5 listing ETag raises,
+# naming the key and both digests (D3d §4).
+def test_resume_corrupted_kept_file_raises_naming_key_and_both_digests(s3_server, tmp_path):
+    corpus = build_corpus(s3_server, real_md5_etags=True)
+    digest = listing_digest(list(list_prefix(corpus.plan)))
+    source = _versioned_source(digest)
+    out_root = tmp_path / "out"
+    version_root = out_root / "sources" / source.id / source.version
+    images_dir = version_root / "images" / "default"
+    images_dir.mkdir(parents=True)
+
+    size = corpus.image_sizes[STEMS[0]]
+    corrupted = b"x" * size  # same SIZE as the real image, different content
+    images_dir.joinpath(f"{STEMS[0]}.png").write_bytes(corrupted)
+
+    with pytest.raises(IngestError) as exc:
+        stage_s3_source(source, corpus.plan, tmp_path / "cache", out_root, make_profile())
+    msg = str(exc.value)
+    real_bytes = _S3Handler.objects[f"/{corpus.plan.bucket}/{PREFIX}{STEMS[0]}.png"]
+    assert STEMS[0] in msg
+    assert hashlib.md5(corrupted).hexdigest() in msg
+    assert hashlib.md5(real_bytes).hexdigest() in msg

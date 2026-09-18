@@ -145,7 +145,9 @@ circular; this module is where both call sites (here, ``fetch.py``, and
 (D3a2 tidy)."""
 
 
-def download_digest(url: str, dest: str | Path, *, timeout: int = 60) -> str:
+def download_digest(
+    url: str, dest: str | Path, *, timeout: int = 60, extra: hashlib._Hash | None = None
+) -> str:
     """GET ``url``, streaming the body to ``dest`` and sha256-ing it in the SAME pass.
 
     Same request plumbing as :func:`marinedata.fetch.get_stream` — a ``User-Agent``
@@ -157,6 +159,11 @@ def download_digest(url: str, dest: str | Path, *, timeout: int = 60) -> str:
     into place only once the whole body has landed, so a failed or interrupted transfer
     never leaves a partial file at ``dest`` — and the ``.part`` file itself is removed
     on any error rather than left behind.
+
+    ``extra`` (2026-09-18-D3d §4), when given, is fed every chunk alongside the sha256
+    — the S3 path's way of getting a second digest (an md5 to check against a listing
+    ETag) without a second read of a multi-hundred-MB file. The caller owns ``extra``
+    and reads its digest back once this returns.
     """
     dest = Path(dest)
     dest.parent.mkdir(parents=True, exist_ok=True)
@@ -171,6 +178,8 @@ def download_digest(url: str, dest: str | Path, *, timeout: int = 60) -> str:
             while chunk := response.read(CHUNK_SIZE):
                 handle.write(chunk)
                 digest.update(chunk)
+                if extra is not None:
+                    extra.update(chunk)
     except Exception:
         part.unlink(missing_ok=True)
         raise

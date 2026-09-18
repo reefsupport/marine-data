@@ -287,6 +287,7 @@ def _stage_with_parquet_plan(
         upstream=upstream,
         ignore_index=plan.ignore_index,
         fetched_uri=f"https://huggingface.co/datasets/{hf_id}" if hf_id else "",
+        stem_rule="hf-struct-path-basename-else-split-shard-row",
     )
 
 
