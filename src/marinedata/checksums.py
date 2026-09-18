@@ -135,14 +135,14 @@ def copy_digest(src: Path, dest: Path) -> str:
     return digest.hexdigest()
 
 
-_DOWNLOAD_USER_AGENT = "marinedata/0.1 (+https://github.com/reefsupport/marine-data)"
-"""Matches :data:`marinedata.fetch.USER_AGENT` by value. :mod:`marinedata.fetch`
-already imports :data:`CHUNK_SIZE` from this module, so the reverse import — this
-module calling :func:`marinedata.fetch.get_stream` to avoid a second HTTP stack — would
-be circular. This module is where both call sites can reach a shared opener without
-that cycle (:func:`download_digest` lives here now); the two ``User-Agent`` literals
-still have to be kept in sync by hand until ``fetch.py`` is changed to import this one
-instead of defining its own, which is out of this change's scope."""
+DOWNLOAD_USER_AGENT = "marinedata/0.1 (+https://github.com/reefsupport/marine-data)"
+"""The one ``User-Agent`` literal for this package. :mod:`marinedata.fetch` already
+imports :data:`CHUNK_SIZE` from this module, so the reverse import — this module
+calling :func:`marinedata.fetch.get_stream` to avoid a second HTTP stack — would be
+circular; this module is where both call sites (here, ``fetch.py``, and
+:mod:`marinedata.s3_listing`, D3a2) reach a shared opener without that cycle.
+``fetch.py`` imports this name as ``USER_AGENT`` rather than holding a second literal
+(D3a2 tidy)."""
 
 
 def download_digest(url: str, dest: str | Path, *, timeout: int = 60) -> str:
@@ -162,7 +162,7 @@ def download_digest(url: str, dest: str | Path, *, timeout: int = 60) -> str:
     dest.parent.mkdir(parents=True, exist_ok=True)
     part = dest.with_suffix(dest.suffix + ".part")
     digest = hashlib.sha256()
-    request = urllib.request.Request(url, headers={"User-Agent": _DOWNLOAD_USER_AGENT})
+    request = urllib.request.Request(url, headers={"User-Agent": DOWNLOAD_USER_AGENT})
     try:
         with (
             urllib.request.urlopen(request, timeout=timeout) as response,

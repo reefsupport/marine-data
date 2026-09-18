@@ -123,9 +123,10 @@ def _cmd_ingest(args: argparse.Namespace) -> int:
     reg = Registry.load()
     source = reg.source(args.source_id)
     profile = reg.profile(args.profile)
+    out, cap = Path(args.out), args.slice_cap_bytes
     try:
         result = stage_source(
-            source, cache_root=cache_root(), out_root=Path(args.out), profile=profile
+            source, cache_root=cache_root(), out_root=out, profile=profile, slice_cap_bytes=cap
         )
     except (IngestError, LicenceViolation) as exc:
         print(f"ingest failed: {exc}", file=sys.stderr)
@@ -314,6 +315,9 @@ def build_parser() -> argparse.ArgumentParser:
     p_ingest.add_argument("source_id")
     p_ingest.add_argument("--out", required=True, help="Root directory to stage into")
     p_ingest.add_argument("--profile", required=True, help="Release profile (see profiles.yaml)")
+    p_ingest.add_argument(
+        "--slice-cap-bytes", type=int, default=None, help="S3 sources only: cap staged bytes"
+    )
     p_ingest.set_defaults(func=_cmd_ingest)
 
     p_verify = sub.add_parser("verify", help="Check declared layouts against real fetched samples")

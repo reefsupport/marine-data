@@ -34,6 +34,12 @@ from marinedata.models import (
     Verification,
 )
 
+# D3a2: shares the ``s3_server`` fixture with tests/test_ingest_s3.py without an
+# explicit import (which ruff flags as F811 — a parameter of the same name
+# shadowing it in every test function). This is pytest's own sanctioned
+# mechanism for cross-module fixtures.
+pytest_plugins = ["_ingest_s3_helpers"]
+
 
 @pytest.fixture(scope="session")
 def registry() -> Registry:

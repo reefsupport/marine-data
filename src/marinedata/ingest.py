@@ -183,25 +183,30 @@ _PLANS: Mapping[str, ArchivePlan] = MappingProxyType(
 
 
 def stage_source(
-    source: Source, *, cache_root: Path, out_root: Path, profile: Profile
+    source: Source,
+    *,
+    cache_root: Path,
+    out_root: Path,
+    profile: Profile,
+    slice_cap_bytes: int | None = None,
 ) -> StagedVersion:
-    """``_PLANS`` (archive) first, else ``_PARQUET_PLANS`` (D2a HF-parquet), else
-    :class:`IngestError`. Gate check happens once, inside whichever stage fn runs."""
-    plan = _PLANS.get(source.id)
-    if plan is not None:
+    """``_PLANS``, then ``_PARQUET_PLANS``, then ``_S3_PLANS`` (D3a2); cap is S3-only."""
+    from . import ingest_parquet, ingest_s3
+
+    if slice_cap_bytes is not None and source.id not in ingest_s3._S3_PLANS:
+        raise IngestError(f"{source.id}: --slice-cap-bytes only applies to an S3 source")
+    if (plan := _PLANS.get(source.id)) is not None:
         return _stage_with_plan(
             source, plan, cache_root=cache_root, out_root=out_root, profile=profile
         )
-
-    from . import ingest_parquet
-
-    parquet_plan = ingest_parquet._PARQUET_PLANS.get(source.id)
-    if parquet_plan is None:
+    if (parquet_plan := ingest_parquet._PARQUET_PLANS.get(source.id)) is not None:
+        shards = ingest_parquet.fetch_parquet_shards(source, parquet_plan, cache_root)
+        return ingest_parquet._stage_with_parquet_plan(
+            source, parquet_plan, shards, out_root=out_root, profile=profile
+        )
+    if (s3 := ingest_s3._S3_PLANS.get(source.id)) is None:
         raise IngestError(f"no ingest plan for {source.id!r}")
-    shards = ingest_parquet.fetch_parquet_shards(source, parquet_plan, cache_root)
-    return ingest_parquet._stage_with_parquet_plan(
-        source, parquet_plan, shards, out_root=out_root, profile=profile
-    )
+    return ingest_s3.stage_s3_source(source, s3, cache_root, out_root, profile, slice_cap_bytes)
 
 
 def _stage_with_plan(

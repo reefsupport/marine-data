@@ -37,6 +37,7 @@ def _finish_staging(
     ignore_index: int | None,
     fetched_uri: str,
     geometries: Sequence[Mapping[str, object]] | None = None,
+    extra_ingest: Mapping[str, object] | None = None,
 ) -> StagedVersion:
     """Write ``metadata.parquet``, the three metadata files, then the checksum
     manifest last — the parquet-path equivalent of D1 §7 f-g.
@@ -45,6 +46,11 @@ def _finish_staging(
     geometry list verbatim instead of the mask-derived one built here by default.
     ``None`` — every existing caller — reproduces today's behaviour byte-for-byte,
     including that ``mask_count == 0`` still yields an empty geometries list.
+
+    ``extra_ingest`` (D3a2) merges additional keys into ``SOURCE.json``'s
+    ``_ingest`` block — the S3 path's ``listing_digest``/``slice_rule``/etc. — none
+    of which may be timestamp-shaped (``manifests._assert_no_timestamp_keys``
+    still runs over the result unchanged).
     """
     metadata_path = version_root / "metadata.parquet"
     recorded[metadata_path.relative_to(version_root).as_posix()] = write_metadata_table(
@@ -64,6 +70,8 @@ def _finish_staging(
         # False provenance otherwise: a byte-for-byte copy path (or a points-only
         # stage with no masks at all) never ran pillow over anything.
         ingest_meta["mask_encoder"] = "pillow/11.0.0"
+    if extra_ingest:
+        ingest_meta.update(extra_ingest)
     source_json_path = version_root / "SOURCE.json"
     recorded[source_json_path.relative_to(version_root).as_posix()] = write_source_json(
         source_json_path, source, ingest_meta

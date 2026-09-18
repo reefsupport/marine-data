@@ -31,13 +31,15 @@ from datetime import datetime, timezone
 from pathlib import Path
 from types import MappingProxyType
 
-from .checksums import CHUNK_SIZE, stream_into
+from .checksums import CHUNK_SIZE, DOWNLOAD_USER_AGENT, stream_into
 from .enums import AccessMethod
 from .models import Source
 
 DATASETS_SERVER = "https://datasets-server.huggingface.co"
 DEFAULT_LIMIT = 100
-USER_AGENT = "marinedata/0.1 (+https://github.com/reefsupport/marine-data)"
+USER_AGENT = DOWNLOAD_USER_AGENT
+"""Alias, not a second literal (D3a2 tidy) — see :data:`marinedata.checksums.
+DOWNLOAD_USER_AGENT`."""
 
 
 class FetchError(Exception):
