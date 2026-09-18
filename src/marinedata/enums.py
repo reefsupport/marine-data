@@ -52,6 +52,24 @@ class LegalBasis(str, Enum):
     """Unresolved. Never usable — present so gaps are explicit rather than absent."""
 
 
+class Redistribution(str, Enum):
+    """Whether we may redistribute a verbatim copy of this source. Recorded per source,
+    surfaced in lineage.
+
+    Orthogonal to :class:`LegalBasis` and to ``LicenceFlags.no_derivatives`` — a source
+    can permit reading data in place while forbidding redistribution, or permit
+    redistributing an unmodified copy while forbidding derivative works from it. This
+    field is a recorded position, never a storage or mirror filter.
+    """
+
+    OK = "ok"
+    """The licence or an explicit grant permits redistributing an unmodified copy."""
+    PROHIBITED = "prohibited"
+    """Redistribution is barred outright — provenance-defective or contract-blocked."""
+    UNKNOWN = "unknown"
+    """Unresolved, or the basis does not establish a redistribution right. Default."""
+
+
 class Capability(str, Enum):
     """What a source is *useful for*. The primary axis most users will query on."""
 

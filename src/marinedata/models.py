@@ -18,6 +18,7 @@ from .enums import (
     LegalBasis,
     Modality,
     Provenance,
+    Redistribution,
     Region,
     Tier,
 )
@@ -243,6 +244,9 @@ class Source(_Frozen):
     licence: Licence
     verification: Verification
     legal_basis: LegalBasis
+    redistribution: Redistribution = Redistribution.UNKNOWN
+    """Recorded position on redistributing a verbatim copy. Never a storage filter —
+    see :class:`~marinedata.enums.Redistribution`."""
     provenance: Provenance
 
     access: Access

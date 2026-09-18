@@ -11,7 +11,8 @@ from __future__ import annotations
 import pytest
 
 from marinedata import Registry
-from marinedata.enums import LegalBasis, Tier
+from marinedata.enums import LegalBasis, Redistribution, Tier
+from marinedata.registry import _default_root, _read_yaml
 
 
 @pytest.fixture(scope="module")
@@ -48,6 +49,41 @@ def test_tdm_sources_declare_tdm_basis(registry: Registry) -> None:
         if src.licence.tier is Tier.TDM_ONLY:
             assert src.legal_basis in (LegalBasis.TDM, LegalBasis.UNKNOWN), (
                 f"{src.id}: tier T4_TDM_ONLY but legal_basis={src.legal_basis.value}"
+            )
+
+
+def test_every_source_declares_redistribution_explicitly(registry: Registry) -> None:
+    """The default exists so pydantic never crashes — the raw YAML must not rely on it.
+
+    A silently-defaulted ``unknown`` is indistinguishable from a reviewed ``unknown``,
+    which defeats the point of recording a position at all.
+    """
+    base = _default_root() / "sources"
+    for path in sorted(base.rglob("*.yaml")):
+        for entry in _read_yaml(path).get("sources", []):
+            assert "redistribution" in entry, (
+                f"{path}: source '{entry.get('id')}' has no explicit redistribution key"
+            )
+
+
+def test_prohibited_redistribution_matches_prohibited_tier(registry: Registry) -> None:
+    """`redistribution: prohibited` and tier `TX_PROHIBITED` must imply each other."""
+    for src in registry:
+        is_prohibited_tier = src.licence.tier is Tier.PROHIBITED
+        is_prohibited_redist = src.redistribution is Redistribution.PROHIBITED
+        assert is_prohibited_redist == is_prohibited_tier, (
+            f"{src.id}: tier={src.licence.tier.value} "
+            f"redistribution={src.redistribution.value} — must match exactly"
+        )
+
+
+def test_tdm_or_unknown_basis_never_redistributes_ok(registry: Registry) -> None:
+    """A source with no established legal basis must never claim a redistribution right."""
+    for src in registry:
+        if src.licence.tier is Tier.TDM_ONLY or src.legal_basis is LegalBasis.UNKNOWN:
+            assert src.redistribution is not Redistribution.OK, (
+                f"{src.id}: tier={src.licence.tier.value} legal_basis={src.legal_basis.value} "
+                f"but redistribution=ok"
             )
 
 

@@ -14,6 +14,7 @@ sources:
       label and a harmonised ReefNet label.
     licence: CC-BY-4.0
     legal_basis: licence
+    redistribution: ok
     provenance: public
     verification:
       verified_on: 2026-08-17
@@ -56,6 +57,7 @@ sources:
     description: Coral species image classification set derived from the ReefNet corpus.
     licence: CC-BY-4.0
     legal_basis: licence
+    redistribution: ok
     provenance: public
     verification:
       verified_on: 2026-08-17
@@ -101,6 +103,7 @@ sources:
       superpixel line of work.
     licence: CC-BY-4.0
     legal_basis: licence
+    redistribution: ok
     provenance: public
     verification:
       verified_on: 2026-08-17
@@ -131,6 +134,7 @@ sources:
       largest openly available reef bioacoustics corpus we have found.
     licence: CC-BY-4.0
     legal_basis: licence
+    redistribution: ok
     provenance: public
     verification:
       verified_on: 2026-08-17
@@ -169,6 +173,7 @@ sources:
     description: IFCB plankton imagery with expert class labels - the canonical plankton benchmark.
     licence: MIT
     legal_basis: licence
+    redistribution: ok
     provenance: public
     verification:
       verified_on: 2026-08-17
@@ -197,6 +202,7 @@ sources:
     description: Paired/labelled underwater imagery for enhancement and restoration work.
     licence: CC-BY-4.0
     legal_basis: licence
+    redistribution: ok
     provenance: public
     verification:
       verified_on: 2026-08-17
@@ -228,6 +234,7 @@ sources:
       satellite reef set published with ground-truth labels rather than as a product.
     licence: CC-BY-4.0
     legal_basis: licence
+    redistribution: ok
     provenance: public
     verification:
       verified_on: 2026-08-17

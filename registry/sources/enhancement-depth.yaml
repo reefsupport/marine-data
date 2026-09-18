@@ -12,6 +12,7 @@ sources:
     description: Reference-paired real underwater images — the standard enhancement benchmark.
     licence: PROVENANCE-DEFECTIVE
     legal_basis: unknown
+    redistribution: prohibited
     provenance: public
     verification:
       verified_on: 2026-08-29
@@ -73,6 +74,7 @@ sources:
     description: Stereo underwater images with distance information and colour charts.
     licence: CC-BY-NC-SA-4.0
     legal_basis: licence
+    redistribution: ok
     provenance: public
     verification:
       verified_on: 2026-08-29
@@ -107,6 +109,7 @@ sources:
     description: Physically-rendered synthetic sequences with depth, normals, poses and IMU.
     licence: CC-BY-4.0
     legal_basis: licence
+    redistribution: ok
     provenance: public
     verification:
       verified_on: 2026-08-17
@@ -132,6 +135,7 @@ sources:
     description: Forward-looking underwater depth ground truth with IMU and poses.
     licence: CC-BY-NC-SA-4.0
     legal_basis: licence
+    redistribution: ok
     provenance: public
     verification:
       verified_on: 2026-08-17
@@ -152,6 +156,7 @@ sources:
     description: 8-class underwater semantic segmentation — fish, reef, diver, wrecks, seafloor.
     licence: MIT
     legal_basis: licence
+    redistribution: ok
     provenance: public
     verification:
       verified_on: 2026-08-29

@@ -14,6 +14,7 @@ sources:
       measurements — the most relevant public asset for length-based biomass.
     licence: CC-BY-3.0-AU
     legal_basis: licence
+    redistribution: ok
     provenance: public
     verification:
       verified_on: 2026-08-29
@@ -60,6 +61,7 @@ sources:
     description: Habitat-diverse fish imagery from turbid Australian waters, with segmentation and counts.
     licence: CC-BY-4.0
     legal_basis: licence
+    redistribution: ok
     provenance: public
     verification:
       verified_on: 2026-08-29
@@ -146,6 +148,7 @@ sources:
     description: Reef fish detection from Gulf of Mexico BRUV footage, 130 species.
     licence: NO-LICENCE-STATED
     legal_basis: unknown
+    redistribution: unknown
     provenance: public
     verification:
       verified_on: 2026-08-29
@@ -187,6 +190,7 @@ sources:
     description: Largest species-labelled fish taxonomy benchmark — 17,357 species with traits.
     licence: NO-LICENCE-STATED
     legal_basis: unknown
+    redistribution: unknown
     provenance: public
     verification:
       verified_on: 2026-08-29
@@ -238,6 +242,7 @@ sources:
       the SU-T tracker (AAAI 2026 Oral).
     licence: Apache-2.0
     legal_basis: licence
+    redistribution: ok
     provenance: public
     verification:
       verified_on: 2026-08-29
@@ -275,6 +280,7 @@ sources:
     description: First public deep-sea multi-object-tracking benchmark.
     licence: CC-BY-SA-4.0
     legal_basis: licence
+    redistribution: ok
     provenance: public
     verification:
       verified_on: 2026-08-17
@@ -308,6 +314,7 @@ sources:
     description: Large deep-sea annotation ecosystem with a mature API and taxonomy backbone.
     licence: PER-SOURCE-VARIES
     legal_basis: unknown
+    redistribution: unknown
     provenance: public
     verification:
       verified_on: 2026-08-29
@@ -360,6 +367,7 @@ sources:
     description: Grayscale stationary-camera fish detection from Hawaiian BFISH surveys.
     licence: US-GOV-PD
     legal_basis: licence
+    redistribution: ok
     provenance: public
     verification:
       verified_on: 2026-08-17
@@ -393,6 +401,7 @@ sources:
     description: Canonical NOAA benchmark for fish detection in cluttered rocky habitat.
     licence: US-GOV-PD
     legal_basis: licence
+    redistribution: ok
     provenance: public
     verification:
       verified_on: 2026-08-29
@@ -449,6 +458,7 @@ sources:
     description: The only major temperate/brackish underwater detection set — fish and crustaceans.
     licence: CC-BY-SA-4.0
     legal_basis: licence
+    redistribution: ok
     provenance: public
     verification:
       verified_on: 2026-08-29
@@ -488,6 +498,7 @@ sources:
     description: Classic imbalanced live-reef-fish recognition set with segmentation masks.
     licence: NO-LICENCE-STATED
     legal_basis: unknown
+    redistribution: unknown
     provenance: public
     verification:
       verified_on: 2026-08-29
@@ -542,6 +553,7 @@ sources:
     description: Multi-class urchin detection — relevant to herbivory and reef-state indicators.
     licence: CC-BY-4.0
     legal_basis: licence
+    redistribution: ok
     provenance: public
     verification:
       verified_on: 2026-08-29

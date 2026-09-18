@@ -10,6 +10,7 @@ sources:
       frames, camera poses and COLMAP reconstructions. Georeferenced and scaled.
     licence: CC-BY-4.0
     legal_basis: licence
+    redistribution: ok
     provenance: public
     verification:
       verified_on: 2026-08-17
@@ -71,6 +72,7 @@ sources:
       real-time semantic 3D reef mapping.
     licence: CC-BY-4.0
     legal_basis: licence
+    redistribution: ok
     provenance: public
     verification:
       verified_on: 2026-08-17
@@ -107,6 +109,7 @@ sources:
       paired adult and juvenile coral annotations.
     licence: US-GOV-PD
     legal_basis: licence
+    redistribution: ok
     provenance: public
     verification:
       verified_on: 2026-08-17
@@ -135,6 +138,7 @@ sources:
     description: Synthetic underwater image/depth/text triplets for monocular depth training.
     licence: MIT
     legal_basis: licence
+    redistribution: ok
     provenance: public
     verification:
       verified_on: 2026-08-17

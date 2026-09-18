@@ -10,6 +10,7 @@ sources:
       Pretrained SegFormer and DINOv2/DPT checkpoints are published alongside.
     licence: Apache-2.0
     legal_basis: licence
+    redistribution: ok
     provenance: public
     verification:
       verified_on: 2026-08-18
@@ -93,6 +94,7 @@ sources:
       pretraining on this substantially outperforms ImageNet on small regional sets.
     licence: CC-BY-4.0
     legal_basis: licence
+    redistribution: ok
     provenance: public
     verification:
       verified_on: 2026-08-17
@@ -149,6 +151,7 @@ sources:
       cross-source generalisation testbed available.
     licence: CC-BY-4.0
     legal_basis: licence
+    redistribution: ok
     provenance: public
     verification:
       verified_on: 2026-08-17
@@ -213,6 +216,7 @@ sources:
       to Caribbean work despite its modest size.
     licence: CC-BY-4.0
     legal_basis: licence
+    redistribution: ok
     provenance: public
     verification:
       verified_on: 2026-08-17
@@ -285,6 +289,7 @@ sources:
     description: 17-year georeferenced photoquadrat time series from the Great Barrier Reef.
     licence: CC-BY-4.0
     legal_basis: licence
+    redistribution: ok
     provenance: public
     verification:
       verified_on: 2026-08-17
@@ -344,6 +349,7 @@ sources:
     description: Large-scale visual question answering dataset for coral reef understanding.
     licence: CC-BY-4.0
     legal_basis: licence
+    redistribution: ok
     provenance: public
     verification:
       verified_on: 2026-08-17
@@ -391,6 +397,7 @@ sources:
     description: Purpose-built bleached vs healthy classification set from NOAA Pacific Islands.
     licence: US-GOV-PD
     legal_basis: licence
+    redistribution: ok
     provenance: public
     verification:
       verified_on: 2026-08-17
@@ -436,6 +443,7 @@ sources:
       16.5M point annotations across ~330 sources.
     licence: NO-LICENCE-STATED
     legal_basis: tdm
+    redistribution: unknown
     provenance: public
     verification:
       verified_on: 2026-08-17
@@ -486,6 +494,7 @@ sources:
       annotated with multilabel and instance segmentation across 38 classes.
     licence: CC-BY-NC-ND-4.0
     legal_basis: licence
+    redistribution: ok
     provenance: public
     verification:
       verified_on: 2026-08-17
@@ -521,6 +530,7 @@ sources:
       that harmonises partner label schemes.
     licence: CC-BY-NC-SA-4.0
     legal_basis: licence
+    redistribution: ok
     provenance: public
     verification:
       verified_on: 2026-08-17
@@ -584,6 +594,7 @@ sources:
       the largest marine instance-segmentation corpus in existence.
     licence: PROVENANCE-DEFECTIVE
     legal_basis: unknown
+    redistribution: prohibited
     provenance: public
     verification:
       verified_on: 2026-08-17

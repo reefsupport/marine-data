@@ -13,6 +13,7 @@ sources:
       (241), Tetes Providencia (105).
     licence: PROPRIETARY-OWN
     legal_basis: own
+    redistribution: ok
     provenance: own
     verification:
       verified_on: 2026-08-17
@@ -88,6 +89,7 @@ sources:
       are not.
     licence: NO-LICENCE-STATED
     legal_basis: unknown
+    redistribution: unknown
     provenance: partner
     verification:
       verified_on: 2026-08-17
@@ -153,6 +155,7 @@ sources:
       usable for a multi-task condition head.
     licence: PROPRIETARY-OWN
     legal_basis: own
+    redistribution: ok
     provenance: own
     verification:
       verified_on: 2026-08-17
@@ -209,6 +212,7 @@ sources:
     description: Partner point-labelled reef imagery from Reefolution, Kenya.
     licence: NO-LICENCE-STATED
     legal_basis: unknown
+    redistribution: unknown
     provenance: partner
     verification:
       verified_on: 2026-08-17
@@ -254,6 +258,7 @@ sources:
     description: Partner point-labelled reef imagery.
     licence: NO-LICENCE-STATED
     legal_basis: unknown
+    redistribution: unknown
     provenance: partner
     verification:
       verified_on: 2026-08-17
@@ -297,6 +302,7 @@ sources:
       ground truth. Useful for weak supervision and pretraining only.
     licence: CC-BY-NC-SA-4.0
     legal_basis: licence
+    redistribution: ok
     provenance: auto
     verification:
       verified_on: 2026-08-17

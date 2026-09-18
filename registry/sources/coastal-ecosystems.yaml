@@ -14,6 +14,7 @@ sources:
       ALOS/JERS SAR classification.
     licence: CC-BY-4.0
     legal_basis: licence
+    redistribution: ok
     provenance: public
     verification:
       verified_on: 2026-08-17
@@ -39,6 +40,7 @@ sources:
     description: First high-resolution global seagrass extent map from Sentinel-2 deep learning.
     licence: CC-BY-4.0
     legal_basis: licence
+    redistribution: ok
     provenance: public
     verification:
       verified_on: 2026-08-17
@@ -64,6 +66,7 @@ sources:
       satellite basemap for reef extent.
     licence: CC-BY-4.0
     legal_basis: licence
+    redistribution: ok
     provenance: public
     verification:
       verified_on: 2026-08-17
@@ -93,6 +96,7 @@ sources:
       Florida, Puerto Rico and the US Virgin Islands.
     licence: US-GOV-PD
     legal_basis: licence
+    redistribution: ok
     provenance: public
     verification:
       verified_on: 2026-08-17
@@ -117,6 +121,7 @@ sources:
     description: Global bathymetry and topography at 15 arc-seconds.
     licence: CC0-1.0
     legal_basis: licence
+    redistribution: ok
     provenance: public
     verification:
       verified_on: 2026-08-17
@@ -141,6 +146,7 @@ sources:
     description: Photon-classified nearshore bathymetry — reference depths and SDB training labels.
     licence: US-GOV-PD
     legal_basis: licence
+    redistribution: ok
     provenance: public
     verification:
       verified_on: 2026-08-17
@@ -160,6 +166,7 @@ sources:
     description: Underwater debris and marine-life instance segmentation, 40 categories.
     licence: CC-BY-4.0
     legal_basis: licence
+    redistribution: ok
     provenance: public
     verification:
       verified_on: 2026-08-17
@@ -213,6 +220,7 @@ sources:
     description: Pixel-level spectral labels for floating debris detection from Sentinel-2.
     licence: CC-BY-4.0
     legal_basis: licence
+    redistribution: ok
     provenance: public
     verification:
       verified_on: 2026-08-17
@@ -237,6 +245,7 @@ sources:
     description: Chlorophyll-a, turbidity and water-quality retrievals — reef stress context.
     licence: CC-BY-4.0
     legal_basis: licence
+    redistribution: ok
     provenance: public
     verification:
       verified_on: 2026-08-17
@@ -257,6 +266,7 @@ sources:
     description: ~200M marine species occurrence records with taxonomy and coordinates.
     licence: CC-BY-4.0
     legal_basis: licence
+    redistribution: ok
     provenance: public
     verification:
       verified_on: 2026-08-17
