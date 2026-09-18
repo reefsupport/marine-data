@@ -35,6 +35,7 @@ from .scan import (
     scan,
 )
 from .schema import Axis
+from .splitmap import resolve_splits
 from .task import TaskKind
 
 SUPERVISED_DEFAULT_RATIOS = {"train": 0.7, "val": 0.15, "test": 0.15}
@@ -111,6 +112,7 @@ class Dataset:
         ratios: dict[SplitName, float] | None = None,
         seed: int = 0,
         tolerance: float | None = 0.10,
+        split_map: str | Path | None = None,
     ) -> Dataset:
         """Assign splits. Returns self so it chains.
 
@@ -126,6 +128,11 @@ class Dataset:
                 stable when new samples arrive in an existing group.
             tolerance: raise if any achieved split deviates from its requested ratio by
                 more than this. Set ``None`` to accept whatever the group sizes allow.
+            split_map: path to a ``SPLIT_MAP.json`` to read and extend. Omitted (the
+                default), splits are computed fresh every call, as before. Given, a
+                group already recorded there keeps its split forever — see
+                :mod:`marinedata.splitmap` — shared by every task that passes the same
+                path, since the map is keyed by group only.
         """
         if ratios is None:
             ratios = (
@@ -146,7 +153,10 @@ class Dataset:
         # Shared with the streaming path so the two cannot drift. A split that differed
         # between them would be near-impossible to notice and would invalidate every
         # comparison between runs.
-        assignment = assign_splits(counts, ratios, seed=seed)
+        if split_map is not None:
+            assignment = resolve_splits(split_map, counts, ratios, seed=seed, by=by)
+        else:
+            assignment = assign_splits(counts, ratios, seed=seed)
 
         splits: dict[SplitName, list[int]] = {name: [] for name in ratios}
         for position, key in enumerate(keys):
@@ -361,6 +371,7 @@ class DatasetBuilder:
         seed: int = 0,
         tolerance: float | None = 0.10,
         min_count: int = 1,
+        split_map: str | Path | None = None,
     ) -> StreamingDataset:
         """Plan a corpus in constant memory, then stream it.
 
@@ -371,6 +382,9 @@ class DatasetBuilder:
         Use this when the corpus exceeds ~1M samples; :meth:`build` stays the simpler
         choice below that. Defaults to 70/15/15 for a supervised (or task-less) corpus,
         95/5 for a self-supervised one — see ``SELF_SUPERVISED_DEFAULT_RATIOS``.
+
+        ``split_map``: as in :meth:`Dataset.split` — a path to a ``SPLIT_MAP.json`` to
+        read and extend, shared with the eager path and every task that passes it.
         """
         if ratios is None:
             ratios = (
@@ -385,7 +399,10 @@ class DatasetBuilder:
         if not corpus.total:
             raise ValueError("No samples found. Check `roots` point at fetched data.")
 
-        assignment = assign_splits(dict(corpus.groups), ratios, seed=seed)
+        if split_map is not None:
+            assignment = resolve_splits(split_map, dict(corpus.groups), ratios, seed=seed, by=by)
+        else:
+            assignment = assign_splits(dict(corpus.groups), ratios, seed=seed)
 
         achieved: dict[SplitName, int] = {}
         for key, count in corpus.groups.items():

@@ -110,6 +110,8 @@ def assign_splits(
     ratios: dict[SplitName, float],
     *,
     seed: int = 0,
+    total: int | None = None,
+    filled: dict[SplitName, int] | None = None,
 ) -> dict[str, SplitName]:
     """Pack whole groups into splits, weighted by sample count.
 
@@ -123,14 +125,20 @@ def assign_splits(
     Groups are never divided. That is the entire point of grouping: consecutive transect
     frames overlap heavily, so splitting one across train and test leaks near-duplicates
     and inflates every metric.
+
+    ``total`` and ``filled`` let a caller assign only the groups *not yet* pinned by a
+    persisted map, against the quota the pinned groups already used, without resorting
+    them: pass the corpus-wide total and each split's already-filled count, and only the
+    still-unassigned ``counts`` here. Omit both for the original, whole-corpus behaviour.
     """
     ordered = sorted(
         counts,
         key=lambda k: (-counts[k], hashlib.sha256(f"{seed}:{k}".encode()).hexdigest()),
     )
-    total = sum(counts.values())
+    if total is None:
+        total = sum(counts.values())
     targets = {name: fraction * total for name, fraction in ratios.items()}
-    filled: dict[str, int] = dict.fromkeys(ratios, 0)
+    filled = {name: (filled or {}).get(name, 0) for name in ratios}
 
     assignment: dict[str, SplitName] = {}
     for key in ordered:
