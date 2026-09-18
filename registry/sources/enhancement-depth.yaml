@@ -160,9 +160,9 @@ sources:
     provenance: public
     checksums:
       version: "2020"
-      root_digest: 596939c79961be58d57c8250e3c97e4654575667b38aabd60d28c6841d963a1a
+      root_digest: f7a9ea260f37ead52c20990bfc88b11c10b20dce96faa84a8f477e6f259aba95
       files: 3200
-      size_bytes: 178203960
+      size_bytes: 178204379
     verification:
       verified_on: 2026-08-29
       verified_by: >
