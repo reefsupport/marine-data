@@ -44,12 +44,14 @@ schemas:
   - id: mermaid-attributes
     name: MERMAID benthic attribute + growth form
     description: >
-      MERMAID's own point-label vocabulary (``benthic_attribute_name`` crossed with
-      ``growth_form_name``) — 259 distinct attribute names in the live corpus (D3a2).
-      OPEN, not enumerated here: the previous ``coralnet-labelset`` mapping this source
-      used to declare only covers 24.9% of rows and is wrong for the rest (D3a2 brief
-      §5). Registered so ``mermaid-aws`` records the vocabulary it actually speaks
-      instead of a mismatched borrowed one; a real crosswalk is future work.
+      MERMAID's own point-label vocabulary: ``benthic_attribute_name`` — 259 distinct
+      names measured in the live corpus (D3a2) — plus a separate nullable
+      ``growth_form_name`` carried natively on ~11% of rows. OPEN and still not
+      enumerated here, because partners add attributes as they annotate; the closed
+      artefact is the crosswalk. ``mermaid-attributes`` (X1) maps every one of those 259
+      names onto rs-benthic-v1, 99.7% of rows, replacing the borrowed
+      ``coralnet-labelset`` mapping that reached 24.9%. The ``form`` half of this
+      vocabulary is deliberately unmapped — see the crosswalk header.
     axes: [taxon, form]
 
   - id: deolho-21

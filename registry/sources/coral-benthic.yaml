@@ -581,7 +581,7 @@ sources:
         `_featurevector` blobs are NOT yet exposed by any layout and would need a
         paired-sidecar reader.
       schema_id: mermaid-attributes
-      crosswalk_id: null
+      crosswalk_id: mermaid-attributes
     notes: >
       NOT CoralNet data. Verified 2026-08-17 by listing the bucket: it contains exactly
       one top-level prefix, `mermaid/`, and no CoralNet prefix. CoralNet is a named
@@ -601,6 +601,17 @@ sources:
       NC-SA still blocks commercial training. The LabelMapping *crosswalk* — the fact that
       attribute X corresponds to CATAMI Y — is factual information, not copyrightable
       expression, and can inform our ontology without using the imagery.
+
+      LABELS: the loader declares `mermaid-attributes`, which is now a real crosswalk
+      covering all 259 attribute names measured in the corpus (99.7% of rows map; only
+      `Other` and `Unknown` are unmappable). It replaces the borrowed `coralnet-labelset`
+      mapping, which matched 6 labels = 24.9% of rows. Group membership was taken from
+      WoRMS, not from the names, because the vocabulary contains real homonyms.
+
+      The `form` column stays NATIVE. MERMAID's growth-form values are a separate field,
+      not part of the attribute string, and three of the eleven observed values
+      (Columnar, Corymbose, Arborescent) have no node on the canonical `form` axis, so a
+      form crosswalk cannot be authored honestly without extending rs-benthic-v1 first.
     tags: [crosswalk, noncommercial]
 
   - id: marineinst20m
