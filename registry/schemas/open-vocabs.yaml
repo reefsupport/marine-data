@@ -40,3 +40,14 @@ schemas:
       Sources here load and train fine on their own; they simply cannot be pooled with
       others until someone authors the crosswalk.
     axes: [taxon]
+
+  - id: mermaid-attributes
+    name: MERMAID benthic attribute + growth form
+    description: >
+      MERMAID's own point-label vocabulary (``benthic_attribute_name`` crossed with
+      ``growth_form_name``) — 259 distinct attribute names in the live corpus (D3a2).
+      OPEN, not enumerated here: the previous ``coralnet-labelset`` mapping this source
+      used to declare only covers 24.9% of rows and is wrong for the rest (D3a2 brief
+      §5). Registered so ``mermaid-aws`` records the vocabulary it actually speaks
+      instead of a mismatched borrowed one; a real crosswalk is future work.
+    axes: [taxon, form]

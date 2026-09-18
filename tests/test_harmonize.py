@@ -431,10 +431,11 @@ def test_every_declared_schema_has_a_vocabulary(registry: Registry) -> None:
     catami-1.4, coralnet-labelset, worms-genus and agrra-benthic were all registered
     with zero label nodes, so no dataset actually had a label dictionary.
 
-    Open vocabularies are the deliberate exception — worms-species, sonotype and
-    dataset-native cannot be enumerated and say so in their descriptions.
+    Open vocabularies are the deliberate exception — worms-species, sonotype,
+    dataset-native and mermaid-attributes (D3a2: a 259-name vocabulary with no
+    honest crosswalk yet) cannot be enumerated and say so in their descriptions.
     """
-    OPEN = {"worms-species", "sonotype", "dataset-native"}
+    OPEN = {"worms-species", "sonotype", "dataset-native", "mermaid-attributes"}
     empty = [s.id for s in registry.schemas if not s.nodes and s.id not in OPEN]
     assert not empty, f"schemas registered with no vocabulary: {empty}"
 
