@@ -83,17 +83,19 @@ sources:
     name: Reef Support annotations on XL Catlin Seaview imagery
     version: "2026-08"
     description: >
-      Our expert instance masks drawn on PUBLIC XL Catlin Seaview photographs -
-      SEAVIEW_PAC_AUS (808), SEAVIEW_PAC_USA (728), SEAVIEW_ATL (705), SEAVIEW_IDN_PHL
-      (466). The annotation labour and the resulting masks are ours; the underlying pixels
-      are not.
+      Our expert instance masks drawn on reef photographs, across 8 site directories:
+      SEAFLOWER_BOLIVAR, SEAFLOWER_COURTOWN, SEAVIEW_ATL, SEAVIEW_IDN_PHL, SEAVIEW_PAC_AUS,
+      SEAVIEW_PAC_USA, TETES_PROVIDENCIA, UNAL_BLEACHING_TAYRONA. The four SEAVIEW_* dirs
+      are on PUBLIC XL Catlin Seaview photographs; pixel origin for the other four is not
+      confirmed. The annotation labour and the resulting masks are ours; the underlying
+      pixels are not established as ours in any directory.
     licence: NO-LICENCE-STATED
     legal_basis: unknown
     redistribution: unknown
     provenance: partner
     verification:
-      verified_on: 2026-08-17
-      verified_by: "Live bucket manifest: 2,707 images across four SEAVIEW_* site directories. No XL Catlin Seaview licence or permission document located in the repo or bucket."
+      verified_on: 2026-09-19
+      verified_by: "2026-09-19 boto3 bucket listing (v4s-open-listing.tsv): 73,045 images across eight site directories (SEAFLOWER_BOLIVAR, SEAFLOWER_COURTOWN, SEAVIEW_ATL, SEAVIEW_IDN_PHL, SEAVIEW_PAC_AUS, SEAVIEW_PAC_USA, TETES_PROVIDENCIA, UNAL_BLEACHING_TAYRONA) - supersedes the 2026-08-17 four-directory/2,707-image count. No XL Catlin Seaview licence or permission document located in the repo or bucket."
       method: absent
     access:
       method: s3
@@ -104,6 +106,7 @@ sources:
         region: hel1
         prefix: benthic_datasets/mask_labels/reef_support/SEAVIEW_ATL/
         credentials_env: S3
+      size_bytes: 8121822251  # 2026-09-19 boto3 listing
     modalities: [image]
     capabilities:
       - benthic-segmentation
@@ -119,7 +122,7 @@ sources:
         geometry_labels: "SCALE"
       verified_on: 2026-08-29
       verified_note: "Live S3 fetch confirms images/ and export-result.ndjson at the declared prefix, matching the layout."
-    items: 2707
+    items: 73045
     annotations:
       - kind: instance-mask
         schema_id: reef-support-labelbox
@@ -144,6 +147,12 @@ sources:
       Re-checked 2026-09-18 (s3://rs-storage-open/benthic_datasets/mask_labels/reef_support):
       no separate Seaview-imagery registry record exists to confirm terms from; still
       unresolved.
+
+      Re-checked 2026-09-19 (boto3 listing): live prefix has grown from four SEAVIEW_* dirs
+      / 2,707 images (recorded 2026-08-17) to eight dirs / 73,045 images - added
+      SEAFLOWER_BOLIVAR, SEAFLOWER_COURTOWN, TETES_PROVIDENCIA, UNAL_BLEACHING_TAYRONA.
+      Item/byte counts corrected here. Pixel origin for the four new dirs is unconfirmed -
+      see P1-B proposal "Needs Yohan" #2.
     tags: [needs-permission, annotation-ip, octocoral]
 
   - id: reef-support-bleaching
@@ -333,3 +342,89 @@ sources:
       research and weak supervision; never in shipped weights.
     loader: { layout: metadata-only }
     tags: [pseudo-label, never-eval]
+
+  - id: rs-labelled-masks
+    name: rs_labelled segmentation masks (origin unconfirmed)
+    version: "unversioned"
+    description: >
+      Segmentation mask labelling effort over reef site imagery, per root README.md
+      ("rs_labelled (Reef Support): Segmentation mask labeling effort of various
+      datasets"). Shares site-name conventions with `reef-support-seaview-labels` but
+      lacks its Labelbox ndjson / contour-colour layout - reads as an earlier or
+      alternate export of the same labelling work, not confirmed identical or distinct.
+    licence: NO-LICENCE-STATED
+    legal_basis: unknown
+    redistribution: unknown
+    provenance: own
+    verification:
+      verified_on: 2026-09-19
+      verified_by: "2026-09-19 boto3 bucket listing (v4s-open-listing.tsv): 63,167 files / 5,725,787,671 bytes under benthic_datasets/mask_labels/rs_labelled/. No licence or origin document located in the repo or bucket (P1-B proposal)."
+      method: absent
+    access:
+      method: s3
+      uri: s3://rs-storage-open/benthic_datasets/mask_labels/rs_labelled
+      params:
+        bucket: rs-storage-open
+        endpoint: hel1.your-objectstorage.com
+        region: hel1
+        prefix: benthic_datasets/mask_labels/rs_labelled/
+        credentials_env: S3
+      size_bytes: 5725787671
+    modalities: [image]
+    capabilities: [benthic-segmentation, general-pretraining]
+    items: 63167
+    annotations:
+      - kind: none
+        supervises: []
+        notes: "Mask/label structure not verified this pass."
+    coverage:
+      regions: [unknown]
+    notes: >
+      BLOCKED PENDING PERMISSION. Ownership question open with Yohan: whether this is a
+      distinct asset from `reef-support-seaview-labels` or an earlier export of the same
+      effort - see P1-B proposal "Needs Yohan" #1. Licence/origin not stated either way.
+    loader: { layout: metadata-only }
+    tags: [needs-permission]
+
+  - id: mussel-ai-data
+    name: Mussel AI detector data (origin unconfirmed)
+    version: "unversioned"
+    description: >
+      Single-class mussel detector dataset - data/mussel_ai/semantic_drone_dataset/
+      data.yaml declares `names: [mussels]`, `nc: 1`. The `semantic_drone_dataset`
+      folder name is misleading: this is not the public Graz drone dataset.
+    licence: NO-LICENCE-STATED
+    legal_basis: unknown
+    redistribution: unknown
+    provenance: own
+    verification:
+      verified_on: 2026-09-19
+      verified_by: "2026-09-19 boto3 bucket listing (v4s-open-listing.tsv): 1,041 files / 834,506,951 bytes under data/mussel_ai/. No licence or origin document located in the repo or bucket (P1-B proposal)."
+      method: absent
+    access:
+      method: s3
+      uri: s3://rs-storage-open/data/mussel_ai
+      params:
+        bucket: rs-storage-open
+        endpoint: hel1.your-objectstorage.com
+        region: hel1
+        prefix: data/mussel_ai/
+        credentials_env: S3
+      size_bytes: 834506951
+    modalities: [image]
+    capabilities: [invertebrate-detection]
+    items: 1041
+    annotations:
+      - kind: none
+        supervises: []
+        notes: "YOLO-style data.yaml declares nc:1 names:[mussels]; label files not verified this pass."
+    coverage:
+      regions: [unknown]
+    notes: >
+      BLOCKED PENDING PERMISSION. Ownership question open with Yohan - no README, licence,
+      or origin document anywhere in the bucket or registry. `data/mussel_ai/lobster_demo.tif`
+      (512,790,898 B, counted in this entry) is byte-identical (size + multipart ETag) to
+      `s3://rs-storage-open/data/lobster_demo.tif` at the bucket root, which sits outside
+      this prefix and is not otherwise registered.
+    loader: { layout: metadata-only }
+    tags: [needs-permission]

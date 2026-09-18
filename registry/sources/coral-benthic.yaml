@@ -658,3 +658,321 @@ sources:
       why verification requires a primary source.
     loader: { layout: metadata-only }
     tags: [prohibited, provenance-risk]
+
+  - id: noaa-esd-coral-bleaching
+    name: NOAA ESD coral bleaching dataset (bucket mirror)
+    version: "v1"
+    description: >
+      Bucket copy of a Hugging Face dataset-card checkout (git + LFS) of bleached vs.
+      healthy coral imagery from a NOAA Ecosystem Sciences Division programme.
+    licence: US-GOV-PD
+    legal_basis: licence
+    redistribution: ok
+    provenance: public
+    verification:
+      verified_on: 2026-09-19
+      verified_by: "2026-09-19 boto3 bucket listing (v4s-open-listing.tsv): 4,430 files / 327,036,884 bytes under coral_bleaching/others/NOAA-ESD-CORAL-Bleaching-Dataset/. The checked-out README.md dataset-card (HF pretty_name 'NOAA-ESD-CORAL-Bleaching-Dataset v1') states 'Public Domain (NOAA Open Data)' (L1 report 2026-09-19)."
+      method: dataset-card
+    access:
+      method: s3
+      uri: s3://rs-storage-open/coral_bleaching/others/NOAA-ESD-CORAL-Bleaching-Dataset
+      params:
+        bucket: rs-storage-open
+        endpoint: hel1.your-objectstorage.com
+        region: hel1
+        prefix: coral_bleaching/others/NOAA-ESD-CORAL-Bleaching-Dataset/
+        credentials_env: S3
+      size_bytes: 327036884
+    modalities: [image]
+    capabilities: [bleaching-assessment, general-pretraining]
+    items: 4430
+    annotations:
+      - kind: none
+        supervises: []
+        notes: "Annotation/folder structure not verified this pass."
+    coverage:
+      regions: [unknown]
+    homepage: https://www.fisheries.noaa.gov/inport/item/59195
+    notes: >
+      INCOMPLETE EXTRACTION. The expanded tree here is a partial checkout: the sibling
+      archive coral_bleaching/others.tar.gz holds 8,854 more files of this same repo
+      (including a .git/lfs/objects tree), per the 2026-09-19 tar-vs-tree cross-check
+      (T1 report). Item/byte counts above cover only what is expanded at the live
+      prefix. Relationship to the already-registered `noaa-pifsc-bleaching` (HF
+      NMFS-OSI/NOAA-PIFSC-ESD-CORAL-Bleaching-Dataset) - same agency/programme naming -
+      is not confirmed this pass.
+    loader: { layout: metadata-only }
+    tags: [bleaching, public-domain, incomplete-extraction]
+
+  - id: roboflow-coral-bleaching-final-v6i
+    name: Coral Bleaching Final (Roboflow v6i)
+    version: "v6i"
+    description: Roboflow-exported multiclass coral bleaching image set.
+    licence: CC-BY-4.0
+    legal_basis: licence
+    redistribution: ok
+    provenance: public
+    verification:
+      verified_on: 2026-09-19
+      verified_by: "README.dataset.txt sidecar: 'License: CC BY 4.0' (L1 report 2026-09-19). 2026-09-19 boto3 bucket listing (v4s-open-listing.tsv): 2,556 files / 187,249,687 bytes under coral_bleaching/others/Coral Bleaching Final.v6i.multiclass/."
+      method: licence-file
+    access:
+      method: s3
+      uri: "s3://rs-storage-open/coral_bleaching/others/Coral Bleaching Final.v6i.multiclass"
+      params:
+        bucket: rs-storage-open
+        endpoint: hel1.your-objectstorage.com
+        region: hel1
+        prefix: "coral_bleaching/others/Coral Bleaching Final.v6i.multiclass/"
+        credentials_env: S3
+      size_bytes: 187249687
+    modalities: [image]
+    capabilities: [bleaching-assessment, general-pretraining]
+    items: 2556
+    annotations:
+      - kind: none
+        supervises: []
+        notes: "Class/label structure not verified this pass - only the licence sidecar was read (L1)."
+    coverage:
+      regions: [unknown]
+    notes: >
+      Roboflow Universe project URL not recorded in the sidecar - attribution target
+      unknown. Sidecars link only the generic https://universe.roboflow.com and
+      https://github.com/roboflow/notebooks.
+    loader: { layout: metadata-only }
+    tags: [bleaching, roboflow]
+
+  - id: roboflow-coral-bleaching-general-v1-yolov8s
+    name: Coral Bleaching_General (Roboflow v1, YOLOv8s)
+    version: "v1-yolov8s"
+    description: Roboflow-exported multiclass coral bleaching image set.
+    licence: CC-BY-4.0
+    legal_basis: licence
+    redistribution: ok
+    provenance: public
+    verification:
+      verified_on: 2026-09-19
+      verified_by: "README.dataset.txt sidecar: 'License: CC BY 4.0' (L1 report 2026-09-19). 2026-09-19 boto3 bucket listing (v4s-open-listing.tsv): 2,548 files / 186,654,672 bytes under coral_bleaching/others/Coral Bleaching_General.v1-yolov8s.multiclass/."
+      method: licence-file
+    access:
+      method: s3
+      uri: "s3://rs-storage-open/coral_bleaching/others/Coral Bleaching_General.v1-yolov8s.multiclass"
+      params:
+        bucket: rs-storage-open
+        endpoint: hel1.your-objectstorage.com
+        region: hel1
+        prefix: "coral_bleaching/others/Coral Bleaching_General.v1-yolov8s.multiclass/"
+        credentials_env: S3
+      size_bytes: 186654672
+    modalities: [image]
+    capabilities: [bleaching-assessment, general-pretraining]
+    items: 2548
+    annotations:
+      - kind: none
+        supervises: []
+        notes: "Class/label structure not verified this pass - only the licence sidecar was read (L1)."
+    coverage:
+      regions: [unknown]
+    notes: >
+      Roboflow Universe project URL not recorded in the sidecar - attribution target
+      unknown. Sidecars link only the generic https://universe.roboflow.com and
+      https://github.com/roboflow/notebooks.
+    loader: { layout: metadata-only }
+    tags: [bleaching, roboflow]
+
+  - id: roboflow-coral-classification-copy-changed-v13i
+    name: "Coral Classification Copy -Changed- (Roboflow v13i)"
+    version: "v13i"
+    description: Roboflow-exported multiclass coral classification image set.
+    licence: CC-BY-4.0
+    legal_basis: licence
+    redistribution: ok
+    provenance: public
+    verification:
+      verified_on: 2026-09-19
+      verified_by: "README.dataset.txt sidecar: 'License: CC BY 4.0' (L1 report 2026-09-19). 2026-09-19 boto3 bucket listing (v4s-open-listing.tsv): 2,794 files / 185,563,432 bytes under 'coral_bleaching/others/Coral Classification Copy -Changed-.v13i.multiclass/'."
+      method: licence-file
+    access:
+      method: s3
+      uri: "s3://rs-storage-open/coral_bleaching/others/Coral Classification Copy -Changed-.v13i.multiclass"
+      params:
+        bucket: rs-storage-open
+        endpoint: hel1.your-objectstorage.com
+        region: hel1
+        prefix: "coral_bleaching/others/Coral Classification Copy -Changed-.v13i.multiclass/"
+        credentials_env: S3
+      size_bytes: 185563432
+    modalities: [image]
+    capabilities: [bleaching-assessment, general-pretraining]
+    items: 2794
+    annotations:
+      - kind: none
+        supervises: []
+        notes: "Class/label structure not verified this pass - only the licence sidecar was read (L1)."
+    coverage:
+      regions: [unknown]
+    notes: >
+      Roboflow Universe project URL not recorded in the sidecar - attribution target
+      unknown. Sidecars link only the generic https://universe.roboflow.com and
+      https://github.com/roboflow/notebooks.
+    loader: { layout: metadata-only }
+    tags: [bleaching, roboflow]
+
+  - id: roboflow-coral-reef-bleach-detection-v2i
+    name: Coral Reef Bleach Detection (Roboflow v2i)
+    version: "v2i"
+    description: Roboflow-exported multiclass coral bleach detection image set.
+    licence: CC-BY-4.0
+    legal_basis: licence
+    redistribution: ok
+    provenance: public
+    verification:
+      verified_on: 2026-09-19
+      verified_by: "README.dataset.txt sidecar: 'License: CC BY 4.0' (L1 report 2026-09-19). 2026-09-19 boto3 bucket listing (v4s-open-listing.tsv): 10,786 files / 790,572,339 bytes under coral_bleaching/others/Coral Reef Bleach Detection.v2i.multiclass/."
+      method: licence-file
+    access:
+      method: s3
+      uri: "s3://rs-storage-open/coral_bleaching/others/Coral Reef Bleach Detection.v2i.multiclass"
+      params:
+        bucket: rs-storage-open
+        endpoint: hel1.your-objectstorage.com
+        region: hel1
+        prefix: "coral_bleaching/others/Coral Reef Bleach Detection.v2i.multiclass/"
+        credentials_env: S3
+      size_bytes: 790572339
+    modalities: [image]
+    capabilities: [bleaching-assessment, general-pretraining]
+    items: 10786
+    annotations:
+      - kind: none
+        supervises: []
+        notes: "Class/label structure not verified this pass - only the licence sidecar was read (L1)."
+    coverage:
+      regions: [unknown]
+    notes: >
+      Roboflow Universe project URL not recorded in the sidecar - attribution target
+      unknown. Sidecars link only the generic https://universe.roboflow.com and
+      https://github.com/roboflow/notebooks.
+    loader: { layout: metadata-only }
+    tags: [bleaching, roboflow]
+
+  - id: roboflow-coral-reef-classification-v3i
+    name: Coral Reef Classification (Roboflow v3i)
+    version: "v3i"
+    description: Roboflow-exported folder-layout coral reef classification image set.
+    licence: CC-BY-4.0
+    legal_basis: licence
+    redistribution: ok
+    provenance: public
+    verification:
+      verified_on: 2026-09-19
+      verified_by: "README.dataset.txt sidecar: 'License: CC BY 4.0' (L1 report 2026-09-19). 2026-09-19 boto3 bucket listing (v4s-open-listing.tsv): 4,558 files / 238,924,096 bytes under coral_bleaching/others/Coral Reef Classification.v3i.folder/."
+      method: licence-file
+    access:
+      method: s3
+      uri: "s3://rs-storage-open/coral_bleaching/others/Coral Reef Classification.v3i.folder"
+      params:
+        bucket: rs-storage-open
+        endpoint: hel1.your-objectstorage.com
+        region: hel1
+        prefix: "coral_bleaching/others/Coral Reef Classification.v3i.folder/"
+        credentials_env: S3
+      size_bytes: 238924096
+    modalities: [image]
+    capabilities: [bleaching-assessment, general-pretraining]
+    items: 4558
+    annotations:
+      - kind: none
+        supervises: []
+        notes: "Class/label structure not verified this pass - only the licence sidecar was read (L1)."
+    coverage:
+      regions: [unknown]
+    notes: >
+      Roboflow Universe project URL not recorded in the sidecar - attribution target
+      unknown. Sidecars link only the generic https://universe.roboflow.com and
+      https://github.com/roboflow/notebooks.
+    loader: { layout: metadata-only }
+    tags: [bleaching, roboflow]
+
+  - id: coralseg-ucsd-mosaics
+    name: Coralseg (UCSD) coral reef mosaics
+    version: "unversioned"
+    description: >
+      Coral reef photomosaics from UCSD, associated with the Coralseg segmentation
+      paper. No licence terms found in either the root or benthic_datasets README.
+    licence: NO-LICENCE-STATED
+    legal_basis: unknown
+    redistribution: unknown
+    provenance: public
+    verification:
+      verified_on: 2026-09-19
+      verified_by: "2026-09-19 boto3 bucket listing (v4s-open-listing.tsv): 9,844 files / 829,917,530 bytes under benthic_datasets/mask_labels/Coralseg/. Root and benthic_datasets READMEs describe it as a UCSD mosaics dataset and link the Coralseg paper; neither states a licence (P1-B proposal)."
+      method: absent
+    access:
+      method: s3
+      uri: s3://rs-storage-open/benthic_datasets/mask_labels/Coralseg
+      params:
+        bucket: rs-storage-open
+        endpoint: hel1.your-objectstorage.com
+        region: hel1
+        prefix: benthic_datasets/mask_labels/Coralseg/
+        credentials_env: S3
+      size_bytes: 829917530
+    modalities: [image]
+    capabilities: [benthic-segmentation, general-pretraining]
+    items: 9844
+    annotations:
+      - kind: none
+        supervises: []
+        notes: "Label/mask structure not verified this pass."
+    coverage:
+      regions: [unknown]
+    citation: https://onlinelibrary.wiley.com/doi/abs/10.1002/rob.21915
+    notes: >
+      BLOCKED PENDING PERMISSION. No licence stated anywhere in the bucket; the Coralseg
+      paper (Journal of Field Robotics) is cited but does not itself grant redistribution
+      terms.
+    loader: { layout: metadata-only }
+    tags: [needs-permission]
+
+  - id: seaview-survey-imagery
+    name: SEAVIEW raw survey imagery (UQ eSpace)
+    version: "unversioned"
+    description: >
+      Raw reef-survey photographs mirrored from the University of Queensland eSpace
+      record UQ_734799. Excludes labelled_data/labelled_segmentation_data.pickle
+      (6,956,023,722 B) - slated for deletion, unsafe pickle format, not counted here.
+    licence: NO-LICENCE-STATED
+    legal_basis: unknown
+    redistribution: unknown
+    provenance: public
+    verification:
+      verified_on: 2026-09-19
+      verified_by: "2026-09-19 boto3 bucket listing (v4s-open-listing.tsv): 12,373 files / 19,480,434,205 bytes under benthic_datasets/point_labels/SEAVIEW/, excluding the pickle file. No licence stated in the bucket for the UQ eSpace UQ_734799 record (P1-B proposal)."
+      method: absent
+    access:
+      method: s3
+      uri: s3://rs-storage-open/benthic_datasets/point_labels/SEAVIEW
+      params:
+        bucket: rs-storage-open
+        endpoint: hel1.your-objectstorage.com
+        region: hel1
+        prefix: benthic_datasets/point_labels/SEAVIEW/
+        credentials_env: S3
+      size_bytes: 19480434205
+    modalities: [image]
+    capabilities: [general-pretraining]
+    items: 12373
+    annotations:
+      - kind: none
+        supervises: []
+        notes: "Raw survey imagery; labelled_data/labelled_segmentation_data.pickle excluded (unsafe format, slated for deletion)."
+    coverage:
+      regions: [unknown]
+    homepage: https://espace.library.uq.edu.au/view/UQ:734799
+    notes: >
+      BLOCKED PENDING PERMISSION. Whether Reef Support has rights to mirror this raw
+      imagery (distinct from `reef-support-seaview-labels`, which covers only our own
+      masks over a subset of it) is unconfirmed - see P1-B proposal "Needs Yohan" #5.
+    loader: { layout: metadata-only }
+    tags: [needs-permission]
