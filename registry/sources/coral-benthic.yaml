@@ -551,6 +551,11 @@ sources:
     legal_basis: licence
     redistribution: ok
     provenance: public
+    checksums:
+      version: "2026-09-19-bc53d5a2c0b6"
+      root_digest: 152db0e89bea9baf9b02b4ddbdc3b3a8c2845b361a8b2e60df695387df0c2e7a
+      files: 18566
+      size_bytes: 50559907142
     verification:
       verified_on: 2026-08-17
       verified_by: "registry.opendata.aws/coralreef-image-classification-training — CC BY-NC-SA 4.0"
