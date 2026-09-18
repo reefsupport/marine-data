@@ -541,7 +541,7 @@ sources:
 
   - id: mermaid-aws
     name: MERMAID community coral reef image classification training data
-    version: "live"
+    version: "2026-09-18-8c6d8be8f097"
     description: >
       Live, growing point-label corpus with a taxonomy crosswalk API (LabelMapping)
       that harmonises partner label schemes.
@@ -556,7 +556,7 @@ sources:
     access:
       method: s3
       uri: s3://coral-reef-training
-      size_bytes: 68498969565  # measured 2026-09-18
+      size_bytes: 68534501856  # measured 2026-09-18
       notes: "no-sign-request - anonymously listable, no credentials needed"
       params:
         bucket: coral-reef-training
