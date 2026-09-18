@@ -177,7 +177,8 @@ def check_ratios(
     want = "  ".join(f"{n}={ratios[n]:.1%}" for n in sorted(skewed))
     raise ValueError(
         f"split(by={by!r}) could not hit the requested ratios within {tolerance:.0%}: "
-        f"wanted {want}, got {got}. Group sizes are too uneven to divide this way — the "
-        f"largest group holds {largest_group:,} of {total:,} samples. Rebalance the "
+        f"wanted {want}. The closest achievable split for these group sizes is {got} — "
+        f"no re-run needed to see it. Group sizes are too uneven to divide this way — "
+        f"the largest group holds {largest_group:,} of {total:,} samples. Rebalance the "
         f"corpus, relax `tolerance`, or split by a finer unit."
     )
