@@ -167,7 +167,15 @@ sources:
     items: 90000
     annotations: [{ kind: bbox, classes: 130, supervises: [taxon] }]
     coverage: { regions: [western-atlantic] }
-    notes: "Gulf of Mexico — the closest large fish-detection set to Caribbean assemblages. Worth chasing the terms."
+    notes: >
+      Gulf of Mexico — the closest large fish-detection set to Caribbean assemblages.
+      Worth chasing the terms.
+
+      Legal-basis check 2026-09-18: github.com/SEFSC/SEAMAPD21/blob/master/License.txt
+      grants rights to "Software" only and never mentions the dataset itself, matching
+      verification.verified_by above — legal_basis stays `unknown`. Resolving needs a
+      counsel-opinion reference on whether 17 U.S.C. §105 extends to the data, the step
+      tdm requires before shipping use.
     loader:
       layout: coco-json
       schema_id: worms-species
@@ -210,6 +218,13 @@ sources:
     coverage: { regions: [global] }
     domain_shift:
       caveats: ["Aggregated from many sources — not in-situ reef survey imagery, so appearance differs from transect footage."]
+    notes: >
+      Legal-basis re-check 2026-09-18: fishnet-2023.github.io's CC-BY-SA-4.0 footer is
+      the Academic Project Page Template's boilerplate licensing the WEBSITE, not the
+      dataset (github.com/faixan-khan/FishNet API: `license: null`), matching
+      verification.verified_by above. legal_basis stays `unknown`; resolving needs
+      either written permission from the authors or a counsel-opinion reference for a
+      tdm basis — moot until the Google-Drive access block is also fixed.
     loader:
       layout: coco-json
       schema_id: worms-species
@@ -268,6 +283,7 @@ sources:
     access:
       method: huggingface
       uri: https://huggingface.co/datasets/MBARI-org/DeepSea-MOT
+      size_bytes: 18464323583  # measured 2026-09-18
       params:
         hf_id: MBARI-org/DeepSea-MOT
         image_column: image
@@ -322,6 +338,13 @@ sources:
     coverage: { regions: [deep-sea, eastern-pacific] }
     domain_shift:
       caveats: ["Excellent infrastructure, weak reef overlap."]
+    notes: >
+      Legal-basis re-check 2026-09-18: fathomnet.org/terms (JS-rendered Wix page, HTTP
+      200) could not be quoted cleanly via anonymous curl, but verification.verified_by
+      above already confirms the same four-licence (CC0/CC-BY/CC-BY-NC/CC-BY-NC-ND)
+      per-image split with no machine-readable per-image field. legal_basis stays
+      `unknown`; resolving needs a per-image licence lookup or written permission
+      covering the NC/ND-tagged images before shipping use.
     loader:
       layout: coco-json
       schema_id: worms-species
@@ -345,6 +368,7 @@ sources:
     access:
       method: huggingface
       uri: https://huggingface.co/datasets/akridge/MOUSS_fish_imagery_dataset_grayscale_small
+      size_bytes: 60910307  # measured 2026-09-18
       params:
         hf_id: akridge/MOUSS_fish_imagery_dataset_grayscale_small
         image_column: image
@@ -437,6 +461,7 @@ sources:
     access:
       method: http
       uri: https://vap.aau.dk/the-brackish-dataset/
+      size_bytes: 173000000  # documented upstream, not measured — 2026-09-18
       notes: >
         Checked 2026-08-28: the AAU page's only real data host is Kaggle
         (aalborguniversity/brackish-dataset, ~173MB per its public listing API,
@@ -493,6 +518,13 @@ sources:
     coverage: { regions: [coral-triangle] }
     domain_shift:
       caveats: ["Severe class imbalance — the long tail is the point of the benchmark."]
+    notes: >
+      Legal-basis re-check 2026-09-18: homepages.inf.ed.ac.uk/rbf/Fish4Knowledge/ (HTTP
+      200) still carries zero mentions of licence, copyright or terms anywhere on the
+      site — confirmed absence, not silence, matching verification.verified_by above.
+      legal_basis stays `unknown`; NO-LICENCE-STATED's tdm exception (EU Art. 15o
+      Auteurswet / DSM Art. 4) is the proposed basis, pending a robots.txt /
+      machine-readable-reservation check and counsel sign-off before shipping use.
     loader:
       layout: image-folder
       schema_id: worms-species

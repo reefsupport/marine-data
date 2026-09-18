@@ -22,6 +22,7 @@ sources:
     access:
       method: huggingface
       uri: https://huggingface.co/datasets/ReefNet/ReefNet-1.0
+      size_bytes: 4161666984  # measured 2026-09-18
       params:
         hf_id: ReefNet/ReefNet-1.0
     modalities: [tabular]
@@ -63,6 +64,7 @@ sources:
     access:
       method: huggingface
       uri: https://huggingface.co/datasets/BobDerBaum/reefnet_species_images
+      size_bytes: 283236711706  # measured 2026-09-18
       params: { hf_id: BobDerBaum/reefnet_species_images, image_column: image, label_column: label }
     modalities: [image]
     capabilities: [general-pretraining]
@@ -107,6 +109,7 @@ sources:
     access:
       method: huggingface
       uri: https://huggingface.co/datasets/QCR-Underwater-Perception/reef-guidance-system
+      size_bytes: 31982049423  # measured 2026-09-18
       params: { hf_id: QCR-Underwater-Perception/reef-guidance-system, image_column: image }
     modalities: [image]
     capabilities: [general-pretraining, benthic-segmentation]
@@ -136,11 +139,15 @@ sources:
     access:
       method: huggingface
       uri: https://huggingface.co/datasets/bens-bots/marrs-global-coral-reef-soundscapes
+      size_bytes: 10128808016  # measured 2026-09-18
       params:
         hf_id: bens-bots/marrs-global-coral-reef-soundscapes
         config: detections_australia
         audio_column: audio
         label_column: sonotype
+      notes: >
+        Measured 2026-09-18: 10,128,808,016 bytes is for config `detections_australia`
+        only. The whole HF repo (all configs, all countries) is approximately 975 GB.
     modalities: [audio]
     capabilities: [bioacoustics]
     annotations: [{ kind: audio-event, supervises: [taxon] }]
@@ -170,6 +177,7 @@ sources:
     access:
       method: huggingface
       uri: https://huggingface.co/datasets/nf-whoi/whoi-plankton-small
+      size_bytes: 1107683776  # measured 2026-09-18
       params: { hf_id: nf-whoi/whoi-plankton-small, image_column: image, label_column: label }
     modalities: [image]
     capabilities: [general-pretraining]
@@ -197,6 +205,7 @@ sources:
     access:
       method: huggingface
       uri: https://huggingface.co/datasets/iamvastava/underwater_image_enhancement
+      size_bytes: 449116892  # measured 2026-09-18
       params: { hf_id: iamvastava/underwater_image_enhancement, image_column: image, label_column: label }
     modalities: [image]
     capabilities: [image-enhancement, general-pretraining]
@@ -227,6 +236,7 @@ sources:
     access:
       method: huggingface
       uri: https://huggingface.co/datasets/aimsks/satellite-coral-mapping
+      size_bytes: 30434265  # measured 2026-09-18
       params:
         hf_id: aimsks/satellite-coral-mapping
         split: test

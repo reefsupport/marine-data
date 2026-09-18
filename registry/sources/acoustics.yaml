@@ -74,7 +74,16 @@ sources:
       verified_on: 2026-08-17
       verified_by: "AWS Open Data registry 'pacific-sound' — CC-BY 4.0"
       method: dataset-card
-    access: { method: s3, uri: s3://pacific-sound }
+    access:
+      method: s3
+      uri: s3://pacific-sound
+      notes: >
+        Checked 2026-09-18: uri s3://pacific-sound does not exist (NoSuchBucket). Real
+        buckets in us-west-2 (anonymous, no-sign-request) are pacific-sound-2khz
+        (1,941,304,337,791 bytes / 3,745 files, measured 2026-09-18), pacific-sound-16khz
+        (exists, not sized) and pacific-sound-256khz (unresolved, HTTP 301 — likely
+        wrong-region endpoint). Open-ended continuous recording with no bounded mirror
+        scope decided yet, so size_bytes stays deliberately unset here.
     modalities: [audio]
     capabilities: [bioacoustics, general-pretraining]
     items_note: "~2 TB/month, unlabelled."
@@ -122,7 +131,10 @@ sources:
         Collaborative approves using these videos, including this watermark, under
         the CC0 license waiver."
       method: dataset-card
-    access: { method: http, uri: https://datadryad.org/dataset/doi:10.5061/dryad.mcvdnckcp }
+    access:
+      method: http
+      uri: https://datadryad.org/dataset/doi:10.5061/dryad.mcvdnckcp
+      size_bytes: 3650000000  # documented upstream, not measured — 2026-09-18
     modalities: [audio, video]
     capabilities: [bioacoustics, fish-classification]
     items: 156

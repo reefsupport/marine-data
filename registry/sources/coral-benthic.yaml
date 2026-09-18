@@ -23,6 +23,7 @@ sources:
     access:
       method: huggingface
       uri: https://huggingface.co/datasets/EPFL-ECEO/coralscapes
+      size_bytes: 5855224073  # measured 2026-09-18
       params:
         hf_id: EPFL-ECEO/coralscapes
         config: default
@@ -398,6 +399,7 @@ sources:
     access:
       method: huggingface
       uri: https://huggingface.co/datasets/NMFS-OSI/NOAA-PIFSC-ESD-CORAL-Bleaching-Dataset
+      size_bytes: 767739339  # measured 2026-09-18
       params:
         hf_id: NMFS-OSI/NOAA-PIFSC-ESD-CORAL-Bleaching-Dataset
         fetch_style: files
@@ -492,6 +494,7 @@ sources:
     access:
       method: zenodo
       uri: https://zenodo.org/records/11125847
+      size_bytes: 7847491024  # measured 2026-09-18
     modalities: [image]
     capabilities: [benthic-segmentation, general-pretraining, habitat-mapping-satellite]
     items: 1600000
@@ -526,6 +529,7 @@ sources:
     access:
       method: s3
       uri: s3://coral-reef-training
+      size_bytes: 68498969565  # measured 2026-09-18
       notes: "no-sign-request - anonymously listable, no credentials needed"
       params:
         bucket: coral-reef-training

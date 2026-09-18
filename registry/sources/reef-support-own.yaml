@@ -138,6 +138,10 @@ sources:
       Catlin Seaview's and their terms are unconfirmed, so legal_basis is `unknown` and the
       gate blocks this everywhere until resolved. Resolve by confirming Seaview's terms in
       writing; if permissive, retier and record the primary source.
+
+      Re-checked 2026-09-18 (s3://rs-storage-open/benthic_datasets/mask_labels/reef_support):
+      no separate Seaview-imagery registry record exists to confirm terms from; still
+      unresolved.
     tags: [needs-permission, annotation-ip, octocoral]
 
   - id: reef-support-bleaching
@@ -235,6 +239,9 @@ sources:
       BLOCKED PENDING PERMISSION. We hold the imagery but no written grant was found.
       Partner data without a documented grant is the same class of problem as
       unlicensed public data. Obtain a written licence before any training use.
+
+      Re-checked 2026-09-18 (s3://rs-storage-open/benthic_datasets/point_labels/Reefolution):
+      still no written grant on record.
     loader:
       layout: flat-images
       verified_on: 2026-08-17
@@ -273,6 +280,9 @@ sources:
       regions: [unknown]
     notes: >
       BLOCKED PENDING PERMISSION. As with reefolution — imagery held, no written grant found.
+
+      Re-checked 2026-09-18 (s3://rs-storage-open/benthic_datasets/point_labels/IBF):
+      still no written grant on record.
     loader:
       layout: flat-images
       verified_on: 2026-08-17

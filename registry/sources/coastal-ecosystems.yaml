@@ -19,7 +19,10 @@ sources:
       verified_on: 2026-08-17
       verified_by: "Zenodo record 6894273 — CC-BY-4.0"
       method: dataset-card
-    access: { method: zenodo, uri: https://zenodo.org/records/6894273 }
+    access:
+      method: zenodo
+      uri: https://zenodo.org/records/6894273
+      size_bytes: 5286160794  # measured 2026-09-18
     modalities: [satellite]
     capabilities: [habitat-mapping-satellite]
     items_note: "~147,000 km² mapped (2020 epoch)."
@@ -41,7 +44,10 @@ sources:
       verified_on: 2026-08-17
       verified_by: "Zenodo record 18612239 — CC-BY-4.0 (Nature 2026)"
       method: dataset-card
-    access: { method: zenodo, uri: https://zenodo.org/records/18612239 }
+    access:
+      method: zenodo
+      uri: https://zenodo.org/records/18612239
+      size_bytes: 886793559  # measured 2026-09-18
     modalities: [satellite]
     capabilities: [seagrass-mapping, habitat-mapping-satellite]
     items_note: "~148,000 km² mapped."
@@ -116,7 +122,10 @@ sources:
       verified_on: 2026-08-17
       verified_by: "gebco.net terms — public domain, attribution requested"
       method: site-terms
-    access: { method: http, uri: https://www.gebco.net/data-products-gridded-bathymetry-data/gebco2024-grid }
+    access:
+      method: http
+      uri: https://www.gebco.net/data-products-gridded-bathymetry-data/gebco2024-grid
+      size_bytes: 7500000000  # documented upstream, not measured — 2026-09-18
     modalities: [satellite]
     capabilities: [bathymetry]
     coverage: { regions: [global] }
@@ -209,7 +218,10 @@ sources:
       verified_on: 2026-08-17
       verified_by: "github.com/miguelmendesduarte/Floating-Marine-Debris-Data — CC-BY 4.0"
       method: licence-file
-    access: { method: http, uri: https://github.com/miguelmendesduarte/Floating-Marine-Debris-Data }
+    access:
+      method: http
+      uri: https://github.com/miguelmendesduarte/Floating-Marine-Debris-Data
+      size_bytes: 19306000  # documented upstream, not measured — 2026-09-18
     modalities: [satellite]
     capabilities: [marine-debris]
     items: 60680
