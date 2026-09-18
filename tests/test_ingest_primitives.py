@@ -170,6 +170,69 @@ def test_source_json_rejects_timestamp_keys(tmp_path: Path) -> None:
         write_source_json(tmp_path / "SOURCE.json", source, {"fetched_at": "2026-01-01"})
 
 
+@pytest.mark.parametrize(
+    "key",
+    [
+        "fetched_on",
+        "ingest_time",
+        "timestamp",
+        "Created",
+        "modified",
+        "updated",
+        "mtime",
+        "ctime",
+        "staged_at",
+        "run_ts",
+    ],
+)
+def test_timestamp_guard_rejects_date_like_keys(tmp_path: Path, key: str) -> None:
+    source = make_source("image-mask-pairs")
+    with pytest.raises(ValueError, match=key):
+        write_source_json(tmp_path / "SOURCE.json", source, {key: "2026-01-01"})
+
+
+def test_timestamp_guard_rejects_nested_date_like_key(tmp_path: Path) -> None:
+    source = make_source("image-mask-pairs")
+    with pytest.raises(ValueError, match="fetched_on"):
+        write_source_json(
+            tmp_path / "SOURCE.json",
+            source,
+            {"nested": {"fetched_on": "2026-01-01"}},
+        )
+
+
+def test_timestamp_guard_accepts_fetched_uri(tmp_path: Path) -> None:
+    source = make_source("image-mask-pairs")
+    path = tmp_path / "SOURCE.json"
+    write_source_json(path, source, {"fetched_uri": "https://example.test/data.zip"})
+    payload = json.loads(path.read_text(encoding="utf-8"))
+    assert payload["_ingest"]["fetched_uri"] == "https://example.test/data.zip"
+
+
+def test_timestamp_guard_allows_registry_date_keys(tmp_path: Path) -> None:
+    from marinedata.manifests import _REGISTRY_DATE_KEYS, _assert_no_timestamp_keys
+
+    for key in _REGISTRY_DATE_KEYS:
+        _assert_no_timestamp_keys({key: "2026-01-01"})  # must not raise
+
+
+def test_allowlist_keys_are_registry_model_fields() -> None:
+    import inspect
+
+    from pydantic import BaseModel
+
+    from marinedata import models
+    from marinedata.manifests import _REGISTRY_DATE_KEYS
+
+    all_fields: set[str] = set()
+    for _name, cls in inspect.getmembers(models, inspect.isclass):
+        if issubclass(cls, BaseModel) and cls.__module__ == models.__name__:
+            all_fields.update(cls.model_fields)
+
+    for key in _REGISTRY_DATE_KEYS:
+        assert key in all_fields, f"{key} is not a field of any model in models.py"
+
+
 def test_every_writer_returns_the_digest_of_the_file_it_wrote(tmp_path: Path) -> None:
     source = make_source("image-mask-pairs")
 

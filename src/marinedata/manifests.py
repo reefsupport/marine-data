@@ -26,17 +26,28 @@ from .checksums import write_digest
 if TYPE_CHECKING:
     from .models import Source
 
-_TIMESTAMP_KEY = re.compile(r"_at$|^fetched_bytes$|^staged_at$")
-"""D1 §3/step 6: a key ending in ``_at`` (catches ``fetched_at`` too), or exactly
-``fetched_bytes`` (the ``FetchResult.manifest()`` shape) or ``staged_at``.
-``^staged_at$`` is redundant with ``_at$`` but named explicitly in the design, so it
-stays explicit here too rather than being "simplified" away.
+_TIMESTAMP_KEY = re.compile(
+    r"_(at|on|date|time|timestamp|ts)$"
+    r"|^(timestamp|date|time|created|modified|updated|mtime|ctime)$"
+    r"|^fetched_bytes$",
+    re.IGNORECASE,
+)
+"""D1 §3/step 6, widened again (D2e): any key ending in ``_at``/``_on``/``_date``/
+``_time``/``_timestamp``/``_ts``, or exactly matching a bare clock word, or
+``fetched_bytes`` (the ``FetchResult.manifest()`` shape). This is date-*shaped* key
+matching, not a runtime-vs-static distinction — that distinction is
+``_REGISTRY_DATE_KEYS`` below.
 
 Narrowed from a blanket ``^fetched`` prefix match (D2c): that also caught
 ``fetched_uri`` — a deterministic string naming where bytes were actually requested
-from, not a timestamp, and exactly what D2c's manifest-truth fix needs ``SOURCE.json``
-to carry. The two keys this guard exists to block, ``fetched_at`` and
-``fetched_bytes``, are matched explicitly instead."""
+from, not a timestamp — which stays accepted because ``uri`` matches none of the
+suffixes above."""
+
+_REGISTRY_DATE_KEYS: frozenset[str] = frozenset({"verified_on"})
+"""Registry-model fields (``Verification.verified_on``, ``LoaderSpec.verified_on`` —
+``models.py``) that are static dates baked into YAML at author time, not runtime
+clocks: the same bytes come out on every ingest, so they cannot break
+``root_digest`` determinism. Rejected only when NOT in this allowlist (D2e)."""
 
 
 @dataclass(frozen=True)
@@ -59,7 +70,7 @@ class AnnotationCounts:
 def _assert_no_timestamp_keys(obj: object, where: str = "<root>") -> None:
     if isinstance(obj, Mapping):
         for key, value in obj.items():
-            if _TIMESTAMP_KEY.search(str(key)):
+            if str(key) not in _REGISTRY_DATE_KEYS and _TIMESTAMP_KEY.search(str(key)):
                 raise ValueError(
                     f"{where}.{key} looks like a timestamp key — staged output must "
                     "carry no timestamps (D1 §3)"
