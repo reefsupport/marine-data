@@ -10,8 +10,8 @@ from __future__ import annotations
 
 import argparse
 import sys
-from pathlib import Path
 
+from .cli_ingest import _cmd_ingest, add_ingest_subparser  # noqa: F401 — re-exported
 from .gate import evaluate
 from .lineage import build_lineage
 from .query import find
@@ -111,36 +111,6 @@ def _cmd_fetch(args: argparse.Namespace) -> int:
         return 1
     print(f"{result.items} items → {result.root}")
     print("Bounded verification sample — NOT the full dataset.")
-    return 0
-
-
-def _cmd_ingest(args: argparse.Namespace) -> int:
-    """Stage one source's declared version into ``<out>/sources/<source_id>/<version>/``."""
-    from .fetch import cache_root
-    from .gate import LicenceViolation
-    from .ingest import IngestError, stage_source
-
-    reg = Registry.load()
-    source = reg.source(args.source_id)
-    profile = reg.profile(args.profile)
-    out, cap = Path(args.out), args.slice_cap_bytes
-    try:
-        result = stage_source(
-            source,
-            cache_root=cache_root(),
-            out_root=out,
-            profile=profile,
-            slice_cap_bytes=cap,
-            workers=args.workers,
-        )
-    except (IngestError, LicenceViolation) as exc:
-        print(f"ingest failed: {exc}", file=sys.stderr)
-        return 1
-    m = result.manifest
-    print(
-        f"{result.source_id}@{result.version}  {result.images} images  → {result.root}  "
-        f"root_digest={m.root_digest}  files={m.files}  size_bytes={m.size_bytes}"
-    )
     return 0
 
 
@@ -316,20 +286,7 @@ def build_parser() -> argparse.ArgumentParser:
     p_fetch.add_argument("--force", action="store_true")
     p_fetch.set_defaults(func=_cmd_fetch)
 
-    p_ingest = sub.add_parser("ingest", help="Stage a source version into sources/<id>/<version>/")
-    p_ingest.add_argument("source_id")
-    p_ingest.add_argument("--out", required=True, help="Root directory to stage into")
-    p_ingest.add_argument("--profile", required=True, help="Release profile (see profiles.yaml)")
-    p_ingest.add_argument(
-        "--slice-cap-bytes", type=int, default=None, help="S3 sources only: cap staged bytes"
-    )
-    p_ingest.add_argument(
-        "--workers",
-        type=int,
-        default=None,
-        help="S3 sources only: concurrent image downloads (default 8)",
-    )
-    p_ingest.set_defaults(func=_cmd_ingest)
+    add_ingest_subparser(sub)
 
     p_verify = sub.add_parser("verify", help="Check declared layouts against real fetched samples")
     p_verify.add_argument("source_id", nargs="*")

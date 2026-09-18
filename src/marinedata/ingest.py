@@ -25,6 +25,7 @@ from pathlib import Path
 from types import MappingProxyType
 
 from . import checksums, fetch, gate
+from .ingest_dispatch import stage_source  # noqa: F401 — re-exported, dispatch moved out (D3f)
 from .manifests import AnnotationCounts, write_annotations_json, write_license, write_source_json
 from .models import Profile, Source
 from .normalise import bmp_mask_to_indexed_png, copy_image
@@ -180,39 +181,6 @@ _PLANS: Mapping[str, ArchivePlan] = MappingProxyType(
         ),
     }
 )
-
-
-def stage_source(
-    source: Source,
-    *,
-    cache_root: Path,
-    out_root: Path,
-    profile: Profile,
-    slice_cap_bytes: int | None = None,
-    workers: int | None = None,
-) -> StagedVersion:
-    """``_PLANS``, then ``_PARQUET_PLANS``, then ``_S3_PLANS`` (D3a2); cap and
-    ``workers`` (D3d) are both S3-only, same refusal pattern for each."""
-    from . import ingest_parquet, ingest_s3
-
-    if slice_cap_bytes is not None and source.id not in ingest_s3._S3_PLANS:
-        raise IngestError(f"{source.id}: --slice-cap-bytes only applies to an S3 source")
-    if workers is not None and source.id not in ingest_s3._S3_PLANS:
-        raise IngestError(f"{source.id}: --workers only applies to an S3 source")
-    if (plan := _PLANS.get(source.id)) is not None:
-        return _stage_with_plan(
-            source, plan, cache_root=cache_root, out_root=out_root, profile=profile
-        )
-    if (parquet_plan := ingest_parquet._PARQUET_PLANS.get(source.id)) is not None:
-        shards = ingest_parquet.fetch_parquet_shards(source, parquet_plan, cache_root)
-        return ingest_parquet._stage_with_parquet_plan(
-            source, parquet_plan, shards, out_root=out_root, profile=profile
-        )
-    if (s3 := ingest_s3._S3_PLANS.get(source.id)) is None:
-        raise IngestError(f"no ingest plan for {source.id!r}")
-    return ingest_s3.stage_s3_source(
-        source, s3, cache_root, out_root, profile, slice_cap_bytes, workers
-    )
 
 
 def _stage_with_plan(
