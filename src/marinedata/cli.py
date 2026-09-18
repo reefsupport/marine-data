@@ -10,6 +10,7 @@ from __future__ import annotations
 
 import argparse
 import sys
+from pathlib import Path
 
 from .gate import evaluate
 from .lineage import build_lineage
@@ -110,6 +111,26 @@ def _cmd_fetch(args: argparse.Namespace) -> int:
         return 1
     print(f"{result.items} items → {result.root}")
     print("Bounded verification sample — NOT the full dataset.")
+    return 0
+
+
+def _cmd_ingest(args: argparse.Namespace) -> int:
+    """Stage one source's declared version into ``<out>/<source_id>/<version>/``."""
+    from .fetch import cache_root
+    from .gate import LicenceViolation
+    from .ingest import IngestError, stage_source
+
+    reg = Registry.load()
+    source = reg.source(args.source_id)
+    profile = reg.profile(args.profile)
+    try:
+        result = stage_source(
+            source, cache_root=cache_root(), out_root=Path(args.out), profile=profile
+        )
+    except (IngestError, LicenceViolation) as exc:
+        print(f"ingest failed: {exc}", file=sys.stderr)
+        return 1
+    print(f"{result.source_id}@{result.version}  {result.images} images  → {result.root}")
     return 0
 
 
@@ -284,6 +305,12 @@ def build_parser() -> argparse.ArgumentParser:
     p_fetch.add_argument("--limit", type=int, default=100)
     p_fetch.add_argument("--force", action="store_true")
     p_fetch.set_defaults(func=_cmd_fetch)
+
+    p_ingest = sub.add_parser("ingest", help="Stage a source version into sources/<id>/<version>/")
+    p_ingest.add_argument("source_id")
+    p_ingest.add_argument("--out", required=True, help="Root directory to stage into")
+    p_ingest.add_argument("--profile", required=True, help="Release profile (see profiles.yaml)")
+    p_ingest.set_defaults(func=_cmd_ingest)
 
     p_verify = sub.add_parser("verify", help="Check declared layouts against real fetched samples")
     p_verify.add_argument("source_id", nargs="*")

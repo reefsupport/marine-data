@@ -39,6 +39,15 @@ def _bmp_mask(path: Path, pixels: list[int], size: tuple[int, int]) -> None:
     im.save(path, format="BMP")
 
 
+def _rgb_bmp_mask(path: Path, pixels: list[tuple[int, int, int]], size: tuple[int, int]) -> None:
+    from PIL import Image
+
+    path.parent.mkdir(parents=True, exist_ok=True)
+    im = Image.new("RGB", size)
+    im.putdata(pixels)
+    im.save(path, format="BMP")
+
+
 def test_write_digest_returns_sha256_of_written_bytes(tmp_path: Path) -> None:
     payload = b"some staged bytes"
     dest = tmp_path / "out.bin"
@@ -199,6 +208,56 @@ def test_every_writer_returns_the_digest_of_the_file_it_wrote(tmp_path: Path) ->
     counts = AnnotationCounts(images=1, images_without_annotation=0, geometries=())
     annotations_digest = write_annotations_json(annotations_dest, source, counts)
     assert annotations_digest == file_digest(annotations_dest)
+
+
+def test_rgb_bitpacked_mask_decodes_to_schema_indices(tmp_path: Path) -> None:
+    # index = 4*R + 2*G + 1*B (each channel thresholded at 127) — one pixel per class.
+    pixels = [
+        (0, 0, 0),  # 0
+        (0, 0, 255),  # 1 (HD)
+        (0, 255, 0),  # 2
+        (0, 255, 255),  # 3 (WR)
+        (255, 0, 0),  # 4 (RO)
+        (255, 0, 255),  # 5 (RI)
+        (255, 255, 0),  # 6 (FV)
+        (255, 255, 255),  # 7
+    ]
+    src = tmp_path / "mask.bmp"
+    _rgb_bmp_mask(src, pixels, size=(8, 1))
+    dest = tmp_path / "mask.png"
+    digest, observed = bmp_mask_to_indexed_png(src, dest, classes=8)
+    assert observed == frozenset(range(8))
+    assert digest == file_digest(dest)
+
+    from PIL import Image
+
+    with Image.open(dest) as im:
+        assert im.mode == "P"
+        assert list(im.getdata()) == list(range(8))
+
+
+def test_rgb_mask_noisy_channel_values_threshold_at_127(tmp_path: Path) -> None:
+    # Off-pure values either side of the 127 threshold must still resolve to 0/1 bits.
+    pixels = [(0, 0, 128), (10, 5, 255), (0, 127, 0), (5, 200, 20)]
+    src = tmp_path / "mask.bmp"
+    _rgb_bmp_mask(src, pixels, size=(4, 1))
+    dest = tmp_path / "mask.png"
+    _digest, observed = bmp_mask_to_indexed_png(src, dest, classes=8)
+    # (0,0,128)->1, (10,5,255)->1, (0,127,0)->0 (127 is not > 127), (5,200,20)->2
+    assert observed == frozenset({0, 1, 2})
+
+
+def test_unsupported_mask_mode_raises(tmp_path: Path) -> None:
+    from PIL import Image
+
+    src = tmp_path / "mask.bmp"
+    src.parent.mkdir(parents=True, exist_ok=True)
+    # BMP's native 1-bit bilevel mode ("1") round-trips losslessly but is neither
+    # 'L'/'P' (single-channel index) nor 'RGB' (bitpacked) — must raise, not silently
+    # coerce.
+    Image.new("1", (2, 2), 0).save(src, format="BMP")
+    with pytest.raises(ValueError, match="not a supported mask mode"):
+        bmp_mask_to_indexed_png(src, tmp_path / "mask.png", classes=8)
 
 
 def test_missing_ingest_extra_error_names_the_extra(

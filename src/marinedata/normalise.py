@@ -63,26 +63,57 @@ def _palette_bytes(classes: int) -> bytes:
     return bytes(entries)
 
 
+def _rgb_bitpacked_indices(im) -> bytes:
+    """Decode an RGB-mode mask into raw per-pixel indices via SUIM's own 3-bit packing.
+
+    I2 override (2026-09-18 brief, upstream SUIM masks are very likely 24-bit RGB BMPs,
+    not the ``'L'``-mode the design assumed): ``index = 4*(R>127) + 2*(G>127) +
+    1*(B>127)``, confirmed against ``registry/crosswalks/suim-8class.yaml``'s own
+    decoder comment (HD=(0,0,1)=1, RO=(1,0,0)=4, FV=(1,1,0)=6, WR=(0,1,1)=3,
+    RI=(1,0,1)=5 — every one consistent with R contributing 4, G contributing 2, B
+    contributing 1). Thresholded at 127, never exact-matched: upstream has off-pure
+    values. Built from three ``'L'``-mode channel images combined with
+    :class:`PIL.ImageChops`, not numpy — numpy is not part of the ``ingest`` extra, and
+    the per-channel max (``4+2+1=7``) never overflows a single byte.
+    """
+    from PIL import ImageChops
+
+    red, green, blue = im.split()
+    red_bit = red.point(lambda v: 4 if v > 127 else 0)
+    green_bit = green.point(lambda v: 2 if v > 127 else 0)
+    blue_bit = blue.point(lambda v: 1 if v > 127 else 0)
+    combined = ImageChops.add(ImageChops.add(red_bit, green_bit), blue_bit)
+    return combined.tobytes()
+
+
 def bmp_mask_to_indexed_png(src: Path, dest: Path, *, classes: int) -> tuple[str, frozenset[int]]:
-    """Re-encode a single-channel SUIM ``.bmp`` mask as an indexed (mode ``'P'``) PNG.
+    """Re-encode a SUIM ``.bmp`` mask as an indexed (mode ``'P'``) PNG.
 
     The one unavoidable re-encode in the pipeline (D1 §3) — ``.bmp`` is not a format we
-    ship. Raises if the source mask is not single-channel (``'L'``) or already-indexed
-    (``'P'``), or if any observed pixel index is ``>= classes``: an out-of-range index
-    is a crosswalk error, not a warning, and must not be staged silently.
+    ship. Accepts single-channel ``'L'``/already-indexed ``'P'`` masks unchanged, and
+    24-bit ``'RGB'`` masks via :func:`_rgb_bitpacked_indices` (I2 override — see its
+    docstring). Raises for any other mode, and if any observed pixel index is ``>=
+    classes``: an out-of-range index is a crosswalk error, not a warning, and must not
+    be staged silently.
 
     Returns ``(sha256 of the written PNG, the set of pixel indices actually observed)``.
     """
     Image = _require_pillow()
     with Image.open(src) as im:
-        if im.mode not in {"L", "P"}:
-            raise ValueError(f"{src}: mode {im.mode!r} is not a single-channel index mask")
-        # Both 'L' and 'P' store one byte per pixel; ``tobytes()`` on either returns
-        # those raw bytes verbatim (for 'P' it is the palette *index*, never the
-        # resolved RGB). Building the target image from those bytes — rather than
-        # ``Image.convert("P")``, which quantises/dithers by default — is what keeps
-        # each pixel's integer value exactly what it was in the source mask.
-        raw = im.tobytes()
+        if im.mode == "RGB":
+            raw = _rgb_bitpacked_indices(im)
+        elif im.mode in {"L", "P"}:
+            # Both 'L' and 'P' store one byte per pixel; ``tobytes()`` on either
+            # returns those raw bytes verbatim (for 'P' it is the palette *index*,
+            # never the resolved RGB). Building the target image from those bytes —
+            # rather than ``Image.convert("P")``, which quantises/dithers by default —
+            # is what keeps each pixel's integer value exactly what it was in the
+            # source mask.
+            raw = im.tobytes()
+        else:
+            raise ValueError(
+                f"{src}: mode {im.mode!r} is not a supported mask mode (need 'L', 'P' or 'RGB')"
+            )
         observed = frozenset(raw)
         if observed and max(observed) >= classes:
             raise ValueError(
