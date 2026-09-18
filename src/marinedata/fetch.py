@@ -868,3 +868,12 @@ def sample_digest(root: Path) -> str:
         digest.update(path.name.encode())
         stream_into(digest, path)
     return "sha256:" + digest.hexdigest()[:16]
+
+
+get_bytes = _get
+"""Public alias for :func:`_get` — a retrying GET returning the whole response body.
+For :mod:`marinedata.ingest`, which needs the full archive rather than a sample."""
+
+extract_archive = _extract_archive
+"""Public alias for :func:`_extract_archive` — extract an in-memory archive to a
+directory, bounded to ``limit`` files (``0`` means every member)."""

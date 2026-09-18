@@ -105,6 +105,35 @@ def file_digest(path: str | Path) -> str:
     return digest.hexdigest()
 
 
+def write_digest(path: Path, payload: bytes) -> str:
+    """Write ``payload`` to ``path`` and return its sha256. One pass over the bytes.
+
+    The write-side counterpart to :func:`file_digest`: :func:`stream_into` opens its
+    path for *reading*, so calling it right after a write would be a second pass over
+    bytes already in hand. This hashes the buffer directly instead.
+    """
+    path.parent.mkdir(parents=True, exist_ok=True)
+    digest = hashlib.sha256(payload)
+    path.write_bytes(payload)
+    return digest.hexdigest()
+
+
+def copy_digest(src: Path, dest: Path) -> str:
+    """Stream ``src`` to ``dest`` in :data:`CHUNK_SIZE` chunks, hashing as it goes.
+
+    Carries large files (images) without holding them whole in memory, and without a
+    second read: each chunk is written to ``dest`` and folded into the digest in the
+    same pass.
+    """
+    dest.parent.mkdir(parents=True, exist_ok=True)
+    digest = hashlib.sha256()
+    with src.open("rb") as source, dest.open("wb") as target:
+        while chunk := source.read(CHUNK_SIZE):
+            digest.update(chunk)
+            target.write(chunk)
+    return digest.hexdigest()
+
+
 def _relative_paths(root: Path) -> Iterator[tuple[str, Path]]:
     """Walk ``root``, yielding ``(posix relative path, absolute path)`` for every file.
 
