@@ -262,11 +262,10 @@ def stage_s3_source(
 
 
 def _mermaid_licence_text() -> str:
-    """CC BY-NC-SA 4.0. The bucket carries no licence file of its own, so this
-    is the canonical short notice + legalcode URL, vendored rather than the
-    full legalcode (D3a2 brief §3: not fetched from the internet, and the
-    official text is long — see ``licenses/cc-by-nc-sa-4.0.txt`` for how it was
-    sourced)."""
+    """CC BY-NC-SA 4.0. The bucket carries no licence file of its own, so this is
+    the full upstream legalcode, vendored verbatim from
+    https://creativecommons.org/licenses/by-nc-sa/4.0/legalcode.txt (D3f) into
+    ``licenses/cc-by-nc-sa-4.0.txt``."""
     from importlib.resources import files
 
     return (
