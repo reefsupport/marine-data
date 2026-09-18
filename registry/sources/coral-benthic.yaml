@@ -101,7 +101,7 @@ sources:
       verified_by: "arXiv 2405.05241 / Scientific Data 2025 — CC-BY-4.0 for metadata and models; most images CC-BY with per-source exceptions noted in Appendix C"
       method: dataset-card
     access:
-      method: http
+      method: request
       uri: https://doi.org/10.20383/103.0614
       notes: >
         Checked 2026-08-28: the DOI resolves to a Federated Research Data Repository
@@ -356,7 +356,7 @@ sources:
       verified_by: "HuggingFace card CoralReefData/CoralVQA states license:cc-by-4.0"
       method: dataset-card
     access:
-      method: http
+      method: huggingface
       uri: https://huggingface.co/datasets/CoralReefData/CoralVQA
       size_bytes: 26694403050
       params:

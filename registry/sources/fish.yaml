@@ -27,7 +27,7 @@ sources:
         Same practical permissions either way (attribution only).
       method: licence-file
     access:
-      method: http
+      method: request
       uri: https://github.com/open-AIMS/ozfish
       notes: >
         Checked 2026-08-28: the repo's README points at two AIMS-operated data
@@ -204,7 +204,7 @@ sources:
         statement exists anywhere for the actual images/annotations.
       method: absent
     access:
-      method: http
+      method: request
       uri: https://fishnet-2023.github.io/
       notes: >
         Checked 2026-08-28: the only image source is a Google Drive file
@@ -262,7 +262,7 @@ sources:
         licence statement for the data at all. Apache-2.0 is written for software,
         not imagery/annotations — plausibly a placeholder default rather than a
         considered choice. Confirm with the authors before shipping on this basis.
-    access: { method: http, uri: https://vranlee.github.io/SU-T/ }
+    access: { method: request, uri: https://vranlee.github.io/SU-T/ }
     modalities: [video]
     capabilities: [fish-tracking, fish-detection]
     items: 48066
@@ -563,7 +563,7 @@ sources:
         "LICENSE: CC BY 4.0" directly, shown twice including in its citation block.
       method: dataset-card
     access:
-      method: http
+      method: request
       uri: https://universe.roboflow.com/thesis-ztpwb/sea-urchin-10r8i
       notes: >
         Checked 2026-08-28: confirmed via direct interaction with the live project

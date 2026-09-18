@@ -141,7 +141,7 @@ sources:
       verified_on: 2026-08-17
       verified_by: "Kaggle viseaonlab/flsea-vi — CC BY-NC-SA 4.0"
       method: dataset-card
-    access: { method: http, uri: https://www.kaggle.com/datasets/viseaonlab/flsea-vi }
+    access: { method: request, uri: https://www.kaggle.com/datasets/viseaonlab/flsea-vi }
     modalities: [image, video]
     capabilities: [depth-estimation, pose-slam]
     annotations: [{ kind: depth-map, supervises: [] }]

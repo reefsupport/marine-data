@@ -11,7 +11,7 @@ from __future__ import annotations
 import pytest
 
 from marinedata import Registry
-from marinedata.enums import LegalBasis, Redistribution, Tier
+from marinedata.enums import AccessMethod, LegalBasis, Redistribution, Tier
 from marinedata.registry import _default_root, _read_yaml
 
 
@@ -85,6 +85,16 @@ def test_tdm_or_unknown_basis_never_redistributes_ok(registry: Registry) -> None
                 f"{src.id}: tier={src.licence.tier.value} legal_basis={src.legal_basis.value} "
                 f"but redistribution=ok"
             )
+
+
+def test_every_source_access_method_is_a_valid_enum_member(registry: Registry) -> None:
+    """Pinned as an explicit contract, independent of how the field happens to be typed —
+    a fetcher dispatch table keyed on a value outside the vocabulary fails silently
+    rather than at load."""
+    for src in registry:
+        assert isinstance(src.access.method, AccessMethod), (
+            f"{src.id}: access.method={src.access.method!r} is not a valid AccessMethod member"
+        )
 
 
 def test_no_derivatives_sources_are_flagged_not_just_noted(registry: Registry) -> None:
