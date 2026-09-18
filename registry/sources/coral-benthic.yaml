@@ -12,6 +12,11 @@ sources:
     legal_basis: licence
     redistribution: ok
     provenance: public
+    checksums:
+      version: "1.0"
+      root_digest: 67d6b719e54e3981a639f58c06ef1061a964ec0662fc23fd52005c01c89e6d20
+      files: 4154
+      size_bytes: 5848378768
     verification:
       verified_on: 2026-08-18
       verified_by: >
@@ -42,8 +47,15 @@ sources:
       schema_id: coralscapes-39
       crosswalk_id: coralscapes-39
       params: { images_dir: images, masks_dir: masks }
-      verified_on: 2026-08-29
-      verified_note: "Live HF fetch confirms images/ and masks/ columns write to matching-stem files, as the layout declares."
+      verified_on: 2026-09-18
+      verified_note: >
+        Real ingest of all 13 upstream shards (9 train + 3 test + 1 validation)
+        confirms 2075 image/mask pairs (train 1517, test 392, validation 166),
+        exact stem match, no unlabelled or unpaired files. Images are 8-bit PNG
+        (2075/2075); masks are palette-indexed PNG (mode P, 2075/2075), observed
+        indices 0-39, matching ANNOTATIONS.json's declared 40-class
+        observed_indices range — raster_ignore_value 255 is the ignore value,
+        not index 0. Index 0 alone covers ~17.1% of all mask pixels.
     items: 2075
     annotations:
       - kind: dense-mask
