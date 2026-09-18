@@ -288,15 +288,15 @@ sources:
         train/test/val/<stem>.jpg + <stem>.json sidecars, LabelMe polygon format,
         with real Brazilian scleractinian species names as labels (e.g. "Mussismilia
         hispida", "Siderastrea stellata", "Agaricia spp") — not the
-        annotations.schema_id: deolho-21 this entry also declares, which does not
-        exist as a registered schema. Corrected 2026-08-29: loader.schema_id was
-        `dataset-native` (implying a hand-authored crosswalk is the missing piece);
-        the real labels are open-vocabulary genus/species binomials, exactly what
-        worms-species exists for, needing no static crosswalk_id at all. Note that
-        annotations[].schema_id (`deolho-21`) is documentation only — nothing checks
-        it resolves, unlike loader.schema_id/crosswalk_id which are checked at load —
-        a real but lower-stakes registry gap, left as `deolho-21` rather than fixed
-        here since it changes nothing about how the source loads or crosswalks.
+        annotations.schema_id: deolho-21 this entry also declares. Corrected
+        2026-08-29: loader.schema_id was `dataset-native` (implying a hand-authored
+        crosswalk is the missing piece); the real labels are open-vocabulary
+        genus/species binomials, exactly what worms-species exists for, needing no
+        static crosswalk_id at all. `deolho-21` is registered in
+        `registry/schemas/open-vocabs.yaml` as a closed, unenumerated stub (the
+        dataset's native 21-class polygon vocabulary) purely so
+        annotations[].schema_id resolves at load; the loader never uses it, since the
+        real per-image labels are worms-species binomials, not the polygon classes.
     tags: [atlantic, dense-seg, rare-region]
 
   - id: heron-reef-benthic

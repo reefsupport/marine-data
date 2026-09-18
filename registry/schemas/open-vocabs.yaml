@@ -51,3 +51,15 @@ schemas:
       §5). Registered so ``mermaid-aws`` records the vocabulary it actually speaks
       instead of a mismatched borrowed one; a real crosswalk is future work.
     axes: [taxon, form]
+
+  - id: deolho-21
+    name: "#DeOlhoNosCorais 21-class polygon vocabulary"
+    description: >
+      Dataset-native vocabulary of #DeOlhoNosCorais (``deolhonoscorais``), 21 classes
+      per the source entry's ``annotations`` block. A CLOSED set — not open by nature —
+      whose label list is NOT enumerated here yet; it is registered only so
+      ``annotations.schema_id: deolho-21`` resolves. The source's loader speaks
+      ``worms-species`` binomials directly (real per-image labels are Brazilian
+      scleractinian species names), so this id is not on the load path today.
+      Enumerating the 21 labels from the upstream LabelMe release is follow-up work.
+    axes: [taxon]
