@@ -157,16 +157,21 @@ class Registry:
         """A loader pointing at a missing schema should fail at load, not at epoch 1."""
         for src in sources.values():
             spec = src.loader
-            if spec is None:
-                continue
-            if spec.schema_id and spec.schema_id not in schemas:
-                raise RegistryError(
-                    f"source '{src.id}' references unknown schema '{spec.schema_id}'"
-                )
-            if spec.crosswalk_id and spec.crosswalk_id not in crosswalks:
-                raise RegistryError(
-                    f"source '{src.id}' references unknown crosswalk '{spec.crosswalk_id}'"
-                )
+            if spec is not None:
+                if spec.schema_id and spec.schema_id not in schemas:
+                    raise RegistryError(
+                        f"source '{src.id}' references unknown schema '{spec.schema_id}'"
+                    )
+                if spec.crosswalk_id and spec.crosswalk_id not in crosswalks:
+                    raise RegistryError(
+                        f"source '{src.id}' references unknown crosswalk '{spec.crosswalk_id}'"
+                    )
+            for ann in src.annotations:
+                if ann.schema_id and ann.schema_id not in schemas:
+                    raise RegistryError(
+                        f"source '{src.id}' annotations.schema_id references unknown "
+                        f"schema '{ann.schema_id}'"
+                    )
         for walk in crosswalks.values():
             if walk.target_schema not in schemas:
                 raise RegistryError(
