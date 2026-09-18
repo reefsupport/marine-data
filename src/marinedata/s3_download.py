@@ -23,6 +23,7 @@ from __future__ import annotations
 
 import hashlib
 import re
+import sys
 import time
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from pathlib import Path
@@ -159,6 +160,9 @@ def download_images(
     next attempt.
     """
     results: dict[str, tuple[str, str, int, int]] = {}
+    total = len(selected)
+    completed = 0
+    bytes_done = 0
     with ThreadPoolExecutor(max_workers=workers) as executor:
         futures = {
             executor.submit(_stage_one, stem, image_groups, plan, version_root): stem
@@ -168,6 +172,16 @@ def download_images(
             for future in as_completed(futures):
                 stem, key, digest, width, height = future.result()
                 results[stem] = (key, digest, width, height)
+                completed += 1
+                bytes_done += image_groups[stem][1]
+                if completed % 100 == 0:
+                    # Progress only — stderr, never into the staged tree (no-timestamp
+                    # rule covers files; this line carries no clock anyway).
+                    print(
+                        f"{completed}/{total} images, {bytes_done} B",
+                        file=sys.stderr,
+                        flush=True,
+                    )
         except Exception:
             for pending in futures:
                 pending.cancel()
