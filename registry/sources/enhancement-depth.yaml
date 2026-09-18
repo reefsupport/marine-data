@@ -158,6 +158,11 @@ sources:
     legal_basis: licence
     redistribution: ok
     provenance: public
+    checksums:
+      version: "2020"
+      root_digest: 596939c79961be58d57c8250e3c97e4654575667b38aabd60d28c6841d963a1a
+      files: 3200
+      size_bytes: 178203960
     verification:
       verified_on: 2026-08-29
       verified_by: >
@@ -179,7 +184,7 @@ sources:
         train_val split, not a trimmed sample, but small enough to fetch whole.
     modalities: [image]
     capabilities: [benthic-segmentation, fish-detection, general-pretraining]
-    items: 1525
+    items: 1598
     annotations: [{ kind: dense-mask, classes: 8, supervises: [taxon] }]
     coverage: { regions: [global] }
     domain_shift:
@@ -189,11 +194,11 @@ sources:
       params: { images_dir: SUIM/train_val/images, masks_dir: SUIM/train_val/masks }
       schema_id: dataset-native
       crosswalk_id: suim-8class
-      verified_on: 2026-08-28
+      verified_on: 2026-09-18
       verified_note: >
-        Live fetch confirms SUIM/train_val/{images,masks}/ (1488 pairs; a handful of
-        images have no matching mask in the re-host, consistent with the original
-        dataset's own known gaps) and a separate SUIM/TEST/ split. Masks are
-        single-channel index images (mode 'L', values 0-7), not RGB-encoded in this
-        distribution — see registry/crosswalks/suim-8class.yaml for the index table.
+        Real ingest confirms SUIM/train_val/{images,masks}/ (1488 pairs) plus a
+        separate SUIM/TEST/ split (110 pairs) — 1598 items total, image↔mask pairing
+        exact, no unpaired files. Masks are palette-indexed .bmp files (not .png) in
+        the upstream distribution, values 0-7 — see
+        registry/crosswalks/suim-8class.yaml for the index table.
     tags: [scene-understanding, baseline]
