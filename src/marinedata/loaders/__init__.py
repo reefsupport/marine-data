@@ -30,6 +30,7 @@ from .generic import (
     MetadataOnlyLoader,
 )
 from .labelbox import LabelboxNdjsonLoader, LabelboxRgbMaskLoader
+from .segmentsai import SegmentsAiInstanceMaskLoader
 
 __all__ = [
     "AudioClipsLoader",
@@ -43,6 +44,7 @@ __all__ = [
     "LabelboxRgbMaskLoader",
     "LoaderError",
     "MetadataOnlyLoader",
+    "SegmentsAiInstanceMaskLoader",
     "SourceLoader",
     "build_loader",
     "loader_for",
