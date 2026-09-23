@@ -28,7 +28,7 @@ from .generic import (
     ImageMaskPairLoader,
     MetadataOnlyLoader,
 )
-from .labelbox import LabelboxNdjsonLoader
+from .labelbox import LabelboxNdjsonLoader, LabelboxRgbMaskLoader
 
 __all__ = [
     "AudioClipsLoader",
@@ -38,6 +38,7 @@ __all__ = [
     "ImageFolderLoader",
     "ImageMaskPairLoader",
     "LabelboxNdjsonLoader",
+    "LabelboxRgbMaskLoader",
     "LoaderError",
     "MetadataOnlyLoader",
     "SourceLoader",

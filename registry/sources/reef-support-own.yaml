@@ -34,17 +34,20 @@ sources:
       - coral-instance-segmentation
       - general-pretraining
     loader:
-      layout: labelbox-ndjson
+      layout: labelbox-rgb
       schema_id: reef-support-labelbox
       crosswalk_id: reef-support-labelbox
-      verified_on: 2026-08-17
+      verified_on: 2026-09-23
       verified_note: >
-        Verified against the live Hetzner bucket. Site-partitioned - each site directory
-        holds images/ + masks/ + masks_stitched/ + one export-result.ndjson.
+        WSD S6x/S7a: masks_stitched/ is a locally-rendered 5-colour RGB raster, not an
+        indexed one - labelbox-rgb decodes the fixed fill+outline LUT and cross-checks
+        the result against export-result.ndjson (prototype-verified on 540/540 stitched
+        masks). Site-partitioned - each site directory holds images/ + masks_stitched/ +
+        one export-result.ndjson.
       params:
         annotations: export-result.ndjson
         images_dir: images
-        geometry_labels: "SCALE"
+        stitched_dir: masks_stitched
     items: 1250
     items_note: >
       The only imagery whose pixels we own. THE moat, and it is small.
@@ -122,15 +125,19 @@ sources:
       - coral-instance-segmentation
       - general-pretraining
     loader:
-      layout: labelbox-ndjson
+      layout: labelbox-rgb
       schema_id: reef-support-labelbox
       crosswalk_id: reef-support-labelbox
       params:
-        annotations: export-result.ndjson
+        annotations: export-result-old.ndjson
         images_dir: images
-        geometry_labels: "SCALE"
-      verified_on: 2026-08-29
-      verified_note: "Live S3 fetch confirms images/ and export-result.ndjson at the declared prefix, matching the layout."
+        stitched_dir: masks_stitched
+      verified_on: 2026-09-23
+      verified_note: >
+        WSD S6x/S7a: SEAVIEW_ATL's export-result.ndjson is the newer, lossy export (0
+        objects for 320/705 images) - export-result-old.ndjson is the input that
+        actually matches masks_stitched/ (705/705, spec §2a). labelbox-rgb decodes the
+        fixed fill+outline colour LUT and cross-checks per image against the NDJSON.
     items: 73045
     items_note: >
       STALE 2026-09-23: this still totals all eight directories from the 2026-09-19
