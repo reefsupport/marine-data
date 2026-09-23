@@ -17,6 +17,8 @@ from marinedata.labelindex import IGNORE_INDEX, LabelIndex
 from marinedata.lineage import build_lineage
 from marinedata.sample import LabelValue, Sample
 from marinedata.schema import Axis
+from marinedata.splitmap import resolve_splits
+from marinedata.task import TaskKind
 
 pd = pytest.importorskip("pandas")
 
@@ -100,6 +102,62 @@ def test_site_split_has_no_group_leakage(dataset: Dataset) -> None:
 
     dataset.split(by="site")
     assert len(leakage_report(dataset)) == 0
+
+
+def test_cross_source_duplicate_lands_in_one_split(registry: Registry) -> None:
+    """Byte-identical images ingested under two different sources share a `split_group`
+    (`by="group"`) and must never straddle a split boundary — the leakage rule the
+    site-keyed map cannot make when the duplicate crosses `source_id`."""
+    shared_group = "seaview/12345"
+    shared = [
+        Sample(source_id="seaview-survey-imagery", key="s1", meta={"split_group": shared_group}),
+        Sample(source_id="coralvqa", key="c1", meta={"split_group": shared_group}),
+    ]
+    filler = [
+        Sample(source_id="other", key=f"o{i}", meta={"split_group": f"other/g{i}"})
+        for i in range(20)
+    ]
+    samples = shared + filler
+    schema = registry.label_schema("rs-benthic-v1")
+    index = LabelIndex.from_samples(samples, schema)
+    lineage = build_lineage([], registry.profile("research"))
+    dataset = Dataset(samples=samples, label_index=index, lineage=lineage)
+
+    dataset.split(by="group", tolerance=None)
+
+    shared_positions = {0, 1}
+    containing = [
+        name for name, positions in dataset.splits.items() if shared_positions & set(positions)
+    ]
+    assert len(containing) == 1, "the shared group must not straddle two splits"
+    assert shared_positions <= set(dataset.splits[containing[0]])
+
+
+def test_self_supervised_with_map_adopts_map_ratios(registry: Registry, tmp_path: Path) -> None:
+    """A self-supervised build's own 95/5 default must not raise against a map already
+    written at 70/15/15 for the whole corpus — the builder adopts the map's ratios."""
+    samples = [
+        _sample("a", f"a{i}", "HC" if i % 3 else "SC", partition=f"site{i % 12}")
+        for i in range(120)
+    ]
+    schema = registry.label_schema("rs-benthic-v1")
+    index = LabelIndex.from_samples(samples, schema)
+    lineage = build_lineage([], registry.profile("research"))
+    dataset = Dataset(
+        samples=samples, label_index=index, lineage=lineage, task_kind=TaskKind.SELF_SUPERVISED
+    )
+
+    path = tmp_path / "SPLIT_MAP.json"
+    counts = {f"a/site{i}": 10 for i in range(12)}
+    resolve_splits(
+        path, counts, {"train": 0.7, "val": 0.15, "test": 0.15}, seed=0, by="site",
+        now="2026-09-23T00:00:00Z",
+    )
+
+    dataset.split(by="site", split_map=path)  # must not raise
+
+    assert set(dataset.splits) == {"train", "val", "test"}
+    assert dataset.splits["test"], "the map's own test split must be reachable, not dropped"
 
 
 def test_random_split_leaks_and_that_is_why_it_is_not_the_default(dataset: Dataset) -> None:

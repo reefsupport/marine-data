@@ -12,6 +12,7 @@ import argparse
 import sys
 
 from .cli_ingest import _cmd_ingest, add_ingest_subparser  # noqa: F401 — re-exported
+from .cli_splitmap import add_splitmap_subparser
 from .gate import evaluate
 from .lineage import build_lineage
 from .query import find
@@ -287,6 +288,7 @@ def build_parser() -> argparse.ArgumentParser:
     p_fetch.set_defaults(func=_cmd_fetch)
 
     add_ingest_subparser(sub)
+    add_splitmap_subparser(sub)
 
     p_verify = sub.add_parser("verify", help="Check declared layouts against real fetched samples")
     p_verify.add_argument("source_id", nargs="*")

@@ -126,6 +126,43 @@ def test_split_map_absent_file_loads_as_none(tmp_path: Path) -> None:
     assert load_split_map(tmp_path / "does-not-exist.json") is None
 
 
+def test_site_map_rejected_for_group(tmp_path: Path) -> None:
+    """A map generated `by="site"` cannot be extended by a `by="group"` request — mixing
+    keying strategies under one file would silently reinterpret every existing key."""
+    path = tmp_path / "SPLIT_MAP.json"
+    resolve_splits(path, {"a/site0": 10, "a/site1": 20}, RATIOS, seed=0, by="site")
+
+    with pytest.raises(SplitMapError, match="by="):
+        resolve_splits(path, {"g0": 5}, RATIOS, seed=0, by="group")
+
+
+def test_frozen_map_raises_on_new_group(tmp_path: Path) -> None:
+    """`frozen=True` is the release-build contract: every group must already be in the
+    map, and a call that finds one missing must write nothing — not even a partial
+    append — so a release can never quietly grow the shared map."""
+    path = tmp_path / "SPLIT_MAP.json"
+    counts = {"g0": 10, "g1": 20, "g2": 5}
+    resolve_splits(path, counts, RATIOS, seed=0)
+    before = path.read_text()
+
+    with pytest.raises(SplitMapError, match="frozen"):
+        resolve_splits(path, {**counts, "g3": 3}, RATIOS, seed=0, frozen=True)
+
+    assert path.read_text() == before, "a frozen call must not write anything, even on failure"
+
+    # A frozen call over exactly the persisted groups succeeds and changes nothing.
+    resolved = resolve_splits(path, counts, RATIOS, seed=0, frozen=True)
+    assert resolved == resolve_splits(path, counts, RATIOS, seed=0)
+    assert path.read_text() == before, "a frozen call must never write, even when it succeeds"
+
+
+def test_frozen_map_raises_when_file_absent(tmp_path: Path) -> None:
+    path = tmp_path / "SPLIT_MAP.json"
+    with pytest.raises(SplitMapError, match="frozen"):
+        resolve_splits(path, {"g0": 5}, RATIOS, seed=0, frozen=True)
+    assert not path.exists()
+
+
 def test_split_map_mismatched_ratios_raises(tmp_path: Path) -> None:
     """Extending a map under different ratios/seed/by would silently reinterpret a
     stale map, so it must raise instead — the same "raise, don't warn" contract as the

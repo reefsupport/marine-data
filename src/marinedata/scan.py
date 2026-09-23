@@ -52,7 +52,16 @@ def group_key(sample: Sample, by: str) -> str:
         return f"{sample.source_id}/{sample.meta.get('partition', '')}"
     if by == "random":
         return f"{sample.source_id}/{sample.key}"
-    raise ValueError(f"unknown split strategy '{by}' (site | source | random)")
+    if by == "group":
+        group = sample.meta.get("split_group")
+        if not group:
+            raise ValueError(
+                f"group_key(by='group') requires sample.meta['split_group'] "
+                f"(source={sample.source_id!r} key={sample.key!r} has none) — the "
+                "registry's per-source split_group rule must run before scanning."
+            )
+        return group
+    raise ValueError(f"unknown split strategy '{by}' (site | source | random | group)")
 
 
 @dataclass(frozen=True)

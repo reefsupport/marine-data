@@ -150,6 +150,21 @@ def test_group_key_rejects_unknown_strategy() -> None:
         group_key(sample, "by-vibes")
 
 
+def test_group_key_group_uses_split_group() -> None:
+    """`by="group"` reads the registry-assigned unit, not source/partition — it is the
+    only strategy that can make a cross-source duplicate converge on one key."""
+    sample = Sample(source_id="coralvqa", key="img1", meta={"split_group": "seaview/12345"})
+    assert group_key(sample, "group") == "seaview/12345"
+
+
+def test_group_key_group_raises_when_missing() -> None:
+    """A sample with no `split_group` in `meta` must fail loudly — silently falling back
+    to another key would defeat the whole point of a registry-assigned group."""
+    sample = Sample(source_id="coralvqa", key="img1")
+    with pytest.raises(ValueError, match="split_group"):
+        group_key(sample, "group")
+
+
 def test_assign_splits_never_divides_a_group() -> None:
     counts = {f"site{i}": 100 * (i + 1) for i in range(20)}
     assignment = assign_splits(counts, RATIOS)

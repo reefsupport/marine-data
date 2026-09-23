@@ -101,6 +101,7 @@ def resolve_splits(
     seed: int = 0,
     by: str = "site",
     now: str | None = None,
+    frozen: bool = False,
 ) -> dict[str, SplitName]:
     """Assign every group in ``counts`` a split, persisting the result at ``path``.
 
@@ -118,6 +119,12 @@ def resolve_splits(
     Raises ``SplitMapError`` if a map already exists at ``path`` with a different
     ``by``, ``seed``, or ``ratios`` — extending a stale map under different parameters
     would silently reinterpret it rather than fail loudly.
+
+    ``frozen=True`` is the release-build contract: every group in ``counts`` must
+    already be recorded at ``path``. A group that is not raises ``SplitMapError``
+    instead of being allocated and appended — a frozen build touches nothing on disk,
+    successful or not, so a release can never quietly grow the shared map that other
+    tasks depend on.
     """
     existing = load_split_map(path)
     if existing is not None:
@@ -131,10 +138,22 @@ def resolve_splits(
         persisted = dict(existing.assignments)
         generated_at = existing.generated_at
     else:
+        if frozen:
+            raise SplitMapError(
+                f"{path} does not exist — a frozen build requires a split map already "
+                "generated (see `marinedata splitmap generate`)."
+            )
         persisted = {}
         generated_at = now if now is not None else datetime.now(UTC).isoformat()
 
     new_counts = {key: count for key, count in counts.items() if key not in persisted}
+
+    if frozen and new_counts:
+        missing = ", ".join(sorted(new_counts))
+        raise SplitMapError(
+            f"{path} is frozen: group(s) not in the map: {missing}. A frozen build "
+            "never allocates or appends — regenerate the map to include them first."
+        )
 
     new_assignment: dict[str, SplitName] = {}
     if new_counts:
@@ -156,7 +175,7 @@ def resolve_splits(
                 f"append-only violation: group {key!r} would move from {split!r} to {merged[key]!r}"
             )
 
-    if new_assignment or existing is None:
+    if not frozen and (new_assignment or existing is None):
         save_split_map(
             path,
             SplitMap(

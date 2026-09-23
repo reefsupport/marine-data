@@ -35,7 +35,7 @@ from .scan import (
     scan,
 )
 from .schema import Axis
-from .splitmap import resolve_splits
+from .splitmap import load_split_map, resolve_splits
 from .task import TaskKind
 
 SUPERVISED_DEFAULT_RATIOS = {"train": 0.7, "val": 0.15, "test": 0.15}
@@ -50,6 +50,31 @@ evaluation of a self-supervised encoder happens on a separate, labelled downstre
 — not inside the pretraining corpus itself."""
 
 SplitName = str
+
+
+def _default_ratios(
+    ratios: dict[SplitName, float] | None,
+    *,
+    self_supervised: bool,
+    split_map: str | Path | None,
+) -> dict[SplitName, float]:
+    """Fill in the default split ratios, adopting a persisted map's ratios first.
+
+    A self-supervised task defaults to ``SELF_SUPERVISED_DEFAULT_RATIOS`` (95/5), but a
+    shared ``split_map`` may already have been generated at 70/15/15 for the whole
+    corpus (see :mod:`marinedata.splitmap`). Without this, pretraining would raise on
+    every release build purely because its own default disagrees with the map it was
+    told to use. An explicit ``ratios=`` from the caller always wins — this only fills
+    in the *default*.
+    """
+    if ratios is not None:
+        return ratios
+    if split_map is not None:
+        existing = load_split_map(split_map)
+        if existing is not None:
+            return dict(existing.ratios)
+    return SELF_SUPERVISED_DEFAULT_RATIOS if self_supervised else SUPERVISED_DEFAULT_RATIOS
+
 
 _SCALAR_LABEL_KINDS = frozenset(
     {
@@ -113,6 +138,7 @@ class Dataset:
         seed: int = 0,
         tolerance: float | None = 0.10,
         split_map: str | Path | None = None,
+        frozen: bool = False,
     ) -> Dataset:
         """Assign splits. Returns self so it chains.
 
@@ -120,10 +146,16 @@ class Dataset:
             by: ``"site"`` groups by partition then source — the default, and the only
                 one that gives a trustworthy generalisation estimate for transect data.
                 ``"source"`` holds out whole datasets, which measures cross-dataset
-                transfer. ``"random"`` is available but leaks; use it knowingly.
+                transfer. ``"group"`` uses ``sample.meta["split_group"]``, the unit that
+                must land in one split across every source and task (see
+                :mod:`marinedata.scan`). ``"random"`` is available but leaks; use it
+                knowingly.
             ratios: split name to fraction. Defaults to 70/15/15 for a supervised
                 dataset (or one built with no task at all); to 95/5 (``train``/``probe``)
-                for a self-supervised one — see ``SELF_SUPERVISED_DEFAULT_RATIOS``.
+                for a self-supervised one — see ``SELF_SUPERVISED_DEFAULT_RATIOS``. When
+                ``split_map`` already exists on disk and ``ratios`` is omitted, the
+                map's own ratios are used instead of the task default, so a
+                self-supervised build does not raise against a shared 70/15/15 map.
             seed: groups are hashed with this, so the assignment is deterministic and
                 stable when new samples arrive in an existing group.
             tolerance: raise if any achieved split deviates from its requested ratio by
@@ -133,13 +165,13 @@ class Dataset:
                 group already recorded there keeps its split forever — see
                 :mod:`marinedata.splitmap` — shared by every task that passes the same
                 path, since the map is keyed by group only.
+            frozen: require every group to already be in ``split_map`` — raise instead
+                of allocating and appending a new one. A release build passes this so
+                it can never grow the shared map; nothing is written to disk either way.
         """
-        if ratios is None:
-            ratios = (
-                SELF_SUPERVISED_DEFAULT_RATIOS
-                if self.task_kind is TaskKind.SELF_SUPERVISED
-                else SUPERVISED_DEFAULT_RATIOS
-            )
+        ratios = _default_ratios(
+            ratios, self_supervised=self.task_kind is TaskKind.SELF_SUPERVISED, split_map=split_map
+        )
         total = sum(ratios.values())
         if abs(total - 1.0) > 1e-6:
             raise ValueError(f"split ratios must sum to 1.0, got {total}")
@@ -154,7 +186,7 @@ class Dataset:
         # between them would be near-impossible to notice and would invalidate every
         # comparison between runs.
         if split_map is not None:
-            assignment = resolve_splits(split_map, counts, ratios, seed=seed, by=by)
+            assignment = resolve_splits(split_map, counts, ratios, seed=seed, by=by, frozen=frozen)
         else:
             assignment = assign_splits(counts, ratios, seed=seed)
 
@@ -372,6 +404,7 @@ class DatasetBuilder:
         tolerance: float | None = 0.10,
         min_count: int = 1,
         split_map: str | Path | None = None,
+        frozen: bool = False,
     ) -> StreamingDataset:
         """Plan a corpus in constant memory, then stream it.
 
@@ -381,17 +414,21 @@ class DatasetBuilder:
 
         Use this when the corpus exceeds ~1M samples; :meth:`build` stays the simpler
         choice below that. Defaults to 70/15/15 for a supervised (or task-less) corpus,
-        95/5 for a self-supervised one — see ``SELF_SUPERVISED_DEFAULT_RATIOS``.
+        95/5 for a self-supervised one — see ``SELF_SUPERVISED_DEFAULT_RATIOS`` — unless
+        ``split_map`` already has a map on disk and ``ratios`` is omitted, in which case
+        the map's own ratios are adopted (see :meth:`Dataset.split`).
 
         ``split_map``: as in :meth:`Dataset.split` — a path to a ``SPLIT_MAP.json`` to
         read and extend, shared with the eager path and every task that passes it.
+        ``frozen``: as in :meth:`Dataset.split` — raise on a group absent from the map
+        instead of allocating and appending it; nothing is written either way.
         """
-        if ratios is None:
-            ratios = (
-                SELF_SUPERVISED_DEFAULT_RATIOS
-                if self.task_spec is not None and self.task_spec.kind is TaskKind.SELF_SUPERVISED
-                else SUPERVISED_DEFAULT_RATIOS
-            )
+        ratios = _default_ratios(
+            ratios,
+            self_supervised=self.task_spec is not None
+            and self.task_spec.kind is TaskKind.SELF_SUPERVISED,
+            split_map=split_map,
+        )
         if abs(sum(ratios.values()) - 1.0) > 1e-6:
             raise ValueError(f"split ratios must sum to 1.0, got {sum(ratios.values())}")
 
@@ -400,7 +437,9 @@ class DatasetBuilder:
             raise ValueError("No samples found. Check `roots` point at fetched data.")
 
         if split_map is not None:
-            assignment = resolve_splits(split_map, dict(corpus.groups), ratios, seed=seed, by=by)
+            assignment = resolve_splits(
+                split_map, dict(corpus.groups), ratios, seed=seed, by=by, frozen=frozen
+            )
         else:
             assignment = assign_splits(dict(corpus.groups), ratios, seed=seed)
 
