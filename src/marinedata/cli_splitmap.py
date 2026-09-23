@@ -4,14 +4,15 @@ Split out of :mod:`marinedata.cli` for the same reason as :mod:`marinedata.cli_i
 keep that module under the line cap. ``cli.py`` imports and wires
 ``add_splitmap_subparser`` from here.
 
-**Input contract.** ``DatasetBuilder`` enumerates samples from a staged ``sources/``
-tree via a registry-driven ``roots`` mapping, but nothing today turns an arbitrary
-staged tree into that mapping without a task id and a schema — there is no release
-driver yet (see the WS-D design doc, §3). Rather than build one as a side effect of
-this CLI, ``generate`` takes a flat, already-deduplicated enumeration instead: a TSV or
-Parquet file with exactly two columns, ``image_sha256`` and ``split_group`` — one row
-per admitted image, however many sources or tasks it appears in. Producing that file
-(e.g. from ``metadata.parquet`` across every staged source) is the caller's job.
+**Input contract.** ``generate`` takes a flat, already-deduplicated enumeration: a TSV
+or Parquet file with exactly two columns, ``image_sha256`` and ``split_group`` — one row
+per admitted image, however many sources or tasks it appears in. Producing that file by
+hand is no longer required for a release: ``marinedata release build`` enumerates
+admitted staged trees itself (:func:`marinedata.release.enumerate_release_rows`) and
+generates the map directly when one is not yet on disk, sharing this module's row
+reduction (:func:`marinedata.splitmap.rows_to_counts`). This CLI stays useful for a
+one-off file (e.g. a corpus not backed by the registry's ``roots`` shape) or for
+inspecting what a given enumeration would produce before committing to it.
 
 **Stratification.** An optional third column, ``stratum`` (normally the source id),
 plus ``--stratify <label>`` allocates per stratum (:mod:`marinedata.strata`): one row
@@ -25,15 +26,12 @@ import argparse
 import csv
 import fnmatch
 import sys
-from collections import Counter
 from collections.abc import Iterator
 from pathlib import Path
 
 from .builder import SELF_SUPERVISED_DEFAULT_RATIOS, SUPERVISED_DEFAULT_RATIOS, SplitName
-from .splitmap import SplitMap, load_split_map, resolve_splits, save_split_map
+from .splitmap import Row, SplitMap, load_split_map, resolve_splits, rows_to_counts, save_split_map
 from .strata import DEFAULT_MIN_GROUPS, achieved_by_stratum, small_strata
-
-Row = tuple[str, str, str | None]
 
 
 def _read_tsv_rows(path: Path) -> Iterator[Row]:
@@ -67,35 +65,13 @@ def _read_parquet_rows(path: Path) -> Iterator[Row]:
 def _group_counts(
     path: Path, *, stratified: bool = False
 ) -> tuple[dict[str, int], dict[str, dict[str, int]] | None]:
-    """One count per unique image: a duplicate across sources must not be counted twice.
-
-    Raises if the same image resolves to two different groups — the registry's
-    per-source ``split_group`` rule is supposed to make duplicates converge, and a
-    disagreement here means that rule (or the input file) is wrong, not something to
-    silently pick a winner for.
-    """
+    """``rows_to_counts`` (:mod:`marinedata.splitmap`) over this file's rows, with the
+    path folded into any error so a bad TSV/Parquet is easy to place."""
     rows = _read_parquet_rows(path) if path.suffix == ".parquet" else _read_tsv_rows(path)
-    group_of: dict[str, str] = {}
-    members: dict[str, set[str]] = {}
-    for sha256, group, stratum in rows:
-        if not sha256 or not group:
-            raise ValueError(f"{path}: row with an empty image_sha256 or split_group")
-        prior = group_of.get(sha256)
-        if prior is not None and prior != group:
-            raise ValueError(
-                f"{path}: image {sha256} maps to two different split_group values "
-                f"({prior!r} and {group!r}) — split_group must be immutable per image"
-            )
-        group_of[sha256] = group
-        if stratified:
-            if not stratum:
-                raise ValueError(f"{path}: --stratify needs a non-empty `stratum` on every row")
-            members.setdefault(stratum, set()).add(sha256)
-    counts = dict(Counter(group_of.values()))
-    if not stratified:
-        return counts, None
-    strata = {name: dict(Counter(group_of[sha] for sha in shas)) for name, shas in members.items()}
-    return counts, strata
+    try:
+        return rows_to_counts(rows, stratified=stratified)
+    except ValueError as exc:
+        raise ValueError(f"{path}: {exc}") from exc
 
 
 def _parse_ratios(spec: str) -> dict[SplitName, float]:

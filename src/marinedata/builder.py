@@ -76,6 +76,33 @@ def _default_ratios(
     return SELF_SUPERVISED_DEFAULT_RATIOS if self_supervised else SUPERVISED_DEFAULT_RATIOS
 
 
+def _to_pretrain_vocabulary(
+    assignment: dict[str, SplitName], ratios: dict[SplitName, float]
+) -> tuple[dict[str, SplitName], dict[SplitName, float]]:
+    """Translate a shared map's train/val/test assignment into the pretrain vocabulary.
+
+    ``train`` stays ``train``. ``val`` demotes to ``probe`` — the self-supervised
+    representation-quality check, not a task metric (see
+    ``SELF_SUPERVISED_DEFAULT_RATIOS``). ``test`` is dropped from the returned
+    ``assignment`` entirely: a labelled task's held-out evaluation images must never
+    enter a pretraining corpus, so a group the map assigned ``test`` gets no entry here
+    and ``Dataset.split()`` excludes its samples rather than assigning them a split.
+    A map already speaking the pretrain vocabulary directly (no ``val``/``test`` key)
+    passes through unchanged.
+    """
+    new_assignment = {
+        key: ("probe" if name == "val" else name)
+        for key, name in assignment.items()
+        if name != "test"
+    }
+    new_ratios = {
+        ("probe" if name == "val" else name): value
+        for name, value in ratios.items()
+        if name != "test"
+    }
+    return new_assignment, new_ratios
+
+
 _SCALAR_LABEL_KINDS = frozenset(
     {
         AnnotationKind.IMAGE_LABEL,
@@ -168,6 +195,12 @@ class Dataset:
             frozen: require every group to already be in ``split_map`` — raise instead
                 of allocating and appending a new one. A release build passes this so
                 it can never grow the shared map; nothing is written to disk either way.
+
+        A self-supervised task reading a shared ``split_map`` never inherits its
+        ``test`` split: those groups are excluded from ``self.splits`` outright, and a
+        ``val`` group is renamed ``probe`` — see :func:`_to_pretrain_vocabulary`. A
+        labelled task's held-out evaluation images must never enter a pretraining
+        corpus.
         """
         ratios = _default_ratios(
             ratios, self_supervised=self.task_kind is TaskKind.SELF_SUPERVISED, split_map=split_map
@@ -190,9 +223,19 @@ class Dataset:
         else:
             assignment = assign_splits(counts, ratios, seed=seed)
 
+        if self.task_kind is TaskKind.SELF_SUPERVISED and split_map is not None:
+            # A shared map speaks train/val/test — the labelled-task vocabulary, not
+            # this task's own. See ``_to_pretrain_vocabulary`` for the rule this
+            # translation enforces: `val` demotes to `probe`, `test` is excluded
+            # outright, never appended to ``self.splits`` at all.
+            assignment, ratios = _to_pretrain_vocabulary(assignment, ratios)
+
         splits: dict[SplitName, list[int]] = {name: [] for name in ratios}
         for position, key in enumerate(keys):
-            splits[assignment[key]].append(position)
+            name = assignment.get(key)
+            if name is None:
+                continue  # a supervised-vocabulary `test` group, excluded from pretraining
+            splits[name].append(position)
         self.splits = splits
 
         empty = [name for name, positions in splits.items() if not positions]

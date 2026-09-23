@@ -12,13 +12,17 @@ from __future__ import annotations
 
 import argparse
 import sys
+from datetime import UTC, datetime
 from pathlib import Path
 
+from .cli_splitmap import _parse_ratios
 from .fetch import FetchError, fetch_sample
 from .fetchers_remote import _is_pinned_staged_tree
 from .gate import evaluate
 from .registry import Registry
-from .release import build_release
+from .release import build_release, generate_split_map
+from .splitmap import load_split_map
+from .strata import DEFAULT_MIN_GROUPS
 
 _RELEASE_FETCH_LIMIT = 10_000_000
 """Effectively "the whole pinned tree" — ``fetch_sample``'s ``limit`` exists to bound a
@@ -67,6 +71,29 @@ def _cmd_release_build(args: argparse.Namespace) -> int:
         return 1
     roots = _resolve_roots(registry, args.profile, local)
 
+    split_map_path = Path(args.split_map)
+    if load_split_map(split_map_path) is None:
+        # No hand-built TSV: enumerate the resolved staged trees directly and generate a
+        # fresh, source-stratified map at the path this same command then freezes
+        # against — one command, pinned/local trees straight to a release.
+        try:
+            ratios = _parse_ratios(args.ratios)
+        except ValueError as exc:
+            print(f"release build: {exc}", file=sys.stderr)
+            return 1
+        generate_split_map(
+            registry,
+            out=split_map_path,
+            roots=roots,
+            profile=args.profile,
+            ratios=ratios,
+            seed=args.seed,
+            min_groups=args.min_groups,
+            now=datetime.now(UTC).isoformat(),
+            release=args.release,
+        )
+        print(f"release build: generated {split_map_path} (stratify=source)")
+
     result = build_release(
         registry,
         release=args.release,
@@ -97,7 +124,26 @@ def add_release_subparser(sub: argparse._SubParsersAction) -> None:
     )
     p_build.add_argument("--release", required=True, help="Release id")
     p_build.add_argument(
-        "--split-map", dest="split_map", required=True, help="Path to the frozen SPLIT_MAP.json"
+        "--split-map",
+        dest="split_map",
+        required=True,
+        help="Path to SPLIT_MAP.json — frozen if it exists, else generated here first "
+        "(source-stratified) from the resolved staged trees",
+    )
+    p_build.add_argument(
+        "--ratios",
+        default="70/15/15",
+        help="'/'-separated, only used when --split-map does not exist yet",
+    )
+    p_build.add_argument(
+        "--seed", type=int, default=0, help="Only used when --split-map does not exist yet"
+    )
+    p_build.add_argument(
+        "--min-groups",
+        type=int,
+        default=DEFAULT_MIN_GROUPS,
+        help="A stratum with fewer groups than this is train-only (default 3); only used "
+        "when --split-map does not exist yet",
     )
     p_build.add_argument("--out", default=".", help="Output root (default: current directory)")
     p_build.add_argument(

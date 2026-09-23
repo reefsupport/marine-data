@@ -23,7 +23,8 @@ task id — so a group lands in the same split under every task that scans it.
 from __future__ import annotations
 
 import json
-from collections.abc import Mapping
+from collections import Counter
+from collections.abc import Iterable, Mapping
 from dataclasses import dataclass, field
 from datetime import UTC, datetime
 from pathlib import Path
@@ -33,9 +34,56 @@ from .strata import DEFAULT_MIN_GROUPS, assign_splits_stratified
 
 SCHEMA_VERSION = 1
 
+Row = tuple[str, str, str | None]
+"""``(image_sha256, split_group, stratum)`` — one row per (image, source) pair. See
+:func:`rows_to_counts`."""
+
 
 class SplitMapError(ValueError):
     """A SPLIT_MAP.json read or write would violate the append-only contract."""
+
+
+def rows_to_counts(
+    rows: Iterable[Row], *, stratified: bool = False
+) -> tuple[dict[str, int], dict[str, dict[str, int]] | None]:
+    """Reduce ``(image_sha256, split_group, stratum)`` rows to per-group counts.
+
+    One count per unique image: the same physical image staged under two admitted
+    sources shares one ``split_group`` (the registry's cross-source dedup rule) but
+    must not be counted twice toward that group's overall size. ``stratum`` still gets
+    the row once per source it was staged under, though — a cross-source duplicate is
+    real evidence for *both* strata's quotas, only the overall pool must not double it.
+
+    Shared by ``splitmap generate --in <file>`` (:mod:`marinedata.cli_splitmap`) and the
+    release enumerator (:func:`marinedata.release.enumerate_release_rows`) so a
+    hand-built TSV and a live staged-tree scan reduce identically.
+
+    Raises if the same image resolves to two different groups — the registry's
+    per-source ``split_group`` rule is supposed to make duplicates converge, and a
+    disagreement here means that rule (or the input) is wrong, not something to
+    silently pick a winner for.
+    """
+    group_of: dict[str, str] = {}
+    members: dict[str, set[str]] = {}
+    for sha256, group, stratum in rows:
+        if not sha256 or not group:
+            raise ValueError("row with an empty image_sha256 or split_group")
+        prior = group_of.get(sha256)
+        if prior is not None and prior != group:
+            raise ValueError(
+                f"image {sha256} maps to two different split_group values "
+                f"({prior!r} and {group!r}) — split_group must be immutable per image"
+            )
+        group_of[sha256] = group
+        if stratified:
+            if not stratum:
+                raise ValueError("--stratify needs a non-empty stratum on every row")
+            members.setdefault(stratum, set()).add(sha256)
+    counts = dict(Counter(group_of.values()))
+    if not stratified:
+        return counts, None
+    strata = {name: dict(Counter(group_of[sha] for sha in shas)) for name, shas in members.items()}
+    return counts, strata
 
 
 @dataclass(frozen=True)

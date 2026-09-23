@@ -20,14 +20,17 @@ from __future__ import annotations
 
 import hashlib
 import json
+from collections.abc import Iterator
 from dataclasses import dataclass
 from pathlib import Path
 
-from .builder import DatasetBuilder
+from .builder import SUPERVISED_DEFAULT_RATIOS, DatasetBuilder, SplitName
 from .checksums import file_digest
 from .gate import evaluate
 from .registry import Registry
-from .splitmap import load_split_map
+from .splitmap import Row, load_split_map, resolve_splits, rows_to_counts
+from .strata import DEFAULT_MIN_GROUPS
+from .tables import _require_pyarrow
 
 DEFAULT_SCHEMA_ID = "rs-benthic-v1"
 
@@ -68,6 +71,93 @@ def _admitted_source_ids(
         if evaluate(source, prof).allowed:
             admitted.append(source_id)
     return admitted
+
+
+def enumerate_release_rows(
+    registry: Registry, roots: dict[str, str | Path], profile: str = "research"
+) -> Iterator[Row]:
+    """``(image_sha256, split_group, stratum)`` for every admitted source's staged tree.
+
+    ``stratum`` is always the source id — the enumerator a release needs to generate a
+    stratified ``SPLIT_MAP.json`` without a hand-built TSV (the WS-D 7l scratch
+    ``build_tsv.py`` did this once, read-only, outside the repo; this is that made real).
+
+    Reads each source's ``metadata.parquet`` directly rather than through its registered
+    loader: ``split_group`` is a staging-time property (D-group, WS-D step 3), recorded
+    for every staged tree regardless of what layout the source's own loader later
+    declares for training reads (e.g. ``labelbox-rgb`` reads stitched masks the
+    staged-tree convention never touches, but every staged tree still carries the same
+    sample index). Going through a per-annotation-kind loader here would demand
+    layout-specific params this enumerator has no business needing.
+    """
+    _require_pyarrow()
+    import pyarrow.parquet as pq
+
+    for source_id in _admitted_source_ids(registry, roots, profile):
+        root = Path(roots[source_id])
+        metadata_path = root / "metadata.parquet"
+        if not metadata_path.is_file():
+            raise ValueError(
+                f"{source_id}: no metadata.parquet under {root} — the release enumerator "
+                "reads the staging pipeline's sample index, independent of the source's "
+                "own loader layout"
+            )
+        for record in pq.read_table(metadata_path).to_pylist():
+            group = record.get("split_group")
+            if not group:
+                raise ValueError(
+                    f"{source_id}: metadata.parquet row for stem={record['stem']!r} has no "
+                    "split_group — the registry's per-source split_group rule must run "
+                    "before staging"
+                )
+            partition, stem = record["partition"], record["stem"]
+            matches = sorted((root / "images" / partition).glob(f"{stem}.*"))
+            if not matches:
+                raise ValueError(
+                    f"{source_id}: metadata.parquet references image {stem!r} (partition "
+                    f"{partition!r}) not found under {root / 'images' / partition}"
+                )
+            yield file_digest(matches[0]), group, source_id
+
+
+def generate_split_map(
+    registry: Registry,
+    *,
+    out: str | Path,
+    roots: dict[str, str | Path],
+    profile: str = "research",
+    ratios: dict[SplitName, float] | None = None,
+    seed: int = 0,
+    min_groups: int = DEFAULT_MIN_GROUPS,
+    now: str | None = None,
+    release: str | None = None,
+) -> None:
+    """Enumerate every admitted staged tree in ``roots`` and write a fresh, stratified
+    ``SPLIT_MAP.json`` at ``out`` — the "no hand-built TSV" path from staged trees straight
+    to a map ``release build`` can then freeze against. ``stratify="source"`` always:
+    the map is the registry's cross-source dedup unit, and a stratum with fewer than
+    ``min_groups`` groups is train-only (see :mod:`marinedata.strata`).
+
+    Raises if ``out`` already exists — ``resolve_splits`` treats that as extending a map,
+    and a release's own map is meant to be generated fresh once, not silently appended
+    to under a different corpus. Regenerate deliberately: remove it first.
+    """
+    if load_split_map(out) is not None:
+        raise ValueError(f"{out} already exists — remove it first to regenerate")
+    rows = enumerate_release_rows(registry, roots, profile)
+    counts, strata = rows_to_counts(rows, stratified=True)
+    resolve_splits(
+        out,
+        counts,
+        ratios or dict(SUPERVISED_DEFAULT_RATIOS),
+        seed=seed,
+        by="group",
+        now=now,
+        release=release,
+        strata=strata,
+        stratify="source",
+        min_groups=min_groups,
+    )
 
 
 def build_release(

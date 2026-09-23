@@ -156,8 +156,13 @@ def test_self_supervised_with_map_adopts_map_ratios(registry: Registry, tmp_path
 
     dataset.split(by="site", split_map=path)  # must not raise
 
-    assert set(dataset.splits) == {"train", "val", "test"}
-    assert dataset.splits["test"], "the map's own test split must be reachable, not dropped"
+    # A shared map speaks train/val/test — the labelled-task vocabulary. A
+    # self-supervised task must never inherit the map's `test` split: those groups are
+    # excluded from `self.splits` altogether, and `val` demotes to `probe`.
+    assert set(dataset.splits) == {"train", "probe"}
+    assert dataset.splits["probe"], "the map's own val split must be reachable as probe"
+    included = sum(len(positions) for positions in dataset.splits.values())
+    assert included < len(samples), "the map's `test` groups must be excluded from `self.splits`"
 
 
 def test_random_split_leaks_and_that_is_why_it_is_not_the_default(dataset: Dataset) -> None:
