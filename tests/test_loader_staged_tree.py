@@ -1,0 +1,147 @@
+"""Tests for the ``staged-tree`` layout (WS-D 7i).
+
+Fixtures are built with the repo's own writers (:mod:`marinedata.tables`), not
+hand-rolled parquet — the point is to prove the loader reads exactly what
+``write_metadata_table``/``write_points_table`` actually produce.
+"""
+
+from __future__ import annotations
+
+from pathlib import Path
+
+import pytest
+from conftest import _touch_image, make_source
+
+from marinedata.loaders import LoaderError, build_loader
+from marinedata.scan import group_key
+from marinedata.tables import PointRow, StagedImage, write_metadata_table, write_points_table
+
+
+def _stage(
+    root: Path,
+    rows: list[StagedImage],
+    *,
+    points: list[PointRow] | None = None,
+    write_images: bool = True,
+) -> Path:
+    if write_images:
+        for row in rows:
+            _touch_image(root / "images" / row.partition / f"{row.stem}.jpg")
+    write_metadata_table(root / "metadata.parquet", rows)
+    if points:
+        write_points_table(root / "labels" / "points.parquet", points)
+    return root
+
+
+def test_sample_count(tmp_path: Path) -> None:
+    root = _stage(
+        tmp_path,
+        [
+            StagedImage(stem=f"img{i}", partition="default", upstream_path=f"orig/{i}.jpg",
+                        upstream_split=None, width=10, height=10)
+            for i in range(3)
+        ],
+    )
+    samples = list(build_loader(make_source("staged-tree"), root))
+    assert len(samples) == 3
+    assert {s.key for s in samples} == {
+        "images/default/img0.jpg",
+        "images/default/img1.jpg",
+        "images/default/img2.jpg",
+    }
+
+
+def test_split_group_pass_through(tmp_path: Path) -> None:
+    """The parquet's ``split_group`` must be what ``group_key(by='group')`` sees —
+    not whatever ``source.split_group_for`` would derive fresh (the default rule's
+    fallback template is ``<source_id>/<partition>``, which this deliberately does
+    not match)."""
+    root = _stage(
+        tmp_path,
+        [
+            StagedImage(
+                stem="img0",
+                partition="default",
+                upstream_path="orig/0.jpg",
+                upstream_split=None,
+                width=10,
+                height=10,
+                split_group="pinned-at-staging/0",
+            )
+        ],
+    )
+    source = make_source("staged-tree")
+    sample = next(iter(build_loader(source, root)))
+
+    assert sample.meta["split_group"] == "pinned-at-staging/0"
+    assert group_key(sample, "group") == "pinned-at-staging/0"
+    # The registry's own default rule would compute something else — proving the
+    # loader did not silently re-derive it.
+    assert source.split_group_for(stem="img0", upstream_path="orig/0.jpg", partition="default") != (
+        "pinned-at-staging/0"
+    )
+
+
+def test_points_join(tmp_path: Path) -> None:
+    rows = [
+        StagedImage(stem="img0", partition="default", upstream_path="orig/0.jpg",
+                    upstream_split=None, width=10, height=10),
+        StagedImage(stem="img1", partition="default", upstream_path="orig/1.jpg",
+                    upstream_split=None, width=10, height=10),
+    ]
+    points = [
+        PointRow(stem="img0", partition="default", row=1, col=2, label="Hard Coral",
+                  schema_id="fixture-schema"),
+        PointRow(stem="img0", partition="default", row=3, col=4, label="Soft Coral",
+                  schema_id="fixture-schema"),
+    ]
+    root = _stage(tmp_path, rows, points=points)
+    samples = {s.key: s for s in build_loader(make_source("staged-tree"), root)}
+
+    with_points = samples["images/default/img0.jpg"]
+    assert with_points.points == ((1, 2), (3, 4))
+    assert with_points.meta["native_labels"] == ["Hard Coral", "Soft Coral"]
+    assert with_points.meta["n_points"] == 2
+
+    without_points = samples["images/default/img1.jpg"]
+    assert without_points.points == ()
+    assert "native_labels" not in without_points.meta
+
+
+def test_missing_image_raises(tmp_path: Path) -> None:
+    root = _stage(
+        tmp_path,
+        [
+            StagedImage(stem="ghost", partition="default", upstream_path="orig/ghost.jpg",
+                        upstream_split=None, width=10, height=10)
+        ],
+        write_images=False,
+    )
+    loader = build_loader(make_source("staged-tree"), root)
+    with pytest.raises(LoaderError, match="ghost"):
+        list(loader)
+
+
+def test_missing_image_skipped_when_partial(tmp_path: Path) -> None:
+    root = _stage(
+        tmp_path,
+        [
+            StagedImage(stem="ghost", partition="default", upstream_path="orig/ghost.jpg",
+                        upstream_split=None, width=10, height=10),
+            StagedImage(stem="real", partition="default", upstream_path="orig/real.jpg",
+                        upstream_split=None, width=10, height=10),
+        ],
+        write_images=False,
+    )
+    _touch_image(root / "images" / "default" / "real.jpg")
+    loader = build_loader(make_source("staged-tree"), root, partial=True)
+    samples = list(loader)
+    assert [s.key for s in samples] == ["images/default/real.jpg"]
+
+
+def test_missing_metadata_parquet_raises(tmp_path: Path) -> None:
+    (tmp_path / "images" / "default").mkdir(parents=True)
+    _touch_image(tmp_path / "images" / "default" / "img0.jpg")
+    loader = build_loader(make_source("staged-tree"), tmp_path)
+    with pytest.raises(LoaderError, match=r"metadata\.parquet"):
+        list(loader)

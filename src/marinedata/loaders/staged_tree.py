@@ -1,0 +1,139 @@
+"""Reader for a tree this repo's own writer produced (WS-D staging, D1 §2/§5).
+
+Shape: ``images/<partition>/<stem>.<ext>``, ``metadata.parquet`` (one row per staged
+image — the sample index), optionally ``labels/points.parquet`` (sparse point
+annotations) and/or ``labels/masks/<partition>/<stem>.png`` (dense masks), and
+``CHECKSUMS.sha256`` (not read here — that pins bytes for ingest, not for loading).
+
+``metadata.parquet`` is the sample index, not the ``images/`` directory tree, because
+the writer (:func:`marinedata.tables.write_metadata_table`) records ``stem`` and
+``partition`` but never the file extension — resolving the real file means walking
+``images/`` once and matching by ``(partition, stem)``, the same style
+:class:`~marinedata.loaders.generic.ImageMaskPairLoader` already uses to pair images
+with masks by stem.
+"""
+
+from __future__ import annotations
+
+from collections.abc import Iterator
+from pathlib import Path
+
+from ..sample import Sample
+from ..tables import _require_pyarrow
+from .base import LoaderError, register_loader
+from .generic import _HarmonizingLoader
+
+
+def _by_partition_stem(directory: Path) -> dict[tuple[str, str], Path]:
+    """Every file under ``directory``, keyed by ``(partition, stem)`` — the first path
+    segment below ``directory`` is the partition, ``""`` for a file sitting directly in
+    it."""
+    if not directory.is_dir():
+        return {}
+    by_key: dict[tuple[str, str], Path] = {}
+    for path in sorted(directory.rglob("*")):
+        if not path.is_file():
+            continue
+        parts = path.relative_to(directory).parts
+        partition = parts[0] if len(parts) > 1 else ""
+        by_key[(partition, path.stem)] = path
+    return by_key
+
+
+def _read_parquet(path: Path):
+    _require_pyarrow()
+    import pyarrow.parquet as pq
+
+    return pq.read_table(path)
+
+
+@register_loader
+class StagedTreeLoader(_HarmonizingLoader):
+    """Reads a ``sources/<id>/<version>/`` tree exactly as this repo's ``ingest``
+    writers emit it — no params, because the shape is fixed by the writer, not by a
+    per-source convention a YAML entry could vary.
+
+    ``split_group`` comes straight from the ``metadata.parquet`` column into
+    ``sample.meta["split_group"]`` — the one value
+    :func:`marinedata.scan.group_key` reads for ``by="group"``. It is not re-derived
+    via :meth:`~marinedata.models.Source.split_group_for`: that rule already ran once,
+    at staging time, and its output is pinned into the tree's checksummed bytes. Calling
+    it again here would let a registry rule edited *after* staging silently disagree
+    with the split a training run already used — the staged value must win.
+    """
+
+    layout = "staged-tree"
+
+    def _metadata_path(self) -> Path:
+        return self.root / "metadata.parquet"
+
+    def _points_path(self) -> Path:
+        return self.root / "labels" / "points.parquet"
+
+    def validate(self) -> None:
+        super().validate()
+        if not self._metadata_path().is_file():
+            raise LoaderError(
+                f"{self.source.id}: layout 'staged-tree' expects metadata.parquet at "
+                f"{self._metadata_path()}"
+            )
+
+    def _points_by_key(self) -> dict[tuple[str, str], list[dict]]:
+        path = self._points_path()
+        if not path.is_file():
+            return {}
+        grouped: dict[tuple[str, str], list[dict]] = {}
+        for record in _read_parquet(path).to_pylist():
+            grouped.setdefault((record["partition"], record["stem"]), []).append(record)
+        return grouped
+
+    def _iter_samples(self) -> Iterator[Sample]:
+        images_by_key = _by_partition_stem(self.root / "images")
+        masks_by_key = _by_partition_stem(self.root / "labels" / "masks")
+        points_by_key = self._points_by_key()
+
+        for record in _read_parquet(self._metadata_path()).to_pylist():
+            partition = record["partition"]
+            stem = record["stem"]
+            key = (partition, stem)
+            image = images_by_key.get(key)
+            if image is None:
+                if self.partial:
+                    continue  # sampled sets are legitimately incomplete
+                raise LoaderError(
+                    f"{self.source.id}: metadata.parquet references image '{stem}' "
+                    f"(partition {partition!r}) not found under "
+                    f"{self.root / 'images' / partition}"
+                )
+
+            point_rows = points_by_key.get(key, ())
+            points = tuple((row["row"], row["col"]) for row in point_rows)
+            native = [row["label"] for row in point_rows]
+            labels, supervised = self._resolve(native[0]) if native else ({}, frozenset())
+
+            mask = masks_by_key.get(key)
+            meta: dict[str, object] = {
+                "partition": partition,
+                "upstream_path": record["upstream_path"],
+                "split_group": record.get("split_group"),
+            }
+            if record.get("upstream_split"):
+                meta["upstream_split"] = record["upstream_split"]
+            if native:
+                meta["native_labels"] = native
+                meta["n_points"] = len(points)
+            if mask is not None:
+                meta["mask_is_dense"] = True
+
+            yield Sample(
+                source_id=self.source.id,
+                key=self._relative(image),
+                image=image,
+                mask=mask,
+                points=points,
+                labels=labels,
+                supervised=supervised,
+                licence_tier=self.source.licence.tier,
+                split=self.split,
+                meta=meta,
+            )

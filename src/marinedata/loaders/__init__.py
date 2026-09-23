@@ -31,6 +31,7 @@ from .generic import (
 )
 from .labelbox import LabelboxNdjsonLoader, LabelboxRgbMaskLoader
 from .segmentsai import SegmentsAiInstanceMaskLoader
+from .staged_tree import StagedTreeLoader
 
 __all__ = [
     "AudioClipsLoader",
@@ -46,6 +47,7 @@ __all__ = [
     "MetadataOnlyLoader",
     "SegmentsAiInstanceMaskLoader",
     "SourceLoader",
+    "StagedTreeLoader",
     "build_loader",
     "loader_for",
     "register_loader",
