@@ -253,7 +253,7 @@ sources:
 
   - id: reefolution
     name: Reefolution partner imagery (Kenya)
-    version: "unversioned"
+    version: "2026-09-23-2c84cb0c9cda"
     description: Partner point-labelled reef imagery from Reefolution, Kenya.
     licence: NO-LICENCE-STATED
     legal_basis: unknown
@@ -265,14 +265,19 @@ sources:
       method: absent
     access:
       method: s3
-      uri: s3://rs-storage-open/benthic_datasets/point_labels/Reefolution
+      uri: s3://rs-storage-open/sources/reefolution/2026-09-23-2c84cb0c9cda
       params:
         bucket: rs-storage-open
         endpoint: hel1.your-objectstorage.com
         region: hel1
-        prefix: benthic_datasets/point_labels/Reefolution/
+        prefix: sources/reefolution/2026-09-23-2c84cb0c9cda/
         credentials_env: S3
-      size_bytes: 3617000000
+      size_bytes: 3616150247
+    checksums:
+      version: "2026-09-23-2c84cb0c9cda"
+      root_digest: 60443dd966feee06538ed585496b3fa3d5687fcfef9e5604f9335c19bafdaa7b
+      files: 872
+      size_bytes: 3616064902
     modalities: [image]
     capabilities: [benthic-classification, general-pretraining]
     items: 872
@@ -287,6 +292,11 @@ sources:
           `labelset.csv`) was located and staged (S7b) as `labels/points.parquet`:
           870 images x 50 points/image = 43,500 rows, native vocabulary of 85 short
           codes, no crosswalk to a canonical scheme yet.
+
+          RE-POINTED 2026-09-23 (S7h): `access.uri`/`version` now point at this staged
+          tree (873 objects / 3,616,150,247 B), pinned by `checksums.root_digest`. No
+          archive/originals pointer field exists on the model, so the private-cache
+          prefix for the label originals is not recorded here.
     coverage:
       regions: [western-indian]
     notes: >
@@ -305,11 +315,12 @@ sources:
       schema_id: reefolution-coralnet-native
       verified_on: 2026-08-17
       verified_note: >
-        Verified against the live bucket: images only, no annotation files (still true
-        of `access.uri` as of 2026-09-23). Point labels exist in the partner export and
-        are staged (S7b) as `labels/points.parquet`, not yet re-pointed here — layout
-        stays flat-images until a later step verifies the upload and repoints
-        `access.uri`/`version`.
+        RE-POINTED 2026-09-23 (S7h): `access.uri`/`version` now target the staged tree
+        `sources/reefolution/2026-09-23-2c84cb0c9cda/` (`images/default/*.jpg` +
+        `metadata.parquet` + `labels/points.parquet` + `CHECKSUMS.sha256`), pinned by
+        `checksums.root_digest`. Layout stays flat-images: it has not yet been updated
+        for this tree's `images/default/` + parquet-metadata shape, so the loader is
+        unverified against the new structure.
     tags: [needs-permission]
 
   - id: ibf
