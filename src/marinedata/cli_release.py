@@ -72,9 +72,27 @@ def _cmd_release_build(args: argparse.Namespace) -> int:
     roots = _resolve_roots(registry, args.profile, local)
 
     split_map_path = Path(args.split_map)
-    if load_split_map(split_map_path) is None:
-        # No hand-built TSV: enumerate the resolved staged trees directly and generate a
-        # fresh, source-stratified map at the path this same command then freezes
+    split_map_exists = load_split_map(split_map_path) is not None
+
+    if split_map_exists and args.generate_split_map:
+        print(
+            f"release build: {split_map_path} already exists; --generate-split-map "
+            "never overwrites a frozen map — use 'splitmap generate' to append",
+            file=sys.stderr,
+        )
+        return 1
+
+    if not split_map_exists and not args.generate_split_map:
+        print(
+            f"release build: {split_map_path} does not exist; pass --generate-split-map "
+            "to create it, or point --split-map at an existing frozen map",
+            file=sys.stderr,
+        )
+        return 1
+
+    if not split_map_exists:
+        # --generate-split-map: enumerate the resolved staged trees directly and generate
+        # a fresh, source-stratified map at the path this same command then freezes
         # against — one command, pinned/local trees straight to a release.
         try:
             ratios = _parse_ratios(args.ratios)
@@ -127,23 +145,32 @@ def add_release_subparser(sub: argparse._SubParsersAction) -> None:
         "--split-map",
         dest="split_map",
         required=True,
-        help="Path to SPLIT_MAP.json — frozen if it exists, else generated here first "
-        "(source-stratified) from the resolved staged trees",
+        help="Path to SPLIT_MAP.json — frozen if it exists. If it does not exist yet, "
+        "pass --generate-split-map to create it here first (source-stratified) from the "
+        "resolved staged trees; without the flag this refuses to run",
+    )
+    p_build.add_argument(
+        "--generate-split-map",
+        dest="generate_split_map",
+        action="store_true",
+        help="Required to create --split-map when it does not exist yet; refused if the "
+        "path already exists (never overwrites a frozen map — use 'splitmap generate' "
+        "to append)",
     )
     p_build.add_argument(
         "--ratios",
         default="70/15/15",
-        help="'/'-separated, only used when --split-map does not exist yet",
+        help="'/'-separated, only used with --generate-split-map",
     )
     p_build.add_argument(
-        "--seed", type=int, default=0, help="Only used when --split-map does not exist yet"
+        "--seed", type=int, default=0, help="Only used with --generate-split-map"
     )
     p_build.add_argument(
         "--min-groups",
         type=int,
         default=DEFAULT_MIN_GROUPS,
         help="A stratum with fewer groups than this is train-only (default 3); only used "
-        "when --split-map does not exist yet",
+        "with --generate-split-map",
     )
     p_build.add_argument("--out", default=".", help="Output root (default: current directory)")
     p_build.add_argument(
