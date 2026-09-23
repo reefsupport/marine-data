@@ -57,6 +57,7 @@ def test_generate_is_byte_identical_with_pinned_now(tmp_path: Path) -> None:
     assert loaded is not None
     assert loaded.by == "group"
     assert loaded.generated_at == "2026-09-23T00:00:00Z"
+    assert loaded.release == "r1", "the map must record which release generated it"
 
 
 def test_generate_refuses_to_overwrite_existing_output(tmp_path: Path) -> None:

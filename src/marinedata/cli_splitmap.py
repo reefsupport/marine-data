@@ -127,9 +127,12 @@ def _cmd_splitmap_generate(args: argparse.Namespace) -> int:
                 ratios=ratios,
                 assignments=preseed,
                 generated_at=args.now,
+                release=args.release,
             ),
         )
-    resolve_splits(out, counts, ratios, seed=args.seed, by="group", now=args.now)
+    resolve_splits(
+        out, counts, ratios, seed=args.seed, by="group", now=args.now, release=args.release
+    )
 
     split_map = load_split_map(out)
     assert split_map is not None  # just written above
