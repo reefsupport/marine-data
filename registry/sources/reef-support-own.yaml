@@ -277,11 +277,16 @@ sources:
     capabilities: [benthic-classification, general-pretraining]
     items: 872
     annotations:
-      - kind: none
-        supervises: []
+      - kind: point-label
+        count: 43500
+        schema_id: reefolution-coralnet-native
+        supervises: [taxon]
         notes: >
-          CORRECTED 2026-08-17: no point-label files exist in the bucket. The prefix
-          holds images only, grouped into site directories.
+          CORRECTED 2026-09-23 (S7g): superseded the 2026-08-17 "no point-label files
+          exist" note — Reefolution's own CoralNet-style export (`annotations.csv` +
+          `labelset.csv`) was located and staged (S7b) as `labels/points.parquet`:
+          870 images x 50 points/image = 43,500 rows, native vocabulary of 85 short
+          codes, no crosswalk to a canonical scheme yet.
     coverage:
       regions: [western-indian]
     notes: >
@@ -297,8 +302,14 @@ sources:
       template: "reefolution/{group}"
     loader:
       layout: flat-images
+      schema_id: reefolution-coralnet-native
       verified_on: 2026-08-17
-      verified_note: "Verified against the live bucket: images only, no annotation files."
+      verified_note: >
+        Verified against the live bucket: images only, no annotation files (still true
+        of `access.uri` as of 2026-09-23). Point labels exist in the partner export and
+        are staged (S7b) as `labels/points.parquet`, not yet re-pointed here — layout
+        stays flat-images until a later step verifies the upload and repoints
+        `access.uri`/`version`.
     tags: [needs-permission]
 
   - id: ibf
