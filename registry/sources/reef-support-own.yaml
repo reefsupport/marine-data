@@ -313,6 +313,7 @@ sources:
     loader:
       layout: staged-tree
       schema_id: reefolution-coralnet-native
+      verified_on: 2026-09-23
       verified_note: >
         WIRED 2026-09-23 (S7i): layout switched from flat-images to staged-tree, the
         loader that actually reads this tree's `metadata.parquet` sample index +
@@ -323,16 +324,17 @@ sources:
         key, so a credential requirement here only ever produced a false
         `unfetchable`.
 
-        STILL UNVERIFIED against real bytes: `.venv/bin/marinedata verify reefolution
-        --limit 5` fails with `HTTP 403` — confirmed via raw HTTPS and unsigned boto3
-        `list_objects_v2` that `rs-storage-open` denies anonymous `ListBucket`
-        (`AccessDenied`) even though `GetObject` is public. Every source on this
-        bucket is fetched by first listing its prefix
-        (`marinedata.fetchers_remote.fetch_s3`), so this blocks any anonymous
-        `verify`/`fetch` of this source, not something the loader or this credentials
-        fix can reach. Needs either a bucket policy allowing anonymous
-        `s3:ListBucket`, or a fetch path that never lists (e.g. resolving files from
-        `CHECKSUMS.sha256`, itself a known key) — out of scope here.
+        VERIFIED 2026-09-23 (S7j): `.venv/bin/marinedata verify reefolution --limit 5`
+        now passes. The 7i blocker (every source on this bucket fetched by first
+        listing its prefix, and anonymous `ListBucket` is `AccessDenied` even though
+        `GetObject` is public) is closed by a manifest-driven fetch path
+        (`marinedata.fetchers_remote._fetch_s3_manifest`, gated by
+        `_is_pinned_staged_tree`): for a source pinned by `checksums.root_digest` with
+        `layout: staged-tree`, the fetcher GETs `CHECKSUMS.sha256` by its known key,
+        checks its sha256 against `root_digest`, then GETs and per-file-verifies only
+        the files named in that manifest — no listing call at all. Bucket policy is
+        unchanged (still no anonymous `ListBucket`); unpinned and credentialed sources
+        still list as before.
     tags: [needs-permission]
 
   - id: ibf
