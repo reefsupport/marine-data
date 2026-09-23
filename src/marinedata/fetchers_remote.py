@@ -24,6 +24,7 @@ import xml.etree.ElementTree as ET
 from datetime import datetime, timezone
 from pathlib import Path
 
+from .checksums import CHECKSUM_FILE, parse_checksums
 from .fetch import FetchError, FetchNotSupported, FetchResult, _get, _write
 from .models import Source
 
@@ -119,6 +120,76 @@ def _s3_endpoint(source: Source) -> tuple[str, str, str]:
     return bucket, f"{bucket}.{endpoint}", region
 
 
+def _is_pinned_staged_tree(source: Source) -> bool:
+    """Whether ``source`` can be fetched by digest-pinned manifest instead of a listing.
+
+    Anonymous ``GetObject`` is allowed on ``rs-storage-open`` but anonymous
+    ``ListBucket`` is not (7i) — every fetch that starts by listing the prefix 403s
+    there. A pinned staged tree does not need to list: ``checksums.root_digest`` names
+    the exact ``CHECKSUMS.sha256`` key to fetch, and that manifest names every other
+    file by key too, so the whole fetch is GETs by known key. Sources without a pin, or
+    without the ``staged-tree`` layout the manifest format is written for, keep the
+    listing path unchanged.
+    """
+    checksums = source.checksums
+    loader = source.loader
+    return (
+        checksums is not None
+        and bool(checksums.root_digest)
+        and loader is not None
+        and loader.layout == "staged-tree"
+    )
+
+
+def _fetch_s3_manifest(
+    source: Source, root: Path, limit: int, host: str, prefix: str
+) -> FetchResult:
+    """Fetch a pinned staged tree by its ``CHECKSUMS.sha256`` manifest, never listing.
+
+    1. GET ``<prefix>CHECKSUMS.sha256`` by its known key and check its own sha256
+       against ``checksums.root_digest`` — a stale or tampered manifest is caught
+       before a single file it names is trusted.
+    2. Parse it with the repo's own :func:`marinedata.checksums.parse_checksums` (the
+       one place this ``<sha256>  <relpath>`` format is read) and fetch
+       ``metadata.parquet`` plus everything under ``labels/`` in full, then the first
+       ``limit`` remaining files (the images) in manifest order — sorted-path order,
+       the same every run, so a ``--limit`` sample is reproducible rather than whatever
+       a listing's pagination happened to hand back.
+    3. Verify each downloaded file's sha256 against the manifest before writing it, so
+       a partial or corrupted transfer raises naming the exact file rather than
+       silently staging bad bytes.
+    """
+    manifest_key = f"{prefix}{CHECKSUM_FILE}"
+    manifest_bytes = _get(f"https://{host}/{urllib.parse.quote(manifest_key)}")
+    manifest_digest = hashlib.sha256(manifest_bytes).hexdigest()
+    expected_digest = source.checksums.root_digest  # type: ignore[union-attr]
+    if manifest_digest != expected_digest:
+        raise FetchError(
+            f"{source.id}: {CHECKSUM_FILE} digest {manifest_digest} does not match "
+            f"checksums.root_digest {expected_digest} — the pinned manifest is stale "
+            f"or has been tampered with"
+        )
+
+    digests = parse_checksums(manifest_bytes.decode("utf-8"))
+    always = [rel for rel in digests if rel == "metadata.parquet" or rel.startswith("labels/")]
+    rest = [rel for rel in digests if rel not in always]
+    wanted = always + rest[:limit]
+
+    for relative in wanted:
+        key = f"{prefix}{relative}"
+        payload = _get(f"https://{host}/{urllib.parse.quote(key)}")
+        actual_digest = hashlib.sha256(payload).hexdigest()
+        if actual_digest != digests[relative]:
+            raise FetchError(
+                f"{source.id}: {relative} downloaded with sha256 {actual_digest}, the "
+                f"manifest expects {digests[relative]} — the transfer is corrupt or "
+                f"the tree changed under a pinned version"
+            )
+        _write(root / relative, payload)
+
+    return FetchResult(source.id, root, len(wanted), "s3-manifest", truncated=len(rest) > limit)
+
+
 def fetch_s3(source: Source, root: Path, limit: int) -> FetchResult:
     """List a bucket prefix and download up to ``limit`` objects.
 
@@ -126,10 +197,20 @@ def fetch_s3(source: Source, root: Path, limit: int) -> FetchResult:
         bucket, endpoint, region, prefix
         credentials_env: prefix for env vars, e.g. ``S3`` → ``S3_ACCESS_KEY_ID``.
             Omit for anonymous buckets.
+
+    A source with ``checksums.root_digest`` and ``loader.layout: staged-tree`` — a
+    pinned tree this repo's own writer produced — is instead fetched by
+    :func:`_fetch_s3_manifest`, which never lists (see :func:`_is_pinned_staged_tree`).
+    Credentialed sources (``credentials_env`` set) always keep this listing path: they
+    can list, so there is no need to trade the loop-detects-drift benefit of a listing
+    for a manifest fetch.
     """
     bucket, host, region = _s3_endpoint(source)
     prefix = str(source.access.params.get("prefix", ""))
     env_prefix = source.access.params.get("credentials_env")
+
+    if env_prefix is None and _is_pinned_staged_tree(source):
+        return _fetch_s3_manifest(source, root, limit, host, prefix)
 
     access_key = secret_key = None
     if env_prefix:
