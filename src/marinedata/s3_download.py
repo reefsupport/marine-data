@@ -30,6 +30,7 @@ from pathlib import Path
 
 from . import checksums
 from .ingest import IngestError
+from .models import Source
 from .s3_listing import S3Plan, _object_url
 from .tables import StagedImage
 
@@ -149,8 +150,14 @@ def download_images(
     plan: S3Plan,
     version_root: Path,
     workers: int,
+    *,
+    source: Source | None = None,
 ) -> tuple[dict[str, str], list[StagedImage]]:
     """Resume-or-fetch every stem in ``selected``, ``workers`` at a time.
+
+    ``source``, when given, supplies the registry ``split_group`` rule applied to each
+    staged row. ``None`` (the default) leaves ``StagedImage.split_group`` unset — every
+    existing caller that predates this parameter keeps working unchanged.
 
     The FIRST worker exception (whichever completes first, in wall-clock order) is
     re-raised; every not-yet-started download is cancelled before that happens.
@@ -201,6 +208,13 @@ def download_images(
                 upstream_split=None,
                 width=width,
                 height=height,
+                split_group=(
+                    source.split_group_for(
+                        stem=stem, upstream_path=key, partition=plan.partition
+                    )
+                    if source is not None
+                    else None
+                ),
             )
         )
     return recorded, staged_rows

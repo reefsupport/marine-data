@@ -7,6 +7,7 @@ with the lineage report it emitted five minutes earlier.
 
 from __future__ import annotations
 
+import re
 from datetime import date
 
 from pydantic import BaseModel, ConfigDict, Field, model_validator
@@ -253,6 +254,58 @@ class Checksums(_Frozen):
     size_bytes: int = Field(gt=0)
 
 
+class SplitGroupRule(_Frozen):
+    """How to derive an image's ``split_group`` for ``resolve_splits(by="group")``.
+
+    Required on every :class:`Source` — a source with no source-specific pattern
+    still resolves to the explicit fallback ``<source_id>/<partition>``, the same
+    grouping ``by="site"`` already uses, so ``by="group"`` never raises for a source
+    nobody has written a rule for yet.
+
+    ``pattern`` is a regex tested against ``stem`` or ``upstream_path`` (per
+    ``match_field``) with exactly one capturing group; the captured text fills
+    ``{group}`` in ``template``. ``pattern=None`` means "no source-specific
+    extraction" and ``template`` is filled from ``{source_id}``/``{partition}``
+    instead.
+    """
+
+    pattern: str | None = None
+    match_field: str = "stem"
+    template: str = "{source_id}/{partition}"
+
+    @model_validator(mode="after")
+    def _pattern_is_well_formed(self) -> SplitGroupRule:
+        if self.match_field not in ("stem", "upstream_path"):
+            raise ValueError(
+                f"split_group match_field must be 'stem' or 'upstream_path', "
+                f"got {self.match_field!r}"
+            )
+        if self.pattern is not None:
+            try:
+                compiled = re.compile(self.pattern)
+            except re.error as exc:
+                raise ValueError(f"split_group pattern {self.pattern!r} is invalid: {exc}") from exc
+            if compiled.groups < 1:
+                raise ValueError(
+                    f"split_group pattern {self.pattern!r} needs exactly one capturing group"
+                )
+        return self
+
+    def resolve(self, *, source_id: str, stem: str, upstream_path: str, partition: str) -> str:
+        """Derive the split_group for one image. Raises if a declared pattern misses —
+        a silent fallback would let one malformed stem quietly leak across splits."""
+        if self.pattern is None:
+            return self.template.format(source_id=source_id, partition=partition)
+        value = stem if self.match_field == "stem" else upstream_path
+        match = re.search(self.pattern, value)
+        if not match:
+            raise ValueError(
+                f"{source_id}: split_group pattern {self.pattern!r} did not match "
+                f"{self.match_field} {value!r}"
+            )
+        return self.template.format(group=match.group(1), source_id=source_id, partition=partition)
+
+
 class Source(_Frozen):
     """A single dataset entry."""
 
@@ -281,12 +334,29 @@ class Source(_Frozen):
     """Set once this source's declared version is stored. ``None`` means not ingested
     yet, which is every source today — never "ingested but unverified"."""
 
+    split_group: SplitGroupRule = Field(default_factory=SplitGroupRule)
+    """Required per-source rule for ``resolve_splits(by="group")``. Defaults to the
+    explicit fallback (``<source_id>/<partition>``) so every source has one without
+    needing a per-entry YAML edit."""
+
+    images_from: tuple[str, ...] = ()
+    """Other source ids whose images this source's annotations sit on top of, with no
+    pixel copy of its own — a second label layer over an image pool it does not own.
+    Referenced ids are validated to exist at registry load (see
+    ``Registry._check_references``)."""
+
     items: int | None = Field(default=None, description="Primary unit count (images/clips)")
     items_note: str | None = None
     citation: str | None = None
     homepage: str | None = None
     tags: tuple[str, ...] = ()
     notes: str | None = None
+
+    def split_group_for(self, *, stem: str, upstream_path: str, partition: str) -> str:
+        """Apply this source's :class:`SplitGroupRule` to one staged image."""
+        return self.split_group.resolve(
+            source_id=self.id, stem=stem, upstream_path=upstream_path, partition=partition
+        )
 
     def declared_supervision(self) -> frozenset[Axis]:
         """Axes this source's registry entry actually claims, across all annotations.

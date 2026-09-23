@@ -193,7 +193,7 @@ def stage_s3_source(
 
     effective_workers = DEFAULT_WORKERS if workers is None else workers
     recorded, staged_rows = download_images(
-        selected, image_groups, plan, version_root, effective_workers
+        selected, image_groups, plan, version_root, effective_workers, source=source
     )
 
     points = points_for_stems(points_table, selected, plan)

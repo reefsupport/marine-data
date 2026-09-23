@@ -46,6 +46,10 @@ class StagedImage:
     upstream_split: str | None
     width: int
     height: int
+    split_group: str | None = None
+    """The source's registry ``split_group`` rule applied to this row (D-group, WS-D
+    step 3). ``None`` for ingest paths that have not been wired to compute it yet —
+    the column stays nullable rather than every caller needing a placeholder value."""
 
 
 @dataclass(frozen=True)
@@ -99,6 +103,7 @@ def write_metadata_table(path: Path, rows: Sequence[StagedImage]) -> str:
             pa.field("upstream_split", pa.string(), nullable=True),
             pa.field("width", pa.int32(), nullable=False),
             pa.field("height", pa.int32(), nullable=False),
+            pa.field("split_group", pa.string(), nullable=True),
         ]
     )
     ordered = sorted(rows, key=lambda r: (r.partition, r.stem))
@@ -110,6 +115,7 @@ def write_metadata_table(path: Path, rows: Sequence[StagedImage]) -> str:
             "upstream_split": [r.upstream_split for r in ordered],
             "width": [r.width for r in ordered],
             "height": [r.height for r in ordered],
+            "split_group": [r.split_group for r in ordered],
         },
         schema=schema,
     )

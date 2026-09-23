@@ -96,6 +96,10 @@ sources:
         - "CRITICAL: the schema contains no soft-coral class of any kind. On octocoral-dominated Caribbean reefs the model has no valid label and collapses into 'unknown hard substrate' and 'rubble'. Do not deploy on Caribbean imagery without re-heading to a schema that includes octocorals."
         - "Several classes are Indo-Pacific/Red-Sea endemics absent from the Atlantic: table acropora, stylophora, turbinaria, pocillopora, crown-of-thorns."
         - "Only 2,075 images — small for dense segmentation. Best used as a transfer base, not a sole training set."
+    split_group:
+      pattern: '(?i)(site[0-9]+)'
+      match_field: stem
+      template: "coralscapes/{group}"
     citation: "Sauder et al., The Coralscapes Dataset, ICCV 2025 Marine Vision Workshop"
     homepage: https://josauder.github.io/coralscapes/
     tags: [dense-seg, transfer-base, red-sea]
@@ -398,6 +402,10 @@ sources:
     coverage:
       regions: [global]
     citation: "arXiv 2507.10449"
+    split_group:
+      pattern: '^(.{5})'
+      match_field: stem
+      template: "seaview/{group}"
     loader:
       layout: flat-images
       verified_on: 2026-08-28
@@ -685,7 +693,14 @@ sources:
       size_bytes: 327036884
     modalities: [image]
     capabilities: [bleaching-assessment, general-pretraining]
-    items: 4430
+    items: 1568
+    items_note: >
+      CORRECTED 2026-09-23 (WS-D step 3). The prior 4,430 counted the checked-out
+      repo's own .git internals: the tar-vs-tree cross-check (T1 report, 2026-09-19)
+      found 2,862 `.git/` objects under this prefix. 4,430 - 2,862 = 1,568 real
+      dataset files (test/ split only; close to, not identical to, the design's
+      independently-eyeballed "1,565 imgs" — the ~3-file gap is non-image repo
+      metadata such as README.md/LICENSE, not re-verified this pass).
     annotations:
       - kind: none
         supervises: []
@@ -695,10 +710,14 @@ sources:
     homepage: https://www.fisheries.noaa.gov/inport/item/59195
     notes: >
       INCOMPLETE EXTRACTION. The expanded tree here is a partial checkout: the sibling
-      archive coral_bleaching/others.tar.gz holds 8,854 more files of this same repo
-      (including a .git/lfs/objects tree), per the 2026-09-19 tar-vs-tree cross-check
-      (T1 report). Item/byte counts above cover only what is expanded at the live
-      prefix. Relationship to the already-registered `noaa-pifsc-bleaching` (HF
+      archive coral_bleaching/others.tar.gz holds train/ and val/ (8,854 files,
+      651.6 MB combined per the 2026-09-23 design) that are absent from this bucket
+      tree, which has test/ only. Per the 2026-09-23 WS-D decision, primary access
+      should move to Hugging Face rather than this incomplete bucket mirror, but the
+      exact HF dataset-card repo id (org/name) is not recorded anywhere in the registry
+      or prior reports and could not be confirmed this pass under a no-network
+      constraint — `access` below is left as the bucket mirror pending that ID.
+      Relationship to the already-registered `noaa-pifsc-bleaching` (HF
       NMFS-OSI/NOAA-PIFSC-ESD-CORAL-Bleaching-Dataset) - same agency/programme naming -
       is not confirmed this pass.
     loader: { layout: metadata-only }
@@ -739,6 +758,10 @@ sources:
       Roboflow Universe project URL not recorded in the sidecar - attribution target
       unknown. Sidecars link only the generic https://universe.roboflow.com and
       https://github.com/roboflow/notebooks.
+    split_group:
+      pattern: '^(.+?)_jpg\.rf\.'
+      match_field: stem
+      template: "roboflow-bleaching/{group}"
     loader: { layout: metadata-only }
     tags: [bleaching, roboflow]
 
@@ -777,6 +800,10 @@ sources:
       Roboflow Universe project URL not recorded in the sidecar - attribution target
       unknown. Sidecars link only the generic https://universe.roboflow.com and
       https://github.com/roboflow/notebooks.
+    split_group:
+      pattern: '^(.+?)_jpg\.rf\.'
+      match_field: stem
+      template: "roboflow-bleaching/{group}"
     loader: { layout: metadata-only }
     tags: [bleaching, roboflow]
 
@@ -815,6 +842,10 @@ sources:
       Roboflow Universe project URL not recorded in the sidecar - attribution target
       unknown. Sidecars link only the generic https://universe.roboflow.com and
       https://github.com/roboflow/notebooks.
+    split_group:
+      pattern: '^(.+?)_jpg\.rf\.'
+      match_field: stem
+      template: "roboflow-bleaching/{group}"
     loader: { layout: metadata-only }
     tags: [bleaching, roboflow]
 
@@ -853,6 +884,10 @@ sources:
       Roboflow Universe project URL not recorded in the sidecar - attribution target
       unknown. Sidecars link only the generic https://universe.roboflow.com and
       https://github.com/roboflow/notebooks.
+    split_group:
+      pattern: '^(.+?)_jpg\.rf\.'
+      match_field: stem
+      template: "roboflow-bleaching/{group}"
     loader: { layout: metadata-only }
     tags: [bleaching, roboflow]
 
@@ -891,6 +926,10 @@ sources:
       Roboflow Universe project URL not recorded in the sidecar - attribution target
       unknown. Sidecars link only the generic https://universe.roboflow.com and
       https://github.com/roboflow/notebooks.
+    split_group:
+      pattern: '^(.+?)_jpg\.rf\.'
+      match_field: stem
+      template: "roboflow-bleaching/{group}"
     loader: { layout: metadata-only }
     tags: [bleaching, roboflow]
 
@@ -932,6 +971,10 @@ sources:
       BLOCKED PENDING PERMISSION. No licence stated anywhere in the bucket; the Coralseg
       paper (Journal of Field Robotics) is cited but does not itself grant redistribution
       terms.
+    split_group:
+      pattern: '^(.+)_\d+$'
+      match_field: stem
+      template: "coralseg/{group}"
     loader: { layout: metadata-only }
     tags: [needs-permission]
 
@@ -974,5 +1017,160 @@ sources:
       BLOCKED PENDING PERMISSION. Whether Reef Support has rights to mirror this raw
       imagery (distinct from `reef-support-seaview-labels`, which covers only our own
       masks over a subset of it) is unconfirmed - see P1-B proposal "Needs Yohan" #5.
+    split_group:
+      pattern: '^(.{5})'
+      match_field: stem
+      template: "seaview/{group}"
     loader: { layout: metadata-only }
     tags: [needs-permission]
+
+  - id: coral-bleaching-detection-v2i-multiclass
+    name: Coral Bleaching Detection (v2i, multiclass) — tar-only
+    version: "unversioned"
+    description: >
+      Roboflow-style multiclass coral bleaching image set found only inside the
+      coral_bleaching/others.tar.gz archive — never extracted to a live bucket prefix
+      (2026-09-19 tar-vs-tree cross-check, T1 report). Not one of the 5 already-registered
+      roboflow-* exports; those all have their own extracted prefixes, this does not.
+    licence: NO-LICENCE-STATED
+    legal_basis: unknown
+    redistribution: unknown
+    provenance: public
+    verification:
+      verified_on: 2026-09-19
+      verified_by: >
+        2026-09-19 tar-member listing (T1 report): 736 files under
+        "coral bleaching detection.v2i.multiclass/" inside
+        coral_bleaching/others.tar.gz. No licence sidecar read this pass — the member
+        was never extracted, so no README/licence file has been opened.
+      method: absent
+    access:
+      method: s3
+      uri: s3://rs-storage-open/coral_bleaching/others.tar.gz
+      params:
+        bucket: rs-storage-open
+        endpoint: hel1.your-objectstorage.com
+        region: hel1
+        prefix: coral_bleaching/others.tar.gz
+        credentials_env: S3
+      notes: >
+        Lives only inside the tar member "coral bleaching detection.v2i.multiclass/" —
+        there is no standalone S3 prefix for this dataset. Extract the archive to reach
+        it (see coral_bleaching/others.tar.gz entry-level notes on the sibling
+        noaa-esd-coral-bleaching source).
+    modalities: [image]
+    capabilities: [bleaching-assessment, general-pretraining]
+    items: 736
+    annotations:
+      - kind: none
+        supervises: []
+        notes: "Never extracted; class/label structure not verified this pass."
+    coverage:
+      regions: [unknown]
+    notes: >
+      Licence NOT GUESSED (WS-D decision, 2026-09-23): no licence sidecar has been read
+      for this member. Recorded as NO-LICENCE-STATED per the registry's convention for
+      an unverified public-looking dataset, pending extraction of
+      coral_bleaching/others.tar.gz and a real read of its README/licence file.
+    loader: { layout: metadata-only }
+    tags: [needs-permission, tar-only]
+
+  - id: coral-health-classification
+    name: Coral Health Classification — tar-only
+    version: "unversioned"
+    description: >
+      Coral health/bleaching classification image set found only inside the
+      coral_bleaching/others.tar.gz archive — never extracted to a live bucket prefix
+      (2026-09-19 tar-vs-tree cross-check, T1 report).
+    licence: NO-LICENCE-STATED
+    legal_basis: unknown
+    redistribution: unknown
+    provenance: public
+    verification:
+      verified_on: 2026-09-19
+      verified_by: >
+        2026-09-19 tar-member listing (T1 report): 1,637 files under
+        "coral-health-classification/" inside coral_bleaching/others.tar.gz. No licence
+        sidecar read this pass — the member was never extracted.
+      method: absent
+    access:
+      method: s3
+      uri: s3://rs-storage-open/coral_bleaching/others.tar.gz
+      params:
+        bucket: rs-storage-open
+        endpoint: hel1.your-objectstorage.com
+        region: hel1
+        prefix: coral_bleaching/others.tar.gz
+        credentials_env: S3
+      notes: >
+        Lives only inside the tar member "coral-health-classification/" — there is no
+        standalone S3 prefix for this dataset. Extract the archive to reach it.
+    modalities: [image]
+    capabilities: [bleaching-assessment, general-pretraining]
+    items: 1637
+    annotations:
+      - kind: none
+        supervises: []
+        notes: "Never extracted; class/label structure not verified this pass."
+    coverage:
+      regions: [unknown]
+    notes: >
+      Licence NOT GUESSED (WS-D decision, 2026-09-23): no licence sidecar has been read
+      for this member. Recorded as NO-LICENCE-STATED per the registry's convention,
+      pending extraction of coral_bleaching/others.tar.gz and a real read of its
+      README/licence file.
+    loader: { layout: metadata-only }
+    tags: [needs-permission, tar-only]
+
+  - id: kaggle-healthy-bleached-corals
+    name: "Kaggle: healthy and bleached corals — tar-only"
+    version: "unversioned"
+    description: >
+      Kaggle-sourced healthy-vs-bleached coral image set found only inside the
+      coral_bleaching/others.tar.gz archive — never extracted to a live bucket prefix
+      (2026-09-19 tar-vs-tree cross-check, T1 report). Upstream member name is
+      truncated in every report seen this pass ("kaggle-healthy-and-bleached-corals-…");
+      the full name needs the archive extracted to read.
+    licence: NO-LICENCE-STATED
+    legal_basis: unknown
+    redistribution: unknown
+    provenance: public
+    verification:
+      verified_on: 2026-09-19
+      verified_by: >
+        2026-09-19 tar-member listing (T1 report): 923 files under a member named
+        "kaggle-healthy-and-bleached-corals-…" (truncated in the report) inside
+        coral_bleaching/others.tar.gz. No licence sidecar read this pass — the member
+        was never extracted.
+      method: absent
+    access:
+      method: s3
+      uri: s3://rs-storage-open/coral_bleaching/others.tar.gz
+      params:
+        bucket: rs-storage-open
+        endpoint: hel1.your-objectstorage.com
+        region: hel1
+        prefix: coral_bleaching/others.tar.gz
+        credentials_env: S3
+      notes: >
+        Lives only inside a tar member named "kaggle-healthy-and-bleached-corals-…"
+        (exact full name unconfirmed — truncated in every prior report) — there is no
+        standalone S3 prefix for this dataset. Extract the archive to reach it and
+        record the untruncated member name.
+    modalities: [image]
+    capabilities: [bleaching-assessment, general-pretraining]
+    items: 923
+    annotations:
+      - kind: none
+        supervises: []
+        notes: "Never extracted; class/label structure not verified this pass."
+    coverage:
+      regions: [unknown]
+    notes: >
+      Licence NOT GUESSED (WS-D decision, 2026-09-23): no licence sidecar has been read
+      for this member. Recorded as NO-LICENCE-STATED per the registry's convention,
+      pending extraction of coral_bleaching/others.tar.gz and a real read of its
+      README/licence file. Kaggle datasets carry per-dataset licences that vary widely —
+      do not assume CC-BY or public domain without reading it.
+    loader: { layout: metadata-only }
+    tags: [needs-permission, tar-only]

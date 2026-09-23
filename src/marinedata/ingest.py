@@ -280,6 +280,9 @@ def _stage_with_plan(
                 upstream_split=split,
                 width=width,
                 height=height,
+                split_group=source.split_group_for(
+                    stem=stem, upstream_path=member, partition=plan.partition
+                ),
             )
         )
 

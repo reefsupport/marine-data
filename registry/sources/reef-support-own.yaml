@@ -77,25 +77,34 @@ sources:
       caveats:
         - "CRITICAL SUPERVISION HOLE: this corpus labels BIOTA only. It contains no Caribbean substrate ground truth of any kind - no sand, rubble, pavement, turf or CCA. Fixing the ontology makes soft coral EXPRESSIBLE but supplies no substrate examples, so it cannot on its own repair the ~32% rubble / ~50% unknown-hard-substrate collapse. That needs funded substrate annotation."
         - "Soft coral is ~24% of all our Caribbean/Atlantic annotations and absent from every major public reef schema."
+    split_group:
+      pattern: 'reef_support/([^/]+)/'
+      match_field: upstream_path
+      template: "rs-colombia/{group}"
+    notes: >
+      OWNERSHIP CONFIRMED 2026-09-23 (WS-D decision): this entry owns all four
+      Colombian `mask_labels/reef_support/` directories (Tayrona, Seaflower Bolivar,
+      Seaflower Courtown, Tetes Providencia) outright — both pixels and annotations
+      are ours. `reef-support-seaview-labels` no longer claims any of these four; it
+      is scoped to the SEAVIEW_* directories only.
     tags: [moat, caribbean, octocoral, biota-only]
 
   - id: reef-support-seaview-labels
     name: Reef Support annotations on XL Catlin Seaview imagery
     version: "2026-08"
     description: >
-      Our expert instance masks drawn on reef photographs, across 8 site directories:
-      SEAFLOWER_BOLIVAR, SEAFLOWER_COURTOWN, SEAVIEW_ATL, SEAVIEW_IDN_PHL, SEAVIEW_PAC_AUS,
-      SEAVIEW_PAC_USA, TETES_PROVIDENCIA, UNAL_BLEACHING_TAYRONA. The four SEAVIEW_* dirs
-      are on PUBLIC XL Catlin Seaview photographs; pixel origin for the other four is not
-      confirmed. The annotation labour and the resulting masks are ours; the underlying
-      pixels are not established as ours in any directory.
+      Our expert instance masks drawn on reef photographs, across the four SEAVIEW_*
+      site directories: SEAVIEW_ATL, SEAVIEW_IDN_PHL, SEAVIEW_PAC_AUS, SEAVIEW_PAC_USA.
+      These are PUBLIC XL Catlin Seaview photographs. The annotation labour and the
+      resulting masks are ours; the underlying pixels are XL Catlin Seaview's and
+      their terms are unconfirmed.
     licence: NO-LICENCE-STATED
     legal_basis: unknown
     redistribution: unknown
     provenance: partner
     verification:
       verified_on: 2026-09-19
-      verified_by: "2026-09-19 boto3 bucket listing (v4s-open-listing.tsv): 73,045 images across eight site directories (SEAFLOWER_BOLIVAR, SEAFLOWER_COURTOWN, SEAVIEW_ATL, SEAVIEW_IDN_PHL, SEAVIEW_PAC_AUS, SEAVIEW_PAC_USA, TETES_PROVIDENCIA, UNAL_BLEACHING_TAYRONA) - supersedes the 2026-08-17 four-directory/2,707-image count. No XL Catlin Seaview licence or permission document located in the repo or bucket."
+      verified_by: "2026-09-19 boto3 bucket listing (v4s-open-listing.tsv): 73,045 images across eight site directories under benthic_datasets/mask_labels/reef_support/, of which SEAVIEW_ATL, SEAVIEW_IDN_PHL, SEAVIEW_PAC_AUS and SEAVIEW_PAC_USA belong to this entry (WS-D decision, 2026-09-23) - the other four (SEAFLOWER_BOLIVAR, SEAFLOWER_COURTOWN, TETES_PROVIDENCIA, UNAL_BLEACHING_TAYRONA) belong to `reef-support-benthic-own`. No XL Catlin Seaview licence or permission document located in the repo or bucket."
       method: absent
     access:
       method: s3
@@ -123,6 +132,16 @@ sources:
       verified_on: 2026-08-29
       verified_note: "Live S3 fetch confirms images/ and export-result.ndjson at the declared prefix, matching the layout."
     items: 73045
+    items_note: >
+      STALE 2026-09-23: this still totals all eight directories from the 2026-09-19
+      listing. Per the WS-D ownership decision this entry now covers only the four
+      SEAVIEW_* directories; the true per-directory split (and the Colombian-side
+      total now owned by `reef-support-benthic-own`) needs a recount from the
+      post-delete listing — deferred with the version-pin work (not this step).
+    split_group:
+      pattern: '^(.{5})'
+      match_field: stem
+      template: "seaview/{group}"
     annotations:
       - kind: instance-mask
         schema_id: reef-support-labelbox
@@ -131,7 +150,7 @@ sources:
         depth: L2
         notes: "Hard Coral / Soft Coral. SEAVIEW_ATL is 46.9% Soft Coral - our strongest octocoral evidence."
     coverage:
-      regions: [western-atlantic, caribbean, coral-triangle, central-pacific, gbr-australia]
+      regions: [western-atlantic, coral-triangle, central-pacific, gbr-australia]
       sites: 4
     notes: >
       SPLIT OUT 2026-08-17 after review. Previously these 2,707 images sat inside a single
@@ -151,8 +170,14 @@ sources:
       Re-checked 2026-09-19 (boto3 listing): live prefix has grown from four SEAVIEW_* dirs
       / 2,707 images (recorded 2026-08-17) to eight dirs / 73,045 images - added
       SEAFLOWER_BOLIVAR, SEAFLOWER_COURTOWN, TETES_PROVIDENCIA, UNAL_BLEACHING_TAYRONA.
-      Item/byte counts corrected here. Pixel origin for the four new dirs is unconfirmed -
-      see P1-B proposal "Needs Yohan" #2.
+
+      RESOLVED 2026-09-23 (WS-D decision): the four added directories are Reef Support's
+      OWN imagery, not XL Catlin Seaview's — ownership moved to `reef-support-benthic-own`,
+      which already covered them (Tayrona, Seaflower Bolivar, Seaflower Courtown, Tetes
+      Providencia) and keeps its existing PROPRIETARY-OWN/ok licence fields. This entry now
+      covers only the four SEAVIEW_* directories, whose XL Catlin Seaview pixel terms remain
+      unconfirmed; the "pixel origin not confirmed" language previously applied to the
+      Colombian four is removed as no longer applicable to them.
     tags: [needs-permission, annotation-ip, octocoral]
 
   - id: reef-support-bleaching
@@ -213,6 +238,10 @@ sources:
       ecoregions: ["Southern Caribbean"]
       years: [2024, 2024]
       sites: 1
+    split_group:
+      pattern: 'reef_support/([^/]+)/'
+      match_field: upstream_path
+      template: "rs-colombia/{group}"
     tags: [multi-task, caribbean]
 
   - id: reefolution
@@ -255,6 +284,10 @@ sources:
 
       Re-checked 2026-09-18 (s3://rs-storage-open/benthic_datasets/point_labels/Reefolution):
       still no written grant on record.
+    split_group:
+      pattern: '(DSCN\d+)'
+      match_field: stem
+      template: "reefolution/{group}"
     loader:
       layout: flat-images
       verified_on: 2026-08-17
@@ -297,6 +330,10 @@ sources:
 
       Re-checked 2026-09-18 (s3://rs-storage-open/benthic_datasets/point_labels/IBF):
       still no written grant on record.
+    split_group:
+      pattern: 'IBF/([^/]+)/'
+      match_field: upstream_path
+      template: "ibf/{group}"
     loader:
       layout: flat-images
       verified_on: 2026-08-17
@@ -344,14 +381,15 @@ sources:
     tags: [pseudo-label, never-eval]
 
   - id: rs-labelled-masks
-    name: rs_labelled segmentation masks (origin unconfirmed)
+    name: rs_labelled segmentation masks (second annotation set over reef_support images)
     version: "unversioned"
     description: >
       Segmentation mask labelling effort over reef site imagery, per root README.md
       ("rs_labelled (Reef Support): Segmentation mask labeling effort of various
-      datasets"). Shares site-name conventions with `reef-support-seaview-labels` but
+      datasets"). Shares site-name conventions with `reef-support-seaview-labels` and
       lacks its Labelbox ndjson / contour-colour layout - reads as an earlier or
-      alternate export of the same labelling work, not confirmed identical or distinct.
+      alternate export of the same labelling work.
+    images_from: [reef-support-benthic-own, reef-support-seaview-labels]
     licence: NO-LICENCE-STATED
     legal_basis: unknown
     redistribution: unknown
@@ -379,10 +417,18 @@ sources:
         notes: "Mask/label structure not verified this pass."
     coverage:
       regions: [unknown]
+    split_group:
+      pattern: '^(.{5})'
+      match_field: stem
+      template: "seaview/{group}"
     notes: >
-      BLOCKED PENDING PERMISSION. Ownership question open with Yohan: whether this is a
-      distinct asset from `reef-support-seaview-labels` or an earlier export of the same
-      effort - see P1-B proposal "Needs Yohan" #1. Licence/origin not stated either way.
+      RESOLVED 2026-09-23 (WS-D decision): folded in as a SECOND annotation set over the
+      images already registered under `reef-support-benthic-own` and
+      `reef-support-seaview-labels` (see `images_from`) - no pixel copy of its own. The
+      prior "distinct asset vs. earlier export" ownership question (P1-B "Needs Yohan"
+      #1) is superseded by this: whatever the origin, its masks sit on existing reef_support
+      imagery, not a new image pool. Licence/origin of the mask labour itself is still
+      not stated either way.
     loader: { layout: metadata-only }
     tags: [needs-permission]
 

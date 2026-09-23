@@ -33,3 +33,24 @@ def test_unknown_annotations_schema_id_raises() -> None:
     )
     with pytest.raises(RegistryError, match=r"fixture.*annotations\.schema_id.*no-such-schema"):
         Registry._check_references({src.id: src}, schemas={}, crosswalks={})
+
+
+def test_unknown_images_from_raises() -> None:
+    """An ``images_from`` entry naming a source id that doesn't exist must fail at
+    load (WS-D step 3) — the same fail-fast shape as the other reference checks in
+    this module, not a silent dangling reference."""
+    src = make_source(layout="image-folder", images_from=("no-such-source",))
+    with pytest.raises(RegistryError, match=r"fixture.*images_from.*no-such-source"):
+        Registry._check_references({src.id: src}, schemas={}, crosswalks={})
+
+
+def test_known_images_from_resolves() -> None:
+    """The control case: an ``images_from`` id that does exist in the same registry
+    resolves cleanly."""
+    own = make_source(layout="image-folder", source_id="own-images")
+    annotations_only = make_source(
+        layout="image-folder", source_id="second-annotation-set", images_from=("own-images",)
+    )
+    Registry._check_references(
+        {own.id: own, annotations_only.id: annotations_only}, schemas={}, crosswalks={}
+    )

@@ -156,6 +156,12 @@ class Registry:
     ) -> None:
         """A loader pointing at a missing schema should fail at load, not at epoch 1."""
         for src in sources.values():
+            for images_source_id in src.images_from:
+                if images_source_id not in sources:
+                    raise RegistryError(
+                        f"source '{src.id}' images_from references unknown source "
+                        f"'{images_source_id}'"
+                    )
             spec = src.loader
             if spec is not None:
                 if spec.schema_id and spec.schema_id not in schemas:

@@ -52,6 +52,7 @@ def make_source(
     source_id: str = "fixture",
     annotations: tuple[Annotation, ...] = (),
     modalities: tuple[Modality, ...] = (Modality.IMAGE,),
+    images_from: tuple[str, ...] = (),
 ) -> Source:
     """A minimal source declaring a given layout."""
     return Source(
@@ -72,6 +73,7 @@ def make_source(
         coverage=Coverage(regions=(Region.GLOBAL,)),
         loader=LoaderSpec(layout=layout, params=params or {}),
         annotations=annotations,
+        images_from=images_from,
     )
 
 

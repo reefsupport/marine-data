@@ -267,6 +267,9 @@ def _stage_with_parquet_plan(
                         upstream_split=split,
                         width=width,
                         height=height,
+                        split_group=source.split_group_for(
+                            stem=stem, upstream_path=upstream_path, partition=plan.partition
+                        ),
                     )
                 )
                 row_idx += 1
