@@ -20,6 +20,7 @@ from .base import (
     register_loader,
     registered_layouts,
 )
+from .coralseg import CoralsegRMaskLoader
 from .generic import (
     AudioClipsLoader,
     CocoJsonLoader,
@@ -33,6 +34,7 @@ from .labelbox import LabelboxNdjsonLoader, LabelboxRgbMaskLoader
 __all__ = [
     "AudioClipsLoader",
     "CocoJsonLoader",
+    "CoralsegRMaskLoader",
     "CsvPointsLoader",
     "DataNotAvailable",
     "ImageFolderLoader",
