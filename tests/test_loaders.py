@@ -525,8 +525,17 @@ def test_declared_crosswalk_builds(registry: Registry, source_id: str) -> None:
     assert harmonizer.coverage_report()
 
 
+#: Layouts with no current source, kept intentionally rather than orphaned by accident.
+#: Each entry needs a reason so the next audit can tell "half-landed rename" from "known gap".
+_INTENTIONALLY_UNWIRED_LAYOUTS = {
+    "labelbox-ndjson": "superseded by labelbox-rgb 2026-09-23 (S7a); retire or rewire",
+    "segmentsai-instance": "provenance pending with Yohan (S7e)",
+}
+
+
 def test_layouts_have_at_least_one_source(registry: Registry) -> None:
     """Flags a layout implemented but never used — usually a rename that half-landed."""
     declared = {s.loader.layout for s in _sources_with_loaders(registry)}
     orphans = set(registered_layouts()) - declared
-    assert not orphans - {"metadata-only"}, f"layouts with no sources: {sorted(orphans)}"
+    unexpected = orphans - {"metadata-only"} - set(_INTENTIONALLY_UNWIRED_LAYOUTS)
+    assert not unexpected, f"layouts with no sources: {sorted(unexpected)}"
