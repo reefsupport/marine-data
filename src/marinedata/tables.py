@@ -1,6 +1,6 @@
 """Sparse geometry and metadata tables — parquet writers, explicit schema (D1 §2).
 
-Three tables, all with rows sorted before write and ``write_statistics=False``: two
+Four tables, all with rows sorted before write and ``write_statistics=False``: two
 determinism requirements from the same cause. Parquet dictionary-encodes string
 columns in first-seen order, so *unsorted* input rows would make the encoded bytes
 depend on insertion order even though the decoded values are identical; sorting first
@@ -71,6 +71,30 @@ class PointRow:
     label_id: str | None = None
     form: str | None = None
     region: str | None = None
+
+
+@dataclass(frozen=True)
+class ImageLabelRow:
+    """One ``labels/image_labels.parquet`` row — a whole-image annotation (Roboflow
+    image classification, WS-D S23), not a localized point or box.
+
+    One row per positive class: a single-label source (v3i's folder-per-class layout)
+    emits exactly one row per ``(partition, stem)``; a multi-label source (a Roboflow
+    one-hot ``_classes.csv`` export) emits one row per column whose value is truthy for
+    that image. There is deliberately no "negative" row for a 0 column — absence from
+    this table already means "not this class", the same convention
+    :func:`write_points_table` uses for an unannotated image.
+
+    ``confidence`` is a nullable float extra for a source whose export carries a
+    per-label score rather than a bare 0/1 flag — ``None`` for every caller that does
+    not have one, same shape as :class:`PointRow`'s nullable extras.
+    """
+
+    stem: str
+    partition: str
+    label: str
+    schema_id: str
+    confidence: float | None = None
 
 
 @dataclass(frozen=True)
@@ -154,6 +178,36 @@ def write_points_table(path: Path, rows: Sequence[PointRow]) -> str:
             "label_id": [r.label_id for r in ordered],
             "form": [r.form for r in ordered],
             "region": [r.region for r in ordered],
+        },
+        schema=schema,
+    )
+    path.parent.mkdir(parents=True, exist_ok=True)
+    pq.write_table(table, path, **_WRITE_KWARGS)
+    return file_digest(path)
+
+
+def write_image_labels_table(path: Path, rows: Sequence[ImageLabelRow]) -> str:
+    """Write ``labels/image_labels.parquet``. Returns the file's sha256."""
+    pa = _require_pyarrow()
+    import pyarrow.parquet as pq
+
+    schema = pa.schema(
+        [
+            pa.field("stem", pa.string(), nullable=False),
+            pa.field("partition", pa.string(), nullable=False),
+            pa.field("label", pa.string(), nullable=False),
+            pa.field("schema_id", pa.string(), nullable=False),
+            pa.field("confidence", pa.float32(), nullable=True),
+        ]
+    )
+    ordered = sorted(rows, key=lambda r: (r.partition, r.stem, r.label))
+    table = pa.table(
+        {
+            "stem": [r.stem for r in ordered],
+            "partition": [r.partition for r in ordered],
+            "label": [r.label for r in ordered],
+            "schema_id": [r.schema_id for r in ordered],
+            "confidence": [r.confidence for r in ordered],
         },
         schema=schema,
     )

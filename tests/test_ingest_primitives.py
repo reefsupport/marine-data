@@ -434,3 +434,62 @@ def test_points_table_existing_callers_unaffected(tmp_path: Path) -> None:
     ]
     digest = write_points_table(tmp_path / "points.parquet", rows)
     assert digest == file_digest(tmp_path / "points.parquet")
+
+
+def test_image_labels_table_roundtrip(tmp_path: Path) -> None:
+    """``ImageLabelRow`` round-trips through ``write_image_labels_table``: schema,
+    the nullable ``confidence`` extra, and multiple rows per ``(partition, stem)`` for
+    a multi-label image (WS-D S23)."""
+    import pyarrow.parquet as pq
+
+    from marinedata.tables import ImageLabelRow, write_image_labels_table
+
+    rows = [
+        ImageLabelRow(
+            stem="s0", partition="default", label="Healthy", schema_id="roboflow-bleaching-native"
+        ),
+        ImageLabelRow(
+            stem="s1",
+            partition="default",
+            label="Unhealthy",
+            schema_id="roboflow-bleaching-native",
+            confidence=0.9,
+        ),
+        ImageLabelRow(
+            stem="s1",
+            partition="default",
+            label="Bleached",
+            schema_id="roboflow-bleaching-native",
+            confidence=0.8,
+        ),
+    ]
+    path = tmp_path / "image_labels.parquet"
+    write_image_labels_table(path, rows)
+
+    table = pq.read_table(path)
+    assert table.column_names == ["stem", "partition", "label", "schema_id", "confidence"]
+    assert table.field("confidence").nullable
+    by_stem = table.column("stem").to_pylist()
+    assert by_stem.count("s1") == 2
+    confidences = dict(
+        zip(table.column("stem").to_pylist(), table.column("confidence").to_pylist(), strict=True)
+    )
+    assert confidences["s0"] is None
+
+
+def test_image_labels_table_two_writes_byte_identical(tmp_path: Path) -> None:
+    """Same determinism guarantee as the other three tables."""
+    from marinedata.tables import ImageLabelRow, write_image_labels_table
+
+    rows = [
+        ImageLabelRow(
+            stem=f"s{i}",
+            partition="default",
+            label="Healthy",
+            schema_id="roboflow-bleaching-native",
+        )
+        for i in range(5)
+    ]
+    d1 = write_image_labels_table(tmp_path / "a.parquet", rows)
+    d2 = write_image_labels_table(tmp_path / "b.parquet", rows)
+    assert d1 == d2

@@ -20,6 +20,7 @@ from marinedata.schema import (
     LabelNode,
     LabelSchema,
 )
+from marinedata.task import TaskProjector
 
 
 @pytest.fixture
@@ -188,6 +189,32 @@ def test_coralscapes_records_its_lossiness(registry: Registry) -> None:
     edge = walk.edge("unknown hard substrate")
     assert edge is not None
     assert edge.fidelity is Fidelity.APPROXIMATE
+
+
+def test_roboflow_unhealthy_never_resolves_to_bleached(registry: Registry) -> None:
+    """WS-D S24 D1: the condition axis is flat (BLEACHED is a sibling of DISEASED/
+    RECENTLY_DEAD/OLD_DEAD, not their ancestor), so a Roboflow contributor's binary
+    "Unhealthy" call must never be asserted as the specific diagnosis BLEACHED. It
+    resolves to UNHEALTHY, their shared condition-axis parent, and the real
+    ``bleaching-condition`` task (targeting the six leaves) abstains on it rather than
+    guessing."""
+    walk = registry.crosswalk("roboflow-bleaching-condition")
+    target = registry.label_schema(walk.target_schema)
+    harmonizer = Harmonizer(walk, target)
+
+    result = harmonizer.map_label("Unhealthy")
+    node_id = result.labels[Axis.CONDITION].node_id
+    assert node_id == "UNHEALTHY"
+    assert node_id != "BLEACHED"
+
+    task = registry.task("bleaching-condition")
+    assert set(task.classes) == {
+        "HEALTHY", "PALE", "BLEACHED", "DISEASED", "RECENTLY_DEAD", "OLD_DEAD",
+    }, "bleaching-condition classes must stay the six leaves; UNHEALTHY is an ancestor."
+    projector = TaskProjector(task, target)
+    projection = projector.project(node_id)
+    assert projection.target_class is None
+    assert "coarser" in projection.reason
 
 
 def test_every_crosswalk_target_resolves(registry: Registry) -> None:

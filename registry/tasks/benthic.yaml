@@ -56,3 +56,16 @@ tasks:
       than being an aspiration.
     classes: [HEALTHY, PALE, BLEACHED, DISEASED, RECENTLY_DEAD, OLD_DEAD]
     coarser: abstain
+
+  - id: coral-health-binary
+    schema_id: rs-benthic-v1
+    axis: condition
+    description: >
+      Coarse healthy/unhealthy call — the level Roboflow's five bleaching-classification
+      exports actually annotated at (WS-D S26). `bleaching-condition` correctly abstains
+      on their "Unhealthy" rows because that label cannot be split into PALE/BLEACHED/
+      DISEASED/RECENTLY_DEAD/OLD_DEAD; here UNHEALTHY *is* the target, so every
+      descendant of it (every finer condition source labels) rolls up and the same
+      sources that partially abstain above are fully supervised here.
+    classes: [HEALTHY, UNHEALTHY]
+    coarser: abstain

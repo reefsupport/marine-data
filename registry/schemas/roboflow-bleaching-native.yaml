@@ -1,0 +1,26 @@
+# Shared native vocabulary for Roboflow's five independently-uploaded bleaching /
+# coral-classification image sets (WS-D S23, R3 Q10): v3i, v6i, v1-yolov8s, v13i, v2i.
+#
+# All five carry the same two-class image-level judgement — Healthy vs Unhealthy —
+# whether it arrives as a folder-per-class layout (v3i) or a one-hot `_classes.csv`
+# sidecar (the other four). One shared schema instead of five near-identical ones,
+# same reasoning as the shared `roboflow-bleaching/{group}` split_group template these
+# sources already use.
+#
+# "Unhealthy" is a Roboflow contributor's own binary call, not a diagnosis: it does not
+# distinguish pale, diseased, recently-dead or long-dead coral. See the
+# `roboflow-bleaching-condition` crosswalk for how (coarsely) this maps onto
+# `rs-benthic-v1`'s condition axis.
+
+schemas:
+  - id: roboflow-bleaching-native
+    name: Roboflow bleaching-classification native labelset
+    description: >
+      The shared binary Healthy/Unhealthy image-level vocabulary across Roboflow's
+      five bleaching/coral-classification exports (v3i, v6i, v1-yolov8s, v13i, v2i).
+      Dataset-native, unmapped to any finer condition scale — this only makes
+      schema_id: roboflow-bleaching-native resolve and records the vocabulary honestly.
+    axes: [condition]
+    nodes:
+      - { id: "Healthy", name: Healthy, axis: condition }
+      - { id: "Unhealthy", name: Unhealthy, axis: condition }

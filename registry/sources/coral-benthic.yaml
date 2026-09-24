@@ -925,7 +925,7 @@ sources:
 
   - id: roboflow-coral-reef-classification-v3i
     name: Coral Reef Classification (Roboflow v3i)
-    version: "v3i"
+    version: "v3i-image-labels"
     description: Roboflow-exported folder-layout coral reef classification image set.
     licence: CC-BY-4.0
     legal_basis: licence
@@ -938,7 +938,11 @@ sources:
     access:
       method: s3
       uri: "s3://rs-storage-open/sources/roboflow-coral-reef-classification-v3i/v3i"
-      notes: "rs-storage-open is a public bucket — anonymously fetchable, no credentials needed"
+      notes: >
+        rs-storage-open is a public bucket — anonymously fetchable, no credentials
+        needed. Still points at the OLD bespoke-schema upload (v3i/): the re-staged
+        tree below (v3i-image-labels/) is local only, never pushed (WS-D S23) — a
+        release build needs a `roots` override until it is uploaded (S24).
       params:
         bucket: rs-storage-open
         endpoint: hel1.your-objectstorage.com
@@ -946,17 +950,23 @@ sources:
         prefix: "sources/roboflow-coral-reef-classification-v3i/v3i/"
       size_bytes: 239768692
     checksums:
-      version: "v3i"
-      root_digest: fba76467138ee66b168820df7e148726564b57f1f795daa062b78d7f451323b4
-      files: 4559
-      size_bytes: 239132929
+      version: "v3i-image-labels"
+      root_digest: 17e31b15399c46dfd9816e7ab5ad7dded9599f464db9258e83f96e16402f9655
+      files: 4558
+      size_bytes: 239232782
     modalities: [image]
     capabilities: [bleaching-assessment, general-pretraining]
-    items: 4558
+    items: 4556
     annotations:
-      - kind: none
-        supervises: []
-        notes: "Class/label structure not verified this pass - only the licence sidecar was read (L1)."
+      - kind: image-label
+        count: 4556
+        schema_id: roboflow-bleaching-native
+        supervises: [condition]
+        notes: >
+          STAGED 2026-09-24 (WS-D S23): re-staged locally from the S12b bespoke tree
+          into the standard StagedImage + labels/image_labels.parquet convention (one
+          row per image, single-label folder class Healthy/Unhealthy) — see loader
+          note for the local-only path.
     coverage:
       regions: [unknown]
     citation: >
@@ -974,19 +984,25 @@ sources:
       match_field: stem
       template: "roboflow-bleaching/{group}"
     loader:
-      layout: metadata-only
+      layout: staged-tree
+      schema_id: roboflow-bleaching-native
+      crosswalk_id: roboflow-bleaching-condition
       verified_on: 2026-09-24
       verified_note: >
-        PINNED 2026-09-24 (S12b): `access.uri`/`prefix` now point at the uploaded
-        staged tree `sources/roboflow-coral-reef-classification-v3i/v3i/` (4,560
-        objects, 239,768,692 B), pinned by `checksums.root_digest` (4,559 files,
-        239,132,929 B, excludes CHECKSUMS.sha256 itself). `access.params.credentials_env`
-        dropped: `rs-storage-open` allows anonymous `GetObject` on a known key.
-        Layout stays `metadata-only`: this source's `metadata.parquet` is a bespoke
-        schema (path, class, upstream_split, width, height, split_group), not
-        marinedata's `StagedImage` schema (no class column) — `staged-tree` was not
-        adopted. `marinedata verify roboflow-coral-reef-classification-v3i --limit 5`
-        passes via the manifest-driven fetch path.
+        SWITCHED 2026-09-24 (WS-D S23, R3 Q10): layout moved from `metadata-only` to
+        `staged-tree`, fixing the S12b `KeyError` (`enumerate_release_rows` skipped
+        this source outright because its old bespoke `metadata.parquet` had no
+        `partition`/`stem` columns). `marinedata.ingest_image_labels.
+        convert_bespoke_metadata` re-derived `partition`="default"/`stem` from each row's
+        `path`, dropped `upstream_split` (492/886 v3i groups straddle Roboflow's own
+        train/valid/test, never honoured), and wrote the new tree to
+        `sources/roboflow-coral-reef-classification-v3i/v3i-image-labels/` under the
+        LOCAL `_stage` root only (4,556 images, 886 split_group values, max group size
+        46; `CHECKSUMS.sha256` pinned by `checksums.root_digest` above). NOT uploaded —
+        `access.uri`/`prefix` still name the old `v3i/` bucket location (S24 uploads
+        the new tree and repoints them). The other four Roboflow bleaching sets
+        (v6i, v1-yolov8s, v13i, v2i) stay `metadata-only` until their own
+        `_classes.csv` re-stage (S24).
     tags: [bleaching, roboflow]
 
   - id: coralseg-ucsd-mosaics

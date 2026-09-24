@@ -112,8 +112,10 @@ schemas:
 
       # ── CONDITION axis ────────────────────────────────────────────────
       - { id: HEALTHY,       name: Healthy,        axis: condition, aliases: ["alive", "healthy"] }
-      - { id: PALE,          name: Pale,           axis: condition, aliases: ["pale", "paling"] }
-      - { id: BLEACHED,      name: Bleached,       axis: condition, aliases: ["bleached"] }
-      - { id: DISEASED,      name: Diseased,       axis: condition, aliases: ["diseased"] }
-      - { id: RECENTLY_DEAD, name: Recently dead,  axis: condition, aliases: ["recently dead"] }
-      - { id: OLD_DEAD,      name: Old dead,       axis: condition, aliases: ["dead", "old dead"] }
+      - { id: UNHEALTHY,     name: Unhealthy,      axis: condition,
+          notes: "Coarsening parent for a source that only ever recorded a binary healthy/not-healthy call — never assert PALE/BLEACHED/DISEASED/RECENTLY_DEAD/OLD_DEAD from it." }
+      - { id: PALE,          name: Pale,           parent: UNHEALTHY, axis: condition, aliases: ["pale", "paling"] }
+      - { id: BLEACHED,      name: Bleached,       parent: UNHEALTHY, axis: condition, aliases: ["bleached"] }
+      - { id: DISEASED,      name: Diseased,       parent: UNHEALTHY, axis: condition, aliases: ["diseased"] }
+      - { id: RECENTLY_DEAD, name: Recently dead,  parent: UNHEALTHY, axis: condition, aliases: ["recently dead"] }
+      - { id: OLD_DEAD,      name: Old dead,       parent: UNHEALTHY, axis: condition, aliases: ["dead", "old dead"] }
