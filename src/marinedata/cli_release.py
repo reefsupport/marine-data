@@ -99,6 +99,7 @@ def _cmd_release_build(args: argparse.Namespace) -> int:
         except ValueError as exc:
             print(f"release build: {exc}", file=sys.stderr)
             return 1
+        skipped_sources: dict[str, str] = {}
         generate_split_map(
             registry,
             out=split_map_path,
@@ -109,8 +110,11 @@ def _cmd_release_build(args: argparse.Namespace) -> int:
             min_groups=args.min_groups,
             now=datetime.now(UTC).isoformat(),
             release=args.release,
+            skipped=skipped_sources,
         )
         print(f"release build: generated {split_map_path} (stratify=source)")
+        for source_id, reason in sorted(skipped_sources.items()):
+            print(f"  skipped {source_id}: {reason}", file=sys.stderr)
 
     result = build_release(
         registry,

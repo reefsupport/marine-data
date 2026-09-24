@@ -74,7 +74,11 @@ def _admitted_source_ids(
 
 
 def enumerate_release_rows(
-    registry: Registry, roots: dict[str, str | Path], profile: str = "research"
+    registry: Registry,
+    roots: dict[str, str | Path],
+    profile: str = "research",
+    *,
+    skipped: dict[str, str] | None = None,
 ) -> Iterator[Row]:
     """``(image_sha256, split_group, stratum)`` for every admitted source's staged tree.
 
@@ -89,11 +93,31 @@ def enumerate_release_rows(
     staged-tree convention never touches, but every staged tree still carries the same
     sample index). Going through a per-annotation-kind loader here would demand
     layout-specific params this enumerator has no business needing.
+
+    A source whose ``loader.layout`` is not ``staged-tree`` (e.g. ``metadata-only``:
+    v3i's bespoke ``path``/``class``/``upstream_split``/``width``/``height``/
+    ``split_group`` schema, no ``partition``/``stem`` columns at all) is *not* a
+    staged-tree sample index and is skipped rather than crashing on the missing
+    columns — whether classification sources like these join a release is still
+    Yohan's open question (WS-D S12b/S12c), so until it is answered they are left
+    out, never silently dropped: pass ``skipped`` to collect ``{source_id: reason}``
+    for the caller to report. The guard checks the registry's declared layout, not
+    a caught ``KeyError`` — a *staged-tree* source missing ``partition`` is real
+    corruption and must still raise (below, unchanged).
     """
     _require_pyarrow()
     import pyarrow.parquet as pq
 
     for source_id in _admitted_source_ids(registry, roots, profile):
+        source = registry.source(source_id)
+        layout = source.loader.layout if source.loader is not None else None
+        if layout != "staged-tree":
+            if skipped is not None:
+                skipped[source_id] = (
+                    f"{layout if layout is not None else 'no loader'}: not in release "
+                    "until labels format decided"
+                )
+            continue
         root = Path(roots[source_id])
         metadata_path = root / "metadata.parquet"
         if not metadata_path.is_file():
@@ -131,6 +155,7 @@ def generate_split_map(
     min_groups: int = DEFAULT_MIN_GROUPS,
     now: str | None = None,
     release: str | None = None,
+    skipped: dict[str, str] | None = None,
 ) -> None:
     """Enumerate every admitted staged tree in ``roots`` and write a fresh, stratified
     ``SPLIT_MAP.json`` at ``out`` — the "no hand-built TSV" path from staged trees straight
@@ -141,10 +166,15 @@ def generate_split_map(
     Raises if ``out`` already exists — ``resolve_splits`` treats that as extending a map,
     and a release's own map is meant to be generated fresh once, not silently appended
     to under a different corpus. Regenerate deliberately: remove it first.
+
+    ``skipped``, if given, is filled in-place with ``{source_id: reason}`` for every
+    admitted source :func:`enumerate_release_rows` left out for not being a
+    ``staged-tree`` layout (see there) — the caller's hook for surfacing "this source
+    isn't in the release" rather than it disappearing silently.
     """
     if load_split_map(out) is not None:
         raise ValueError(f"{out} already exists — remove it first to regenerate")
-    rows = enumerate_release_rows(registry, roots, profile)
+    rows = enumerate_release_rows(registry, roots, profile, skipped=skipped)
     counts, strata = rows_to_counts(rows, stratified=True)
     resolve_splits(
         out,
