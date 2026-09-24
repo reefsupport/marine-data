@@ -16,6 +16,8 @@ decides *what* rows exist; this module decides how they land on disk:
   ``datasets.config.MAX_ROW_GROUP_SIZE``) — the Hub dataset viewer re-converts a Parquet
   file whose row groups exceed 100–300 MB uncompressed. One row group is the only thing
   ever held in memory, so writing is constant-memory in the corpus size.
+- **Image row groups** are also capped at :data:`IMAGE_ROW_GROUP_ROWS` rows, and every file
+  carries a page index (``write_page_index=True``) so the viewer reads only what it shows.
 - **No statistics / dictionaries on blobs.** Min/max statistics on a multi-megabyte
   ``bytes`` column would copy two images into the footer of every row group.
 """
@@ -32,6 +34,12 @@ SHARD_TARGET_BYTES = 500 * 1000**2
 
 ROW_GROUP_TARGET_BYTES = 100 * 1000**2
 """``datasets.config.MAX_ROW_GROUP_SIZE = "100MB"``; the viewer's ceiling is 100–300 MB."""
+
+IMAGE_ROW_GROUP_ROWS = 100
+"""Row-group row cap for configs with an embedded file: ``datasets`` writes 100 rows per row
+group for images, and hub-docs ``datasets-image.md`` recommends exactly that; the viewer
+reads whole row groups, so 100 MB groups risk ``TooBigContentError`` (hub-docs
+``datasets-data-files-configuration.md``: "use smaller row groups and include a page index")."""
 
 ROW_OVERHEAD_BYTES = 256
 """Allowance per row for the scalar columns and the struct ``path`` in size planning."""
@@ -93,6 +101,16 @@ def greedy_chunks(rows: Sequence[ExportRow], target_bytes: int) -> list[list[Exp
     if current:
         chunks.append(current)
     return chunks
+
+
+def row_groups(spec: ConfigSpec, rows: Sequence[ExportRow]) -> list[list[ExportRow]]:
+    """Byte-greedy groups, further cut to :data:`IMAGE_ROW_GROUP_ROWS` rows when the config
+    embeds a file."""
+    groups = greedy_chunks(rows, spec.row_group_target_bytes)
+    if spec.image_column is None:
+        return groups
+    n = IMAGE_ROW_GROUP_ROWS
+    return [g[i : i + n] for g in groups for i in range(0, len(g), n)]
 
 
 def shard_name(config: str, split: str, index: int, total: int) -> str:
@@ -157,8 +175,9 @@ def write_shard(path: Path, spec: ConfigSpec, rows: Sequence[ExportRow]) -> int:
         compression="snappy",
         use_dictionary=scalars,
         write_statistics=scalars,
+        write_page_index=True,
     ) as writer:
-        for group in greedy_chunks(rows, spec.row_group_target_bytes):
+        for group in row_groups(spec, rows):
             writer.write_table(_table(spec, group, schema))
     tmp.replace(path)
     return path.stat().st_size

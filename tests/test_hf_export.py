@@ -27,6 +27,7 @@ from marinedata.hf_parquet import (
     files_per_folder,
     greedy_chunks,
     plan_config,
+    row_groups,
     shard_name,
     write_shard,
 )
@@ -222,3 +223,10 @@ def test_files_per_folder_counts_direct_entries():
         ["README.md", "data/a/x.parquet", "data/a/y.parquet", "data/b/z.parquet"]
     )
     assert counts == {"": 2, "data": 2, "data/a": 2, "data/b": 1}
+
+
+def test_image_row_groups_are_capped_at_100_rows():
+    rows = [ExportRow(values={}, file_bytes=10) for _ in range(250)]
+    image_spec = ConfigSpec("images", (("image", "image"),))
+    assert [len(g) for g in row_groups(image_spec, rows)] == [100, 100, 50]
+    assert [len(g) for g in row_groups(ConfigSpec("t", (("a", "string"),)), rows)] == [250]
