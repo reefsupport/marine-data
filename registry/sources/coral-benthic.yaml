@@ -732,7 +732,7 @@ sources:
 
   - id: roboflow-coral-bleaching-final-v6i
     name: Coral Bleaching Final (Roboflow v6i)
-    version: "v6i"
+    version: "v6i-image-labels"
     description: Roboflow-exported multiclass coral bleaching image set.
     licence: CC-BY-4.0
     legal_basis: licence
@@ -745,6 +745,11 @@ sources:
     access:
       method: s3
       uri: "s3://rs-storage-open/coral_bleaching/others/Coral Bleaching Final.v6i.multiclass"
+      notes: >
+        rs-storage-open is a public bucket — anonymously fetchable, no credentials
+        needed. Still points at the OLD un-versioned upload: the re-staged tree
+        below (v6i-image-labels/) is local only, not yet pushed (WS-D S25) — the
+        upload step in this same pass repoints these.
       params:
         bucket: rs-storage-open
         endpoint: hel1.your-objectstorage.com
@@ -752,13 +757,29 @@ sources:
         prefix: "coral_bleaching/others/Coral Bleaching Final.v6i.multiclass/"
         credentials_env: S3
       size_bytes: 187249687
+    checksums:
+      version: "v6i-image-labels"
+      root_digest: e6d191737ed47f1235f0ac507e4ffba4e194366fd406c84eb996f641e31f7a96
+      files: 2553
+      size_bytes: 187259021
     modalities: [image]
     capabilities: [bleaching-assessment, general-pretraining]
-    items: 2556
+    items: 2551
     annotations:
-      - kind: none
-        supervises: []
-        notes: "Class/label structure not verified this pass - only the licence sidecar was read (L1)."
+      - kind: image-label
+        count: 2551
+        schema_id: roboflow-bleaching-native
+        supervises: [condition]
+        notes: >
+          STAGED 2026-09-24 (WS-D S25): fetched (anon GET) and staged from the
+          one-hot `_classes.csv` sidecar (one per Roboflow train/valid/test split,
+          merged under a single `default` partition — same R3 Q10 reasoning as v3i,
+          the splits are not honoured downstream) via
+          `marinedata.ingest_image_labels.convert_classes_csv`. Native classes:
+          Bleached (1,996), Healthy (1,653). Genuinely multi-label: 1,098/2,551
+          images carry BOTH Bleached=1 and Healthy=1 — a same-axis conflict the S24
+          loader fix (`staged_tree.py` `_iter_samples`) now abstains on rather than
+          picking one.
     coverage:
       regions: [unknown]
     citation: >
@@ -776,12 +797,22 @@ sources:
       pattern: '^(.+?)_jpg\.rf\.'
       match_field: stem
       template: "roboflow-bleaching/{group}"
-    loader: { layout: metadata-only }
+    loader:
+      layout: staged-tree
+      schema_id: roboflow-bleaching-native
+      crosswalk_id: roboflow-bleaching-condition
+      verified_on: 2026-09-24
+      verified_note: >
+        SWITCHED 2026-09-24 (WS-D S25): layout moved from `metadata-only` to
+        `staged-tree`, mirroring v3i (WS-D S23). Staged to
+        `sources/roboflow-coral-bleaching-final-v6i/v6i-image-labels/` under the
+        LOCAL `_stage` root (2,551 images, 2,553 files incl. metadata/labels
+        tables; `CHECKSUMS.sha256` pinned by `checksums.root_digest` above).
     tags: [bleaching, roboflow]
 
   - id: roboflow-coral-bleaching-general-v1-yolov8s
     name: Coral Bleaching_General (Roboflow v1, YOLOv8s)
-    version: "v1-yolov8s"
+    version: "v1-yolov8s-image-labels"
     description: Roboflow-exported multiclass coral bleaching image set.
     licence: CC-BY-4.0
     legal_basis: licence
@@ -794,6 +825,11 @@ sources:
     access:
       method: s3
       uri: "s3://rs-storage-open/coral_bleaching/others/Coral Bleaching_General.v1-yolov8s.multiclass"
+      notes: >
+        rs-storage-open is a public bucket — anonymously fetchable, no credentials
+        needed. Still points at the OLD un-versioned upload: the re-staged tree
+        below (v1-yolov8s-image-labels/) is local only, not yet pushed (WS-D S25) —
+        the upload step in this same pass repoints these.
       params:
         bucket: rs-storage-open
         endpoint: hel1.your-objectstorage.com
@@ -801,13 +837,33 @@ sources:
         prefix: "coral_bleaching/others/Coral Bleaching_General.v1-yolov8s.multiclass/"
         credentials_env: S3
       size_bytes: 186654672
+    checksums:
+      version: "v1-yolov8s-image-labels"
+      root_digest: 1300b44d9383f1b384ba38081f6655ecbafa7f710784fc9147ce54e57133a92c
+      files: 2545
+      size_bytes: 186659316
     modalities: [image]
     capabilities: [bleaching-assessment, general-pretraining]
-    items: 2548
+    items: 2543
     annotations:
-      - kind: none
-        supervises: []
-        notes: "Class/label structure not verified this pass - only the licence sidecar was read (L1)."
+      - kind: image-label
+        count: 2543
+        schema_id: roboflow-bleaching-native
+        supervises: [condition]
+        notes: >
+          STAGED 2026-09-24 (WS-D S25): fetched (anon GET) and staged from the
+          one-hot `_classes.csv` sidecar (one per Roboflow train/valid/test split,
+          merged under a single `default` partition — same R3 Q10 reasoning as v3i,
+          the splits are not honoured downstream) via
+          `marinedata.ingest_image_labels.convert_classes_csv`. This sidecar ships
+          "filename, Bleached, Healthy" (space after each comma) — DictReader's raw
+          fieldnames keep the leading space while `convert_classes_csv`'s class_cols
+          are stripped, so a plain re-read KeyErrors; the fetch script normalizes
+          the header row before conversion (no `convert_classes_csv` change). Native
+          classes: Bleached (1,973), Healthy (1,642). Genuinely multi-label:
+          1,072/2,543 images carry BOTH Bleached=1 and Healthy=1 — a same-axis
+          conflict the S24 loader fix (`staged_tree.py` `_iter_samples`) now
+          abstains on rather than picking one.
     coverage:
       regions: [unknown]
     citation: >
@@ -825,7 +881,18 @@ sources:
       pattern: '^(.+?)_jpg\.rf\.'
       match_field: stem
       template: "roboflow-bleaching/{group}"
-    loader: { layout: metadata-only }
+    loader:
+      layout: staged-tree
+      schema_id: roboflow-bleaching-native
+      crosswalk_id: roboflow-bleaching-condition
+      verified_on: 2026-09-24
+      verified_note: >
+        SWITCHED 2026-09-24 (WS-D S25): layout moved from `metadata-only` to
+        `staged-tree`, mirroring v3i (WS-D S23). Staged to
+        `sources/roboflow-coral-bleaching-general-v1-yolov8s/v1-yolov8s-image-labels/`
+        under the LOCAL `_stage` root (2,543 images, 2,545 files incl.
+        metadata/labels tables; `CHECKSUMS.sha256` pinned by `checksums.root_digest`
+        above).
     tags: [bleaching, roboflow]
 
   - id: roboflow-coral-classification-copy-changed-v13i
