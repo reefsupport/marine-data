@@ -418,7 +418,7 @@ sources:
 
   - id: noaa-pifsc-bleaching
     name: NOAA PIFSC-ESD coral bleaching dataset
-    version: "1"
+    version: "1-image-labels"
     description: Purpose-built bleached vs healthy classification set from NOAA Pacific Islands.
     licence: US-GOV-PD
     legal_basis: licence
@@ -429,35 +429,78 @@ sources:
       verified_by: "HuggingFace NMFS-OSI/NOAA-PIFSC-ESD-CORAL-Bleaching-Dataset (NOAA/NMFS)"
       method: dataset-card
     access:
-      method: huggingface
-      uri: https://huggingface.co/datasets/NMFS-OSI/NOAA-PIFSC-ESD-CORAL-Bleaching-Dataset
-      size_bytes: 767739339  # measured 2026-09-18
+      method: s3
+      uri: "s3://rs-storage-open/sources/noaa-pifsc-bleaching/1-image-labels"
+      size_bytes: 769036546  # flat-list bucket total incl. CHECKSUMS.sha256 itself, measured 2026-09-24
       params:
-        hf_id: NMFS-OSI/NOAA-PIFSC-ESD-CORAL-Bleaching-Dataset
-        fetch_style: files
-        subpath: train
+        bucket: rs-storage-open
+        endpoint: hel1.your-objectstorage.com
+        region: hel1
+        prefix: "sources/noaa-pifsc-bleaching/1-image-labels/"
       notes: >
-        Checked 2026-08-28: the datasets-server rows API exposes only an `image`
-        column for this repo — no label, despite it being an imagefolder-built
-        dataset. The repo's own file tree has the class as the directory itself
-        (train/CORAL/, train/CORAL_BL/), so fetch_style: files (which now preserves
-        relative paths instead of flattening into images/) reaches it correctly.
+        rs-storage-open is a public bucket — anonymously fetchable, no credentials
+        needed. STAGED+UPLOADED 2026-09-24 (WS-D S29): downloaded the full HF repo
+        (huggingface_hub snapshot_download, pinned revision
+        8175d66ef0346795ace415b8b3950ee612ae1463, 10,419 PNGs) and re-staged it into
+        the StagedImage + labels/image_labels.parquet convention (WS-D S23's
+        `marinedata.ingest_image_labels.convert_bespoke_metadata`) rather than
+        fetching live off HF at task time — upstream's own train/val/test split is not
+        honoured (see split_group note below); authenticated flat-list count/bytes
+        (10,422 objects / 769,036,546 bytes, incl. `CHECKSUMS.sha256` itself) and an
+        anon-GET `CHECKSUMS.sha256` sha256 both match the local staged tree. The old
+        `access.method:
+        huggingface` (revision main, `fetch_style: files`) is superseded, not deleted
+        as a fallback: HF revisions can move, this pin cannot.
+    checksums:
+      version: "1-image-labels"
+      root_digest: 655165d2409fd038df530e68b5132cb509c1d0dbb350ad380b50065539ae8ddc
+      files: 10421
+      size_bytes: 767895660
     modalities: [image]
     capabilities: [bleaching-assessment]
     loader:
-      layout: image-folder
+      layout: staged-tree
       schema_id: dataset-native
       crosswalk_id: noaa-pifsc-bleaching-condition
-      verified_on: 2026-08-29
-      verified_note: "Live fetch confirms train/CORAL/ and train/CORAL_BL/ class directories, matching the declared layout."
-    items: 10400
+      verified_on: 2026-09-24
+      verified_note: >
+        SWITCHED 2026-09-24 (WS-D S29): layout moved from `image-folder` (live HF
+        fetch) to `staged-tree` (own bucket copy), the same move S23/S25 made for the
+        Roboflow v3i/v6i/v1-yolov8s sources — see those entries' `loader.verified_note`
+        for the shape this reproduces (StagedImage `metadata.parquet` +
+        `labels/image_labels.parquet`, `partition`="default", `upstream_split` dropped).
+    items: 10419
     annotations:
       - kind: image-label
-        classes: 2
+        count: 10419
+        schema_id: dataset-native
         supervises: [condition]
         depth: L1
+        notes: >
+          STAGED 2026-09-24 (WS-D S29): one row per image, single-label folder class
+          CORAL/CORAL_BL — same shape as the v3i/v6i/v1-yolov8s Roboflow sources.
     coverage:
       regions: [central-pacific]
+    split_group:
+      pattern: '^([A-Za-z]+(?:-[A-Za-z0-9]+)?)'
+      match_field: stem
+      template: "noaa-pifsc-bleaching/{group}"
+    citation: >
+      Pacific Islands Fisheries Science Center (2025). Ecosystem Sciences Division
+      (ESD). NOAA-ESD-CORAL-Bleaching-Dataset v1.
+      https://huggingface.co/datasets/NMFS-OSI/NOAA-PIFSC-ESD-CORAL-Bleaching-Dataset
+    notes: >
+      GROUPING 2026-09-24 (WS-D S29, R1 external research): filenames are 224x224 tile
+      crops of larger survey photos, not whole images — two on-disk conventions,
+      `{SITE}-{CODE}_{YEAR}_{FRAME}_{PATCHID}.PNG` (e.g. `FFS-B013_2019_15_1024.PNG`)
+      and `{SiteName}{YEAR}IMG_{FRAME}_{PATCHID}.PNG` (e.g.
+      `LaehouShallow2015IMG_2682_7264.PNG`). Grouping only by parent image (site+frame,
+      stripping the trailing `_<patchid>` crop suffix) yields 2,328 groups, of which
+      1,146 already straddle more than one of the upstream train/val/test splits —
+      upstream's own split leaks at the parent-image level, so it is never honoured
+      (matches the v3i/v6i finding). The rule above groups by the coarser *site* token
+      instead (236 groups, max 923 images in one site, `LaehouShallow`), the leak-safe
+      choice named in the brief.
     tags: [bleaching, public-domain]
 
   - id: coralnet

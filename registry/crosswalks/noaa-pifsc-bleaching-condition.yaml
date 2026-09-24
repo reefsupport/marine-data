@@ -1,9 +1,18 @@
 # NOAA PIFSC-ESD coral bleaching dataset → RS-Benthic v1, condition axis.
 #
-# Binary classification: CORAL (not bleached) vs CORAL_BL (bleached) — the two class
+# Binary classification: CORAL (healthy) vs CORAL_BL (bleached) — the two class
 # directories the repo's own file tree carries (confirmed live 2026-08-28; the
 # datasets-server rows API exposes no label column for this repo at all, so this is
 # read from the directory structure via fetch_style: files).
+#
+# RE-CHECKED 2026-09-24 (WS-D S29): the dataset card's own "### Labels" table names
+# CORAL "Healthy Hard Coral" outright — not "not bleached", not "unassessed" — so the
+# CORAL edge is exact, not a coarsening. Card quote: "| Label | Name | Functional
+# Group |\n|----------|----------------------|------------------|\n| CORAL | Healthy
+# Hard Coral | Hard Coral |\n| CORAL_BL | Bleached Hard Coral | Hard Coral |", and
+# prose: "specifically identifying **healthy hard coral (CORAL)** and **bleached hard
+# coral (CORAL_BL)**." (https://huggingface.co/datasets/NMFS-OSI/NOAA-PIFSC-ESD-CORAL-Bleaching-Dataset,
+# revision 8175d66ef0346795ace415b8b3950ee612ae1463).
 
 crosswalks:
   - id: noaa-pifsc-bleaching-condition
@@ -11,6 +20,9 @@ crosswalks:
     target_schema: rs-benthic-v1
     description: Directory-name labels onto RS-Benthic's condition axis.
     edges:
-      - { source_label: "CORAL_BL", targets: { condition: BLEACHED }, fidelity: exact }
-      - { source_label: "CORAL", targets: { condition: HEALTHY }, fidelity: coarsened,
-          note: "The source only distinguishes bleached-vs-not; PALE, DISEASED, RECENTLY_DEAD and OLD_DEAD were never assessed, so 'CORAL' can only map to the coarsest true statement." }
+      - { source_label: "CORAL_BL", targets: { condition: BLEACHED }, fidelity: exact,
+          note: "Card: \"| CORAL_BL | Bleached Hard Coral | Hard Coral |\"." }
+      - { source_label: "CORAL", targets: { condition: HEALTHY }, fidelity: exact,
+          note: "Card: \"| CORAL | Healthy Hard Coral | Hard Coral |\" — the class is
+          explicitly defined as healthy coral, not merely 'not bleached', so this is
+          not a coarsening." }
