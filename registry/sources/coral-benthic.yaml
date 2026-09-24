@@ -969,7 +969,7 @@ sources:
 
   - id: roboflow-coral-classification-copy-changed-v13i
     name: "Coral Classification Copy -Changed- (Roboflow v13i)"
-    version: "v13i"
+    version: "v13i-image-labels"
     description: Roboflow-exported multiclass coral classification image set.
     licence: CC-BY-4.0
     legal_basis: licence
@@ -981,42 +981,96 @@ sources:
       method: licence-file
     access:
       method: s3
-      uri: "s3://rs-storage-open/coral_bleaching/others/Coral Classification Copy -Changed-.v13i.multiclass"
+      uri: "s3://rs-storage-open/sources/roboflow-coral-classification-copy-changed-v13i/v13i-image-labels"
+      notes: >
+        rs-storage-open is a public bucket — anonymously fetchable, no credentials
+        needed. STAGED+UPLOADED 2026-09-24 (WS-D S37): repointed from the raw
+        Roboflow export prefix (`coral_bleaching/others/Coral Classification Copy
+        -Changed-.v13i.multiclass/`, left in place, never deleted, not referenced by
+        this entry) to `sources/roboflow-coral-classification-copy-changed-v13i/
+        v13i-image-labels/` via `marinedata.ingest_image_labels.convert_classes_csv`;
+        images moved by server-side copy_object from the old prefix (byte-identical),
+        only metadata.parquet/labels/image_labels.parquet/CHECKSUMS.sha256 freshly
+        uploaded. See `access.params.size_bytes`/`checksums` for the new tree's real
+        counts; flat-list count/bytes and an anon-GET CHECKSUMS.sha256 sha256 both
+        match the local staged tree.
       params:
         bucket: rs-storage-open
         endpoint: hel1.your-objectstorage.com
         region: hel1
-        prefix: "coral_bleaching/others/Coral Classification Copy -Changed-.v13i.multiclass/"
-        credentials_env: S3
-      size_bytes: 185563432
+        prefix: "sources/roboflow-coral-classification-copy-changed-v13i/v13i-image-labels/"
+      size_bytes: 185996006
+    checksums:
+      version: "v13i-image-labels"
+      root_digest: 86da47568aa97a8326169fc173573b63987c16a08c32a1f4e315c6d516a5bdfb
+      files: 2791
+      size_bytes: 185594622
     modalities: [image]
     capabilities: [bleaching-assessment, general-pretraining]
-    items: 2794
+    items: 2789
     annotations:
-      - kind: none
-        supervises: []
-        notes: "Class/label structure not verified this pass - only the licence sidecar was read (L1)."
+      - kind: image-label
+        count: 2789
+        schema_id: roboflow-bleaching-native
+        supervises: [condition]
+        notes: >
+          STAGED 2026-09-24 (WS-D S37): fetched (rclone, real creds — anon
+          ListObjectsV2 is denied on this bucket) and staged from the one-hot
+          `_classes.csv` sidecar (one per Roboflow train/valid/test split, merged
+          under a single `default` partition, same R3 Q10 reasoning as v3i/v6i/v1)
+          via `marinedata.ingest_image_labels.convert_classes_csv`. Native classes:
+          Bleached (1,926), Healthy (1,906), Non-Corals (384). `Non-Corals` (a third
+          one-hot column absent from v6i/v1-yolov8s/v2i) has no condition-axis
+          equivalent — manager decision: declared `fidelity: unmappable` in
+          `roboflow-bleaching-condition-hb` (WS-D S37) rather than mapped or omitted,
+          so rows carrying only `Non-Corals` abstain on `condition` (image still
+          usable for `general-pretraining`) without making this source
+          `partial_abstain` (`fit_source` only inspects declared crosswalk edges; an
+          `unmappable` edge's label goes straight to `abstaining`, never `coarser`).
+          Genuine multi-label same-axis conflicts (Bleached=1 AND Healthy=1): 1,051
+          rows — the S24 loader fix abstains on these rather than picking one. Also
+          248/2,789 stems are `_png.rf.<hash>` rather than `_jpg.rf.<hash>` — the
+          `split_group` pattern below was widened to match both (see its own note).
     coverage:
       regions: [unknown]
+    citation: >
+      maxyn-icaonapo. "Coral Classification Copy (Changed)" (Roboflow Universe, v13).
+      https://universe.roboflow.com/maxyn-icaonapo/coral-classification-copy-changed
     notes: >
-      Roboflow Universe project URL not recorded in the sidecar - attribution target
-      unknown. Sidecars link only the generic https://universe.roboflow.com and
-      https://github.com/roboflow/notebooks.
-
-      GATED PENDING ATTRIBUTION 2026-09-24 (R1 external research): no matching
-      Roboflow Universe project surfaced for this generic name — attribution target
-      still unconfirmed. Do not cite a guessed project; wait for a real attribution
-      URL before use.
+      ATTRIBUTED 2026-09-24 (WS-D S37, direct source): `README.dataset.txt` sidecar
+      under the current prefix names the project outright — "# Coral Classification
+      Copy (Changed) > 2024-10-15 2:31am" +
+      https://universe.roboflow.com/maxyn-icaonapo/coral-classification-copy-changed,
+      "Provided by a Roboflow user", "License: CC BY 4.0". `README.roboflow.txt`
+      confirms the export (2,789 images, "Healthy-Bleached-Dead-j7rc" class set,
+      no augmentation, exported August 19, 2025). Earlier passes (2026-09-19/24) read
+      only the licence line and missed this URL — it was in the same sidecar the
+      whole time, not a new find.
     split_group:
-      pattern: '^(.+?)_jpg\.rf\.'
+      pattern: '^(.+?)_(?:jpg|jpeg|png|bmp)\.rf\.'
       match_field: stem
       template: "roboflow-bleaching/{group}"
-    loader: { layout: metadata-only }
-    tags: [bleaching, roboflow, needs-attribution]
+      # WS-D S37: unlike the other four Roboflow sources sharing this literal
+      # `_jpg\.rf\.` pattern, v13i's stems are NOT uniformly `_jpg` — 248/2789 are
+      # `_png.rf.<hash>` (the source's original upload format before Roboflow's own
+      # jpg re-encode). The `_jpg`-only pattern raised (SplitGroupRule.resolve has no
+      # silent fallback, by design) on the first `_png` stem it hit; widened to the
+      # extension alternation actually present rather than assuming `_jpg`.
+    loader:
+      layout: staged-tree
+      schema_id: roboflow-bleaching-native
+      crosswalk_id: roboflow-bleaching-condition-hb
+      verified_on: 2026-09-24
+      verified_note: >
+        SWITCHED 2026-09-24 (WS-D S37): layout moved from `metadata-only` to
+        `staged-tree`, mirroring v6i/v1-yolov8s (WS-D S25/S28). `CHECKSUMS.sha256`
+        pinned by `checksums.root_digest` above; `shasum -c` 0 fail. UPLOADED
+        2026-09-24 (WS-D S37) — see `access.notes`.
+    tags: [bleaching, roboflow]
 
   - id: roboflow-coral-reef-bleach-detection-v2i
     name: Coral Reef Bleach Detection (Roboflow v2i)
-    version: "v2i"
+    version: "v2i-image-labels"
     description: Roboflow-exported multiclass coral bleach detection image set.
     licence: CC-BY-4.0
     legal_basis: licence
@@ -1028,39 +1082,83 @@ sources:
       method: licence-file
     access:
       method: s3
-      uri: "s3://rs-storage-open/coral_bleaching/others/Coral Reef Bleach Detection.v2i.multiclass"
+      uri: "s3://rs-storage-open/sources/roboflow-coral-reef-bleach-detection-v2i/v2i-image-labels"
+      notes: >
+        rs-storage-open is a public bucket — anonymously fetchable, no credentials
+        needed. STAGED+UPLOADED 2026-09-24 (WS-D S37): repointed from the raw
+        Roboflow export prefix (`coral_bleaching/others/Coral Reef Bleach
+        Detection.v2i.multiclass/`, left in place, never deleted, not referenced by
+        this entry) to `sources/roboflow-coral-reef-bleach-detection-v2i/
+        v2i-image-labels/` via `marinedata.ingest_image_labels.convert_classes_csv`;
+        images moved by server-side copy_object from the old prefix (byte-identical),
+        only metadata.parquet/labels/image_labels.parquet/CHECKSUMS.sha256 freshly
+        uploaded. See `access.params.size_bytes`/`checksums` for the new tree's real
+        counts; flat-list count/bytes and an anon-GET CHECKSUMS.sha256 sha256 both
+        match the local staged tree.
       params:
         bucket: rs-storage-open
         endpoint: hel1.your-objectstorage.com
         region: hel1
-        prefix: "coral_bleaching/others/Coral Reef Bleach Detection.v2i.multiclass/"
-        credentials_env: S3
-      size_bytes: 790572339
+        prefix: "sources/roboflow-coral-reef-bleach-detection-v2i/v2i-image-labels/"
+      size_bytes: 792035145
+    checksums:
+      version: "v2i-image-labels"
+      root_digest: f1335a1a4b729d5273d84b605ef61aa256f3de94e6d4729131e9be900a98f340
+      files: 10783
+      size_bytes: 790558657
     modalities: [image]
     capabilities: [bleaching-assessment, general-pretraining]
-    items: 10786
+    items: 10781
     annotations:
-      - kind: none
-        supervises: []
-        notes: "Class/label structure not verified this pass - only the licence sidecar was read (L1)."
+      - kind: image-label
+        count: 10781
+        schema_id: roboflow-bleaching-native
+        supervises: [condition]
+        notes: >
+          STAGED 2026-09-24 (WS-D S37): fetched (rclone, real creds — anon
+          ListObjectsV2 is denied on this bucket) and staged from the one-hot
+          `_classes.csv` sidecar (one per Roboflow train/valid/test split, merged
+          under a single `default` partition, same R3 Q10 reasoning as v3i/v6i/v1)
+          via `marinedata.ingest_image_labels.convert_classes_csv`. This sidecar
+          ships "filename, Bleached, Healthy" (space after each comma, same as
+          v1-yolov8s) — header normalized before conversion (no
+          `convert_classes_csv` change). Native classes: Bleached (5,754),
+          Healthy (5,426). Genuinely multi-label: 399 images carry BOTH Bleached=1 and
+          Healthy=1 — a same-axis conflict the S24 loader fix abstains on rather
+          than picking one.
     coverage:
       regions: [unknown]
+    citation: >
+      coralreef. "Coral Reef Bleach Detection" (Roboflow Universe, v2).
+      https://universe.roboflow.com/coralreef/coral-reef-bleach-detection
     notes: >
-      Roboflow Universe project URL not recorded in the sidecar - attribution target
-      unknown. Sidecars link only the generic https://universe.roboflow.com and
-      https://github.com/roboflow/notebooks.
-
-      GATED PENDING ATTRIBUTION 2026-09-24 (R1 external research, low confidence): a
-      candidate project (coralreef/coral-reef-bleach-detection) was found but its
-      5.8k source images do not match this entry's 10,786 files (a plausible
-      augmented-export count, not confirmed) — too weak to cite. Wait for a real
-      attribution URL before use.
+      ATTRIBUTED 2026-09-24 (WS-D S37, direct source): `README.dataset.txt` sidecar
+      under the current prefix names the project outright — "# Coral Reef Bleach
+      Detection > 2024-07-14 3:21pm" +
+      https://universe.roboflow.com/coralreef/coral-reef-bleach-detection,
+      "Provided by a Roboflow user", "License: CC BY 4.0". `README.roboflow.txt`
+      confirms the export (10,781 source images, Multi-Class Classification,
+      exported July 14, 2024, 2 augmented versions per source image — auto-orient +
+      resize 640x640 + random exposure/blur — accounting for the 10,786-file
+      registry count). Earlier passes (2026-09-19/24) rejected a same-URL candidate
+      as "too weak" only because they compared 10,786 files against the wrong
+      baseline (5.8k *source* images, before this export's own stated 2x
+      augmentation) — this is the dataset's own sidecar, not an external guess.
     split_group:
       pattern: '^(.+?)_jpg\.rf\.'
       match_field: stem
       template: "roboflow-bleaching/{group}"
-    loader: { layout: metadata-only }
-    tags: [bleaching, roboflow, needs-attribution]
+    loader:
+      layout: staged-tree
+      schema_id: roboflow-bleaching-native
+      crosswalk_id: roboflow-bleaching-condition-hb
+      verified_on: 2026-09-24
+      verified_note: >
+        SWITCHED 2026-09-24 (WS-D S37): layout moved from `metadata-only` to
+        `staged-tree`, mirroring v6i/v1-yolov8s (WS-D S25/S28). `CHECKSUMS.sha256`
+        pinned by `checksums.root_digest` above; `shasum -c` 0 fail. UPLOADED
+        2026-09-24 (WS-D S37) — see `access.notes`.
+    tags: [bleaching, roboflow]
 
   - id: roboflow-coral-reef-classification-v3i
     name: Coral Reef Classification (Roboflow v3i)
