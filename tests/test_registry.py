@@ -246,23 +246,25 @@ def test_s21_still_gated_sources_stay_unknown_basis(registry: Registry) -> None:
 
 def test_roboflow_attribution_added_where_confirmed(registry: Registry) -> None:
     """S21 (R1 Q4 / manager decision 3): confirmed Roboflow attributions carry a
-    citation; unconfirmed ones are flagged needs-attribution instead of guessed."""
+    citation; unconfirmed ones are flagged needs-attribution instead of guessed.
+
+    v13i/v2i (WS-D S37): earlier passes read only the licence line of the shared
+    README sidecar and missed the `README.dataset.txt` Universe URL sitting in the
+    same file — both are now attributed like the other three, no longer
+    needs-attribution."""
     attributed = {
         "roboflow-coral-bleaching-final-v6i": "lockie/coral-bleaching-final",
         "roboflow-coral-bleaching-general-v1-yolov8s": "lockie/coral-bleaching_general",
         "roboflow-coral-reef-classification-v3i": "twork/coral-reef-classification",
+        "roboflow-coral-classification-copy-changed-v13i": (
+            "maxyn-icaonapo/coral-classification-copy-changed"
+        ),
+        "roboflow-coral-reef-bleach-detection-v2i": "coralreef/coral-reef-bleach-detection",
     }
     for source_id, url_fragment in attributed.items():
         src = registry.source(source_id)
         assert src.citation and url_fragment in src.citation, source_id
-
-    for source_id in (
-        "roboflow-coral-classification-copy-changed-v13i",
-        "roboflow-coral-reef-bleach-detection-v2i",
-    ):
-        src = registry.source(source_id)
-        assert src.citation is None, source_id
-        assert "needs-attribution" in src.tags, source_id
+        assert "needs-attribution" not in src.tags, source_id
 
 
 def test_reef_support_seaview_labels_provenance_is_own(registry: Registry) -> None:
