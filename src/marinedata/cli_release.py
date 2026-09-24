@@ -100,7 +100,7 @@ def _cmd_release_build(args: argparse.Namespace) -> int:
             print(f"release build: {exc}", file=sys.stderr)
             return 1
         skipped_sources: dict[str, str] = {}
-        generate_split_map(
+        stats = generate_split_map(
             registry,
             out=split_map_path,
             roots=roots,
@@ -112,7 +112,11 @@ def _cmd_release_build(args: argparse.Namespace) -> int:
             release=args.release,
             skipped=skipped_sources,
         )
-        print(f"release build: generated {split_map_path} (stratify=source)")
+        print(
+            f"release build: generated {split_map_path} (stratify=source) "
+            f"merged_components={stats.merged_components} "
+            f"merged_cross_partition={stats.merged_cross_partition}"
+        )
         for source_id, reason in sorted(skipped_sources.items()):
             print(f"  skipped {source_id}: {reason}", file=sys.stderr)
 
@@ -127,7 +131,8 @@ def _cmd_release_build(args: argparse.Namespace) -> int:
 
     print(
         f"release build: release={result.release} sources={len(result.sources)} "
-        f"tasks={len(result.tasks)} skipped={len(result.skipped_tasks)} -> {result.out_dir}"
+        f"tasks={len(result.tasks)} skipped={len(result.skipped_tasks)} "
+        f"never_eval_excluded={result.never_eval_excluded} -> {result.out_dir}"
     )
     for task in result.tasks:
         print(f"  {task.task_id}: {len(task.rows)} images")

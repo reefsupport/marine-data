@@ -30,7 +30,15 @@ from collections.abc import Iterator
 from pathlib import Path
 
 from .builder import SELF_SUPERVISED_DEFAULT_RATIOS, SUPERVISED_DEFAULT_RATIOS, SplitName
-from .splitmap import Row, SplitMap, load_split_map, resolve_splits, rows_to_counts, save_split_map
+from .splitmap import (
+    MergeInfo,
+    Row,
+    SplitMap,
+    load_split_map,
+    resolve_splits,
+    rows_to_counts,
+    save_split_map,
+)
 from .strata import DEFAULT_MIN_GROUPS, achieved_by_stratum, small_strata
 
 
@@ -64,14 +72,21 @@ def _read_parquet_rows(path: Path) -> Iterator[Row]:
 
 def _group_counts(
     path: Path, *, stratified: bool = False
-) -> tuple[dict[str, int], dict[str, dict[str, int]] | None]:
+) -> tuple[dict[str, int], dict[str, dict[str, int]] | None, MergeInfo]:
     """``rows_to_counts`` (:mod:`marinedata.splitmap`) over this file's rows, with the
     path folded into any error so a bad TSV/Parquet is easy to place."""
     rows = _read_parquet_rows(path) if path.suffix == ".parquet" else _read_tsv_rows(path)
     try:
-        return rows_to_counts(rows, stratified=stratified)
+        counts, strata, merge_info = rows_to_counts(rows, stratified=stratified)
     except ValueError as exc:
         raise ValueError(f"{path}: {exc}") from exc
+    if merge_info.merged_components:
+        print(
+            f"splitmap generate: merged {merge_info.merged_components} group(s) that "
+            "share an image digest",
+            file=sys.stderr,
+        )
+    return counts, strata, merge_info
 
 
 def _parse_ratios(spec: str) -> dict[SplitName, float]:
@@ -115,7 +130,7 @@ def _cmd_splitmap_generate(args: argparse.Namespace) -> int:
         )
         return 1
 
-    counts, strata = _group_counts(Path(args.input), stratified=bool(args.stratify))
+    counts, strata, merge_info = _group_counts(Path(args.input), stratified=bool(args.stratify))
     ratios = _parse_ratios(args.ratios)
     preseed = _parse_preseed(args.preseed, counts)
 
@@ -143,6 +158,7 @@ def _cmd_splitmap_generate(args: argparse.Namespace) -> int:
         strata=strata,
         stratify=args.stratify or "",
         min_groups=args.min_groups,
+        merge_canonical=merge_info.canonical,
     )
 
     split_map = load_split_map(out)

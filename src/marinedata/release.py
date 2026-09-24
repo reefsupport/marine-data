@@ -20,7 +20,7 @@ from __future__ import annotations
 
 import hashlib
 import json
-from collections.abc import Iterator
+from collections.abc import Iterable, Iterator
 from dataclasses import dataclass
 from pathlib import Path
 
@@ -29,7 +29,7 @@ from .checksums import file_digest
 from .gate import evaluate
 from .registry import Registry
 from .splitmap import Row, load_split_map, resolve_splits, rows_to_counts
-from .strata import DEFAULT_MIN_GROUPS
+from .strata import DEFAULT_MIN_GROUPS, TRAIN
 from .tables import _require_pyarrow
 
 DEFAULT_SCHEMA_ID = "rs-benthic-v1"
@@ -53,6 +53,36 @@ class ReleaseResult:
     """``(task_id, reason)`` for a task with no permitted source to build from — not an
     error: a partial ``roots`` (a dry run, or a source temporarily unfetchable) simply
     leaves that task out of this release rather than failing the whole build."""
+    never_eval_excluded: int = 0
+    """Rows dropped from a non-``train`` split manifest because their source carries the
+    ``never-eval`` tag (WS-D S15c) — a mixed merged component (see
+    :mod:`marinedata.splitmap`) lands where its non-never-eval members send it, but a
+    machine-generated row must never enter an evaluation split. Counted, never moved to
+    ``train`` — that would leak the same content the split was built to hold out."""
+
+
+@dataclass(frozen=True)
+class SplitMapStats:
+    """What :func:`generate_split_map` did beyond writing the file — for the CLI/build
+    result to report (WS-D S15c)."""
+
+    merged_components: int
+    """Connected components of 2+ ``split_group`` values merged for sharing an image
+    digest — see :class:`marinedata.splitmap.MergeInfo`."""
+    merged_cross_partition: int
+    """Of those, how many combined members whose rows carry more than one distinct
+    ``upstream_split`` value — report-only evidence of upstream leakage, never a
+    blocker."""
+
+
+def _never_eval_source_ids(registry: Registry, source_ids: Iterable[str]) -> set[str]:
+    """Admitted sources tagged ``never-eval`` in the registry (WS-D S15c) — their rows
+    may only ever land in the ``train`` split."""
+    return {
+        source_id
+        for source_id in source_ids
+        if "never-eval" in registry.source(source_id).tags
+    }
 
 
 def _admitted_source_ids(
@@ -79,6 +109,7 @@ def enumerate_release_rows(
     profile: str = "research",
     *,
     skipped: dict[str, str] | None = None,
+    upstream_splits: dict[str, set[str]] | None = None,
 ) -> Iterator[Row]:
     """``(image_sha256, split_group, stratum)`` for every admitted source's staged tree.
 
@@ -93,6 +124,12 @@ def enumerate_release_rows(
     staged-tree convention never touches, but every staged tree still carries the same
     sample index). Going through a per-annotation-kind loader here would demand
     layout-specific params this enumerator has no business needing.
+
+    ``upstream_splits``, if given, is filled in-place with ``{split_group: {upstream_split,
+    ...}}`` — every distinct, non-empty ``upstream_split`` value seen for a group, keyed
+    by the *raw* (pre-merge) group id. :func:`generate_split_map` uses it to flag a
+    merged component whose members carry more than one upstream partition — report-only
+    evidence of upstream leakage (WS-D S15c), not a blocker.
 
     A source whose ``loader.layout`` is not ``staged-tree`` (e.g. ``metadata-only``:
     v3i's bespoke ``path``/``class``/``upstream_split``/``width``/``height``/
@@ -141,6 +178,10 @@ def enumerate_release_rows(
                     f"{source_id}: metadata.parquet references image {stem!r} (partition "
                     f"{partition!r}) not found under {root / 'images' / partition}"
                 )
+            if upstream_splits is not None:
+                upstream_split = record.get("upstream_split")
+                if upstream_split:
+                    upstream_splits.setdefault(group, set()).add(upstream_split)
             yield file_digest(matches[0]), group, source_id
 
 
@@ -156,7 +197,7 @@ def generate_split_map(
     now: str | None = None,
     release: str | None = None,
     skipped: dict[str, str] | None = None,
-) -> None:
+) -> SplitMapStats:
     """Enumerate every admitted staged tree in ``roots`` and write a fresh, stratified
     ``SPLIT_MAP.json`` at ``out`` — the "no hand-built TSV" path from staged trees straight
     to a map ``release build`` can then freeze against. ``stratify="source"`` always:
@@ -171,11 +212,45 @@ def generate_split_map(
     admitted source :func:`enumerate_release_rows` left out for not being a
     ``staged-tree`` layout (see there) — the caller's hook for surfacing "this source
     isn't in the release" rather than it disappearing silently.
+
+    Two duplicate-content rules apply before allocation, both WS-D S15c:
+
+    * Groups that share an image digest — same or different source — are merged into
+      one connected component and assigned as a unit (see
+      :mod:`marinedata.splitmap`'s ``MergeInfo``/``merge_canonical``), rather than
+      raising the way ``rows_to_counts`` used to.
+    * A component whose only contributing sources are all tagged ``never-eval`` in the
+      registry goes straight to ``train`` — no hashing lottery — since a
+      machine-generated group must never be eligible for an evaluation split. A mixed
+      component (some never-eval, some not) is allocated normally; excluding a
+      never-eval row that lands in a non-``train`` split happens later, per row, in
+      :func:`build_release`.
+
+    Returns :class:`SplitMapStats` — how many components merged, and how many of those
+    also mixed more than one ``upstream_split`` value (report-only upstream-leakage
+    signal, from ``upstream_split``, never a blocker).
     """
     if load_split_map(out) is not None:
         raise ValueError(f"{out} already exists — remove it first to regenerate")
-    rows = enumerate_release_rows(registry, roots, profile, skipped=skipped)
-    counts, strata = rows_to_counts(rows, stratified=True)
+    never_eval_sources = _never_eval_source_ids(
+        registry, _admitted_source_ids(registry, roots, profile)
+    )
+    upstream_splits: dict[str, set[str]] = {}
+    rows = enumerate_release_rows(
+        registry, roots, profile, skipped=skipped, upstream_splits=upstream_splits
+    )
+    counts, strata, merge_info = rows_to_counts(rows, stratified=True)
+
+    group_to_strata: dict[str, set[str]] = {}
+    for source_id, groups in (strata or {}).items():
+        for group in groups:
+            group_to_strata.setdefault(group, set()).add(source_id)
+    forced = {
+        group: TRAIN
+        for group, sources in group_to_strata.items()
+        if sources and sources <= never_eval_sources
+    }
+
     resolve_splits(
         out,
         counts,
@@ -187,6 +262,23 @@ def generate_split_map(
         strata=strata,
         stratify="source",
         min_groups=min_groups,
+        merge_canonical=merge_info.canonical,
+        forced=forced,
+    )
+
+    members_of: dict[str, list[str]] = {}
+    for group, canon in merge_info.canonical.items():
+        members_of.setdefault(canon, []).append(group)
+    merged_cross_partition = sum(
+        1
+        for members in members_of.values()
+        if len(members) > 1
+        and len({split for g in members for split in upstream_splits.get(g, set())}) > 1
+    )
+
+    return SplitMapStats(
+        merged_components=merge_info.merged_components,
+        merged_cross_partition=merged_cross_partition,
     )
 
 
@@ -218,6 +310,7 @@ def build_release(
     if not admitted:
         raise ValueError(f"no admitted source under profile {profile!r} has a resolved root")
     admitted_roots = {source_id: Path(roots[source_id]) for source_id in admitted}
+    never_eval_sources = _never_eval_source_ids(registry, admitted)
 
     release_root = Path(out_dir) / "releases" / release
     manifests_dir = release_root / "tasks"
@@ -229,6 +322,7 @@ def build_release(
 
     tasks: list[TaskManifest] = []
     skipped: list[tuple[str, str]] = []
+    never_eval_excluded = 0
 
     for task in sorted(registry.tasks, key=lambda t: t.id):
         builder = DatasetBuilder(
@@ -254,6 +348,15 @@ def build_release(
             for position in positions:
                 sample = dataset.samples[position]
                 if sample.image is None:
+                    continue
+                if split_name != TRAIN and sample.source_id in never_eval_sources:
+                    # A never-eval-only merged component is already forced to `train`
+                    # (see generate_split_map); this is the mixed-component case — some
+                    # of the group's images are real evaluation data, so the group still
+                    # lands wherever they send it, but the machine-generated rows must
+                    # never enter the resulting evaluation split. Counted, never moved
+                    # to train — that would leak the same content the split holds out.
+                    never_eval_excluded += 1
                     continue
                 rows.append((file_digest(Path(sample.image)), split_name))
         rows.sort()
@@ -293,4 +396,5 @@ def build_release(
         sources=tuple(admitted),
         tasks=tuple(tasks),
         skipped_tasks=tuple(skipped),
+        never_eval_excluded=never_eval_excluded,
     )

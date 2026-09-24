@@ -24,7 +24,7 @@ from __future__ import annotations
 
 import json
 from collections import Counter
-from collections.abc import Iterable, Mapping
+from collections.abc import Callable, Iterable, Mapping
 from dataclasses import dataclass, field
 from datetime import UTC, datetime
 from pathlib import Path
@@ -43,9 +43,42 @@ class SplitMapError(ValueError):
     """A SPLIT_MAP.json read or write would violate the append-only contract."""
 
 
+@dataclass(frozen=True)
+class MergeInfo:
+    """What :func:`rows_to_counts` did to reconcile duplicate-content ``split_group``\\ s.
+
+    Two ``split_group`` values that ever share an image digest (same or different
+    ``stratum``/source) are the same physical content under two labels — WS-D S15c found
+    684 such groups in the coralscop staged tree alone. They are merged into one
+    connected component and assigned as a unit; ``canonical`` is how every caller finds
+    out which representative id a group's assignment now lives under.
+    """
+
+    canonical: dict[str, str]
+    """Every ``split_group`` seen -> the lexicographically smallest member of its merged
+    component (itself, for a group that shares no digest with another)."""
+
+    merged_components: int
+    """Count of components with 2+ distinct ``split_group`` values — real merges, not
+    every group's own trivial 1-member component."""
+
+
+def _merge_components(
+    parent: dict[str, str], find: Callable[[str], str]
+) -> tuple[dict[str, str], int]:
+    """DSU roots -> canonical (lexicographically smallest) member, plus the count of
+    components that merged 2+ distinct group ids."""
+    grouped: dict[str, set[str]] = {}
+    for node in parent:
+        grouped.setdefault(find(node), set()).add(node)
+    canonical = {member: min(members) for members in grouped.values() for member in members}
+    merged = sum(1 for members in grouped.values() if len(members) > 1)
+    return canonical, merged
+
+
 def rows_to_counts(
     rows: Iterable[Row], *, stratified: bool = False
-) -> tuple[dict[str, int], dict[str, dict[str, int]] | None]:
+) -> tuple[dict[str, int], dict[str, dict[str, int]] | None, MergeInfo]:
     """Reduce ``(image_sha256, split_group, stratum)`` rows to per-group counts.
 
     One count per unique image: the same physical image staged under two admitted
@@ -58,32 +91,56 @@ def rows_to_counts(
     release enumerator (:func:`marinedata.release.enumerate_release_rows`) so a
     hand-built TSV and a live staged-tree scan reduce identically.
 
-    Raises if the same image resolves to two different groups — the registry's
-    per-source ``split_group`` rule is supposed to make duplicates converge, and a
-    disagreement here means that rule (or the input) is wrong, not something to
-    silently pick a winner for.
+    An image that resolves to two different ``split_group`` values no longer raises
+    (WS-D S15c): the groups are merged into one connected component (see
+    :class:`MergeInfo`) via union-find over the image digest, keyed by the lexically
+    smallest member — deterministic regardless of row order. ``counts`` and ``strata``
+    are keyed by that canonical id for every merged group; the returned ``MergeInfo``
+    is how a caller (:func:`marinedata.release.generate_split_map`) maps every original
+    ``split_group`` back to it, and checks a merge against a prior persisted map.
     """
+    parent: dict[str, str] = {}
+
+    def find(x: str) -> str:
+        parent.setdefault(x, x)
+        root = x
+        while parent[root] != root:
+            root = parent[root]
+        while parent[x] != root:
+            parent[x], x = root, parent[x]
+        return root
+
+    def union(a: str, b: str) -> None:
+        ra, rb = find(a), find(b)
+        if ra != rb:
+            parent[ra] = rb
+
     group_of: dict[str, str] = {}
     members: dict[str, set[str]] = {}
     for sha256, group, stratum in rows:
         if not sha256 or not group:
             raise ValueError("row with an empty image_sha256 or split_group")
+        find(group)  # register as a DSU node even if it never merges
         prior = group_of.get(sha256)
         if prior is not None and prior != group:
-            raise ValueError(
-                f"image {sha256} maps to two different split_group values "
-                f"({prior!r} and {group!r}) — split_group must be immutable per image"
-            )
+            union(prior, group)
         group_of[sha256] = group
         if stratified:
             if not stratum:
                 raise ValueError("--stratify needs a non-empty stratum on every row")
             members.setdefault(stratum, set()).add(sha256)
-    counts = dict(Counter(group_of.values()))
+
+    canonical, merged_components = _merge_components(parent, find)
+    merge_info = MergeInfo(canonical=canonical, merged_components=merged_components)
+
+    counts = dict(Counter(canonical.get(group, group) for group in group_of.values()))
     if not stratified:
-        return counts, None
-    strata = {name: dict(Counter(group_of[sha] for sha in shas)) for name, shas in members.items()}
-    return counts, strata
+        return counts, None, merge_info
+    strata = {
+        name: dict(Counter(canonical.get(group_of[sha], group_of[sha]) for sha in shas))
+        for name, shas in members.items()
+    }
+    return counts, strata, merge_info
 
 
 @dataclass(frozen=True)
@@ -155,6 +212,50 @@ def save_split_map(path: str | Path, split_map: SplitMap) -> None:
     p.write_text(json.dumps(payload, indent=2) + "\n")
 
 
+def _component_members(merge_canonical: Mapping[str, str] | None) -> dict[str, list[str]]:
+    """Canonical id -> every original ``split_group`` in its component (itself included).
+    Singleton entries (a group that merged with nothing) are dropped — nothing downstream
+    needs to treat them specially."""
+    if not merge_canonical:
+        return {}
+    by_canonical: dict[str, list[str]] = {}
+    for group, canon in merge_canonical.items():
+        by_canonical.setdefault(canon, []).append(group)
+    return {canon: members for canon, members in by_canonical.items() if len(members) > 1}
+
+
+def _inherit_merged_splits(
+    persisted: dict[str, SplitName],
+    member_groups: dict[str, list[str]],
+    counts: dict[str, int],
+) -> dict[str, SplitName]:
+    """D2: a merge may join a component whose members a *prior* map already split
+    apart. Raise naming both if two members disagree; otherwise adopt the one split
+    every persisted member already agrees on for the whole (still-unpersisted)
+    component, so it is never re-offered to the allocator."""
+    persisted = dict(persisted)
+    for canon, members in member_groups.items():
+        if canon not in counts:
+            continue
+        found: dict[SplitName, str] = {}
+        for member in members:
+            split = persisted.get(member)
+            if split is not None and split not in found:
+                found[split] = member
+        if len(found) > 1:
+            (split_a, member_a), (split_b, member_b) = list(found.items())[:2]
+            raise SplitMapError(
+                f"{sorted(members)!r} share an image digest and would merge into one "
+                f"split_group, but a prior map already assigned {member_a!r}={split_a!r} "
+                f"and {member_b!r}={split_b!r} — never silently joining a released "
+                "assignment"
+            )
+        if found:
+            (split,) = found
+            persisted[canon] = split
+    return persisted
+
+
 def resolve_splits(
     path: str | Path,
     counts: dict[str, int],
@@ -168,6 +269,8 @@ def resolve_splits(
     strata: Mapping[str, Mapping[str, int]] | None = None,
     stratify: str = "",
     min_groups: int = DEFAULT_MIN_GROUPS,
+    merge_canonical: Mapping[str, str] | None = None,
+    forced: Mapping[str, SplitName] | None = None,
 ) -> dict[str, SplitName]:
     """Assign every group in ``counts`` a split, persisting the result at ``path``.
 
@@ -205,6 +308,20 @@ def resolve_splits(
     what the strata are and is recorded on the map. A non-frozen call whose
     ``stratify`` differs from the map's raises, like a ``by``/``seed``/``ratios``
     mismatch; a frozen call allocates nothing, so it does not need the strata.
+
+    ``merge_canonical`` (WS-D S15c): every ``split_group`` -> the canonical id of its
+    merged component (see :class:`MergeInfo` — pass ``rows_to_counts``'s third return
+    value's ``.canonical``). A merged component keeps the append-only guarantee at the
+    *component* level: if two of its members are already persisted under different
+    splits, this raises naming both, rather than silently joining a prior release's
+    separated assignments; if one or more agree, that split is inherited for the whole
+    component instead of being re-allocated. Every member — not just the canonical id —
+    is written to the saved map, so a later ``frozen=True`` lookup by any member's own
+    ``split_group`` still finds it.
+
+    ``forced``: groups to assign directly to the named split with no lottery — the
+    never-eval-only-component rule (WS-D S15c). Only applied to a group that is not
+    already persisted; a persisted group keeps its recorded split regardless.
     """
     if (strata is None) != (not stratify):
         raise SplitMapError("pass `strata` and `stratify` together, or neither")
@@ -244,6 +361,10 @@ def resolve_splits(
         generated_at = now if now is not None else datetime.now(UTC).isoformat()
         release_value = release or ""
 
+    member_groups = _component_members(merge_canonical)
+    if existing is not None and member_groups:
+        persisted = _inherit_merged_splits(persisted, member_groups, counts)
+
     new_counts = {key: count for key, count in counts.items() if key not in persisted}
 
     if frozen and new_counts:
@@ -253,22 +374,30 @@ def resolve_splits(
             "never allocates or appends — regenerate the map to include them first."
         )
 
+    forced_new = {key: split for key, split in (forced or {}).items() if key in new_counts}
+
     new_assignment: dict[str, SplitName] = {}
     if new_counts and strata is not None:
+        pinned = {key: persisted[key] for key in counts if key in persisted}
+        pinned.update(forced_new)
         new_assignment = assign_splits_stratified(
             strata,
             ratios,
             seed=seed,
-            pinned={key: persisted[key] for key in counts if key in persisted},
+            pinned=pinned,
             min_groups=min_groups,
         )
+        new_assignment.update(forced_new)
     elif new_counts:
         total = sum(counts.values())
         filled = dict.fromkeys(ratios, 0)
         for key, split in persisted.items():
             if key in counts:
                 filled[split] = filled.get(split, 0) + counts[key]
-        new_assignment = assign_splits(new_counts, ratios, seed=seed, total=total, filled=filled)
+        remaining = {key: count for key, count in new_counts.items() if key not in forced_new}
+        if remaining:
+            new_assignment = assign_splits(remaining, ratios, seed=seed, total=total, filled=filled)
+        new_assignment.update(forced_new)
 
     merged = {**persisted, **new_assignment}
 
@@ -280,6 +409,17 @@ def resolve_splits(
             raise SplitMapError(
                 f"append-only violation: group {key!r} would move from {split!r} to {merged[key]!r}"
             )
+
+    if member_groups:
+        # Every member of a merged component gets the component's split recorded under
+        # its own key, not just the canonical one — a later `frozen=True` lookup keyed
+        # by any original `split_group` (what a sample actually carries) must still hit.
+        expanded = dict(merged)
+        for canon, members in member_groups.items():
+            if canon in merged:
+                for member in members:
+                    expanded[member] = merged[canon]
+        merged = expanded
 
     if not frozen and (new_assignment or existing is None):
         save_split_map(
