@@ -546,14 +546,20 @@ sources:
       method: absent
     access:
       method: s3
-      uri: s3://rs-storage-open/benthic_datasets/mask_labels/rs_labelled
+      uri: s3://rs-storage-private/cache/rs-labelled-masks/2026-09-23-07d6247cea85
       params:
-        bucket: rs-storage-open
+        bucket: rs-storage-private
         endpoint: hel1.your-objectstorage.com
         region: hel1
-        prefix: benthic_datasets/mask_labels/rs_labelled/
+        prefix: cache/rs-labelled-masks/2026-09-23-07d6247cea85/
         credentials_env: S3
-      size_bytes: 5725787671
+      size_bytes: 5725750787
+      notes: >
+        REPOINTED 2026-09-24 (WS-D S38): D7 deletes the open copy at
+        benthic_datasets/mask_labels/rs_labelled/; this now points at the private
+        archive made ahead of that delete. `rclone size` 2026-09-24: 63,162 objects /
+        5,725,750,787 B — 5 fewer objects and 36,884 fewer bytes than the open-copy
+        listing in `verification.verified_by` above, not re-investigated this pass.
     modalities: [image]
     capabilities: [benthic-segmentation, general-pretraining]
     items: 63167
@@ -595,13 +601,6 @@ sources:
       method: absent
     access:
       method: s3
-      uri: s3://rs-storage-open/data/mussel_ai
-      params:
-        bucket: rs-storage-open
-        endpoint: hel1.your-objectstorage.com
-        region: hel1
-        prefix: data/mussel_ai/
-        credentials_env: S3
       size_bytes: 834506951
     modalities: [image]
     capabilities: [invertebrate-detection]
@@ -613,10 +612,19 @@ sources:
     coverage:
       regions: [unknown]
     notes: >
-      BLOCKED PENDING PERMISSION. Ownership question open with Yohan - no README, licence,
-      or origin document anywhere in the bucket or registry. `data/mussel_ai/lobster_demo.tif`
-      (512,790,898 B, counted in this entry) is byte-identical (size + multipart ETag) to
-      `s3://rs-storage-open/data/lobster_demo.tif` at the bucket root, which sits outside
-      this prefix and is not otherwise registered.
+      RETIRED 2026-09-24 (WS-D S38, Yohan decision D6): the ownership question below
+      was never resolved, and Yohan decided outright deletion of
+      `s3://rs-storage-open/data/mussel_ai/` rather than pursuing permission — D6
+      deleted it. `access.uri`/`params` dropped (no copy remains at that prefix or
+      anywhere else). The trained weights (`models/mussel_ai/`) are unaffected and
+      kept in `rs-storage-private`. `size_bytes`/`items` above describe the deleted
+      copy, kept for record.
+
+      BLOCKED PENDING PERMISSION (superseded context). Ownership question open with
+      Yohan - no README, licence, or origin document anywhere in the bucket or
+      registry. `data/mussel_ai/lobster_demo.tif` (512,790,898 B, counted in this
+      entry) was byte-identical (size + multipart ETag) to
+      `s3://rs-storage-open/data/lobster_demo.tif` at the bucket root, which sat
+      outside this prefix and was not otherwise registered — both are gone with D6.
     loader: { layout: metadata-only }
-    tags: [needs-permission]
+    tags: [retired]

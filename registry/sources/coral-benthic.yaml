@@ -726,14 +726,19 @@ sources:
       method: dataset-card
     access:
       method: s3
-      uri: s3://rs-storage-open/coral_bleaching/others/NOAA-ESD-CORAL-Bleaching-Dataset
+      uri: "s3://rs-storage-open/sources/noaa-pifsc-bleaching/1-image-labels"
       params:
         bucket: rs-storage-open
         endpoint: hel1.your-objectstorage.com
         region: hel1
-        prefix: coral_bleaching/others/NOAA-ESD-CORAL-Bleaching-Dataset/
-        credentials_env: S3
-      size_bytes: 327036884
+        prefix: "sources/noaa-pifsc-bleaching/1-image-labels/"
+      size_bytes: 769036546
+      notes: >
+        REPOINTED 2026-09-24 (WS-D S38): D13 deletes the incomplete bucket mirror at
+        coral_bleaching/others/NOAA-ESD-CORAL-Bleaching-Dataset/ (1,568 real files,
+        test/ split only) — this now points at the `noaa-pifsc-bleaching` staged
+        prefix, the same repository, to avoid a dangling uri. Do not fetch from this
+        entry; use `noaa-pifsc-bleaching` directly.
     modalities: [image]
     capabilities: [bleaching-assessment, general-pretraining]
     items: 1568
@@ -1271,17 +1276,20 @@ sources:
       method: absent
     access:
       method: s3
-      uri: s3://rs-storage-open/coral_bleaching/others.tar.gz
+      uri: s3://rs-storage-private/coral_bleaching/others.tar.gz
       params:
-        bucket: rs-storage-open
+        bucket: rs-storage-private
         endpoint: hel1.your-objectstorage.com
         region: hel1
         prefix: coral_bleaching/others.tar.gz
         credentials_env: S3
       notes: >
-        Lives only inside the tar member "coral bleaching detection.v2i.multiclass/" —
-        there is no standalone S3 prefix for this dataset. Extract the archive to reach
-        it (see coral_bleaching/others.tar.gz entry-level notes on the sibling
+        REPOINTED 2026-09-24 (WS-D S38): D8 deletes the open copy at
+        rs-storage-open/coral_bleaching/others.tar.gz; S33 verified the private copy
+        is byte-identical (equal size + ETag). Lives only inside the tar member
+        "coral bleaching detection.v2i.multiclass/" — there is no standalone S3 prefix
+        for this dataset. Extract the archive to reach it (see
+        coral_bleaching/others.tar.gz entry-level notes on the sibling
         noaa-esd-coral-bleaching source).
     modalities: [image]
     capabilities: [bleaching-assessment, general-pretraining]
@@ -1324,16 +1332,19 @@ sources:
       method: absent
     access:
       method: s3
-      uri: s3://rs-storage-open/coral_bleaching/others.tar.gz
+      uri: s3://rs-storage-private/coral_bleaching/others.tar.gz
       params:
-        bucket: rs-storage-open
+        bucket: rs-storage-private
         endpoint: hel1.your-objectstorage.com
         region: hel1
         prefix: coral_bleaching/others.tar.gz
         credentials_env: S3
       notes: >
-        Lives only inside the tar member "coral-health-classification/" — there is no
-        standalone S3 prefix for this dataset. Extract the archive to reach it.
+        REPOINTED 2026-09-24 (WS-D S38): D8 deletes the open copy at
+        rs-storage-open/coral_bleaching/others.tar.gz; S33 verified the private copy
+        is byte-identical (equal size + ETag). Lives only inside the tar member
+        "coral-health-classification/" — there is no standalone S3 prefix for this
+        dataset. Extract the archive to reach it.
     modalities: [image]
     capabilities: [bleaching-assessment, general-pretraining]
     items: 1637
@@ -1379,18 +1390,21 @@ sources:
       method: absent
     access:
       method: s3
-      uri: s3://rs-storage-open/coral_bleaching/others.tar.gz
+      uri: s3://rs-storage-private/coral_bleaching/others.tar.gz
       params:
-        bucket: rs-storage-open
+        bucket: rs-storage-private
         endpoint: hel1.your-objectstorage.com
         region: hel1
         prefix: coral_bleaching/others.tar.gz
         credentials_env: S3
       notes: >
-        Lives only inside a tar member named "kaggle-healthy-and-bleached-corals-…"
-        (exact full name unconfirmed — truncated in every prior report) — there is no
-        standalone S3 prefix for this dataset. Extract the archive to reach it and
-        record the untruncated member name.
+        REPOINTED 2026-09-24 (WS-D S38): D8 deletes the open copy at
+        rs-storage-open/coral_bleaching/others.tar.gz; S33 verified the private copy
+        is byte-identical (equal size + ETag). Lives only inside a tar member named
+        "kaggle-healthy-and-bleached-corals-…" (exact full name unconfirmed —
+        truncated in every prior report) — there is no standalone S3 prefix for this
+        dataset. Extract the archive to reach it and record the untruncated member
+        name.
     modalities: [image]
     capabilities: [bleaching-assessment, general-pretraining]
     items: 923
