@@ -732,7 +732,7 @@ sources:
 
   - id: roboflow-coral-bleaching-final-v6i
     name: Coral Bleaching Final (Roboflow v6i)
-    version: "v6i-image-labels"
+    version: "v6i-image-labels-r2"
     description: Roboflow-exported multiclass coral bleaching image set.
     licence: CC-BY-4.0
     legal_basis: licence
@@ -744,25 +744,29 @@ sources:
       method: licence-file
     access:
       method: s3
-      uri: "s3://rs-storage-open/sources/roboflow-coral-bleaching-final-v6i/v6i-image-labels"
+      uri: "s3://rs-storage-open/sources/roboflow-coral-bleaching-final-v6i/v6i-image-labels-r2"
       notes: >
         rs-storage-open is a public bucket — anonymously fetchable, no credentials
-        needed. UPLOADED 2026-09-24 (WS-D S25): repointed from the OLD un-versioned
-        prefix (coral_bleaching/others/Coral Bleaching Final.v6i.multiclass/, left in
-        place — never deleted, not referenced by this entry) to the re-staged
-        v6i-image-labels/ tree; flat-list count/bytes (2,554 / 187,621,420) and an
-        anon-GET CHECKSUMS.sha256 sha256 both match the local tree.
+        needed. UPLOADED 2026-09-24 (WS-D S28): repointed from v6i-image-labels/
+        (S25 — left in place, never deleted, not referenced by this entry; its
+        metadata.parquet split_group column was stale null, see checksums.version
+        history) to the re-staged v6i-image-labels-r2/ tree, images/labels moved by
+        server-side copy_object (byte-identical to v6i-image-labels/), only
+        metadata.parquet + CHECKSUMS.sha256 re-uploaded with real split_group values
+        (`Source.split_group_for`, the S28 fix); flat-list count/bytes
+        (2,554 / 187,632,080) and an anon-GET CHECKSUMS.sha256 sha256 both match the
+        local tree.
       params:
         bucket: rs-storage-open
         endpoint: hel1.your-objectstorage.com
         region: hel1
-        prefix: "sources/roboflow-coral-bleaching-final-v6i/v6i-image-labels/"
-      size_bytes: 187621420
+        prefix: "sources/roboflow-coral-bleaching-final-v6i/v6i-image-labels-r2/"
+      size_bytes: 187632080
     checksums:
-      version: "v6i-image-labels"
-      root_digest: e6d191737ed47f1235f0ac507e4ffba4e194366fd406c84eb996f641e31f7a96
+      version: "v6i-image-labels-r2"
+      root_digest: da617d411c97fd28b3663d21455cc79e0ff7180726be4708311817946d56c473
       files: 2553
-      size_bytes: 187259021
+      size_bytes: 187269681
     modalities: [image]
     capabilities: [bleaching-assessment, general-pretraining]
     items: 2551
@@ -805,16 +809,22 @@ sources:
       verified_on: 2026-09-24
       verified_note: >
         SWITCHED 2026-09-24 (WS-D S25): layout moved from `metadata-only` to
-        `staged-tree`, mirroring v3i (WS-D S23). Staged to
-        `sources/roboflow-coral-bleaching-final-v6i/v6i-image-labels/` (2,551
-        images, 2,553 files incl. metadata/labels tables; `CHECKSUMS.sha256` pinned
-        by `checksums.root_digest` above). UPLOADED 2026-09-24 (WS-D S25) — see
-        `access.notes`.
+        `staged-tree`, mirroring v3i (WS-D S23). RE-STAGED 2026-09-24 (WS-D S28):
+        S25's `convert_classes_csv` hardcoded `split_group=None` instead of calling
+        `Source.split_group_for` — this source's own pattern above never ran, so the
+        stored column was null for all 2,551 rows. Fixed in
+        `marinedata.ingest_image_labels.convert_classes_csv`; re-staged to
+        `sources/roboflow-coral-bleaching-final-v6i/v6i-image-labels-r2/` (images +
+        `labels/image_labels.parquet` byte-identical to v6i-image-labels/, `cp -Rc`;
+        only `metadata.parquet` changed to carry real split_group values — see the
+        S28 report for the v3i∩v6i stored-data overlap proof, 0 mismatches);
+        `CHECKSUMS.sha256` pinned by `checksums.root_digest` above; `shasum -c` 0
+        fail. UPLOADED 2026-09-24 (WS-D S28) — see `access.notes`.
     tags: [bleaching, roboflow]
 
   - id: roboflow-coral-bleaching-general-v1-yolov8s
     name: Coral Bleaching_General (Roboflow v1, YOLOv8s)
-    version: "v1-yolov8s-image-labels"
+    version: "v1-yolov8s-image-labels-r2"
     description: Roboflow-exported multiclass coral bleaching image set.
     licence: CC-BY-4.0
     legal_basis: licence
@@ -826,26 +836,29 @@ sources:
       method: licence-file
     access:
       method: s3
-      uri: "s3://rs-storage-open/sources/roboflow-coral-bleaching-general-v1-yolov8s/v1-yolov8s-image-labels"
+      uri: "s3://rs-storage-open/sources/roboflow-coral-bleaching-general-v1-yolov8s/v1-yolov8s-image-labels-r2"
       notes: >
         rs-storage-open is a public bucket — anonymously fetchable, no credentials
-        needed. UPLOADED 2026-09-24 (WS-D S25): repointed from the OLD un-versioned
-        prefix (coral_bleaching/others/Coral Bleaching_General.v1-yolov8s.multiclass/,
-        left in place — never deleted, not referenced by this entry) to the
-        re-staged v1-yolov8s-image-labels/ tree; flat-list count/bytes
-        (2,546 / 187,020,536) and an anon-GET CHECKSUMS.sha256 sha256 both match the
-        local tree.
+        needed. UPLOADED 2026-09-24 (WS-D S28): repointed from
+        v1-yolov8s-image-labels/ (S25 — left in place, never deleted, not
+        referenced by this entry; its metadata.parquet split_group column was
+        stale null) to the re-staged v1-yolov8s-image-labels-r2/ tree, images/labels
+        moved by server-side copy_object (byte-identical to
+        v1-yolov8s-image-labels/), only metadata.parquet + CHECKSUMS.sha256
+        re-uploaded with real split_group values (`Source.split_group_for`, the S28
+        fix); flat-list count/bytes (2,546 / 187,031,200) and an anon-GET
+        CHECKSUMS.sha256 sha256 both match the local tree.
       params:
         bucket: rs-storage-open
         endpoint: hel1.your-objectstorage.com
         region: hel1
-        prefix: "sources/roboflow-coral-bleaching-general-v1-yolov8s/v1-yolov8s-image-labels/"
-      size_bytes: 187020536
+        prefix: "sources/roboflow-coral-bleaching-general-v1-yolov8s/v1-yolov8s-image-labels-r2/"
+      size_bytes: 187031200
     checksums:
-      version: "v1-yolov8s-image-labels"
-      root_digest: 1300b44d9383f1b384ba38081f6655ecbafa7f710784fc9147ce54e57133a92c
+      version: "v1-yolov8s-image-labels-r2"
+      root_digest: dae37098cfc58536cbbacc23bcd765d47925cb5fe2ea556910c16d4880560d28
       files: 2545
-      size_bytes: 186659316
+      size_bytes: 186669980
     modalities: [image]
     capabilities: [bleaching-assessment, general-pretraining]
     items: 2543
@@ -892,11 +905,18 @@ sources:
       verified_on: 2026-09-24
       verified_note: >
         SWITCHED 2026-09-24 (WS-D S25): layout moved from `metadata-only` to
-        `staged-tree`, mirroring v3i (WS-D S23). Staged to
-        `sources/roboflow-coral-bleaching-general-v1-yolov8s/v1-yolov8s-image-labels/`
-        (2,543 images, 2,545 files incl. metadata/labels tables; `CHECKSUMS.sha256`
-        pinned by `checksums.root_digest` above). UPLOADED 2026-09-24 (WS-D S25) —
-        see `access.notes`.
+        `staged-tree`, mirroring v3i (WS-D S23). RE-STAGED 2026-09-24 (WS-D S28):
+        S25's `convert_classes_csv` hardcoded `split_group=None` instead of calling
+        `Source.split_group_for` — this source's own pattern above never ran, so the
+        stored column was null for all 2,543 rows. Fixed in
+        `marinedata.ingest_image_labels.convert_classes_csv`; re-staged to
+        `sources/roboflow-coral-bleaching-general-v1-yolov8s/v1-yolov8s-image-labels-r2/`
+        (images + `labels/image_labels.parquet` byte-identical to
+        v1-yolov8s-image-labels/, `cp -Rc`; only `metadata.parquet` changed to carry
+        real split_group values — see the S28 report for the v3i∩v1 stored-data
+        overlap proof, 0 mismatches); `CHECKSUMS.sha256` pinned by
+        `checksums.root_digest` above; `shasum -c` 0 fail. UPLOADED 2026-09-24
+        (WS-D S28) — see `access.notes`.
     tags: [bleaching, roboflow]
 
   - id: roboflow-coral-classification-copy-changed-v13i
