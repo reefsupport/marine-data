@@ -905,14 +905,19 @@ sources:
       method: licence-file
     access:
       method: s3
-      uri: "s3://rs-storage-open/coral_bleaching/others/Coral Reef Classification.v3i.folder"
+      uri: "s3://rs-storage-open/sources/roboflow-coral-reef-classification-v3i/v3i"
+      notes: "rs-storage-open is a public bucket — anonymously fetchable, no credentials needed"
       params:
         bucket: rs-storage-open
         endpoint: hel1.your-objectstorage.com
         region: hel1
-        prefix: "coral_bleaching/others/Coral Reef Classification.v3i.folder/"
-        credentials_env: S3
-      size_bytes: 238924096
+        prefix: "sources/roboflow-coral-reef-classification-v3i/v3i/"
+      size_bytes: 239768692
+    checksums:
+      version: "v3i"
+      root_digest: fba76467138ee66b168820df7e148726564b57f1f795daa062b78d7f451323b4
+      files: 4559
+      size_bytes: 239132929
     modalities: [image]
     capabilities: [bleaching-assessment, general-pretraining]
     items: 4558
@@ -930,7 +935,20 @@ sources:
       pattern: '^(.+?)_jpg\.rf\.'
       match_field: stem
       template: "roboflow-bleaching/{group}"
-    loader: { layout: metadata-only }
+    loader:
+      layout: metadata-only
+      verified_on: 2026-09-24
+      verified_note: >
+        PINNED 2026-09-24 (S12b): `access.uri`/`prefix` now point at the uploaded
+        staged tree `sources/roboflow-coral-reef-classification-v3i/v3i/` (4,560
+        objects, 239,768,692 B), pinned by `checksums.root_digest` (4,559 files,
+        239,132,929 B, excludes CHECKSUMS.sha256 itself). `access.params.credentials_env`
+        dropped: `rs-storage-open` allows anonymous `GetObject` on a known key.
+        Layout stays `metadata-only`: this source's `metadata.parquet` is a bespoke
+        schema (path, class, upstream_split, width, height, split_group), not
+        marinedata's `StagedImage` schema (no class column) — `staged-tree` was not
+        adopted. `marinedata verify roboflow-coral-reef-classification-v3i --limit 5`
+        passes via the manifest-driven fetch path.
     tags: [bleaching, roboflow]
 
   - id: coralseg-ucsd-mosaics
