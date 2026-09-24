@@ -79,6 +79,22 @@ def _registry() -> Registry:
     )
 
 
+def _image_bytes(seed: int) -> bytes:
+    """A real, decodable image — ``release build`` dHashes every staged image (WS-D S47)
+    — smooth random noise, so no two seeds are near-duplicates of each other."""
+    import io
+    import random
+
+    from PIL import Image
+
+    rng = random.Random(seed)
+    small = Image.new("L", (9, 8))
+    small.putdata([rng.randrange(256) for _ in range(72)])
+    buf = io.BytesIO()
+    small.resize((72, 64), Image.Resampling.BICUBIC).save(buf, format="PNG")
+    return buf.getvalue()
+
+
 def _stage(root: Path) -> Path:
     # Enough distinct groups (> DEFAULT_MIN_GROUPS) that a real 70/15/15 split can
     # populate every split non-empty — this test is about the --split-map gate, not
@@ -88,7 +104,7 @@ def _stage(root: Path) -> Path:
         stem = f"a{i}"
         image_path = root / "images" / "p" / f"{stem}.jpg"
         image_path.parent.mkdir(parents=True, exist_ok=True)
-        image_path.write_bytes(f"UNIQUE-IMAGE-BYTES-{i}".encode())
+        image_path.write_bytes(_image_bytes(i))
         staged.append(
             StagedImage(
                 stem=stem,
@@ -106,6 +122,7 @@ def _stage(root: Path) -> Path:
 
 def _run(monkeypatch: pytest.MonkeyPatch, tmp_path: Path, split_map: Path, extra: list[str]) -> int:
     monkeypatch.setattr(Registry, "load", classmethod(lambda cls, root=None: _registry()))
+    monkeypatch.setenv("MARINEDATA_CACHE", str(tmp_path / "cache"))
     root = _stage(tmp_path / "src")
     return main(
         [

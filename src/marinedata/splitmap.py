@@ -62,6 +62,14 @@ class MergeInfo:
     """Count of components with 2+ distinct ``split_group`` values — real merges, not
     every group's own trivial 1-member component."""
 
+    near_dup_unions: int = 0
+    """Of the ``links`` passed to :func:`rows_to_counts` (WS-D S47 near-duplicate
+    pairs), how many joined two components that were still separate — a link inside an
+    already-merged component is not counted."""
+
+    near_dup_canonicals: frozenset[str] = frozenset()
+    """Canonical ids of every component at least one effective near-dup link formed."""
+
 
 def _merge_components(
     parent: dict[str, str], find: Callable[[str], str]
@@ -77,7 +85,10 @@ def _merge_components(
 
 
 def rows_to_counts(
-    rows: Iterable[Row], *, stratified: bool = False
+    rows: Iterable[Row],
+    *,
+    stratified: bool = False,
+    links: Iterable[tuple[str, str]] = (),
 ) -> tuple[dict[str, int], dict[str, dict[str, int]] | None, MergeInfo]:
     """Reduce ``(image_sha256, split_group, stratum)`` rows to per-group counts.
 
@@ -98,6 +109,10 @@ def rows_to_counts(
     are keyed by that canonical id for every merged group; the returned ``MergeInfo``
     is how a caller (:func:`marinedata.release.generate_split_map`) maps every original
     ``split_group`` back to it, and checks a merge against a prior persisted map.
+
+    ``links`` (WS-D S47): extra ``(image_sha256, image_sha256)`` pairs — near-duplicate
+    images, not byte-identical ones — whose groups are unioned exactly like a shared
+    digest. Both digests must appear in ``rows``.
     """
     parent: dict[str, str] = {}
 
@@ -130,8 +145,24 @@ def rows_to_counts(
                 raise ValueError("--stratify needs a non-empty stratum on every row")
             members.setdefault(stratum, set()).add(sha256)
 
+    near_dup_unions = 0
+    linked_roots: list[str] = []
+    for sha_a, sha_b in links:
+        if sha_a not in group_of or sha_b not in group_of:
+            raise ValueError(f"near-dup link ({sha_a}, {sha_b}) names a digest not in rows")
+        root_a, root_b = find(group_of[sha_a]), find(group_of[sha_b])
+        if root_a != root_b:
+            union(root_a, root_b)
+            near_dup_unions += 1
+            linked_roots.append(group_of[sha_a])
+
     canonical, merged_components = _merge_components(parent, find)
-    merge_info = MergeInfo(canonical=canonical, merged_components=merged_components)
+    merge_info = MergeInfo(
+        canonical=canonical,
+        merged_components=merged_components,
+        near_dup_unions=near_dup_unions,
+        near_dup_canonicals=frozenset(canonical[group] for group in linked_roots),
+    )
 
     counts = dict(Counter(canonical.get(group, group) for group in group_of.values()))
     if not stratified:
@@ -161,6 +192,9 @@ class SplitMap:
     :mod:`marinedata.strata`. Written only when set, so unstratified maps keep their
     exact bytes; checked like ``by``/``seed``/``ratios`` whenever a call allocates."""
     schema_version: int = SCHEMA_VERSION
+    near_dup: dict[str, object] = field(default_factory=dict)
+    """The near-duplicate check that shaped the map (WS-D S47): dHash definition, Pillow
+    version, thresholds. Written only when set, like ``stratify``."""
 
 
 def load_split_map(path: str | Path) -> SplitMap | None:
@@ -188,6 +222,7 @@ def load_split_map(path: str | Path) -> SplitMap | None:
         release=raw.get("release", ""),
         stratify=raw.get("stratify", ""),
         schema_version=version,
+        near_dup=dict(raw.get("near_dup", {})),
     )
 
 
@@ -205,6 +240,7 @@ def save_split_map(path: str | Path, split_map: SplitMap) -> None:
         "generated_at": split_map.generated_at,
         "release": split_map.release,
         **({"stratify": split_map.stratify} if split_map.stratify else {}),
+        **({"near_dup": dict(sorted(split_map.near_dup.items()))} if split_map.near_dup else {}),
         "assignments": dict(sorted(split_map.assignments.items())),
     }
     p = Path(path)
@@ -271,6 +307,7 @@ def resolve_splits(
     min_groups: int = DEFAULT_MIN_GROUPS,
     merge_canonical: Mapping[str, str] | None = None,
     forced: Mapping[str, SplitName] | None = None,
+    near_dup: Mapping[str, object] | None = None,
 ) -> dict[str, SplitName]:
     """Assign every group in ``counts`` a split, persisting the result at ``path``.
 
@@ -322,6 +359,8 @@ def resolve_splits(
     ``forced``: groups to assign directly to the named split with no lottery — the
     never-eval-only-component rule (WS-D S15c). Only applied to a group that is not
     already persisted; a persisted group keeps its recorded split regardless.
+
+    ``near_dup``: recorded on a new map (WS-D S47); an existing map keeps its own record.
     """
     if (strata is None) != (not stratify):
         raise SplitMapError("pass `strata` and `stratify` together, or neither")
@@ -351,6 +390,7 @@ def resolve_splits(
         persisted = dict(existing.assignments)
         generated_at = existing.generated_at
         release_value = existing.release
+        near_dup_value = dict(existing.near_dup)
     else:
         if frozen:
             raise SplitMapError(
@@ -360,6 +400,7 @@ def resolve_splits(
         persisted = {}
         generated_at = now if now is not None else datetime.now(UTC).isoformat()
         release_value = release or ""
+        near_dup_value = dict(near_dup or {})
 
     member_groups = _component_members(merge_canonical)
     if existing is not None and member_groups:
@@ -432,6 +473,7 @@ def resolve_splits(
                 generated_at=generated_at,
                 release=release_value,
                 stratify=stratify,
+                near_dup=near_dup_value,
             ),
         )
 

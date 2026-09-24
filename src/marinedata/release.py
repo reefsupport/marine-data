@@ -27,8 +27,15 @@ from pathlib import Path
 from .builder import SUPERVISED_DEFAULT_RATIOS, DatasetBuilder, PartialAbstainExclusion, SplitName
 from .checksums import file_digest
 from .gate import evaluate
+from .neardup import (
+    NearDupChainError,
+    NearDupConfig,
+    compute_dhashes,
+    near_dup_record,
+    near_pairs,
+)
 from .registry import Registry
-from .splitmap import Row, load_split_map, resolve_splits, rows_to_counts
+from .splitmap import MergeInfo, Row, load_split_map, resolve_splits, rows_to_counts
 from .strata import DEFAULT_MIN_GROUPS, TRAIN
 from .tables import _require_pyarrow
 
@@ -63,6 +70,12 @@ class ReleaseResult:
     """Sources dropped entirely from one task's axis (WS-D S26) because their own native
     labels were a mix of resolved and coarser-abstaining — see
     ``Dataset.partial_abstain_excluded``."""
+    never_eval_near_dup_excluded: tuple[str, ...] = ()
+    """Sorted sha256 of every never-eval image within ``exclude_max`` dHash Hamming of
+    any eval-capable admitted row (WS-D S47 rule A) — dropped from every split of every
+    task, train included: a re-encoded twin of an evaluation image must not train."""
+    never_eval_near_dup_rows: int = 0
+    """Task-manifest rows those images would have contributed, summed over tasks."""
 
 
 @dataclass(frozen=True)
@@ -77,6 +90,12 @@ class SplitMapStats:
     """Of those, how many combined members whose rows carry more than one distinct
     ``upstream_split`` value — report-only evidence of upstream leakage, never a
     blocker."""
+    near_dup_pairs: int = 0
+    """Eval-capable image pairs within the union threshold (WS-D S47 rule B)."""
+    near_dup_unions: int = 0
+    """Of those pairs, how many joined two still-separate components."""
+    near_dup_max_component: int = 0
+    """Images in the largest component a near-dup union formed — the chain guard's input."""
 
 
 def _never_eval_source_ids(registry: Registry, source_ids: Iterable[str]) -> set[str]:
@@ -135,6 +154,7 @@ def enumerate_release_rows(
     *,
     skipped: dict[str, str] | None = None,
     upstream_splits: dict[str, set[str]] | None = None,
+    paths: dict[str, Path] | None = None,
 ) -> Iterator[Row]:
     """``(image_sha256, split_group, stratum)`` for every admitted source's staged tree.
 
@@ -155,6 +175,9 @@ def enumerate_release_rows(
     by the *raw* (pre-merge) group id. :func:`generate_split_map` uses it to flag a
     merged component whose members carry more than one upstream partition — report-only
     evidence of upstream leakage (WS-D S15c), not a blocker.
+
+    ``paths``, if given, is filled in-place with ``{image_sha256: file}`` (first file seen
+    for each digest) — what the near-duplicate check (WS-D S47) hashes.
 
     A source whose ``loader.layout`` is not ``staged-tree`` (e.g. ``metadata-only``:
     v3i's bespoke ``path``/``class``/``upstream_split``/``width``/``height``/
@@ -226,7 +249,10 @@ def enumerate_release_rows(
                 upstream_split = record.get("upstream_split")
                 if upstream_split:
                     upstream_splits.setdefault(group, set()).add(upstream_split)
-            yield file_digest(matches[0]), group, source_id
+            digest = file_digest(matches[0])
+            if paths is not None:
+                paths.setdefault(digest, matches[0])
+            yield digest, group, source_id
 
 
 def generate_split_map(
@@ -241,6 +267,7 @@ def generate_split_map(
     now: str | None = None,
     release: str | None = None,
     skipped: dict[str, str] | None = None,
+    near_dup: NearDupConfig | None = None,
 ) -> SplitMapStats:
     """Enumerate every admitted staged tree in ``roots`` and write a fresh, stratified
     ``SPLIT_MAP.json`` at ``out`` — the "no hand-built TSV" path from staged trees straight
@@ -273,6 +300,14 @@ def generate_split_map(
     Returns :class:`SplitMapStats` — how many components merged, and how many of those
     also mixed more than one ``upstream_split`` value (report-only upstream-leakage
     signal, from ``upstream_split``, never a blocker).
+
+    ``near_dup`` (WS-D S47 rule B): images of eval-capable (not ``never-eval``) sources
+    within ``near_dup.union_max`` dHash Hamming of each other — same or different
+    source — are unioned into one component exactly like a shared digest, so a
+    re-encoded copy can never land on the other side of a split. Raises
+    :class:`~marinedata.neardup.NearDupChainError` before anything is written if the
+    largest component a near-dup union formed exceeds ``near_dup.chain_fraction`` of all
+    images (dHash links chain; the thresholds are policy, never auto-retuned).
     """
     if load_split_map(out) is not None:
         raise ValueError(f"{out} already exists — remove it first to regenerate")
@@ -280,10 +315,30 @@ def generate_split_map(
         registry, _admitted_source_ids(registry, roots, profile)
     )
     upstream_splits: dict[str, set[str]] = {}
-    rows = enumerate_release_rows(
-        registry, roots, profile, skipped=skipped, upstream_splits=upstream_splits
+    paths: dict[str, Path] = {}
+    rows = list(
+        enumerate_release_rows(
+            registry,
+            roots,
+            profile,
+            skipped=skipped,
+            upstream_splits=upstream_splits,
+            paths=paths if near_dup is not None else None,
+        )
     )
-    counts, strata, merge_info = rows_to_counts(rows, stratified=True)
+    links: list[tuple[str, str]] = []
+    if near_dup is not None:
+        eval_shas = sorted({sha for sha, _, source in rows if source not in never_eval_sources})
+        hashes = compute_dhashes(
+            {sha: paths[sha] for sha in eval_shas},
+            cache_dir=near_dup.cache_dir,
+            workers=near_dup.workers,
+        )
+        links = [(a, b) for a, b, _ in near_pairs(hashes, near_dup.union_max)]
+    counts, strata, merge_info = rows_to_counts(rows, stratified=True, links=links)
+    near_dup_max_component = 0
+    if near_dup is not None:
+        near_dup_max_component = _check_near_dup_chain(counts, merge_info, near_dup)
 
     group_to_strata: dict[str, set[str]] = {}
     for source_id, groups in (strata or {}).items():
@@ -308,6 +363,7 @@ def generate_split_map(
         min_groups=min_groups,
         merge_canonical=merge_info.canonical,
         forced=forced,
+        near_dup=near_dup_record(near_dup) if near_dup is not None else None,
     )
 
     members_of: dict[str, list[str]] = {}
@@ -323,6 +379,41 @@ def generate_split_map(
     return SplitMapStats(
         merged_components=merge_info.merged_components,
         merged_cross_partition=merged_cross_partition,
+        near_dup_pairs=len(links),
+        near_dup_unions=merge_info.near_dup_unions,
+        near_dup_max_component=near_dup_max_component,
+    )
+
+
+def _check_near_dup_chain(
+    counts: dict[str, int], merge_info: MergeInfo, config: NearDupConfig
+) -> int:
+    """Largest near-dup-formed component in images; raise if it breaks the chain guard,
+    with the size distribution and the biggest components' member groups as evidence."""
+    sizes = sorted(
+        ((counts[canon], canon) for canon in merge_info.near_dup_canonicals),
+        key=lambda item: (-item[0], item[1]),
+    )
+    largest = sizes[0][0] if sizes else 0
+    total = sum(counts.values())
+    if largest <= config.chain_fraction * total:
+        return largest
+    members: dict[str, list[str]] = {}
+    for group, canon in merge_info.canonical.items():
+        members.setdefault(canon, []).append(group)
+    edges = (1, 2, 5, 20, 100, 1000)
+    histogram = []
+    for lo, hi in zip(edges, (*edges[1:], None), strict=True):
+        n = sum(1 for size, _ in sizes if size > lo and (hi is None or size <= hi))
+        histogram.append(f"({lo},{hi if hi is not None else 'inf'}]={n}")
+    examples = "; ".join(
+        f"{canon} size={size} groups={len(members[canon])} e.g. {sorted(members[canon])[:5]}"
+        for size, canon in sizes[:3]
+    )
+    raise NearDupChainError(
+        f"near-dup chain guard: largest near-dup-merged component has {largest} images "
+        f"> {config.chain_fraction:.2%} of {total}; top sizes {[s for s, _ in sizes[:10]]}; "
+        f"components={len(sizes)} sizes {' '.join(histogram)}; examples: {examples}"
     )
 
 
@@ -335,6 +426,7 @@ def build_release(
     out_dir: str | Path,
     profile: str = "research",
     allow_unmapped: bool = False,
+    near_dup: NearDupConfig | None = None,
 ) -> ReleaseResult:
     """Build every registry task against a frozen split map and write the release.
 
@@ -342,6 +434,11 @@ def build_release(
     :mod:`marinedata.splitmap`), or if any admitted source contributes a group absent
     from it (``SplitMapError``, propagated from ``Dataset.split(frozen=True)``) — both
     left uncaught deliberately, since either means the release is not reproducible yet.
+
+    ``near_dup`` (WS-D S47 rule A): every image of a ``never-eval`` source within
+    ``near_dup.exclude_max`` dHash Hamming of any row of an eval-capable admitted source
+    (any split) is dropped from every task manifest, and recorded in ``RELEASE.json`` as
+    a count plus the sorted sha256 list, alongside the check's own parameters.
     """
     split_map_path = Path(split_map)
     if load_split_map(split_map_path) is None:
@@ -367,6 +464,13 @@ def build_release(
     tasks: list[TaskManifest] = []
     skipped: list[tuple[str, str]] = []
     never_eval_excluded = 0
+    near_dup_excluded: list[str] = []
+    if near_dup is not None and never_eval_sources:
+        near_dup_excluded = _never_eval_near_dups(
+            registry, admitted_roots, profile, never_eval_sources, near_dup
+        )
+    near_dup_excluded_set = frozenset(near_dup_excluded)
+    near_dup_rows = 0
     partial_abstain_excluded: list[PartialAbstainExclusion] = []
 
     for task in sorted(registry.tasks, key=lambda t: t.id):
@@ -395,6 +499,10 @@ def build_release(
                 sample = dataset.samples[position]
                 if sample.image is None:
                     continue
+                sha256 = file_digest(Path(sample.image))
+                if sample.source_id in never_eval_sources and sha256 in near_dup_excluded_set:
+                    near_dup_rows += 1
+                    continue
                 if split_name != TRAIN and sample.source_id in never_eval_sources:
                     # A never-eval-only merged component is already forced to `train`
                     # (see generate_split_map); this is the mixed-component case — some
@@ -404,7 +512,7 @@ def build_release(
                     # to train — that would leak the same content the split holds out.
                     never_eval_excluded += 1
                     continue
-                rows.append((file_digest(Path(sample.image)), split_name))
+                rows.append((sha256, split_name))
         rows.sort()
 
         manifest_path = manifests_dir / f"{task.id}.tsv"
@@ -442,6 +550,12 @@ def build_release(
             for exclusion in partial_abstain_excluded
         ],
     }
+    if near_dup is not None:
+        release_json["near_dup"] = near_dup_record(near_dup)
+        release_json["never_eval_near_dup_excluded"] = {
+            "count": len(near_dup_excluded),
+            "sha256": near_dup_excluded,
+        }
     release_json_text = json.dumps(release_json, indent=2, sort_keys=True) + "\n"
     (release_root / "RELEASE.json").write_text(release_json_text)
 
@@ -453,4 +567,36 @@ def build_release(
         skipped_tasks=tuple(skipped),
         never_eval_excluded=never_eval_excluded,
         partial_abstain_excluded=tuple(partial_abstain_excluded),
+        never_eval_near_dup_excluded=tuple(near_dup_excluded),
+        never_eval_near_dup_rows=near_dup_rows,
     )
+
+
+def _never_eval_near_dups(
+    registry: Registry,
+    roots: dict[str, Path],
+    profile: str,
+    never_eval_sources: set[str],
+    config: NearDupConfig,
+) -> list[str]:
+    """Sorted sha256 of never-eval images within ``config.exclude_max`` of any
+    eval-capable admitted image (rule A). Enumerates the same staged-tree rows the split
+    map is generated from, so every admitted row counts, whatever split or task."""
+    paths: dict[str, Path] = {}
+    never_eval: set[str] = set()
+    eval_capable: set[str] = set()
+    for sha, _, source_id in enumerate_release_rows(registry, roots, profile, paths=paths):
+        (never_eval if source_id in never_eval_sources else eval_capable).add(sha)
+    if not never_eval or not eval_capable:
+        return []
+    hashes = compute_dhashes(
+        {sha: paths[sha] for sha in sorted(never_eval | eval_capable)},
+        cache_dir=config.cache_dir,
+        workers=config.workers,
+    )
+    pairs = near_pairs(
+        {sha: hashes[sha] for sha in never_eval},
+        config.exclude_max,
+        {sha: hashes[sha] for sha in eval_capable},
+    )
+    return sorted({sha for sha, _, _ in pairs})

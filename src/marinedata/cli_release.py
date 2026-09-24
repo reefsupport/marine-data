@@ -16,9 +16,10 @@ from datetime import UTC, datetime
 from pathlib import Path
 
 from .cli_splitmap import _parse_ratios
-from .fetch import FetchError, fetch_sample
+from .fetch import FetchError, cache_root, fetch_sample
 from .fetchers_remote import _is_pinned_staged_tree
 from .gate import evaluate
+from .neardup import NearDupConfig, NearDupError, default_workers
 from .registry import Registry
 from .release import build_release, generate_split_map
 from .splitmap import load_split_map
@@ -96,6 +97,7 @@ def _cmd_release_build(args: argparse.Namespace) -> int:
             )
         return 1
 
+    near_dup = NearDupConfig(cache_dir=cache_root() / "_dhash", workers=default_workers())
     split_map_path = Path(args.split_map)
     split_map_exists = load_split_map(split_map_path) is not None
 
@@ -125,39 +127,53 @@ def _cmd_release_build(args: argparse.Namespace) -> int:
             print(f"release build: {exc}", file=sys.stderr)
             return 1
         skipped_sources: dict[str, str] = {}
-        stats = generate_split_map(
-            registry,
-            out=split_map_path,
-            roots=roots,
-            profile=args.profile,
-            ratios=ratios,
-            seed=args.seed,
-            min_groups=args.min_groups,
-            now=datetime.now(UTC).isoformat(),
-            release=args.release,
-            skipped=skipped_sources,
-        )
+        try:
+            stats = generate_split_map(
+                registry,
+                out=split_map_path,
+                roots=roots,
+                profile=args.profile,
+                ratios=ratios,
+                seed=args.seed,
+                min_groups=args.min_groups,
+                now=datetime.now(UTC).isoformat(),
+                release=args.release,
+                skipped=skipped_sources,
+                near_dup=near_dup,
+            )
+        except NearDupError as exc:
+            print(f"release build: {exc}", file=sys.stderr)
+            return 1
         print(
             f"release build: generated {split_map_path} (stratify=source) "
             f"merged_components={stats.merged_components} "
-            f"merged_cross_partition={stats.merged_cross_partition}"
+            f"merged_cross_partition={stats.merged_cross_partition} "
+            f"near_dup_pairs={stats.near_dup_pairs} near_dup_unions={stats.near_dup_unions} "
+            f"near_dup_max_component={stats.near_dup_max_component}"
         )
         for source_id, reason in sorted(skipped_sources.items()):
             print(f"  skipped {source_id}: {reason}", file=sys.stderr)
 
-    result = build_release(
-        registry,
-        release=args.release,
-        split_map=args.split_map,
-        roots=roots,
-        out_dir=args.out,
-        profile=args.profile,
-    )
+    try:
+        result = build_release(
+            registry,
+            release=args.release,
+            split_map=args.split_map,
+            roots=roots,
+            out_dir=args.out,
+            profile=args.profile,
+            near_dup=near_dup,
+        )
+    except NearDupError as exc:
+        print(f"release build: {exc}", file=sys.stderr)
+        return 1
 
     print(
         f"release build: release={result.release} sources={len(result.sources)} "
         f"tasks={len(result.tasks)} skipped={len(result.skipped_tasks)} "
-        f"never_eval_excluded={result.never_eval_excluded} -> {result.out_dir}"
+        f"never_eval_excluded={result.never_eval_excluded} "
+        f"never_eval_near_dup_excluded={len(result.never_eval_near_dup_excluded)} "
+        f"(rows {result.never_eval_near_dup_rows}) -> {result.out_dir}"
     )
     for task in result.tasks:
         print(f"  {task.task_id}: {len(task.rows)} images")
