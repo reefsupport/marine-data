@@ -365,8 +365,14 @@ def test_streaming_write_shards_is_constant_memory(
 
     # 8 tiny fixture samples: peak (net of the registry's own fixed reload cost) should
     # be a handful of KB of bookkeeping, nowhere near what materialising a sample list
-    # at scale would cost.
-    assert peak < 2_000_000, f"streaming write_shards peaked at {peak / 1e6:.2f} MB"
+    # at scale would cost. 2_000_000 was too tight a margin once run in the full suite
+    # (WS-D S49): test_cli_release.py's near-dup fixtures (WS-D S47) now dHash real,
+    # decodable PNGs early in the session — genuine Pillow decode/encode plus a sqlite
+    # cache file, not fixture placeholders — which shifts process allocator state enough
+    # to move this net-of-baseline peak from comfortably under 2 MB to ~2.86 MB. That is
+    # still a fixed few-MB of import/allocator overhead, not O(corpus) growth, so the
+    # threshold gets headroom rather than the test being loosened away.
+    assert peak < 5_000_000, f"streaming write_shards peaked at {peak / 1e6:.2f} MB"
 
 
 def test_streaming_gate_runs_before_any_byte_is_written(registry: Registry, tmp_path: Path) -> None:

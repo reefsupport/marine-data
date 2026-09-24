@@ -192,6 +192,29 @@ def test_existing_split_map_without_flag_is_unchanged_behaviour(
     assert split_map.read_bytes() == before, "a frozen release build must never write to the map"
 
 
+def test_pillow_mismatch_against_a_frozen_map_fails_closed(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
+    """A split map's near-dup dHashes are only valid under the Pillow version that
+    computed them (LANCZOS resize is a Pillow implementation detail, WS-D S49). A
+    frozen map built under a different Pillow than the running one must fail the
+    build closed, naming both versions, rather than silently trust stale dHashes."""
+    split_map = tmp_path / "SPLIT_MAP.json"
+    code = _run(monkeypatch, tmp_path, split_map, ["--generate-split-map"])
+    assert code == 0
+    before = split_map.read_bytes()
+
+    monkeypatch.setattr(cli_release, "pil_version", lambda: "99.0.0")
+    code = _run(monkeypatch, tmp_path, split_map, [])
+    assert code != 0
+    assert split_map.read_bytes() == before
+    err = capsys.readouterr().err
+    assert "99.0.0" in err
+    from marinedata.neardup import pil_version as _real_pil_version
+
+    assert _real_pil_version() in err
+
+
 def test_fetch_failure_for_admitted_source_fails_the_build(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
 ) -> None:

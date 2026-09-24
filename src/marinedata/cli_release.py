@@ -19,7 +19,7 @@ from .cli_splitmap import _parse_ratios
 from .fetch import FetchError, cache_root, fetch_sample
 from .fetchers_remote import _is_pinned_staged_tree
 from .gate import evaluate
-from .neardup import NearDupConfig, NearDupError, default_workers
+from .neardup import NearDupConfig, NearDupError, default_workers, pil_version
 from .registry import Registry
 from .release import build_release, generate_split_map
 from .splitmap import load_split_map
@@ -153,6 +153,28 @@ def _cmd_release_build(args: argparse.Namespace) -> int:
         )
         for source_id, reason in sorted(skipped_sources.items()):
             print(f"  skipped {source_id}: {reason}", file=sys.stderr)
+
+    # Fail closed on a Pillow mismatch (WS-D S49): dHash's LANCZOS resize is a Pillow
+    # implementation detail, so a map's rule-A/rule-B near-dup exclusions are only valid
+    # under the Pillow version that computed them. `--generate-split-map` just recorded
+    # the running version above, so this only ever fires against a pre-existing, frozen
+    # map built under a different Pillow.
+    current_map = load_split_map(split_map_path)
+    if current_map is not None and current_map.near_dup:
+        saved_pillow = current_map.near_dup.get("pil_version")
+        running_pillow = pil_version()
+        if saved_pillow is not None and saved_pillow != running_pillow:
+            print(
+                f"release build: {split_map_path} was generated under Pillow "
+                f"{saved_pillow}, but this environment has Pillow {running_pillow} — "
+                "near-dup dHashes are not comparable across Pillow versions "
+                "(LANCZOS resize output is a Pillow implementation detail); rule A "
+                "exclusions would be silently wrong. Rebuild the split map with "
+                "--generate-split-map under this Pillow, or run under Pillow "
+                f"{saved_pillow}",
+                file=sys.stderr,
+            )
+            return 1
 
     try:
         result = build_release(
