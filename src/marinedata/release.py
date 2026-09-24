@@ -141,12 +141,26 @@ def enumerate_release_rows(
     for the caller to report. The guard checks the registry's declared layout, not
     a caught ``KeyError`` — a *staged-tree* source missing ``partition`` is real
     corruption and must still raise (below, unchanged).
+
+    A source tagged ``needs-attribution`` (WS-D S23) is skipped the same way, and for
+    the same reason a denied-licence source never reaches here at all: its citation is
+    still unconfirmed, so shipping its rows in a release would attribute a real
+    creator's work incorrectly rather than not at all. Checked before the layout guard
+    so a ``needs-attribution`` source gets this specific reason even once it is staged
+    as a ``staged-tree`` — until now the tag was declared in the registry but never
+    read anywhere in ``src/`` (``grep -rn needs-attribution src`` = 0).
     """
     _require_pyarrow()
     import pyarrow.parquet as pq
 
     for source_id in _admitted_source_ids(registry, roots, profile):
         source = registry.source(source_id)
+        if "needs-attribution" in source.tags:
+            if skipped is not None:
+                skipped[source_id] = (
+                    "needs-attribution: attribution target unconfirmed, not in release"
+                )
+            continue
         layout = source.loader.layout if source.loader is not None else None
         if layout != "staged-tree":
             if skipped is not None:

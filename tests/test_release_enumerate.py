@@ -46,7 +46,7 @@ from marinedata.splitmap import load_split_map
 from marinedata.tables import StagedImage, write_metadata_table
 
 
-def _source(source_id: str, layout: str) -> Source:
+def _source(source_id: str, layout: str, *, tags: tuple[str, ...] = ()) -> Source:
     return Source(
         id=source_id,
         name=source_id,
@@ -64,6 +64,7 @@ def _source(source_id: str, layout: str) -> Source:
         coverage=Coverage(regions=(Region.GLOBAL,)),
         loader=LoaderSpec(layout=layout, params={}),
         annotations=(),
+        tags=tags,
     )
 
 
@@ -140,6 +141,29 @@ def test_metadata_only_source_skipped_and_reported(tmp_path: Path) -> None:
     assert {source_id for _, _, source_id in rows} == {"staged-src"}
     assert "v3i" in skipped
     assert "not in release" in skipped["v3i"]
+
+
+def test_needs_attribution_source_skipped_and_reported(tmp_path: Path) -> None:
+    """A ``staged-tree`` source tagged ``needs-attribution`` (WS-D S23) never crashes
+    or contributes rows — it is skipped with a reason naming the tag, the same
+    never-silently-dropped contract as the ``metadata-only`` layout guard above. Tagged
+    before the layout check even matters here: this source IS staged-tree, proving the
+    attribution gate is independent of layout."""
+    staged_root = _stage_staged_tree(tmp_path / "staged", "a", "g/a", b"AAAA")
+    gated_root = _stage_staged_tree(tmp_path / "gated", "b", "g/b", b"BBBB")
+    registry = _registry(
+        {
+            "staged-src": _source("staged-src", "staged-tree"),
+            "gated-src": _source("gated-src", "staged-tree", tags=("needs-attribution",)),
+        }
+    )
+    roots = {"staged-src": staged_root, "gated-src": gated_root}
+
+    skipped: dict[str, str] = {}
+    rows = list(enumerate_release_rows(registry, roots, "research", skipped=skipped))
+
+    assert {source_id for _, _, source_id in rows} == {"staged-src"}
+    assert "needs-attribution" in skipped["gated-src"]
 
 
 def test_staged_tree_missing_partition_still_raises(tmp_path: Path) -> None:

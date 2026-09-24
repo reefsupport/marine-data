@@ -14,7 +14,14 @@ from conftest import _touch_image, make_source
 
 from marinedata.loaders import LoaderError, build_loader
 from marinedata.scan import group_key
-from marinedata.tables import PointRow, StagedImage, write_metadata_table, write_points_table
+from marinedata.tables import (
+    ImageLabelRow,
+    PointRow,
+    StagedImage,
+    write_image_labels_table,
+    write_metadata_table,
+    write_points_table,
+)
 
 
 def _stage(
@@ -22,6 +29,7 @@ def _stage(
     rows: list[StagedImage],
     *,
     points: list[PointRow] | None = None,
+    image_labels: list[ImageLabelRow] | None = None,
     write_images: bool = True,
 ) -> Path:
     if write_images:
@@ -30,6 +38,8 @@ def _stage(
     write_metadata_table(root / "metadata.parquet", rows)
     if points:
         write_points_table(root / "labels" / "points.parquet", points)
+    if image_labels:
+        write_image_labels_table(root / "labels" / "image_labels.parquet", image_labels)
     return root
 
 
@@ -106,6 +116,31 @@ def test_points_join(tmp_path: Path) -> None:
     without_points = samples["images/default/img1.jpg"]
     assert without_points.points == ()
     assert "native_labels" not in without_points.meta
+
+
+def test_image_labels_join(tmp_path: Path) -> None:
+    """``labels/image_labels.parquet`` resolves through ``_resolve`` the same way
+    points do — one row per positive class, ``meta["native_image_labels"]`` recorded,
+    absent from an image with no rows (WS-D S23)."""
+    rows = [
+        StagedImage(stem="img0", partition="default", upstream_path="orig/0.jpg",
+                    upstream_split=None, width=10, height=10),
+        StagedImage(stem="img1", partition="default", upstream_path="orig/1.jpg",
+                    upstream_split=None, width=10, height=10),
+    ]
+    image_labels = [
+        ImageLabelRow(
+            stem="img0", partition="default", label="Unhealthy", schema_id="fixture-schema"
+        ),
+    ]
+    root = _stage(tmp_path, rows, image_labels=image_labels)
+    samples = {s.key: s for s in build_loader(make_source("staged-tree"), root)}
+
+    labelled = samples["images/default/img0.jpg"]
+    assert labelled.meta["native_image_labels"] == ["Unhealthy"]
+
+    unlabelled = samples["images/default/img1.jpg"]
+    assert "native_image_labels" not in unlabelled.meta
 
 
 def test_missing_image_raises(tmp_path: Path) -> None:

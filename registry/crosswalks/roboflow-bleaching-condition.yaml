@@ -1,0 +1,22 @@
+# Roboflow's binary Healthy/Unhealthy image label → RS-Benthic v1, condition axis
+# (WS-D S23, R3 Q10).
+#
+# Both edges are coarsened, never exact: a Roboflow contributor's binary call predates
+# any PALE/DISEASED/RECENTLY_DEAD/OLD_DEAD distinction, so "Healthy" can only map to
+# the coarsest true statement and "Unhealthy" can be coarsened onto BLEACHED at most —
+# never split into the finer condition states RS-Benthic distinguishes, because the
+# annotator never made that distinction either. Same shape and same reasoning as
+# `reef-support-bleaching-condition`'s "non_bleached" -> HEALTHY edge.
+
+crosswalks:
+  - id: roboflow-bleaching-condition
+    source_schema: roboflow-bleaching-native
+    target_schema: rs-benthic-v1
+    description: >
+      Roboflow's binary Healthy/Unhealthy image-classification label onto RS-Benthic's
+      condition axis.
+    edges:
+      - { source_label: "Healthy", targets: { condition: HEALTHY }, fidelity: coarsened,
+          note: "The source only ever recorded a binary healthy/not-healthy call; PALE was never distinguished, so 'Healthy' can only map to the coarsest true statement." }
+      - { source_label: "Unhealthy", targets: { condition: BLEACHED }, fidelity: coarsened,
+          note: "'Unhealthy' bundles BLEACHED, DISEASED, RECENTLY_DEAD and OLD_DEAD behind one binary label a Roboflow contributor never split further; BLEACHED is the coarsest true statement, not a diagnosis." }

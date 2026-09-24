@@ -2,8 +2,9 @@
 
 Shape: ``images/<partition>/<stem>.<ext>``, ``metadata.parquet`` (one row per staged
 image — the sample index), optionally ``labels/points.parquet`` (sparse point
-annotations) and/or ``labels/masks/<partition>/<stem>.png`` (dense masks), and
-``CHECKSUMS.sha256`` (not read here — that pins bytes for ingest, not for loading).
+annotations), ``labels/image_labels.parquet`` (whole-image annotations, WS-D S23)
+and/or ``labels/masks/<partition>/<stem>.png`` (dense masks), and ``CHECKSUMS.sha256``
+(not read here — that pins bytes for ingest, not for loading).
 
 ``metadata.parquet`` is the sample index, not the ``images/`` directory tree, because
 the writer (:func:`marinedata.tables.write_metadata_table`) records ``stem`` and
@@ -70,6 +71,9 @@ class StagedTreeLoader(_HarmonizingLoader):
     def _points_path(self) -> Path:
         return self.root / "labels" / "points.parquet"
 
+    def _image_labels_path(self) -> Path:
+        return self.root / "labels" / "image_labels.parquet"
+
     def validate(self) -> None:
         super().validate()
         if not self._metadata_path().is_file():
@@ -87,10 +91,20 @@ class StagedTreeLoader(_HarmonizingLoader):
             grouped.setdefault((record["partition"], record["stem"]), []).append(record)
         return grouped
 
+    def _image_labels_by_key(self) -> dict[tuple[str, str], list[dict]]:
+        path = self._image_labels_path()
+        if not path.is_file():
+            return {}
+        grouped: dict[tuple[str, str], list[dict]] = {}
+        for record in _read_parquet(path).to_pylist():
+            grouped.setdefault((record["partition"], record["stem"]), []).append(record)
+        return grouped
+
     def _iter_samples(self) -> Iterator[Sample]:
         images_by_key = _by_partition_stem(self.root / "images")
         masks_by_key = _by_partition_stem(self.root / "labels" / "masks")
         points_by_key = self._points_by_key()
+        image_labels_by_key = self._image_labels_by_key()
 
         for record in _read_parquet(self._metadata_path()).to_pylist():
             partition = record["partition"]
@@ -111,6 +125,13 @@ class StagedTreeLoader(_HarmonizingLoader):
             native = [row["label"] for row in point_rows]
             labels, supervised = self._resolve(native[0]) if native else ({}, frozenset())
 
+            image_label_rows = image_labels_by_key.get(key, ())
+            native_image_labels = [row["label"] for row in image_label_rows]
+            for image_label in native_image_labels:
+                image_labels, image_supervised = self._resolve(image_label)
+                labels = {**labels, **image_labels}
+                supervised = supervised | image_supervised
+
             mask = masks_by_key.get(key)
             meta: dict[str, object] = {
                 "partition": partition,
@@ -122,6 +143,8 @@ class StagedTreeLoader(_HarmonizingLoader):
             if native:
                 meta["native_labels"] = native
                 meta["n_points"] = len(points)
+            if native_image_labels:
+                meta["native_image_labels"] = native_image_labels
             if mask is not None:
                 meta["mask_is_dense"] = True
 
