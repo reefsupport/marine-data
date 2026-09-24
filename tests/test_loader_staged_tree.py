@@ -14,6 +14,7 @@ from conftest import _touch_image, make_source
 
 from marinedata.loaders import LoaderError, build_loader
 from marinedata.scan import group_key
+from marinedata.schema import Axis
 from marinedata.tables import (
     ImageLabelRow,
     PointRow,
@@ -206,3 +207,78 @@ def test_missing_metadata_parquet_raises(tmp_path: Path) -> None:
     loader = build_loader(make_source("staged-tree"), tmp_path)
     with pytest.raises(LoaderError, match=r"metadata\.parquet"):
         list(loader)
+
+
+def test_mask_values_param_emitted_for_dense_mask(tmp_path: Path) -> None:
+    """WS-D S31: no staged-tree source had a way to declare what a dense mask's own
+    pixel values mean — this is that path, mirroring the shape
+    ``DualConditionMaskLoader`` builds from ``positive_label``/``negative_label``."""
+    rows = [
+        StagedImage(stem="img0", partition="default", upstream_path="orig/0.jpg",
+                    upstream_split=None, width=10, height=10),
+    ]
+    root = _stage(tmp_path, rows)
+    _touch_image(root / "labels" / "masks" / "default" / "img0.png")
+
+    source = make_source(
+        "staged-tree", {"mask_values": "0=unlabelled,1=bleached,2=non_bleached"}
+    )
+    sample = next(iter(build_loader(source, root)))
+
+    assert sample.meta["mask_is_dense"] is True
+    assert sample.meta["mask_values"] == {
+        "0": "unlabelled",
+        "1": "bleached",
+        "2": "non_bleached",
+    }
+
+
+def test_mask_values_absent_when_not_declared(tmp_path: Path) -> None:
+    """A staged-tree source with a mask but no declared ``mask_values`` param keeps
+    behaving exactly as before this change — ``mask_is_dense`` only."""
+    rows = [
+        StagedImage(stem="img0", partition="default", upstream_path="orig/0.jpg",
+                    upstream_split=None, width=10, height=10),
+    ]
+    root = _stage(tmp_path, rows)
+    _touch_image(root / "labels" / "masks" / "default" / "img0.png")
+
+    sample = next(iter(build_loader(make_source("staged-tree"), root)))
+
+    assert sample.meta["mask_is_dense"] is True
+    assert "mask_values" not in sample.meta
+
+
+def test_bleaching_mask_pixel_values_harmonise_through_real_crosswalk(
+    tmp_path: Path, registry
+) -> None:
+    """The registry's own ``reef-support-bleaching`` entry + its
+    ``reef-support-bleaching-condition`` crosswalk: pixel 1 ("bleached") harmonises to
+    BLEACHED, pixel 2 ("non_bleached") harmonises to the crosswalk's declared target
+    for it (HEALTHY — see the crosswalk's coarsened-fidelity note), and the source's
+    own ``mask_values`` param is what a caller reads to know which pixel is which."""
+    source = registry.source("reef-support-bleaching")
+    mask_values = source.loader.params["mask_values"]
+    assert mask_values == "0=unlabelled,1=bleached,2=non_bleached"
+
+    rows = [
+        StagedImage(stem="img0", partition="UNAL_BLEACHING_TAYRONA",
+                    upstream_path="orig/0.jpg", upstream_split=None, width=10, height=10),
+    ]
+    root = _stage(tmp_path, rows)
+    _touch_image(root / "labels" / "masks" / "UNAL_BLEACHING_TAYRONA" / "img0.png")
+
+    loader = build_loader(source, root)
+    harmonizer = registry.harmonizer_for("reef-support-bleaching")
+    loader.bind_harmonizer(harmonizer)
+    sample = next(iter(loader))
+
+    assert sample.meta["mask_values"] == {
+        "0": "unlabelled",
+        "1": "bleached",
+        "2": "non_bleached",
+    }
+    bleached = harmonizer.map_label(sample.meta["mask_values"]["1"])
+    non_bleached = harmonizer.map_label(sample.meta["mask_values"]["2"])
+    assert bleached.labels[Axis.CONDITION].node_id == "BLEACHED"
+    assert non_bleached.labels[Axis.CONDITION].node_id == "HEALTHY"

@@ -82,6 +82,27 @@ class StagedTreeLoader(_HarmonizingLoader):
                 f"{self._metadata_path()}"
             )
 
+    def _mask_values(self) -> dict[str, str]:
+        """Pixel value → native label name for a dense mask, from the ``mask_values``
+        loader param (``"0=unlabelled,1=bleached,2=non_bleached"`` — same
+        comma-separated-pairs style as :meth:`LabelboxNdjsonLoader._geometry_labels`).
+
+        No layout here ever wrote a mask's pixel semantics anywhere a crosswalk could
+        read them (unlike :class:`~.generic.DualConditionMaskLoader`, which builds this
+        same ``meta["mask_values"]`` shape from ``positive_label``/``negative_label`` at
+        read time) — this is the staged-tree equivalent, declared once in the registry
+        rather than re-derived, since staging already fixed which integer means what.
+        """
+        raw = str(self._param("mask_values", ""))
+        result: dict[str, str] = {}
+        for part in raw.split(","):
+            part = part.strip()
+            if not part:
+                continue
+            value, _, label = part.partition("=")
+            result[value.strip()] = label.strip()
+        return result
+
     def _points_by_key(self) -> dict[tuple[str, str], list[dict]]:
         path = self._points_path()
         if not path.is_file():
@@ -105,6 +126,7 @@ class StagedTreeLoader(_HarmonizingLoader):
         masks_by_key = _by_partition_stem(self.root / "labels" / "masks")
         points_by_key = self._points_by_key()
         image_labels_by_key = self._image_labels_by_key()
+        mask_values = self._mask_values()
 
         for record in _read_parquet(self._metadata_path()).to_pylist():
             partition = record["partition"]
@@ -162,6 +184,8 @@ class StagedTreeLoader(_HarmonizingLoader):
                 meta["multi_label_conflicts"] = sorted(a.value for a in conflicted_axes)
             if mask is not None:
                 meta["mask_is_dense"] = True
+                if mask_values:
+                    meta["mask_values"] = mask_values
 
             yield Sample(
                 source_id=self.source.id,
