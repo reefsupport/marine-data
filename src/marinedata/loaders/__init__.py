@@ -20,6 +20,7 @@ from .base import (
     register_loader,
     registered_layouts,
 )
+from .coralscop import CoralscopRleMaskLoader
 from .coralseg import CoralsegRMaskLoader
 from .generic import (
     AudioClipsLoader,
@@ -36,6 +37,7 @@ from .staged_tree import StagedTreeLoader
 __all__ = [
     "AudioClipsLoader",
     "CocoJsonLoader",
+    "CoralscopRleMaskLoader",
     "CoralsegRMaskLoader",
     "CsvPointsLoader",
     "DataNotAvailable",

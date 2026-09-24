@@ -428,7 +428,20 @@ sources:
     notes: >
       Derived from an NC-SA model, so the output inherits the restriction. Retained for
       research and weak supervision; never in shipped weights.
-    loader: { layout: metadata-only }
+    loader:
+      layout: coco-rle-binary
+      verified_on: 2026-09-24
+      verified_note: >
+        WSD S6x §2e: one COCO-style JSON per image under jsons/, one compressed-RLE
+        segmentation per SAM pseudo-object; union all objects per image to a binary
+        {0,1} raster (classes=2, raster_ignore_value=0), cached as an indexed PNG.
+        Verified against two live bucket samples (train+test) — both compressed RLE,
+        no polygons observed. No schema_id/crosswalk — this is class-agnostic and
+        never-eval, so harmonisation is out of scope.
+      params:
+        images_dir: images
+        jsons_dir: jsons
+        partition_glob: "*"
     tags: [pseudo-label, never-eval]
 
   - id: rs-labelled-masks
