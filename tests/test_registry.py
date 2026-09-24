@@ -201,3 +201,94 @@ def test_registry_loads_with_the_network_hard_down(monkeypatch) -> None:
     assert node.worms_aphia_id == 758259, "frozen AphiaID must resolve offline"
     harmonizer = reg.harmonizer_for("coralscapes")
     assert harmonizer.map_label("massive/meandering bleached").labels
+
+
+def test_noaa_esd_coral_bleaching_is_retired_in_favour_of_pifsc(registry: Registry) -> None:
+    """S21 (R1): the bucket mirror is a confirmed duplicate of `noaa-pifsc-bleaching`.
+
+    It stays registered (rather than deleted) so the bucket mirror and tar member are
+    accounted for, but it must read as retired and never as a source to actively fetch.
+    """
+    retired = registry.source("noaa-esd-coral-bleaching")
+    assert "retired" in retired.tags
+    assert "noaa-pifsc-bleaching" in (retired.notes or "")
+    assert retired.citation
+    live = registry.source("noaa-pifsc-bleaching")
+    assert live.legal_basis is LegalBasis.LICENCE
+
+    # The existing metadata-only skip convention (cli.py, verify.py) already excludes
+    # it from any active fetch/build enumeration.
+    fetchable = [s.id for s in registry if s.loader and s.loader.layout != "metadata-only"]
+    assert "noaa-esd-coral-bleaching" not in fetchable
+
+
+def test_seaview_survey_imagery_licence_resolved(registry: Registry) -> None:
+    """S21 (R1 Q2, high confidence): CC BY 3.0 AU confirmed at researchdata.edu.au."""
+    src = registry.source("seaview-survey-imagery")
+    assert src.licence.tier is Tier.PERMISSIVE
+    assert src.legal_basis is LegalBasis.LICENCE
+    assert src.redistribution is Redistribution.OK
+    assert src.citation and "10.14264/UQL.2019.930" in src.citation
+
+
+def test_s21_still_gated_sources_stay_unknown_basis(registry: Registry) -> None:
+    """S21 (R1 Q2): entries with no usable licence confirmation remain gated."""
+    for source_id in (
+        "coralseg-ucsd-mosaics",
+        "ibf",
+        "coral-health-classification",
+        "kaggle-healthy-bleached-corals",
+        "coral-bleaching-detection-v2i-multiclass",
+    ):
+        src = registry.source(source_id)
+        assert src.legal_basis is LegalBasis.UNKNOWN, f"{source_id}: expected gated"
+
+
+def test_roboflow_attribution_added_where_confirmed(registry: Registry) -> None:
+    """S21 (R1 Q4 / manager decision 3): confirmed Roboflow attributions carry a
+    citation; unconfirmed ones are flagged needs-attribution instead of guessed."""
+    attributed = {
+        "roboflow-coral-bleaching-final-v6i": "lockie/coral-bleaching-final",
+        "roboflow-coral-bleaching-general-v1-yolov8s": "lockie/coral-bleaching_general",
+        "roboflow-coral-reef-classification-v3i": "twork/coral-reef-classification",
+    }
+    for source_id, url_fragment in attributed.items():
+        src = registry.source(source_id)
+        assert src.citation and url_fragment in src.citation, source_id
+
+    for source_id in (
+        "roboflow-coral-classification-copy-changed-v13i",
+        "roboflow-coral-reef-bleach-detection-v2i",
+    ):
+        src = registry.source(source_id)
+        assert src.citation is None, source_id
+        assert "needs-attribution" in src.tags, source_id
+
+
+def test_reef_support_seaview_labels_provenance_is_own(registry: Registry) -> None:
+    """S21 (R2 Q8): annotation labour is ours; the mislabeled `partner` provenance is
+    corrected to `own`. `legal_basis` stays `unknown` — the underlying pixels' terms
+    are not independently reconfirmed for these exact site directories."""
+    src = registry.source("reef-support-seaview-labels")
+    assert src.provenance.value == "own"
+    assert src.legal_basis is LegalBasis.UNKNOWN
+    assert src.licence.tier is not Tier.OWN
+    assert src.citation and "10.14264/UQL.2019.930" in src.citation
+
+
+def test_reefolution_legal_basis_stays_gated(registry: Registry) -> None:
+    """S21 (R2 Q6): partnership documented, no written grant found — still unknown."""
+    src = registry.source("reefolution")
+    assert src.legal_basis is LegalBasis.UNKNOWN
+    assert "no written grant" in (src.notes or "").lower()
+
+
+def test_rs_labelled_masks_split_legal_basis_documented(registry: Registry) -> None:
+    """S21 (R2 Q7): the schema has no per-partition legal_basis, so the whole-entry
+    value is kept at the stricter (unknown) end rather than blanket-upgraded to own,
+    and the split rationale is recorded in notes."""
+    src = registry.source("rs-labelled-masks")
+    assert src.legal_basis is LegalBasis.UNKNOWN
+    assert src.licence.tier is not Tier.OWN
+    notes = (src.verification.verified_by or "") + (src.notes or "")
+    assert "reef-support-benthic-own" in notes and "reef-support-seaview-labels" in notes

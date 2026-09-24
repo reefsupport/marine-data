@@ -678,8 +678,8 @@ sources:
     redistribution: ok
     provenance: public
     verification:
-      verified_on: 2026-09-19
-      verified_by: "2026-09-19 boto3 bucket listing (v4s-open-listing.tsv): 4,430 files / 327,036,884 bytes under coral_bleaching/others/NOAA-ESD-CORAL-Bleaching-Dataset/. The checked-out README.md dataset-card (HF pretty_name 'NOAA-ESD-CORAL-Bleaching-Dataset v1') states 'Public Domain (NOAA Open Data)' (L1 report 2026-09-19)."
+      verified_on: 2026-09-24
+      verified_by: "2026-09-19 boto3 bucket listing (v4s-open-listing.tsv): 4,430 files / 327,036,884 bytes under coral_bleaching/others/NOAA-ESD-CORAL-Bleaching-Dataset/. The checked-out README.md dataset-card (HF pretty_name 'NOAA-ESD-CORAL-Bleaching-Dataset v1') states 'Public Domain (NOAA Open Data)' (L1 report 2026-09-19). CONFIRMED IDENTICAL 2026-09-24 (R1 external research): 14/14 sampled filenames from this tar/bucket match paths in HF NMFS-OSI/NOAA-PIFSC-ESD-CORAL-Bleaching-Dataset exactly — same repo as `noaa-pifsc-bleaching`."
       method: dataset-card
     access:
       method: s3
@@ -708,20 +708,27 @@ sources:
     coverage:
       regions: [unknown]
     homepage: https://www.fisheries.noaa.gov/inport/item/59195
+    citation: >
+      Pacific Islands Fisheries Science Center (2025). Ecosystem Sciences Division
+      (ESD). NOAA-ESD-CORAL-Bleaching-Dataset v1.
+      https://huggingface.co/datasets/NMFS-OSI/NOAA-PIFSC-ESD-CORAL-Bleaching-Dataset
     notes: >
-      INCOMPLETE EXTRACTION. The expanded tree here is a partial checkout: the sibling
-      archive coral_bleaching/others.tar.gz holds train/ and val/ (8,854 files,
-      651.6 MB combined per the 2026-09-23 design) that are absent from this bucket
-      tree, which has test/ only. Per the 2026-09-23 WS-D decision, primary access
-      should move to Hugging Face rather than this incomplete bucket mirror, but the
-      exact HF dataset-card repo id (org/name) is not recorded anywhere in the registry
-      or prior reports and could not be confirmed this pass under a no-network
-      constraint — `access` below is left as the bucket mirror pending that ID.
-      Relationship to the already-registered `noaa-pifsc-bleaching` (HF
-      NMFS-OSI/NOAA-PIFSC-ESD-CORAL-Bleaching-Dataset) - same agency/programme naming -
-      is not confirmed this pass.
+      RETIRED 2026-09-24 (R1 external research, high confidence): this incomplete
+      bucket mirror (test/ split only) and the sibling coral_bleaching/others.tar.gz
+      train/val subset are the SAME repository already registered as
+      `noaa-pifsc-bleaching` (HF NMFS-OSI/NOAA-PIFSC-ESD-CORAL-Bleaching-Dataset) —
+      confirmed by checking 14 sampled filenames against a live `hf_fs find`, 14/14
+      identical paths; the README pretty_name is literally "NOAA-ESD-CORAL-Bleaching-
+      Dataset v1". superseded_by: noaa-pifsc-bleaching. Do not fetch from this entry;
+      use `noaa-pifsc-bleaching` for all access. Kept registered (rather than deleted)
+      so the bucket mirror and tar member are not silently unaccounted for.
+
+      INCOMPLETE EXTRACTION (superseded context). The expanded tree here is a partial
+      checkout: the sibling archive coral_bleaching/others.tar.gz holds train/ and
+      val/ (8,854 files, 651.6 MB combined per the 2026-09-23 design) that are absent
+      from this bucket tree, which has test/ only.
     loader: { layout: metadata-only }
-    tags: [bleaching, public-domain, incomplete-extraction]
+    tags: [bleaching, public-domain, incomplete-extraction, retired]
 
   - id: roboflow-coral-bleaching-final-v6i
     name: Coral Bleaching Final (Roboflow v6i)
@@ -732,7 +739,7 @@ sources:
     redistribution: ok
     provenance: public
     verification:
-      verified_on: 2026-09-19
+      verified_on: 2026-09-24
       verified_by: "README.dataset.txt sidecar: 'License: CC BY 4.0' (L1 report 2026-09-19). 2026-09-19 boto3 bucket listing (v4s-open-listing.tsv): 2,556 files / 187,249,687 bytes under coral_bleaching/others/Coral Bleaching Final.v6i.multiclass/."
       method: licence-file
     access:
@@ -754,10 +761,17 @@ sources:
         notes: "Class/label structure not verified this pass - only the licence sidecar was read (L1)."
     coverage:
       regions: [unknown]
+    citation: >
+      Lockie. "Coral Bleaching Final" (Roboflow Universe, v6i).
+      https://universe.roboflow.com/lockie/coral-bleaching-final
     notes: >
       Roboflow Universe project URL not recorded in the sidecar - attribution target
       unknown. Sidecars link only the generic https://universe.roboflow.com and
       https://github.com/roboflow/notebooks.
+
+      ATTRIBUTED 2026-09-24 (R1 external research, med confidence): identified by
+      name+count match (2,556 imgs, exact) with Lockie's "Coral Bleaching Final"
+      project — see citation above.
     split_group:
       pattern: '^(.+?)_jpg\.rf\.'
       match_field: stem
@@ -774,7 +788,7 @@ sources:
     redistribution: ok
     provenance: public
     verification:
-      verified_on: 2026-09-19
+      verified_on: 2026-09-24
       verified_by: "README.dataset.txt sidecar: 'License: CC BY 4.0' (L1 report 2026-09-19). 2026-09-19 boto3 bucket listing (v4s-open-listing.tsv): 2,548 files / 186,654,672 bytes under coral_bleaching/others/Coral Bleaching_General.v1-yolov8s.multiclass/."
       method: licence-file
     access:
@@ -796,10 +810,17 @@ sources:
         notes: "Class/label structure not verified this pass - only the licence sidecar was read (L1)."
     coverage:
       regions: [unknown]
+    citation: >
+      Lockie. "Coral Bleaching_General" (Roboflow Universe, v1, YOLOv8s).
+      https://universe.roboflow.com/lockie/coral-bleaching_general/dataset/1
     notes: >
       Roboflow Universe project URL not recorded in the sidecar - attribution target
       unknown. Sidecars link only the generic https://universe.roboflow.com and
       https://github.com/roboflow/notebooks.
+
+      ATTRIBUTED 2026-09-24 (R1 external research, med confidence): identified by
+      name+count match (2,543 vs registry's 2,548 imgs — close, not exact) with
+      Lockie's "Coral Bleaching_General" project — see citation above.
     split_group:
       pattern: '^(.+?)_jpg\.rf\.'
       match_field: stem
@@ -816,7 +837,7 @@ sources:
     redistribution: ok
     provenance: public
     verification:
-      verified_on: 2026-09-19
+      verified_on: 2026-09-24
       verified_by: "README.dataset.txt sidecar: 'License: CC BY 4.0' (L1 report 2026-09-19). 2026-09-19 boto3 bucket listing (v4s-open-listing.tsv): 2,794 files / 185,563,432 bytes under 'coral_bleaching/others/Coral Classification Copy -Changed-.v13i.multiclass/'."
       method: licence-file
     access:
@@ -842,12 +863,17 @@ sources:
       Roboflow Universe project URL not recorded in the sidecar - attribution target
       unknown. Sidecars link only the generic https://universe.roboflow.com and
       https://github.com/roboflow/notebooks.
+
+      GATED PENDING ATTRIBUTION 2026-09-24 (R1 external research): no matching
+      Roboflow Universe project surfaced for this generic name — attribution target
+      still unconfirmed. Do not cite a guessed project; wait for a real attribution
+      URL before use.
     split_group:
       pattern: '^(.+?)_jpg\.rf\.'
       match_field: stem
       template: "roboflow-bleaching/{group}"
     loader: { layout: metadata-only }
-    tags: [bleaching, roboflow]
+    tags: [bleaching, roboflow, needs-attribution]
 
   - id: roboflow-coral-reef-bleach-detection-v2i
     name: Coral Reef Bleach Detection (Roboflow v2i)
@@ -858,7 +884,7 @@ sources:
     redistribution: ok
     provenance: public
     verification:
-      verified_on: 2026-09-19
+      verified_on: 2026-09-24
       verified_by: "README.dataset.txt sidecar: 'License: CC BY 4.0' (L1 report 2026-09-19). 2026-09-19 boto3 bucket listing (v4s-open-listing.tsv): 10,786 files / 790,572,339 bytes under coral_bleaching/others/Coral Reef Bleach Detection.v2i.multiclass/."
       method: licence-file
     access:
@@ -884,12 +910,18 @@ sources:
       Roboflow Universe project URL not recorded in the sidecar - attribution target
       unknown. Sidecars link only the generic https://universe.roboflow.com and
       https://github.com/roboflow/notebooks.
+
+      GATED PENDING ATTRIBUTION 2026-09-24 (R1 external research, low confidence): a
+      candidate project (coralreef/coral-reef-bleach-detection) was found but its
+      5.8k source images do not match this entry's 10,786 files (a plausible
+      augmented-export count, not confirmed) — too weak to cite. Wait for a real
+      attribution URL before use.
     split_group:
       pattern: '^(.+?)_jpg\.rf\.'
       match_field: stem
       template: "roboflow-bleaching/{group}"
     loader: { layout: metadata-only }
-    tags: [bleaching, roboflow]
+    tags: [bleaching, roboflow, needs-attribution]
 
   - id: roboflow-coral-reef-classification-v3i
     name: Coral Reef Classification (Roboflow v3i)
@@ -900,7 +932,7 @@ sources:
     redistribution: ok
     provenance: public
     verification:
-      verified_on: 2026-09-19
+      verified_on: 2026-09-24
       verified_by: "README.dataset.txt sidecar: 'License: CC BY 4.0' (L1 report 2026-09-19). 2026-09-19 boto3 bucket listing (v4s-open-listing.tsv): 4,558 files / 238,924,096 bytes under coral_bleaching/others/Coral Reef Classification.v3i.folder/."
       method: licence-file
     access:
@@ -927,10 +959,16 @@ sources:
         notes: "Class/label structure not verified this pass - only the licence sidecar was read (L1)."
     coverage:
       regions: [unknown]
+    citation: >
+      twork. "Coral Reef Classification" (Roboflow Universe).
+      https://universe.roboflow.com/twork/coral-reef-classification
     notes: >
       Roboflow Universe project URL not recorded in the sidecar - attribution target
       unknown. Sidecars link only the generic https://universe.roboflow.com and
       https://github.com/roboflow/notebooks.
+
+      ATTRIBUTED 2026-09-24 (S21 registry apply): attribution URL confirmed — see
+      citation above.
     split_group:
       pattern: '^(.+?)_jpg\.rf\.'
       match_field: stem
@@ -1015,14 +1053,17 @@ sources:
       Raw reef-survey photographs mirrored from the University of Queensland eSpace
       record UQ_734799. Excludes labelled_data/labelled_segmentation_data.pickle
       (6,956,023,722 B) - slated for deletion, unsafe pickle format, not counted here.
-    licence: NO-LICENCE-STATED
-    legal_basis: unknown
-    redistribution: unknown
+    licence: CC-BY-3.0-AU
+    legal_basis: licence
+    redistribution: ok
     provenance: public
+    citation: >
+      González-Rivero et al. (2019). Seaview Survey Photo-quadrat and Image
+      Classification Dataset. University of Queensland. doi:10.14264/UQL.2019.930
     verification:
-      verified_on: 2026-09-19
-      verified_by: "2026-09-19 boto3 bucket listing (v4s-open-listing.tsv): 12,373 files / 19,480,434,205 bytes under benthic_datasets/point_labels/SEAVIEW/, excluding the pickle file. No licence stated in the bucket for the UQ eSpace UQ_734799 record (P1-B proposal)."
-      method: absent
+      verified_on: 2026-09-24
+      verified_by: "2026-09-19 boto3 bucket listing (v4s-open-listing.tsv): 12,373 files / 19,480,434,205 bytes under benthic_datasets/point_labels/SEAVIEW/, excluding the pickle file. RESOLVED 2026-09-24 (R1 external research, high confidence): researchdata.edu.au record https://researchdata.edu.au/seaview-survey-photo-classification-dataset/3369315 states 'Creative Commons Attribution 3.0' for this UQ eSpace UQ_734799 record."
+      method: licence-file
     access:
       method: s3
       uri: s3://rs-storage-open/benthic_datasets/point_labels/SEAVIEW
@@ -1044,15 +1085,18 @@ sources:
       regions: [unknown]
     homepage: https://espace.library.uq.edu.au/view/UQ:734799
     notes: >
-      BLOCKED PENDING PERMISSION. Whether Reef Support has rights to mirror this raw
-      imagery (distinct from `reef-support-seaview-labels`, which covers only our own
-      masks over a subset of it) is unconfirmed - see P1-B proposal "Needs Yohan" #5.
+      RESOLVED 2026-09-24 (R1 external research): CC BY 3.0 confirmed at the source
+      (researchdata.edu.au), so mirroring and redistribution of this raw imagery are
+      permitted with attribution (González-Rivero et al. 2019). Same underlying
+      Seaview/XL Catlin survey imagery whose pixels also sit under
+      `reef-support-seaview-labels`'s masks (that entry's own legal_basis is kept
+      `unknown` pending independent reconfirmation for its exact site directories).
+      No longer BLOCKED PENDING PERMISSION.
     split_group:
       pattern: '^(.{5})'
       match_field: stem
       template: "seaview/{group}"
     loader: { layout: metadata-only }
-    tags: [needs-permission]
 
   - id: coral-bleaching-detection-v2i-multiclass
     name: Coral Bleaching Detection (v2i, multiclass) — tar-only
@@ -1067,7 +1111,7 @@ sources:
     redistribution: unknown
     provenance: public
     verification:
-      verified_on: 2026-09-19
+      verified_on: 2026-09-24
       verified_by: >
         2026-09-19 tar-member listing (T1 report): 736 files under
         "coral bleaching detection.v2i.multiclass/" inside
@@ -1102,6 +1146,10 @@ sources:
       for this member. Recorded as NO-LICENCE-STATED per the registry's convention for
       an unverified public-looking dataset, pending extraction of
       coral_bleaching/others.tar.gz and a real read of its README/licence file.
+
+      NOT CHECKED 2026-09-24 (R1 external research): still tar-only, never extracted;
+      no licence read this pass either. Remains gated (legal_basis: unknown) for that
+      reason alone.
     loader: { layout: metadata-only }
     tags: [needs-permission, tar-only]
 
@@ -1117,7 +1165,7 @@ sources:
     redistribution: unknown
     provenance: public
     verification:
-      verified_on: 2026-09-19
+      verified_on: 2026-09-24
       verified_by: >
         2026-09-19 tar-member listing (T1 report): 1,637 files under
         "coral-health-classification/" inside coral_bleaching/others.tar.gz. No licence
@@ -1149,6 +1197,11 @@ sources:
       for this member. Recorded as NO-LICENCE-STATED per the registry's convention,
       pending extraction of coral_bleaching/others.tar.gz and a real read of its
       README/licence file.
+
+      AMBIGUOUS 2026-09-24 (R1 external research, med confidence, carried from wsb-S16):
+      a README.md sidecar states licence "cc" with no version/variant, which does not
+      resolve to a specific SPDX-style licence id. Stays gated (legal_basis: unknown)
+      until a real licence file is read.
     loader: { layout: metadata-only }
     tags: [needs-permission, tar-only]
 
@@ -1166,7 +1219,7 @@ sources:
     redistribution: unknown
     provenance: public
     verification:
-      verified_on: 2026-09-19
+      verified_on: 2026-09-24
       verified_by: >
         2026-09-19 tar-member listing (T1 report): 923 files under a member named
         "kaggle-healthy-and-bleached-corals-…" (truncated in the report) inside
@@ -1202,5 +1255,11 @@ sources:
       pending extraction of coral_bleaching/others.tar.gz and a real read of its
       README/licence file. Kaggle datasets carry per-dataset licences that vary widely —
       do not assume CC-BY or public domain without reading it.
+
+      IDENTIFIED, LICENCE UNKNOWN 2026-09-24 (R1 external research, low confidence):
+      dataset page located at
+      https://www.kaggle.com/datasets/vencerlanz09/healthy-and-bleached-corals-image-classification,
+      but the licence field is JS-rendered and could not be retrieved this pass. Stays
+      gated (legal_basis: unknown).
     loader: { layout: metadata-only }
     tags: [needs-permission, tar-only]

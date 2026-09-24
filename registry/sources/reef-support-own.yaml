@@ -112,10 +112,13 @@ sources:
     licence: NO-LICENCE-STATED
     legal_basis: unknown
     redistribution: unknown
-    provenance: partner
+    provenance: own
+    citation: >
+      González-Rivero et al. (2019). Seaview Survey Photo-quadrat and Image
+      Classification Dataset. University of Queensland. doi:10.14264/UQL.2019.930
     verification:
-      verified_on: 2026-09-19
-      verified_by: "2026-09-19 boto3 bucket listing (v4s-open-listing.tsv): 73,045 images across eight site directories under benthic_datasets/mask_labels/reef_support/, of which SEAVIEW_ATL, SEAVIEW_IDN_PHL, SEAVIEW_PAC_AUS and SEAVIEW_PAC_USA belong to this entry (WS-D decision, 2026-09-23) - the other four (SEAFLOWER_BOLIVAR, SEAFLOWER_COURTOWN, TETES_PROVIDENCIA, UNAL_BLEACHING_TAYRONA) belong to `reef-support-benthic-own`. No XL Catlin Seaview licence or permission document located in the repo or bucket."
+      verified_on: 2026-09-24
+      verified_by: "2026-09-19 boto3 bucket listing (v4s-open-listing.tsv): 73,045 images across eight site directories under benthic_datasets/mask_labels/reef_support/, of which SEAVIEW_ATL, SEAVIEW_IDN_PHL, SEAVIEW_PAC_AUS and SEAVIEW_PAC_USA belong to this entry (WS-D decision, 2026-09-23) - the other four (SEAFLOWER_BOLIVAR, SEAFLOWER_COURTOWN, TETES_PROVIDENCIA, UNAL_BLEACHING_TAYRONA) belong to `reef-support-benthic-own`. No XL Catlin Seaview licence or permission document located in the repo or bucket. CORRECTED 2026-09-24 (R2 internal provenance, Q8): `provenance` was `partner`, a data-entry slip vs. this entry's own description ('the annotation labour... [is] ours') — the annotation labour is genuinely ours, so `provenance: own`. `legal_basis` stays `unknown`: the underlying pixels are XL Catlin Seaview's, and R1 external research found their licence (CC-BY-3.0-AU, `seaview-survey-imagery`) 'likely' the same imagery but not independently reconfirmed for these exact site directories (med confidence)."
       method: absent
     access:
       method: s3
@@ -268,7 +271,7 @@ sources:
     redistribution: unknown
     provenance: partner
     verification:
-      verified_on: 2026-08-17
+      verified_on: 2026-09-24
       verified_by: "Bucket scan; no permission document located in the repo or bucket"
       method: absent
     access:
@@ -314,6 +317,9 @@ sources:
 
       Re-checked 2026-09-18 (s3://rs-storage-open/benthic_datasets/point_labels/Reefolution):
       still no written grant on record.
+
+      RE-CHECKED 2026-09-24 (R2 internal provenance, Q6): partnership documented, no
+      written grant found (R2, 2 checks) — `legal_basis` stays `unknown`.
     split_group:
       pattern: '(DSCN\d+)'
       match_field: stem
@@ -476,8 +482,8 @@ sources:
     redistribution: unknown
     provenance: own
     verification:
-      verified_on: 2026-09-19
-      verified_by: "2026-09-19 boto3 bucket listing (v4s-open-listing.tsv): 63,167 files / 5,725,787,671 bytes under benthic_datasets/mask_labels/rs_labelled/. No licence or origin document located in the repo or bucket (P1-B proposal)."
+      verified_on: 2026-09-24
+      verified_by: "2026-09-19 boto3 bucket listing (v4s-open-listing.tsv): 63,167 files / 5,725,787,671 bytes under benthic_datasets/mask_labels/rs_labelled/. No licence or origin document located in the repo or bucket (P1-B proposal). ASSESSED 2026-09-24 (R2 internal provenance, Q7): the label labour itself is ours — a PROPRIETARY-OWN licence would be correct for that labour alone — but `legal_basis` is split by which image pool each sub-image sits on: `own` for the `reef-support-benthic-own`-sourced images, `unknown` (inherited) for the `reef-support-seaview-labels`-sourced images (XL Catlin pixel terms still unresolved). This schema has no per-partition legal_basis, so both `licence` and `legal_basis` are kept at their stricter, whole-entry value (NO-LICENCE-STATED / unknown) rather than blanket-upgrading to PROPRIETARY-OWN/own over imagery this entry does not itself hold pixel rights to — see `test_no_source_claims_own_tier_over_third_party_pixels` for the regression this guards against."
       method: absent
     access:
       method: s3
