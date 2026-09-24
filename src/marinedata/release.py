@@ -24,7 +24,7 @@ from collections.abc import Iterable, Iterator
 from dataclasses import dataclass
 from pathlib import Path
 
-from .builder import SUPERVISED_DEFAULT_RATIOS, DatasetBuilder, SplitName
+from .builder import SUPERVISED_DEFAULT_RATIOS, DatasetBuilder, PartialAbstainExclusion, SplitName
 from .checksums import file_digest
 from .gate import evaluate
 from .registry import Registry
@@ -59,6 +59,10 @@ class ReleaseResult:
     :mod:`marinedata.splitmap`) lands where its non-never-eval members send it, but a
     machine-generated row must never enter an evaluation split. Counted, never moved to
     ``train`` — that would leak the same content the split was built to hold out."""
+    partial_abstain_excluded: tuple[PartialAbstainExclusion, ...] = ()
+    """Sources dropped entirely from one task's axis (WS-D S26) because their own native
+    labels were a mix of resolved and coarser-abstaining — see
+    ``Dataset.partial_abstain_excluded``."""
 
 
 @dataclass(frozen=True)
@@ -337,6 +341,7 @@ def build_release(
     tasks: list[TaskManifest] = []
     skipped: list[tuple[str, str]] = []
     never_eval_excluded = 0
+    partial_abstain_excluded: list[PartialAbstainExclusion] = []
 
     for task in sorted(registry.tasks, key=lambda t: t.id):
         builder = DatasetBuilder(
@@ -355,6 +360,7 @@ def build_release(
             skipped.append((task.id, str(exc)[:200]))
             continue
 
+        partial_abstain_excluded.extend(dataset.partial_abstain_excluded)
         dataset.split(by="group", split_map=split_map_path, frozen=True, tolerance=None)
 
         rows: list[tuple[str, str]] = []
@@ -400,6 +406,15 @@ def build_release(
         ],
         "tasks": [task.task_id for task in tasks],
         "skipped_tasks": [{"task": task_id, "reason": reason} for task_id, reason in skipped],
+        "partial_abstain_excluded": [
+            {
+                "source": exclusion.source_id,
+                "task": exclusion.task_id,
+                "abstaining_labels": list(exclusion.abstaining_labels),
+                "rows_dropped": exclusion.rows_dropped,
+            }
+            for exclusion in partial_abstain_excluded
+        ],
     }
     release_json_text = json.dumps(release_json, indent=2, sort_keys=True) + "\n"
     (release_root / "RELEASE.json").write_text(release_json_text)
@@ -411,4 +426,5 @@ def build_release(
         tasks=tuple(tasks),
         skipped_tasks=tuple(skipped),
         never_eval_excluded=never_eval_excluded,
+        partial_abstain_excluded=tuple(partial_abstain_excluded),
     )

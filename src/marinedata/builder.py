@@ -36,7 +36,7 @@ from .scan import (
 )
 from .schema import Axis
 from .splitmap import load_split_map, resolve_splits
-from .task import TaskKind
+from .task import SourceFit, TaskKind, fit_source
 
 SUPERVISED_DEFAULT_RATIOS = {"train": 0.7, "val": 0.15, "test": 0.15}
 
@@ -118,6 +118,28 @@ unmapped vocabulary into the label index. Dense masks and point clouds carry cla
 the raster instead, which the index never touches."""
 
 
+@dataclass(frozen=True)
+class PartialAbstainExclusion:
+    """A source dropped from one task's axis entirely (WS-D S26).
+
+    Not a per-row abstention — this is what happens when a source's OWN native labels
+    on the task's axis are a mix of resolved and coarser-abstaining (see
+    ``SourceFit.partial_abstain``). Keeping the resolved subset would confound the label
+    with the source itself — a Roboflow set whose "Unhealthy" rows abstain from
+    `bleaching-condition` while its "Healthy" rows are kept would teach a model
+    "looks like Roboflow" rather than "looks healthy". So the source contributes no
+    rows to this task at all, and that is reported here rather than happening silently.
+    """
+
+    source_id: str
+    task_id: str
+    abstaining_labels: tuple[str, ...]
+    """The native labels responsible — the coarser ones, e.g. ``("Unhealthy",)``."""
+    rows_dropped: int
+    """The source's total item count (``Source.items``), since none of it reaches
+    this task once excluded."""
+
+
 @dataclass
 class Dataset:
     """A built, licence-cleared, harmonised training set."""
@@ -139,6 +161,10 @@ class Dataset:
     task_kind: TaskKind | None = None
     """The task's kind, when built with ``task_id``. Drives ``split()``'s default
     ratios — a self-supervised corpus doesn't want the supervised 70/15/15."""
+
+    partial_abstain_excluded: tuple[PartialAbstainExclusion, ...] = ()
+    """Sources dropped entirely from this task (WS-D S26) because their own native
+    labels on the task's axis were a mix of resolved and coarser-abstaining."""
 
     def __len__(self) -> int:
         return len(self.samples)
@@ -353,6 +379,9 @@ class DatasetBuilder:
         self.allow_unmapped = allow_unmapped
         self.task_id = task_id
         self.task_spec = registry.task(task_id) if task_id else None
+        self.partial_abstain_excluded: tuple[PartialAbstainExclusion, ...] = ()
+        """Set by :meth:`stream_samples`/:meth:`build_streaming` once run — see
+        ``Dataset.partial_abstain_excluded`` for the eager path's equivalent."""
 
         # A self-supervised task fixes no vocabulary, so there is nothing to build a
         # projector for — the label index falls back to whatever supervision the roots
@@ -406,6 +435,48 @@ class DatasetBuilder:
             )
         return allowed, denied
 
+    def _partial_abstain_fits(self, sources: list[Source]) -> dict[str, SourceFit]:
+        """Sources among ``sources`` whose native labels on the task's axis are a mix of
+        resolved and coarser-abstaining (WS-D S26).
+
+        Supervised tasks only — a self-supervised task fixes no vocabulary to abstain
+        against. A static crosswalk analysis, same as ``fit_source`` everywhere else in
+        this codebase, so it costs nothing to run before any data is read.
+        """
+        if self.projector is None:
+            return {}
+        fits: dict[str, SourceFit] = {}
+        for source in sources:
+            spec = source.loader
+            if spec is None or not spec.crosswalk_id:
+                continue
+            crosswalk = self.registry.crosswalk(spec.crosswalk_id)
+            if crosswalk.target_schema != self.schema_id:
+                continue
+            fit = fit_source(self.projector, crosswalk, source.id)
+            if fit.partial_abstain:
+                fits[source.id] = fit
+        return fits
+
+    def _drop_partial_abstain(
+        self, sources: list[Source]
+    ) -> tuple[list[Source], tuple[PartialAbstainExclusion, ...]]:
+        """Remove partial-abstain sources from ``sources``, reporting what was dropped."""
+        fits = self._partial_abstain_fits(sources)
+        if not fits:
+            return sources, ()
+        kept = [s for s in sources if s.id not in fits]
+        excluded = tuple(
+            PartialAbstainExclusion(
+                source_id=source_id,
+                task_id=self.task_id or "",
+                abstaining_labels=fit.coarser,
+                rows_dropped=self.registry.source(source_id).items or 0,
+            )
+            for source_id, fit in sorted(fits.items())
+        )
+        return kept, excluded
+
     def stream_samples(self) -> Iterator[Sample]:
         """Yield every permitted sample without materialising the corpus.
 
@@ -425,6 +496,8 @@ class DatasetBuilder:
                 f"These sources emit labels but have no crosswalk into "
                 f"'{self.schema_id}': {', '.join(unmapped)}."
             )
+
+        allowed, self.partial_abstain_excluded = self._drop_partial_abstain(allowed)
 
         for source in allowed:
             try:
@@ -505,6 +578,8 @@ class DatasetBuilder:
             else LabelIndex.from_counts(corpus.labels, schema, min_count=min_count)
         )
         allowed, denied = self._permitted()
+        excluded_ids = {e.source_id for e in self.partial_abstain_excluded}
+        allowed = [s for s in allowed if s.id not in excluded_ids]
         return StreamingDataset(
             builder=self,
             label_index=index,
@@ -520,6 +595,7 @@ class DatasetBuilder:
             assignment=assignment,
             by=by,
             task_kind=self.task_spec.kind if self.task_spec is not None else None,
+            partial_abstain_excluded=self.partial_abstain_excluded,
         )
 
     def build(self, *, min_count: int = 1) -> Dataset:
@@ -542,6 +618,8 @@ class DatasetBuilder:
                 f"Add a crosswalk (registry/crosswalks/), drop the source, or pass "
                 f"allow_unmapped=True if you genuinely want native labels."
             )
+
+        allowed, partial_abstain_excluded = self._drop_partial_abstain(allowed)
 
         samples: list[Sample] = []
         skipped: dict[str, str] = {}
@@ -587,6 +665,7 @@ class DatasetBuilder:
             skipped=skipped,
             projector=self.projector,
             task_kind=self.task_spec.kind if self.task_spec is not None else None,
+            partial_abstain_excluded=partial_abstain_excluded,
         )
 
 
@@ -615,6 +694,9 @@ class StreamingDataset:
     assignment: dict[str, SplitName]
     by: str = "site"
     task_kind: TaskKind | None = None
+    partial_abstain_excluded: tuple[PartialAbstainExclusion, ...] = ()
+    """Sources dropped entirely from this task (WS-D S26) — see
+    ``Dataset.partial_abstain_excluded``."""
 
     def __iter__(self) -> Iterator[Sample]:
         yield from self.builder.stream_samples()

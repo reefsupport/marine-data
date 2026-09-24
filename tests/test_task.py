@@ -20,7 +20,7 @@ from marinedata import Registry
 from marinedata.labelindex import IGNORE_INDEX, LabelIndex
 from marinedata.sample import LabelValue, Sample
 from marinedata.schema import Axis
-from marinedata.task import Coarser, TaskKind, TaskProjector, TaskSpec
+from marinedata.task import Coarser, TaskKind, TaskProjector, TaskSpec, fit_source
 
 COARSE = TaskSpec(
     id="t", schema_id="rs-benthic-v1", axis=Axis.TAXON, classes=("HC", "SC", "ABIOTIC")
@@ -172,6 +172,50 @@ def test_contributing_sources_are_reported_without_duplicates(registry: Registry
     ids = [fit.source_id for _, fit in pairs]
     assert len(ids) == len(set(ids)), f"duplicate source ids: {ids}"
     assert all(source.id == fit.source_id for source, fit in pairs)
+
+
+# ── partial-abstain sources (WS-D S26) ──────────────────────────────────
+
+
+def test_partial_abstain_source_excluded_from_bleaching_condition(registry: Registry) -> None:
+    """⭐ The confound this rule exists to catch: Roboflow's "Healthy" rows resolve to
+    HEALTHY on the 6-way `bleaching-condition` scale while its "Unhealthy" rows abstain
+    (too coarse to place on PALE/BLEACHED/DISEASED/RECENTLY_DEAD/OLD_DEAD). Keeping only
+    the resolved subset would teach "looks like Roboflow" rather than "looks healthy" —
+    so the fit must flag the whole source as internally inconsistent for this task, with
+    the abstaining label named.
+    """
+    projector = registry.projector_for("bleaching-condition")
+    crosswalk = registry.crosswalk("roboflow-bleaching-condition")
+    fit = fit_source(projector, crosswalk, "roboflow-coral-reef-classification-v3i")
+    assert fit.reachable == ("HEALTHY",)
+    assert fit.coarser == ("Unhealthy",)
+    assert fit.partial_abstain
+
+
+def test_partial_abstain_source_fully_supervised_in_coral_health_binary(
+    registry: Registry,
+) -> None:
+    """The same source and crosswalk, at the level it actually annotated: both native
+    labels resolve onto {HEALTHY, UNHEALTHY}, so nothing abstains."""
+    projector = registry.projector_for("coral-health-binary")
+    crosswalk = registry.crosswalk("roboflow-bleaching-condition")
+    fit = fit_source(projector, crosswalk, "roboflow-coral-reef-classification-v3i")
+    assert set(fit.reachable) == {"HEALTHY", "UNHEALTHY"}
+    assert fit.coarser == ()
+    assert not fit.partial_abstain
+
+
+def test_source_with_fully_resolving_labels_is_unaffected(registry: Registry) -> None:
+    """A source whose native labels all resolve on this axis (bleached/non_bleached ->
+    BLEACHED/HEALTHY, both real `bleaching-condition` classes) is untouched by the rule —
+    it has nothing to abstain on."""
+    projector = registry.projector_for("bleaching-condition")
+    crosswalk = registry.crosswalk("reef-support-bleaching-condition")
+    fit = fit_source(projector, crosswalk, "reef-support-bleaching")
+    assert set(fit.reachable) == {"HEALTHY", "BLEACHED"}
+    assert fit.coarser == ()
+    assert not fit.partial_abstain
 
 
 # ── self-supervised tasks ────────────────────────────────────────────────

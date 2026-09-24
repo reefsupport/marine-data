@@ -138,6 +138,13 @@ def _cmd_release_build(args: argparse.Namespace) -> int:
         print(f"  {task.task_id}: {len(task.rows)} images")
     for task_id, reason in result.skipped_tasks:
         print(f"  skipped {task_id}: {reason}", file=sys.stderr)
+    for exclusion in result.partial_abstain_excluded:
+        labels = ", ".join(exclusion.abstaining_labels)
+        print(
+            f"  partial-abstain: {exclusion.source_id} excluded from "
+            f"{exclusion.task_id} ({labels}; {exclusion.rows_dropped} rows dropped)",
+            file=sys.stderr,
+        )
     return 0
 
 

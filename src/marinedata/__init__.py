@@ -17,7 +17,7 @@ The registry is metadata, not legal advice. See ``docs/LEGAL.md``.
 
 from __future__ import annotations
 
-from .builder import Dataset, DatasetBuilder
+from .builder import Dataset, DatasetBuilder, PartialAbstainExclusion
 from .enums import (
     AccessMethod,
     AnnotationKind,
@@ -90,6 +90,7 @@ __all__ = [
     "MirrorTarget",
     "MirrorViolation",
     "Modality",
+    "PartialAbstainExclusion",
     "Profile",
     "Projection",
     "Provenance",
