@@ -297,7 +297,8 @@ def test_bleaching_mask_pixel_values_harmonise_through_real_crosswalk(
 
     rows = [
         StagedImage(stem="img0", partition="UNAL_BLEACHING_TAYRONA",
-                    upstream_path="orig/0.jpg", upstream_split=None, width=10, height=10),
+                    upstream_path="orig/0.jpg", upstream_split=None, width=10, height=10,
+                    split_group="rs-colombia/UNAL_BLEACHING_TAYRONA/CB1"),
     ]
     root = _stage(tmp_path, rows)
     _touch_image(root / "labels" / "masks" / "UNAL_BLEACHING_TAYRONA" / "img0.png")
