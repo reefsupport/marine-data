@@ -73,9 +73,7 @@ def _runs_to_mask(runs: Sequence[int], h: int, w: int, *, label: str):
         idx += run
         value ^= 1
     if idx != total:
-        raise LoaderError(
-            f"{label}: RLE counts sum to {idx} pixels, expected {total} ({h}x{w})"
-        )
+        raise LoaderError(f"{label}: RLE counts sum to {idx} pixels, expected {total} ({h}x{w})")
     return flat.reshape((h, w), order="F")
 
 

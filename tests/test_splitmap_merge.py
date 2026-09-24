@@ -92,9 +92,7 @@ def test_merge_agreeing_with_prior_map_inherits_split(tmp_path: Path) -> None:
     """If a prior map already agrees across every persisted member of a component, the
     whole (now-merged) component inherits that split rather than re-allocating."""
     out = tmp_path / "SPLIT_MAP.json"
-    save_split_map(
-        out, SplitMap(by="group", seed=0, ratios=RATIOS, assignments={"g/a": "test"})
-    )
+    save_split_map(out, SplitMap(by="group", seed=0, ratios=RATIOS, assignments={"g/a": "test"}))
     rows = [("sha1", "g/a", None), ("sha1", "g/b", None), ("sha2", "g/c", None)]
     counts, _, merge_info = rows_to_counts(rows)
 

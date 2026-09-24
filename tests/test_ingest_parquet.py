@@ -385,4 +385,4 @@ def test_finish_staging_default_geometries_unchanged(tmp_path: Path) -> None:
     ]
 
     source_payload = json.loads((root / "SOURCE.json").read_text(encoding="utf-8"))
-    assert source_payload["_ingest"]["mask_encoder"] == "pillow/11.0.0"
+    assert source_payload["_ingest"]["mask_encoder"] == "pillow/12.3.0"

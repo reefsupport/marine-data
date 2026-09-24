@@ -85,9 +85,7 @@ class CoralsegRMaskLoader(_HarmonizingLoader):
             if mask is None:
                 if self.partial:
                     continue  # sampled sets are legitimately incomplete
-                raise LoaderError(
-                    f"{self.source.id}: no mask for image '{image.name}' in {masks}"
-                )
+                raise LoaderError(f"{self.source.id}: no mask for image '{image.name}' in {masks}")
 
             label = f"{self.source.id}/{image.name}"
             dest = converted / f"{image.stem}.png"

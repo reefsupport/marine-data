@@ -241,9 +241,7 @@ def add_release_subparser(sub: argparse._SubParsersAction) -> None:
         default="70/15/15",
         help="'/'-separated, only used with --generate-split-map",
     )
-    p_build.add_argument(
-        "--seed", type=int, default=0, help="Only used with --generate-split-map"
-    )
+    p_build.add_argument("--seed", type=int, default=0, help="Only used with --generate-split-map")
     p_build.add_argument(
         "--min-groups",
         type=int,

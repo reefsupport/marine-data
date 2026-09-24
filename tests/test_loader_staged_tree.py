@@ -49,8 +49,14 @@ def test_sample_count(tmp_path: Path) -> None:
     root = _stage(
         tmp_path,
         [
-            StagedImage(stem=f"img{i}", partition="default", upstream_path=f"orig/{i}.jpg",
-                        upstream_split=None, width=10, height=10)
+            StagedImage(
+                stem=f"img{i}",
+                partition="default",
+                upstream_path=f"orig/{i}.jpg",
+                upstream_split=None,
+                width=10,
+                height=10,
+            )
             for i in range(3)
         ],
     )
@@ -96,16 +102,40 @@ def test_split_group_pass_through(tmp_path: Path) -> None:
 
 def test_points_join(tmp_path: Path) -> None:
     rows = [
-        StagedImage(stem="img0", partition="default", upstream_path="orig/0.jpg",
-                    upstream_split=None, width=10, height=10),
-        StagedImage(stem="img1", partition="default", upstream_path="orig/1.jpg",
-                    upstream_split=None, width=10, height=10),
+        StagedImage(
+            stem="img0",
+            partition="default",
+            upstream_path="orig/0.jpg",
+            upstream_split=None,
+            width=10,
+            height=10,
+        ),
+        StagedImage(
+            stem="img1",
+            partition="default",
+            upstream_path="orig/1.jpg",
+            upstream_split=None,
+            width=10,
+            height=10,
+        ),
     ]
     points = [
-        PointRow(stem="img0", partition="default", row=1, col=2, label="Hard Coral",
-                  schema_id="fixture-schema"),
-        PointRow(stem="img0", partition="default", row=3, col=4, label="Soft Coral",
-                  schema_id="fixture-schema"),
+        PointRow(
+            stem="img0",
+            partition="default",
+            row=1,
+            col=2,
+            label="Hard Coral",
+            schema_id="fixture-schema",
+        ),
+        PointRow(
+            stem="img0",
+            partition="default",
+            row=3,
+            col=4,
+            label="Soft Coral",
+            schema_id="fixture-schema",
+        ),
     ]
     root = _stage(tmp_path, rows, points=points)
     samples = {s.key: s for s in build_loader(make_source("staged-tree"), root)}
@@ -125,10 +155,22 @@ def test_image_labels_join(tmp_path: Path) -> None:
     points do — one row per positive class, ``meta["native_image_labels"]`` recorded,
     absent from an image with no rows (WS-D S23)."""
     rows = [
-        StagedImage(stem="img0", partition="default", upstream_path="orig/0.jpg",
-                    upstream_split=None, width=10, height=10),
-        StagedImage(stem="img1", partition="default", upstream_path="orig/1.jpg",
-                    upstream_split=None, width=10, height=10),
+        StagedImage(
+            stem="img0",
+            partition="default",
+            upstream_path="orig/0.jpg",
+            upstream_split=None,
+            width=10,
+            height=10,
+        ),
+        StagedImage(
+            stem="img1",
+            partition="default",
+            upstream_path="orig/1.jpg",
+            upstream_split=None,
+            width=10,
+            height=10,
+        ),
     ]
     image_labels = [
         ImageLabelRow(
@@ -150,8 +192,14 @@ def test_image_labels_conflict_on_same_axis_is_not_supervised(tmp_path: Path) ->
     leave that axis unsupervised (counted + reported in ``meta``), never
     last-write-wins (WS-D S24 D2)."""
     rows = [
-        StagedImage(stem="img0", partition="default", upstream_path="orig/0.jpg",
-                    upstream_split=None, width=10, height=10),
+        StagedImage(
+            stem="img0",
+            partition="default",
+            upstream_path="orig/0.jpg",
+            upstream_split=None,
+            width=10,
+            height=10,
+        ),
     ]
     image_labels = [
         ImageLabelRow(
@@ -175,8 +223,14 @@ def test_missing_image_raises(tmp_path: Path) -> None:
     root = _stage(
         tmp_path,
         [
-            StagedImage(stem="ghost", partition="default", upstream_path="orig/ghost.jpg",
-                        upstream_split=None, width=10, height=10)
+            StagedImage(
+                stem="ghost",
+                partition="default",
+                upstream_path="orig/ghost.jpg",
+                upstream_split=None,
+                width=10,
+                height=10,
+            )
         ],
         write_images=False,
     )
@@ -189,10 +243,22 @@ def test_missing_image_skipped_when_partial(tmp_path: Path) -> None:
     root = _stage(
         tmp_path,
         [
-            StagedImage(stem="ghost", partition="default", upstream_path="orig/ghost.jpg",
-                        upstream_split=None, width=10, height=10),
-            StagedImage(stem="real", partition="default", upstream_path="orig/real.jpg",
-                        upstream_split=None, width=10, height=10),
+            StagedImage(
+                stem="ghost",
+                partition="default",
+                upstream_path="orig/ghost.jpg",
+                upstream_split=None,
+                width=10,
+                height=10,
+            ),
+            StagedImage(
+                stem="real",
+                partition="default",
+                upstream_path="orig/real.jpg",
+                upstream_split=None,
+                width=10,
+                height=10,
+            ),
         ],
         write_images=False,
     )
@@ -218,8 +284,15 @@ def test_null_split_group_raises_when_source_declares_a_rule(tmp_path: Path) -> 
     root = _stage(
         tmp_path,
         [
-            StagedImage(stem="img0", partition="default", upstream_path="orig/0.jpg",
-                        upstream_split=None, width=10, height=10, split_group=None)
+            StagedImage(
+                stem="img0",
+                partition="default",
+                upstream_path="orig/0.jpg",
+                upstream_split=None,
+                width=10,
+                height=10,
+                split_group=None,
+            )
         ],
     )
     rule = SplitGroupRule(pattern=r"^(.+?)_jpg\.rf\.", match_field="stem", template="rf/{group}")
@@ -235,8 +308,15 @@ def test_null_split_group_ok_when_source_has_no_explicit_rule(tmp_path: Path) ->
     root = _stage(
         tmp_path,
         [
-            StagedImage(stem="img0", partition="default", upstream_path="orig/0.jpg",
-                        upstream_split=None, width=10, height=10, split_group=None)
+            StagedImage(
+                stem="img0",
+                partition="default",
+                upstream_path="orig/0.jpg",
+                upstream_split=None,
+                width=10,
+                height=10,
+                split_group=None,
+            )
         ],
     )
     samples = list(build_loader(make_source("staged-tree"), root))
@@ -248,15 +328,19 @@ def test_mask_values_param_emitted_for_dense_mask(tmp_path: Path) -> None:
     pixel values mean — this is that path, mirroring the shape
     ``DualConditionMaskLoader`` builds from ``positive_label``/``negative_label``."""
     rows = [
-        StagedImage(stem="img0", partition="default", upstream_path="orig/0.jpg",
-                    upstream_split=None, width=10, height=10),
+        StagedImage(
+            stem="img0",
+            partition="default",
+            upstream_path="orig/0.jpg",
+            upstream_split=None,
+            width=10,
+            height=10,
+        ),
     ]
     root = _stage(tmp_path, rows)
     _touch_image(root / "labels" / "masks" / "default" / "img0.png")
 
-    source = make_source(
-        "staged-tree", {"mask_values": "0=unlabelled,1=bleached,2=non_bleached"}
-    )
+    source = make_source("staged-tree", {"mask_values": "0=unlabelled,1=bleached,2=non_bleached"})
     sample = next(iter(build_loader(source, root)))
 
     assert sample.meta["mask_is_dense"] is True
@@ -271,8 +355,14 @@ def test_mask_values_absent_when_not_declared(tmp_path: Path) -> None:
     """A staged-tree source with a mask but no declared ``mask_values`` param keeps
     behaving exactly as before this change — ``mask_is_dense`` only."""
     rows = [
-        StagedImage(stem="img0", partition="default", upstream_path="orig/0.jpg",
-                    upstream_split=None, width=10, height=10),
+        StagedImage(
+            stem="img0",
+            partition="default",
+            upstream_path="orig/0.jpg",
+            upstream_split=None,
+            width=10,
+            height=10,
+        ),
     ]
     root = _stage(tmp_path, rows)
     _touch_image(root / "labels" / "masks" / "default" / "img0.png")
@@ -296,9 +386,15 @@ def test_bleaching_mask_pixel_values_harmonise_through_real_crosswalk(
     assert mask_values == "0=unlabelled,1=bleached,2=non_bleached"
 
     rows = [
-        StagedImage(stem="img0", partition="UNAL_BLEACHING_TAYRONA",
-                    upstream_path="orig/0.jpg", upstream_split=None, width=10, height=10,
-                    split_group="rs-colombia/UNAL_BLEACHING_TAYRONA/CB1"),
+        StagedImage(
+            stem="img0",
+            partition="UNAL_BLEACHING_TAYRONA",
+            upstream_path="orig/0.jpg",
+            upstream_split=None,
+            width=10,
+            height=10,
+            split_group="rs-colombia/UNAL_BLEACHING_TAYRONA/CB1",
+        ),
     ]
     root = _stage(tmp_path, rows)
     _touch_image(root / "labels" / "masks" / "UNAL_BLEACHING_TAYRONA" / "img0.png")

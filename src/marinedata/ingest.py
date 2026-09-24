@@ -308,7 +308,7 @@ def _stage_with_plan(
         "ingest_version": 1,
         "stem_rule": "basename-no-extension",
         "partition_rule": f"literal:{plan.partition}",
-        "mask_encoder": "pillow/11.0.0",
+        "mask_encoder": "pillow/12.3.0",
         "upstream": [{"url": sample_url, "sha256": archive_sha256, "bytes": archive_bytes}],
         "fetched_uri": sample_url,
         "gate": {"profile": profile.id, "allowed": decision.allowed, "reason": decision.reason},
