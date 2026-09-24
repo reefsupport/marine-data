@@ -151,10 +151,16 @@ def _fetch_s3_manifest(
        before a single file it names is trusted.
     2. Parse it with the repo's own :func:`marinedata.checksums.parse_checksums` (the
        one place this ``<sha256>  <relpath>`` format is read) and fetch
-       ``metadata.parquet`` plus everything under ``labels/`` in full, then the first
-       ``limit`` remaining files (the images) in manifest order — sorted-path order,
-       the same every run, so a ``--limit`` sample is reproducible rather than whatever
-       a listing's pagination happened to hand back.
+       ``metadata.parquet`` plus the first ``limit`` remaining files (the images) in
+       manifest order — sorted-path order, the same every run, so a ``--limit`` sample
+       is reproducible rather than whatever a listing's pagination happened to hand
+       back. A file under ``labels/`` is fetched only if its filename stem matches one
+       of the sampled images (``images/default/<stem>.jpg`` <-> ``labels/masks/<stem>.png``);
+       a label file whose stem matches no image at all — a shared manifest like
+       reefolution's small ``labels/points.parquet`` — is treated like ``metadata.parquet``
+       and always fetched in full. Per-image mask sources like coralscop-masks-rs have
+       ~39k label files for a handful of sampled images, and fetching every one in full
+       made ``verify --limit N`` take an hour instead of seconds.
     3. Verify each downloaded file's sha256 against the manifest before writing it, so
        a partial or corrupted transfer raises naming the exact file rather than
        silently staging bad bytes.
@@ -171,9 +177,24 @@ def _fetch_s3_manifest(
         )
 
     digests = parse_checksums(manifest_bytes.decode("utf-8"))
-    always = [rel for rel in digests if rel == "metadata.parquet" or rel.startswith("labels/")]
-    rest = [rel for rel in digests if rel not in always]
-    wanted = always + rest[:limit]
+    metadata = [rel for rel in digests if rel == "metadata.parquet"]
+    rest = [rel for rel in digests if rel != "metadata.parquet" and not rel.startswith("labels/")]
+    image_stems = {Path(rel).stem for rel in rest}
+
+    labels_by_stem: dict[str, list[str]] = {}
+    shared_labels: list[str] = []
+    for rel in digests:
+        if not rel.startswith("labels/"):
+            continue
+        stem = Path(rel).stem
+        if stem in image_stems:
+            labels_by_stem.setdefault(stem, []).append(rel)
+        else:
+            shared_labels.append(rel)
+
+    sampled = rest[:limit]
+    sampled_labels = [rel for path in sampled for rel in labels_by_stem.get(Path(path).stem, [])]
+    wanted = metadata + shared_labels + sampled_labels + sampled
 
     for relative in wanted:
         key = f"{prefix}{relative}"

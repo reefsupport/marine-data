@@ -156,6 +156,56 @@ def test_limit_subset_is_deterministic(tmp_path: Path, monkeypatch: pytest.Monke
         assert not (root / "images" / "c.jpg").exists()
 
 
+_DENSE_MASK_FILES = {
+    "metadata.parquet": b"METADATA",
+    **{f"images/default/img{i:02d}.jpg": f"IMG{i}".encode() for i in range(10)},
+    **{f"labels/masks/img{i:02d}.png": f"MASK{i}".encode() for i in range(10)},
+}
+
+
+def test_limit_fetches_only_the_sampled_images_labels(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """A dense-mask source (10 images, 10 per-image labels): `--limit 2` must fetch
+    exactly the 2 sampled images' labels, not all 10 (the coralscop-masks-rs bug)."""
+    manifest_bytes, root_digest = _build_manifest(_DENSE_MASK_FILES)
+    source = _pinned_source(root_digest)
+    calls: list[str] = []
+    monkeypatch.setattr(
+        fetchers_remote, "_get", _fake_get(manifest_bytes, _DENSE_MASK_FILES, calls)
+    )
+
+    result = fetchers_remote.fetch_s3(source, tmp_path, limit=2)
+
+    assert result.items == 5  # metadata + 2 sampled images + their 2 matching labels
+    for i in range(2):
+        assert (tmp_path / "images" / "default" / f"img{i:02d}.jpg").exists()
+        assert (tmp_path / "labels" / "masks" / f"img{i:02d}.png").exists()
+    for i in range(2, 10):
+        assert not (tmp_path / "images" / "default" / f"img{i:02d}.jpg").exists()
+        assert not (tmp_path / "labels" / "masks" / f"img{i:02d}.png").exists()
+
+
+def test_no_limit_fetches_all_images_and_labels(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """A limit covering every image (i.e. no effective truncation) fetches all labels
+    too, since every image's stem is sampled — unchanged end-to-end behaviour."""
+    manifest_bytes, root_digest = _build_manifest(_DENSE_MASK_FILES)
+    source = _pinned_source(root_digest)
+    calls: list[str] = []
+    monkeypatch.setattr(
+        fetchers_remote, "_get", _fake_get(manifest_bytes, _DENSE_MASK_FILES, calls)
+    )
+
+    result = fetchers_remote.fetch_s3(source, tmp_path, limit=10)
+
+    assert result.items == 21  # metadata + 10 images + 10 labels
+    for i in range(10):
+        assert (tmp_path / "images" / "default" / f"img{i:02d}.jpg").exists()
+        assert (tmp_path / "labels" / "masks" / f"img{i:02d}.png").exists()
+
+
 def test_unpinned_source_still_takes_the_list_path(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
