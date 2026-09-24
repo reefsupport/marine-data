@@ -21,33 +21,41 @@ sources:
       method: licence-file
     access:
       method: s3
-      uri: s3://rs-storage-open/benthic_datasets/mask_labels/reef_support
+      uri: s3://rs-storage-open/sources/reef-support-benthic-own/2026-08
+      notes: "rs-storage-open is a public bucket — anonymously fetchable, no credentials needed"
       params:
         bucket: rs-storage-open
         endpoint: hel1.your-objectstorage.com
         region: hel1
-        prefix: benthic_datasets/mask_labels/reef_support/SEAFLOWER_BOLIVAR/
-        credentials_env: S3
+        prefix: sources/reef-support-benthic-own/2026-08/
+      size_bytes: 4092140433
+    checksums:
+      version: "2026-08"
+      root_digest: f06d84ad4bc3ccb231610b0bf76507f8751bc958f0a917c2399737e9af9a9a52
+      files: 2501
+      size_bytes: 4091820228
     modalities: [image]
     capabilities:
       - benthic-segmentation
       - coral-instance-segmentation
       - general-pretraining
     loader:
-      layout: labelbox-rgb
+      layout: staged-tree
       schema_id: reef-support-labelbox
       crosswalk_id: reef-support-labelbox
-      verified_on: 2026-09-23
+      verified_on: 2026-09-24
       verified_note: >
-        WSD S6x/S7a: masks_stitched/ is a locally-rendered 5-colour RGB raster, not an
-        indexed one - labelbox-rgb decodes the fixed fill+outline LUT and cross-checks
-        the result against export-result.ndjson (prototype-verified on 540/540 stitched
-        masks). Site-partitioned - each site directory holds images/ + masks_stitched/ +
-        one export-result.ndjson.
-      params:
-        annotations: export-result.ndjson
-        images_dir: images
-        stitched_dir: masks_stitched
+        PINNED 2026-09-24 (S8e): `access.uri`/`version` now point at the uploaded
+        staged tree `sources/reef-support-benthic-own/2026-08/` (2,502 objects,
+        4,092,140,433 B), pinned by `checksums.root_digest` (2,501 files,
+        4,091,820,228 B). `access.params.credentials_env` dropped: `rs-storage-open`
+        allows anonymous `GetObject` on a known key. Layout switched from
+        labelbox-rgb to staged-tree — this tree was produced by this repo's own
+        staging writers (`images/<site>/`, `metadata.parquet`, `labels/masks/`,
+        `CHECKSUMS.sha256`), the shape `StagedTreeLoader` reads with no params.
+        VERIFIED 2026-09-24: `.venv/bin/marinedata verify reef-support-benthic-own`
+        passes via the manifest-driven fetch path (`fetchers_remote._fetch_s3_manifest`),
+        which never lists the bucket.
     items: 1250
     items_note: >
       The only imagery whose pixels we own. THE moat, and it is small.

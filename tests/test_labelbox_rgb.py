@@ -94,9 +94,11 @@ def test_unknown_colour_raises(tmp_path: Path) -> None:
 
 
 def test_registry_sources_resolve_to_labelbox_rgb() -> None:
-    """Both Reef Support sources declare the new converter and it actually resolves."""
+    """The remaining Reef Support labelbox-rgb source declares the converter and it
+    actually resolves — `reef-support-benthic-own` moved to `staged-tree` once its
+    staged tree was pinned (WSD S8e), so it is no longer in this list."""
     registry = Registry.load()
-    for source_id in ("reef-support-benthic-own", "reef-support-seaview-labels"):
+    for source_id in ("reef-support-seaview-labels",):
         source = registry.source(source_id)
         assert source.loader is not None
         assert source.loader.layout == "labelbox-rgb"
