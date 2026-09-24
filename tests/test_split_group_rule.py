@@ -80,6 +80,59 @@ def test_source_split_group_for_delegates_to_its_rule() -> None:
     )
 
 
+def test_benthic_own_station_bay_rule() -> None:
+    """`reef-support-benthic-own`'s split_group moved from site (4 groups) to
+    station/bay (31 groups, WS-D S22 / R3 Q9 / 7l): known stems from each of the
+    four Colombian sites must land in the expected `rs-colombia/<site>/<station>`
+    group, and the pattern must not raise on any of them (WS-D S22, template uses
+    the per-row `partition`, not the regex, to disambiguate the site)."""
+    from marinedata.registry import Registry
+
+    source = Registry.load().source("reef-support-benthic-own")
+    cases = [
+        ("20220912_AnB_CB10_103_", "SEAFLOWER_BOLIVAR", "rs-colombia/SEAFLOWER_BOLIVAR/CB10"),
+        ("P9150320", "SEAFLOWER_BOLIVAR", "rs-colombia/SEAFLOWER_BOLIVAR/P9150"),
+        ("E0_T1_C10_Corr_30sep22", "SEAFLOWER_COURTOWN", "rs-colombia/SEAFLOWER_COURTOWN/E0"),
+        (
+            "C10_BC_PM_T1_29nov24_CDaza_corr",
+            "UNAL_BLEACHING_TAYRONA",
+            "rs-colombia/UNAL_BLEACHING_TAYRONA/BC",
+        ),
+        ("G0088299", "TETES_PROVIDENCIA", "rs-colombia/TETES_PROVIDENCIA/G"),
+    ]
+    for stem, partition, expected in cases:
+        assert (
+            source.split_group_for(stem=stem, upstream_path=f"x/{stem}", partition=partition)
+            == expected
+        )
+
+    # Group count must match R3/7l: Bolivar 7, Courtown 19, Tayrona 4, Tetes 1 = 31.
+    # Best-effort against the real local staged tree; skips where that tree is absent
+    # (e.g. a fresh checkout) rather than failing the suite on missing local data.
+    staged = (
+        Path.home() / "dev/reefsupport/data/_stage/sources/reef-support-benthic-own/2026-08"
+        "/metadata.parquet"
+    )
+    if not staged.exists():
+        pytest.skip(f"local staged tree not present at {staged}")
+    pq = pytest.importorskip("pyarrow.parquet")
+    table = pq.read_table(staged)
+    groups_by_partition: dict[str, set[str]] = {}
+    for stem, partition in zip(
+        table.column("stem").to_pylist(), table.column("partition").to_pylist(), strict=True
+    ):
+        group = source.split_group_for(stem=stem, upstream_path=f"x/{stem}", partition=partition)
+        groups_by_partition.setdefault(partition, set()).add(group)
+    counts = {k: len(v) for k, v in groups_by_partition.items()}
+    assert counts == {
+        "SEAFLOWER_BOLIVAR": 7,
+        "SEAFLOWER_COURTOWN": 19,
+        "UNAL_BLEACHING_TAYRONA": 4,
+        "TETES_PROVIDENCIA": 1,
+    }
+    assert sum(counts.values()) == 31
+
+
 def test_split_group_rule_matches_metadata_column(tmp_path: Path) -> None:
     """The value ``source.split_group_for(...)`` computes for a staged row must be the
     exact value that lands in ``metadata.parquet``'s ``split_group`` column — no

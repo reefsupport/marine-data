@@ -6,7 +6,7 @@
 sources:
   - id: reef-support-benthic-own
     name: Reef Support benthic instance masks — own imagery (Colombia)
-    version: "2026-08"
+    version: "2026-09-24"
     description: >
       Expert Labelbox instance masks over four Colombian sites where BOTH the imagery and
       the annotations are ours: Tayrona (658), Seaflower Bolivar (246), Seaflower Courtown
@@ -21,19 +21,19 @@ sources:
       method: licence-file
     access:
       method: s3
-      uri: s3://rs-storage-open/sources/reef-support-benthic-own/2026-08
+      uri: s3://rs-storage-open/sources/reef-support-benthic-own/2026-09-24
       notes: "rs-storage-open is a public bucket — anonymously fetchable, no credentials needed"
       params:
         bucket: rs-storage-open
         endpoint: hel1.your-objectstorage.com
         region: hel1
-        prefix: sources/reef-support-benthic-own/2026-08/
-      size_bytes: 4092140433
+        prefix: sources/reef-support-benthic-own/2026-09-24/
+      size_bytes: 4092140695
     checksums:
-      version: "2026-08"
-      root_digest: f06d84ad4bc3ccb231610b0bf76507f8751bc958f0a917c2399737e9af9a9a52
+      version: "2026-09-24"
+      root_digest: e8c6506ea2abda4047b2fece85989f774cac849e85712071e919e72dbba0494b
       files: 2501
-      size_bytes: 4091820228
+      size_bytes: 4091820490
     modalities: [image]
     capabilities:
       - benthic-segmentation
@@ -45,13 +45,18 @@ sources:
       crosswalk_id: reef-support-labelbox
       verified_on: 2026-09-24
       verified_note: >
-        PINNED 2026-09-24 (S8e): `access.uri`/`version` now point at the uploaded
-        staged tree `sources/reef-support-benthic-own/2026-08/` (2,502 objects,
-        4,092,140,433 B), pinned by `checksums.root_digest` (2,501 files,
-        4,091,820,228 B). `access.params.credentials_env` dropped: `rs-storage-open`
-        allows anonymous `GetObject` on a known key. Layout switched from
-        labelbox-rgb to staged-tree — this tree was produced by this repo's own
-        staging writers (`images/<site>/`, `metadata.parquet`, `labels/masks/`,
+        PINNED 2026-08-17 (S8e), RE-PINNED 2026-09-24 (WS-D S22): `access.uri`/`version`
+        now point at the re-staged tree `sources/reef-support-benthic-own/2026-09-24/`
+        (2,502 objects, 4,092,140,695 B), pinned by `checksums.root_digest` (2,501
+        files, 4,091,820,490 B). Images/masks are byte-identical to the prior
+        `2026-08/` pin (moved by server-side `copy_object`, no pixel re-upload,
+        reused digests); only `metadata.parquet`'s `split_group` column and
+        `CHECKSUMS.sha256` changed, for the station/bay `split_group` rule below.
+        The old `2026-08/` prefix (2,502 objects, 4,092,140,433 B) is left in the
+        open bucket pending a separate delete step. `access.params.credentials_env`
+        dropped: `rs-storage-open` allows anonymous `GetObject` on a known key.
+        Layout is staged-tree — this tree was produced by this repo's own staging
+        writers (`images/<site>/`, `metadata.parquet`, `labels/masks/`,
         `CHECKSUMS.sha256`), the shape `StagedTreeLoader` reads with no params.
         VERIFIED 2026-09-24: `.venv/bin/marinedata verify reef-support-benthic-own`
         passes via the manifest-driven fetch path (`fetchers_remote._fetch_s3_manifest`),
@@ -89,15 +94,25 @@ sources:
         - "CRITICAL SUPERVISION HOLE: this corpus labels BIOTA only. It contains no Caribbean substrate ground truth of any kind - no sand, rubble, pavement, turf or CCA. Fixing the ontology makes soft coral EXPRESSIBLE but supplies no substrate examples, so it cannot on its own repair the ~32% rubble / ~50% unknown-hard-substrate collapse. That needs funded substrate annotation."
         - "Soft coral is ~24% of all our Caribbean/Atlantic annotations and absent from every major public reef schema."
     split_group:
-      pattern: 'reef_support/([^/]+)/'
-      match_field: upstream_path
-      template: "rs-colombia/{group}"
+      pattern: '(CB\d+|E\d+|BC|Gy|PB|Gr|P9150|G)'
+      match_field: stem
+      template: "rs-colombia/{partition}/{group}"
     notes: >
       OWNERSHIP CONFIRMED 2026-09-23 (WS-D decision): this entry owns all four
       Colombian `mask_labels/reef_support/` directories (Tayrona, Seaflower Bolivar,
       Seaflower Courtown, Tetes Providencia) outright — both pixels and annotations
       are ours. `reef-support-seaview-labels` no longer claims any of these four; it
       is scoped to the SEAVIEW_* directories only.
+      RE-STAGED 2026-09-24 (WS-D S22, R3 Q9 + 7l): `split_group` moved from site-level
+      (`rs-colombia/<site>`, 4 groups) to station/bay (`rs-colombia/<site>/<station>`,
+      31 groups: Bolivar 7 — CB8/CB9/CB10/CB11/CB12/CB14 + one `P9150*` pair grouped
+      together (no station code in those two stems) — Courtown 19 (E0..E21, 19 of 22
+      present), Tayrona 4 (bays BC/Gy/PB/Gr), Tetes 1
+      (one GoPro run, no station code in the stem). Site-level held out one Tetes
+      GoPro run as `test` (52% of all SC pixels, 4% of HC); station/bay flattens the
+      HC share across splits (22.9/22.1/21.5%) at the cost of Bolivar/Courtown
+      stations straddling all 3 splits. `reef-support-seaview-labels`'s bleaching set
+      and `rs_labelled` (via `images_from`) share this rule and pick it up unstaged.
     tags: [moat, caribbean, octocoral, biota-only]
 
   - id: reef-support-seaview-labels
