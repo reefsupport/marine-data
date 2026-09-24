@@ -186,7 +186,7 @@ def test_partial_abstain_source_excluded_from_bleaching_condition(registry: Regi
     the abstaining label named.
     """
     projector = registry.projector_for("bleaching-condition")
-    crosswalk = registry.crosswalk("roboflow-bleaching-condition")
+    crosswalk = registry.crosswalk("roboflow-bleaching-condition-hu")
     fit = fit_source(projector, crosswalk, "roboflow-coral-reef-classification-v3i")
     assert fit.reachable == ("HEALTHY",)
     assert fit.coarser == ("Unhealthy",)
@@ -199,7 +199,7 @@ def test_partial_abstain_source_fully_supervised_in_coral_health_binary(
     """The same source and crosswalk, at the level it actually annotated: both native
     labels resolve onto {HEALTHY, UNHEALTHY}, so nothing abstains."""
     projector = registry.projector_for("coral-health-binary")
-    crosswalk = registry.crosswalk("roboflow-bleaching-condition")
+    crosswalk = registry.crosswalk("roboflow-bleaching-condition-hu")
     fit = fit_source(projector, crosswalk, "roboflow-coral-reef-classification-v3i")
     assert set(fit.reachable) == {"HEALTHY", "UNHEALTHY"}
     assert fit.coarser == ()

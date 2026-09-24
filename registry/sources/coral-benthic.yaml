@@ -801,7 +801,7 @@ sources:
     loader:
       layout: staged-tree
       schema_id: roboflow-bleaching-native
-      crosswalk_id: roboflow-bleaching-condition
+      crosswalk_id: roboflow-bleaching-condition-hb
       verified_on: 2026-09-24
       verified_note: >
         SWITCHED 2026-09-24 (WS-D S25): layout moved from `metadata-only` to
@@ -888,7 +888,7 @@ sources:
     loader:
       layout: staged-tree
       schema_id: roboflow-bleaching-native
-      crosswalk_id: roboflow-bleaching-condition
+      crosswalk_id: roboflow-bleaching-condition-hb
       verified_on: 2026-09-24
       verified_note: >
         SWITCHED 2026-09-24 (WS-D S25): layout moved from `metadata-only` to
@@ -1059,7 +1059,7 @@ sources:
     loader:
       layout: staged-tree
       schema_id: roboflow-bleaching-native
-      crosswalk_id: roboflow-bleaching-condition
+      crosswalk_id: roboflow-bleaching-condition-hu
       verified_on: 2026-09-24
       verified_note: >
         SWITCHED 2026-09-24 (WS-D S23, R3 Q10): layout moved from `metadata-only` to

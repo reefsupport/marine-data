@@ -20,18 +20,27 @@
 # any image whose only condition label is "Unhealthy", instead of miscounting it as
 # BLEACHED. A coarser task targeting {HEALTHY, UNHEALTHY} directly would count it as
 # UNHEALTHY-supervised; no such task exists yet, but the node supports one.
+#
+# SPLIT (WS-D S27): this crosswalk used to be shared with v6i/v1-yolov8s (which never
+# emit "Unhealthy" — they emit "Bleached"). `fit_source` (src/marinedata/task.py) is
+# static over the WHOLE crosswalk, not filtered by which native labels a source
+# actually emits, so a shared crosswalk containing both this "Unhealthy" edge and
+# v6i/v1's "Bleached" edge made ALL THREE sources look partial_abstain on
+# `bleaching-condition` (v6i/v1 wrongly, purely from v3i's edge being present) and made
+# v3i's `reachable` wrongly include BLEACHED (a class it never emits). Split into this
+# file (`roboflow-bleaching-condition-hu`, v3i only: Healthy/Unhealthy) and
+# `roboflow-bleaching-condition-hb` (v6i + v1-yolov8s: Healthy/Bleached). Notes and
+# fidelities below are unchanged from the pre-split file.
 
 crosswalks:
-  - id: roboflow-bleaching-condition
+  - id: roboflow-bleaching-condition-hu
     source_schema: roboflow-bleaching-native
     target_schema: rs-benthic-v1
     description: >
-      Roboflow's Healthy/Unhealthy/Bleached image-classification labels onto
-      RS-Benthic's condition axis.
+      Roboflow's Healthy/Unhealthy image-classification labels (v3i) onto RS-Benthic's
+      condition axis.
     edges:
       - { source_label: "Healthy", targets: { condition: HEALTHY }, fidelity: coarsened,
           note: "The source only ever recorded a binary healthy/not-healthy call; PALE was never distinguished, so 'Healthy' can only map to the coarsest true statement." }
       - { source_label: "Unhealthy", targets: { condition: UNHEALTHY }, fidelity: coarsened,
           note: "'Unhealthy' bundles PALE, BLEACHED, DISEASED, RECENTLY_DEAD and OLD_DEAD behind one binary label a Roboflow contributor never split further; UNHEALTHY (their condition-axis parent) is the coarsest true statement, never a specific diagnosis like BLEACHED." }
-      - { source_label: "Bleached", targets: { condition: BLEACHED }, fidelity: exact,
-          note: "WS-D S25: v6i/v1-yolov8s's one-hot _classes.csv names this class 'Bleached' outright — it IS the BLEACHED leaf, not a coarsening onto it, so this edge is exact rather than coarsened like the other two." }

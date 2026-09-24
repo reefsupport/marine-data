@@ -13,7 +13,7 @@
 # distinguish pale, diseased, recently-dead or long-dead coral. "Bleached" is the
 # contributor's own specific call — the source literally names the class "Bleached" —
 # so it crosswalks exactly onto the BLEACHED leaf, never coarsened. See the
-# `roboflow-bleaching-condition` crosswalk for how each of these maps onto
+# `roboflow-bleaching-condition-hu`/`-hb` crosswalks for how each of these maps onto
 # `rs-benthic-v1`'s condition axis.
 
 schemas:

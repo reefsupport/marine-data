@@ -198,7 +198,7 @@ def test_roboflow_unhealthy_never_resolves_to_bleached(registry: Registry) -> No
     resolves to UNHEALTHY, their shared condition-axis parent, and the real
     ``bleaching-condition`` task (targeting the six leaves) abstains on it rather than
     guessing."""
-    walk = registry.crosswalk("roboflow-bleaching-condition")
+    walk = registry.crosswalk("roboflow-bleaching-condition-hu")
     target = registry.label_schema(walk.target_schema)
     harmonizer = Harmonizer(walk, target)
 
