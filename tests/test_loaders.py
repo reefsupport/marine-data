@@ -530,6 +530,11 @@ def test_declared_crosswalk_builds(registry: Registry, source_id: str) -> None:
 _INTENTIONALLY_UNWIRED_LAYOUTS = {
     "labelbox-ndjson": "superseded by labelbox-rgb 2026-09-23 (S7a); retire or rewire",
     "segmentsai-instance": "provenance pending with Yohan (S7e)",
+    "coco-rle-binary": (
+        "coralscop-masks-rs moved to staged-tree once its staged tree was pinned "
+        "(WSD S15b, 2026-09-24); converter kept for a future re-export of raw "
+        "upstream JSONs"
+    ),
 }
 
 

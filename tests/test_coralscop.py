@@ -206,10 +206,17 @@ def test_real_sample_json(tmp_path: Path) -> None:
     assert sample.meta["num_annotations"] == 11
 
 
-def test_registry_source_resolves_to_coco_rle_binary() -> None:
-    """The registry entry declares the new converter and it actually resolves."""
+def test_coco_rle_binary_loader_still_registered() -> None:
+    """The converter stays registered under `coco-rle-binary` even though no
+    registry entry declares that layout anymore (`coralscop-masks-rs` moved to
+    `staged-tree` once its staged tree was pinned, WSD S15b)."""
+    assert loader_for("coco-rle-binary") is CoralscopRleMaskLoader
+
+
+def test_registry_source_resolves_to_staged_tree() -> None:
+    """`coralscop-masks-rs` moved to `staged-tree` once its staged tree was pinned
+    (WSD S15b), same pattern as `reef-support-benthic-own` (WSD S8e)."""
     registry = Registry.load()
     source = registry.source("coralscop-masks-rs")
     assert source.loader is not None
-    assert source.loader.layout == "coco-rle-binary"
-    assert loader_for(source.loader.layout) is CoralscopRleMaskLoader
+    assert source.loader.layout == "staged-tree"
