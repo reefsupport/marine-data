@@ -43,6 +43,16 @@ sources:
       layout: staged-tree
       schema_id: reef-support-labelbox
       crosswalk_id: reef-support-labelbox
+      params:
+        # WS-D S31: the dense mask under labels/masks/ is 0=unlabelled/1=Hard Coral/
+        # 2=Soft Coral (verified against real pixels — every sampled mask is {0},
+        # {0,1} or {0,1,2}, never a third value). Nothing resolved this before —
+        # StagedTreeLoader only ever set mask_is_dense, never what the pixels mean —
+        # so labels/taxon here are keyed on the sparse point annotations only; this
+        # declares the mask's own pixel semantics for a consumer that wants them,
+        # using the same native label strings ("Hard Coral"/"Soft Coral") the
+        # crosswalk above already resolves from the point annotations.
+        mask_values: "0=unlabelled,1=Hard Coral,2=Soft Coral"
       verified_on: 2026-09-24
       verified_note: >
         PINNED 2026-08-17 (S8e), RE-PINNED 2026-09-24 (WS-D S22): `access.uri`/`version`
@@ -57,7 +67,10 @@ sources:
         dropped: `rs-storage-open` allows anonymous `GetObject` on a known key.
         Layout is staged-tree — this tree was produced by this repo's own staging
         writers (`images/<site>/`, `metadata.parquet`, `labels/masks/`,
-        `CHECKSUMS.sha256`), the shape `StagedTreeLoader` reads with no params.
+        `CHECKSUMS.sha256`), the shape `StagedTreeLoader` reads. `loader.params.
+        mask_values` added (WS-D S31): declares the dense mask's own pixel→native-
+        label meaning (0=unlabelled/1=Hard Coral/2=Soft Coral), which nothing read
+        before — `StagedTreeLoader` only ever set `mask_is_dense`.
         VERIFIED 2026-09-24: `.venv/bin/marinedata verify reef-support-benthic-own`
         passes via the manifest-driven fetch path (`fetchers_remote._fetch_s3_manifest`),
         which never lists the bucket.
@@ -215,11 +228,11 @@ sources:
 
   - id: reef-support-bleaching
     name: Reef Support bleaching masks (Tayrona)
-    version: "2026-08"
+    version: "2026-09-24"
     description: >
-      Paired bleached / non-bleached masks over the same 658 Tayrona images that carry
-      benthic instance masks. The same pixels labelled on two axes — rare, and directly
-      usable for a multi-task condition head.
+      One condition raster per image (0 unlabelled / 1 bleached / 2 non-bleached) over
+      the same 658 Tayrona images that carry benthic instance masks. The same pixels
+      labelled on two axes — rare, and directly usable for a multi-task condition head.
     licence: PROPRIETARY-OWN
     legal_basis: own
     redistribution: ok
@@ -230,51 +243,82 @@ sources:
       method: licence-file
     access:
       method: s3
-      uri: s3://rs-storage-open/coral_bleaching/reef_support/UNAL_BLEACHING_TAYRONA
-      size_bytes: 1996000000
+      uri: s3://rs-storage-open/sources/reef-support-bleaching/2026-09-24
+      notes: "rs-storage-open is a public bucket — anonymously fetchable, no credentials needed"
+      size_bytes: 1982677210
       params:
         bucket: rs-storage-open
         endpoint: hel1.your-objectstorage.com
         region: hel1
-        prefix: coral_bleaching/reef_support/UNAL_BLEACHING_TAYRONA/
-        credentials_env: S3
+        prefix: sources/reef-support-bleaching/2026-09-24/
+    checksums:
+      version: "2026-09-24"
+      root_digest: 2d22bbe938f4a69d9cd2ca13ef123b88195dc7722cad39a4a940b147717ae04a
+      files: 1317
+      size_bytes: 1982497341
     modalities: [image]
     capabilities: [bleaching-assessment, benthic-segmentation]
     loader:
-      layout: dual-condition-masks
-      verified_on: 2026-08-28
-      verified_note: >
-        RESOLVED. The stems DO align (e.g. images/C10_..._corr.jpg pairs with
-        masks_bleached/C10..._corr_bleached.png and masks_non_bleached/
-        C10..._corr_non_bleached.png) — the previous "no stems aligned" failure was
-        the single-masks_dir 'image-mask-pairs' layout looking for a plain "masks/"
-        directory that has never existed, not a real misalignment. Pixel check
-        against a live sample: masks_bleached and masks_non_bleached never mark the
-        same pixel (verified on the fetched sample), so the two combine into one
-        condition raster (0=unlabelled, 1=bleached, 2=non-bleached) with no
-        information lost or invented. See DualConditionMaskLoader.
-      params:
-        positive_dir: masks_bleached
-        negative_dir: masks_non_bleached
-        positive_label: bleached
-        negative_label: non_bleached
+      layout: staged-tree
       schema_id: dataset-native
       crosswalk_id: reef-support-bleaching-condition
+      params:
+        # WS-D S31: mirrors reef-support-benthic-own's `mask_values` param below —
+        # StagedTreeLoader had no path resolving a dense mask's own pixel values
+        # (only DualConditionMaskLoader, which this tree's masks were combined by at
+        # stage time, ever emitted this). Same native label strings the crosswalk's
+        # source_label edges above already key on ("bleached"/"non_bleached").
+        mask_values: "0=unlabelled,1=bleached,2=non_bleached"
+      verified_on: 2026-09-24
+      verified_note: >
+        RESTAGED (WS-D S30): the raw two-mask-directory layout (images/,
+        masks_bleached/, masks_non_bleached/) is merged once, offline, into a single
+        condition raster per image (0=unlabelled, 1=bleached, 2=non-bleached — the
+        same combine DualConditionMaskLoader performs on read, done here at stage
+        time instead) and written as this repo's own staged-tree shape
+        (`images/UNAL_BLEACHING_TAYRONA/`, `metadata.parquet`,
+        `labels/masks/UNAL_BLEACHING_TAYRONA/`, `CHECKSUMS.sha256`), which
+        `StagedTreeLoader` reads. All 658 images paired cleanly with
+        both masks (0 orphans) and 0 pairs overlapped (0 raises). Cross-checked
+        against `reef-support-benthic-own`'s Tayrona partition: all 658 images match
+        by sha256 digest (byte-identical, as expected — see Q11) and every matched
+        pair's `split_group` agrees between the two sources (0 mismatches), because
+        this source's `split_group` rule below is the same station/bay rule as
+        `reef-support-benthic-own`'s. `access.params.credentials_env` dropped:
+        `rs-storage-open` allows anonymous `GetObject` on a known key. The prior raw
+        `coral_bleaching/reef_support/UNAL_BLEACHING_TAYRONA/` prefix is left in the
+        open bucket pending a separate delete step.
+        UPLOADED 2026-09-24 (WS-D S31): 1,318 objects, 1,982,677,210 B live under
+        `sources/reef-support-bleaching/2026-09-24/` — 658 images moved by
+        server-side `copy_object` from `reef-support-benthic-own`'s already-uploaded
+        Tayrona partition (matched by sha256 digest across both sources' CHECKSUMS
+        files, not by relpath), 660 objects (658 masks + `metadata.parquet` +
+        `CHECKSUMS.sha256`) uploaded fresh. Flat-list count+bytes, authenticated
+        per-object HEAD, and an anonymous GET of `CHECKSUMS.sha256` (sha256
+        `2d22bbe9…7ae04a`, matches the local staged tree) all verified; `.venv/bin/
+        marinedata verify reef-support-bleaching --limit 5` passes.
+        `loader.params.mask_values` added: declares the combined condition raster's
+        pixel→native-label meaning, the same shape `DualConditionMaskLoader` builds
+        from `positive_label`/`negative_label` at read time — nothing resolved this
+        for a staged dense mask before.
     items: 658
     annotations:
       - kind: dense-mask
-        count: 1316
+        count: 658
         supervises: [condition]
-        notes: "Two mask sets per image: masks_bleached and masks_non_bleached."
+        notes: "One combined condition raster per image (0/1/2), merged from the source's masks_bleached/masks_non_bleached pair at stage time."
     coverage:
       regions: [caribbean]
       ecoregions: ["Southern Caribbean"]
       years: [2024, 2024]
       sites: 1
     split_group:
-      pattern: 'reef_support/([^/]+)/'
-      match_field: upstream_path
-      template: "rs-colombia/{group}"
+      # Same station/bay rule as reef-support-benthic-own (WS-D S30, Q11): these
+      # 658 images are byte-identical to benthic-own's Tayrona partition, so an
+      # image shared between the two sources must land in the same split_group.
+      pattern: '(CB\d+|E\d+|BC|Gy|PB|Gr|P9150|G)'
+      match_field: stem
+      template: "rs-colombia/{partition}/{group}"
     tags: [multi-task, caribbean]
 
   - id: reefolution
