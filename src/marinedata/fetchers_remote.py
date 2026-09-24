@@ -21,10 +21,11 @@ import hmac
 import os
 import urllib.parse
 import xml.etree.ElementTree as ET
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from datetime import datetime, timezone
 from pathlib import Path
 
-from .checksums import CHECKSUM_FILE, parse_checksums
+from .checksums import CHECKSUM_FILE, file_digest, parse_checksums
 from .fetch import FetchError, FetchNotSupported, FetchResult, _get, _write
 from .models import Source
 
@@ -120,6 +121,30 @@ def _s3_endpoint(source: Source) -> tuple[str, str, str]:
     return bucket, f"{bucket}.{endpoint}", region
 
 
+MANIFEST_FETCH_WORKERS = 16
+"""Concurrent GETs for a pinned staged tree. One-at-a-time was latency-bound at ~110
+files/min against ``rs-storage-open`` — ~17 h for the v1 release's ~115k files.
+``MARINEDATA_FETCH_WORKERS`` overrides."""
+MANIFEST_FETCH_RETRIES = 8
+"""Per-file attempts (backoff 1.5, 3, 6, 12, 24, 30, 30 s) — at ~10^5 GETs a 3-attempt
+budget turns an ordinary burst of 5xx/429/timeouts into a failed release."""
+MANIFEST_FETCH_TIMEOUT = 30
+"""Per-attempt socket timeout. ``rs-storage-open`` normally answers in ~0.2 s but
+intermittently stalls one key for tens of seconds (observed 17-21 s TTFB on IPv4 and
+IPv6 alike, and five straight 60 s read timeouts on one v1 image during S44): a stalled
+GET is abandoned and retried sooner, and the retries span ~6 min rather than ~5."""
+MANIFEST_FETCH_MAX_FAILURES = 50
+"""Files that may fail outright before the rest of the fetch is cancelled."""
+
+
+def _manifest_workers() -> int:
+    raw = os.environ.get("MARINEDATA_FETCH_WORKERS", "").strip()
+    try:
+        return max(1, int(raw)) if raw else MANIFEST_FETCH_WORKERS
+    except ValueError:
+        return MANIFEST_FETCH_WORKERS
+
+
 def _is_pinned_staged_tree(source: Source) -> bool:
     """Whether ``source`` can be fetched by digest-pinned manifest instead of a listing.
 
@@ -163,7 +188,14 @@ def _fetch_s3_manifest(
        made ``verify --limit N`` take an hour instead of seconds.
     3. Verify each downloaded file's sha256 against the manifest before writing it, so
        a partial or corrupted transfer raises naming the exact file rather than
-       silently staging bad bytes.
+       silently staging bad bytes. Files are fetched :data:`MANIFEST_FETCH_WORKERS` at a
+       time; a file already on disk with the manifest's sha256 is not fetched again, so
+       an interrupted release fetch resumes instead of restarting.
+    4. Check the result on disk: a full fetch (``limit`` covering every image) must
+       leave every manifest file present, a sample every file it chose — otherwise
+       raise with the missing count. A partial tree is never returned as if complete
+       (the staged-tree loader walks ``images/`` on disk, so missing files would silently
+       shrink the release rather than fail it).
     """
     manifest_key = f"{prefix}{CHECKSUM_FILE}"
     manifest_bytes = _get(f"https://{host}/{urllib.parse.quote(manifest_key)}")
@@ -194,11 +226,20 @@ def _fetch_s3_manifest(
 
     sampled = rest[:limit]
     sampled_labels = [rel for path in sampled for rel in labels_by_stem.get(Path(path).stem, [])]
-    wanted = metadata + shared_labels + sampled_labels + sampled
+    # De-duplicated (two partitions can share a stem) so no two workers write one file.
+    wanted = list(dict.fromkeys(metadata + shared_labels + sampled_labels + sampled))
+    truncated = len(rest) > limit
 
-    for relative in wanted:
+    def fetch_one(relative: str) -> None:
+        dest = root / relative
+        if dest.is_file() and file_digest(dest) == digests[relative]:
+            return  # already staged with the right bytes (an earlier, interrupted run)
         key = f"{prefix}{relative}"
-        payload = _get(f"https://{host}/{urllib.parse.quote(key)}")
+        payload = _get(
+            f"https://{host}/{urllib.parse.quote(key)}",
+            timeout=MANIFEST_FETCH_TIMEOUT,
+            retries=MANIFEST_FETCH_RETRIES,
+        )
         actual_digest = hashlib.sha256(payload).hexdigest()
         if actual_digest != digests[relative]:
             raise FetchError(
@@ -206,9 +247,34 @@ def _fetch_s3_manifest(
                 f"manifest expects {digests[relative]} — the transfer is corrupt or "
                 f"the tree changed under a pinned version"
             )
-        _write(root / relative, payload)
+        _write(dest, payload)
 
-    return FetchResult(source.id, root, len(wanted), "s3-manifest", truncated=len(rest) > limit)
+    failures: dict[str, Exception] = {}
+    with ThreadPoolExecutor(max_workers=_manifest_workers()) as pool:
+        futures = {pool.submit(fetch_one, relative): relative for relative in wanted}
+        for future in as_completed(futures):
+            exc = future.exception()
+            if exc is not None:
+                failures[futures[future]] = exc
+                if len(failures) >= MANIFEST_FETCH_MAX_FAILURES:
+                    for pending in futures:
+                        pending.cancel()  # the endpoint is down, not flaky — stop early
+                    break
+
+    # Completeness is checked on disk, not inferred from "no exception": a full fetch
+    # must leave every file the manifest names in place, a sample every file it chose.
+    required = list(digests) if not truncated else wanted
+    missing = sorted(rel for rel in required if not (root / rel).is_file())
+    if failures or missing:
+        first = sorted(failures)[0] if failures else missing[0]
+        detail = f"{first}: {failures[first]}" if failures else first
+        raise FetchError(
+            f"{source.id}: {'full' if not truncated else 'sample'} fetch incomplete — "
+            f"{len(missing)} of {len(required)} file(s) missing under {root} "
+            f"({len(failures)} failed to download); first: {detail}"
+        )
+
+    return FetchResult(source.id, root, len(wanted), "s3-manifest", truncated=truncated)
 
 
 def fetch_s3(source: Source, root: Path, limit: int) -> FetchResult:

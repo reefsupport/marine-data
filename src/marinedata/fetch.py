@@ -80,7 +80,11 @@ class FetchResult:
             "method": self.method,
             "truncated": self.truncated,
             "fetched_at": datetime.now(timezone.utc).isoformat(),
-            "note": "Bounded verification sample. NOT the full dataset.",
+            "note": (
+                "Bounded verification sample. NOT the full dataset."
+                if self.truncated
+                else "Complete fetch of the source, not a bounded sample."
+            ),
         }
 
 
@@ -99,7 +103,9 @@ def _get(
     ``http.client.RemoteDisconnected``, which is neither an ``HTTPError`` nor a
     ``URLError`` and so escaped the original handler entirely.
 
-    4xx is not retried: a 404 will still be a 404. 5xx and connection-level faults are.
+    4xx is not retried: a 404 will still be a 404 — except 429, which is the server
+    asking a concurrent fetch to slow down. 5xx and connection-level faults (timeouts
+    included) are retried with exponential backoff (:func:`_backoff`).
     """
     last: Exception | None = None
     for attempt in range(retries):
@@ -108,7 +114,7 @@ def _get(
             with urllib.request.urlopen(request, timeout=timeout) as response:
                 return response.read()
         except urllib.error.HTTPError as exc:
-            if exc.code < 500:
+            if exc.code < 500 and exc.code != 429:
                 raise FetchError(f"HTTP {exc.code} for {url}") from exc
             last = exc
         except (urllib.error.URLError, http.client.HTTPException, OSError) as exc:
@@ -116,8 +122,15 @@ def _get(
             # socket timeouts all land here.
             last = exc
         if attempt < retries - 1:
-            time.sleep(1.5 * (attempt + 1))
+            time.sleep(_backoff(attempt))
     raise FetchError(f"failed after {retries} attempt(s) for {url}: {last}")
+
+
+def _backoff(attempt: int) -> float:
+    """Seconds to wait after failed attempt ``attempt`` (0-based): 1.5, 3, 6, 12, … capped
+    at 30. The first two steps equal the old linear schedule, so a default 3-attempt
+    ``_get`` waits exactly as long as it always did."""
+    return min(30.0, 1.5 * (2**attempt))
 
 
 def _get_stream(url: str, dest: Path, *, timeout: int = 60, retries: int = 3) -> int:
@@ -126,7 +139,7 @@ def _get_stream(url: str, dest: Path, *, timeout: int = 60, retries: int = 3) ->
     memory the way :func:`_get` does (D2a: an HF parquet shard is ~450 MB, and every
     shard would otherwise be held in RAM at once).
 
-    Same retry policy as :func:`_get`: a 4xx raises immediately; a 5xx or a
+    Same retry policy as :func:`_get`: a 4xx other than 429 raises immediately; a 5xx or a
     connection-level fault retries a fresh GET from the start, so ``dest`` is truncated
     and rewritten on each attempt rather than appended to. Returns the number of bytes
     written.
@@ -146,13 +159,13 @@ def _get_stream(url: str, dest: Path, *, timeout: int = 60, retries: int = 3) ->
                     written += len(chunk)
             return written
         except urllib.error.HTTPError as exc:
-            if exc.code < 500:
+            if exc.code < 500 and exc.code != 429:
                 raise FetchError(f"HTTP {exc.code} for {url}") from exc
             last = exc
         except (urllib.error.URLError, http.client.HTTPException, OSError) as exc:
             last = exc
         if attempt < retries - 1:
-            time.sleep(1.5 * (attempt + 1))
+            time.sleep(_backoff(attempt))
     raise FetchError(f"failed after {retries} attempt(s) for streaming GET of {url}: {last}")
 
 

@@ -12,6 +12,9 @@ deterministic `--limit` subset, and that an unpinned source is untouched (still 
 from __future__ import annotations
 
 import hashlib
+import json
+import threading
+import time
 import urllib.parse
 from pathlib import Path
 
@@ -48,9 +51,7 @@ def _pinned_source(root_digest: str, *, credentials_env: str | None = None):
         params["credentials_env"] = credentials_env
     return base.model_copy(
         update={
-            "access": base.access.model_copy(
-                update={"method": AccessMethod.S3, "params": params}
-            ),
+            "access": base.access.model_copy(update={"method": AccessMethod.S3, "params": params}),
             "checksums": Checksums(
                 version="2026-09-23-abc", root_digest=root_digest, files=5, size_bytes=100
             ),
@@ -290,9 +291,7 @@ def test_truncated_cache_is_not_reused_for_a_larger_request(
         assert (tmp_path / "labels" / "masks" / f"img{i:02d}.png").exists()
 
 
-def test_complete_cache_is_still_reused(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
-) -> None:
+def test_complete_cache_is_still_reused(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     """A cache that already holds everything (not truncated) is reused for a bigger or
     unbounded request too — no network call is made the second time."""
     manifest_bytes, root_digest = _build_manifest(_DENSE_MASK_FILES)
@@ -316,3 +315,103 @@ def test_complete_cache_is_still_reused(
     assert reused.items == 21
     assert reused.truncated is False
     assert calls == []
+
+
+# --- S44: complete + concurrent full fetch -------------------------------------------
+
+
+def test_full_fetch_skips_files_already_present_with_the_right_digest(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """An interrupted release fetch resumes: a file already on disk with the manifest's
+    sha256 is not fetched again, and one with the wrong bytes is re-fetched."""
+    manifest_bytes, root_digest = _build_manifest(_DENSE_MASK_FILES)
+    source = _pinned_source(root_digest)
+    for i in range(5):
+        rel = f"labels/masks/img{i:02d}.png"
+        (tmp_path / rel).parent.mkdir(parents=True, exist_ok=True)
+        (tmp_path / rel).write_bytes(_DENSE_MASK_FILES[rel])
+    stale = tmp_path / "images" / "default" / "img00.jpg"
+    stale.parent.mkdir(parents=True, exist_ok=True)
+    stale.write_bytes(b"HALF-WRITTEN")
+    calls: list[str] = []
+    monkeypatch.setattr(
+        fetchers_remote, "_get", _fake_get(manifest_bytes, _DENSE_MASK_FILES, calls)
+    )
+
+    result = fetchers_remote.fetch_s3(source, tmp_path, limit=10)
+
+    assert result.items == 21 and result.truncated is False
+    fetched = set(calls) - {_url_for("CHECKSUMS.sha256")}
+    assert len(fetched) == 21 - 5  # the 5 verified labels were skipped
+    assert _url_for("images/default/img00.jpg") in fetched  # wrong bytes -> re-fetched
+    assert stale.read_bytes() == _DENSE_MASK_FILES["images/default/img00.jpg"]
+    for rel, data in _DENSE_MASK_FILES.items():
+        assert (tmp_path / rel).read_bytes() == data
+
+
+def test_full_fetch_with_failed_files_raises_with_the_missing_count(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """A full fetch never returns a partial root: two files that cannot be fetched make
+    it raise naming how many are missing — after the rest have still been staged."""
+    manifest_bytes, root_digest = _build_manifest(_DENSE_MASK_FILES)
+    source = _pinned_source(root_digest)
+    broken = {_url_for("images/default/img03.jpg"), _url_for("labels/masks/img07.png")}
+    inner = _fake_get(manifest_bytes, _DENSE_MASK_FILES, [])
+
+    def flaky_get(url: str, **kw: object) -> bytes:
+        if url in broken:
+            raise FetchError(f"failed after 5 attempt(s) for {url}: HTTP 503")
+        return inner(url, **kw)
+
+    monkeypatch.setattr(fetchers_remote, "_get", flaky_get)
+
+    with pytest.raises(FetchError, match=r"full fetch incomplete — 2 of 21 file\(s\) missing"):
+        fetchers_remote.fetch_s3(source, tmp_path, limit=10_000_000)
+    assert (tmp_path / "images" / "default" / "img04.jpg").is_file()
+    assert not (tmp_path / "images" / "default" / "img03.jpg").exists()
+
+
+def test_full_fetch_leaves_a_complete_marker_over_a_stale_truncated_one(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    manifest_bytes, root_digest = _build_manifest(_DENSE_MASK_FILES)
+    source = _pinned_source(root_digest)
+    monkeypatch.setattr(fetchers_remote, "_get", _fake_get(manifest_bytes, _DENSE_MASK_FILES, []))
+    fetch_sample(source, root=tmp_path, limit=2)
+
+    fetch_sample(source, root=tmp_path, limit=10_000_000)
+
+    marker = json.loads((tmp_path / "_fetch.json").read_text(encoding="utf-8"))
+    assert marker["truncated"] is False
+    assert marker["items"] == 21
+    assert "NOT the full dataset" not in marker["note"]
+
+
+def test_manifest_files_are_fetched_concurrently(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    manifest_bytes, root_digest = _build_manifest(_DENSE_MASK_FILES)
+    source = _pinned_source(root_digest)
+    inner = _fake_get(manifest_bytes, _DENSE_MASK_FILES, [])
+    lock = threading.Lock()
+    in_flight = 0
+    peak = 0
+
+    def slow_get(url: str, **kw: object) -> bytes:
+        nonlocal in_flight, peak
+        with lock:
+            in_flight += 1
+            peak = max(peak, in_flight)
+        time.sleep(0.02)
+        with lock:
+            in_flight -= 1
+        return inner(url, **kw)
+
+    monkeypatch.setattr(fetchers_remote, "_get", slow_get)
+    monkeypatch.setenv("MARINEDATA_FETCH_WORKERS", "4")
+
+    fetchers_remote.fetch_s3(source, tmp_path, limit=10)
+
+    assert 1 < peak <= 4  # concurrent, and bounded by the configured pool
