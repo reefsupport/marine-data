@@ -109,6 +109,10 @@ class SourceAdapter(Protocol):
 
     def enumerate(self) -> Iterator[RemoteItem]: ...
 
+    def is_label(self, key: str) -> bool:
+        """A loose file matching ``label_patterns`` (e.g. YOLO ``labels/*.txt``)."""
+        return any(fnmatch.fnmatch(key, g) for g in self.params.get("label_patterns") or [])
+
     def fetch(self, item: RemoteItem, tmp_dir: Path) -> Fetched: ...
 
     def decode(self, fetched: Fetched) -> Iterator[Decoded]: ...
@@ -141,20 +145,28 @@ class BaseAdapter:
         inc = list(self.params.get("include") or ["*"])
         exc = list(self.params.get("exclude") or [])
         cap = self.params.get("max_items")
+        labels = list(self.params.get("label_patterns") or [])
         items = sorted(
             (
                 i
                 for i in self.list_items()
                 if any(fnmatch.fnmatch(i.key, g) for g in inc)
                 and not any(fnmatch.fnmatch(i.key, g) for g in exc)
-                and suffix_of(i.key) in STREAMABLE + SPOOLED
+                and (
+                    suffix_of(i.key) in STREAMABLE + SPOOLED
+                    or any(fnmatch.fnmatch(i.key, g) for g in labels)  # loose label files
+                )
             ),
             key=lambda i: i.key,
         )
         yield from items[: int(cap)] if cap else items
 
+    def is_label(self, key: str) -> bool:
+        """A loose file matching ``label_patterns`` (e.g. YOLO ``labels/*.txt``)."""
+        return any(fnmatch.fnmatch(key, g) for g in self.params.get("label_patterns") or [])
+
     def fetch(self, item: RemoteItem, tmp_dir: Path) -> Fetched:
-        if suffix_of(item.key) in SPOOLED:
+        if suffix_of(item.key) in SPOOLED and not self.is_label(item.key):
             dest = tmp_dir / "fetch" / PurePosixPath(item.key).name
             sha, md5, size = download(item.url, dest)
             _check_declared(item, sha, md5, size)

@@ -223,7 +223,10 @@ def _sniff(data: bytes) -> str:
 def decode_item(fetched: Fetched, params: Mapping[str, Any]) -> Iterator[Decoded]:
     key = fetched.item.key
     suffix = suffix_of(key)
-    if suffix in IMAGE_SUFFIXES:
+    if any(fnmatch.fnmatch(key, g) for g in params.get("label_patterns") or []):
+        assert fetched.stream is not None  # loose label file: pair by basename stem
+        yield Decoded(key, b"", suffix, fetched.item.url, label_files={key: fetched.stream.read()})
+    elif suffix in IMAGE_SUFFIXES:
         assert fetched.stream is not None
         members: Iterable[tuple[str, Callable[[], bytes]]] = [
             (key, lambda: fetched.stream.read())  # type: ignore[union-attr]

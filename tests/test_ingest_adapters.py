@@ -218,3 +218,41 @@ def test_github_raw_tree_pinned_to_commit(server, tmp_path):
 def test_http_adapter_requires_version():
     with pytest.raises(ValueError, match="version"):
         make_adapter("http", {"urls": ["https://example.org/a.zip"]}).resolve_version()
+
+
+def test_hf_loose_yolo_repo_pairs_label_files(server, tmp_path):
+    import datetime as dt
+
+    from marinedata.staged_writer import StagedWriter, WriterConfig
+
+    repo = "reef/yolo"
+    files = {
+        "train/images/a.jpg": png(11),
+        "train/labels/a.txt": b"0 0.5 0.5 0.2 0.2\n",
+        "valid/images/b.jpg": png(12),
+        "valid/labels/b.txt": b"1 0.4 0.4 0.1 0.1\n",
+        "data.yaml": b"names: [x, y]\n",
+    }
+    server.add(f"/api/datasets/{repo}/revision/main", {"sha": SHA, "gated": False})
+    server.add(
+        f"/api/datasets/{repo}/tree/{SHA}?recursive=true",
+        [{"type": "file", "path": k, "size": len(v)} for k, v in files.items()],
+    )
+    for k, v in files.items():
+        server.add(f"/datasets/{repo}/resolve/{SHA}/{k}", v)
+    adapter = make_adapter(
+        "hf", {"repo": repo, "endpoint": server.base, "label_patterns": ["*/labels/*.txt"]}
+    )
+    adapter.resolve_version()
+    writer = StagedWriter(
+        tmp_path / "stage", WriterConfig("s", "v", "CC-BY-4.0", "x", dt.date(2026, 1, 1))
+    )
+    for item, _, decoded in adapter.samples(tmp_path):
+        writer.add(item, decoded)
+    writer.finalize()
+    assert [r.split_hint for r in writer.rows] == ["train", "val"]
+    assert [r.label_refs for r in writer.rows] == [
+        ("labels/files/train_labels_a.txt",),
+        ("labels/files/valid_labels_b.txt",),
+    ]
+    assert (tmp_path / "stage/labels/files/train_labels_a.txt").read_bytes().startswith(b"0 ")

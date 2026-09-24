@@ -31,6 +31,7 @@ from .s3_upload import DEFAULT_PART, DiskGuard, GiB, local_digest, upload_file
 from .staged_writer import DEFAULT_SHARD_BYTES, DEFAULT_THRESHOLD, StagedWriter, WriterConfig
 
 _BIG_PREFIXES = ("images/", "labels/")
+_CONTAINERS = (".tar", ".tar.gz", ".tgz", *SPOOLED)
 
 
 @dataclass
@@ -97,8 +98,8 @@ def _choose_layout(spec: IngestSpec, items: list) -> str:
     if spec.layout in {"objects", "shards"}:
         return spec.layout
     n = spec.expected_images
-    if n is None and items and all(suffix_of(i.key) in IMAGE_SUFFIXES for i in items):
-        n = len(items)
+    if n is None and items and not any(suffix_of(i.key) in _CONTAINERS for i in items):
+        n = sum(suffix_of(i.key) in IMAGE_SUFFIXES for i in items)  # loose images (+labels)
     if n is None and spec.max_images is not None:
         n = spec.max_images
     return "shards" if n is not None and n > spec.shard_threshold else "objects"
