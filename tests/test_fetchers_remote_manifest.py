@@ -20,7 +20,7 @@ from conftest import make_source
 
 import marinedata.fetchers_remote as fetchers_remote
 from marinedata.enums import AccessMethod
-from marinedata.fetch import FetchError
+from marinedata.fetch import FetchError, fetch_sample
 from marinedata.models import Checksums
 
 BUCKET = "rs-storage-open"
@@ -256,3 +256,63 @@ def test_credentialed_pinned_source_still_takes_the_list_path(
         fetchers_remote.fetch_s3(source, tmp_path, limit=5)
 
     assert calls and "list-type=2" in calls[0]
+
+
+# ── cache reuse: a truncated `_fetch.json` must not satisfy a bigger request ─────────
+
+
+def test_truncated_cache_is_not_reused_for_a_larger_request(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """The coralscop-masks-rs release bug: a bounded 2-image verification sample left
+    `truncated: true` in `_fetch.json`; the release build's unbounded fetch then reused
+    that cache as-is instead of re-fetching the remaining 8 images, and the loader
+    later failed on images `metadata.parquet` named but the cache never held."""
+    manifest_bytes, root_digest = _build_manifest(_DENSE_MASK_FILES)
+    source = _pinned_source(root_digest)
+    calls: list[str] = []
+    monkeypatch.setattr(
+        fetchers_remote, "_get", _fake_get(manifest_bytes, _DENSE_MASK_FILES, calls)
+    )
+
+    bounded = fetch_sample(source, root=tmp_path, limit=2)
+    assert bounded.items == 5  # metadata + 2 sampled images + their 2 labels
+    assert bounded.truncated is True
+    for i in range(2, 10):
+        assert not (tmp_path / "images" / "default" / f"img{i:02d}.jpg").exists()
+
+    full = fetch_sample(source, root=tmp_path, limit=10)
+
+    assert full.items == 21  # metadata + all 10 images + all 10 labels
+    assert full.truncated is False
+    for i in range(10):
+        assert (tmp_path / "images" / "default" / f"img{i:02d}.jpg").exists()
+        assert (tmp_path / "labels" / "masks" / f"img{i:02d}.png").exists()
+
+
+def test_complete_cache_is_still_reused(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """A cache that already holds everything (not truncated) is reused for a bigger or
+    unbounded request too — no network call is made the second time."""
+    manifest_bytes, root_digest = _build_manifest(_DENSE_MASK_FILES)
+    source = _pinned_source(root_digest)
+    calls: list[str] = []
+    monkeypatch.setattr(
+        fetchers_remote, "_get", _fake_get(manifest_bytes, _DENSE_MASK_FILES, calls)
+    )
+
+    complete = fetch_sample(source, root=tmp_path, limit=10)
+    assert complete.truncated is False
+    calls.clear()
+
+    def _forbidden_get(url: str, *, headers: dict[str, str] | None = None, **kw: object) -> bytes:
+        raise AssertionError(f"unexpected GET {url} — cache should have been reused")
+
+    monkeypatch.setattr(fetchers_remote, "_get", _forbidden_get)
+
+    reused = fetch_sample(source, root=tmp_path, limit=10_000_000)
+
+    assert reused.items == 21
+    assert reused.truncated is False
+    assert calls == []

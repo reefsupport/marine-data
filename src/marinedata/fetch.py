@@ -861,13 +861,22 @@ def fetch_sample(
 
     if marker.is_file() and not force:
         existing = json.loads(marker.read_text(encoding="utf-8"))
-        return FetchResult(
-            source.id,
-            target,
-            int(existing.get("items", 0)),
-            str(existing.get("method", "cache")),
-            truncated=True,
-        )
+        cached_items = int(existing.get("items", 0))
+        cached_truncated = bool(existing.get("truncated", True))
+        # A truncated cache recorded fewer items than the source actually has. It only
+        # satisfies a request that asks for no more than it already holds — a bigger or
+        # unbounded (release) ``limit`` must re-fetch rather than silently hand back a
+        # partial tree as if it were complete (the coralscop-masks-rs release bug: a
+        # bounded 5-image verification sample was reused for a 10,000,000-item release
+        # fetch, so ``metadata.parquet``'s 38,928 rows outran the images on disk).
+        if not cached_truncated or cached_items >= limit:
+            return FetchResult(
+                source.id,
+                target,
+                cached_items,
+                str(existing.get("method", "cache")),
+                truncated=cached_truncated,
+            )
 
     fetcher = _FETCHERS.get(source.access.method)
     if fetcher is None:
