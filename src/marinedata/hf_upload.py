@@ -21,6 +21,8 @@ import hashlib
 from dataclasses import dataclass
 from pathlib import Path
 
+from .hf_export import DEFAULT_REPO_ID
+
 MAX_FILES_PER_COMMIT = 99
 MAX_BYTES_PER_COMMIT = 4 * 1000**3
 LAST = ("README.md",)
@@ -105,7 +107,7 @@ def _execute(folder: Path, repo_id: str, commits: list[Commit], private: bool) -
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(prog="python -m marinedata.hf_upload")
     parser.add_argument("folder", type=Path)
-    parser.add_argument("--repo-id", required=True)
+    parser.add_argument("--repo-id", default=DEFAULT_REPO_ID)
     parser.add_argument("--max-files", type=int, default=MAX_FILES_PER_COMMIT)
     parser.add_argument("--max-bytes", type=int, default=MAX_BYTES_PER_COMMIT)
     parser.add_argument("--execute", action="store_true")

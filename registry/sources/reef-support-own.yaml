@@ -11,7 +11,16 @@ sources:
       Expert Labelbox instance masks over four Colombian sites where BOTH the imagery and
       the annotations are ours: Tayrona (658), Seaflower Bolivar (246), Seaflower Courtown
       (241), Tetes Providencia (105).
-    licence: PROPRIETARY-OWN
+    licence:
+      id: CC-BY-4.0
+      name: Creative Commons Attribution 4.0
+      tier: T1_PERMISSIVE
+      url: https://creativecommons.org/licenses/by/4.0/
+      flags: { attribution_required: true }
+      notes: >
+        D-B (Yohan 2026-09-25, by delegation): Reef Support's own imagery relicensed
+        from PROPRIETARY-OWN to CC-BY-4.0 for the open dataset. set 2026-09-25 by
+        delegation; confirm before publish.
     legal_basis: own
     redistribution: ok
     provenance: own
@@ -233,7 +242,16 @@ sources:
       One condition raster per image (0 unlabelled / 1 bleached / 2 non-bleached) over
       the same 658 Tayrona images that carry benthic instance masks. The same pixels
       labelled on two axes — rare, and directly usable for a multi-task condition head.
-    licence: PROPRIETARY-OWN
+    licence:
+      id: CC-BY-4.0
+      name: Creative Commons Attribution 4.0
+      tier: T1_PERMISSIVE
+      url: https://creativecommons.org/licenses/by/4.0/
+      flags: { attribution_required: true }
+      notes: >
+        D-B (Yohan 2026-09-25, by delegation): Reef Support's own imagery relicensed
+        from PROPRIETARY-OWN to CC-BY-4.0 for the open dataset. set 2026-09-25 by
+        delegation; confirm before publish.
     legal_basis: own
     redistribution: ok
     provenance: own

@@ -10,7 +10,15 @@ from __future__ import annotations
 
 import json
 
-from .hf_export import IMAGES, MASKS, PSEUDO_MASKS, SPLIT_ORDER
+from .hf_export import (
+    DEFAULT_EXCLUDE_CONFIGS,
+    DEFAULT_REPO_ID,
+    EXCLUDE_REASONS,
+    IMAGES,
+    MASKS,
+    PSEUDO_MASKS,
+    SPLIT_ORDER,
+)
 
 CONFIG_BLURB = {
     IMAGES: "every image once (pixels embedded), keyed by `image_sha256`",
@@ -45,7 +53,8 @@ def _sources_table(sources: list[dict]) -> list[str]:
             f"| `{s['id']}` ({s['version']}) | {s['licence']} | {s['tier']} | "
             f"{s.get('images', '—')} | {citation} |"
         )
-    return rows
+    notes = [f"- `{s['id']}`: {s['licence_note']}" for s in sources if s.get("licence_note")]
+    return rows + (["", *notes] if notes else [])
 
 
 def _split_table(summary: dict) -> list[str]:
@@ -62,8 +71,9 @@ def render_card(
     sources: list[dict],
     *,
     pretty_name: str,
-    repo_id: str = "<repo>",
+    repo_id: str = DEFAULT_REPO_ID,
     unsupervised: tuple[str, ...] = (),
+    excluded: dict[str, str] | None = None,
 ) -> str:
     near = release["near_dup"]
     empty_note = [
@@ -71,6 +81,13 @@ def render_card(
         "`mask_class_map` value is null. It is published for split membership only."
         for c in unsupervised
     ]
+    excluded = excluded or {}
+    not_included = (
+        ["", "## Not included", ""]
+        + [f"- `{c}` — {reason}" for c, reason in sorted(excluded.items())]
+        if excluded
+        else []
+    )
     n_images = sum(v["rows"] for v in summary["configs"][IMAGES]["splits"].values())
     ids = sorted({s["licence_hf"] for s in sources})
     yaml = [
@@ -124,6 +141,7 @@ def render_card(
         "it was reached, `native_label` is the source's own label. For mask sources, "
         "`mask_class_map` maps each mask pixel value to the task class (null = unlabelled or "
         "abstain); the mask itself is in `masks`.",
+        *not_included,
         "",
         "## Sources",
         "",
@@ -209,6 +227,7 @@ def render_licence(sources: list[dict]) -> str:
     ]
     lines += [
         f"- {s['id']}: {s['licence']} — {s.get('licence_url') or 'no URL recorded'}"
+        + (f" ({s['licence_note']})" if s.get("licence_note") else "")
         for s in sources
     ]
     return "\n".join(lines) + "\n"
@@ -227,6 +246,7 @@ def source_rows(registry, release: dict, image_counts: dict[str, int]) -> list[d
                 "licence": licence.id,
                 "licence_hf": licence.id.lower() if licence.id.startswith("CC-") else "other",
                 "licence_url": licence.url,
+                "licence_note": licence.notes,
                 "tier": licence.tier.value,
                 "citation": source.citation or source.homepage,
                 "images": image_counts.get(entry["id"], 0),
@@ -249,7 +269,12 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--summary", type=Path, required=True)
     parser.add_argument("--out", type=Path, required=True)
     parser.add_argument("--pretty-name", default="Reef Support coral-reef imagery v1")
-    parser.add_argument("--repo-id", default="<repo>")
+    parser.add_argument("--repo-id", default=DEFAULT_REPO_ID)
+    parser.add_argument(
+        "--exclude-configs",
+        default=",".join(DEFAULT_EXCLUDE_CONFIGS),
+        help="comma-separated configs dropped from the export (D-A); '' for none",
+    )
     args = parser.parse_args(argv)
 
     summary = json.loads(args.summary.read_text())
@@ -261,6 +286,8 @@ def main(argv: list[str] | None = None) -> int:
                 counts[sid] = counts.get(sid, 0) + 1
     sources = source_rows(Registry.load(), release, counts)
     empty = unsupervised_configs(args.out, summary)
+    exclude = [c for c in args.exclude_configs.split(",") if c]
+    excluded = {c: EXCLUDE_REASONS.get(c, "excluded from this release") for c in exclude}
     (args.out / "README.md").write_text(
         render_card(
             summary,
@@ -269,6 +296,7 @@ def main(argv: list[str] | None = None) -> int:
             pretty_name=args.pretty_name,
             repo_id=args.repo_id,
             unsupervised=empty,
+            excluded=excluded,
         )
     )
     (args.out / "LICENSE").write_text(render_licence(sources))
