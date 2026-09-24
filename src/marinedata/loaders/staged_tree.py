@@ -19,6 +19,7 @@ from __future__ import annotations
 from collections.abc import Iterator
 from pathlib import Path
 
+from ..models import SplitGroupRule
 from ..sample import Sample
 from ..tables import _require_pyarrow
 from .base import LoaderError, register_loader
@@ -76,11 +77,34 @@ class StagedTreeLoader(_HarmonizingLoader):
 
     def validate(self) -> None:
         super().validate()
-        if not self._metadata_path().is_file():
+        metadata_path = self._metadata_path()
+        if not metadata_path.is_file():
             raise LoaderError(
                 f"{self.source.id}: layout 'staged-tree' expects metadata.parquet at "
-                f"{self._metadata_path()}"
+                f"{metadata_path}"
             )
+        # A source that explicitly overrides the default SplitGroupRule (a
+        # source-specific pattern, e.g. Roboflow's `_jpg.rf.` stem prefix) is
+        # declaring that cross-source leakage grouping matters for it — so a
+        # staged row's split_group must never be null/empty (S28: a converter
+        # that hardcoded ``None`` instead of calling ``split_group_for`` produced
+        # exactly that). Sources still on the bare fallback rule are left alone:
+        # many pre-D1 fixtures/trees legitimately have a null split_group column
+        # (see StagedImage.split_group's docstring) and re-deriving one for them
+        # is a separate migration, not this guard's job.
+        if self.source.split_group != SplitGroupRule():
+            null_count = 0
+            for record in _read_parquet(metadata_path).to_pylist():
+                value = record.get("split_group")
+                if value is None or (isinstance(value, str) and value.strip() == ""):
+                    null_count += 1
+            if null_count:
+                raise LoaderError(
+                    f"{self.source.id}: {null_count} row(s) in {metadata_path} have a "
+                    "null/empty split_group, but this source declares an explicit "
+                    "split_group rule — re-stage with a converter that calls "
+                    "Source.split_group_for"
+                )
 
     def _points_by_key(self) -> dict[tuple[str, str], list[dict]]:
         path = self._points_path()

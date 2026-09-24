@@ -13,6 +13,7 @@ import pytest
 from conftest import _touch_image, make_source
 
 from marinedata.loaders import LoaderError, build_loader
+from marinedata.models import SplitGroupRule
 from marinedata.scan import group_key
 from marinedata.tables import (
     ImageLabelRow,
@@ -206,3 +207,36 @@ def test_missing_metadata_parquet_raises(tmp_path: Path) -> None:
     loader = build_loader(make_source("staged-tree"), tmp_path)
     with pytest.raises(LoaderError, match=r"metadata\.parquet"):
         list(loader)
+
+
+def test_null_split_group_raises_when_source_declares_a_rule(tmp_path: Path) -> None:
+    """S28: v6i/v1's registry entries declare a source-specific split_group pattern,
+    but the converter that staged them hardcoded ``split_group=None`` — the loader
+    must refuse that tree rather than silently letting shared-stem leakage checks pass
+    on an unproven grouping."""
+    root = _stage(
+        tmp_path,
+        [
+            StagedImage(stem="img0", partition="default", upstream_path="orig/0.jpg",
+                        upstream_split=None, width=10, height=10, split_group=None)
+        ],
+    )
+    rule = SplitGroupRule(pattern=r"^(.+?)_jpg\.rf\.", match_field="stem", template="rf/{group}")
+    source = make_source("staged-tree").model_copy(update={"split_group": rule})
+    with pytest.raises(LoaderError, match="null/empty split_group"):
+        list(build_loader(source, root))
+
+
+def test_null_split_group_ok_when_source_has_no_explicit_rule(tmp_path: Path) -> None:
+    """A source on the bare default rule (no per-entry ``split_group:`` override) is
+    not held to this guard — many pre-D1 staged trees legitimately have a null
+    split_group column (StagedImage.split_group's docstring)."""
+    root = _stage(
+        tmp_path,
+        [
+            StagedImage(stem="img0", partition="default", upstream_path="orig/0.jpg",
+                        upstream_split=None, width=10, height=10, split_group=None)
+        ],
+    )
+    samples = list(build_loader(make_source("staged-tree"), root))
+    assert len(samples) == 1

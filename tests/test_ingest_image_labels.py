@@ -16,6 +16,7 @@ from pathlib import Path
 import pyarrow as pa
 import pyarrow.parquet as pq
 import pytest
+from conftest import make_source
 
 from marinedata.ingest_image_labels import (
     convert_bespoke_metadata,
@@ -101,7 +102,8 @@ def _classes_csv_tree(root: Path) -> Path:
 
 def test_convert_classes_csv_one_row_per_positive_class(tmp_path: Path) -> None:
     root = _classes_csv_tree(tmp_path / "csv")
-    converted = convert_classes_csv(root, schema_id="roboflow-bleaching-native")
+    source = make_source(layout="staged-tree", source_id="fixture")
+    converted = convert_classes_csv(root, source=source, schema_id="roboflow-bleaching-native")
 
     labels_by_stem: dict[str, list[str]] = {}
     for row in converted.labels:
@@ -111,7 +113,9 @@ def test_convert_classes_csv_one_row_per_positive_class(tmp_path: Path) -> None:
     by_stem = {img.stem: img for img in converted.images}
     assert by_stem["img0"].width == 4
     assert by_stem["img0"].height == 4
-    assert by_stem["img0"].split_group is None
+    # S28: never None — derived via Source.split_group_for (the default fallback
+    # rule here, since `source` declares no source-specific pattern).
+    assert by_stem["img0"].split_group == "fixture/default"
 
 
 def test_convert_classes_csv_strips_whitespace_from_header(tmp_path: Path) -> None:
@@ -129,7 +133,8 @@ def test_convert_classes_csv_strips_whitespace_from_header(tmp_path: Path) -> No
         "filename, Bleached, Healthy\nimg0.jpg, 0, 1\nimg1.jpg, 1, 0\n", encoding="utf-8"
     )
 
-    converted = convert_classes_csv(root, schema_id="roboflow-bleaching-native")
+    source = make_source(layout="staged-tree", source_id="fixture")
+    converted = convert_classes_csv(root, source=source, schema_id="roboflow-bleaching-native")
 
     labels_by_stem: dict[str, list[str]] = {}
     for row in converted.labels:

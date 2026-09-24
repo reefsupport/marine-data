@@ -24,6 +24,7 @@ import csv
 from dataclasses import dataclass
 from pathlib import Path
 
+from .models import Source
 from .tables import ImageLabelRow, StagedImage, _require_pyarrow
 
 
@@ -93,6 +94,7 @@ def convert_bespoke_metadata(
 def convert_classes_csv(
     root: Path,
     *,
+    source: Source,
     schema_id: str,
     partition: str = "default",
     csv_name: str = "_classes.csv",
@@ -101,6 +103,12 @@ def convert_classes_csv(
     the filename, every other column is a class name whose value is truthy (anything
     but empty or ``"0"``) when that image carries the class — zero, one, or several
     per image. No width/height column in the CSV, so those are read off each image.
+
+    ``split_group`` is derived via ``source.split_group_for`` (the same call
+    :func:`marinedata.ingest.stage_archive` and friends make) — never left ``None``:
+    a source with no source-specific pattern still resolves to the explicit fallback,
+    so this staged tree's ``split_group`` column is never null (S28, fixing the S25
+    regression where it was hardcoded ``None``).
     """
     from PIL import Image
 
@@ -140,7 +148,9 @@ def convert_classes_csv(
                     upstream_split=None,
                     width=width,
                     height=height,
-                    split_group=None,
+                    split_group=source.split_group_for(
+                        stem=stem, upstream_path=filename, partition=partition
+                    ),
                 )
             )
             for label in (c.strip() for c in class_cols):
