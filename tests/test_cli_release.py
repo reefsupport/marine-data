@@ -13,6 +13,7 @@ from pathlib import Path
 
 import pytest
 
+import marinedata.cli_release as cli_release
 from marinedata.cli import main
 from marinedata.enums import (
     AccessMethod,
@@ -172,3 +173,42 @@ def test_existing_split_map_without_flag_is_unchanged_behaviour(
     code = _run(monkeypatch, tmp_path, split_map, [])
     assert code == 0
     assert split_map.read_bytes() == before, "a frozen release build must never write to the map"
+
+
+def test_fetch_failure_for_admitted_source_fails_the_build(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
+    """An admitted source with no ``--local`` override whose fetch raises must fail the
+    whole build (non-zero exit, the source id and error named on stderr) rather than
+    silently produce a smaller release — see :class:`marinedata.cli_release.ReleaseFetchError`."""
+    monkeypatch.setattr(cli_release, "_is_pinned_staged_tree", lambda source: True)
+
+    def _boom(source: object, *, limit: int) -> object:
+        raise cli_release.FetchError(f"{SOURCE_ID}: connection reset")
+
+    monkeypatch.setattr(cli_release, "fetch_sample", _boom)
+    monkeypatch.setattr(Registry, "load", classmethod(lambda cls, root=None: _registry()))
+
+    out_dir = tmp_path / "out"
+    split_map = tmp_path / "SPLIT_MAP.json"
+    code = main(
+        [
+            "release",
+            "build",
+            "--release",
+            "r1",
+            "--split-map",
+            str(split_map),
+            "--out",
+            str(out_dir),
+            "--profile",
+            "research",
+            "--generate-split-map",
+        ]
+    )
+    assert code != 0
+    err = capsys.readouterr().err
+    assert SOURCE_ID in err
+    assert "connection reset" in err
+    assert not split_map.exists()
+    assert not out_dir.exists()

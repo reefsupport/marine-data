@@ -39,13 +39,28 @@ def _parse_local(specs: list[str] | None) -> dict[str, Path]:
     return overrides
 
 
+class ReleaseFetchError(Exception):
+    """One or more admitted sources could not be fetched.
+
+    Raised by :func:`_resolve_roots` instead of silently shrinking the release — a
+    build must fail closed rather than quietly omit an admitted source (and any
+    split-map groups or rows generated from it) because of a transient fetch error.
+    """
+
+    def __init__(self, failures: list[tuple[str, str]]) -> None:
+        self.failures = failures
+        detail = "; ".join(f"{source_id}: {error}" for source_id, error in failures)
+        super().__init__(f"failed to fetch {len(failures)} admitted source(s): {detail}")
+
+
 def _resolve_roots(registry: Registry, profile: str, local: dict[str, Path]) -> dict[str, Path]:
     """Every admitted source's local root: a ``--local`` override first, else a fetched
-    pinned staged tree. A source with neither is silently absent from ``roots`` —
-    :func:`marinedata.release.build_release` treats a task with no admitted source as
-    skipped, not fatal, so a partial fetch still produces a partial release."""
+    pinned staged tree. A fetch failure for an admitted source raises
+    :class:`ReleaseFetchError` naming every failed source — the build must fail closed
+    rather than silently produce a smaller release."""
     prof = registry.profile(profile)
     roots: dict[str, Path] = dict(local)
+    failures: list[tuple[str, str]] = []
     for source in registry:
         if source.id in roots:
             continue
@@ -56,9 +71,11 @@ def _resolve_roots(registry: Registry, profile: str, local: dict[str, Path]) -> 
         try:
             result = fetch_sample(source, limit=_RELEASE_FETCH_LIMIT)
         except FetchError as exc:
-            print(f"release build: skipping {source.id}: {exc}", file=sys.stderr)
+            failures.append((source.id, str(exc)))
             continue
         roots[source.id] = result.root
+    if failures:
+        raise ReleaseFetchError(failures)
     return roots
 
 
@@ -69,7 +86,15 @@ def _cmd_release_build(args: argparse.Namespace) -> int:
     except ValueError as exc:
         print(f"release build: {exc}", file=sys.stderr)
         return 1
-    roots = _resolve_roots(registry, args.profile, local)
+    try:
+        roots = _resolve_roots(registry, args.profile, local)
+    except ReleaseFetchError as exc:
+        for source_id, error in exc.failures:
+            print(
+                f"release build: fetch failed for admitted source {source_id}: {error}",
+                file=sys.stderr,
+            )
+        return 1
 
     split_map_path = Path(args.split_map)
     split_map_exists = load_split_map(split_map_path) is not None
