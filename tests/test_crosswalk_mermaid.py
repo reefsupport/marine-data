@@ -119,6 +119,20 @@ def test_the_source_declares_this_crosswalk(registry):
     assert spec is not None and spec.crosswalk_id == CROSSWALK_ID
 
 
+def test_bare_substrate_retargeted_to_rk(crosswalk):
+    """S21 (R3 Q12a): retargeted from ABIOTIC(coarsened) to RK(exact)."""
+    edge = next(e for e in crosswalk.edges if e.source_label == "Bare substrate")
+    assert edge.targets["taxon"] == "RK"
+    assert edge.fidelity is Fidelity.EXACT
+
+
+def test_dead_coral_retargeted_to_transition(crosswalk):
+    """S21 (R3 Q12b): retargeted from DC(approximate) to TRANSITION(coarsened)."""
+    edge = next(e for e in crosswalk.edges if e.source_label == "Dead coral")
+    assert edge.targets["taxon"] == "TRANSITION"
+    assert edge.fidelity is Fidelity.COARSENED
+
+
 def test_harmonizer_maps_the_homonym_traps(registry):
     """MERMAID disambiguates two genera that share the name Turbinaria; we must too."""
     harmonizer = registry.harmonizer_for("mermaid-aws")

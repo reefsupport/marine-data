@@ -33,8 +33,8 @@ crosswalks:
       - { source_label: "Sand", targets: { taxon: SD }, fidelity: exact }
       - { source_label: "Rubble", targets: { taxon: RB }, fidelity: exact }
       - { source_label: "Turf algae", targets: { taxon: TA }, fidelity: exact }
-      - { source_label: "Bare substrate", targets: { taxon: ABIOTIC }, fidelity: coarsened,
-          note: "MERMAID scores Sand, Rubble and Silt as separate attributes, so this is most likely bare hard substrate - but the attribute does not exclude unconsolidated cover, so it rolls up to the ABIOTIC parent instead of guessing RK. Same call as the CoralNet crosswalk." }
+      - { source_label: "Bare substrate", targets: { taxon: RK }, fidelity: exact,
+          note: "RETARGETED 2026-09-24 (R3 Q12a): in the MERMAID API, Bare substrate is the parent of Rock + Dead coral, while Sand/Silt/Rubble are separate top-level categories - the prior premise ('does not exclude unconsolidated cover') was false, and the CoralNet precedent doesn't transfer (CoralNet lumps sand/rubble/pavement together). RK's own aliases are 'unknown hard substrate' and 'hard substrate', matching this attribute exactly; 37,417 rows move from coarsened/ABIOTIC to exact/RK. Kept `exact` rather than `approximate` because `is_reliable` = exact|coarsened, and `approximate` would drop all 37,417 rows from supervision." }
       - { source_label: "Crustose coralline algae", targets: { taxon: CCA }, fidelity: exact }
       - { source_label: "Hard coral", targets: { taxon: HC }, fidelity: exact }
       - { source_label: "Porites", targets: { taxon: HC_PORITES }, fidelity: exact,
@@ -42,8 +42,8 @@ crosswalks:
       - { source_label: "Soft coral", targets: { taxon: SC }, fidelity: exact }
       - { source_label: "Acropora", targets: { taxon: HC_ACROPORA }, fidelity: exact,
           note: "genus of Scleractinia (Acroporidae) -> the Acropora L3 node." }
-      - { source_label: "Dead coral", targets: { taxon: DC }, fidelity: approximate,
-          note: "MERMAID scores 'Dead coral with algae' separately, so this is dead coral without algal cover; DC additionally asserts recency, which the attribute does not." }
+      - { source_label: "Dead coral", targets: { taxon: TRANSITION }, fidelity: coarsened,
+          note: "RETARGETED 2026-09-24 (R3 Q12b): DC asserts recency, which this attribute does not - MERMAID scores 'Dead coral with algae' separately, so this is dead coral without algal cover, but the attribute alone can't confirm it is recently dead. TRANSITION is the parent of both dead-coral taxon nodes (DC, DCA) in rs-benthic-v1, so it is a strict ancestor - the definition of `coarsened`, not a guess. 8,710 rows move from excluded/unreliable (approximate) to supervised at TRANSITION." }
       - { source_label: "Sargassum", targets: { taxon: SW }, fidelity: coarsened,
           note: "Ochrophyta macroalga (Fucales) -> SW." }
       - { source_label: "Tape", targets: { taxon: TWS }, fidelity: exact,
