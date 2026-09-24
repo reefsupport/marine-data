@@ -127,10 +127,23 @@ class StagedTreeLoader(_HarmonizingLoader):
 
             image_label_rows = image_labels_by_key.get(key, ())
             native_image_labels = [row["label"] for row in image_label_rows]
+            conflicted_axes: set = set()
             for image_label in native_image_labels:
                 image_labels, image_supervised = self._resolve(image_label)
-                labels = {**labels, **image_labels}
+                for axis, value in image_labels.items():
+                    existing = labels.get(axis)
+                    if existing is not None and existing.node_id != value.node_id:
+                        # Two image-level labels disagree on the same axis (a genuine
+                        # multi-label conflict — e.g. a one-hot export with more than
+                        # one positive class landing on the same target axis). Neither
+                        # is more trustworthy than the other, so this is NOT supervised
+                        # on that axis: never last-write-wins (WS-D S24 D2).
+                        conflicted_axes.add(axis)
+                    labels = {**labels, axis: value}
                 supervised = supervised | image_supervised
+            if conflicted_axes:
+                labels = {a: v for a, v in labels.items() if a not in conflicted_axes}
+                supervised = supervised - frozenset(conflicted_axes)
 
             mask = masks_by_key.get(key)
             meta: dict[str, object] = {
@@ -145,6 +158,8 @@ class StagedTreeLoader(_HarmonizingLoader):
                 meta["n_points"] = len(points)
             if native_image_labels:
                 meta["native_image_labels"] = native_image_labels
+            if conflicted_axes:
+                meta["multi_label_conflicts"] = sorted(a.value for a in conflicted_axes)
             if mask is not None:
                 meta["mask_is_dense"] = True
 

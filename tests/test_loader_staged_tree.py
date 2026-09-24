@@ -143,6 +143,32 @@ def test_image_labels_join(tmp_path: Path) -> None:
     assert "native_image_labels" not in unlabelled.meta
 
 
+def test_image_labels_conflict_on_same_axis_is_not_supervised(tmp_path: Path) -> None:
+    """Two image-level labels that resolve to DIFFERENT targets on the same axis must
+    leave that axis unsupervised (counted + reported in ``meta``), never
+    last-write-wins (WS-D S24 D2)."""
+    rows = [
+        StagedImage(stem="img0", partition="default", upstream_path="orig/0.jpg",
+                    upstream_split=None, width=10, height=10),
+    ]
+    image_labels = [
+        ImageLabelRow(
+            stem="img0", partition="default", label="Healthy", schema_id="fixture-schema"
+        ),
+        ImageLabelRow(
+            stem="img0", partition="default", label="Unhealthy", schema_id="fixture-schema"
+        ),
+    ]
+    root = _stage(tmp_path, rows, image_labels=image_labels)
+    samples = {s.key: s for s in build_loader(make_source("staged-tree"), root)}
+
+    sample = samples["images/default/img0.jpg"]
+    assert sample.meta["native_image_labels"] == ["Healthy", "Unhealthy"]
+    assert sample.meta["multi_label_conflicts"] == ["taxon"]
+    assert sample.labels == {}
+    assert sample.supervised == frozenset()
+
+
 def test_missing_image_raises(tmp_path: Path) -> None:
     root = _stage(
         tmp_path,
