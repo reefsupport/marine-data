@@ -166,6 +166,65 @@ def test_needs_attribution_source_skipped_and_reported(tmp_path: Path) -> None:
     assert "needs-attribution" in skipped["gated-src"]
 
 
+def test_missing_image_still_raises(tmp_path: Path) -> None:
+    """A ``metadata.parquet`` row whose image is absent from the partition dir still
+    raises — the stem→path index (WS-D S45 perf) must not turn a real missing file into
+    a silent skip."""
+    root = tmp_path / "staged"
+    write_metadata_table(
+        root / "metadata.parquet",
+        [
+            StagedImage(
+                stem="ghost",
+                partition="p",
+                upstream_path="orig/ghost.jpg",
+                upstream_split=None,
+                width=4,
+                height=4,
+                split_group="g/ghost",
+            )
+        ],
+    )
+    registry = _registry({"staged-src": _source("staged-src", "staged-tree")})
+
+    with pytest.raises(ValueError, match="not found under"):
+        list(enumerate_release_rows(registry, {"staged-src": root}, "research"))
+
+
+def test_two_candidate_extensions_picks_the_sorted_first(tmp_path: Path) -> None:
+    """A stem with two files under the same partition (e.g. ``a0.jpg`` and ``a0.png``)
+    keeps the pre-index tie-break: ``sorted(...)[0]`` — alphabetically first extension —
+    same as the old ``glob(f"{stem}.*")`` call this index replaces."""
+    root = tmp_path / "staged"
+    images_dir = root / "images" / "p"
+    images_dir.mkdir(parents=True)
+    (images_dir / "a0.png").write_bytes(b"PNG-BYTES")
+    (images_dir / "a0.jpg").write_bytes(b"JPG-BYTES")
+    write_metadata_table(
+        root / "metadata.parquet",
+        [
+            StagedImage(
+                stem="a0",
+                partition="p",
+                upstream_path="orig/a0.jpg",
+                upstream_split=None,
+                width=4,
+                height=4,
+                split_group="g/a0",
+            )
+        ],
+    )
+    registry = _registry({"staged-src": _source("staged-src", "staged-tree")})
+
+    from marinedata.checksums import file_digest
+
+    rows = list(enumerate_release_rows(registry, {"staged-src": root}, "research"))
+    assert len(rows) == 1
+    digest, group, source_id = rows[0]
+    assert digest == file_digest(images_dir / "a0.jpg")
+    assert (group, source_id) == ("g/a0", "staged-src")
+
+
 def test_staged_tree_missing_partition_still_raises(tmp_path: Path) -> None:
     """A ``staged-tree`` source is held to the real schema: a row with no ``partition``
     key is corruption, not a layout to skip, and must still raise ``KeyError``."""

@@ -107,6 +107,27 @@ def _admitted_source_ids(
     return admitted
 
 
+def _partition_stem_index(partition_dir: Path) -> dict[str, list[Path]]:
+    """``{stem: sorted candidate paths}`` for every file directly under ``partition_dir``,
+    built with one directory scan rather than one ``glob(f"{stem}.*")`` per row.
+
+    Keyed by ``Path(name).stem`` (split on the *last* dot) rather than a first-dot split:
+    staging always appends exactly one extension to a stem that may itself contain dots
+    (``Path(...).stem`` at staging time — see ``fetchers_remote``/``ingest_image_labels``),
+    so this reconstructs the same key the glob-per-row pattern ``f"{stem}.*"`` matched
+    against. A stem with two candidate files (e.g. ``a0.jpg`` and ``a0.png``) keeps the
+    same tie-break as before: the caller sorts and takes the first.
+    """
+    index: dict[str, list[Path]] = {}
+    if partition_dir.is_dir():
+        for path in partition_dir.iterdir():
+            if path.is_file():
+                index.setdefault(path.stem, []).append(path)
+        for paths in index.values():
+            paths.sort()
+    return index
+
+
 def enumerate_release_rows(
     registry: Registry,
     roots: dict[str, str | Path],
@@ -181,6 +202,7 @@ def enumerate_release_rows(
                 "reads the staging pipeline's sample index, independent of the source's "
                 "own loader layout"
             )
+        partition_indexes: dict[str, dict[str, list[Path]]] = {}
         for record in pq.read_table(metadata_path).to_pylist():
             group = record.get("split_group")
             if not group:
@@ -190,7 +212,11 @@ def enumerate_release_rows(
                     "before staging"
                 )
             partition, stem = record["partition"], record["stem"]
-            matches = sorted((root / "images" / partition).glob(f"{stem}.*"))
+            index = partition_indexes.get(partition)
+            if index is None:
+                index = _partition_stem_index(root / "images" / partition)
+                partition_indexes[partition] = index
+            matches = index.get(stem, [])
             if not matches:
                 raise ValueError(
                     f"{source_id}: metadata.parquet references image {stem!r} (partition "
