@@ -106,9 +106,14 @@ def convert_classes_csv(
 
     with (root / csv_name).open(newline="", encoding="utf-8") as handle:
         reader = csv.DictReader(handle)
-        fieldnames = reader.fieldnames or []
+        # v1-yolov8s's header carries a space after each comma ("filename, Bleached,
+        # Healthy"); strip it from the reader's own fieldnames (not just a local copy)
+        # so the records it yields are keyed by the stripped names too — otherwise
+        # `record[label]` below would look up a stripped name against unstripped keys.
+        fieldnames = [name.strip() for name in (reader.fieldnames or [])]
         if not fieldnames:
             raise ValueError(f"{root / csv_name}: no header row")
+        reader.fieldnames = fieldnames
         filename_col, *class_cols = fieldnames
 
         images: list[StagedImage] = []

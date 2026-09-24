@@ -112,3 +112,26 @@ def test_convert_classes_csv_one_row_per_positive_class(tmp_path: Path) -> None:
     assert by_stem["img0"].width == 4
     assert by_stem["img0"].height == 4
     assert by_stem["img0"].split_group is None
+
+
+def test_convert_classes_csv_strips_whitespace_from_header(tmp_path: Path) -> None:
+    """v1-yolov8s's real ``_classes.csv`` header carries a space after each comma
+    (``filename, Bleached, Healthy``), which raised ``KeyError`` before the fix: class
+    names were stripped for lookup but the record dict was still keyed by the raw
+    (space-prefixed) header."""
+    from PIL import Image
+
+    root = tmp_path / "csv-ws"
+    root.mkdir(parents=True)
+    Image.new("RGB", (4, 4)).save(root / "img0.jpg")
+    Image.new("RGB", (4, 4)).save(root / "img1.jpg")
+    (root / "_classes.csv").write_text(
+        "filename, Bleached, Healthy\nimg0.jpg, 0, 1\nimg1.jpg, 1, 0\n", encoding="utf-8"
+    )
+
+    converted = convert_classes_csv(root, schema_id="roboflow-bleaching-native")
+
+    labels_by_stem: dict[str, list[str]] = {}
+    for row in converted.labels:
+        labels_by_stem.setdefault(row.stem, []).append(row.label)
+    assert labels_by_stem == {"img0": ["Healthy"], "img1": ["Bleached"]}
