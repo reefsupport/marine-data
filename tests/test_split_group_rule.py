@@ -133,6 +133,35 @@ def test_benthic_own_station_bay_rule() -> None:
     assert sum(counts.values()) == 31
 
 
+def test_bleaching_shares_benthic_own_station_bay_rule() -> None:
+    """`reef-support-bleaching`'s 658 images are byte-identical to
+    `reef-support-benthic-own`'s Tayrona partition (WS-D S30, R3 Q11), so its
+    `split_group` rule must be the exact same station/bay pattern/template as
+    `reef-support-benthic-own`'s — otherwise a shared image would land in different
+    groups under the two sources, defeating group-disjoint splitting."""
+    from marinedata.registry import Registry
+
+    registry = Registry.load()
+    bleaching = registry.source("reef-support-bleaching")
+    benthic_own = registry.source("reef-support-benthic-own")
+
+    assert bleaching.split_group.pattern == benthic_own.split_group.pattern
+    assert bleaching.split_group.match_field == benthic_own.split_group.match_field
+    assert bleaching.split_group.template == benthic_own.split_group.template
+
+    stem = "C10_BC_PM_T1_29nov24_CDaza_corr"
+    expected = "rs-colombia/UNAL_BLEACHING_TAYRONA/BC"
+    assert (
+        bleaching.split_group_for(
+            stem=stem, upstream_path=f"x/{stem}", partition="UNAL_BLEACHING_TAYRONA"
+        )
+        == expected
+        == benthic_own.split_group_for(
+            stem=stem, upstream_path=f"y/{stem}", partition="UNAL_BLEACHING_TAYRONA"
+        )
+    )
+
+
 def test_split_group_rule_matches_metadata_column(tmp_path: Path) -> None:
     """The value ``source.split_group_for(...)`` computes for a staged row must be the
     exact value that lands in ``metadata.parquet``'s ``split_group`` column — no

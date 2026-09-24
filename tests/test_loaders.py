@@ -535,6 +535,11 @@ _INTENTIONALLY_UNWIRED_LAYOUTS = {
         "(WSD S15b, 2026-09-24); converter kept for a future re-export of raw "
         "upstream JSONs"
     ),
+    "dual-condition-masks": (
+        "reef-support-bleaching moved to staged-tree once its staged tree was pinned "
+        "(WS-D S30, 2026-09-24); loader kept for a future re-export of the raw "
+        "masks_bleached/masks_non_bleached pair"
+    ),
 }
 
 
