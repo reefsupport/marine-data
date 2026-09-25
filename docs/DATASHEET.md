@@ -101,16 +101,23 @@ been done in-house.
 ### Ethics
 
 **Diver / face presence.** A subset of in-water photographs may show a diver's face,
-hands or body. We ran an OpenCV Haar-cascade face detector (frontal + profile,
-`haarcascade_frontalface_default.xml` + `haarcascade_profileface.xml`, grayscale,
-longest side downscaled to <=480px, `scaleFactor=1.1`, `minNeighbors=5`,
-`minSize=24px`) over **all 69,600** `images`-config rows. This is a coarse,
-high-recall/low-precision proxy for "a person may be visible" — it also fires on
-coral texture and is not a per-image ground-truth label. Result:
-**12,433 of 69,600 images (17.9%)** were flagged face-positive. Full method,
-per-source breakdown and the raw counts are in
-[`docs/ETHICS_FACE_AUDIT.md`](ETHICS_FACE_AUDIT.md). No face has been identified to a
-named individual; no consent-tracking field exists per sample.
+hands or body. The original OpenCV Haar-cascade proxy (12,433/69,600 = 17.9% flagged,
+mostly coral-texture false positives) was replaced (WP-5b/5d) by two real, open-weight
+detectors — YuNet (faces) and a COCO person model — run over all 69,600 images, with
+the results manually audited against a stratified, seed-fixed sample of 350 images
+(150 face-flagged, 100 person-flagged, 100 negatives; `docs/privacy-audit-2026-09-25.tsv`).
+Audited results: **face precision 12.0% (18/150, 95% CI 7.7–18.2%)**, **person precision
+33.0% (33/100, 95% CI 24.6–42.7%)** — both detectors still fire mostly on coral/rock
+texture and polyp clusters, not real people. Of the 69,600 images, the detector flags
+3,387 as face-positive and 1,117 as person-positive (296 overlap). Extrapolating the
+audit's identifiable-face rate per stratum gives an estimated **~348 images (0.50%,
+95% CI 0.30–4.32%)** contain a face someone could actually recognise; the 100-image
+negative sample found zero missed faces/persons (Wilson upper bound on the miss rate:
+3.7%). Full method, per-detector precision, the occlusion-heuristic calibration and
+raw counts are in [`docs/ETHICS_FACE_AUDIT.md`](ETHICS_FACE_AUDIT.md) and the audit TSV.
+No face has been identified to a named individual; no consent-tracking field exists per
+sample. Per `docs/PRIVACY.md`, the v2 build blurs every `face_identifiable` box in the
+released pixels and ships a `face_identifiable` column in `metadata`.
 
 **Sensitive-species location policy.** v1 carries **zero** per-sample geographic
 coordinates — no `lat`/`lon` field exists anywhere in the current schema (r0 D8), so
@@ -287,4 +294,4 @@ why).
 | Zero-label configs | benthic-coarse, benthic-l2: 0 image labels (1,908 mask_class_map rows only); coral-genus-caribbean: 0 labels, dropped | `docs/RATING_EVIDENCE_R0.md` |
 | Split drift | realized 85.7/7.2/7.1 vs 70/15/15 target | `docs/RATING_EVIDENCE_R0.md` |
 | Pseudo-labels | 37,273 CoralSCOP masks are model output | `docs/RATING_EVIDENCE_R0.md` |
-| Diver/face presence | 12,433 of 69,600 images (17.9%) flagged by a Haar-cascade proxy | `docs/ETHICS_FACE_AUDIT.md` |
+| Diver/face presence | YuNet+COCO-person scan: 3,387 face-flagged / 1,117 person-flagged (296 overlap); audited precision 12.0% faces / 33.0% persons; ~348 (0.50%) images estimated to contain an identifiable face | `docs/ETHICS_FACE_AUDIT.md` |
