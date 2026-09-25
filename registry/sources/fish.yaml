@@ -8,6 +8,8 @@
 sources:
   - id: ozfish
     name: OzFish
+    # habitat inferred (WP-2b) from this source's own description/notes, not independently verified
+    habitat: [coral_reef]
     version: "2020"
     description: >
       Stereo-BRUV reef fish dataset with bounding boxes and millimetre length
@@ -58,6 +60,8 @@ sources:
 
   - id: deepfish
     name: DeepFish
+    # habitat inferred (WP-2b) from this source's own description/notes, not independently verified
+    habitat: [mixed]
     version: "2020"
     description: Habitat-diverse fish imagery from turbid Australian waters, with segmentation and counts.
     licence: CC-BY-4.0
@@ -146,6 +150,8 @@ sources:
 
   - id: seamapd21
     name: SEAMAPD21
+    # habitat inferred (WP-2b) from this source's own description/notes, not independently verified
+    habitat: [mixed]
     version: "2021"
     description: Reef fish detection from Gulf of Mexico BRUV footage, 130 species.
     licence: NO-LICENCE-STATED
@@ -188,6 +194,8 @@ sources:
 
   - id: fishnet-2023
     name: FishNet (ICCV 2023)
+    # habitat inferred (WP-2b) from this source's own description/notes, not independently verified
+    habitat: [mixed]
     version: "2023"
     description: Largest species-labelled fish taxonomy benchmark — 17,357 species with traits.
     licence: NO-LICENCE-STATED
@@ -238,6 +246,8 @@ sources:
 
   - id: mft25
     name: MFT25 (Multiple Fish Tracking 2025)
+    # habitat inferred (WP-2b) from this source's own description/notes, not independently verified
+    habitat: [mixed]
     version: "2025"
     description: >
       The first proper underwater fish multi-object-tracking benchmark, released with
@@ -278,6 +288,8 @@ sources:
 
   - id: deepsea-mot
     name: DeepSea MOT (MBARI)
+    # habitat inferred (WP-2b) from this source's own description/notes, not independently verified
+    habitat: [deep_sea_benthic]
     version: "2025"
     description: First public deep-sea multi-object-tracking benchmark.
     licence: CC-BY-SA-4.0
@@ -313,6 +325,8 @@ sources:
 
   - id: fathomnet
     name: FathomNet
+    # habitat inferred (WP-2b) from this source's own description/notes, not independently verified
+    habitat: [deep_sea_benthic]
     version: "live"
     description: Large deep-sea annotation ecosystem with a mature API and taxonomy backbone.
     licence: PER-SOURCE-VARIES
@@ -367,6 +381,8 @@ sources:
 
   - id: mouss-detection
     name: MOUSS fish imagery (NOAA PIFSC)
+    # habitat inferred (WP-2b) from this source's own description/notes, not independently verified
+    habitat: [deep_sea_benthic]
     version: "2024"
     description: Grayscale stationary-camera fish detection from Hawaiian BFISH surveys.
     licence: US-GOV-PD
@@ -402,6 +418,8 @@ sources:
 
   - id: labeled-fishes-in-the-wild
     name: Labeled Fishes in the Wild (NOAA SWFSC)
+    # habitat inferred (WP-2b) from this source's own description/notes, not independently verified
+    habitat: [rocky_reef]
     version: "2014"
     description: Canonical NOAA benchmark for fish detection in cluttered rocky habitat.
     licence: US-GOV-PD
@@ -460,6 +478,8 @@ sources:
 
   - id: brackish-dataset
     name: Brackish Dataset (AAU)
+    # habitat inferred (WP-2b) from this source's own description/notes, not independently verified
+    habitat: [soft_sediment]
     version: "2019"
     description: The only major temperate/brackish underwater detection set — fish and crustaceans.
     licence: CC-BY-SA-4.0
@@ -501,6 +521,8 @@ sources:
 
   - id: fish4knowledge
     name: Fish4Knowledge
+    # habitat inferred (WP-2b) from this source's own description/notes, not independently verified
+    habitat: [coral_reef]
     version: "2013"
     description: Classic imbalanced live-reef-fish recognition set with segmentation masks.
     licence: NO-LICENCE-STATED
@@ -556,6 +578,8 @@ sources:
 
   - id: sea-urchin-detection
     name: Sea Urchin detection (Roboflow)
+    # habitat inferred (WP-2b) from this source's own description/notes, not independently verified
+    habitat: [rocky_reef]
     version: "unversioned"
     description: Multi-class urchin detection — relevant to herbivory and reef-state indicators.
     licence: CC-BY-4.0

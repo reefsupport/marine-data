@@ -44,7 +44,9 @@ reads whole row groups, so 100 MB groups risk ``TooBigContentError`` (hub-docs
 ROW_OVERHEAD_BYTES = 256
 """Allowance per row for the scalar columns and the struct ``path`` in size planning."""
 
-SCALAR_TYPES = ("string", "bool", "int64")
+SCALAR_TYPES = ("string", "bool", "int64", "double")
+"""``double`` (float64) added for WP-2's pixel-free ``metadata`` config (lat/lon, depth,
+quality scores) — no config before it needed a floating column."""
 IMAGE = "image"
 
 
@@ -131,7 +133,12 @@ def features_metadata(spec: ConfigSpec) -> dict:
 def arrow_schema(spec: ConfigSpec):
     import pyarrow as pa
 
-    types = {"string": pa.string(), "bool": pa.bool_(), "int64": pa.int64()}
+    types = {
+        "string": pa.string(),
+        "bool": pa.bool_(),
+        "int64": pa.int64(),
+        "double": pa.float64(),
+    }
     fields = []
     for name, kind in spec.columns:
         if kind == IMAGE:

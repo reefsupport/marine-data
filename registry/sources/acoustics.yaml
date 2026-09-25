@@ -8,6 +8,8 @@
 sources:
   - id: reefset-v1
     name: ReefSet v1.0
+    # habitat inferred (WP-2b) from this source's own description/notes, not independently verified
+    habitat: [coral_reef]
     version: "1.0"
     description: >
       The reef-bioacoustics training set behind SurfPerch — labelled reef sound clips
@@ -67,6 +69,8 @@ sources:
 
   - id: mbari-pacific-sound
     name: MBARI Pacific Sound (MARS hydrophone)
+    # habitat inferred (WP-2b) from this source's own description/notes, not independently verified
+    habitat: [pelagic]
     version: "live"
     description: Petabyte-scale continuous hydrophone archive from Monterey Bay.
     licence: CC-BY-4.0
@@ -99,6 +103,8 @@ sources:
 
   - id: sanctsound
     name: NOAA SanctSound passive acoustic archive
+    # habitat inferred (WP-2b) from this source's own description/notes, not independently verified
+    habitat: [mixed]
     version: "2018-2021"
     description: Multi-site US sanctuary passive acoustic monitoring with daily species detections.
     licence: CC0-1.0
@@ -120,6 +126,8 @@ sources:
 
   - id: curacao-reef-soundscape
     name: Curaçao reef soundscape with 360° video
+    # habitat inferred (WP-2b) from this source's own description/notes, not independently verified
+    habitat: [coral_reef]
     version: "2025"
     description: >
       Spatially-resolved reef sound with paired 360° video linking fish sounds to source
@@ -154,6 +162,8 @@ sources:
 
   - id: watkins-marine-mammal
     name: Watkins Marine Mammal Sound Database
+    # habitat inferred (WP-2b) from this source's own description/notes, not independently verified
+    habitat: [pelagic]
     version: "2016"
     description: The canonical marine-mammal reference sound library, 60+ species.
     licence: PROVENANCE-DEFECTIVE

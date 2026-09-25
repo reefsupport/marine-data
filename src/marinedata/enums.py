@@ -176,6 +176,27 @@ class Region(str, Enum):
     UNKNOWN = "unknown"
 
 
+class Habitat(str, Enum):
+    """Controlled vocabulary for the physical setting a source's imagery was captured
+    in (WP-2b). Coarser than MEOW ecoregion — orthogonal to geography, since the same
+    habitat recurs across realms. A source may declare more than one (see
+    ``Source.habitat``); each entry is inferred from the source's own description/notes
+    unless the registry comment says otherwise.
+    """
+
+    CORAL_REEF = "coral_reef"
+    SEAGRASS = "seagrass"
+    MANGROVE = "mangrove"
+    KELP_FOREST = "kelp_forest"
+    ROCKY_REEF = "rocky_reef"
+    SOFT_SEDIMENT = "soft_sediment"
+    DEEP_SEA_BENTHIC = "deep_sea_benthic"
+    PELAGIC = "pelagic"
+    MIXED = "mixed"
+    ARTIFICIAL = "artificial"
+    LAB = "lab"
+
+
 class Provenance(str, Enum):
     """Who produced the data. Orthogonal to licence: partner data may have no licence."""
 

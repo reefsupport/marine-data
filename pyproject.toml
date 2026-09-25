@@ -29,6 +29,7 @@ privacy = [
     "opencv-python-headless>=4.9",
     "pyarrow>=15",
 ]
+geo = ["shapely>=2.0"]
 all = ["pandas>=2.0", "torch>=2.2", "numpy>=1.24", "pillow>=10.0"]
 dev = [
     "pytest>=8.0",
