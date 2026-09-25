@@ -35,6 +35,7 @@ def _cmd_run(args: argparse.Namespace) -> int:
         weights=args.weights,
         cache_path=args.cache,
         embed_knn=not args.no_embed_knn,
+        dedup_crop=args.dedup_crop,
         log=main_log,
     )
     names = ["pixel", "hash"] + (["embed"] if not args.no_embed_knn else [])
@@ -81,6 +82,7 @@ def _cmd_eval(args: argparse.Namespace) -> int:
         args.cache,
         ConfirmRules(),
         per_family=args.per_family,
+        dedup_crop=args.dedup_crop,
         log=main_log,
     )
     dump_json(out, args.out / "eval.json")
@@ -132,6 +134,12 @@ def add_dedup_subparser(sub: argparse._SubParsersAction) -> None:
         q.add_argument("--out", type=Path, required=True, help="Output dir for the parquet files")
         q.add_argument("--weights", type=Path, help="SSCD TorchScript weights")
         q.add_argument("--cache", type=Path, help="Embedding cache (SQLite)")
+        q.add_argument(
+            "--dedup-crop",
+            action=argparse.BooleanOptionalAction,
+            default=False,
+            help="Confirm crop candidates by NCC + box re-embed (default off, see WP-10c)",
+        )
 
     q = dsub.add_parser("run", help="Hash, embed, dedup and group a corpus")
     inputs(q)

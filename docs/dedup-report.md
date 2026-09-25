@@ -52,8 +52,7 @@ inside v1, where the Roboflow datasets re-export the same footage: flips, rotati
 of the same video frames.
 
 Across corpora (v1 ↔ mermaid ↔ coralscapes) there are only 3 clusters (7 images). All 3 were
-confirmed by the crop matcher at cos 0.50–0.53 and NCC 0.86–0.93. They were not audited, so treat
-them as suspect (see Open).
+confirmed by the crop matcher at cos 0.50–0.53 and NCC 0.86–0.93. WP-10b audited them: all 3 are false merges (see the crop audit below).
 
 `matrix[A][B]` counts the unique images of A whose dup cluster also holds an image of B. The
 diagonal counts images of A that have another A image in their cluster. The table lists only the
@@ -154,3 +153,31 @@ The option defaults to off, and the v1 code path is unchanged when it is off.
 3. **mermaid-aws has no sequence or dive key in the staged tree.** Only dup clusters group it.
 4. **The gate has not been run on a built release directory.** Its tests use fixtures.
    `audit render` assumes every item has a sha256, so staged-only pairs are not renderable yet.
+
+## Crop and cross-corpus audit (WP-10b, D-I model audit, not a human audit)
+
+All 185 `crop` confirmations were judged (a census, not a sample) from the patch, the NCC box cut out of
+the parent, and the parent, side by side. Verdicts: `docs/dedup-crop-audit-2026-09-25.tsv`.
+
+- derivative 3 · same scene 33 · different 149.
+- Precision, duplicate or same scene: **36/185 = 19.5% [Wilson 95% 14.4–25.8]**. As a crop detector: 3/185 = 1.6% [0.6–4.7].
+- By cos band: [0.50,0.52) 9/68 · [0.52,0.55) 8/68 · [0.55,0.60) 6/30 · [0.60,1] 13/19. By NCC band: [0.85,0.87) 15/59 ·
+  [0.87,0.90) 13/73 · [0.90,0.93) 4/23 · [0.93,1] 4/30. Every band is wrong; NCC is not even monotone.
+- By corpus: mermaid↔mermaid 0/128 [0–2.9] · v1↔v1 36/54 · cross-corpus 0/3.
+- Only 1 of the 36 positives was also joined by a non-crop edge. The 33 same-scene v1 pairs (adjacent video frames,
+  repeat photos of one plot) were joined by coincidence: in none of them is the NCC box the patch content.
+- Mechanism: 163/185 matches sit at scale ≤ 0.2. There the whole patch shrinks to a template of ≤ 51 px that keeps only
+  its low-frequency gradient (light bar, vignette, water column), and NCC finds that gradient in almost any murky parent.
+  Every mermaid-aws frame has the same light bar, hence 128 false merges.
+- Cross-corpus clusters: **0/3 real**. C008 (v1↔coralscapes), C023 and C103 (v1↔mermaid) are unrelated scenes, all matched at
+  scale 0.08. The v1↔v1 edge inside `dc-35f5d77f` is a real same-scene pair and stays.
+- Proposed, NOT committed: a `crop_scale_min = 0.30` floor on the match grid. Synthetic crops keep 0.60–0.95 per side, so the floor
+  never excludes one. Under the floor the 3 cross-corpus NCCs drop to 0.82 / 0.61 / 0.82 (< 0.85), so the clusters split
+  (a synthetic fixture for this passed locally, then was reverted with the floor). Synthetic crop recall, crop family only,
+  n=400, seed 0: not measured with the floor, not measured without. Floor committed: no. The crop-only eval ran, but its recall was not captured, so the ≥ 85% gate is unproven. The thresholds are unchanged.
+- Not fixed by any threshold: with the floor, 68 of the 185 still confirm (3 derivative, 6 same scene, 59 different; 13%).
+  NCC ≥ 0.93 keeps 6 false and loses C182 (0.929); NCC ≥ 0.95 keeps 1 false and loses 1 of the 3 real crops. Cos does not
+  separate them either: the false pairs run up to cos 0.655, and the real crops sit at 0.547–0.690.
+
+**`--dedup-v2` is not ready to flip** while the crop channel is on. The fix is to verify the box, not to tighten NCC: re-embed
+`parent[box]` with SSCD and require a high cos to the patch. Until then, either keep v2 off or flip it with the crop channel off.
