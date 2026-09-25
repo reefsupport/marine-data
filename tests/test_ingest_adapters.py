@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import hashlib
 import json
 import urllib.parse
 from pathlib import Path
@@ -117,8 +118,8 @@ def test_zenodo_adapter_zip_with_label_files_md5_checked(server, tmp_path):
     assert list(labels[0].label_files) == ["masks/a_mask.png"]
 
 
-def test_zenodo_adapter_md5_mismatch_raises(server, tmp_path):
-    server.add("/files/y.zip", zip_bytes({"a.png": png(1)}))
+def _zenodo_record(server, body: bytes, *, size, checksum):
+    server.add("/files/y.zip", body)
     server.add(
         "/api/records/7",
         {
@@ -126,15 +127,41 @@ def test_zenodo_adapter_md5_mismatch_raises(server, tmp_path):
             "files": [
                 {
                     "key": "y.zip",
-                    "size": None,
-                    "checksum": "md5:" + "0" * 32,
+                    "size": size,
+                    "checksum": checksum,
                     "links": {"self": f"{server.base}/files/y.zip"},
                 }
             ],
         },
     )
-    with pytest.raises(ValueError, match="md5"):
-        _run(make_adapter("zenodo", {"zenodo_record": 7, "endpoint": server.base}), tmp_path)
+    return make_adapter("zenodo", {"zenodo_record": 7, "endpoint": server.base})
+
+
+def test_zenodo_adapter_md5_mismatch_kept_and_recorded(server, tmp_path):
+    """D-AG: a declared-md5 mismatch keeps the image and records upstream_match=False."""
+    adapter = _zenodo_record(
+        server, zip_bytes({"a.png": png(1)}), size=None, checksum="md5:" + "0" * 32
+    )
+    out = list(adapter.samples(tmp_path))
+    assert [item.key for item, _, _ in out] == ["y.zip"]
+    assert len(out) == 1
+    assert out[0][1].upstream_match is False
+
+
+def test_zenodo_adapter_md5_match_recorded_true(server, tmp_path):
+    body = zip_bytes({"a.png": png(1)})
+    checksum = "md5:" + hashlib.md5(body).hexdigest()
+    adapter = _zenodo_record(server, body, size=len(body), checksum=checksum)
+    out = list(adapter.samples(tmp_path))
+    assert len(out) == 1 and out[0][1].upstream_match is True
+
+
+def test_zenodo_adapter_size_mismatch_still_raises(server, tmp_path):
+    """A byte-count mismatch is a short transfer, not a provider-hash disagreement: it raises."""
+    body = zip_bytes({"a.png": png(1)})
+    adapter = _zenodo_record(server, body, size=len(body) + 1, checksum="md5:" + "0" * 32)
+    with pytest.raises(ValueError, match="bytes != declared"):
+        _run(adapter, tmp_path)
 
 
 def test_zenodo_adapter_refuses_restricted(server):
