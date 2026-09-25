@@ -23,9 +23,10 @@ import http.client
 import io
 import logging
 import re
+import tarfile
 import time
 import zipfile
-from collections.abc import Callable
+from collections.abc import Callable, Iterator
 from typing import IO, Any
 
 from ..concurrency import RetriesExhausted
@@ -250,3 +251,46 @@ def read_member(zf: zipfile.ZipFile, rf: RemoteFile, info: zipfile.ZipInfo) -> b
     start, end = member_span(zf, info)
     rf.load(start, end)
     return _read_zip_member(zf, info)
+
+
+def iter_tar_stream(
+    fileobj: IO[bytes],
+    *,
+    member_ok: Callable[[str], bool],
+    max_bytes: int,
+    resume_after: str | None = None,
+) -> Iterator[tuple[str, bytes]]:
+    """WP-6n: stream a ``.tar``/``.tar.gz``/``.tgz`` container member-by-member with no
+    on-disk copy. Unlike a zip (WP-6k), a tar has no central directory, so it cannot be
+    range-read; ``fileobj`` (the raw HTTP body) is consumed sequentially, once, through
+    ``tarfile.open(mode="r|*")`` (gz/bz2/xz auto-detected from content). ``member_ok`` is
+    the caller's existing image/label member filter; a member whose header declares more
+    than ``max_bytes`` is skipped without ever being read — the same per-item size cap
+    other adapters apply, just enforced from the header instead of a completed download.
+
+    Resume (D-D): a tar cannot seek, so a caller resuming after a crash reopens the url
+    from byte 0 and passes the checkpointed ``resume_after`` member name; every member up
+    to and including it is re-read off the wire here and discarded, never re-yielded --
+    that redownload of the already-uploaded prefix is the accepted cost of a tar having no
+    index (a zip resume needs no redownload, WP-6k, because its central directory lets a
+    later member be range-read directly).
+    """
+    skipping = resume_after is not None
+    with tarfile.open(fileobj=fileobj, mode="r|*") as tar:
+        for member in tar:
+            if not member.isfile():
+                continue
+            if skipping:
+                if member.name == resume_after:
+                    skipping = False
+                continue
+            if not member_ok(member.name):
+                continue
+            if member.size > max_bytes:
+                log.warning(
+                    "tar member %s: %d B over the %d B cap, skipped",
+                    member.name, member.size, max_bytes,
+                )  # fmt: skip
+                continue
+            handle = tar.extractfile(member)
+            yield member.name, (handle.read() if handle is not None else b"")

@@ -12,6 +12,11 @@ WP-6k (D-AH 4): a ``.zip`` item is never spooled to local disk, whatever its siz
 central directory is read over HTTP Range (:func:`~._range.open_remote_zip`) and each
 member is expanded into its own item, read with one further ranged GET
 (:func:`~._range.read_member`, Deflate64-safe) straight into memory.
+
+WP-6n: a ``.tar``/``.tar.gz``/``.tgz`` item has no central directory, so it cannot be
+range-read like a zip. It is expanded the same way (one item per member, ``key#member``)
+but the container is opened as a plain streaming HTTP body and walked once, sequentially,
+via :func:`~._range.iter_tar_stream` -- never written to disk, never spooled whole.
 """
 
 from __future__ import annotations
@@ -26,8 +31,10 @@ from collections.abc import Iterator
 from pathlib import Path, PurePosixPath
 
 from . import SPOOLED, STREAMABLE, AccessRefused, BaseAdapter, Fetched, RemoteItem, suffix_of
-from ._http import HashingReader, get_json
-from ._range import RemoteFile, open_remote_zip, read_member
+from ._http import HashingReader, get_json, open_url
+from ._range import RemoteFile, iter_tar_stream, open_remote_zip, read_member
+
+TAR_MEMBER_MAX_BYTES = 64 * 1024 * 1024  # 64 MiB: the per-item size cap for a tar member
 
 log = logging.getLogger(__name__)
 
@@ -85,12 +92,48 @@ class HttpAdapter(BaseAdapter):
             )
 
     # -- WP-6k: zip members over HTTP Range, never spooled (D-AH 4) ---------------------
+    # -- WP-6n: tar members streamed sequentially, never spooled -------------------------
     def enumerate(self, *, limit: int | None = None) -> Iterator[RemoteItem]:
+        # ``stream_tar_members`` (WP-6n) is opt-in: existing WebDataset-style specs decode
+        # a tar's paired members into one grouped sample (decode.py's ``_tar_members`` +
+        # ``_group``) and must keep seeing ONE item per tar; only a spec that wants each
+        # image as its own item (e.g. onc-camdsb103-fauna, no shard pairing) sets this.
+        stream_tar = bool(self.params.get("stream_tar_members"))
         for item in super().enumerate(limit=limit):
-            if suffix_of(item.key) == ".zip" and not self.is_label(item.key):
+            suffix = suffix_of(item.key)
+            if suffix == ".zip" and not self.is_label(item.key):
                 yield from self._expand_zip(item)
+            elif (
+                stream_tar
+                and suffix in (".tar", ".tar.gz", ".tgz")
+                and not self.is_label(item.key)
+            ):
+                yield from self._expand_tar(item)
             else:
                 yield item
+
+    def _member_ok(self, name: str) -> bool:
+        # same decodable-suffix-or-label filter BaseAdapter.enumerate() applies at the
+        # top level (D-AH 4), reused so a stray README/script inside the tar is dropped
+        # rather than crashing the whole source.
+        return suffix_of(name) in STREAMABLE + SPOOLED or self.is_label(name)
+
+    def _expand_tar(
+        self, item: RemoteItem, *, resume_after: str | None = None
+    ) -> Iterator[RemoteItem]:
+        if not hasattr(self, "_tar_members"):
+            self._tar_members: dict[str, bytes] = {}
+            self._tar_lock = threading.Lock()
+        resp = open_url(item.url)
+        stream = iter_tar_stream(
+            resp, member_ok=self._member_ok, max_bytes=TAR_MEMBER_MAX_BYTES,
+            resume_after=resume_after,
+        )  # fmt: skip
+        for name, data in stream:
+            key = f"{item.key}#{name}"
+            with self._tar_lock:
+                self._tar_members[key] = data
+            yield RemoteItem(key=key, url=item.url, size=len(data))
 
     def _expand_zip(self, item: RemoteItem) -> Iterator[RemoteItem]:
         if item.size is None:
@@ -119,6 +162,9 @@ class HttpAdapter(BaseAdapter):
             yield RemoteItem(key=key, url=item.url, size=info.file_size)
 
     def fetch(self, item: RemoteItem, tmp_dir: Path) -> Fetched:
+        tar_data = getattr(self, "_tar_members", {}).pop(item.key, None)
+        if tar_data is not None:
+            return Fetched(item, stream=HashingReader(io.BytesIO(tar_data)))
         member = getattr(self, "_zip_members", {}).get(item.key)
         if member is None:
             return super().fetch(item, tmp_dir)

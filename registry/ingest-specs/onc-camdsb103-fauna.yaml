@@ -3,6 +3,7 @@ id: onc-camdsb103-fauna
 adapter: zenodo
 params:
   zenodo_record: 22134596
+  stream_tar_members: true  # WP-6n: one item per image, no on-disk container (D-AH 4)
 license: cc-by-4.0
 attribution: Bigham, Carter (2026), Zenodo
 citation: doi:10.5281/zenodo.22134596 — CAMDSB103 August 2022 to August 2023 Fauna Annotations
