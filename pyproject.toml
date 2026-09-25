@@ -17,7 +17,7 @@ pandas = ["pandas>=2.0"]
 torch = ["torch>=2.2", "numpy>=1.24", "pillow>=10.0"]
 tf = ["tensorflow>=2.15"]
 hf = ["datasets>=2.18"]
-ingest = ["pyarrow>=15", "pillow==11.0.0"]
+ingest = ["pyarrow>=15", "pillow==12.3.0"]
 all = ["pandas>=2.0", "torch>=2.2", "numpy>=1.24", "pillow>=10.0"]
 dev = ["pytest>=8.0", "ruff==0.16.3", "mypy>=1.9", "pandas>=2.0", "numpy>=1.24", "pillow>=10.0"]
 

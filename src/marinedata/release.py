@@ -102,9 +102,7 @@ def _never_eval_source_ids(registry: Registry, source_ids: Iterable[str]) -> set
     """Admitted sources tagged ``never-eval`` in the registry (WS-D S15c) — their rows
     may only ever land in the ``train`` split."""
     return {
-        source_id
-        for source_id in source_ids
-        if "never-eval" in registry.source(source_id).tags
+        source_id for source_id in source_ids if "never-eval" in registry.source(source_id).tags
     }
 
 

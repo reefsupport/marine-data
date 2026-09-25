@@ -75,7 +75,7 @@ def _finish_staging(
     if mask_count:
         # False provenance otherwise: a byte-for-byte copy path (or a points-only
         # stage with no masks at all) never ran pillow over anything.
-        ingest_meta["mask_encoder"] = "pillow/11.0.0"
+        ingest_meta["mask_encoder"] = "pillow/12.3.0"
     if extra_ingest:
         ingest_meta.update(extra_ingest)
     source_json_path = version_root / "SOURCE.json"

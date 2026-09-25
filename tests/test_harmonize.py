@@ -209,7 +209,12 @@ def test_roboflow_unhealthy_never_resolves_to_bleached(registry: Registry) -> No
 
     task = registry.task("bleaching-condition")
     assert set(task.classes) == {
-        "HEALTHY", "PALE", "BLEACHED", "DISEASED", "RECENTLY_DEAD", "OLD_DEAD",
+        "HEALTHY",
+        "PALE",
+        "BLEACHED",
+        "DISEASED",
+        "RECENTLY_DEAD",
+        "OLD_DEAD",
     }, "bleaching-condition classes must stay the six leaves; UNHEALTHY is an ancestor."
     projector = TaskProjector(task, target)
     projection = projector.project(node_id)
