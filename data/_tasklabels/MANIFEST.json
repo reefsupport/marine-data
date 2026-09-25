@@ -1,0 +1,11 @@
+{
+  "files": {
+    "coralvqa/vqa.parquet": {
+      "status": "invalid",
+      "since": "2026-09-25",
+      "reason": "sha256 is null on all 254,867 rows (1 distinct value: null). The WP-8d producer (task_layers/sources/coralvqa.py) hard-coded sha256=None because CoralVQA's images (a single 26.7 GB CoralVQA_Image.zip) are not staged, so no row can join to an image.",
+      "resume": "stage the CoralVQA images, then re-run `python -m marinedata.task_layers.sources.coralvqa --train ... --test ... --images <dir> --out data/_tasklabels/coralvqa/vqa.parquet` (fails closed on unstaged images unless --allow-partial) and drop this entry.",
+      "found_by": "INT-core3b"
+    }
+  }
+}

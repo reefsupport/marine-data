@@ -90,6 +90,30 @@ def _tasklabels_path(base_dir: Path, source_id: str, task: str) -> Path:
     return base_dir / "_tasklabels" / source_id / f"{task}.parquet"
 
 
+TASKLABELS_MANIFEST = "MANIFEST.json"
+"""``<base_dir>/_tasklabels/MANIFEST.json``: ``{"files": {"<source_id>/<task>.parquet":
+{"status": "invalid", "reason": ...}}}``. A file marked ``invalid`` is tracked for the
+record but never read into a config (INT-core3b: coralvqa's null-keyed ``vqa.parquet``)."""
+
+
+def tasklabels_status(base_dir: Path, source_id: str, task: str) -> str:
+    """``"invalid"`` if the tasklabels manifest marks this file so, else ``"ok"``."""
+    path = Path(base_dir) / "_tasklabels" / TASKLABELS_MANIFEST
+    if not path.is_file():
+        return "ok"
+    files = json.loads(path.read_text()).get("files", {})
+    return str(files.get(f"{source_id}/{task}.parquet", {}).get("status", "ok"))
+
+
+def _read_tasklabels(base_dir: Path, source_id: str, task: str) -> list[dict]:
+    """The D-Z2 rows of one tasklabels file — none if the manifest marks it ``invalid``,
+    and never a row without its ``sha256`` join key (a null key joins to no image)."""
+    if tasklabels_status(base_dir, source_id, task) == "invalid":
+        return []
+    rows = _read_parquet(_tasklabels_path(base_dir, source_id, task))
+    return [row for row in rows if row.get("sha256")]
+
+
 @dataclass
 class _SourceUnmapped:
     known: int = 0
@@ -130,7 +154,7 @@ def build_points_config(registry: Registry, base_dir: str | Path) -> ConfigResul
 
     for source_id in POINT_SOURCES:
         tally = unmapped.setdefault(source_id, _SourceUnmapped())
-        for point in _read_parquet(_tasklabels_path(base_dir, source_id, "points")):
+        for point in _read_tasklabels(base_dir, source_id, "points"):
             canonical = _canonical_taxon(registry, source_id, point["native_label"])
             if canonical is None:
                 tally.unmapped += 1
@@ -159,7 +183,7 @@ def build_vqa_config(base_dir: str | Path) -> ConfigResult:
     label_status = _load_label_status(base_dir)
     rows: list[dict] = []
     for source_id in ("coralvqa",):
-        for record in _read_parquet(_tasklabels_path(base_dir, source_id, "vqa")):
+        for record in _read_tasklabels(base_dir, source_id, "vqa"):
             rows.append({**record, "label_status": label_status.get(record["sha256"], "ok")})
     return ConfigResult("vqa", tuple(rows), {})
 
@@ -175,7 +199,7 @@ def build_semseg_config(registry: Registry, base_dir: str | Path) -> ConfigResul
 
     for source_id in SEMSEG_SOURCES:
         tally = unmapped.setdefault(source_id, _SourceUnmapped())
-        for record in _read_parquet(_tasklabels_path(base_dir, source_id, "semseg")):
+        for record in _read_tasklabels(base_dir, source_id, "semseg"):
             native_counts: dict[str, int] = json.loads(record["class_counts"])
             canonical_counts: dict[str, int] = {}
             for native_label, n in native_counts.items():
@@ -256,10 +280,10 @@ def _build_benthic_rollup(
             source_of.setdefault(sha256, source_id)
 
     for source_id in POINT_SOURCES:
-        points = _read_parquet(_tasklabels_path(base_dir, source_id, "points"))
+        points = _read_tasklabels(base_dir, source_id, "points")
         add(source_id, _coarse_counts_from_points(registry, projector, source_id, points))
     for source_id in SEMSEG_SOURCES:
-        masks = _read_parquet(_tasklabels_path(base_dir, source_id, "semseg"))
+        masks = _read_tasklabels(base_dir, source_id, "semseg")
         add(source_id, _coarse_counts_from_masks(registry, projector, source_id, masks))
 
     result = {
@@ -325,7 +349,7 @@ def build_bleaching_config(registry: Registry, base_dir: str | Path) -> ConfigRe
     rows: list[dict] = []
     for source_id in BLEACHING_SOURCES:
         tally = unmapped.setdefault(source_id, _SourceUnmapped())
-        for record in _read_parquet(_tasklabels_path(base_dir, source_id, "bleaching")):
+        for record in _read_tasklabels(base_dir, source_id, "bleaching"):
             node = _canonical(registry, source_id, record["native_label"], Axis.CONDITION)
             if node is None:
                 tally.unmapped += 1

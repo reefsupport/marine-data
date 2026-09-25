@@ -172,24 +172,77 @@ def test_parse_line_test_flat_shape_has_no_answer():
     assert parsed["question"] == "what color?"
 
 
-def test_build_rows_sha256_is_null_for_unstaged_images(tmp_path):
-    line = json.dumps(
+def _vqa_line(image: str, q: str = "q") -> str:
+    return json.dumps(
         {
-            "image": "1.jpg",
+            "image": image,
             "conversations": [
-                {"from": "human", "value": "<image>\n[vqa] q"},
+                {"from": "human", "value": f"<image>\n[vqa] {q}"},
                 {"from": "gpt", "value": "a"},
             ],
         }
     )
-    rows = coralvqa.build_rows([line], "train")
-    assert rows[0]["sha256"] is None
-    assert rows[0]["split_hint"] == "train"
+
+
+def test_build_rows_keys_every_row_by_its_staged_image_sha256(tmp_path):
+    """INT-core3b regression: the WP-8d producer wrote sha256=None on every row, so the
+    tracked vqa.parquet had 1 distinct key for 11,811 images. Distinct sha256 must equal
+    distinct staged images, and an unstaged image's rows are dropped, never null-keyed."""
+    images = tmp_path / "images"
+    images.mkdir()
+    for name in ("1.jpg", "2.jpg", "3.jpg"):
+        (images / name).write_bytes(name.encode() * 10)
+    lines = [
+        _vqa_line(img, f"q{i}")
+        for i, img in enumerate(["1.jpg", "1.jpg", "2.jpg", "3.jpg", "3.jpg", "3.jpg"])
+    ]
+    lines += [_vqa_line("missing.jpg"), _vqa_line("missing.jpg", "q2")]
+    unkeyed: dict[str, int] = {}
+    rows = coralvqa.build_rows(lines, "train", images, unkeyed=unkeyed)
+    assert len(rows) == 6
+    assert all(r["sha256"] for r in rows)
+    assert len({r["sha256"] for r in rows}) == len({r["image_filename"] for r in rows}) == 3
+    assert unkeyed == {"missing.jpg": 2}
     out = tmp_path / "vqa.parquet"
-    n = coralvqa.write_vqa_parquet(rows, out)
-    assert n == 1
+    assert coralvqa.write_vqa_parquet(rows, out) == 6
     table = pq.read_table(out)
-    assert set(table.column_names) >= {"sha256", "source_id", "label_origin", "qtype"}
+    assert str(table.schema.field("sha256").type) == "string"
+    assert table.column("sha256").null_count == 0
+
+
+def test_main_refuses_a_partial_write_unless_allowed(tmp_path):
+    images = tmp_path / "images"
+    images.mkdir()
+    (images / "1.jpg").write_bytes(b"x" * 10)
+    train = tmp_path / "train.jsonl"
+    train.write_text("\n".join([_vqa_line("1.jpg"), _vqa_line("missing.jpg")]))
+    out = tmp_path / "vqa.parquet"
+    args = ["--train", str(train), "--images", str(images), "--out", str(out)]
+    assert coralvqa.main(args) == 2
+    assert not out.exists()
+    assert coralvqa.main([*args, "--allow-partial"]) == 0
+    assert pq.read_table(out).num_rows == 1
+
+
+def test_tracked_tasklabels_are_keyed_or_marked_invalid():
+    """Every tracked ``data/_tasklabels/<src>/<task>.parquet`` either has a sha256 on
+    every row or is marked ``invalid`` in the tasklabels MANIFEST — and an invalid file
+    contributes no row to any config."""
+    from pathlib import Path
+
+    from marinedata.task_layers.configs import build_vqa_config, tasklabels_status
+
+    base = Path(__file__).resolve().parents[1] / "data"
+    files = sorted((base / "_tasklabels").glob("*/*.parquet"))
+    assert files, "no tracked tasklabels found"
+    for path in files:
+        source_id, task = path.parent.name, path.stem
+        column = pq.read_table(path, columns=["sha256"]).column("sha256")
+        if tasklabels_status(base, source_id, task) == "invalid":
+            continue
+        assert column.null_count == 0, f"{source_id}/{task}: null sha256 and not marked invalid"
+    assert tasklabels_status(base, "coralvqa", "vqa") == "invalid"
+    assert [r for r in build_vqa_config(base).rows if r["source_id"] == "coralvqa"] == []
 
 
 # -- Coralseg mask class counts + parquet schema -----------------------------------------
