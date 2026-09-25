@@ -25,8 +25,14 @@ Null semantics (the contract — a null always means one specific thing):
 * ``depth_zone`` is derived from ``depth_m`` by :func:`depth_zone_for` when a depth is
   known; it may be set from source-level facts (e.g. a deep-sea-only survey) with
   ``depth_m`` null. When both are set they must agree.
-* ``meow_realm`` / ``habitat`` / ``platform`` / ``camera`` null = not stated upstream and
-  not derived yet (derivation is WP-2's enrichment step, not the ingest's).
+* ``meow_realm`` / ``meow_province`` / ``meow_ecoregion`` / ``habitat`` / ``platform`` /
+  ``camera`` null = not stated upstream and not derived yet (derivation is WP-2's
+  enrichment step, not the ingest's). The three MEOW fields are always all-null or
+  all-set together (one point-in-polygon lookup fills all three or none).
+* ``location_generalized`` is ``true`` when ``lat``/``lon`` were rounded to 0.1° and the
+  precise position withheld (WP-2 location policy: a source tagged ``location-sensitive``
+  in the registry, or an IUCN CR/EN taxon). ``false`` — never null — otherwise, including
+  when there is no position to generalize.
 * ``width``/``height`` null = the bytes did not decode with Pillow at ingest time (the
   image is still staged; ``image_format`` then comes from the file suffix).
 * ``image_member`` is null in per-object layout; in shard layout ``image_path`` is the
@@ -143,8 +149,11 @@ class SampleRow:
     platform: str | None = None
     camera: str | None = None
     meow_realm: str | None = None
+    meow_province: str | None = None
+    meow_ecoregion: str | None = None
     depth_zone: str | None = None
     habitat: str | None = None
+    location_generalized: bool = False
     split_hint: str | None = None
     label_refs: tuple[str, ...] = field(default_factory=tuple)
 
@@ -200,16 +209,17 @@ def arrow_schema():
         "platform": s,
         "camera": s,
         "meow_realm": s,
+        "meow_province": s,
+        "meow_ecoregion": s,
         "depth_zone": s,
         "habitat": s,
+        "location_generalized": pa.bool_(),
         "split_hint": s,
         "label_refs": pa.list_(s),
     }
+    non_nullable = REQUIRED | {"label_refs", "location_generalized"}
     return pa.schema(
-        [
-            pa.field(n, types[n], nullable=n not in REQUIRED and n != "label_refs")
-            for n in FIELD_NAMES
-        ],
+        [pa.field(n, types[n], nullable=n not in non_nullable) for n in FIELD_NAMES],
         metadata={b"marinedata.sample_schema": SCHEMA_VERSION.encode()},
     )
 
@@ -266,6 +276,11 @@ def validate_row(row: SampleRow) -> list[str]:
         errs.append("image_member must be set exactly when image_path is a shard .tar")
     if any(not r.startswith("labels/") for r in row.label_refs):
         errs.append("label_refs must point under labels/")
+    meow = (row.meow_realm, row.meow_province, row.meow_ecoregion)
+    if any(v is not None for v in meow) and any(v is None for v in meow):
+        errs.append("meow_realm/meow_province/meow_ecoregion must be all-set or all-null")
+    if row.location_generalized and row.lat is None:
+        errs.append("location_generalized requires lat/lon to be set")
     return errs
 
 
