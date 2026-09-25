@@ -169,6 +169,80 @@ def run_confident(
     return summary
 
 
+# The bleaching-family lineage (label-origin.yaml, WP-9 D-U (4)); v3i is deliberately not
+# in this set — its Unhealthy label is a different concept, not a rater of the same call.
+V3I = "roboflow-coral-reef-classification-v3i"
+V13I = "roboflow-coral-classification-copy-changed-v13i"
+V6I = "roboflow-coral-bleaching-final-v6i"
+V1_YOLOV8S = "roboflow-coral-bleaching-general-v1-yolov8s"
+
+# label_status precedence when a sha256 hits more than one rule (WP-9 D-U).
+_STATUS_RANK = {"conflict": 3, "ambiguous": 2, "flagged_hard": 1, "ok": 0}
+
+
+def classify_conflict(rows: list[tuple[str, str]]) -> str:
+    """One of the 14 conflicting-identical-image sha256 → ``conflict`` | ``ambiguous`` | ``ok``.
+
+    ``rows`` is ``(source_id, label)`` for one sha256 in the ``coral-health-binary``
+    identical-sha conflict set (WP-9 D-U (2)); rule, not a lookup table, so it re-derives
+    the same categories tabled in ``docs/label-quality.md`` §2:
+
+    * a source appears twice with different labels (within-source duplicate) → ``conflict``;
+    * v3i disagrees with any other source → ``ok`` (a concept mismatch, not an error: v3i's
+      "Unhealthy" is a different axis, per D-U (1), never a rater of the bleaching family);
+    * v13i disagrees with v1-yolov8s alone (v6i absent) → ``conflict`` (the "Copy (Changed)"
+      fork relabelling pigmented brain coral as Bleached);
+    * v1-yolov8s disagrees with v6i and v13i together → ``ambiguous`` (pale soft coral, an
+      expert call — D-I).
+    """
+    sources = [s for s, _ in rows]
+    if len(sources) != len(set(sources)):
+        return "conflict"
+    by_source = dict(rows)
+    if V3I in by_source and any(s != V3I for s in sources):
+        return "ok"
+    if V13I in by_source and V1_YOLOV8S in by_source and V6I not in by_source:
+        return "conflict"
+    if V13I in by_source and V6I in by_source and V1_YOLOV8S in by_source:
+        return "ambiguous"
+    return "conflict"  # pragma: no cover - no such case in the audited population
+
+
+def run_label_status(hf_root: Path, labelquality_dir: Path, out_path: Path) -> dict[str, int]:
+    """``label_status`` per sha256 (WP-9 D-U): ``ok``|``conflict``|``ambiguous``|``flagged_hard``.
+
+    Population: every sha256 labelled on either task. Rules, in precedence order:
+    the 14 identical-sha conflicts (:func:`classify_conflict`, over
+    ``conflicts-coral-health-binary.tsv`` — the superset of both tasks' conflicts) beat a
+    confident-learning flag (``label_issues.parquet`` → ``flagged_hard``), which beats
+    ``ok``. Non-``ok`` rows are excluded from val/test scoring (kept in train/pretrain);
+    the eval harness applies that filter, this module only labels it.
+    """
+    import pandas as pd
+
+    status: dict[str, str] = {}
+    for task in TASKS:
+        for sha in load_labels(hf_root, task).image_sha256.unique():
+            status.setdefault(sha, "ok")
+
+    conflicts = pd.read_csv(
+        labelquality_dir / "conflicts-coral-health-binary.tsv", sep="\t"
+    )
+    for sha, grp in conflicts.groupby("image_sha256"):
+        cls = classify_conflict(list(zip(grp.source_id, grp.label, strict=True)))
+        status[sha] = cls
+
+    issues = pd.read_parquet(labelquality_dir / "label_issues.parquet", columns=["image_sha256"])
+    for sha in issues.image_sha256.unique():
+        if _STATUS_RANK["flagged_hard"] > _STATUS_RANK.get(status.get(sha, "ok"), 0):
+            status[sha] = "flagged_hard"
+
+    table = pd.DataFrame({"sha256": list(status), "label_status": list(status.values())})
+    out_path.parent.mkdir(parents=True, exist_ok=True)
+    table.to_parquet(out_path, index=False)
+    return dict(table.label_status.value_counts())
+
+
 def audit_sample(issues, n: int, *, per_source_min: int = 10, seed: int = 20260925):  # type: ignore[no-untyped-def]
     """Stratified sample of flagged rows (task × source), distinct images, seeded."""
     rng = np.random.default_rng(seed)

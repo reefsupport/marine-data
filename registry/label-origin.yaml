@@ -9,6 +9,10 @@
 # confidence: how sure the ORIGIN call is (not the label accuracy). "measured" lines cite
 # docs/label-quality.md. WP-2 wires this into `metadata.label_origin` at the merge;
 # models.py and hf_* are deliberately not edited here (D-M).
+# lineage_id (WP-9 D-U (4)): entries sharing one id are ONE annotation lineage, not
+# independent raters — their cross-source agreement (measured at 99.4% / κ 0.988) must
+# never be reported as inter-rater agreement. v3i carries no lineage_id: its "Unhealthy"
+# is a different concept (D-U (1)), never a rater of this lineage's calls.
 version: 1
 entries:
   - source: coralscop-masks-rs
@@ -41,6 +45,7 @@ entries:
     label_set: condition raster (1 bleached / 2 non-bleached)
     origin: human_expert
     confidence: medium
+    lineage_id: bleaching-family-v1
     evidence: >-
       Our own UNAL_BLEACHING_TAYRONA tree over the same 658 Tayrona images as the expert
       benthic masks. The annotators are not named in the registry — Yohan to confirm.
@@ -49,6 +54,7 @@ entries:
     label_set: image_labels (Healthy, Bleached, Non-Corals)
     origin: human_crowd
     confidence: high
+    lineage_id: bleaching-family-v1
     evidence: >-
       Roboflow Universe upload (Lockie, "Coral Bleaching Final" v6), CC-BY-4.0, no annotation
       protocol published. Measured: shares footage and labels with v1-yolov8s (same uploader);
@@ -58,6 +64,7 @@ entries:
     label_set: image_labels (Healthy, Bleached, Non-Corals)
     origin: human_crowd
     confidence: high
+    lineage_id: bleaching-family-v1
     evidence: >-
       Roboflow Universe upload (Lockie, "Coral Bleaching_General" v1). "YOLOv8s" names the
       Roboflow training run, not a model-labelled export. Same uploader and footage as v6i:
@@ -68,6 +75,7 @@ entries:
     label_set: image_labels (Healthy, Bleached, Non-Corals)
     origin: human_crowd
     confidence: high
+    lineage_id: bleaching-family-v1
     evidence: >-
       Roboflow Universe fork (maxyn-icaonapo, "Coral Classification Copy (Changed)" v13): a
       copy of another project with labels edited. Measured: 3 of the 14 identical-sha conflicts

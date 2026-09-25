@@ -10,6 +10,7 @@ import pytest
 
 from marinedata.labelquality import agreement as A
 from marinedata.labelquality import confident as CL
+from marinedata.labelquality import quality as Q
 from marinedata.labelquality.features import preprocess, resize_shape
 
 
@@ -126,6 +127,83 @@ def test_preprocess_resize_rule_and_shape() -> None:
     arr = preprocess(buf.getvalue())
     assert arr.shape == (3, 224, 224) and arr.dtype == np.float32
     assert abs(float(arr.mean())) < 0.05  # the ImageNet mean colour normalises to ~0
+
+
+def _png(pixels: np.ndarray) -> bytes:
+    from PIL import Image
+
+    buf = io.BytesIO()
+    Image.fromarray(pixels.astype(np.uint8), "RGB").save(buf, format="PNG")
+    return buf.getvalue()
+
+
+def test_quality_features_separate_sharp_from_blurred() -> None:
+    rng = np.random.default_rng(0)
+    sharp = rng.integers(0, 256, size=(64, 64, 3), dtype=np.uint8)
+    blurred = np.full((64, 64, 3), 128, dtype=np.uint8)
+    f_sharp = Q.compute_features(_png(sharp))
+    f_blur = Q.compute_features(_png(blurred))
+    assert f_sharp.blur > f_blur.blur
+    assert f_blur.blur == pytest.approx(0.0, abs=1e-6)
+
+
+def test_quality_features_flag_colour_cast_and_saturation() -> None:
+    balanced = np.full((32, 32, 3), 128, dtype=np.uint8)
+    green_cast = np.zeros((32, 32, 3), dtype=np.uint8)
+    green_cast[..., 1] = 220  # pure green channel: maximum cast and saturation
+    f_balanced = Q.compute_features(_png(balanced))
+    f_cast = Q.compute_features(_png(green_cast))
+    assert f_balanced.color_cast == pytest.approx(0.0, abs=1e-6)
+    assert f_cast.color_cast > 0.5
+    assert f_cast.saturation_p50 == pytest.approx(1.0, abs=1e-6)
+    assert f_balanced.saturation_p50 == pytest.approx(0.0, abs=1e-6)
+
+
+def test_bleach_gate_passes_requires_every_threshold_and_margin() -> None:
+    gate = Q.BleachGate(
+        blur_min=10.0, color_cast_max=0.3, luminance_min=0.2, luminance_max=0.8, margin_min=0.5
+    )
+    good = Q.QualityFeatures(blur=50.0, color_cast=0.1, luminance=0.5, saturation_p50=0.3)
+    assert gate.passes(good, margin=0.6) is True
+    assert gate.passes(good, margin=0.4) is False  # margin too low
+    too_blurry = Q.QualityFeatures(blur=1.0, color_cast=0.1, luminance=0.5, saturation_p50=0.3)
+    assert gate.passes(too_blurry, margin=0.9) is False
+    assert gate.enabled is False  # never on by default
+
+
+def test_tuned_gate_is_shipped_off_by_default() -> None:
+    assert Q.TUNED_GATE.enabled is False
+
+
+def test_classify_conflict_categories() -> None:
+    from marinedata.labelquality.pipeline import V1_YOLOV8S, V3I, V6I, V13I, classify_conflict
+
+    # within-source duplicate (same source twice, different labels) -> conflict
+    assert classify_conflict([("src-a", "H"), ("src-a", "U")]) == "conflict"
+    # v3i disagreeing with anyone is a concept mismatch, not an error -> ok
+    assert classify_conflict([(V3I, "Unhealthy"), (V1_YOLOV8S, "Healthy")]) == "ok"
+    # v13i vs v1-yolov8s alone (v6i absent) -> conflict (the relabelling fork)
+    assert classify_conflict([(V13I, "Bleached"), (V1_YOLOV8S, "Healthy")]) == "conflict"
+    # v1-yolov8s vs v6i+v13i together -> ambiguous (expert call, D-I)
+    assert (
+        classify_conflict([(V1_YOLOV8S, "Healthy"), (V6I, "Bleached"), (V13I, "Bleached")])
+        == "ambiguous"
+    )
+
+
+def test_grid_search_respects_recall_floor() -> None:
+    rng = np.random.default_rng(3)
+    n = 40
+    labels = (rng.random(n) > 0.5).astype(int)
+    # A feature that perfectly separates the classes, plus noise features.
+    blur = np.where(labels == 1, 500.0, 50.0) + rng.normal(scale=1.0, size=n)
+    feats = [
+        Q.QualityFeatures(blur=b, color_cast=0.1, luminance=0.5, saturation_p50=0.3) for b in blur
+    ]
+    margins = np.full(n, 0.9)
+    _gate, precision, recall = Q.grid_search(feats, margins, labels, min_recall=0.75)
+    assert recall >= 0.75
+    assert precision > labels.mean()  # gate beats the un-gated baseline here
 
 
 def test_cli_wires_labelquality() -> None:

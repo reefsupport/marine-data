@@ -2,7 +2,7 @@
 
 This is a read-only audit of the v1 HF build (`data/_hf/v1`). No label in the release was changed.
 
-- Outputs (outside git): `data/_labelquality/2026-09-25/` — `agreement.json`, `conflicts-<task>.tsv`, `label_issues.parquet`, `noise.json`.
+- Outputs (outside git): `data/_labelquality/2026-09-25/` — `agreement.json`, `conflicts-<task>.tsv`, `label_issues.parquet`, `noise.json`, `label_status.parquet` (§5c).
 - Code: `src/marinedata/labelquality/`; run it with `marinedata labelquality {features,agreement,confident}`.
 - Origins: `registry/label-origin.yaml`.
 - Audit sheets: `docs/label-quality/`.
@@ -104,31 +104,90 @@ These are files whose identical bytes carry different labels. The category was a
 
 - **Sample.** 235 flagged images were drawn stratified by task × source (seeded) and shuffled into `M001–M235`.
 - **Blinding.** Each was judged from a 256-px thumbnail **without** seeing the given or suggested label. The verdicts are H (healthy), U (bleached/unhealthy), N (not coral) and ? (cannot tell).
-- **What was scored.** 115 verdicts (M121–M235) were recorded in `docs/label-quality/model-audit.tsv`. The M001–M120 verdicts were lost in a session compaction before they were written to disk. Their contact sheets are kept for a re-read, and the 115 audited images span all six sources and both tasks.
+- **What was scored.** All 235 verdicts are recorded in `docs/label-quality/model-audit.tsv` (M001–M235; M001–M120 were re-judged from the retained contact sheets, `$SP/wp9/sheets/audit-00..05.jpg`, after the first pass was lost in a session compaction). The audited images span all six sources and both tasks.
 
 | | value |
 |---|---|
-| audited / decided / unsure | 115 / 65 / 50 |
-| **flag precision** (given label wrong), decided | **53.8%** (35/65), Wilson 95% [41.8, 65.4] |
-| conservative (unsure counted as not-an-error) | 30.4% (35/115) |
-| suggestion correct, decided | 46.2% |
-| flags pointing to HEALTHY (given BLEACHED/UNHEALTHY) | 19/23 = 83% correct |
-| flags pointing to BLEACHED/UNHEALTHY (given HEALTHY) | 16/42 = 38% correct |
-| per source (decided n) | noaa 75% (12), v2i 64% (14), v3i 52% (21), v6i 43% (7), v1 33% (6), v13i 20% (5) |
+| audited / decided / unsure | 235 / 147 / 88 |
+| **flag precision** (given label wrong), decided | **57.8%** (85/147), Wilson 95% [49.7, 65.5] |
+| conservative (unsure counted as not-an-error) | 36.2% (85/235) |
+| suggestion correct, decided | 51.7% (76/147) |
+| flags pointing to HEALTHY (given BLEACHED/UNHEALTHY) | 54/62 = **87.1%** correct, Wilson 95% [76.6, 93.3] |
+| flags pointing to BLEACHED/UNHEALTHY (given HEALTHY) | 31/85 = **36.5%** correct, Wilson 95% [27.0, 47.1] |
+| per source (decided n) | noaa 86.2% (29), v3i 58.5% (41), v6i 57.1% (14), v2i 51.2% (41), v1-yolov8s 40.0% (10), v13i 25.0% (12) |
 
 **Mechanism.**
-- The probe's "should be bleached" flags fire on pale, blurred and colour-cast frames: a cyan cast, blue strobe light and 224-px NOAA tiles. The DINOv2 CLS+mean feature confounds whiteness with bleaching. Those flags are mostly wrong, so treat them as **"hard or ambiguous"**, not as "mislabelled".
-- The "should be healthy" flags are mostly right: given-Bleached images show pigmented coral. They are real label errors, concentrated in the crowd sources.
-- Five images labelled for coral health show no coral (anemones, a sponge, a nudibranch).
-- Rough corrected noise = CL noise × flag precision ≈ 7.4% × 0.54 ≈ **4% (health)** and 6.1% × 0.53 ≈ **3% (bleaching)**. Both are wide; the expert audit (§6) replaces this estimate.
+- The probe's "should be bleached" flags fire on pale, blurred and colour-cast frames: a cyan cast, blue strobe light and 224-px NOAA tiles. The DINOv2 CLS+mean feature confounds whiteness with bleaching. Those flags are mostly wrong (36.5% correct on the full 235-image audit), so treat them as **"hard or ambiguous"**, not as "mislabelled".
+- The "should be healthy" flags are mostly right (87.1%): given-Bleached/Unhealthy images show pigmented coral. They are real label errors, concentrated in the crowd sources.
+- Several images labelled for coral health show no coral (anemones, a sponge, a nudibranch, other reef fauna).
+- Rough corrected noise = CL noise × flag precision ≈ 7.4% × 0.578 ≈ **4.3% (health)** and 6.1% × 0.578 ≈ **3.5% (bleaching)**, using the pooled decided-precision as a single point estimate across both tasks. Both are wide; the expert audit (§6) replaces this estimate.
+
+## 5b. Bleach-direction quality gate (Task 2, WP-9b)
+
+The bleach-direction flags (given HEALTHY, suggested BLEACHED/UNHEALTHY) are the unreliable
+half of the audit (36.5%). `src/marinedata/labelquality/quality.py` computes four cheap,
+pure-numpy/PIL per-image features — Laplacian-variance blur, grey-world colour-cast, Rec.709
+luminance and median HSV saturation — and defines `BleachGate`, which keeps a bleach-direction
+flag only if every quality threshold passes **and** the probe margin
+(`suggested_prob - self_confidence`) clears `margin_min`.
+
+- **Tuning.** `grid_search` sweeps a percentile grid over the 85 toward-BLEACHED/UNHEALTHY
+  decided rows of `model-audit.tsv`, maximising precision subject to recall ≥ 75% of the
+  confirmed-correct flags in that set.
+- **Result: the gate does not help.** Fit on the full 85 rows, the tuned gate reaches 43.1%
+  precision at 80.6% recall. Grouped 5-fold CV (fixed seed, each image its own fold group)
+  gives an **out-of-fold precision of 35.2% at 61.3% recall — below the 36.5% un-gated
+  baseline**. Blur, colour cast and luminance do not separate confirmed-correct
+  bleach-direction flags from confirmed-wrong ones on this sample: the CL probe's mistakes
+  are not explained by these four cheap features.
+- **Conclusion.** Precision never reaches the 60% floor this task set as a bar, so
+  `TUNED_GATE` in `quality.py` is tuned but shipped with `enabled=False`. No consumer should
+  turn it on without re-tuning on a larger audited set; `BleachGate.passes` and
+  `TUNED_GATE.enabled` are covered by fixture tests in `tests/test_labelquality.py`.
+
+## 5c. `label_status` (Task 3, WP-9 D-U)
+
+`run_label_status` (`pipeline.py`) writes one `label_status` per `sha256` to
+`data/_labelquality/2026-09-25/label_status.parquet`, over every sha256 labelled on either
+task:
+
+| status | rule | n |
+|---|---|---|
+| `conflict` | one of the 14 identical-sha conflicts (§2), categories a and c: a within-source duplicate, or v13i relabelling v1-yolov8s alone | 6 |
+| `ambiguous` | category d: v1-yolov8s against v6i+v13i together on pale soft coral, an expert call | 2 |
+| `flagged_hard` | a confident-learning flag (`label_issues.parquet`) not already `conflict`/`ambiguous` | 1,794 |
+| `ok` | none of the above (category b — v3i against the bleaching family — is `ok`: a concept mismatch, not an error, D-U (1)) | 26,932 |
+
+Precedence is `conflict` > `ambiguous` > `flagged_hard` > `ok` (`classify_conflict`,
+`_STATUS_RANK`). **Non-`ok` rows are excluded from val/test scoring** (kept in
+train/pretrain); this module only labels the rows — the INT/WP-8 merge wires the filter into
+`metadata` and the eval harness, and `hf_*`/`release.py`/`models.py` are not touched here.
+
+`registry/label-origin.yaml` now carries `lineage_id: bleaching-family-v1` on
+`reef-support-bleaching`, `roboflow-coral-bleaching-final-v6i`,
+`roboflow-coral-bleaching-general-v1-yolov8s` and
+`roboflow-coral-classification-copy-changed-v13i`: these four share one annotation lineage
+(§1), so their 99.4%/κ0.988 cross-source agreement must never be read as independent-rater
+agreement. `roboflow-coral-reef-classification-v3i` carries no `lineage_id` — its "Unhealthy"
+is a different concept (§1, D-U (1)) and is confirmed excluded from the bleaching-binary
+crosswalk (`registry/crosswalks/roboflow-bleaching-condition-hb.yaml`), while remaining in
+the health-binary crosswalk.
 
 ## 6. Expert-audit protocol (500 samples; to be run by Yohan's team)
 
 - **Files.**
   - `expert-audit-sheet.tsv` is **blind**: audit_id, sha, sample_key, split and blank expert columns.
   - `expert-audit-key.tsv` holds source, given label, CL flag, stratum and weight. **Do not give it to the annotators.**
-- **Strata.** Source × given health label × CL flag, 24 strata over 29,766 (sha, source) units. Half the budget is spread equally across strata and half proportionally, and small strata are taken whole. 131 of the 500 rows are CL-flagged.
-- **Weight.** `N_h/n_h`. Estimate population noise with the weighted (Horvitz-Thompson) mean, never the raw mean.
+- **Strata.** Source × given health label × CL flag, 24 strata over 29,766 (sha, source) units. Half the budget is spread equally across strata and half proportionally, and small strata are taken whole. 135 of the 500 rows are CL-flagged.
+- **Re-prioritised (Task 4, WP-9b).** The CL-flag stratum now counts a flag only if it is
+  toward-HEALTHY (always reliable, §5) or toward-UNHEALTHY with probe margin ≥
+  `TUNED_GATE.margin_min` (§5b) — a flag failing that margin competes as an ordinary,
+  unflagged row instead of being over-sampled. 16 rows (8 distinct sha256, the `conflict`/
+  `ambiguous` rows of §5c/§2) are force-included as certainty selections, weight 1.0, stratum
+  `forced-conflict`/`forced-ambiguous`, replacing 16 of the ordinarily-sampled rows so the
+  sheet stays at 500. The blind sheet and key are otherwise unchanged in shape.
+- **Weight.** `N_h/n_h` for sampled rows; certainty-selected (forced) rows carry weight 1.0.
+  Estimate population noise with the weighted (Horvitz-Thompson) mean, never the raw mean.
 - **Annotators.** Two independent annotators with coral-reef survey experience (e.g. CoralWatch or Reef Check trained), plus an adjudicator for disagreements.
 - **Conditions.** `HEALTHY, PALE, BLEACHED, OTHER_UNHEALTHY, DEAD, NOT_CORAL, UNSURE`. Confidence 1–3.
 - **Instructions.**
@@ -147,7 +206,8 @@ These are files whose identical bytes carry different labels. The category was a
 1. The expert sheet (§6) is unfilled. Until it is filled, all noise figures are model-estimated.
 2. NOAA annotator training and the `reef-support-bleaching` annotators need confirming (see `label-origin.yaml`).
 3. Whether v3i "Unhealthy" should roll up into coral-health-binary at all is a curation decision, not a measurement.
-4. The 2 category-d soft-coral conflicts in the test split need an expert call.
+4. The 2 category-d soft-coral conflicts in the test split need an expert call (now guaranteed a row in the re-prioritised expert sheet, §6).
+5. The bleach-direction quality gate (§5b) does not clear its precision floor on 85 audited rows; a larger audited sample might still find a workable signal.
 
 ## Reproduce
 
