@@ -35,6 +35,7 @@ from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
 from pathlib import Path
 
+from .geo_backfill import BACKFILL_ROOT, load_backfill
 from .geo_meow import MeowFeature, classify
 from .hf_export import (
     DEFAULT_EXCLUDE_CONFIGS,
@@ -65,6 +66,8 @@ METADATA_COLUMNS: tuple[tuple[str, str], ...] = (
     ("capture_datetime", "string"),
     ("lat", "double"),
     ("lon", "double"),
+    ("geo_precision", "string"),
+    ("geo_source", "string"),
     ("gps_precision_m", "double"),
     ("depth_m", "double"),
     ("depth_source", "string"),
@@ -102,17 +105,22 @@ LOCATION_SENSITIVE_TAG = "location-sensitive"
 `Source.location_sensitive` bool field (WP-2b). No v1 source carries this tag."""
 
 REQUIRED_NULL_REASONS = {
-    "capture_datetime": "no source in v1 stages EXIF or a capture-time column",
-    "lat": "no source in v1 stages GPS (checked: no EXIF, no location column)",
-    "lon": "no source in v1 stages GPS (checked: no EXIF, no location column)",
-    "gps_precision_m": "requires lat/lon, which are null for all of v1",
+    "capture_datetime": (
+        "no EXIF anywhere in v1; set (date precision) only where the upstream filename "
+        "carries a date (WP-2c, geo_backfill.date_from_stem)"
+    ),
+    "lat": "set only where upstream documents a place (WP-2c); see docs/geo-provenance.md",
+    "lon": "set only where upstream documents a place (WP-2c); see docs/geo-provenance.md",
+    "geo_precision": "never null: 'none' when no upstream position exists",
+    "geo_source": "null exactly when geo_precision is 'none'",
+    "gps_precision_m": "no upstream states a GPS error; geo_precision carries the precision class",
     "depth_m": "no source in v1 records a per-image depth",
     "depth_source": "requires depth_m, which is null for all of v1",
     "platform": "not stated upstream for any v1 source and not safely inferable",
     "camera": "not stated upstream for any v1 source",
-    "meow_realm": "requires lat/lon, which are null for all of v1",
-    "meow_province": "requires lat/lon, which are null for all of v1",
-    "meow_ecoregion": "requires lat/lon, which are null for all of v1",
+    "meow_realm": "requires lat/lon (WP-2c backfill), or the point falls in a MEOW gap",
+    "meow_province": "requires lat/lon (WP-2c backfill), or the point falls in a MEOW gap",
+    "meow_ecoregion": "requires lat/lon (WP-2c backfill), or the point falls in a MEOW gap",
     "depth_zone": "requires depth_m, which is null for all of v1",
     "habitat": "populated from Source.habitat; null only for a source predating the WP-2b backfill",
     "upstream_url": "no per-item URL resolves; the source-level URL is in the registry",
@@ -233,9 +241,17 @@ def build_rows(
     stage_root: Path,
     quality_by_sha: Mapping[str, dict],
     meow_polygons: Sequence[MeowFeature] = (),
+    backfill_root: Path = BACKFILL_ROOT,
+    sample_labels: Mapping[str, Sequence[str]] | None = None,
+    cr_en_labels: frozenset[str] = frozenset(),
 ) -> list[dict]:
+    """``sample_labels`` (``image_sha256 -> label strings``) + ``cr_en_labels`` feed the
+    WP-2b CR/EN location gate per sample; v1 has no species-level per-sample labels, so the
+    default is a no-op there. Geography comes from :mod:`marinedata.geo_backfill`."""
     rows: list[dict] = []
     staged_cache: dict[str, dict[tuple[str, str], dict]] = {}
+    geo_cache: dict[str, dict[str, dict]] = {}
+    sample_labels = sample_labels or {}
     for ref in refs:
         source = registry.source(ref.source_id)
         if ref.source_id not in staged_cache:
@@ -243,8 +259,14 @@ def build_rows(
         staged = staged_cache[ref.source_id]
         partition, stem = ref.file.parent.name, ref.file.stem
         staged_row = staged.get((partition, stem), {})
-        lat = lon = gps_precision_m = depth_m = None
-        sensitive = is_location_sensitive(source)
+        if ref.source_id not in geo_cache:
+            geo_cache[ref.source_id] = load_backfill(ref.source_id, backfill_root)
+        geo = geo_cache[ref.source_id].get(f"{partition}/{stem}", {})
+        lat, lon, depth_m = geo.get("lat"), geo.get("lon"), geo.get("depth_m")
+        gps_precision_m = None
+        sensitive = is_location_sensitive(
+            source, sample_labels=sample_labels.get(ref.sha256, ()), cr_en_labels=cr_en_labels
+        )
         lat, lon, generalized = _generalize(lat, lon, sensitive)
         meow = classify(lat, lon, meow_polygons) if lat is not None else None
         q = quality_by_sha.get(ref.sha256, {})
@@ -259,14 +281,16 @@ def build_rows(
                 "upstream_url": None,
                 "fetch_date": source.verification.verified_on.isoformat(),
                 "lineage_root_digest": lineage_root_digest_for(source, registry),
-                "capture_datetime": None,
+                "capture_datetime": geo.get("capture_datetime"),
                 "lat": lat,
                 "lon": lon,
+                "geo_precision": geo.get("geo_precision") or "none",
+                "geo_source": geo.get("geo_source"),
                 "gps_precision_m": gps_precision_m,
                 "depth_m": depth_m,
                 "depth_source": None,
-                "platform": None,
-                "camera": None,
+                "platform": geo.get("platform"),
+                "camera": geo.get("camera"),
                 "meow_realm": meow.realm if meow else None,
                 "meow_province": meow.province if meow else None,
                 "meow_ecoregion": meow.ecoregion if meow else None,

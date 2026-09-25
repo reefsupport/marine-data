@@ -157,8 +157,14 @@ def test_project_v2_coverage_reads_generically_and_handles_missing_columns(tmp_p
 
     full = tmp_path / "full.parquet"
     pd.DataFrame(
-        {"lat": [1.0, None], "lon": [2.0, None], "depth_m": [3.0, 4.0],
-         "capture_datetime": [None, None], "platform": [None, None], "camera": [None, None]}
+        {
+            "lat": [1.0, None],
+            "lon": [2.0, None],
+            "depth_m": [3.0, 4.0],
+            "capture_datetime": [None, None],
+            "platform": [None, None],
+            "camera": [None, None],
+        }
     ).to_parquet(full)
     bare = tmp_path / "bare.parquet"
     pd.DataFrame({"stem": ["a", "b", "c"]}).to_parquet(bare)
@@ -171,3 +177,37 @@ def test_project_v2_coverage_reads_generically_and_handles_missing_columns(tmp_p
     assert proj["n_rows"] == 5
     md = mr.render_v2_projection_markdown(proj)
     assert "has-some" in md and "has-none" in md
+
+
+def test_build_rows_joins_geo_backfill_and_generalizes_sensitive(tmp_path):
+    from pathlib import Path
+
+    from marinedata import geo_backfill as gb
+
+    bf = tmp_path / "bf"
+    rec = gb.GeoRecord(
+        "default/stem1",
+        12.4237,
+        -81.4825,
+        "source_centroid",
+        "fixture",
+        capture_datetime="2022-09-26",
+    )
+    gb.write_backfill("src-a", [rec], bf)
+    registry = _Registry({"src-a": _source()})
+    refs = [mr.ImageRef("s" * 64, "src-a", Path("/x/default/stem1.jpg"), "train")]
+    (row,) = mr.build_rows(refs, registry, tmp_path, {}, backfill_root=bf)
+    assert (row["lat"], row["lon"], row["geo_precision"]) == (12.4237, -81.4825, "source_centroid")
+    assert row["capture_datetime"] == "2022-09-26" and row["geo_source"] == "fixture"
+    (gen,) = mr.build_rows(
+        refs,
+        registry,
+        tmp_path,
+        {},
+        backfill_root=bf,
+        sample_labels={"s" * 64: ["Acropora palmata"]},
+        cr_en_labels=frozenset({"Acropora palmata"}),
+    )
+    assert (gen["lat"], gen["lon"], gen["location_generalized"]) == (12.4, -81.5, True)
+    (none,) = mr.build_rows(refs, registry, tmp_path, {}, backfill_root=tmp_path / "empty")
+    assert none["geo_precision"] == "none" and none["lat"] is None
