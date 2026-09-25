@@ -72,9 +72,16 @@ sources with some off-diagonal overlap.
 
 ## Synthetic recall (brief: >= 90% on >= 2,000 pairs)
 
-The smoke run (v1 test shard, 150 derivatives, every family re-encoded to JPEG) reached **97.3%** recall with hash + SSCD kNN (crop 90%) and 80.0% with hash candidates only. Positive-pair cosine: p1 0.66 · p5 0.72 · p10 0.77 · p50 0.96.
+| mode | n | recall | candidate recall | resize | jpeg | crop | jitter | flip |
+|---|---|---|---|---|---|---|---|---|
+| hash+embed-knn | 2000 | 97.25% | 99.85% | 99.50% | 99.50% | 87.25% | 100.00% | 100.00% |
+| hash-candidates-only | 2000 | 80.15% | 80.35% | 99.50% | 99.50% | 1.75% | 100.00% | 100.00% |
 
-The acceptance run (`marinedata dedup eval --per-family 400`, n = 2,000) was still running at commit time. Its results land in `eval.json`.
+- Lowtex queries: 6, recall 33%. The texture guard costs recall on flat images, but n is tiny.
+- Crop pairs confirmed: 197.
+- Queries that also confirmed another corpus image: 647. These are mostly the source's own augment-copy siblings.
+- Positive-pair cosine percentiles: {'1': 0.6344028115272522, '5': 0.7127112150192261, '10': 0.7576063871383667, '50': 0.9724259376525879}.
+- Every derivative is re-encoded to JPEG. The seed is 0.
 
 ## Precision audit (D-I model audit, not a human audit)
 
@@ -106,7 +113,7 @@ This replays v1 rule A (dHash <= 8) over the 69,600 v1 images and asks what v2 c
 | cross split-group | 14,526 | 9,823 |
 | lowtex, cross split-group | 10 | 0 |
 
-Rule B (dHash <= 4) is in `eval.json`, the same pending run.
+Rule B (dHash <= 4): `{"cross_group_kept_v2": 4648, "cross_group_pairs": 4720, "lowtex_cross_group_kept_v2": 0, "lowtex_cross_group_pairs": 0, "lowtex_kept_v2": 0, "lowtex_pairs": 0, "pairs": 15129, "pairs_kept_v2": 15057}`.
 
 v2 rejects all 10 lowtex pairs because their SSCD cosine is < 0.85. Nobody has visually checked
 whether all 10 were false.
