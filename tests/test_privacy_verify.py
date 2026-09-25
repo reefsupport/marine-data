@@ -11,6 +11,7 @@ from marinedata.privacy.verify import (
     VERIFY_THRESHOLD,
     VerifyResult,
     expand_box,
+    fit_threshold_for_min_recall,
     recall_precision_at_threshold,
 )
 
@@ -57,3 +58,22 @@ def test_recall_precision_at_threshold_length_mismatch_raises() -> None:
 
     with pytest.raises(ValueError):
         recall_precision_at_threshold([0.1], [True, False], 0.5)
+
+
+def test_fit_threshold_for_min_recall_picks_highest_qualifying_threshold() -> None:
+    # 4 true faces at 0.9/0.6/0.4/0.2; recall>=75% needs the top 3, i.e. threshold=0.4.
+    scores = [0.9, 0.6, 0.4, 0.2, 0.95, 0.05]
+    truth = [True, True, True, True, False, False]
+    t = fit_threshold_for_min_recall(scores, truth, min_recall=0.75)
+    assert t == 0.4
+
+
+def test_fit_threshold_for_min_recall_full_recall_needs_lowest_true_score() -> None:
+    scores = [0.9, 0.6, 0.4]
+    truth = [True, True, True]
+    assert fit_threshold_for_min_recall(scores, truth, min_recall=1.0) == 0.4
+
+
+def test_fit_threshold_for_min_recall_returns_none_with_no_positives() -> None:
+    assert fit_threshold_for_min_recall([0.9, 0.1], [False, False], min_recall=0.95) is None
+    assert fit_threshold_for_min_recall([], [], min_recall=0.95) is None

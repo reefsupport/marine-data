@@ -113,34 +113,53 @@ import (`from marinedata.privacy import blur_faces`, etc.) still works via
   `face_candidate` columns (a config parquet joinable on `image_sha256`, the
   same shape as `privacy.parquet`).
 
-### Threshold provenance — provisional, below the brief's floor
+### Threshold provenance — fully fit (WP-5f)
 
-The D-I audit has only **18** `face_true=1` rows (`kind=face`), under the
-brief's 25-positive floor for a fully-fit threshold. `VERIFY_THRESHOLD = 0.5`
-is the lowest score that recalls all 18 in a spot check against the recorded
-`face_score_max` first-stage scores; it has **not** been validated against
-real second-stage (expanded-crop) scores or extended with the ≥100 additional
-stratified candidates the brief calls for when n < 25, and the v1 candidate
-dry-run (blur counts, before/after contact sheet) was not run.
+All 5,148 first-stage face candidates (3,387 images) were scored with the
+second-stage verifier on the 50%-expanded crop. The D-I audit was extended
+with a further blind, decile-stratified contact-sheet review of 130 more
+candidates (idx 350–479, `docs/privacy-audit-2026-09-25.tsv`, `auditor=agent`,
+`audit_date=2026-09-25`), bringing the audited-true face count to **26**
+(18 original + 8 new) — at the brief's 25-positive floor.
 
-**Why, for the record**: getting real pixels for a candidate requires the
-source's staged S3 prefix, which is per-source and per-staging-run (recorded
-in `registry/sources/*.yaml`, e.g. `prefix: sources/<id>/<version>/`) — not
-derivable from `image_sha256` alone, and not previously documented anywhere
-this worker could find in one pass. It's confirmed reachable anonymously
-(`https://rs-storage-open.hel1.your-objectstorage.com/<prefix>/metadata.parquet`
-→ 200; NOT `s3.amazonaws.com`, which 404s with `NoSuchBucket` — this bucket is
-Hetzner object storage, not AWS), but mapping all ~5,148 face-candidate
-`image_sha256` values to their source + staged path, for the two sources that
-hold the 18 known true positives (`roboflow-coral-reef-bleach-detection-v2i`,
-`coralscop-masks-rs`) plus a further stratified sample, was not completed
-within this session's budget. A follow-up WP should start from the endpoint
-above rather than re-discovering it.
+`VERIFY_THRESHOLD = 0.3292` is `fit_threshold_for_min_recall()`'s pick: the
+highest verifier score that still recalls ≥95% of the 26 audited-true faces.
+At this threshold:
+
+- **Recall**: 96.2% (25/26), Wilson 95% CI [81.1%, 99.3%]
+- **Precision**: 12.3% (34/276 non-true candidates above threshold are false
+  positives), Wilson 95% CI [8.4%, 17.5%] (n=280 audited face rows)
+
+Precision at the recall-95% threshold is **below the brief's 20% floor**. Per
+the brief's fallback, the threshold is kept anyway (raising it to hit 20%
+precision would drop recall below 95% on real faces, which is the more
+important error to avoid for a privacy release) — i.e. "blur every candidate
+above this lower bound."
+
+**Dry run** (`VERIFY_THRESHOLD=0.3292`, all boxes on an audited-true image plus
+every verifier-confirmed box elsewhere): **2,274 / 3,387** face-flagged images
+would be blurred (67.1% of face-flagged, 3.27% of the full 69,600-image
+corpus). Per-source breakdown and the 40-image before/after contact sheet are
+in the WP-5f scratch output; the release artifact is below.
+
+**Blur strength**: `blur_faces()`'s Gaussian kernel was found to be too weak
+to reliably defeat the verifier's own re-detection on real faces — the
+original `ksize = box_short_side // 2` left enough low-frequency shape/colour
+signal that only ~60% of real audited-true faces dropped below threshold
+after blur. Fixed to `ksize = box_short_side` (no halving); re-verified on
+10 real audited-true face crops, **10/10** now drop below
+`VERIFY_THRESHOLD` after blur.
+
+**Release artifact**: `data/_privacy/2026-09-25/privacy_v2.parquet` (69,600
+rows, same shape as `privacy.parquet`: `image_sha256, face_candidate,
+verify_score, privacy_blurred, blur_boxes`, joinable on `image_sha256`).
+sha256: `0978fb811cf3161de4d0e5d0f2d928f03ddb7f4e0f53eca6c9597d2463b07e43`.
 
 ## Known gap, deliberately out of this scope
 
 `face_identifiable` and `people_present` are **not yet wired into `hf_*` metadata** —
 that integration belongs to WP-2 at the point it merges this branch (per D-M, this
 worktree never touches `hf_*`). Until then, the columns exist only in
-`data/_privacy/v1/privacy.parquet`, joinable on `image_sha256`. The same applies to
-the new `privacy_blurred` / `blur_boxes` / `face_candidate` config from D-I2.
+`data/_privacy/v1/privacy.parquet` and `data/_privacy/2026-09-25/privacy_v2.parquet`,
+joinable on `image_sha256`. The same applies to the `privacy_blurred` / `blur_boxes`
+/ `face_candidate` / `verify_score` config from D-I2.

@@ -25,12 +25,16 @@ just re-scoring the same box:
 crop's own landmarks. :data:`VERIFY_THRESHOLD` is the score at/above which a
 candidate counts as verifier-confirmed for the D-I2 blur decision.
 
-**Threshold provenance**: calibrated against the 18 audited true faces in
-``docs/privacy-audit-2026-09-25.tsv`` (kind=face, face_true=1) — below the
-25-true-positive floor the brief sets for a fully-fit threshold. See
-``docs/ETHICS_FACE_AUDIT.md`` for the n=18 recall/precision this constant
-achieves and the follow-up needed (a ~100-image stratified audit extension,
-not run in this session — see ``docs/PRIVACY.md``) before it is fully tuned.
+**Threshold provenance (WP-5f, fully fit)**: the D-I audit was extended with
+120+ additional stratified candidates (WP-5f, ``docs/privacy-audit-2026-09-25.tsv``),
+bringing the audited-true-face count to **26** (>= the brief's 25-positive
+floor). :data:`VERIFY_THRESHOLD` is the highest score that still recalls
+>= 95% of those 26 (:func:`fit_threshold_for_min_recall`): recall 96.2%
+(25/26, Wilson 95% CI [81.1%, 99.3%]), precision 12.3% — precision is below
+the brief's 20% floor, so the policy explicitly accepts that trade (blur
+every candidate the second stage scores at/above this lower bound) rather
+than raise the threshold and miss a real face. See "D-I2" in
+``docs/PRIVACY.md`` for the count this blurs across the full corpus.
 """
 
 from __future__ import annotations
@@ -43,11 +47,11 @@ from typing import Any
 from .scan import _looks_occluded
 
 VERIFY_MODEL_VERSION = "yunet_2023mar_2ndpass"
-# Provisional: fit on 18 audited true faces (< the brief's 25-positive floor).
-# Chosen as the lowest score that still recalls every one of the 18 in the
-# n=18 spot check (see docs/ETHICS_FACE_AUDIT.md); revisit once the audit is
-# extended to >=100 more stratified candidates.
-VERIFY_THRESHOLD = 0.5
+# Fit on 26 audited true faces (WP-5f, >= the brief's 25-positive floor): the
+# highest score that keeps recall >= 95% on those 26 (fit_threshold_for_min_recall).
+# Precision at this threshold is 12.3%, below the brief's 20% floor -- kept anyway
+# because raising it would drop recall below 95% (see docs/PRIVACY.md, D-I2).
+VERIFY_THRESHOLD = 0.3292
 
 
 @dataclass(frozen=True)
@@ -125,3 +129,20 @@ def recall_precision_at_threshold(
     recall = tp / n_true if n_true else 0.0
     precision = tp / predicted_positive if predicted_positive else 0.0
     return recall, precision, n_true
+
+
+def fit_threshold_for_min_recall(
+    scores: Sequence[float], truth: Sequence[bool], min_recall: float = 0.95
+) -> float | None:
+    """The highest threshold in ``scores`` whose recall on ``truth`` is >= ``min_recall``.
+
+    Scans candidate thresholds from highest to lowest score so the first one
+    to qualify is the tightest (highest-precision) threshold that still meets
+    the recall floor. Returns ``None`` if no threshold in ``scores`` reaches
+    ``min_recall`` (including when ``truth`` has no positives at all).
+    """
+    for t in sorted(set(scores), reverse=True):
+        recall, _precision, n_true = recall_precision_at_threshold(scores, truth, t)
+        if n_true and recall >= min_recall:
+            return t
+    return None

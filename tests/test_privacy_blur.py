@@ -115,6 +115,40 @@ def test_write_privacy_config_roundtrip(tmp_path) -> None:
     assert len(table.column("blur_boxes").to_pylist()[0]) == 1
 
 
+def test_blur_faces_kernel_spans_the_full_box_not_half_of_it(monkeypatch) -> None:
+    """Regression for WP-5f: a kernel scaled to half the box's short side left
+    enough low-frequency shape/colour signal that the verifier still re-detected
+    ~40% of real audited-true faces post-blur (see docs/PRIVACY.md D-I2). The
+    kernel must span the box's own short side, not a fraction of it."""
+    cv2 = pytest.importorskip("cv2")
+    np = pytest.importorskip("numpy")
+
+    from marinedata.privacy.scan import blur_faces
+
+    calls: list[tuple[int, int]] = []
+    real_gaussian_blur = cv2.GaussianBlur
+
+    def spy(src, ksize, sigma, *args, **kwargs):
+        calls.append(ksize)
+        return real_gaussian_blur(src, ksize, sigma, *args, **kwargs)
+
+    monkeypatch.setattr(cv2, "GaussianBlur", spy)
+
+    img = np.zeros((200, 200, 3), dtype=np.uint8)
+    ok, encoded = cv2.imencode(".png", img)
+    assert ok
+
+    box = {"x": 20, "y": 20, "w": 63, "h": 110, "score": 1.0}
+    blur_faces(encoded.tobytes(), [box], pad_frac=0.0)
+
+    assert calls, "blur_faces did not call cv2.GaussianBlur"
+    kw, kh = calls[0]
+    # short side of the box is 63: the kernel must be at least that, not ~31
+    # (the old, halved formula).
+    assert kw >= 63 or kh >= 63
+    assert kw > 31 and kh > 31
+
+
 RUN = os.environ.get("MARINEDATA_INTEGRATION") == "1"
 
 
