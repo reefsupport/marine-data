@@ -453,9 +453,7 @@ def add_embeddings(
     keys = [r.sha256 for r in needing]
     vecs = embedder.embed_keys(keys, _load, cache=cache)
     by_sha = dict(zip(keys, vecs, strict=True))
-    return [
-        r if r.sha256 not in by_sha else _with_embedding(r, by_sha[r.sha256]) for r in records
-    ]
+    return [r if r.sha256 not in by_sha else _with_embedding(r, by_sha[r.sha256]) for r in records]
 
 
 def _with_embedding(r: ImageRecord, vec: np.ndarray) -> ImageRecord:
@@ -493,9 +491,7 @@ def check(
     overlaps = []
     for entry in registry.benchmarks:
         manifest_path = registry.manifest_path(entry.id, manifests_root)
-        bench_records = load_benchmark_records(
-            manifest_path, (image_roots or {}).get(entry.id)
-        )
+        bench_records = load_benchmark_records(manifest_path, (image_roots or {}).get(entry.id))
         if embed_weights is not None and embed_cache is not None:
             bench_records = add_embeddings(bench_records, embed_weights, embed_cache)
         if not bench_records and entry.obtain.status not in {"staged", "w1", "w2"}:

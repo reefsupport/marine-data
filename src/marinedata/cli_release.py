@@ -189,7 +189,10 @@ def _cmd_release_build(args: argparse.Namespace) -> int:
             near_dup=near_dup,
             dedup_v2_groups=args.dedup_v2,
             decon=args.decon,
+            dedup_crop=args.dedup_crop,
+            split_v2=args.split_v2,
             tasks=args.tasks,
+            v2=args.v2,
         )
     except (NearDupError, DedupGateError, DeconError) as exc:
         print(f"release build: {exc}", file=sys.stderr)
@@ -243,6 +246,21 @@ def add_release_subparser(sub: argparse._SubParsersAction) -> None:
         "against admitted sources; fails the build on any hit. Default OFF (v2 build)",
     )
     p_build.add_argument(
+        "--dedup-crop",
+        dest="dedup_crop",
+        action="store_true",
+        help="WP-10c: enable decon's S5 patch/crop stage (only takes effect with "
+        "--decon). Default OFF (code default stays off, D-X)",
+    )
+    p_build.add_argument(
+        "--split-v2",
+        dest="split_v2",
+        action="store_true",
+        help="WP-11/12 P3: validate the split-v2 config (registry/splits/v2.yaml plus "
+        "registry/benchmarks.yaml) and record its hashes in RELEASE.json. The full "
+        "per-sample gate is deferred to the v2 build. Default OFF (D-X)",
+    )
+    p_build.add_argument(
         "--split-map",
         dest="split_map",
         required=True,
@@ -290,5 +308,13 @@ def add_release_subparser(sub: argparse._SubParsersAction) -> None:
         "to before this flag existed (D-X). 'v2' additionally builds the 5 WP-8c "
         "task-layer configs (points/vqa/semseg/benthic-coarse/benthic-cover) from "
         "data/_tasklabels/** into <out>/releases/<release>/task_layers/",
+    )
+    p_build.add_argument(
+        "--v2",
+        dest="v2",
+        action="store_true",
+        help="Preset (INT-core2): turns on --decon, --dedup-crop, --split-v2 and "
+        "--tasks v2 together. Does not enable --dedup-v2 (needs an explicit "
+        "groups.parquet path). Default OFF, so an unflagged build is unchanged (D-X)",
     )
     p_build.set_defaults(func=_cmd_release_build)

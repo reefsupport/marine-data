@@ -282,9 +282,7 @@ def run_label_status(
         for sha in load_labels(hf_root, task).image_sha256.unique():
             status.setdefault(sha, "ok")
 
-    conflicts = pd.read_csv(
-        labelquality_dir / "conflicts-coral-health-binary.tsv", sep="\t"
-    )
+    conflicts = pd.read_csv(labelquality_dir / "conflicts-coral-health-binary.tsv", sep="\t")
     for sha, grp in conflicts.groupby("image_sha256"):
         cls = classify_conflict(list(zip(grp.source_id, grp.label, strict=True)))
         status[sha] = cls

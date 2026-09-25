@@ -27,8 +27,7 @@ def allocate(sizes: dict[tuple[str, ...], int], n: int) -> dict[tuple[str, ...],
     keys = sorted(sizes)
     total = sum(sizes.values())
     alloc = {
-        k: min(sizes[k], int(n / 2 / len(keys)) + round(n / 2 * sizes[k] / total))
-        for k in keys
+        k: min(sizes[k], int(n / 2 / len(keys)) + round(n / 2 * sizes[k] / total)) for k in keys
     }
     while sum(alloc.values()) < min(n, total):
         room = [k for k in keys if alloc[k] < sizes[k]]

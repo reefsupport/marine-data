@@ -57,9 +57,7 @@ def add_decon_subparser(sub: argparse._SubParsersAction) -> None:
     q.add_argument("--benchmarks-yaml", type=Path, default=None, dest="benchmarks_yaml")
     q.add_argument("--manifests-root", type=Path, default=None, dest="manifests_root")
     q.add_argument("--hf-images", action="append", dest="hf_images", help="HF `images` config dir")
-    q.add_argument(
-        "--staged", action="append", dest="staged", help="label=root staged source tree"
-    )
+    q.add_argument("--staged", action="append", dest="staged", help="label=root staged source tree")
     q.add_argument(
         "--benchmark-root",
         action="append",

@@ -194,7 +194,8 @@ def merge_append_only(
         ood_tags=merged_tags,
         dp_province=dp_province if dp_province is not None else existing.dp_province,
         dp_province_n_images=(
-            dp_province_n_images if dp_province_n_images is not None
+            dp_province_n_images
+            if dp_province_n_images is not None
             else existing.dp_province_n_images
         ),
     )

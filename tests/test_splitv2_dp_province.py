@@ -43,7 +43,9 @@ def test_selects_the_province_closest_to_five_percent_of_the_labelled_pool():
         "Solomon Sea": ("Western Indo-Pacific", 1500),  # |1500-1050| = 450
     }
     choice = select_tropical_province(
-        counts, tropical_realms=TROPICAL_REALMS, labelled_total=18_550 + 950 + 1500,
+        counts,
+        tropical_realms=TROPICAL_REALMS,
+        labelled_total=18_550 + 950 + 1500,
         min_images=500,
     )
     assert choice.province == "Coral Triangle Core"
@@ -57,7 +59,10 @@ def test_below_500_images_never_qualifies_even_when_closest():
         "Big Enough Province": ("Western Indo-Pacific", 500),
     }
     choice = select_tropical_province(
-        counts, tropical_realms=TROPICAL_REALMS, labelled_total=2_000, min_images=500,
+        counts,
+        tropical_realms=TROPICAL_REALMS,
+        labelled_total=2_000,
+        min_images=500,
     )
     assert choice.province == "Big Enough Province"
 
@@ -87,14 +92,20 @@ def test_ties_break_by_province_name_ascending():
         "Andaman Coast": ("Central Indo-Pacific", 950),
     }
     choice = select_tropical_province(
-        counts, tropical_realms=TROPICAL_REALMS, labelled_total=20_000, min_images=500,
+        counts,
+        tropical_realms=TROPICAL_REALMS,
+        labelled_total=20_000,
+        min_images=500,
     )
     assert choice.province == "Andaman Coast"
 
 
 def test_inert_case_prints_the_exact_warning_line():
     choice = select_tropical_province(
-        {}, tropical_realms=TROPICAL_REALMS, labelled_total=10_000, min_images=500,
+        {},
+        tropical_realms=TROPICAL_REALMS,
+        labelled_total=10_000,
+        min_images=500,
     )
     assert choice.province is None
     line = choice.describe()
@@ -109,8 +120,11 @@ def test_chosen_case_describe_reports_province_count_and_percent():
 
 def _sample(sha, gid, source, realm=None, province=None):
     return Sample(
-        sha256=sha, split_group_id=gid, source_id=source,
-        meow_realm=realm, meow_province=province,
+        sha256=sha,
+        split_group_id=gid,
+        source_id=source,
+        meow_realm=realm,
+        meow_province=province,
     )
 
 
@@ -125,8 +139,11 @@ def test_province_labelled_counts_counts_tagged_samples_and_excludes_never_eval(
     ] + [
         # never-eval source: must not count toward the labelled pool at all.
         _sample(
-            "pretrain-0", "sg-pretrain", "some-pretrain-source",
-            "Central Indo-Pacific", "Some Province",
+            "pretrain-0",
+            "sg-pretrain",
+            "some-pretrain-source",
+            "Central Indo-Pacific",
+            "Some Province",
         ),
     ]
     counts = province_labelled_counts(samples, config, never_eval={"some-pretrain-source"})

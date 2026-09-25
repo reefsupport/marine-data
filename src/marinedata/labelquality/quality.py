@@ -34,11 +34,7 @@ def laplacian_variance(rgb: np.ndarray) -> float:
     """
     grey = rgb.mean(axis=2)
     lap = (
-        grey[:-2, 1:-1]
-        + grey[2:, 1:-1]
-        + grey[1:-1, :-2]
-        + grey[1:-1, 2:]
-        - 4.0 * grey[1:-1, 1:-1]
+        grey[:-2, 1:-1] + grey[2:, 1:-1] + grey[1:-1, :-2] + grey[1:-1, 2:] - 4.0 * grey[1:-1, 1:-1]
     )
     return float(lap.var())
 
@@ -159,8 +155,10 @@ def grid_search(
                         recall = correct / n_pos if n_pos else 0.0
                         if recall < min_recall:
                             continue
-                        if best is None or precision > best[1] or (
-                            precision == best[1] and recall > best[2]
+                        if (
+                            best is None
+                            or precision > best[1]
+                            or (precision == best[1] and recall > best[2])
                         ):
                             gate = BleachGate(bmin, cmax, llo, lhi, mmin, enabled=False)
                             best = (gate, precision, recall)

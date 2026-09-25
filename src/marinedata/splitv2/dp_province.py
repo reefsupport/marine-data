@@ -33,12 +33,22 @@ EXCLUDED_REALM = "Tropical Atlantic"
 # logic to read a sample's realm/province — these are never matched against, only
 # used to resolve a single field's effective value.
 _REALM_FIELD = HoldoutRule(
-    name="_dp_realm_lookup", order=0, kind="field_eq",
-    field="meow_realm", value=None, fallback="geo_fallback", fallback_key="realm",
+    name="_dp_realm_lookup",
+    order=0,
+    kind="field_eq",
+    field="meow_realm",
+    value=None,
+    fallback="geo_fallback",
+    fallback_key="realm",
 )
 _PROVINCE_FIELD = HoldoutRule(
-    name="_dp_province_lookup", order=0, kind="field_eq",
-    field="meow_province", value=None, fallback="geo_fallback", fallback_key="province",
+    name="_dp_province_lookup",
+    order=0,
+    kind="field_eq",
+    field="meow_province",
+    value=None,
+    fallback="geo_fallback",
+    fallback_key="province",
 )
 
 

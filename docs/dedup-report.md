@@ -181,3 +181,23 @@ the parent, and the parent, side by side. Verdicts: `docs/dedup-crop-audit-2026-
 
 **`--dedup-v2` is not ready to flip** while the crop channel is on. The fix is to verify the box, not to tighten NCC: re-embed
 `parent[box]` with SSCD and require a high cos to the patch. Until then, either keep v2 off or flip it with the crop channel off.
+
+## WP-10c — the crop channel fix (D-T2)
+
+The WP-10b false-merge mechanism was fixed with a box re-embed, gated behind a new `--dedup-crop`/
+`--no-dedup-crop` switch (**default OFF**): `match_patch` is restricted to `scale >= crop_scale_min`
+(0.30, was unbounded down to 0.08, where background-gradient matches lived), and a peak NCC is no
+longer sufficient on its own — the matched box is cropped out of the larger image, SSCD-re-embedded,
+and must also clear `cos_box_crop` against the smaller image's own embedding.
+
+- `tau_ncc=0.50` and `tau_box=0.60` were grid-searched with 5-fold CV on the same 185-pair WP-10b
+  audit set (`docs/dedup-crop-audit-2026-09-25.tsv`): mean held-out **precision 100%** (bar ≥ 95%),
+  **0/3** cross-corpus false merges (C008/C023/C103) in every fold.
+- The synthetic crop eval (n=400, hash+embed-knn) went from 69.25% recall with the channel off to
+  **99.5%** with it on (bar ≥ 85%), 380/400 confirmed via the crop channel itself.
+- With the switch off, v2 dedup is copy/agree/pixel only and the 3 known cross-corpus false merges
+  cannot occur (`confirm()` alone rejects them — regression test in `tests/test_dedup_v2.py`).
+- Only ~9 true crop positives sit in the 185-pair audit, so D-T2's caveat stands: the v2 build must
+  hand-audit 50 random crop merges before shipping the channel on, with P ≥ 90% or it goes back off.
+- The code default stays off (D-X): `--dedup-crop` only changes output when both it and `--decon`
+  (or the `v2=True` `build_release` preset, INT-core2) are passed.

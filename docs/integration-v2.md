@@ -53,17 +53,91 @@ Fix-ups on `feat/v2-int`:
   - Regenerating the map with `--generate-split-map` changes only `generated_at` (wall clock) and the
     `split_map_sha256` that follows from it. The assignments, `near_dup` and all 6 TSVs are identical.
 
+## INT-core2 merge log (2026-09-25)
+
+Continues the log above from `fa46154`. All 8 branches were merged at the brief's fixed commits
+(never a tip, since the branches were still moving).
+
+| # | Branch | Merged sha | Merge commit | Conflicts | Resolution |
+|---|--------|-----------|--------------|-----------|------------|
+| 1 | WP-10c `feat/wp10-dedup` | `8c26170` | `03648b6` | none | — |
+| 2 | WP-9c `feat/wp9-label-quality` | `0975973` | `3d41952` | `cli.py` | Both registered (`labelquality` import + subparser added alongside the existing ones). |
+| 3 | P3 `feat/p3-splitv2` (incl. P1 `d376e95`) | `fed2608` | `17f7fb6` | `cli.py` | Both registered (`cli_bench`/`cli_splits` imports and `add_bench_subparser`/`add_splits_subparser` calls added alongside `cli_verify`/`eval.cli`/`cli_labelquality`). `registry/benchmarks.yaml` union auto-merged, no manual resolution needed. |
+| 4 | P2 `feat/p2-decon` (merges WP-10c `8c26170`) | `6bb90cf` | `ad61374` | `cli.py` | `add_decon_subparser(sub)` added alongside `add_splits_subparser`. `cli_release.py`/`release.py` auto-merged (the `decon` hook, default off, D-X). |
+| 5 | S61 `feat/s61-stage-local` | `9b3fcb9` | `ebc0054` | none | — |
+| 6 | WP-2c `feat/wp2-metadata` | `7b5ab23` | `6478862` | none | — |
+| 7 | WP-5d `feat/wp5b-privacy` | `2398fc4` | `ee93336` | none | — |
+| 8 | WP-8c `feat/wp8-tasks` | `c39807c` | `a048ef6` | `cli_release.py`, `release.py` | `build_release(..., decon=args.decon, tasks=args.tasks)` — both kwargs kept as independent parameters. `hf_card.py`/`hf_export.py` auto-merged, untouched beyond that (per the brief). |
+
+### Bug found and fixed in this round
+
+`feat/wp8-tasks`'s `build_release()` declared `tasks: str = "v1"` as a parameter, then a few lines
+into the function body shadowed it with a same-named local `tasks: list[TaskManifest] = []` — so the
+later `if tasks == "v2":` always compared a list to a string and never fired. `--tasks v2` silently
+built nothing extra, both on the branch and after merge. No test called `build_release(tasks="v2")`
+end to end, so nothing caught it. Fixed by binding `tasks_mode = tasks` before the shadow and checking
+`tasks_mode == "v2"`; `tests/test_task_layers_wp8c.py` and `tests/test_e2e_release.py` still pass.
+
+### `--split-v2`, `--dedup-crop` and the `v2=True` preset (new in this round)
+
+Not present on any merged branch; added directly to `build_release()`/`cli_release.py`:
+
+- `--dedup-crop` (WP-10c) threads into `run_decon_gate(..., dedup_crop=dedup_crop)`; it only changes
+  output together with `--decon`. Default off.
+- `--split-v2` (WP-11/12 P3) is a config-only smoke check: it loads `registry/splits/v2.yaml` and
+  `registry/benchmarks.yaml` and records their hashes under `RELEASE.json["split_v2"]`. It does
+  **not** run the full per-sample OOD/allocator gate — `metadata.parquet` has no `meow_realm`/
+  `depth_m`/`platform`/`capture_datetime` columns yet (`docs/split-v2-dry-run.md` already says this
+  gate needs WP-2's per-sample geo enrichment) — so the real gate is deferred to the v2 build. Default
+  off.
+- `v2=True` is one preset that sets `decon`, `dedup_crop`, `split_v2` and `tasks="v2"` together. It
+  does **not** enable `--dedup-v2` (the WP-10 split-leak gate), which needs an explicit
+  `groups.parquet` path and cannot be turned on by a bare bool. All defaults stay off, so an unflagged
+  build is byte-identical to before this preset existed (D-X).
+
+## INT-core2 verification (2026-09-25)
+
+- Targeted tests passed after every merge (the touched test modules, plus `test_e2e_release.py`,
+  `test_decon.py` and `test_dedup_v2.py` where relevant).
+- `ruff check .`: all checks passed.
+- `make ci` (lint → check → taxonomy-check → test → e2e): see the report for the exit code and count.
+- Full suite `pytest -q tests/`: see the report for the pass/skip/deselect counts.
+- v1 identity (D-X) proved at **manifest level, with no image bytes** (INT-core2b,
+  `src/marinedata/manifest_identity.py`). The INT-core round's two-pass `release build` rebuild was
+  NOT re-run: `_resolve_roots` fetches every non-`--local` staged tree, images included, and on this
+  Mac it re-downloaded mermaid-aws + coralscapes (+14 GB). Instead: rows = each admitted staged-tree
+  source's local `metadata.parquet` + its `CHECKSUMS.sha256` (anonymous HTTPS GET, digest-pinned to
+  `checksums.root_digest`; the only network I/O), split from `registry/SPLIT_MAP.json`, and every
+  metadata column rebuilt by the v1 code path itself (`metadata_release.build_rows`, fed the
+  CHECKSUMS key as the file path). Compared against the published HF tree's `data/metadata/*.parquet`
+  (`data/_hf/v1/`). `~/.cache/marinedata` 51621 → 51624 MB. Result (2026-09-25):
+  - Row ids / sha256: 69,600 published rows, 0 missing from the rebuild; every published
+    `(sha256, source_id)` pair is reconstructed. 557 extra `coralscop-masks-rs` shas are admitted rows
+    that sit in no v1 task (the local v1 release's task TSVs hold exactly the 69,600 published shas and
+    none of the 557) — the row manifest does not replicate per-task inclusion rules.
+  - Splits: 69,600 / 69,600 identical (`val` ↔ HF `validation`).
+  - Columns: 33 compared. 25 identical on every row (licence/provenance, quality `min_side`/`q_*`,
+    `quality_flags`, `habitat`, `capture_datetime`, …). `upstream_id` differs on 933 rows, all shas
+    that occur under more than one stem in the SAME source (byte-identical files); the published
+    stem is among the rebuilt candidates — a tie-break of which duplicate `hf_export` embedded, not a
+    content change. `lat`/`lon`/`geo_precision`/`geo_source` differ on the 10,186 `noaa-pifsc-bleaching`
+    rows only: WP-2c's site-level geo backfill (`67b141e`) post-dates the published v1 metadata (with
+    an empty backfill root those rows match). `meow_*` (1,250 `reef-support-benthic-own` rows) could
+    not be checked — no MEOW polygon file is on this machine.
+  - The release-build path (task TSVs) is not rebuilt byte-for-byte by this check; no existing test
+    fetched images (network tests are already `-m 'not integration'`), so no test was re-marked.
+
 ## Still to merge (deltas)
 
-- `feat/wp10-dedup`: now at `fe4923f`, one commit (WP-10b) past `66af021`.
-- `feat/wp2-metadata` (WP-2c) and `feat/wp7-taxonomy` (WP-7d): merged at `29bedbb` and `ee81554`,
-  and still receiving commits.
-- The ingest stack, via INT-ingest (`feat/ingest-int`): WP-6b `b70ec81`, WP-6c, spec-w0/w2a/w2b and
-  w1a. Also S61 `feat/s61-stage-local`.
+- Excluded from this round by the brief (INT-core3 takes them): WP-7d, WP-8d, WP-5e, P5, WP-13, and
+  the ingest branches — `feat/ingest-int` (WP-6b `b70ec81`, WP-6c, spec-w0/w2a/w2b, w1a) and
+  `feat/spec-w3` (PARTIAL, per `$T/reports/2026-09-25-5star-integration-notes.md`).
 - Carried follow-ups from the notes, not done here:
   - Regenerate `_hf/v1/MANIFEST.tsv` and re-run `verify-release` after WP-2's metadata config (WP-3).
   - Dedupe `s3_client.client_from_rclone` against `s3_upload.client_from_rclone`. The WP-6 copy adds
     `request/response_checksum_*="when_required"`. This is deferred until WP-6b/6c reconcile `s3_upload`.
   - Recompute `_quality/v1/quality.parquet` under Pillow 12.3.0 (WP-1).
   - Regenerate the datasheet and Croissant at the v2 build (WP-5).
-  - Flip `--dedup-v2` together with `--decon` at the v2 build (WP-11/12).
+  - Run the full split-v2 per-sample gate at the v2 build, once WP-2's per-sample geo columns land
+    (this round only wires a config-only smoke check — see above).
+  - D-T2's 50-random-crop-merge hand audit (P ≥ 90%) is still owed before `--dedup-crop` ships on.

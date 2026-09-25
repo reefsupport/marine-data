@@ -431,7 +431,10 @@ def build_release(
     near_dup: NearDupConfig | None = None,
     dedup_v2_groups: str | Path | None = None,
     decon: bool = False,
+    dedup_crop: bool = False,
+    split_v2: bool = False,
     tasks: str = "v1",
+    v2: bool = False,
 ) -> ReleaseResult:
     """Build every registry task against a frozen split map and write the release.
 
@@ -445,6 +448,20 @@ def build_release(
     shape or content when ``tasks="v2"`` is passed, so v1 byte-identity holds regardless
     of this flag.
 
+    ``decon`` (WP-12 P2) and ``dedup_crop`` (WP-10c) are independent switches: the latter
+    only changes decon's S5 patch/crop stage when ``decon=True`` (INT-core2, D-T2).
+    ``split_v2`` (WP-11/12 P3, INT-core2) validates the split-v2 config — ``registry/
+    splits/v2.yaml`` plus ``registry/benchmarks.yaml`` load and hash cleanly — and records
+    the hashes in ``RELEASE.json``. The full per-sample split-v2 gate needs WP-2's
+    per-sample geo columns, not yet in ``metadata.parquet`` (``docs/split-v2-dry-run.md``),
+    so it is deferred to the v2 build; this switch is a config-only smoke check, off by
+    default, that changes nothing when off (D-X).
+
+    ``v2=True`` is a preset (INT-core2): it turns on ``decon``, ``dedup_crop``,
+    ``split_v2`` and ``tasks="v2"`` together. It does not turn on the WP-10
+    ``dedup_v2_groups`` split-leak gate, which needs an explicit groups.parquet path.
+    Default off, so passing no flags stays byte-identical to before this preset existed.
+
     Raises if ``split_map`` does not exist yet (a release never allocates one — see
     :mod:`marinedata.splitmap`), or if any admitted source contributes a group absent
     from it (``SplitMapError``, propagated from ``Dataset.split(frozen=True)``) — both
@@ -455,6 +472,12 @@ def build_release(
     (any split) is dropped from every task manifest, and recorded in ``RELEASE.json`` as
     a count plus the sorted sha256 list, alongside the check's own parameters.
     """
+    if v2:
+        decon = True
+        dedup_crop = True
+        split_v2 = True
+        tasks = "v2"
+    tasks_mode = tasks
     split_map_path = Path(split_map)
     if load_split_map(split_map_path) is None:
         raise ValueError(
@@ -594,15 +617,28 @@ def build_release(
             "gate": "pass",
             "groups": gate.groups,
         }
+    if split_v2:  # WP-11/12 P3 hook, off by default (INT-core2); config-only smoke
+        # check — see the build_release docstring for why the full per-sample gate
+        # is deferred to the v2 build.
+        from .benchmarks import BenchmarkRegistry, benchmarks_sha256
+        from .splitv2.rules import load_rules, rules_sha256
+
+        rules = load_rules("registry/splits/v2.yaml")
+        bench = BenchmarkRegistry.load()
+        release_json["split_v2"] = {
+            "rules_sha256": rules_sha256(rules),
+            "benchmarks_sha256": benchmarks_sha256(bench),
+            "status": "config-validated-only; per-sample gate deferred to the v2 build",
+        }
     if decon:  # WP-12 P2 hook, off by default; the integrator flips it at the v2 build
         from .decon import run_decon_gate
 
-        run_decon_gate(release_root, registry, admitted_roots)
+        run_decon_gate(release_root, registry, admitted_roots, dedup_crop=dedup_crop)
     release_json_text = json.dumps(release_json, indent=2, sort_keys=True) + "\n"
     (release_root / "RELEASE.json").write_text(release_json_text)
 
     task_layer_configs: dict[str, int] = {}
-    if tasks == "v2":
+    if tasks_mode == "v2":
         from .task_layers.configs import build_all_configs, write_configs
 
         base_dir = Path(".")  # data/_tasklabels/** is read relative to the cwd (D-Z2)

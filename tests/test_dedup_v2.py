@@ -221,9 +221,7 @@ def test_crop_refine_scale_floor_can_reject_a_true_crop() -> None:
     assert kind1[0] == "crop" and ncc1[0] > 0.8
 
     floored = ConfirmRules(ncc_crop=0.8, crop_scale_min=0.6)  # excludes the true 0.40 scale
-    _, kind2, _ = crop_refine(
-        scores, ok, kind, area_a, area_b, lambda k: pt, lambda k: pr, floored
-    )
+    _, kind2, _ = crop_refine(scores, ok, kind, area_a, area_b, lambda k: pt, lambda k: pr, floored)
     assert kind2[0] != "crop"
 
 
