@@ -355,10 +355,33 @@ Honest gaps:
   blocked from shipping profiles until someone opens the primary source. That backlog is
   deliberate and visible.
 - **No fetchers yet.** Loaders read what is already on disk.
-- **No Croissant emission yet.**
 - Plankton and megafauna are absent; the schema accommodates them.
 
 `marinedata check --profile ship-commercial` prints exactly what is blocked and why.
+
+## Citing this dataset
+
+`marinedata.croissant` emits Croissant 1.0 (+ RAI) metadata for a built Hugging Face
+export (`python -m marinedata.croissant --build-dir <dir> --repo-id <id> --out <path>`);
+see [`docs/croissant-v1.json`](docs/croissant-v1.json) for the v1 build.
+
+For the v1 imagery release itself, cite:
+
+```bibtex
+@misc{reefsupport_open_marine_imagery_v1,
+  title        = {Reef Support Open Marine Imagery (v1)},
+  author       = {{Reef Support B.V.}},
+  year         = {2026},
+  howpublished = {\url{https://huggingface.co/datasets/reefsupport/open-marine-imagery}},
+  note         = {v1, released 2026-09-24. Licence is mixed per source --- see the
+                  dataset card and docs/DATASHEET.md before use.}
+}
+```
+
+Machine-readable citation metadata for this repository is in
+[`CITATION.cff`](CITATION.cff). See [`docs/DATASHEET.md`](docs/DATASHEET.md) for the
+full datasheet (composition, collection, known biases, ethics) and
+[`CHANGELOG.md`](CHANGELOG.md) for the per-release changelog.
 
 ## Licence
 

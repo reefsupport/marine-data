@@ -1,0 +1,33 @@
+cff-version: 1.2.0
+message: >-
+  If you use the v1 imagery release, cite it as a dataset (below). If you use the
+  marine-data tool itself (registry, gate, loaders), cite it as software. Licence for
+  the data is mixed per source and is NOT a single SPDX id: see
+  https://huggingface.co/datasets/reefsupport/open-marine-imagery and
+  docs/DATASHEET.md before use.
+title: "Reef Support Open Marine Imagery (v1)"
+type: dataset
+version: "1.0.0"
+date-released: "2026-09-24"
+url: "https://huggingface.co/datasets/reefsupport/open-marine-imagery"
+repository-code: "https://github.com/reefsupport/marine-data"
+authors:
+  - name: "Reef Support B.V."
+    website: "https://reef.support"
+keywords:
+  - marine
+  - coral reef
+  - benthic
+  - coral bleaching
+  - dataset
+  - computer vision
+identifiers:
+  - type: url
+    value: "https://huggingface.co/datasets/reefsupport/open-marine-imagery"
+    description: "Hugging Face dataset repository (v1 release)"
+references:
+  - type: software
+    title: "marine-data"
+    authors:
+      - name: "Reef Support B.V."
+    repository-code: "https://github.com/reefsupport/marine-data"
