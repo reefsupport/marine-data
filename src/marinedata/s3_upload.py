@@ -257,6 +257,35 @@ def _verify(client: Any, bucket: str, key: str, d: LocalDigest) -> None:
         raise RuntimeError(f"verify failed for s3://{bucket}/{key}: size/ETag mismatch")
 
 
+def client_from_env(endpoint_url: str | None = None, region: str | None = None) -> Any:
+    """boto3 S3 client from ``AWS_ACCESS_KEY_ID``/``AWS_SECRET_ACCESS_KEY`` env vars (WP-6c:
+    the cluster Job path has no ``~/.config/rclone/rclone.conf``). Credentials are read
+    from the environment and passed straight to boto3 — never printed, logged, or put in
+    any returned/raised value."""
+    import boto3
+    from botocore.config import Config
+
+    access_key = os.environ.get("AWS_ACCESS_KEY_ID")
+    secret_key = os.environ.get("AWS_SECRET_ACCESS_KEY")
+    if not access_key or not secret_key:
+        raise KeyError("AWS_ACCESS_KEY_ID/AWS_SECRET_ACCESS_KEY not set")
+    endpoint = endpoint_url or os.environ.get("S3_ENDPOINT")
+    if endpoint and not endpoint.startswith(("http://", "https://")):
+        endpoint = f"https://{endpoint}"
+    return boto3.client(
+        "s3",
+        endpoint_url=endpoint,
+        region_name=region or os.environ.get("S3_REGION") or None,
+        aws_access_key_id=access_key,
+        aws_secret_access_key=secret_key,
+        config=Config(
+            retries={"max_attempts": 8, "mode": "standard"},
+            request_checksum_calculation="when_required",
+            response_checksum_validation="when_required",
+        ),
+    )
+
+
 def client_from_rclone(remote: str = "rs-hel1", conf: Path | None = None) -> Any:
     """boto3 S3 client from an rclone remote. Credentials are never printed or logged."""
     import boto3
