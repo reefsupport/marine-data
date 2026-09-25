@@ -81,8 +81,16 @@ TIMEOUT_S = 180
 BYTES_PER_HOUR_AT_100MBPS = 100_000_000 * 3600  # planning rate, S57 catalog convention
 
 COLUMNS = [
-    "id", "adapter", "pinned_version", "items", "bytes", "licence",
-    "label_format", "dry_run", "est_hours_at_100mbps", "priority",
+    "id",
+    "adapter",
+    "pinned_version",
+    "items",
+    "bytes",
+    "licence",
+    "label_format",
+    "dry_run",
+    "est_hours_at_100mbps",
+    "priority",
 ]
 
 # id -> kind, for D-R4 rows already diagnosed by hand (video/rar/json/... payloads

@@ -26,19 +26,27 @@ def _run(adapter, tmp_path: Path):
 
 def test_fathomnet_paginated_boxes_and_licence(server, tmp_path):
     body = png(1)
-    server.add("/api/images?page=0&size=1", {
-        "content": [{
-            "uuid": "img-1",
-            "url": f"{server.base}/img1.jpg",
-            "sha256": sha256(body),
-            "latitude": 1.0,
-            "longitude": 2.0,
-            "depthMeters": 5.0,
-            "timestamp": "2021-01-01T00:00:00Z",
-            "boundingBoxes": [{"concept": "fish", "annotationLicense": "CC-BY-4.0"}],
-        }],
-        "pageNumber": 0, "pageSize": 1, "totalItems": 1, "totalPages": 1,
-    })
+    server.add(
+        "/api/images?page=0&size=1",
+        {
+            "content": [
+                {
+                    "uuid": "img-1",
+                    "url": f"{server.base}/img1.jpg",
+                    "sha256": sha256(body),
+                    "latitude": 1.0,
+                    "longitude": 2.0,
+                    "depthMeters": 5.0,
+                    "timestamp": "2021-01-01T00:00:00Z",
+                    "boundingBoxes": [{"concept": "fish", "annotationLicense": "CC-BY-4.0"}],
+                }
+            ],
+            "pageNumber": 0,
+            "pageSize": 1,
+            "totalItems": 1,
+            "totalPages": 1,
+        },
+    )
     server.add("/img1.jpg", body, ctype="image/jpeg")
     adapter = make_adapter(
         "fathomnet", {"endpoint": f"{server.base}/api", "max_items": 1, "page_size": 1}
@@ -55,13 +63,23 @@ def test_fathomnet_paginated_boxes_and_licence(server, tmp_path):
 
 def test_figshare_article_files(server, tmp_path):
     body = png(2)
-    server.add("/v2/articles/123", {
-        "id": 123, "version": 2, "is_embargoed": False, "is_confidential": False,
-        "files": [{
-            "name": "a.png", "size": len(body),
-            "download_url": f"{server.base}/dl/a.png", "computed_md5": md5(body),
-        }],
-    })
+    server.add(
+        "/v2/articles/123",
+        {
+            "id": 123,
+            "version": 2,
+            "is_embargoed": False,
+            "is_confidential": False,
+            "files": [
+                {
+                    "name": "a.png",
+                    "size": len(body),
+                    "download_url": f"{server.base}/dl/a.png",
+                    "computed_md5": md5(body),
+                }
+            ],
+        },
+    )
     server.add("/dl/a.png", body)
     adapter = make_adapter("figshare", {"article": 123, "endpoint": f"{server.base}/v2"})
     assert adapter.resolve_version() == "2"
@@ -103,7 +121,8 @@ def test_pangaea_textfile_image_and_hash_columns(server, tmp_path):
 def test_http_index_recursive_html_directory(server, tmp_path):
     img_a, img_b = png(4), png(5)
     server.add(
-        "/idx/", b'<html><body><a href="sub/">sub/</a><a href="a.jpg">a.jpg</a></body></html>',
+        "/idx/",
+        b'<html><body><a href="sub/">sub/</a><a href="a.jpg">a.jpg</a></body></html>',
         ctype="text/html",
     )
     server.add(

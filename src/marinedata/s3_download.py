@@ -209,9 +209,7 @@ def download_images(
                 width=width,
                 height=height,
                 split_group=(
-                    source.split_group_for(
-                        stem=stem, upstream_path=key, partition=plan.partition
-                    )
+                    source.split_group_for(stem=stem, upstream_path=key, partition=plan.partition)
                     if source is not None
                     else None
                 ),

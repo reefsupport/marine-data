@@ -150,7 +150,11 @@ def test_self_supervised_with_map_adopts_map_ratios(registry: Registry, tmp_path
     path = tmp_path / "SPLIT_MAP.json"
     counts = {f"a/site{i}": 10 for i in range(12)}
     resolve_splits(
-        path, counts, {"train": 0.7, "val": 0.15, "test": 0.15}, seed=0, by="site",
+        path,
+        counts,
+        {"train": 0.7, "val": 0.15, "test": 0.15},
+        seed=0,
+        by="site",
         now="2026-09-23T00:00:00Z",
     )
 

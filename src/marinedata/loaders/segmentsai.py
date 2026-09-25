@@ -119,9 +119,7 @@ class SegmentsAiInstanceMaskLoader(_HarmonizingLoader):
             if mask is None:
                 if self.partial:
                     continue  # sampled sets are legitimately incomplete
-                raise LoaderError(
-                    f"{self.source.id}: no mask for image '{image.name}' in {masks}"
-                )
+                raise LoaderError(f"{self.source.id}: no mask for image '{image.name}' in {masks}")
 
             record = samples_by_stem.get(stem)
             label_entry = (record or {}).get("labels", {}).get("ground-truth")
@@ -151,16 +149,14 @@ class SegmentsAiInstanceMaskLoader(_HarmonizingLoader):
                 with Image.open(image) as img:
                     if im.size != img.size:
                         raise LoaderError(
-                            f"{label}: mask size {im.size} does not match ATL image "
-                            f"size {img.size}"
+                            f"{label}: mask size {im.size} does not match ATL image size {img.size}"
                         )
                 arr = np.asarray(im)
                 raw_ids = frozenset(int(i) for i in np.unique(arr))
                 unknown = sorted(i for i in raw_ids if i >= len(lut))
                 if unknown:
                     raise LoaderError(
-                        f"{label}: pixel id(s) {unknown} have no annotation entry in "
-                        "the v0.4 JSON"
+                        f"{label}: pixel id(s) {unknown} have no annotation entry in the v0.4 JSON"
                     )
                 dest = converted / f"{stem}.png"
                 if not dest.is_file():

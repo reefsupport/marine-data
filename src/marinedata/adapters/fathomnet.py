@@ -152,6 +152,10 @@ class FathomNetAdapter(BaseAdapter):
                         "lat": entry.get("latitude"),
                         "lon": entry.get("longitude"),
                         "depth_m": entry.get("depthMeters"),
+                        # schema: depth_m needs a depth_source (provider metadata, not our sensor read)
+                        "depth_source": "metadata"
+                        if entry.get("depthMeters") is not None
+                        else None,
                         "capture_datetime": entry.get("timestamp") or entry.get("createdTimestamp"),
                         "license": ";".join(licences) or None,
                     },

@@ -44,9 +44,7 @@ class GirderAdapter(BaseAdapter):
                 size=item.get("size"),
             )
         for folder in self._folders(folder_id, "folder"):
-            yield from self._walk(
-                folder["_id"], "folder", f"{prefix}{folder['name']}/"
-            )
+            yield from self._walk(folder["_id"], "folder", f"{prefix}{folder['name']}/")
 
     def list_items(self) -> Iterator[RemoteItem]:
         root_id = str(self.params.get("folder") or self.params["collection"])

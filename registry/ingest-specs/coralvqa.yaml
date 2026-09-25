@@ -1,0 +1,23 @@
+id: coralvqa
+adapter: hf
+license: CC-BY-4.0 (HF card CoralReefData/CoralVQA)
+attribution: CoralVQA authors (CoralReefData)
+citation: CoralVQA (2025), HF CoralReefData/CoralVQA
+homepage: https://huggingface.co/datasets/CoralReefData/CoralVQA
+params:
+  repo: CoralReefData/CoralVQA
+  revision: 3da50a4429e474f75e887d63ffa99e348b6677e7
+  include: ['CoralVQA_Image.zip', 'CoralVQA_train.jsonl', 'CoralVQA_test.jsonl']
+  label_patterns: ['*.jsonl']
+notes: >-
+  INT-ingest6: full image set (the 12k images the WP-8d/INT-core3b vqa.parquet needs keyed by
+  staged sha256). ONE 26,694,403,050 B zip, spooled whole before decode, so temp_cap_gb must
+  exceed it and the floor must leave the runner floor (34 GiB) free after the spool (34 + 25 = 59 -> 60).
+temp_cap_gb: 26.0
+disk_floor_gib: 60.0
+measured:
+  items: 3
+  bytes: 26764286845
+  method: HF tree @3da50a4 (CoralVQA_Image.zip 26694403050 + train.jsonl 62809221 + test.jsonl 7074574)
+  date: '2026-09-25'
+  bytes_basis: hf-tree

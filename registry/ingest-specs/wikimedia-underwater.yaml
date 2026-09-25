@@ -10,6 +10,7 @@ license: 'per file (Commons extmetadata LicenseShortName): CC-BY-SA / CC-BY / CC
 attribution: Wikimedia Commons contributors
 citation: Wikimedia Commons
 homepage: https://commons.wikimedia.org/wiki/Category:Underwater_photographs
+disk_floor_gib: 34.0  # INT-ingest6: runner-5 floor (D-AE), like its queue5 siblings
 measured:
   items: 14247
   bytes: 76955372449

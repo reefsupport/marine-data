@@ -63,9 +63,7 @@ class FigshareAdapter(BaseAdapter):
             return str(self.params.get("version") or art.get("version") or f"article-{art['id']}")
         self._articles = [self._article(aid) for aid in self._article_ids()]
         collection = self.params.get("collection")
-        return str(
-            self.params.get("version") or f"collection-{collection}-{len(self._articles)}"
-        )
+        return str(self.params.get("version") or f"collection-{collection}-{len(self._articles)}")
 
     def list_items(self) -> Iterator[RemoteItem]:
         if not hasattr(self, "_articles"):

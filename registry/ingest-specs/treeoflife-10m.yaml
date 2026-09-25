@@ -14,6 +14,7 @@ license: HF card licence null; per image per upstream (EOL media licence, iNat21
 attribution: Imageomics Institute — TreeOfLife-10M (EOL, iNat21, BIOSCAN-1M)
 citation: Stevens et al. 2024, CVPR, BioCLIP
 homepage: https://huggingface.co/datasets/imageomics/TreeOfLife-10M
+disk_floor_gib: 34.0  # INT-ingest6: runner-5 floor (D-AE), like its queue5 siblings
 measured:
   items: 10988032
   bytes: 1984907071025

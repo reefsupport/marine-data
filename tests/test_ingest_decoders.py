@@ -211,9 +211,7 @@ def _make_bag(path: Path) -> None:
     frames = [png(3), png(30)]
 
     with Writer(path) as writer:
-        conn = writer.add_connection(
-            "/camera/image/compressed", msg_t.__msgtype__, typestore=ts
-        )
+        conn = writer.add_connection("/camera/image/compressed", msg_t.__msgtype__, typestore=ts)
         for i, jpg in enumerate(frames):
             msg = msg_t(
                 header=header_t(seq=i, stamp=time_t(sec=i, nanosec=0), frame_id="cam"),

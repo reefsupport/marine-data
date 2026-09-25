@@ -22,9 +22,7 @@ def _write_tsv(path: Path, rows: list[tuple[str, str]]) -> None:
 
 
 def _rows(n_groups: int = 20, per_group: int = 5) -> list[tuple[str, str]]:
-    return [
-        (f"sha-{g}-{i}", f"group{g}") for g in range(n_groups) for i in range(per_group)
-    ]
+    return [(f"sha-{g}-{i}", f"group{g}") for g in range(n_groups) for i in range(per_group)]
 
 
 def test_generate_is_byte_identical_with_pinned_now(tmp_path: Path) -> None:

@@ -91,6 +91,8 @@ def occurrence_row(rec: Mapping[str, Any]) -> dict[str, Any] | None:
         "dataset_key": ds,
         "basis_of_record": rec.get("basisOfRecord"),
         "depth_m": rec.get("depth"),
+        # schema: depth_m needs a depth_source; GBIF depth is the occurrence record's metadata
+        "depth_source": "metadata" if rec.get("depth") is not None else None,
     }
 
 
@@ -130,7 +132,10 @@ class GbifOccurrenceMediaAdapter(RowJoinMixin, BaseAdapter):
     def __init__(self, params: Mapping[str, Any]) -> None:
         super().__init__(params)
         self._rows = {}
-        self.params.setdefault("field_columns", {"lat": "lat", "lon": "lon", "depth_m": "depth_m"})
+        self.params.setdefault(
+            "field_columns",
+            {"lat": "lat", "lon": "lon", "depth_m": "depth_m", "depth_source": "depth_source"},
+        )
         self.params.setdefault(
             "label_columns",
             [
