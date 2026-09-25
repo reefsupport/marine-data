@@ -157,8 +157,14 @@ def test_project_v2_coverage_reads_generically_and_handles_missing_columns(tmp_p
 
     full = tmp_path / "full.parquet"
     pd.DataFrame(
-        {"lat": [1.0, None], "lon": [2.0, None], "depth_m": [3.0, 4.0],
-         "capture_datetime": [None, None], "platform": [None, None], "camera": [None, None]}
+        {
+            "lat": [1.0, None],
+            "lon": [2.0, None],
+            "depth_m": [3.0, 4.0],
+            "capture_datetime": [None, None],
+            "platform": [None, None],
+            "camera": [None, None],
+        }
     ).to_parquet(full)
     bare = tmp_path / "bare.parquet"
     pd.DataFrame({"stem": ["a", "b", "c"]}).to_parquet(bare)

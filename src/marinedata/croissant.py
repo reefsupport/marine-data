@@ -126,8 +126,7 @@ RAI_FIELDS: dict[str, object] = {
     "machine_annotation_tools": ["CoralSCOP (instance segmentation, weak supervision only)"],
     "data_biases": [
         "CoralSCOP alone is 54% of images (single-source concentration).",
-        "100% shallow coral reef habitat; no depth, region or platform recorded per "
-        "sample (D8).",
+        "100% shallow coral reef habitat; no depth, region or platform recorded per sample (D8).",
         "NOAA PIFSC images are 224x224 px crops; ~23k Roboflow images are resized to "
         "640x640 px — neither carries a resolution flag (D9).",
     ],

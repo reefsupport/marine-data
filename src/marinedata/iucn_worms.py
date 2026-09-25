@@ -65,9 +65,7 @@ def _extract_category(attributes: list[dict]) -> str | None:
     return None
 
 
-def fetch_iucn_category(
-    aphia_id: int, *, cache_dir: Path, timeout: float = 15.0
-) -> str | None:
+def fetch_iucn_category(aphia_id: int, *, cache_dir: Path, timeout: float = 15.0) -> str | None:
     """One AphiaID -> its IUCN category, or ``None`` if WoRMS has no such attribute.
     Cached to ``cache_dir/{aphia_id}.json`` so a retried run makes zero new requests
     for AphiaIDs it already resolved."""

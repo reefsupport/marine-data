@@ -138,9 +138,7 @@ def _finalize_rows(rows: list[dict]) -> list[dict]:
     """Recompute ``flags`` for every row against the combined ``q_blur`` percentile,
     then sort by ``image_sha256`` for a deterministic write order."""
     blur_values = [
-        r["q_blur"]
-        for r in rows
-        if r["decode_ok"] and not r["q_blank"] and r["q_blur"] is not None
+        r["q_blur"] for r in rows if r["decode_ok"] and not r["q_blank"] and r["q_blur"] is not None
     ]
     blur_p1 = blur_percentile_threshold(blur_values)
     finalized = []

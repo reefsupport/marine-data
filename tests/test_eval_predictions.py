@@ -31,9 +31,9 @@ def test_read_cls_predictions_hard_labels(tmp_path: Path) -> None:
 
 def test_read_cls_predictions_probs_only_derives_label(tmp_path: Path) -> None:
     path = tmp_path / "preds.parquet"
-    pd.DataFrame(
-        {"image_sha256": ["a", "b"], "pred_probs": [[0.1, 0.9], [0.8, 0.2]]}
-    ).to_parquet(path)
+    pd.DataFrame({"image_sha256": ["a", "b"], "pred_probs": [[0.1, 0.9], [0.8, 0.2]]}).to_parquet(
+        path
+    )
     preds = read_cls_predictions(path)
     assert list(preds.pred_label) == [1, 0]
     assert preds.pred_probs.shape == (2, 2)
@@ -48,18 +48,16 @@ def test_read_points_predictions_requires_point_id(tmp_path: Path) -> None:
 
 def test_read_points_predictions_ok(tmp_path: Path) -> None:
     path = tmp_path / "preds.parquet"
-    pd.DataFrame(
-        {"image_sha256": ["a", "a"], "point_id": [0, 1], "pred_label": [1, 2]}
-    ).to_parquet(path)
+    pd.DataFrame({"image_sha256": ["a", "a"], "point_id": [0, 1], "pred_label": [1, 2]}).to_parquet(
+        path
+    )
     preds = read_cls_predictions(path, task_type="points")
     assert list(preds.point_id) == [0, 1]
 
 
 def test_read_seg_predictions(tmp_path: Path) -> None:
     path = tmp_path / "preds.parquet"
-    pd.DataFrame(
-        {"image_sha256": ["a", "b"], "pred_mask_png": ["a.png", "b.png"]}
-    ).to_parquet(path)
+    pd.DataFrame({"image_sha256": ["a", "b"], "pred_mask_png": ["a.png", "b.png"]}).to_parquet(path)
     preds = read_seg_predictions(path)
     assert preds.as_dict() == {"a": "a.png", "b": "b.png"}
 

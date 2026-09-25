@@ -286,11 +286,7 @@ def _uiconm(rgb: np.ndarray) -> float:
 
 
 def _uiqm(rgb: np.ndarray) -> float:
-    return (
-        _UIQM_C1_UICM * _uicm(rgb)
-        + _UIQM_C2_UISM * _uism(rgb)
-        + _UIQM_C3_UICONM * _uiconm(rgb)
-    )
+    return _UIQM_C1_UICM * _uicm(rgb) + _UIQM_C2_UISM * _uism(rgb) + _UIQM_C3_UICONM * _uiconm(rgb)
 
 
 # --- Flags -------------------------------------------------------------------------

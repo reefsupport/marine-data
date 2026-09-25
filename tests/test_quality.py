@@ -190,8 +190,16 @@ def test_png_roundtrip_matches_array_scoring():
 
 def test_compute_flags_decode_failure_is_the_only_flag():
     row = QualityScores(
-        decode_ok=False, width=None, height=None, min_side=None, q_blur=None,
-        q_clip_lo=None, q_clip_hi=None, q_uiqm=None, q_entropy=None, q_blank=None,
+        decode_ok=False,
+        width=None,
+        height=None,
+        min_side=None,
+        q_blur=None,
+        q_clip_lo=None,
+        q_clip_hi=None,
+        q_uiqm=None,
+        q_entropy=None,
+        q_blank=None,
     ).to_dict()
     assert compute_flags(row, blur_p1=5.0) == ["decode_failed"]
 
