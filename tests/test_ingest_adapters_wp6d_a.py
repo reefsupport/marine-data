@@ -195,11 +195,17 @@ def test_pawsey_portal_swift_json_listing(server, tmp_path):
 
 
 def test_pawsey_portal_js_shell_enumerates_zero(server, tmp_path):
+    """0 items from the Swift listing is a D-R4 ``NoStageableItems`` (INT-ingest2
+    merge: this was ``== []`` before WP-6d-B's structural fix landed on the shared
+    ``BaseAdapter.enumerate()`` all adapters, including this one, inherit)."""
+    from marinedata.adapters import NoStageableItems
+
     server.add("/container?format=json", b"<html>JS app shell</html>", ctype="text/html")
     adapter = make_adapter(
         "pawsey-portal", {"container_url": f"{server.base}/container", "version": "list-1"}
     )
-    assert list(adapter.enumerate()) == []
+    with pytest.raises(NoStageableItems, match="pawsey-portal"):
+        list(adapter.enumerate())
 
 
 def test_frdr_https_explicit_manifest(server, tmp_path):

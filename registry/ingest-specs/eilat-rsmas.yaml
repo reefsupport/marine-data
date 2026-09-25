@@ -12,3 +12,4 @@ notes: needs_adapter:site-scrape — page https://sci2s.ugr.es/CNN-coral-image-c
   only linked StructureRSMAS.zip on this pass (host needed -k/-L, plain http 301s
   to https); the EILAT+RSMAS image archive itself is referenced from a same-page 'dataset'
   anchor that needs a follow-up fetch to resolve to an exact file URL
+disk_floor_gib: 34.0

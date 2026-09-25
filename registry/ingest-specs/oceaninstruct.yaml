@@ -8,3 +8,4 @@ homepage: https://huggingface.co/datasets/zjunlp/OceanInstruct-v0.1
 params:
   repo: zjunlp/OceanInstruct-v0.1
   revision: main
+disk_floor_gib: 34.0

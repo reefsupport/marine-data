@@ -10,4 +10,4 @@ attribution: "RUOD authors (Fu et al.); HF mirror Mortallll/RUOD — no LICENSE 
 citation: "Fu, C. et al. 2023, Rethinking General Underwater Object Detection: Datasets, Challenges, and Solutions, Engineering Applications of Artificial Intelligence 123:106002 (RUOD dataset)"
 homepage: https://huggingface.co/datasets/Mortallll/RUOD
 
-disk_floor_gib: 36.0
+disk_floor_gib: 34.0

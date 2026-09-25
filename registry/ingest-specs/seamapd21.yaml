@@ -21,3 +21,4 @@ params:
     - https://grunt.sefsc.noaa.gov/parr/SEAMAPD21.tar.gz.af
   label_patterns:
     - "*/labels/*.txt"
+disk_floor_gib: 34.0

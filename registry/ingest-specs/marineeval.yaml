@@ -10,4 +10,4 @@ attribution: "Yukwong Wong et al. (HKUST VGD) — MarineEval benchmark; HF mirro
 citation: "Wong et al. 2025, MarineEval: A Large-scale Benchmark for Marine Understanding in Vision-Language Models, arXiv:2512.21126"
 homepage: https://huggingface.co/datasets/WongYukKwan/MarineEval
 
-disk_floor_gib: 36.0
+disk_floor_gib: 34.0

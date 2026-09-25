@@ -15,3 +15,4 @@ attribution: NTNU ARL
 citation: NTNU Autonomous Robotics Lab
 homepage: https://huggingface.co/datasets/ntnu-arl/underwater-datasets
 max_images: 20000
+disk_floor_gib: 34.0

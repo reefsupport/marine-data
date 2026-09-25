@@ -11,3 +11,4 @@ notes: needs_adapter:seafile-share — the real download host is a Seafile share
   (https://seafile.lirmm.fr/d/79b03788f29148ca84e5/), not a flat file list; needs
   a Seafile-share adapter (its API lists folder contents as JSON under /api/v2.1 given
   the share token)
+disk_floor_gib: 34.0

@@ -8,3 +8,4 @@ citation: Zenodo 2542305
 homepage: https://zenodo.org/records/2542305
 params:
   zenodo_record: 2542305
+disk_floor_gib: 34.0

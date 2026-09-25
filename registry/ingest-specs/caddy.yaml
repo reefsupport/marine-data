@@ -11,3 +11,4 @@ homepage: http://www.caddian.eu/
 notes: needs_adapter:site-scrape — caddian.eu root and a guessed /index.php/downloads
   path (404) exposed no direct zip links on this pass; the catalog's 'zip links' note
   implies a subpage not yet located
+disk_floor_gib: 34.0

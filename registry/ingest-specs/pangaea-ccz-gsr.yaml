@@ -9,3 +9,4 @@ homepage: https://doi.org/10.1594/PANGAEA.987009
 notes: needs_adapter:pangaea — PANGAEA serves data via its own OAI/REST API (https://doi.pangaea.de/10.1594/PANGAEA.987009
   resolves to a dataset page listing linked image files/collections, not a flat archive);
   needs a PANGAEA-dataset adapter that follows child datasets
+disk_floor_gib: 34.0

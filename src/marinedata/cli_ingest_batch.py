@@ -16,11 +16,29 @@ import concurrent.futures as cf
 import dataclasses
 import json
 import sys
+import threading
 import time
+from collections.abc import Callable
 from pathlib import Path
 from typing import Any
 
 import yaml
+
+# D-AA (2026-09-25 charter): anonymous HF only, no token. On a 429, cool down at
+# least this long, then retry the same source (its worker thread just sleeps and
+# re-runs it in place — with all sources submitted to the pool up front, a source
+# that sleeps 15+ minutes naturally finishes far later than the rest, the same
+# outcome as an explicit tail-requeue). After this many cool-downs the source is
+# given up on and reported as ``needs-yohan: hf-rate-limit`` instead of ``error``.
+HF_COOLDOWN_S = 15 * 60.0
+HF_MAX_COOLDOWNS = 3
+
+
+def _is_hf_rate_limited(result: dict[str, Any]) -> bool:
+    if result.get("status") != "error":
+        return False
+    error = result.get("error", "")
+    return "429" in error or "Too Many Requests" in error
 
 
 def _spec_paths(specs_dir: Path, only: set[str] | None) -> list[Path]:
@@ -105,6 +123,43 @@ def run_one(spec_path: Path, work_root: Path, client: Any) -> dict[str, Any]:
         }
 
 
+def _run_one_hf_aware(
+    spec_path: Path,
+    work_root: Path,
+    client: Any,
+    *,
+    hf_semaphore: threading.Semaphore,
+    cooldown_s: float,
+    max_cooldowns: int,
+    sleep: Callable[[float], None],
+) -> dict[str, Any]:
+    """``run_one``, plus D-AA: on an HF 429 cool down and retry in place (keeping HF
+    concurrency at 1 via ``hf_semaphore``, regardless of ``--jobs``), up to
+    ``max_cooldowns`` times before giving up as ``needs-yohan: hf-rate-limit``."""
+    from .ingest_source import IngestSpec
+
+    spec = IngestSpec.load(spec_path)
+    is_hf = spec.adapter == "hf"
+    cooldowns = 0
+    while True:
+        if is_hf:
+            with hf_semaphore:
+                res = run_one(spec_path, work_root, client)
+        else:
+            res = run_one(spec_path, work_root, client)
+        if not (is_hf and _is_hf_rate_limited(res)):
+            return res
+        cooldowns += 1
+        if cooldowns >= max_cooldowns:
+            return {
+                **res,
+                "status": "needs-yohan",
+                "needs": "hf-rate-limit",
+                "cooldowns": cooldowns,
+            }
+        sleep(cooldown_s)
+
+
 def run_batch(
     specs_dir: Path,
     work_root: Path,
@@ -113,23 +168,51 @@ def run_batch(
     jobs: int = 1,
     remote: str = "rs-hel1",
     out: Any = None,
+    hf_cooldown_s: float = HF_COOLDOWN_S,
+    hf_max_cooldowns: int = HF_MAX_COOLDOWNS,
+    sleep: Callable[[float], None] = time.sleep,
 ) -> list[dict[str, Any]]:
     """Run every spec under ``specs_dir``; return the per-source result dicts in spec
     order. One JSONL line per finished source is written to ``out`` as it completes.
     ``out`` defaults to the CURRENT ``sys.stdout`` at call time (not import time — a
-    stdlib default-argument trap that would otherwise escape test capture/redirection)."""
+    stdlib default-argument trap that would otherwise escape test capture/redirection).
+
+    D-AA: HF sources never run more than one at a time (``hf_semaphore``, independent
+    of ``--jobs``), and an HF 429 is cooled down and retried rather than a fatal error
+    (see ``_run_one_hf_aware``)."""
     out = sys.stdout if out is None else out
     paths = _spec_paths(specs_dir, only)
     client = _resolve_client(remote)
+    hf_semaphore = threading.Semaphore(1)
     results: dict[str, dict[str, Any]] = {}
     if jobs <= 1:
         for p in paths:
-            res = run_one(p, work_root, client)
+            res = _run_one_hf_aware(
+                p,
+                work_root,
+                client,
+                hf_semaphore=hf_semaphore,
+                cooldown_s=hf_cooldown_s,
+                max_cooldowns=hf_max_cooldowns,
+                sleep=sleep,
+            )
             print(json.dumps(res, sort_keys=True), file=out, flush=True)
             results[str(p)] = res
     else:
         with cf.ThreadPoolExecutor(max_workers=jobs) as pool:
-            futures = {pool.submit(run_one, p, work_root, client): p for p in paths}
+            futures = {
+                pool.submit(
+                    _run_one_hf_aware,
+                    p,
+                    work_root,
+                    client,
+                    hf_semaphore=hf_semaphore,
+                    cooldown_s=hf_cooldown_s,
+                    max_cooldowns=hf_max_cooldowns,
+                    sleep=sleep,
+                ): p
+                for p in paths
+            }
             for fut in cf.as_completed(futures):
                 res = fut.result()
                 print(json.dumps(res, sort_keys=True), file=out, flush=True)

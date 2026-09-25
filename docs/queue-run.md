@@ -41,6 +41,41 @@ local file after `upload_file`'s own verify (etag/size match), so an
 interrupted source just resumes into its own checkpoint on the next
 `run.sh` pass.
 
+## Runner 2 (INT-ingest2, 2026-09-25)
+
+A second, independent background runner drains the 17 rows the WP-6d-A/B
+merge newly flipped to `ok` (`aqualoc, caddy, duo, eilat-rsmas, fathomnet,
+hicrd, lsui, ntnu-arl-uw, oceaninstruct, pangaea-ccz-gsr, pangaea-ofos-msm77,
+salmon-cage, seamapd21, seathru-nerf, underwater-images-2542305, usod10k,
+viame-public`) plus the 4 rows that hit an HF 429 in runner 1's `run.log`
+(`ruod, marineeval, uiis10k, uiis`) — 21 ids total, `--jobs 2`.
+
+```sh
+SP=/private/tmp/claude-501/-Users-yohanrunhaar-dev-reefsupport/0ca12ad3-aada-4ede-ab99-14fec1fa7cc2/scratchpad
+nohup sh "$SP/queue2/run.sh" > "$SP/queue2/run.log" 2>"$SP/queue2/run.err" &
+echo $! > "$SP/queue2/pid"
+```
+
+- **PID:** `55020` (recorded at `$SP/queue2/pid`)
+- **Log:** `$SP/queue2/run.log` (JSONL, one line per finished source; stderr
+  separately at `$SP/queue2/run.err`)
+- **Ids:** `$SP/queue2/ids.txt` (21 ids, comma-separated, same file as passed
+  to `--only`)
+- **Disk floor:** `disk_floor_gib: 34.0` set on all 21 specs (down from the
+  default 40 GiB / runner 1's 36 GiB — free disk was 33 GiB at launch, so
+  this runner **starts paused**: every source raises `DiskFloorError`,
+  caught as a per-source `error` line, until free space rises above 34 GiB.
+  That is expected; do not lower the floor further. It shares this Mac's
+  disk with runner 1 (36 GiB floor) and `usis10k`, so it will start doing
+  real work once either of those frees enough space or completes.
+- **D-AA (HF 429 backoff):** `ingest-batch` now cools an HF source down
+  (>= 15 min) and retries it in place on a 429 rather than failing the
+  batch, keeps HF concurrency at 1 regardless of `--jobs`, and gives up as
+  `needs-yohan: hf-rate-limit` after 3 cool-downs — see
+  `_run_one_hf_aware` in `src/marinedata/cli_ingest_batch.py`. This runner
+  is the first to exercise it live (`ruod`, `marineeval`, `uiis10k`, `uiis`
+  are all HF sources that 429'd on runner 1).
+
 ## Checking progress
 
 ```sh
