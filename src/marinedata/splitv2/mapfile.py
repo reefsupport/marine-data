@@ -5,8 +5,12 @@ Same append-only contract as v1's :mod:`marinedata.splitmap`, keyed by
 so a rule or benchmark-registry edit is visible in the map itself: ``rules_sha256``
 (of ``registry/splits/v2.yaml``) and ``benchmarks_sha256`` (of
 ``registry/benchmarks.yaml``). ``map_sha256`` is the canonical-JSON digest of
-``{seed, ratios, rules_sha256, benchmarks_sha256, assignments}`` — regenerating from
-the same inputs must reproduce it byte for byte.
+``{seed, ratios, rules_sha256, benchmarks_sha256, assignments, dp_province,
+dp_province_n_images}`` — regenerating from the same inputs must reproduce it byte
+for byte. ``dp_province``/``dp_province_n_images`` record charter D-P(1)'s
+data-driven tropical-province holdout choice (``None``/``0`` when none qualified),
+so which province was picked is part of the map's own provenance, not just a log
+line (brief P3b).
 
 This module never touches v1's ``registry/SPLIT_MAP.json``: v2 is a new file, written
 wherever the caller points ``save`` (design: the integrator's build, not this
@@ -36,6 +40,8 @@ class SplitMapV2:
     benchmarks_sha256: str
     assignments: dict[str, str] = field(default_factory=dict)
     ood_tags: dict[str, list[str]] = field(default_factory=dict)
+    dp_province: str | None = None  # charter D-P(1): chosen tropical-province holdout
+    dp_province_n_images: int = 0  # its labelled count, at the time it was chosen
     schema_version: int = SCHEMA_VERSION
     map_sha256: str = ""
 
@@ -49,6 +55,8 @@ class SplitMapV2:
             "map_sha256": self.map_sha256,
             "assignments": dict(sorted(self.assignments.items())),
             "ood_tags": {k: list(v) for k, v in sorted(self.ood_tags.items())},
+            "dp_province": self.dp_province,
+            "dp_province_n_images": self.dp_province_n_images,
         }
 
 
@@ -59,6 +67,8 @@ def compute_map_sha256(
     rules_sha256: str,
     benchmarks_sha256: str,
     assignments: Mapping[str, str],
+    dp_province: str | None = None,
+    dp_province_n_images: int = 0,
 ) -> str:
     canonical = json.dumps(
         {
@@ -67,6 +77,8 @@ def compute_map_sha256(
             "rules_sha256": rules_sha256,
             "benchmarks_sha256": benchmarks_sha256,
             "assignments": dict(assignments),
+            "dp_province": dp_province,
+            "dp_province_n_images": dp_province_n_images,
         },
         sort_keys=True,
         separators=(",", ":"),
@@ -82,15 +94,21 @@ def build(
     benchmarks_sha256: str,
     assignments: Mapping[str, str],
     ood_tags: Mapping[str, list[str]] | None = None,
+    dp_province: str | None = None,
+    dp_province_n_images: int = 0,
 ) -> SplitMapV2:
     """Pure function of its inputs: same inputs -> byte-identical ``map_sha256`` and
-    JSON, any number of times (design §3.5's regeneration test)."""
+    JSON, any number of times (design §3.5's regeneration test). ``dp_province``/
+    ``dp_province_n_images`` are charter D-P(1)'s chosen tropical-province holdout
+    and its labelled count — part of the hash inputs, like everything else here."""
     digest = compute_map_sha256(
         seed=seed,
         ratios=ratios,
         rules_sha256=rules_sha256,
         benchmarks_sha256=benchmarks_sha256,
         assignments=assignments,
+        dp_province=dp_province,
+        dp_province_n_images=dp_province_n_images,
     )
     return SplitMapV2(
         seed=seed,
@@ -99,6 +117,8 @@ def build(
         benchmarks_sha256=benchmarks_sha256,
         assignments=dict(assignments),
         ood_tags={k: list(v) for k, v in (ood_tags or {}).items()},
+        dp_province=dp_province,
+        dp_province_n_images=dp_province_n_images,
         map_sha256=digest,
     )
 
@@ -123,6 +143,8 @@ def load(path: str | Path) -> SplitMapV2:
         benchmarks_sha256=raw["benchmarks_sha256"],
         assignments=dict(raw["assignments"]),
         ood_tags={k: list(v) for k, v in raw.get("ood_tags", {}).items()},
+        dp_province=raw.get("dp_province"),
+        dp_province_n_images=raw.get("dp_province_n_images", 0),
         map_sha256=raw["map_sha256"],
     )
     expected = compute_map_sha256(
@@ -131,6 +153,8 @@ def load(path: str | Path) -> SplitMapV2:
         rules_sha256=m.rules_sha256,
         benchmarks_sha256=m.benchmarks_sha256,
         assignments=m.assignments,
+        dp_province=m.dp_province,
+        dp_province_n_images=m.dp_province_n_images,
     )
     if expected != m.map_sha256:
         raise SplitMapError(
@@ -146,9 +170,13 @@ def merge_append_only(
     new_ood_tags: Mapping[str, list[str]] | None = None,
     rules_sha256: str,
     benchmarks_sha256: str,
+    dp_province: str | None = None,
+    dp_province_n_images: int | None = None,
 ) -> SplitMapV2:
     """Add groups not yet in ``existing``; a key already present must keep its value —
-    raise rather than silently reinterpreting a stale map (v1's contract, §3.5)."""
+    raise rather than silently reinterpreting a stale map (v1's contract, §3.5).
+    ``dp_province``/``dp_province_n_images`` default to carrying ``existing``'s choice
+    forward unchanged — the D-P(1) province, once picked, is append-only too."""
     for gid, split in new_assignments.items():
         prior = existing.assignments.get(gid)
         if prior is not None and prior != split:
@@ -164,4 +192,9 @@ def merge_append_only(
         benchmarks_sha256=benchmarks_sha256,
         assignments=merged_assignments,
         ood_tags=merged_tags,
+        dp_province=dp_province if dp_province is not None else existing.dp_province,
+        dp_province_n_images=(
+            dp_province_n_images if dp_province_n_images is not None
+            else existing.dp_province_n_images
+        ),
     )

@@ -90,6 +90,43 @@ def test_split_map_v2_regeneration_is_byte_identical():
     assert to_json(first) == to_json(second)
 
 
+def test_split_map_v2_header_carries_the_dp_province_choice():
+    """Brief P3b: the chosen D-P(1) tropical-province holdout and its labelled count
+    are recorded in the SPLIT_MAP v2 header, not just logged."""
+    m = build(
+        seed=0,
+        ratios={"train": 0.70, "val": 0.15, "test": 0.15},
+        rules_sha256="e" * 64,
+        benchmarks_sha256="f" * 64,
+        assignments={"sg-1": "ood-geo-tropical-province"},
+        dp_province="Western Indo-Pacific / Red Sea and Gulf of Aden",
+        dp_province_n_images=1234,
+    )
+    assert m.dp_province == "Western Indo-Pacific / Red Sea and Gulf of Aden"
+    assert m.dp_province_n_images == 1234
+    assert to_json(m).count("Western Indo-Pacific / Red Sea and Gulf of Aden") == 1
+
+
+def test_split_map_v2_regeneration_is_byte_identical_with_dp_province():
+    """Same regeneration guarantee (§3.5) once the D-P province fields are set — a
+    different chosen province must change `map_sha256` (it is a hash input)."""
+    base = dict(
+        seed=0,
+        ratios={"train": 0.70, "val": 0.15, "test": 0.15},
+        rules_sha256="a" * 64,
+        benchmarks_sha256="b" * 64,
+        assignments={"sg-1": "train"},
+        dp_province="Andaman Sea Coral Coast",
+        dp_province_n_images=777,
+    )
+    first = build(**base)
+    second = build(**base)
+    assert first.map_sha256 == second.map_sha256
+
+    different = build(**{**base, "dp_province": "Somewhere Else"})
+    assert different.map_sha256 != first.map_sha256
+
+
 def test_v1_split_map_json_is_untouched_by_running_split_v2():
     """Running the split-v2 allocator/mapfile never reads or writes v1's
     registry/SPLIT_MAP.json — hash it before and after (brief: 'Do NOT touch v1's

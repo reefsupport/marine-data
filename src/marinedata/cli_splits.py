@@ -16,6 +16,12 @@ import sys
 from pathlib import Path
 
 from .splitv2.allocate import achieved_by_stratum, allocate
+from .splitv2.dp_province import (
+    labelled_total,
+    province_labelled_counts,
+    resolve_tropical_province_rule,
+    select_tropical_province,
+)
 from .splitv2.holdouts import Sample, assign_ood, share_issues
 from .splitv2.rules import load_rules, rules_sha256
 
@@ -71,6 +77,16 @@ def _cmd_check(args: argparse.Namespace) -> int:
     ]
     never_eval = {row["source_id"] for row in cols if row.get("never_eval")}
     pinned = {row["split_group_id"]: row["pinned_split"] for row in cols if row.get("pinned_split")}
+
+    dp_counts = province_labelled_counts(samples, config, never_eval)
+    dp_choice = select_tropical_province(
+        dp_counts,
+        tropical_realms=config.tropical_realms,
+        labelled_total=labelled_total(samples, never_eval),
+        min_images=int(config.size_guards["min_images"]),
+    )
+    print(dp_choice.describe())
+    config = resolve_tropical_province_rule(config, dp_choice)
 
     ood = assign_ood(samples, config)
     eligible = [

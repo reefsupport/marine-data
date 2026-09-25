@@ -80,8 +80,54 @@ invariants directly.)
 
 1. A WP-10 `split_group_id` table for `coralscapes` and `mermaid-aws` (dedup/near-dup
    grouping), so groups — not single images — are the allocation unit.
-2. WP-2b geography/depth/platform/time enrichment run over these two sources, so the 6
-   OOD holdouts have real candidates to evaluate (currently 0/6 constructible here).
+2. WP-2b geography/depth/platform/time enrichment run over these two sources, so the 7
+   OOD holdouts have real candidates to evaluate (currently 0/7 constructible here).
 3. The v1 69,600-row per-image table (`source_id`, `split_group_id`, pins) joined
    against `registry/SPLIT_MAP.json`, so the "v1 eligible" row above is measured by
    this package rather than carried from the design doc's own §0 measurement.
+
+## D-P: the 7th holdout — `ood-geo-tropical-province`
+
+Charter D-P(1) (2026-09-25, decided after design §3.2 was written) replaces a
+Caribbean/Tropical-Atlantic realm holdout with one tropical-reef **province**
+outside the Tropical Atlantic, picked deterministically: the tropical-realm province
+whose labelled count is closest to 5% of the labelled pool, with >= 500 labelled
+images; if none qualifies, the rule stays inert and `splits check` prints
+`D-P holdout: none qualifies (<reason>)` as a warning, not a failure
+(`src/marinedata/splitv2/dp_province.py`).
+
+**This run cannot compute the real per-province tally.** `feat/wp2-metadata@29bedbb`
+ships `registry/geo/meow-2026-09-25.parquet` (MEOW realm/province polygons) and a
+point-in-polygon classifier (`src/marinedata/geo_meow.py`), but no precomputed
+per-source-per-province labelled-image count — producing one means running
+`geo_meow.classify` against every staged source's per-image lat/lon in
+`rs-storage-open`, which this brief's budget does not cover. There is no
+locally-readable "MEOW output" table of counts to read instead, so only the
+synthetic proof below is shown, per this brief's explicit fallback.
+
+**Synthetic proof** (`tests/test_splitv2_dp_province.py`), all passing:
+
+| Property | Fixture | Result |
+|---|---|---|
+| closest-to-5% selection | pool 21,000; candidates 950 (dist 100) vs 1,500 (dist 450) | picks the 950-image province |
+| `>= 500` floor | pool 2,000; 90-image candidate is closer than the 500-image one | picks the 500-image one, not the closer 90 |
+| Tropical Atlantic hard exclusion | a Tropical Atlantic candidate sits exactly on target, even with the realm allow-list (mis-)configured to include it | never chosen |
+| tie-break | two candidates equidistant from target | picks the alphabetically-first province name |
+| inert case | no candidate | `DPChoice.describe()` == `"D-P holdout: none qualifies (…)"` |
+| wiring | `resolve_tropical_province_rule` + `assign_ood` on 5 groups x 100 images (exactly the size-guard floor) | every group holds out as `ood-geo-tropical-province` |
+
+The realm allow-list (Central/Western/Eastern Indo-Pacific, Tropical Eastern
+Pacific) lives in `registry/splits/v2.yaml`'s `tropical_realms:` key, not
+hard-coded; the Tropical Atlantic exclusion is hard-coded in
+`dp_province.EXCLUDED_REALM` so a future yaml edit can never route our own
+imagery into this holdout. The chosen province and its labelled count are recorded
+in the SPLIT_MAP v2 header (`dp_province`, `dp_province_n_images`) and are part of
+`map_sha256`'s hash inputs (`tests/test_splitv2_allocate.py`).
+
+### D-P(3): MLC 2009+2010 both pinned to test
+
+Already true before this brief: `registry/benchmarks.yaml`'s `mlc-moorea` entry has
+`upstream_split.eval_split: "2009+2010"` and `policy: route-to-our-test`
+(`policy_reason: "pin both test years so neither published protocol is
+contaminated"`). No fix was needed; `tests/test_benchmarks.py::
+test_mlc_moorea_pins_both_2009_and_2010_to_test` makes it a regression test.

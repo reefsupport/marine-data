@@ -29,12 +29,16 @@ allocator:
   overshoot_cap: 1.10
   repair_max_swaps: 200
 
-# The 6 OOD holdouts, in precedence order (§3.2). `kind` selects the comparison:
+# The 7 OOD holdouts, in precedence order (§3.2 + charter D-P(1), 2026-09-25, which
+# added #4 after the design doc was written). `kind` selects the comparison:
 #   source_eq   — source_id == value
 #   field_eq    — field == value, filling nulls from `fallback` first
 #   field_gte   — field >= value, filling nulls from `fallback` first
 # `fallback` names a per-source lookup table below (`geo_fallback`, `platform_fallback`,
-# `source_min_depth_m`); `widen_values` is the one-time rescue §3.2 describes for #5.
+# `source_min_depth_m`); `widen_values` is the one-time rescue §3.2 describes for #6.
+# `data_driven: true` means `value` is not authored here — `splits check` resolves it
+# at run time from the labelled pool (`marinedata.splitv2.dp_province`) and the yaml
+# `value` stays null until then, which never matches anything on its own.
 holdouts:
   - name: ood-source-deepfish
     order: 1
@@ -54,25 +58,43 @@ holdouts:
     value: "Mediterranean Sea"
     fallback: geo_fallback
     fallback_key: province
-  - name: ood-depth-deep
+  - name: ood-geo-tropical-province
     order: 4
+    kind: field_eq
+    field: meow_province
+    value: null
+    fallback: geo_fallback
+    fallback_key: province
+    data_driven: true
+  - name: ood-depth-deep
+    order: 5
     kind: field_gte
     field: depth_m
     value: 800
     fallback: source_min_depth_m
   - name: ood-platform-auv
-    order: 5
+    order: 6
     kind: field_eq
     field: platform
     value: auv
     fallback: platform_fallback
     widen_values: [auv, towed]
   - name: ood-time-2025
-    order: 6
+    order: 7
     kind: field_gte
     field: capture_datetime
     value: "2025-01-01T00:00:00+00:00"
     requires_bimodal_source: true
+
+# D-P(1) candidate realms for `ood-geo-tropical-province`: the tropical MEOW realms
+# OUTSIDE the Tropical Atlantic (our own operating area, which D-P explicitly keeps
+# out of this holdout — enforced again, hard-coded, in `dp_province.EXCLUDED_REALM`
+# so a future edit here can never accidentally route our own imagery OOD).
+tropical_realms:
+  - Central Indo-Pacific
+  - Western Indo-Pacific
+  - Eastern Indo-Pacific
+  - Tropical Eastern Pacific
 
 # Per-source fallback used to fill a null meow_realm/meow_province before the geography
 # rules test it — never invented, only sources known single-realm/-province (§3.2).

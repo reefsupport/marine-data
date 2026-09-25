@@ -52,6 +52,17 @@ def test_loads_and_validates_every_entry(registry: BenchmarkRegistry) -> None:
             assert entry.policy_reason.strip()
 
 
+def test_mlc_moorea_pins_both_2009_and_2010_to_test(registry: BenchmarkRegistry) -> None:
+    """Charter D-P(3): pin BOTH MLC 2009 and 2010 to test, to keep both published
+    protocols (Exp 1: 2009; Exp 3: 2009+2010) comparable. `eval_split` already
+    carries both years and `policy` routes them to our test — verified here, not
+    fixed, since P1 already set it this way."""
+    entry = registry.by_id("mlc-moorea")
+    assert "2009" in entry.upstream_split.eval_split
+    assert "2010" in entry.upstream_split.eval_split
+    assert entry.policy == "route-to-our-test"
+
+
 def test_split_verified_true_requires_evidence() -> None:
     fixture = _fixture_doc()
     fixture["benchmarks"][0]["split_verified"] = True

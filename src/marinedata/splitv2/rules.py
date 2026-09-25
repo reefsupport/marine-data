@@ -40,6 +40,7 @@ class HoldoutRule:
     fallback_key: str | None = None  # sub-key within that table's per-source entry
     widen_values: tuple[Any, ...] | None = None
     requires_bimodal_source: bool = False
+    data_driven: bool = False  # value resolved at `splits check` time, not authored here
 
 
 @dataclass(frozen=True)
@@ -56,6 +57,7 @@ class RulesConfig:
     geo_fallback: dict[str, dict[str, str]]
     platform_fallback: dict[str, str]
     source_min_depth_m: dict[str, float]
+    tropical_realms: tuple[str, ...] = ()
 
     def lookup_table(self, name: str) -> dict[str, Any]:
         return {
@@ -81,14 +83,17 @@ def load_rules(path: str | Path) -> RulesConfig:
             fallback_key=h.get("fallback_key"),
             widen_values=tuple(h["widen_values"]) if h.get("widen_values") else None,
             requires_bimodal_source=bool(h.get("requires_bimodal_source", False)),
+            data_driven=bool(h.get("data_driven", False)),
         )
         for h in sorted(raw["holdouts"], key=lambda h: h["order"])
     )
     names = [h.name for h in holdouts]
     if len(set(names)) != len(names):
         raise RulesError(f"{path}: duplicate holdout names in {names}")
-    if len(holdouts) != 6:
-        raise RulesError(f"{path}: expected 6 holdouts (design §3.2), got {len(holdouts)}")
+    if len(holdouts) != 7:
+        raise RulesError(
+            f"{path}: expected 7 holdouts (design §3.2 + charter D-P(1)), got {len(holdouts)}"
+        )
     return RulesConfig(
         raw=raw,
         path=path,
@@ -102,6 +107,7 @@ def load_rules(path: str | Path) -> RulesConfig:
         geo_fallback=dict(raw.get("geo_fallback") or {}),
         platform_fallback=dict(raw.get("platform_fallback") or {}),
         source_min_depth_m=dict(raw.get("source_min_depth_m") or {}),
+        tropical_realms=tuple(raw.get("tropical_realms") or ()),
     )
 
 
