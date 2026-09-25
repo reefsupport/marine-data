@@ -12,8 +12,8 @@ thresholds:   # §2.1; changing any value changes benchmarks_sha256 and therefor
   s3_phash256_confirm_max: 32
   s3_phash256_review_max: 48
   s3_min_entropy_bits: 4.0
-  s4_embedding_model: facebook/dinov2-small   # revision pinned by WP-10; P1 copies the sha here
-  s4_embedding_revision: null
+  s4_embedding_model: sscd_disc_mixup   # D-V: decon copy-detection uses WP-10's SSCD, not dinov2
+  s4_embedding_revision: 9f26bd4c848cc19b73d2ae92eea6e04886f61a7b764ceb7a13aeee62e6a6db56
   s4_tau_dedup: 0.93          # placeholder until WP-10's precision-95 calibration; record its report sha256 below
   s4_tau_dedup_calibration_sha256: null
   s4_tau_decon_offset: -0.03  # tau_decon = clamp(tau_dedup + offset, 0.85, 0.95) = 0.90 now

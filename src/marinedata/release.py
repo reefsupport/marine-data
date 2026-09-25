@@ -428,6 +428,7 @@ def build_release(
     allow_unmapped: bool = False,
     near_dup: NearDupConfig | None = None,
     dedup_v2_groups: str | Path | None = None,
+    decon: bool = False,
 ) -> ReleaseResult:
     """Build every registry task against a frozen split map and write the release.
 
@@ -576,6 +577,10 @@ def build_release(
             "gate": "pass",
             "groups": gate.groups,
         }
+    if decon:  # WP-12 P2 hook, off by default; the integrator flips it at the v2 build
+        from .decon import run_decon_gate
+
+        run_decon_gate(release_root, registry, admitted_roots)
     release_json_text = json.dumps(release_json, indent=2, sort_keys=True) + "\n"
     (release_root / "RELEASE.json").write_text(release_json_text)
 
