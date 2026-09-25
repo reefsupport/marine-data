@@ -154,7 +154,23 @@ class HFAdapter(BaseAdapter):
     def _expand_zip(self, item: RemoteItem, wanted: set[str] | None) -> Iterator[RemoteItem]:
         if item.size is None:
             raise ValueError(f"{item.key}: remote_zip needs the declared size (HF tree)")
-        zf, rf = open_remote_zip(item.url, item.size)
+        try:
+            zf, rf = open_remote_zip(item.url, item.size)
+        except zipfile.BadZipFile:
+            # WP-6n (marineevt): a nested remote_zip tree can ship one malformed/
+            # non-standard member (e.g. a genuinely corrupt upstream archive) among many
+            # otherwise-good zips -- the declared size and tree metadata both check out
+            # (ruled out: a directory, a stale/pointer size), the bytes at this url just
+            # never yield a central directory. One bad archive must not crash enumerate()
+            # for the whole nested tree: stage it as a normal (unexpanded) item instead,
+            # so ingest_missing's existing per-item skip (D-AF, "decode-error:BadZipFile")
+            # drops just this one item when it is actually fetched/decoded.
+            log.warning(
+                "%s: not a valid remote zip (no central directory found), staged whole",
+                item.key,
+            )
+            yield item
+            return
         if not hasattr(self, "_zip_members"):
             self._zip_members: dict[str, tuple[zipfile.ZipFile, RemoteFile, zipfile.ZipInfo]] = {}
             self._zip_lock = threading.Lock()

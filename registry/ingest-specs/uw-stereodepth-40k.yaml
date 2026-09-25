@@ -1,4 +1,4 @@
-# WP-6l-B (2026-09-25) new source: needs_adapter:split-tar-gz — WP-6l-B depth-3d: underwater stereo depth pairs
+# WP-6l-B (2026-09-25) new source: candidate — WP-6l-B depth-3d: underwater stereo depth pairs
 id: uw-stereodepth-40k
 adapter: hf
 params:
@@ -8,7 +8,7 @@ license: unstated
 attribution: AIGeeksGroup (HF)
 citation: HF dataset AIGeeksGroup/UW-StereoDepth-40K
 homepage: https://huggingface.co/datasets/AIGeeksGroup/UW-StereoDepth-40K
-notes: 'needs_adapter:split-tar-gz — WP-6l-B depth-3d: underwater stereo depth pairs'
+notes: 'candidate — WP-6l-B depth-3d: underwater stereo depth pairs'
 temp_cap_gb: 31.0
 disk_floor_gib: 62.0
 measured:

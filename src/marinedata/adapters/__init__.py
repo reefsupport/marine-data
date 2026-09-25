@@ -60,9 +60,13 @@ STREAMABLE = (
 )
 SPOOLED = (".zip", ".parquet", *RAR, *VIDEO, *ROSBAG)
 
-# ``<name>.tar.gz.aa``/``.ab``/... (D-D multipart-tar, e.g. seamapd21): grouped into one
-# synthetic ``.tar.gz`` item by ``_group_multipart`` before the suffix filter runs.
-_MULTIPART_RE = re.compile(r"^(.+\.tar\.gz)\.([a-z]{2,3})$", re.IGNORECASE)
+# ``<name>.tar.gz.aa``/``.ab``/... (D-D multipart-tar, e.g. seamapd21) and the equivalent
+# ``.partaa``/``.partab`` naming (WP-6n, e.g. UW-StereoDepth-40K's ``.tar.gz.partaa``):
+# grouped into one synthetic ``.tar.gz`` item by ``_group_multipart`` before the suffix
+# filter runs. Both name a plain sequential byte-concatenation of the parts (gzip is not
+# seekable, so this is read once, forward-only, via ``ConcatReader`` -- never reassembled
+# on disk); the counter alone (post the optional ``part`` prefix) decides read order.
+_MULTIPART_RE = re.compile(r"^(.+\.tar\.gz)\.(?:part)?([a-z]{2,3})$", re.IGNORECASE)
 
 
 def suffix_of(key: str) -> str:
