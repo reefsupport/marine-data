@@ -20,6 +20,14 @@ hf = ["datasets>=2.18"]
 ingest = ["pyarrow>=15", "pillow==12.3.0"]
 quality = ["numpy==2.4.6", "pillow==12.3.0", "opencv-python-headless==5.0.0.93", "pyarrow>=15"]
 croissant = ["mlcroissant>=1.0", "pyarrow>=15"]
+privacy = [
+    "torch>=2.2",
+    "torchvision>=0.17",
+    "numpy>=1.24",
+    "pillow>=10.0",
+    "opencv-python-headless>=4.9",
+    "pyarrow>=15",
+]
 all = ["pandas>=2.0", "torch>=2.2", "numpy>=1.24", "pillow>=10.0"]
 dev = [
     "pytest>=8.0",
