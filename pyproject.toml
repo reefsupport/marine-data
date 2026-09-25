@@ -8,6 +8,7 @@ license = { text = "Apache-2.0" }
 authors = [{ name = "Reef Support B.V." }]
 keywords = ["marine", "coral-reef", "benthic", "dataset", "licence", "croissant"]
 dependencies = [
+    "pyarrow>=15",  # release label gate reads the pinned WoRMS snapshot (WP-7)
     "pydantic>=2.6",
     "pyyaml>=6.0",
 ]

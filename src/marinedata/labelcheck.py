@@ -170,3 +170,20 @@ def summarise(audits: list[LabelAudit]) -> str:
         f"{len(audited)} audited · {drops} silent drop(s) · {dead} dead edge(s) · "
         f"worst coverage {worst:.1%}"
     )
+
+
+def release_label_gate(registry: Registry, source_ids: list[str]) -> dict[str, str]:
+    """The release gate (WP-7): fail on silent drops, dead edges, unanchored taxon nodes,
+    and sources under 95% mapped without a documented exception.
+
+    Runs against the committed vocabularies in ``registry/taxonomy/vocab/`` — no data
+    and no network needed — so it can sit in front of every release build. Returns the
+    ``taxonomy_version`` stamp written into RELEASE.json; in-memory registries (no
+    ``root``) have no taxonomy to gate and return an empty stamp.
+    """
+    from .taxonomy import assert_release_gate
+
+    root = getattr(registry, "root", None)
+    if root is None or not (Path(root) / "taxonomy" / "taxonomy.yaml").exists():
+        return {}
+    return assert_release_gate(registry, root, list(source_ids))

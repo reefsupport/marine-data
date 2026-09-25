@@ -1,0 +1,29 @@
+# source: obsea-fish
+# crosswalk: obsea-fish
+# counts: types
+# retrieved: 2026-09-25 from Zenodo 14888440 obsea_split_YOLO.zip data.yaml (23 classes, 34,945 boxes)
+# note: the 4,120 label files span 1.2 GB of the zip; coverage is type-weighted
+label	count	description
+Chromis chromis		
+Coris julis		
+Dactylopterus volitans		
+Dentex dentex		
+Diplodus cervinus		
+Diplodus puntazzo		
+Diplodus sargus		
+Diplodus vulgaris		
+Diver		
+Epinephelus costae		
+Epinephelus marginatus		
+Mullus surmuletus		
+Muraena helena		
+Myliobatidae		
+Oblada melanura		
+Octopus vulgaris		
+Parablennius gattorugine		
+Sarpa salpa		
+Sciaena umbra		
+Seriola dumerili		
+Serranus cabrilla		
+Sparus aurata		
+Symphodus mediterraneus		

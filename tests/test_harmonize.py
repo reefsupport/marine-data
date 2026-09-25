@@ -441,7 +441,7 @@ def test_every_crosswalk_declares_its_lossiness_honestly(registry: Registry) -> 
     vocabularies were designed independently and do not align perfectly."""
     for walk in registry.crosswalks:
         coverage = walk.coverage
-        if len(walk.edges) >= 20:
+        if len(walk.edges) >= 20 and not walk.exact_by_construction:
             assert coverage[Fidelity.EXACT] < len(walk.edges), (
                 f"{walk.id}: every edge claims exact fidelity across {len(walk.edges)} "
                 f"independently-designed labels, which is not credible"

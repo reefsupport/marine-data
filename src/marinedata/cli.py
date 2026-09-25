@@ -224,6 +224,39 @@ def _cmd_doctor(args: argparse.Namespace) -> int:
     return 0
 
 
+def _cmd_taxonomy(args: argparse.Namespace) -> int:
+    import json as _json
+
+    from .registry import _default_root
+    from .taxonomy import audit_all, diff, gate, load_manifest, manifest, node_counts
+
+    root = _default_root()
+    registry = Registry.load(root)
+    if args.action == "diff":
+        a, b = (
+            load_manifest(r, root) if r != "HEAD" else manifest(registry, root) for r in args.refs
+        )
+        print(_json.dumps(diff(a, b), indent=1, default=str))
+        return 0
+    if args.action == "export":
+        m = manifest(registry, root)
+        out = root / "taxonomy" / "releases" / f"{m['taxonomy_version']}.json"
+        out.parent.mkdir(parents=True, exist_ok=True)
+        out.write_text(_json.dumps(m, indent=1, sort_keys=True, default=str) + "\n")
+        print(out)
+        return 0
+    counts = node_counts(registry)
+    print(
+        f"taxon nodes {counts['nodes']} (aphia {counts['aphia']}, non_taxon {counts['non_taxon']})"
+    )
+    for audit in audit_all(registry, root):
+        print(audit.line())
+    fails = gate(registry, root)
+    for line in fails:
+        print(f"  FAIL {line}")
+    return 1 if fails else 0
+
+
 def _cmd_labels(args: argparse.Namespace) -> int:
     """Audit crosswalk labels against the labels the data actually contains."""
     from .fetch import FetchError, fetch_sample
@@ -349,6 +382,13 @@ def build_parser() -> argparse.ArgumentParser:
     p_labels.add_argument("--strict", action="store_true", help="Exit 1 on any silent drop")
     p_labels.add_argument("-v", "--verbose", action="store_true")
     p_labels.set_defaults(func=_cmd_labels)
+
+    p_tax = sub.add_parser(
+        "taxonomy", help="Check the taxonomy gate, export a manifest, or diff two versions"
+    )
+    p_tax.add_argument("action", choices=["check", "export", "diff"])
+    p_tax.add_argument("refs", nargs="*", help="diff: two versions/paths (HEAD = working tree)")
+    p_tax.set_defaults(func=_cmd_taxonomy)
 
     return parser
 

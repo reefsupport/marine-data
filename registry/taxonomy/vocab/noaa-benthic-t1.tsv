@@ -1,0 +1,15 @@
+# source: noaa-benthic-t1
+# crosswalk: coralnet-noaa-pifsc
+# counts: annotations
+# retrieved: 2026-09-25 from https://huggingface.co/datasets/NMFS-OSI/noaa-pacific-benthic-cover-t1-all data/all.parquet
+label	count	description
+TURF	337415	Turf Alga
+CORAL	153139	Hard/Stony Coral
+MA	120174	Macroalga
+CCA	95241	Coralline Alga (crustose)
+SED	45871	Sediment / Sand / Rubble
+UC	26036	Unclassified / Unknown
+I	5181	Sessile Invertebrate (non-coral)
+SC	5085	Soft Coral
+MF	1133	Mobile Fauna
+TW	1077	Tape / Wand

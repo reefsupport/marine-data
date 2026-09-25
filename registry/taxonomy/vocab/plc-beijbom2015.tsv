@@ -1,0 +1,25 @@
+# source: plc-beijbom2015
+# crosswalk: plc-beijbom2015
+# counts: annotations
+# retrieved: 2026-09-25 from Zenodo 5000003 {heron_reef,nanwan_bay,line_islands} labelmap.txt + */annotations.txt (archived column)
+label	count	description
+Turf	52468	
+Other scleractinians	21696	
+Macroalgae	16830	
+All other	15225	
+CCA	12985	
+Montipora	10025	
+Soft Coral	4941	
+Acropora	4453	
+Pocillopora	4391	
+Millepora	2691	
+Porites	2588	
+Sand	2271	
+Favia	1394	
+Favites	1179	
+Pavona	877	
+Platygyra	747	
+Bare Substrate	693	
+Transect hardware	216	
+Unclear	98	
+Sponges	20	
