@@ -62,7 +62,7 @@ luderick-seagrass	zenodo	record-7659203	1	1170972899	CC-BY-4.0 (Zenodo API)	imag
 marine-animals-mm	hf	rev-a3b5ba3ff9a3	96	2534775497	CC-BY-4.0 (HF card)	parquet	ok	0.007	0.789	w2b
 marine-snow	zenodo	record-6424752	2	14213316419	CC-BY-4.0 (Zenodo API)	PNG	ok	0.038	0.141	w2b
 marineeval	hf	rev-cb94f5a61594	2000		CC-BY-4.0	VQA jsonl (eval hold-out)	ok		1995	w1a
-marineinst20m	needs:annotation-overlay				annotations: repo LICENSE.txt; images: per upstream dataset/website		needs_adapter:annotation-overlay	-	?	w3
+marineinst20m	needs:annotation-overlay				annotations: repo LICENSE.txt; images: per upstream dataset/website		needs_adapter:overlay-join (overlay built WP-6e-B; 0/8 matching sources staged)	-	?	w3
 marinelife16k	hf	rev-a0e2bd2852c7	4000	458129645	CC-BY-4.0 (HF card)	parquet	ok	0.001	6.548	w2b
 med-fish	zenodo	record-7534425	1	638492593	CC-BY-4.0 (Zenodo API)	JPEG+labels	ok	0.002	4.699	w2b
 mermaid	bucket	list-9aff83837d7b	53143	65864161628	NOASSERTION		ok	0.18	0.076	w0
@@ -129,22 +129,23 @@ viame-public	girder	girder-pinned	325	74922518907	per-dataset (mostly NOAA publi
 whoi-plankton	hf	rev-ba1e637e4cb8	19	9098273854	NOASSERTION	PNG	ok	0.03	0.22	w0
 whoi-plankton-small	hf	rev-2d0ddc911aa8	4	1107677510	MIT		ok	0.0	2.708	w0
 wildfish	hf	rev-5212c80f4d98	26	14517292127	research-only (non-commercial, per upstream)	JPEG	ok	0.038	0.207	w2b
-afrl-stereo-vi	hf	rev-bdb079e7fef8			mit		needs_adapter:unsupported-format	-	?	w3
+afrl-stereo-vi	hf	rev-bdb079e7fef8			mit		needs_adapter:ros2-db3 (3 ROS1 .bag + 3 ROS2 .db3; .bag decoder exists, 0 items -> check include/size)	-	?	w3
 elliott-bay-benthic	hf	rev-cd20e627ba77	1000	45301235557	cc-by-nc-4.0		ok	0.120	?	w3
-gbif-marine	needs:gbif-occurrence-media				per record: CC0-1.0 / CC-BY-4.0 / CC-BY-NC-4.0 (GBIF licence facet)		needs_adapter:gbif-occurrence-media	-	?	w3
+gbif-marine	gbif-occurrence-media	api-20260925	832978		per record: CC0-1.0 / CC-BY-4.0 / CC-BY-NC-4.0 (GBIF licence facet)		ok	-	?	w3
 inat-marine	needs:manifest				per photo (photos.csv `license`): CC0 / CC-BY / CC-BY-NC / -SA / -ND variants		needs_adapter:manifest	-	?	w3
-muot3m	hf	rev-4294cb6a2537			CC-BY-NC-ND-4.0 (HF card)		needs_adapter:video	-	?	w3
-nautdata	hf	rev-3cf1dbd245dc			apache-2.0		needs_adapter:unsupported-format	-	?	w3
+muot3m	hf	rev-4294cb6a2537	3030	256556451094	CC-BY-NC-ND-4.0 (HF card)		ok	-	?	w3
+nautdata	hf	rev-3cf1dbd245dc			apache-2.0		needs_adapter:split-archive (*.aa/.ab/.ac not .tar.gz.NN; widen _MULTIPART_RE + sniff)	-	?	w3
 nes-plankton-2022	hf	rev-18fb2e57fd77	10	1576344309	cc-by-4.0		ok	0.004	?	w3
-noaa-gfisher	hf	rev-1666d472567b			cc0-1.0		needs_adapter:unsupported-format	-	?	w3
+noaa-gfisher	hf	rev-1666d472567b			cc0-1.0		needs_adapter:no-payload (HF repo at pinned rev = README + .gitattributes only)	-	?	w3
 noaa-oceaneyes	bucket	list-a11ed85b698b	20065	1807996738	public domain (US government work) — NODD		ok	0.005	?	w3
-noaa-oer-video	needs:video				public domain (US government work)		needs_adapter:video	-	?	w3
-noaa-plankton-shadowgraphs	bucket	list-5502c2df8486			public domain (US government work) — NODD		needs_adapter:unsupported-format	-	?	w3
+noaa-oer-video	needs:source-down				public domain (US government work)		needs_adapter:source-down (NCEI 000 x3 at 2026-09-25T07:42:59Z/07:43:19Z/07:43:39Z)	-	?	w3
+noaa-plankton-shadowgraphs	bucket	list-5502c2df8486			public domain (US government work) — NODD		needs_adapter:empty-listing (bucket prefix lists 0 objects anonymously)	-	?	w3
 plankton-interaction-videos	hf	rev-f7d40238215e	21221	5662987367	apache-2.0		ok	0.015	?	w3
-planktonzilla	hf	rev-7fd542ef9fc9	189	91174191772	other (HF card); per-sample licence = the originating instrument dataset (column `dataset`)		needs_adapter:subset-filter — D-AB requires fetching only the living/label-capped subset (760k of 17.4M rows); the hf adapter has no per-row subset filter yet, held rather than fetched in full (INT-ingest3)	0.242	?	w3
+planktonzilla	hf	rev-7fd542ef9fc9	189	91174191772	other (HF card); per-sample licence = the originating instrument dataset (column `dataset`)		ok	0.242	?	w3
 seattle-aquarium	hf	rev-78701c4efe73	6522	59049737152	CC-BY-NC-4.0 (HF card)		ok	0.156	?	w3
 seaturtleid2022	hf	rev-91cd6c1126c7	4	1755838391	?		ok	0.005	?	w3
 treeoflife-10m	needs:member-filter				HF card licence null; per image per upstream (EOL media licence, iNat21 photo licence) — not in the catalog.csv columns read		needs_adapter:member-filter	-	?	w3
 uwbench	hf	rev-84af94500308	7	9770800777	?		ok	0.026	?	w3
 wikimedia-underwater	needs:commons-api				per file (Commons extmetadata LicenseShortName): CC-BY-SA / CC-BY / CC0 / PD		needs_adapter:commons-api	-	?	w3
 imos-auv	needs:manifest				CC-BY-4.0 (IMOS data licence)		needs_adapter:manifest	-	?	w3
+marineinst20m-web	manifest	manifest-c596e4376e6f	56255		per upstream website (recorded per sample)	overlay join (COCO RLE)	ok	-	?	w3

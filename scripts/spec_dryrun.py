@@ -71,6 +71,8 @@ SUPPORTED_ADAPTERS = {
     "girder",
     "pawsey-portal",
     "frdr-https",
+    "manifest",  # WP-6e-B
+    "gbif-occurrence-media",  # WP-6e-B
 }
 TIMEOUT_S = 180
 BYTES_PER_HOUR_AT_100MBPS = 100_000_000 * 3600  # planning rate, S57 catalog convention

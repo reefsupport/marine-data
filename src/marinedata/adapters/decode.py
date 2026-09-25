@@ -436,6 +436,23 @@ def _parquet(fetched: Fetched, params: Mapping[str, Any]) -> Iterator[Decoded]:
             index += 1
 
 
+def _video_step_frames(fetched: Fetched, params: Mapping[str, Any]) -> Iterator[Decoded]:
+    """WP-6e-B (D-AB): see :mod:`marinedata.adapters.video_frames`."""
+    from .video_frames import sample_video
+
+    assert fetched.path is not None
+    split = split_from_path(fetched.item.key)
+    for idx, data, labels in sample_video(fetched.path, fetched.item.key, params):
+        yield Decoded(
+            upstream_id=f"{fetched.item.key}#frame_{idx:06d}",
+            data=data,
+            suffix=".jpg",
+            upstream_url=fetched.item.url,
+            split_hint=split,
+            labels=labels,
+        )
+
+
 def _sniff(data: bytes) -> str:
     if data[:3] == b"\xff\xd8\xff":
         return ".jpg"
@@ -478,6 +495,8 @@ def decode_item(fetched: Fetched, params: Mapping[str, Any]) -> Iterator[Decoded
         yield from _parquet(fetched, params)
     elif suffix in RAR:
         yield from _group(_rar_members(fetched), fetched, params)
+    elif suffix in VIDEO and params.get("frame_step"):
+        yield from _video_step_frames(fetched, params)
     elif suffix in VIDEO:
         yield from _video_frames(fetched, params)
     elif suffix in ROSBAG:

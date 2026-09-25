@@ -287,11 +287,13 @@ def make_adapter(name: str, params: Mapping[str, Any]) -> BaseAdapter:
     from .bucket import BucketAdapter
     from .fathomnet import FathomNetAdapter
     from .figshare import FigshareAdapter
+    from .gbif import GbifOccurrenceMediaAdapter
     from .gdrive import GDriveAdapter
     from .girder import GirderAdapter
     from .github import GitHubAdapter
     from .hf import HFAdapter
     from .http_index import HttpIndexAdapter
+    from .manifest import ManifestAdapter
     from .pangaea import PangaeaAdapter
     from .pawsey import FrdrHttpsAdapter, PawseyPortalAdapter
     from .seafile import SeafileAdapter
@@ -312,6 +314,8 @@ def make_adapter(name: str, params: Mapping[str, Any]) -> BaseAdapter:
         "girder": GirderAdapter,
         "pawsey-portal": PawseyPortalAdapter,
         "frdr-https": FrdrHttpsAdapter,
+        "manifest": ManifestAdapter,  # WP-6e-B
+        "gbif-occurrence-media": GbifOccurrenceMediaAdapter,  # WP-6e-B
     }
     if name not in table:
         raise KeyError(f"unknown adapter {name!r}; known: {sorted(table)}")
