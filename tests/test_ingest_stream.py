@@ -207,3 +207,18 @@ def test_spec_and_cli_accept_stream():
     assert args.stream is True
     spec = IngestSpec(id="x", adapter="http", params={}, license="CC0", attribution="a")
     assert spec.stream is False and spec.stream_disk_floor_gib == 3.0
+
+
+def test_stream_shards_resume_after_kill_matches_disk(loose):
+    """Shards layout checkpoints at each shard close on an item boundary."""
+    s3, spec_path, tmp = loose
+    shard = dict(shard_threshold=10, shard_bytes=10_000, expected_images=M)
+    work = tmp / "sh"
+    ref = _run(spec_path, work, s3, stream=False, bucket="disk", jobs=1, **shard)
+    with pytest.raises(tis.SimulatedKillMidRun):
+        _run(spec_path, work, tis._KillAfterPuts(s3, n=12), stream=True, bucket="strm", **shard)
+    res = _run(spec_path, work, s3, stream=True, bucket="strm", jobs=4, **shard)
+    assert res.layout == "shards" and 0 < res.plan["resumed_items"] < M
+    prefix = "sources/syn-loose/1/"
+    assert _tree(s3, "strm", prefix) == _tree(s3, "disk", prefix)
+    assert res.root_digest == ref.root_digest and res.images == M

@@ -355,7 +355,9 @@ class StagedWriter:
         self._item_start = len(self.rows)
         self.files.update({k: (str(v[0]), int(v[1])) for k, v in state["files"].items()})
         self._inline.extend(tuple(t) for t in state["inline"])
-        self._index.extend(state["index"])
+        # JSON checkpoints sort keys; index.parquet column order follows the first dict
+        order = ("shard", "member", "stem", "sha256", "size", "offset")
+        self._index.extend({k: e[k] for k in order} for e in state["index"])
         self._pending_labels = {k: list(v) for k, v in state["pending_labels"].items()}
         self._shard_no = int(state["shard_no"])
 
