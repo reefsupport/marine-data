@@ -1,0 +1,9 @@
+id: sweet-corals
+adapter: hf
+params:
+  repo: wildflow/sweet-corals
+  revision: 265724cf6f1a6453116f710c86d2dd32b6285c33
+license: CC-BY-4.0
+attribution: wildflow sweet-corals
+citation: wildflow
+homepage: https://huggingface.co/datasets/wildflow/sweet-corals

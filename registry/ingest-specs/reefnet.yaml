@@ -1,0 +1,7 @@
+id: reefnet
+adapter: hf
+params: {}
+license: CC-BY-NC-SA-4.0
+attribution: ReefNet 2025 (arXiv:2510.16822)
+citation: ReefNet 2025 arXiv:2510.16822
+homepage: https://arxiv.org/abs/2510.16822

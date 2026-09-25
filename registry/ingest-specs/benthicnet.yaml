@@ -1,0 +1,7 @@
+id: benthicnet
+adapter: http
+params: {}
+license: CC-BY
+attribution: BenthicNet (Lowe et al., Sci Data 2025)
+citation: doi:10.20383/103.0614
+homepage: https://doi.org/10.20383/103.0614

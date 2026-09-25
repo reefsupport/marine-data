@@ -1,0 +1,11 @@
+id: deepfish
+adapter: http
+params:
+  version: '2020'
+  urls:
+  - url: http://data.qld.edu.au/public/Q5842/2020-AlzayatSaleh-00e364223a600e83bd9c3f5bcd91045-DeepFish/DeepFish.tar
+    key: DeepFish.tar
+license: CC-BY-4.0
+attribution: DeepFish (Saleh et al., Sci Rep 2020)
+citation: Saleh+ Sci Rep 2020
+homepage: https://alzayats.github.io/DeepFish/

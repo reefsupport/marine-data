@@ -1,0 +1,10 @@
+id: ozfish
+adapter: bucket
+params:
+  endpoint: storage.pawsey.org.au
+  bucket: public
+  prefix: m/FDFML/frames
+license: CC-BY-3.0-AU
+attribution: OzFish (AIMS)
+citation: doi:10.25845/5e28f062c5097
+homepage: https://storage.pawsey.org.au/public/m/FDFML/

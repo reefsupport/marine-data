@@ -1,0 +1,9 @@
+id: deepsea-mot
+adapter: hf
+params:
+  repo: MBARI-org/DeepSea-MOT
+  revision: 61ecbda8acb2749f3771d7192c51341267da2f37
+license: CC-BY-SA-4.0
+attribution: MBARI DeepSea-MOT
+citation: MBARI 2025
+homepage: https://huggingface.co/datasets/MBARI-org/DeepSea-MOT

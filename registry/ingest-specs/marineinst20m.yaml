@@ -1,0 +1,7 @@
+id: marineinst20m
+adapter: http
+params: {}
+license: CC-BY-NC
+attribution: MarineInst20M (Zheng et al., ECCV 2024)
+citation: Zheng+ ECCV2024 MarineInst
+homepage: https://github.com/zhengziqiang/MarineInst20M

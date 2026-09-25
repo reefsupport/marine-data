@@ -1,0 +1,9 @@
+id: whoi-plankton-small
+adapter: hf
+params:
+  repo: nf-whoi/whoi-plankton-small
+  revision: 2d0ddc911aa8ec3e0aeef29cfaf74e399d623029
+license: MIT
+attribution: WHOI-Plankton (small), via HF nf-whoi/whoi-plankton-small
+citation: Sosik+ WHOI-Plankton
+homepage: https://huggingface.co/datasets/nf-whoi/whoi-plankton-small

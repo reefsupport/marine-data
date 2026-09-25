@@ -1,0 +1,7 @@
+id: coralnet
+adapter: http
+params: {}
+license: NOASSERTION
+attribution: CoralNet API
+citation: '-'
+homepage: https://coralnet.ucsd.edu/

@@ -1,0 +1,7 @@
+id: seaclear
+adapter: http
+params: {}
+license: CC-BY-4.0
+attribution: SeaClear marine debris (Djuraskovic et al., Sci Data 2024)
+citation: Djuraskovic+ Sci Data 2024
+homepage: https://doi.org/10.1038/s41597-024-03286-0

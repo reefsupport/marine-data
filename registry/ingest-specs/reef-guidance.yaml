@@ -1,0 +1,9 @@
+id: reef-guidance
+adapter: hf
+params:
+  repo: QCR-Underwater-Perception/reef-guidance-system
+  revision: 2978f343129bb4db89230b47ca55d9afc6953bf4
+license: CC-BY-NC-SA-4.0
+attribution: Reef Guidance System (QUT QCR)
+citation: QUT QCR
+homepage: https://huggingface.co/datasets/QCR-Underwater-Perception/reef-guidance-system
