@@ -30,6 +30,7 @@ from typing import IO, Any
 
 from ..concurrency import RetriesExhausted
 from ._http import CHUNK, AccessRefused, open_url
+from .zipread import read_member as _read_zip_member
 
 log = logging.getLogger(__name__)
 
@@ -244,7 +245,8 @@ def member_span(zf: zipfile.ZipFile, info: zipfile.ZipInfo) -> tuple[int, int]:
 
 
 def read_member(zf: zipfile.ZipFile, rf: RemoteFile, info: zipfile.ZipInfo) -> bytes:
-    """One ranged GET for the member's span, then zipfile decompresses + CRC-checks it."""
+    """One ranged GET for the member's span, then the shared member reader decompresses
+    + CRC-checks it from that cached window — Deflate64 (method 9) included (D-AH 2/4)."""
     start, end = member_span(zf, info)
     rf.load(start, end)
-    return zf.read(info)
+    return _read_zip_member(zf, info)

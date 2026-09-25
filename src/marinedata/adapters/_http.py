@@ -29,6 +29,31 @@ _RETRY_STATUS = frozenset({429, 500, 502, 503, 504})
 _LINK_NEXT = re.compile(r'<([^>]+)>;\s*rel="next"')
 
 
+# INT-ingest7 (WP-6j Open 1): hs.pangaea.de answers bursts of 503 under load (PS96 smoke:
+# 2 of 3 attempts died on it). A PANGAEA host gets 8 tries per request and a longer wait —
+# exponential 2, 4, … s, never below its Retry-After — each wait capped at 120 s, before
+# RetriesExhausted lets D-AF count the item missing. Other hosts keep 4 tries / 30 s.
+_SLOW_5XX_DOMAINS = ("pangaea.de",)
+SLOW_5XX_TRIES = 8
+SLOW_5XX_CAP_S = 120.0
+
+
+def is_slow_5xx_host(host: str) -> bool:
+    host = host.lower()
+    return any(host == d or host.endswith("." + d) for d in _SLOW_5XX_DOMAINS)
+
+
+def backoff_s(attempt: int, exc: BaseException | None, *, slow: bool) -> float:
+    """Seconds to wait after failed ``attempt`` (0-based), before the jitter."""
+    if not slow:
+        return float(min(2**attempt, 30))
+    hdrs = exc.headers if isinstance(exc, urllib.error.HTTPError) else None
+    asked = retry_after_s(hdrs) if hdrs is not None else None
+    # Retry-After is a floor, never a ceiling: hs.pangaea.de sends 2-7 s on its
+    # "loading from tape" 503 while the recall itself takes minutes.
+    return min(max(asked or 0.0, float(2 ** (attempt + 1))), SLOW_5XX_CAP_S)
+
+
 class AccessRefused(RuntimeError):
     """The resource needs a login, a terms click-through or a gate (D-E): never bypass.
     ``url`` + ``needs`` go on the "needs Yohan" list verbatim."""
@@ -50,6 +75,9 @@ def open_url(
     # host's 429 keeps the D-AA path (retried like a 5xx, then the source aborts).
     host = urllib.parse.urlsplit(url).hostname or ""
     throttle = None if is_hf_host(host) else throttle_for(host)
+    slow = is_slow_5xx_host(host)
+    if slow:
+        retries = SLOW_5XX_TRIES
     last: Exception | None = None
     attempt = throttled = 0
     while attempt < retries:
@@ -78,8 +106,9 @@ def open_url(
             if throttle is not None:
                 throttle.on_success()
             return resp
-        time.sleep(min(2**attempt, 30) + random.uniform(0, 1))  # WP-6b: jitter (D-G)
         attempt += 1
+        if attempt < retries:  # INT-ingest7: no dead wait after the last try
+            time.sleep(backoff_s(attempt - 1, last, slow=slow) + random.uniform(0, 1))  # jitter
     raise RetriesExhausted(f"GET {url} failed after {retries} attempts: {last}") from last
 
 
