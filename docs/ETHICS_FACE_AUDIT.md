@@ -67,6 +67,32 @@ estimate (~348) is the more useful planning number; the CI's upper end reflects 
 100-image sample cannot rule out a small residual rate among 65,392 unreviewed
 negatives, not a specific finding of missed faces.
 
+### WP-5f: second-stage verifier fit and dry run (2026-09-25)
+
+All 5,148 first-stage face candidates were re-scored with a second-stage YuNet
+pass on each box's 50%-expanded crop (`marinedata.privacy.verify`). The D-I
+audit above was extended with a further blind, decile-stratified review of
+130 more candidates (idx 350–479 in `docs/privacy-audit-2026-09-25.tsv`,
+`auditor=agent`), bringing the audited-true face count to **26** (18 original
++ 8 new) — at the 25-positive floor needed to fit a threshold rather than
+spot-check one.
+
+`VERIFY_THRESHOLD = 0.3292` is the highest score that still recalls >=95% of
+those 26 audited-true faces:
+
+| Metric | Result | 95% Wilson CI |
+|---|---|---|
+| Recall (of 26 audited-true faces) | **25/26 = 96.2%** | 81.1–99.3% |
+| Precision (of 280 audited face-kind rows) | **12.3%** | 8.4–17.5% |
+
+Precision is below the 20% floor a fully-fit threshold should clear; kept
+anyway per `docs/PRIVACY.md` (D-I2) because raising it would drop recall
+below 95% on real faces. Applying this threshold to every scored candidate
+(not an extrapolation — every one of the 3,387 face-flagged images was
+scored) gives **2,274 images (3.27% of the full 69,600-image corpus)** that
+would be blurred as containing an identifiable face — see
+`data/_privacy/2026-09-25/privacy_v2.parquet`.
+
 ### `_looks_occluded()` calibration
 
 Compared the heuristic's per-box `occluded` flag against the audit's

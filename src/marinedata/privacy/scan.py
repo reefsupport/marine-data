@@ -242,7 +242,12 @@ def blur_faces(
         if x1 <= x0 or y1 <= y0:
             continue
         region = img[y0:y1, x0:x1]
-        ksize = max(3, (min(region.shape[:2]) // 2) | 1)  # odd, scales with box size
+        # Kernel = the padded region's own short side (odd), not a fraction of it: a
+        # kernel scaled down (e.g. //2) leaves enough low-frequency shape/colour signal
+        # for YuNet to still re-detect a real face post-blur (measured empirically,
+        # WP-5f -- a kernel this size is what actually drops the verifier's score to
+        # 0 on real audited-true faces; smaller kernels passed only ~60% of the time).
+        ksize = max(3, min(region.shape[:2]) | 1)
         img[y0:y1, x0:x1] = cv2.GaussianBlur(region, (ksize, ksize), 0)
     ext = _guess_ext(image_bytes)
     ok, encoded = cv2.imencode(ext, img)
