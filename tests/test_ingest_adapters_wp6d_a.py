@@ -26,7 +26,7 @@ def _run(adapter, tmp_path: Path):
 
 def test_fathomnet_paginated_boxes_and_licence(server, tmp_path):
     body = png(1)
-    server.add("/api/images?limit=1&offset=0", {
+    server.add("/api/images?page=0&size=1", {
         "content": [{
             "uuid": "img-1",
             "url": f"{server.base}/img1.jpg",

@@ -148,10 +148,10 @@ plankton-interaction-videos	hf	rev-f7d40238215e	21221	5662987367	apache-2.0		ok	
 planktonzilla	hf	rev-7fd542ef9fc9	189	91174191772	other (HF card); per-sample licence = the originating instrument dataset (column `dataset`)		ok	0.242	?	w3
 seattle-aquarium	hf	rev-78701c4efe73	6522	59049737152	CC-BY-NC-4.0 (HF card)		ok	0.156	?	w3
 seaturtleid2022	hf	rev-91cd6c1126c7	4	1755838391	?		ok	0.005	?	w3
-treeoflife-10m	hf-member-filter	rev-91debffb7146	63	1984907071025	HF card licence null; per image per upstream (EOL media licence, iNat21 photo licence) — not in the catalog.csv columns read		needs_adapter:member-filter-live-smoke-pending	5.51	?	w3
+treeoflife-10m	hf-member-filter	rev-91debffb7146	63	1984907071025	HF card licence null; per image per upstream (EOL media licence, iNat21 photo licence) — not in the catalog.csv columns read		ok	5.51	?	w3
 uwbench	hf	rev-84af94500308	7	9770800777	?		ok	0.026	?	w3
-wikimedia-underwater	commons-api	commons-89318e0046e9	14244	76934349594	per file (Commons extmetadata LicenseShortName): CC-BY-SA / CC-BY / CC0 / PD		needs_adapter:429-pacing	0.21	?	w3
-imos-auv	needs:manifest				CC-BY-4.0 (IMOS data licence)		needs_adapter:manifest	-	?	w3
+wikimedia-underwater	commons-api	commons-89318e0046e9	14244	76934349594	per file (Commons extmetadata LicenseShortName): CC-BY-SA / CC-BY / CC0 / PD		ok	0.21	?	w3
+imos-auv	manifest				CC-BY-4.0 (IMOS data licence)		needs_adapter:manifest-listing-running (WP-6f; ok once the S3 manifest is pinned)	-	?	w3
 fathomnet-fgvc23	needs:coco-remote-fetch	-	10700	17179869184	CC-BY-4.0	?	needs_adapter:coco-remote-fetch	-	?	w4
 fathomnet-vme	hf	rev-51222f42a8ea	3	35519865	other (HF card)	?	needs_adapter:coco-remote-fetch — HF repo holds only coco_{train,val,test}.json (image URLs point at FathomNet); dry-run 'ok' is 3 JSON files, 0 images (D-R4 spirit)	0.00	?	w4
 squidle	needs:squidle-api-auth	-	11398834	0	per-campaign, mostly CC-BY (stated per collection)	?	needs_adapter:squidle-api-auth	-	?	w4

@@ -11,6 +11,7 @@ from __future__ import annotations
 import dataclasses
 import hashlib
 import json
+import os
 from collections.abc import Iterator, Mapping
 from pathlib import Path
 from typing import Any
@@ -20,7 +21,28 @@ from . import BaseAdapter, Decoded, Fetched, RemoteItem
 REPO_ROOT = Path(__file__).resolve().parents[3]
 
 
-def _resolve(path: str) -> Path:
+def _fetch_remote(url: str, sha256: str | None = None) -> Path:
+    """WP-6f: manifests > 10 MB live on S3 (D-AC), so ``manifest`` may be an https URL
+    (anonymous GET on rs-storage-open). Cached per URL; ``manifest_sha256`` pins the bytes."""
+    from ._http import download
+
+    root = Path(os.environ.get("MARINEDATA_MANIFEST_CACHE", "~/.cache/marinedata/manifests"))
+    dest = (
+        root.expanduser() / hashlib.sha256(url.encode()).hexdigest()[:16] / url.rsplit("/", 1)[-1]
+    )
+    if dest.exists() and (not sha256 or hashlib.sha256(dest.read_bytes()).hexdigest() == sha256):
+        return dest
+    dest.parent.mkdir(parents=True, exist_ok=True)
+    got, _md5, _size = download(url, dest)
+    if sha256 and got != sha256:
+        dest.unlink(missing_ok=True)
+        raise ValueError(f"manifest {url}: sha256 {got} != pinned {sha256}")
+    return dest
+
+
+def _resolve(path: str, sha256: str | None = None) -> Path:
+    if path.startswith(("https://", "http://")):
+        return _fetch_remote(path, sha256)
     p = Path(path).expanduser()
     if p.is_absolute() or p.exists():
         return p
@@ -78,7 +100,7 @@ class ManifestAdapter(RowJoinMixin, BaseAdapter):
     def __init__(self, params: Mapping[str, Any]) -> None:
         super().__init__(params)
         self._rows = {}
-        self._path = _resolve(str(self.params["manifest"]))
+        self._path = _resolve(str(self.params["manifest"]), self.params.get("manifest_sha256"))
 
     def resolve_version(self) -> str:
         if self.params.get("version"):

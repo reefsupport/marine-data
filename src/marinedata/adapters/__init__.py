@@ -80,9 +80,11 @@ class RemoteItem:
     url: str
     size: int | None = None
     md5: str | None = None
-    """Upstream-declared md5 (Zenodo checksum, S3 single-part ETag) — verified on fetch."""
+    """Upstream-declared md5 (Zenodo checksum, S3 single-part ETag) — compared on fetch and
+    recorded, never a reason to drop (D-AG: our sha256 of the staged bytes is the anchor)."""
     sha256: str | None = None
-    """Upstream-declared sha256 (HF LFS oid, GitHub asset digest) — verified on fetch."""
+    """Upstream-declared sha256 (HF LFS oid, GitHub asset digest, FathomNet) — compared on fetch
+    and recorded as ``Fetched.upstream_match`` (D-AG); only a decode failure drops an item."""
     parts: tuple[str, ...] = ()
     """Multipart-tar (D-D): ordered part URLs; ``fetch()`` concatenates them with
     :class:`~marinedata.adapters._http.ConcatReader` instead of using ``url`` alone."""
@@ -167,6 +169,8 @@ class Fetched:
     stream: HashingReader | None = None
     sha256: str | None = None
     size: int = 0
+    upstream_match: bool | None = None
+    """D-AG: declared hash == our digest (None when the provider declares none)."""
 
     def close(self) -> None:
         """Drain + close a stream so the digest covers every upstream byte."""
@@ -175,22 +179,30 @@ class Fetched:
             self.stream.raw.close()
             self.sha256 = self.stream.sha.hexdigest()
             self.size = self.stream.nbytes
-            _check_declared(self.item, self.sha256, self.stream.md5.hexdigest(), self.size)
+            self.upstream_match = _check_declared(
+                self.item, self.sha256, self.stream.md5.hexdigest(), self.size
+            )
             self.stream = None
 
 
 class DigestMismatch(ValueError):
-    """Upstream bytes differ from the declared sha256/md5/size: a pin violation, never a
-    D-AF per-item skip — the runner aborts the source on it."""
+    """Upstream byte count differs from the declared size: a short/overlong transfer, i.e. a
+    pin violation, never a D-AF per-item skip — the runner aborts the source on it. A declared
+    sha256/md5 disagreement is NOT this error any more (D-AG, see ``_check_declared``)."""
 
 
-def _check_declared(item: RemoteItem, sha: str, md5: str, size: int) -> None:
-    if item.sha256 and item.sha256 != sha:
-        raise DigestMismatch(f"{item.key}: sha256 {sha} != declared {item.sha256}")
-    if item.md5 and item.md5 != md5:
-        raise DigestMismatch(f"{item.key}: md5 {md5} != declared {item.md5}")
+def _check_declared(item: RemoteItem, sha: str, md5: str, size: int) -> bool | None:
+    """D-AG: a declared-hash mismatch is recorded (returned), never raised — the bytes are kept
+    and our own sha256 is the integrity anchor. A byte-count mismatch is not a provider-hash
+    disagreement and still raises ``DigestMismatch`` (not retryable; aborts the source)."""
     if item.size is not None and item.size != size:
         raise DigestMismatch(f"{item.key}: {size} bytes != declared {item.size}")
+    checks = [
+        declared.lower() == ours
+        for declared, ours in ((item.sha256, sha), (item.md5, md5))
+        if declared
+    ]
+    return all(checks) if checks else None
 
 
 @runtime_checkable
@@ -267,8 +279,8 @@ class BaseAdapter:
         if suffix_of(item.key) in SPOOLED and not self.is_label(item.key):
             dest = tmp_dir / "fetch" / PurePosixPath(item.key).name
             sha, md5, size = download(item.url, dest)
-            _check_declared(item, sha, md5, size)
-            return Fetched(item, path=dest, sha256=sha, size=size)
+            match = _check_declared(item, sha, md5, size)
+            return Fetched(item, path=dest, sha256=sha, size=size, upstream_match=match)
         return Fetched(item, stream=HashingReader(open_url(item.url)))
 
     def decode(self, fetched: Fetched) -> Iterator[Decoded]:
