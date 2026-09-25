@@ -14,6 +14,7 @@ import sys
 from .cli_dedup import add_dedup_subparser
 from .cli_ingest import _cmd_ingest, add_ingest_subparser  # noqa: F401 — re-exported
 from .cli_ingest_source import add_ingest_source_subparser
+from .cli_labelquality import add_labelquality_subparser
 from .cli_privacy import add_privacy_subparser
 from .cli_quality import add_quality_subparser
 from .cli_release import add_release_subparser
@@ -341,6 +342,7 @@ def build_parser() -> argparse.ArgumentParser:
     add_dedup_subparser(sub)
     add_verify_subparsers(sub)
     add_eval_subparser(sub)
+    add_labelquality_subparser(sub)
 
     p_verify = sub.add_parser("verify", help="Check declared layouts against real fetched samples")
     p_verify.add_argument("source_id", nargs="*")
