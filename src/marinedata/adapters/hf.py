@@ -61,29 +61,49 @@ class HFAdapter(BaseAdapter):
         self.sha = str(info["sha"])
         return str(self.params.get("version") or f"rev-{self.sha[:12]}")
 
+    def _item(self, e: dict) -> RemoteItem:
+        lfs = e.get("lfs") or {}
+        return RemoteItem(
+            key=e["path"],
+            url=f"{self._base}/datasets/{self._repo}/resolve/{self.sha}/"
+            f"{urllib.parse.quote(e['path'])}",
+            size=int(e.get("size") or 0) or None,
+            sha256=lfs.get("oid"),
+        )
+
     def list_items(self) -> Iterator[RemoteItem]:
+        # WP-6m: stream the tree page-by-page instead of buffering the whole listing —
+        # a 60-100k-file repo paginates the HF tree API dozens of times, and a bounded
+        # ``--fetch-only --limit N`` probe must not pay for every page just to answer
+        # "give me N". The "prefer parquet if the repo has any" rule (D-E) can only be
+        # decided from a full scan in general; we approximate it from the first page
+        # only (HF pages are large, and parquet-backed repos put their parquet files at
+        # the top of a recursive tree listing in practice) so the common case is exact
+        # and the pathological case (parquet appearing only deep in a huge tree) degrades
+        # to "include everything", never to a full-tree scan before the first item.
         if not hasattr(self, "sha"):
             self.resolve_version()
         url = f"{self._base}/api/datasets/{self._repo}/tree/{self.sha}?recursive=true"
-        files = [
-            e
-            for page in get_json_pages(url)
-            for e in page  # type: ignore[union-attr]
-            if isinstance(e, dict) and e.get("type") == "file"
+        pages = get_json_pages(url)
+        first_page = next(pages, [])
+        first_files = [
+            e for e in first_page if isinstance(e, dict) and e.get("type") == "file"
         ]
-        if not self.params.get("include") and any(
-            suffix_of(e["path"]) == ".parquet" for e in files
-        ):
-            files = [e for e in files if suffix_of(e["path"]) == ".parquet"]
-        for e in files:
-            lfs = e.get("lfs") or {}
-            yield RemoteItem(
-                key=e["path"],
-                url=f"{self._base}/datasets/{self._repo}/resolve/{self.sha}/"
-                f"{urllib.parse.quote(e['path'])}",
-                size=int(e.get("size") or 0) or None,
-                sha256=lfs.get("oid"),
-            )
+        prefer_parquet = not self.params.get("include") and any(
+            suffix_of(e["path"]) == ".parquet" for e in first_files
+        )
+
+        def _files() -> Iterator[dict]:
+            yield from first_files
+            for page in pages:
+                yield from (
+                    e for e in page if isinstance(e, dict) and e.get("type") == "file"  # type: ignore[union-attr]
+                )
+
+        for e in _files():
+            if prefer_parquet and suffix_of(e["path"]) != ".parquet":
+                continue
+            yield self._item(e)
 
     # -- WP-6i: resumable streams + remote zip members ----------------------------------
     def fetch(self, item: RemoteItem, tmp_dir: Path) -> Fetched:
@@ -97,11 +117,13 @@ class HFAdapter(BaseAdapter):
             return super().fetch(item, tmp_dir)
         return Fetched(item, stream=HashingReader(ResumableStream(item.url)))  # type: ignore[arg-type]
 
-    def enumerate(self) -> Iterator[RemoteItem]:
-        items = list(super().enumerate())
+    def enumerate(self, *, limit: int | None = None) -> Iterator[RemoteItem]:
         if not self.params.get("remote_zip"):
-            yield from items
+            yield from super().enumerate(limit=limit)
             return
+        # remote_zip needs the manifest names up front to pick zip members, so it
+        # always needs the full listing regardless of ``limit``.
+        items = list(super().enumerate())
         wanted = self._manifest_names(items)
         for item in items:
             if suffix_of(item.key) == ".zip" and not self.is_label(item.key):

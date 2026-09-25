@@ -343,9 +343,11 @@ def fetch_throughput(
     no staging, no S3 — to measure files/s scaling of ``--jobs`` alone."""
     jobs = max(1, min(int(jobs), MAX_JOBS))
     adapter = make_adapter(spec.adapter, spec.params)
-    items = list(adapter.enumerate())
-    if limit is not None:
-        items = items[:limit]
+    # WP-6m: pass ``limit`` into enumerate() itself so a lazily-paged adapter (hf) can
+    # stop enumerating as soon as it has enough items, instead of listing everything
+    # and slicing afterward — the slice-after-list pattern is what hung on 60-100k
+    # file HF repos.
+    items = list(adapter.enumerate(limit=limit))
     tmp = work / "tmp"
     tmp.mkdir(parents=True, exist_ok=True)
     guard = DiskGuard(work, int(spec.temp_cap_gb * GiB), int(spec.disk_floor_gib * GiB))

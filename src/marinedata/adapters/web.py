@@ -85,8 +85,8 @@ class HttpAdapter(BaseAdapter):
             )
 
     # -- WP-6k: zip members over HTTP Range, never spooled (D-AH 4) ---------------------
-    def enumerate(self) -> Iterator[RemoteItem]:
-        for item in super().enumerate():
+    def enumerate(self, *, limit: int | None = None) -> Iterator[RemoteItem]:
+        for item in super().enumerate(limit=limit):
             if suffix_of(item.key) == ".zip" and not self.is_label(item.key):
                 yield from self._expand_zip(item)
             else:

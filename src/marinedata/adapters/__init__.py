@@ -211,7 +211,7 @@ class SourceAdapter(Protocol):
 
     def resolve_version(self) -> str: ...
 
-    def enumerate(self) -> Iterator[RemoteItem]: ...
+    def enumerate(self, *, limit: int | None = None) -> Iterator[RemoteItem]: ...
 
     def is_label(self, key: str) -> bool:
         """A loose file matching ``label_patterns`` (e.g. YOLO ``labels/*.txt``)."""
@@ -245,25 +245,39 @@ class BaseAdapter:
     def list_items(self) -> Iterator[RemoteItem]:  # pragma: no cover - abstract
         raise NotImplementedError
 
-    def enumerate(self) -> Iterator[RemoteItem]:
+    def enumerate(self, *, limit: int | None = None) -> Iterator[RemoteItem]:
         inc = list(self.params.get("include") or ["*"])
         exc = list(self.params.get("exclude") or [])
         cap = self.params.get("max_items")
         labels = list(self.params.get("label_patterns") or [])
-        raw = _group_multipart(list(self.list_items()))
-        items = sorted(
-            (
-                i
-                for i in raw
-                if any(fnmatch.fnmatch(i.key, g) for g in inc)
+
+        def _keep(i: RemoteItem) -> bool:
+            return (
+                any(fnmatch.fnmatch(i.key, g) for g in inc)
                 and not any(fnmatch.fnmatch(i.key, g) for g in exc)
                 and (
                     suffix_of(i.key) in STREAMABLE + SPOOLED
                     or any(fnmatch.fnmatch(i.key, g) for g in labels)  # loose label files
                 )
-            ),
-            key=lambda i: i.key,
-        )
+            )
+
+        if limit is not None:
+            # WP-6m: a bounded ``--fetch-only --limit N`` throughput probe never needs
+            # the full sorted/deduped listing — stop pulling from list_items() as soon
+            # as N matching items are found, so a lazily-paged adapter (e.g. hf) never
+            # walks a 100k-file tree just to answer "give me 2". Order is discovery
+            # order, not sorted — fine for a probe, never used for real ingestion.
+            yielded = 0
+            for i in self.list_items():
+                if _keep(i):
+                    yield i
+                    yielded += 1
+                    if yielded >= limit:
+                        return
+            return
+
+        raw = _group_multipart(list(self.list_items()))
+        items = sorted((i for i in raw if _keep(i)), key=lambda i: i.key)
         if not items:
             # D-R4 root cause: never a silent/false "ok" — see NoStageableItems.
             raise NoStageableItems(self.name, _classify_empty(raw), tuple(i.key for i in raw))
