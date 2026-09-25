@@ -65,6 +65,7 @@ SUPPORTED_ADAPTERS = {
     "fathomnet",
     "figshare",
     "pangaea",
+    "pangaea-series",  # WP-6j
     "http-index",
     "gdrive-public",
     "seafile-share",
