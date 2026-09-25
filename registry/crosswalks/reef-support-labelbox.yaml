@@ -19,17 +19,17 @@ crosswalks:
     edges:
       - source_label: "Hard Coral"
         targets: { taxon: HC }
-        fidelity: coarsened
+        fidelity: exact
         note: >
-          Scleractinia. Coarsened rather than exact because the annotator recorded no
-          growth form or condition, both of which RS-Benthic can express — the sample
-          simply leaves those axes unsupervised.
+          Scleractinia — the vocab's own HC definition, so exact on the taxon axis
+          (WP-8e, manager decision). Growth form and condition were not recorded; those
+          axes are simply unsupervised, which fidelity does not measure.
 
       - source_label: "Soft Coral"
         targets: { taxon: SC }
-        fidelity: coarsened
+        fidelity: exact
         note: >
-          Octocorallia. THE class absent from every major public reef schema, and 24% of
+          Octocorallia — exact: the vocab's own SC definition (WP-8e). THE class absent from every major public reef schema, and 24% of
           our Caribbean annotations. Growth form (fan/rod/plume/whip) was not recorded.
 
       - source_label: "Milleporid"

@@ -275,7 +275,8 @@ crosswalks:
     fidelity: exact
   - source_label: SHAD
     targets: {taxon: TWS}
-    fidelity: exact
+    fidelity: coarsened
+    note: one TWS component; the node is tape+wand+shadow
   - source_label: SP
     targets: {taxon: SP}
     fidelity: exact
@@ -287,7 +288,8 @@ crosswalks:
     fidelity: exact
   - source_label: TAPE
     targets: {taxon: TWS}
-    fidelity: exact
+    fidelity: coarsened
+    note: one TWS component; the node is tape+wand+shadow
   - source_label: TUN
     targets: {taxon: INV_ASCIDIACEA}
     fidelity: exact
@@ -307,7 +309,8 @@ crosswalks:
     fidelity: exact
   - source_label: TW
     targets: {taxon: TWS}
-    fidelity: exact
+    fidelity: coarsened
+    note: tape+wand, no shadow; TWS is tape+wand+shadow
   - source_label: UC
     targets: {taxon: UNKNOWN}
     fidelity: exact
@@ -320,7 +323,8 @@ crosswalks:
     fidelity: coarsened
   - source_label: WAND
     targets: {taxon: TWS}
-    fidelity: exact
+    fidelity: coarsened
+    note: one TWS component; the node is tape+wand+shadow
   - source_label: ZO
     targets: {taxon: ZO}
     fidelity: exact

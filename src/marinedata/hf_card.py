@@ -19,6 +19,7 @@ from .hf_export import (
     PSEUDO_MASKS,
     SPLIT_ORDER,
 )
+from .task_layers import hf_wiring as _tl
 
 METADATA = "metadata"
 
@@ -81,6 +82,7 @@ def render_card(
     unsupervised: tuple[str, ...] = (),
     excluded: dict[str, str] | None = None,
     metadata_licence_rows: list[str] | None = None,
+    task_layers: dict | None = None,
 ) -> str:
     near = release["near_dup"]
     empty_note = [
@@ -220,6 +222,7 @@ def render_card(
         "evaluation target.",
         *empty_note,
         "",
+        *_tl.card_section(task_layers),
     ]
     return "\n".join(yaml + body)
 

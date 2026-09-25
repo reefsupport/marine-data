@@ -143,15 +143,15 @@ crosswalks:
       - { source_label: "1348", targets: { taxon: TA }, fidelity: exact, note: "CoralNet 1348 CRED-Turf growing on hard substrate (Hard Substrate); noaa-benthic-t3:TURFH (318206)" }
       - { source_label: "1349", targets: { taxon: TA }, fidelity: exact, note: "CoralNet 1349 CRED-Turf growing on rubble (Hard Substrate); noaa-benthic-t3:TURFR (15409)" }
       - { source_label: "1350", targets: { taxon: OTHER_FAUNA }, fidelity: approximate, note: "CoralNet 1350 CRED-Mobile fauna (Other); noaa-benthic-t3:MOBF (1133)" }
-      - { source_label: "1351", targets: { taxon: TWS }, fidelity: exact, note: "CoralNet 1351 CRED-Tape (Other); noaa-benthic-t3:TAPE (302)" }
-      - { source_label: "1352", targets: { taxon: TWS }, fidelity: exact, note: "CoralNet 1352 CRED-Wand (Other); noaa-benthic-t3:WAND (775)" }
-      - { source_label: "1353", targets: { taxon: TWS }, fidelity: exact, note: "CoralNet 1353 CRED-Shadow (Other); noaa-benthic-t3:SHAD (23017)" }
+      - { source_label: "1351", targets: { taxon: TWS }, fidelity: coarsened, note: "CoralNet 1351 CRED-Tape (Other); noaa-benthic-t3:TAPE (302)" }
+      - { source_label: "1352", targets: { taxon: TWS }, fidelity: coarsened, note: "CoralNet 1352 CRED-Wand (Other); noaa-benthic-t3:WAND (775)" }
+      - { source_label: "1353", targets: { taxon: TWS }, fidelity: coarsened, note: "CoralNet 1353 CRED-Shadow (Other); noaa-benthic-t3:SHAD (23017)" }
       - { source_label: "1354", targets: { taxon: UNKNOWN }, fidelity: exact, note: "CoralNet 1354 CRED-Unclassified/Unknown (Other); noaa-benthic-t3:UNK (3019)" }
       - { source_label: "1355", targets: { taxon: ALG_ASPARAGOPSIS }, fidelity: exact, note: "CoralNet 1355 CRED-Asparagopsis spp (Algae); noaa-benthic-t3:ASPP (1260)" }
       - { source_label: "1413", targets: { taxon: HC_PORITES, form: CB }, fidelity: coarsened, note: "CoralNet 1413 Porites (branching) (Hard coral); reefolution:PorB (135)" }
       - { source_label: "1457", targets: { taxon: RB }, fidelity: exact, note: "CoralNet 1457 Rubble (Other); reefolution:Rubble (2045)" }
       - { source_label: "1609", targets: { taxon: HC_DIPSASTRAEA }, fidelity: exact, note: "CoralNet 1609 Dipsastraea (Hard coral); reefolution:Dipsa (20)" }
-      - { source_label: "1637", targets: { taxon: TWS }, fidelity: exact, note: "CoralNet 1637 Framer (Other); reefolution:Frame (101)" }
+      - { source_label: "1637", targets: { taxon: TWS }, fidelity: coarsened, note: "CoralNet 1637 Framer (Other); reefolution:Frame (101)" }
       - { source_label: "1647", targets: { taxon: UNKNOWN }, fidelity: exact, note: "CoralNet 1647 Unknown (Other); reefolution:Unknown (10)" }
       - { source_label: "1829", targets: { taxon: CLAM }, fidelity: exact, note: "CoralNet 1829 Bivalve (Other Invertebrates); reefolution:Bivalve (4)" }
       - { source_label: "1853", targets: { taxon: INV_BRYOZOA }, fidelity: exact, note: "CoralNet 1853 Bryozoan (Other Invertebrates); reefolution:Bryo (3)" }

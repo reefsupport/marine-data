@@ -69,7 +69,7 @@ crosswalks:
       - { source_label: Didae, targets: { taxon: INV_DIDEMNIDAE }, fidelity: exact, note: "CoralNet 3686 Didemnidae" }
       - { source_label: biofilm, targets: { taxon: BIOFILM }, fidelity: exact, note: "CoralNet 2237 Biofilm: sediment with microbial-mat cover" }
       - { source_label: Lobvar, targets: { taxon: ALG_LOBOPHORA }, fidelity: coarsened, note: "CoralNet 504 Lobophora variegata (WoRMS 145381, accepted); genus node" }
-      - { source_label: Frame, targets: { taxon: TWS }, fidelity: exact, note: "CoralNet 1637 Framer (quadrat frame in photo); TWS carries the quadrat alias" }
+      - { source_label: Frame, targets: { taxon: TWS }, fidelity: coarsened, note: "CoralNet 1637 Framer (quadrat frame in photo); one TWS-family component, the node is tape+wand+shadow (+quadrat alias)" }
       - { source_label: Hydroid, targets: { taxon: CN_HYDROZOA }, fidelity: coarsened, note: "CoralNet 456 Hydroid species; class node" }
       - { source_label: Tubmus, targets: { taxon: SC_TUBIPORA }, fidelity: coarsened, note: "CoralNet 634 Tubipora musica (WoRMS 207409, accepted); genus node" }
       - { source_label: Gonio, targets: { taxon: HC_GONIOPORA }, fidelity: exact, note: "CoralNet 130 Goniopora" }

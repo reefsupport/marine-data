@@ -21,6 +21,7 @@ from __future__ import annotations
 import json
 from collections.abc import Mapping
 from dataclasses import dataclass
+from functools import cache, lru_cache
 from pathlib import Path
 
 from ..registry import Registry
@@ -29,8 +30,24 @@ from ..tables import _require_pyarrow
 from .rollup import MIXED, UNKNOWN, rollup_counts
 
 BENTHIC_COARSE_TASK = "benthic-coarse"
+BLEACHING_TASK = "bleaching-condition"
+HEALTH_TASK = "coral-health-binary"
 
-CONFIG_IDS = ("points", "vqa", "semseg", "benthic-coarse", "benthic-cover")
+CONFIG_IDS = ("points", "vqa", "semseg", "benthic-coarse", "benthic-cover", "bleaching")
+
+# WP-8e-resume (manager decision 3): the staged point/mask sources each config reads.
+POINT_SOURCES = ("reefolution", "mermaid-aws")
+SEMSEG_SOURCES = ("coralscapes", "reef-support-benthic-own")
+# WP-8e-resume (manager decision 2): bleaching is a headline reef task with its own config.
+BLEACHING_SOURCES = (
+    "noaa-pifsc-bleaching",
+    "roboflow-coral-bleaching-final-v6i",
+    "roboflow-coral-bleaching-general-v1-yolov8s",
+    "roboflow-coral-classification-copy-changed-v13i",
+    "roboflow-coral-reef-bleach-detection-v2i",
+    "roboflow-coral-reef-classification-v3i",
+    "reef-support-bleaching",
+)
 
 
 @dataclass(frozen=True)
@@ -83,24 +100,35 @@ class _SourceUnmapped:
         return self.unmapped / total if total else 0.0
 
 
-def _canonical_taxon(registry: Registry, source_id: str, native_label: str) -> str | None:
-    """Native label -> canonical ``taxon`` node id, or ``None`` if unmappable."""
-    harmonizer = registry.harmonizer_for(source_id)
+@cache
+def _harmonizer(registry: Registry, source_id: str):
+    return registry.harmonizer_for(source_id)
+
+
+@lru_cache(maxsize=1 << 16)
+def _canonical(registry: Registry, source_id: str, native_label: str, axis: Axis) -> str | None:
+    """Native label -> canonical node id on ``axis``, or ``None`` if unmappable (memoised:
+    a full-scale points file repeats a few hundred labels across ~0.5M rows)."""
+    harmonizer = _harmonizer(registry, source_id)
     if harmonizer is None:
         return None
-    harmonized = harmonizer.map_label(native_label)
-    value = harmonized.labels.get(Axis.TAXON)
+    value = harmonizer.map_label(native_label).labels.get(axis)
     return value.node_id if value is not None else None
 
 
+def _canonical_taxon(registry: Registry, source_id: str, native_label: str) -> str | None:
+    """Native label -> canonical ``taxon`` node id, or ``None`` if unmappable."""
+    return _canonical(registry, source_id, native_label, Axis.TAXON)
+
+
 def build_points_config(registry: Registry, base_dir: str | Path) -> ConfigResult:
-    """``points``: Reefolution (today) point rows, native label + canonical taxon."""
+    """``points``: every :data:`POINT_SOURCES` point row, native label + canonical taxon."""
     base_dir = Path(base_dir)
     label_status = _load_label_status(base_dir)
     unmapped: dict[str, _SourceUnmapped] = {}
     rows: list[dict] = []
 
-    for source_id in ("reefolution",):
+    for source_id in POINT_SOURCES:
         tally = unmapped.setdefault(source_id, _SourceUnmapped())
         for point in _read_parquet(_tasklabels_path(base_dir, source_id, "points")):
             canonical = _canonical_taxon(registry, source_id, point["native_label"])
@@ -145,7 +173,7 @@ def build_semseg_config(registry: Registry, base_dir: str | Path) -> ConfigResul
     unmapped: dict[str, _SourceUnmapped] = {}
     rows: list[dict] = []
 
-    for source_id in ("coralscapes",):
+    for source_id in SEMSEG_SOURCES:
         tally = unmapped.setdefault(source_id, _SourceUnmapped())
         for record in _read_parquet(_tasklabels_path(base_dir, source_id, "semseg")):
             native_counts: dict[str, int] = json.loads(record["class_counts"])
@@ -214,35 +242,25 @@ def _build_benthic_rollup(
     unmapped: dict[str, _SourceUnmapped] = {}
     source_of: dict[str, str] = {}
 
-    points = _read_parquet(_tasklabels_path(base_dir, "reefolution", "points"))
-    tally = unmapped.setdefault("reefolution", _SourceUnmapped())
-    for sha256, counts in _coarse_counts_from_points(
-        registry, projector, "reefolution", points
-    ).items():
-        per_image_counts.setdefault(sha256, {})
-        for cls, n in counts.items():
-            per_image_counts[sha256][cls] = per_image_counts[sha256].get(cls, 0) + n
-            if cls == UNKNOWN:
-                tally.unmapped += n
-            else:
-                tally.known += n
-        origins.setdefault(sha256, "human")
-        source_of.setdefault(sha256, "reefolution")
+    def add(source_id: str, per_source: dict[str, dict[str, int]]) -> None:
+        tally = unmapped.setdefault(source_id, _SourceUnmapped())
+        for sha256, counts in per_source.items():
+            per_image_counts.setdefault(sha256, {})
+            for cls, n in counts.items():
+                per_image_counts[sha256][cls] = per_image_counts[sha256].get(cls, 0) + n
+                if cls == UNKNOWN:
+                    tally.unmapped += n
+                else:
+                    tally.known += n
+            origins.setdefault(sha256, "human")
+            source_of.setdefault(sha256, source_id)
 
-    masks = _read_parquet(_tasklabels_path(base_dir, "coralscapes", "semseg"))
-    tally = unmapped.setdefault("coralscapes", _SourceUnmapped())
-    for sha256, counts in _coarse_counts_from_masks(
-        registry, projector, "coralscapes", masks
-    ).items():
-        per_image_counts.setdefault(sha256, {})
-        for cls, n in counts.items():
-            per_image_counts[sha256][cls] = per_image_counts[sha256].get(cls, 0) + n
-            if cls == UNKNOWN:
-                tally.unmapped += n
-            else:
-                tally.known += n
-        origins.setdefault(sha256, "human")
-        source_of.setdefault(sha256, "coralscapes")
+    for source_id in POINT_SOURCES:
+        points = _read_parquet(_tasklabels_path(base_dir, source_id, "points"))
+        add(source_id, _coarse_counts_from_points(registry, projector, source_id, points))
+    for source_id in SEMSEG_SOURCES:
+        masks = _read_parquet(_tasklabels_path(base_dir, source_id, "semseg"))
+        add(source_id, _coarse_counts_from_masks(registry, projector, source_id, masks))
 
     result = {
         sha256: (source_of[sha256], origins[sha256], rollup_counts(counts))
@@ -292,6 +310,47 @@ def build_benthic_cover_config(registry: Registry, base_dir: str | Path) -> Conf
     return ConfigResult("benthic-cover", tuple(rows), unmapped_by_source)
 
 
+def build_bleaching_config(registry: Registry, base_dir: str | Path) -> ConfigResult:
+    """``bleaching``: one row per (image, native condition label) from every
+    :data:`BLEACHING_SOURCES` file, with the canonical ``condition`` node and its
+    projection onto both condition tasks — ``bleaching-condition`` (6-class; abstains,
+    i.e. null, on a label too coarse to split, e.g. Roboflow "Unhealthy") and
+    ``coral-health-binary`` (HEALTHY/UNHEALTHY). A label with no condition edge is
+    unmapped (tallied per source by row), never guessed."""
+    base_dir = Path(base_dir)
+    label_status = _load_label_status(base_dir)
+    fine = registry.projector_for(BLEACHING_TASK)
+    binary = registry.projector_for(HEALTH_TASK)
+    unmapped: dict[str, _SourceUnmapped] = {}
+    rows: list[dict] = []
+    for source_id in BLEACHING_SOURCES:
+        tally = unmapped.setdefault(source_id, _SourceUnmapped())
+        for record in _read_parquet(_tasklabels_path(base_dir, source_id, "bleaching")):
+            node = _canonical(registry, source_id, record["native_label"], Axis.CONDITION)
+            if node is None:
+                tally.unmapped += 1
+            else:
+                tally.known += 1
+            rows.append(
+                {
+                    "sha256": record["sha256"],
+                    "source_id": source_id,
+                    "label_origin": record["label_origin"],
+                    "native_label": record["native_label"],
+                    "canonical_condition": node,
+                    "bleaching_condition": fine.project(node).target_class if node else None,
+                    "coral_health": binary.project(node).target_class if node else None,
+                    "evidence": record.get("evidence"),
+                    "pixel_count": record.get("pixel_count"),
+                    "confidence": record.get("confidence"),
+                    "label_status": label_status.get(record["sha256"], "ok"),
+                }
+            )
+    return ConfigResult(
+        "bleaching", tuple(rows), {sid: t.fraction() for sid, t in unmapped.items()}
+    )
+
+
 def assert_no_mixed_origin_in_eval(
     rows: list[dict], split_of: Mapping[str, str], *, train_split: str = "train"
 ) -> None:
@@ -321,6 +380,7 @@ def build_all_configs(registry: Registry, base_dir: str | Path) -> dict[str, Con
         "semseg": build_semseg_config(registry, base_dir),
         "benthic-coarse": build_benthic_coarse_config(registry, base_dir),
         "benthic-cover": build_benthic_cover_config(registry, base_dir),
+        "bleaching": build_bleaching_config(registry, base_dir),
     }
 
 
