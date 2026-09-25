@@ -8,7 +8,7 @@ params:
   include:
   - dataset/*.tar.gz
   cap_per_species: 500
-notes: 'member filter keyed by metadata/catalog.csv (marine clades or iNat/WoRMS-marine binomial, no BIOSCAN, <=500 per data_source x species by sha256(treeoflife_id)); streams all 63 shards (1.98 TB read) to keep ~5%; repo not gated (HF API gated=false 2026-09-25); WP-6f live smoke 2026-09-25: 50/50 kept members decoded from shard 1, 0 errors, 300 MB streamed, keep-set 521,541, 77 s, anonymous'
+notes: 'member filter keyed by metadata/catalog.csv (marine clades or iNat/WoRMS-marine binomial, no BIOSCAN, <=500 per data_source x species by sha256(treeoflife_id)); streams all 63 shards (1.98 TB read) to keep ~5%; repo not gated (HF API gated=false 2026-09-25); WP-6f live smoke 2026-09-25: 50/50 kept members decoded from shard 1, 0 errors, 300 MB streamed, keep-set 521,541, 77 s, anonymous. WP-6i: INT-ingest6 smoke ReadError "unexpected end of data" = HF CDN drops a connection idle ~30 s (the shard was opened, then sat idle during the ~60 s catalog pass); keep-set now built before the shard opens and shard/catalog streams resume via Range; smoke 10/10, 4.1 MB, 81 s, 0 resumes'
 license: HF card licence null; per image per upstream (EOL media licence, iNat21 photo licence) — not in the catalog.csv
   columns read
 attribution: Imageomics Institute — TreeOfLife-10M (EOL, iNat21, BIOSCAN-1M)

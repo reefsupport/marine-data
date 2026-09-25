@@ -7,6 +7,12 @@ shard. The adapter pins the HF revision (and refuses a gated repo, D-E/D-AA, via
 build the keep-set, then streams each shard and reads ONLY the kept members — the rest
 are skipped by the streaming tar reader without being buffered.
 
+WP-6i: the keep-set is built in :meth:`fetch`, BEFORE the shard connection opens. It used
+to be built lazily in :meth:`decode`, after ``fetch()`` had opened the shard: the ~60 s
+catalog pass left that connection idle, HF's CDN dropped it (~30 s idle limit) and the
+tar reader hit "unexpected end of data". Both streams are also resumable
+(:class:`~._range.ResumableStream`), so a later stall (a slow flush) resumes, too.
+
 Keep rule (D-AB / SPEC-w3): a catalog row whose phylum/class/order/family/genus is one of
 the wholly-marine clades, or whose binomial is in the iNat/WoRMS marine species set;
 BIOSCAN rows never qualify; at most ``cap_per_species`` rows per (data_source, species),
@@ -18,12 +24,13 @@ from __future__ import annotations
 import hashlib
 import io
 import tarfile
+import threading
 from collections.abc import Iterable, Iterator
-from pathlib import PurePosixPath
+from pathlib import Path, PurePosixPath
 from typing import Any
 
-from . import Decoded, Fetched
-from ._http import open_url
+from . import Decoded, Fetched, RemoteItem
+from ._range import ResumableStream
 from .decode import IMAGE_SUFFIXES
 from .hf import HFAdapter
 from .inat import load_marine_taxa
@@ -108,8 +115,17 @@ class HFMemberFilterAdapter(HFAdapter):
         params = {"include": ["dataset/*.tar.gz"], **dict(params)}
         super().__init__(params)
         self._keep: dict[str, dict[str, str]] | None = None
+        self._keep_lock = threading.Lock()  # --jobs N prefetch threads call fetch()
+
+    def fetch(self, item: RemoteItem, tmp_dir: Path) -> Fetched:
+        self.keep_set()  # first: the shard must not sit open while the catalog streams
+        return super().fetch(item, tmp_dir)
 
     def keep_set(self) -> dict[str, dict[str, str]]:
+        with self._keep_lock:
+            return self._build_keep_set()
+
+    def _build_keep_set(self) -> dict[str, dict[str, str]]:
         if self._keep is None:
             if not hasattr(self, "sha"):
                 self.resolve_version()
@@ -119,8 +135,8 @@ class HFMemberFilterAdapter(HFAdapter):
             taxa = load_marine_taxa(str(self.params.get("marine_taxa") or DEFAULT_TAXA))
             species = {s for _, s in taxa.values() if s}
             cap = int(self.params.get("cap_per_species") or 500)
-            with open_url(url, timeout=300) as resp:
-                raw = io.BufferedReader(resp, 8 << 20)  # type: ignore[arg-type]
+            with ResumableStream(url, timeout=300) as resp:
+                raw = io.BufferedReader(resp, 8 << 20)
                 self._keep = select_marine(_catalog_rows(raw), clades, species, cap)
         return self._keep
 
