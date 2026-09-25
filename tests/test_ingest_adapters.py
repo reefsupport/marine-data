@@ -24,6 +24,7 @@ from _wp6_fixtures import (
 )
 
 from marinedata.adapters import AccessRefused, SourceAdapter, make_adapter
+from marinedata.concurrency import RetriesExhausted
 
 SHA = "a" * 40
 
@@ -137,30 +138,35 @@ def _zenodo_record(server, body: bytes, *, size, checksum):
     return make_adapter("zenodo", {"zenodo_record": 7, "endpoint": server.base})
 
 
-def test_zenodo_adapter_md5_mismatch_kept_and_recorded(server, tmp_path):
-    """D-AG: a declared-md5 mismatch keeps the image and records upstream_match=False."""
+def test_zenodo_adapter_zip_needs_a_declared_size(server, tmp_path):
+    """WP-6k: the container's declared size seeds the tail Range read (D-AH 4); with none
+    declared there is nothing to range-read from, so this raises before any GET."""
     adapter = _zenodo_record(
         server, zip_bytes({"a.png": png(1)}), size=None, checksum="md5:" + "0" * 32
     )
-    out = list(adapter.samples(tmp_path))
-    assert [item.key for item, _, _ in out] == ["y.zip"]
-    assert len(out) == 1
-    assert out[0][1].upstream_match is False
+    with pytest.raises(ValueError, match="declared size"):
+        _run(adapter, tmp_path)
 
 
-def test_zenodo_adapter_md5_match_recorded_true(server, tmp_path):
+def test_zenodo_adapter_zip_member_checksum_is_not_declared(server, tmp_path):
+    """WP-6k: Zenodo's checksum covers the whole container, which is never downloaded
+    whole any more (D-AH 4) — each expanded member has no declared hash of its own, so
+    ``upstream_match`` is ``None`` regardless of whether the container's checksum matches.
+    zipfile's own CRC-32 check (D-AH 2) is the integrity guard at member granularity."""
     body = zip_bytes({"a.png": png(1)})
     checksum = "md5:" + hashlib.md5(body).hexdigest()
     adapter = _zenodo_record(server, body, size=len(body), checksum=checksum)
     out = list(adapter.samples(tmp_path))
-    assert len(out) == 1 and out[0][1].upstream_match is True
+    assert [item.key for item, _, _ in out] == ["y.zip#a.png"]
+    assert len(out) == 1 and out[0][1].upstream_match is None
 
 
-def test_zenodo_adapter_size_mismatch_still_raises(server, tmp_path):
-    """A byte-count mismatch is a short transfer, not a provider-hash disagreement: it raises."""
+def test_zenodo_adapter_size_mismatch_raises(server, tmp_path):
+    """A wrong declared size means the tail Range read misses the real end of the file —
+    still a hard failure, now surfaced as a transport error rather than a digest check."""
     body = zip_bytes({"a.png": png(1)})
     adapter = _zenodo_record(server, body, size=len(body) + 1, checksum="md5:" + "0" * 32)
-    with pytest.raises(ValueError, match="bytes != declared"):
+    with pytest.raises(RetriesExhausted):
         _run(adapter, tmp_path)
 
 

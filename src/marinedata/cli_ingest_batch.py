@@ -18,7 +18,7 @@ import json
 import sys
 import threading
 import time
-from collections.abc import Callable
+from collections.abc import Callable, Iterable
 from pathlib import Path
 from typing import Any
 
@@ -41,15 +41,16 @@ def _is_hf_rate_limited(result: dict[str, Any]) -> bool:
     return "429" in error or "Too Many Requests" in error
 
 
-def _spec_paths(specs_dir: Path, only: set[str] | None) -> list[Path]:
+def _spec_paths(specs_dir: Path, only: Iterable[str] | None) -> list[Path]:
     paths = sorted({*specs_dir.glob("*.yaml"), *specs_dir.glob("*.yml")})
     if only is None:
         return paths
-    kept = [p for p in paths if (yaml.safe_load(p.read_text()) or {}).get("id") in only]
-    missing = only - {(yaml.safe_load(p.read_text()) or {}).get("id") for p in kept}
+    by_id = {(yaml.safe_load(p.read_text()) or {}).get("id"): p for p in paths}
+    ordered = list(dict.fromkeys(only))  # de-dup, keep --only's given order (D-AJ)
+    missing = [i for i in ordered if i not in by_id]
     if missing:
         raise ValueError(f"--only names sources not found under {specs_dir}: {sorted(missing)}")
-    return kept
+    return [by_id[i] for i in ordered]
 
 
 def _resolve_client(remote: str) -> Any:
@@ -180,7 +181,7 @@ def run_batch(
     specs_dir: Path,
     work_root: Path,
     *,
-    only: set[str] | None = None,
+    only: Iterable[str] | None = None,
     jobs: int = 1,
     remote: str = "rs-hel1",
     out: Any = None,
@@ -240,7 +241,7 @@ def run_batch(
 
 
 def _cmd_ingest_batch(args: argparse.Namespace) -> int:
-    only = {s.strip() for s in args.only.split(",") if s.strip()} if args.only else None
+    only = [s.strip() for s in args.only.split(",") if s.strip()] if args.only else None
     try:
         ordered = run_batch(
             Path(args.specs_dir),

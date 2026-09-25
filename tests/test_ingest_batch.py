@@ -81,6 +81,16 @@ def test_only_filter_selects_subset(env):
     assert [r["source_id"] for r in results] == ["source-a"]
 
 
+def test_only_filter_runs_in_the_given_order(env):
+    """WP-6k: ``--only b,a`` runs b before a, even though the spec files sort a-then-b
+    (cli_ingest_batch.py:45-48 used to run in alphabetical filename order, ignoring
+    ``--only``'s order entirely)."""
+    _, _, specs, tmp = env
+    results, lines = _run(specs, tmp / "work", only=["source-b", "source-a"])
+    assert [r["source_id"] for r in results] == ["source-b", "source-a"]
+    assert [line["source_id"] for line in lines] == ["source-b", "source-a"]
+
+
 def test_only_filter_rejects_unknown_id(env):
     _, _, specs, tmp = env
     with pytest.raises(ValueError, match="nope-id"):

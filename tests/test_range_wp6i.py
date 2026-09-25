@@ -5,9 +5,11 @@ from __future__ import annotations
 import io
 import json
 import os
+import struct
 import tarfile
 import threading
 import zipfile
+import zlib
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 
@@ -208,3 +210,94 @@ def test_hf_remote_zip_stages_only_manifest_members(srv, tmp_path: Path) -> None
     assert out[0][1].data == members["Images/b.jpg"] and out[0][1].suffix == ".jpg"
     assert not any(p == "/cdn/CoralVQA_Image.zip" and r is None for p, r in srv.log)
     assert not (tmp_path / "fetch").exists()  # nothing spooled
+
+
+def _mixed_zip(entries: list[tuple[str, bytes, int]]) -> bytes:
+    """A hand-built zip with a per-entry compression method (0 stored / 8 deflate / 9
+    Deflate64) — WP-6k needs one fixture mixing plain members with a Deflate64 member;
+    ``zipfile``'s writer only ever emits methods 0/8, so every entry is packed the same
+    low-level way as WP-6j's Deflate64-only fixture (``test_ingest_wp6j._deflate64_zip``)."""
+    buf, central = io.BytesIO(), []
+    for name, data, method in entries:
+        if method == 9:
+            import inflate64
+
+            d = inflate64.Deflater()
+            comp = d.deflate(data) + d.flush()
+        elif method == 8:
+            co = zlib.compressobj(9, zlib.DEFLATED, -15)
+            comp = co.compress(data) + co.flush()
+        else:
+            comp = data
+        crc, off, n = zlib.crc32(data), buf.tell(), name.encode()
+        buf.write(
+            struct.pack(
+                "<4s5H3L2H",
+                b"PK\x03\x04",
+                20,
+                0,
+                method,
+                0,
+                0,
+                crc,
+                len(comp),
+                len(data),
+                len(n),
+                0,
+            )
+        )
+        buf.write(n + comp)
+        central.append(
+            struct.pack(
+                "<4s6H3L5H2L",
+                b"PK\x01\x02",
+                20, 20, 0, method, 0, 0, crc, len(comp), len(data), len(n), 0, 0, 0, 0, 0, off,
+            )
+            + n
+        )  # fmt: skip
+    cd_off, cd = buf.tell(), b"".join(central)
+    buf.write(
+        cd
+        + struct.pack(
+            "<4s4H2LH", b"PK\x05\x06", 0, 0, len(central), len(central), len(cd), cd_off, 0
+        )
+    )
+    return buf.getvalue()
+
+
+def test_zenodo_adapter_reads_zip_members_by_range_incl_deflate64(srv, tmp_path: Path) -> None:
+    """WP-6k (D-AH 4): the zenodo/http adapter never spools a zip container, whatever its
+    size — it expands each member into its own item over ``open_remote_zip``/``read_member``,
+    Deflate64 (method 9) included."""
+    pytest.importorskip("inflate64")
+    members = {
+        "imgs/000.jpg": os.urandom(4_000),
+        "imgs/001.jpg": os.urandom(4_000) * 3,  # deflate64
+        "imgs/002.jpg": os.urandom(4_000),  # stored
+    }
+    blob = _mixed_zip(
+        [
+            ("imgs/000.jpg", members["imgs/000.jpg"], 8),
+            ("imgs/001.jpg", members["imgs/001.jpg"], 9),
+            ("imgs/002.jpg", members["imgs/002.jpg"], 0),
+        ]
+    )
+    srv.files["/files/big.zip"] = blob
+    srv.files["/api/records/321"] = json.dumps(
+        {
+            "metadata": {"access_right": "open", "version": "wp6k-1"},
+            "files": [
+                {
+                    "key": "big.zip",
+                    "size": len(blob),
+                    "checksum": f"md5:{'0' * 32}",
+                    "links": {"self": srv.base + "/files/big.zip"},
+                }
+            ],
+        }
+    ).encode()
+    adapter = make_adapter("zenodo", {"zenodo_record": 321, "endpoint": srv.base})
+    out = {item.key: d.data for item, _, d in adapter.samples(tmp_path)}
+    assert out == {f"big.zip#{n}": data for n, data in members.items()}
+    assert not any(p == "/files/big.zip" and r is None for p, r in srv.log)  # never whole-file
+    assert not (tmp_path / "fetch").exists()  # no local spool of the container

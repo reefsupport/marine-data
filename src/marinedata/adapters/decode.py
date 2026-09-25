@@ -468,10 +468,12 @@ def _sniff(data: bytes) -> str:
 
 def decode_item(fetched: Fetched, params: Mapping[str, Any]) -> Iterator[Decoded]:
     key = fetched.item.key
+    bare = key.rpartition("#")[2] or key  # WP-6k: strip a remote-zip "container#member" prefix
     suffix = suffix_of(key)
-    if any(fnmatch.fnmatch(key, g) for g in params.get("label_patterns") or []):
+    globs = params.get("label_patterns") or []
+    if any(fnmatch.fnmatch(k, g) for k in (key, bare) for g in globs):
         assert fetched.stream is not None  # loose label file: pair by basename stem
-        yield Decoded(key, b"", suffix, fetched.item.url, label_files={key: fetched.stream.read()})
+        yield Decoded(key, b"", suffix, fetched.item.url, label_files={bare: fetched.stream.read()})
     elif suffix in IMAGE_SUFFIXES:
         assert fetched.stream is not None
         members: Iterable[tuple[str, Callable[[], bytes]]] = [

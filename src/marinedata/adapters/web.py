@@ -7,16 +7,28 @@ from the record is verified on fetch.
 
 Plain HTTP: ``params.urls`` is a list of URLs or ``{url, key, size, md5, sha256}`` dicts
 and ``params.version`` is REQUIRED (a bare URL carries no version signal).
+
+WP-6k (D-AH 4): a ``.zip`` item is never spooled to local disk, whatever its size. Its
+central directory is read over HTTP Range (:func:`~._range.open_remote_zip`) and each
+member is expanded into its own item, read with one further ranged GET
+(:func:`~._range.read_member`, Deflate64-safe) straight into memory.
 """
 
 from __future__ import annotations
 
+import io
+import logging
+import threading
 import urllib.parse
+import zipfile
 from collections.abc import Iterator
-from pathlib import PurePosixPath
+from pathlib import Path, PurePosixPath
 
-from . import AccessRefused, BaseAdapter, RemoteItem
-from ._http import get_json
+from . import AccessRefused, BaseAdapter, Fetched, RemoteItem, suffix_of
+from ._http import HashingReader, get_json
+from ._range import RemoteFile, open_remote_zip, read_member
+
+log = logging.getLogger(__name__)
 
 
 class HttpAdapter(BaseAdapter):
@@ -70,3 +82,37 @@ class HttpAdapter(BaseAdapter):
                 md5=e.get("md5"),
                 sha256=e.get("sha256"),
             )
+
+    # -- WP-6k: zip members over HTTP Range, never spooled (D-AH 4) ---------------------
+    def enumerate(self) -> Iterator[RemoteItem]:
+        for item in super().enumerate():
+            if suffix_of(item.key) == ".zip" and not self.is_label(item.key):
+                yield from self._expand_zip(item)
+            else:
+                yield item
+
+    def _expand_zip(self, item: RemoteItem) -> Iterator[RemoteItem]:
+        if item.size is None:
+            raise ValueError(f"{item.key}: a remote zip needs a declared size (D-AH 4)")
+        zf, rf = open_remote_zip(item.url, item.size)
+        if not hasattr(self, "_zip_members"):
+            self._zip_members: dict[str, tuple[zipfile.ZipFile, RemoteFile, zipfile.ZipInfo]] = {}
+            self._zip_lock = threading.Lock()
+        infos = [i for i in zf.infolist() if not i.is_dir() and "__MACOSX" not in i.filename]
+        log.info(
+            "%s: remote zip %d entries (%d range requests, %d B read so far)",
+            item.key, len(infos), rf.requests, rf.fetched,
+        )  # fmt: skip
+        for info in sorted(infos, key=lambda i: i.filename):
+            key = f"{item.key}#{info.filename}"
+            self._zip_members[key] = (zf, rf, info)
+            yield RemoteItem(key=key, url=item.url, size=info.file_size)
+
+    def fetch(self, item: RemoteItem, tmp_dir: Path) -> Fetched:
+        member = getattr(self, "_zip_members", {}).get(item.key)
+        if member is not None:
+            zf, rf, info = member
+            with self._zip_lock:  # one cache window per archive: serialise member reads
+                data = read_member(zf, rf, info)
+            return Fetched(item, stream=HashingReader(io.BytesIO(data)))
+        return super().fetch(item, tmp_dir)
