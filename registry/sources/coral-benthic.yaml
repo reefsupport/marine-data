@@ -1355,6 +1355,16 @@ sources:
       Resume path: re-run `coralseg.py`'s `main()` once free disk is safely above the
       floor (no local scratch was left behind; `restage()` deletes each closed batch
       after S3 verification).
+      coralseg-flip (2026-09-25): WP-8e's `coralseg_stream` DID restage all 4,922 pairs
+      memory-only to s3://rs-storage-open/sources/coralseg-ucsd-mosaics/unversioned/
+      (9,846 objects / 831,384,589 bytes, head_failed 0; CHECKSUMS.sha256 9,845 entries,
+      sha256 22454a3cfbaced4e13ab2eeb7f80292d40ba708ddaeb1e121e9de2f8a42cc80b, anon-GET
+      digest match; 20/20 random anon HEADs 200). Still NOT flipped: that tree's
+      metadata.parquet has NO split_group column, and this source declares an explicit
+      split_group rule, so the staged-tree loader's validate() would reject all 4,922
+      rows (S28 guard) and the release enumerator would raise. Flip after rewriting
+      metadata.parquet via Source.split_group_for and re-PUTting it + CHECKSUMS.sha256
+      (new root_digest). Task labels (semseg.parquet) are valid and tracked meanwhile.
     split_group:
       pattern: '^(.+)_\d+$'
       match_field: stem

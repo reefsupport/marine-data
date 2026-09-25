@@ -6,6 +6,15 @@
       "reason": "sha256 is null on all 254,867 rows (1 distinct value: null). The WP-8d producer (task_layers/sources/coralvqa.py) hard-coded sha256=None because CoralVQA's images (a single 26.7 GB CoralVQA_Image.zip) are not staged, so no row can join to an image.",
       "resume": "stage the CoralVQA images, then re-run `python -m marinedata.task_layers.sources.coralvqa --train ... --test ... --images <dir> --out data/_tasklabels/coralvqa/vqa.parquet` (fails closed on unstaged images unless --allow-partial) and drop this entry.",
       "found_by": "INT-core3b"
+    },
+    "coralseg-ucsd-mosaics/semseg.parquet": {
+      "status": "valid",
+      "since": "2026-09-25",
+      "rows": 4922,
+      "distinct_sha256": 4922,
+      "reason": "every sha256 equals an images/ entry of CHECKSUMS.sha256 under sources/coralseg-ucsd-mosaics/unversioned/ (root_digest 22454a3c…a42cc80b): 4,922 = 4,922, 0 null. Not read into a config until the source has a crosswalk (not in SEMSEG_SOURCES).",
+      "produced_by": "python -m marinedata.task_layers.sources.coralseg_stream (WP-8e, PID 66320, head_failed 0)",
+      "found_by": "coralseg-flip"
     }
   }
 }
