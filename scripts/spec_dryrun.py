@@ -71,6 +71,9 @@ SUPPORTED_ADAPTERS = {
     "girder",
     "pawsey-portal",
     "frdr-https",
+    "inat-open-data",
+    "hf-member-filter",
+    "commons-api",
 }
 TIMEOUT_S = 180
 BYTES_PER_HOUR_AT_100MBPS = 100_000_000 * 3600  # planning rate, S57 catalog convention
