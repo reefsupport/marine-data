@@ -11,6 +11,7 @@ from __future__ import annotations
 import argparse
 import sys
 
+from .cli_bench import add_bench_subparser  # WP-11 P1: registry/benchmarks.yaml validate+hash
 from .cli_dedup import add_dedup_subparser
 from .cli_ingest import _cmd_ingest, add_ingest_subparser  # noqa: F401 — re-exported
 from .cli_release import add_release_subparser
@@ -293,6 +294,7 @@ def build_parser() -> argparse.ArgumentParser:
     add_splitmap_subparser(sub)
     add_release_subparser(sub)
     add_dedup_subparser(sub)
+    add_bench_subparser(sub)
 
     p_verify = sub.add_parser("verify", help="Check declared layouts against real fetched samples")
     p_verify.add_argument("source_id", nargs="*")
