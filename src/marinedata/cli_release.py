@@ -16,6 +16,7 @@ from datetime import UTC, datetime
 from pathlib import Path
 
 from .cli_splitmap import _parse_ratios
+from .dedup.groups import DedupGateError
 from .fetch import FetchError, cache_root, fetch_sample
 from .fetchers_remote import _is_pinned_staged_tree
 from .gate import evaluate
@@ -185,8 +186,9 @@ def _cmd_release_build(args: argparse.Namespace) -> int:
             out_dir=args.out,
             profile=args.profile,
             near_dup=near_dup,
+            dedup_v2_groups=args.dedup_v2,
         )
-    except NearDupError as exc:
+    except (NearDupError, DedupGateError) as exc:
         print(f"release build: {exc}", file=sys.stderr)
         return 1
 
@@ -220,6 +222,15 @@ def add_release_subparser(sub: argparse._SubParsersAction) -> None:
         "build", help="Build every registry task against a frozen SPLIT_MAP.json"
     )
     p_build.add_argument("--release", required=True, help="Release id")
+    p_build.add_argument(
+        "--dedup-v2",
+        dest="dedup_v2",
+        type=Path,
+        default=None,
+        metavar="GROUPS_PARQUET",
+        help="Run the WP-10 split-leak gate against this groups.parquet ('marinedata dedup "
+        "run'); fails the build on leakage. Default OFF (v1 behaviour, byte-identical)",
+    )
     p_build.add_argument(
         "--split-map",
         dest="split_map",
