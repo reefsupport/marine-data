@@ -606,7 +606,7 @@ sources:
     split_group:
       pattern: '^(.{5})'
       match_field: stem
-      template: "seaview/{group}"
+      template: "rs_labelled/{group}"
     notes: >
       RESOLVED 2026-09-23 (WS-D decision): folded in as a SECOND annotation set over the
       images already registered under `reef-support-benthic-own` and
@@ -615,6 +615,20 @@ sources:
       #1) is superseded by this: whatever the origin, its masks sit on existing reef_support
       imagery, not a new image pool. Licence/origin of the mask labour itself is still
       not stated either way.
+      WP-8d (2026-09-25): fixed `split_group.template` above from a copy-pasted
+      "seaview/{group}" (WP-8b's placeholder, wrong source) to "rs_labelled/{group}".
+      `src/marinedata/task_layers/sources/rs_labelled.py` parses the real Labelbox
+      `export-result.ndjson` export and keys rows by `images_from`'s already-staged
+      sha256 (no image bytes of its own are read). Real-data finding: every one of the
+      2,578 annotation objects sampled across 246 records in
+      `SEAFLOWER_BOLIVAR/export-result.ndjson` is `annotation_kind:
+      "ImageSegmentationMask"` with only a Labelbox-hosted `mask.url` - zero inline
+      `polygon` geometry. The rasteriser is implemented and unit-tested for the
+      inline-polygon case the export schema supports, but the live export has none to
+      rasterise, and the Do-Not-list forbids fetching that mask URL, so this pass
+      produced 0 real semseg rows. Resume path: either a future Labelbox export with
+      polygon (not mask) annotations, or a revisit of D-Z2 to permit fetching
+      Labelbox-hosted masks under a different rule.
     loader: { layout: metadata-only }
     tags: [needs-permission]
 
