@@ -1,0 +1,24 @@
+# WP-6l-B (2026-09-25) new source: candidate — WP-6l-B enhancement: only set with instrument-measured turbidity per image (degradation severity label)
+id: uwturbidity-fnu
+adapter: zenodo
+params:
+  zenodo_record: 10951021
+license: agpl-3.0-or-later
+attribution: Rudy, Wilson (2024), Zenodo
+citation: doi:10.5281/zenodo.10951021 — Underwater Image/Turbidity Dataset
+homepage: https://zenodo.org/records/10951021
+notes: 'candidate — WP-6l-B enhancement: only set with instrument-measured turbidity per image (degradation severity
+  label)'
+disk_floor_gib: 36.0
+measured:
+  items: 675
+  bytes: 2939372600
+  bytes_basis: Zenodo API file sizes (sum)
+  method: 'remote zip CD: 580 jpg + 95 png; _Master-Combined.csv'
+  date: '2026-09-25'
+  per_item_license: agpl-3.0-or-later
+  by_depth_band_m: {}
+  label_type: per-image measured turbidity (FNU) regression label
+  habitat_region: coastal water, graded turbidity
+  dedup_chain: new; no registry/ingest-spec/WP-6g/S57 match on title, DOI or record id
+  wp6l_gap: enhancement

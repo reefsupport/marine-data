@@ -1,0 +1,24 @@
+# WP-6l-B (2026-09-25) new source: candidate — WP-6l-B sonar: UATD: the reference open FLS detection benchmark
+id: uatd
+adapter: figshare
+params:
+  article: 21331143
+license: CC BY 4.0
+attribution: jian, Kaibing (2022), figshare
+citation: doi:10.6084/m9.figshare.21331143.v3 — Underwater acoustic target detection (UATD) dataset
+homepage: https://doi.org/10.6084/m9.figshare.21331143.v3
+notes: 'candidate — WP-6l-B sonar: UATD: the reference open FLS detection benchmark'
+disk_floor_gib: 36.0
+measured:
+  items: 9205
+  bytes: 4796321023
+  bytes_basis: figshare API file sizes (sum)
+  method: 'remote zip CD over 4 zips: 9,205 bmp + 9,200 xml'
+  date: '2026-09-25'
+  per_item_license: CC BY 4.0
+  by_depth_band_m: {}
+  label_type: multibeam FLS target boxes, Pascal VOC xml (10 classes)
+  habitat_region: Golden Bay/Maritime lake, Dalian, China (Tritech Gemini 1200ik)
+  dedup_chain: upstream original; HF iMeanAI/UATD (7,747 parquet rows, 16.5 GB) is a re-pack = dedup-chain member,
+    not a new source
+  wp6l_gap: sonar
