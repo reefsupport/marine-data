@@ -18,11 +18,7 @@ SEP = "|---|---|---|---|---|---|---|---|---|---|---|"
 
 def _harness_commit() -> str:
     try:
-        return (
-            subprocess.check_output(["git", "rev-parse", "--short", "HEAD"])
-            .decode()
-            .strip()
-        )
+        return subprocess.check_output(["git", "rev-parse", "--short", "HEAD"]).decode().strip()
     except Exception:  # pragma: no cover - no git / detached env
         return "unknown"
 

@@ -1,4 +1,5 @@
 """Probe determinism on synthetic features (design §4.4.A: "deterministic")."""
+
 import numpy as np
 
 from marinedata.eval.baselines.probe import fit_probe, score_probe

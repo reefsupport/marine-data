@@ -223,9 +223,7 @@ def _cmd_eval_reproduce(args: argparse.Namespace) -> int:
     if missing:
         raise ValueError(f"{args.fixture}: fixture missing column(s) {missing}")
 
-    images = [
-        (row.image_sha256, Path(row.image_path).read_bytes()) for row in fixture.itertuples()
-    ]
+    images = [(row.image_sha256, Path(row.image_path).read_bytes()) for row in fixture.itertuples()]
     extractor = FeatureExtractor(args.backbone)
     feats_df, img_per_s = extract_with_cache(extractor, images, Path(args.cache))
     merged = fixture.merge(feats_df, on="image_sha256", how="inner", validate="one_to_one")

@@ -28,9 +28,7 @@ class ProbeResult:
     labels: tuple[str, ...]
 
 
-def _capped_group_sample(
-    n: int, group_ids: np.ndarray, cap: int, seed: int
-) -> np.ndarray:
+def _capped_group_sample(n: int, group_ids: np.ndarray, cap: int, seed: int) -> np.ndarray:
     """Seeded whole-group sample of row indices, at most ``cap`` rows total."""
     if n <= cap:
         return np.arange(n)
@@ -83,9 +81,7 @@ def fit_probe(
     return ProbeResult(model=clf, best_C=c, val_macro_f1=float(score), labels=labels)
 
 
-def score_probe(
-    result: ProbeResult, x: np.ndarray, y: np.ndarray
-) -> tuple[float, np.ndarray]:
+def score_probe(result: ProbeResult, x: np.ndarray, y: np.ndarray) -> tuple[float, np.ndarray]:
     """Macro-F1 and raw predictions of a fitted probe on a held-out split."""
     pred = result.model.predict(np.asarray(x, dtype=np.float32))
     f1 = f1_score(y, pred, average="macro", labels=result.labels, zero_division=0)

@@ -1,4 +1,5 @@
 """Card table formatting (design §4.5)."""
+
 from marinedata.eval.baselines.table import render_card_table
 
 

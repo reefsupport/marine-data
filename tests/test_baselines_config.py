@@ -1,4 +1,5 @@
 """Config parsing (design §4.4 baselines config)."""
+
 from pathlib import Path
 
 import yaml

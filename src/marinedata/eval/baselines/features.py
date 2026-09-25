@@ -185,8 +185,10 @@ def extract_with_cache(
     """
     cache_dir.mkdir(parents=True, exist_ok=True)
     path = cache_path(cache_dir, extractor.backbone.id, extractor.backbone.revision)
-    cached = pd.read_parquet(path) if path.exists() else pd.DataFrame(
-        columns=["image_sha256", "model", "revision", "feature"]
+    cached = (
+        pd.read_parquet(path)
+        if path.exists()
+        else pd.DataFrame(columns=["image_sha256", "model", "revision", "feature"])
     )
     cached_shas = set(cached["image_sha256"])
 

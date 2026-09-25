@@ -141,3 +141,43 @@ Not present on any merged branch; added directly to `build_release()`/`cli_relea
   - Run the full split-v2 per-sample gate at the v2 build, once WP-2's per-sample geo columns land
     (this round only wires a config-only smoke check — see above).
   - D-T2's 50-random-crop-merge hand audit (P ≥ 90%) is still owed before `--dedup-crop` ships on.
+
+## INT-core3 merge log (2026-09-25)
+
+| Commit | What | Notes |
+|---|---|---|
+| `b40dac4` | merge WP-8e `feat/wp8e-tasklabels` @ `a0269e3` | S3-keyed tasklabels producers |
+| `d776ecc` | merge WP-5e/5f face blur `feat/wp5b-privacy` @ `30b92b4` | |
+| `ed0bf4d` | merge P5 probes `feat/p5-baselines` @ `bf554e5` | its 8 unformatted files were `ruff format`ted in INT-core3c |
+| `1b60abf` | merge WP-13 captions `feat/wp13-captions` @ `2bfae35` | |
+| `8140176` | fix: D-X2a explicit per-column null sentinels | `manifest_identity.NULL_SENTINELS` |
+| `97a127f` | fix: coralvqa `vqa.parquet` keyed by staged image sha256 | tracked file marked `invalid` |
+| `2d5e689` | feat: `marinedata captions` wired into the CLI | off in the `--v2` preset |
+
+**`cli.py` conflict resolution:** kept HEAD's superset subcommand list; `captions` is
+registered behind `try/except ImportError` (pandas is imported at module top), with a
+stub that exits 2 when pandas is absent.
+
+**D-X2 result (manifest level, no image bytes):** 69,600 rows; 6/6 task TSVs
+byte-identical to v1; 7 metadata columns enriched null→value on 10,186 rows; the
+`upstream_id` duplicate tie-break reproduces v1 with 0 diffs, so no allowlist is needed
+(this corrects INT-core2b's "allowlist of 933"); the MEOW region map is vendored and the 3
+MEOW columns verified (corrects INT-core2b's "MEOW unverified"). D-X2a: sentinels are an
+explicit per-column table; published v1 has 0 `""` and 0 NaN in every column, so the
+live result cannot move.
+
+**coralvqa:** the tracked `data/_tasklabels/coralvqa/vqa.parquet` had `sha256 = null` on
+all 254,867 rows — the WP-8d producer wrote `None` literally because the images (one
+26.7 GB zip) were never staged. It stays `invalid` in `data/_tasklabels/MANIFEST.json`,
+so `task_layers.configs` skips it. INT-core3c found no staged
+`sources/coralvqa/**/CHECKSUMS.sha256` in `rs-storage-open`: anonymous HEAD → 403. The
+source is queued for the ingest line; regenerate once it is staged.
+
+**Tasklabels root (INT-core3c):** `build_release(tasks="v2")` read `Path(".")/_tasklabels`,
+and a missing parquet reads as `[]`, so a build run from the repo root produced 6 empty
+configs. Now `task_layers.configs.resolve_tasklabels_root` takes the explicit
+`--tasklabels-root`, or else derives `<repo>/data` from the registry's location; it
+fails closed if no `_tasklabels/` exists there. `tests/test_tasklabels_root.py` checks
+that the configs are identical and non-empty when built from two different cwds.
+
+**Taxonomy:** frozen at 2.1.0 (charter D-AD), pinned in `tests/test_taxonomy.py`.
