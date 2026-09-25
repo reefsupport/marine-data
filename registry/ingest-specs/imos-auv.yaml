@@ -1,0 +1,31 @@
+# IMOS AUV (Sirius/Nimbus) benthic survey stills, public bucket s3://imos-data/IMOS/AUV/ (anonymous).
+# Listing NOT finished at report time: >= 10.2M objects after 80 min (scratch job imos_list.py); items/bytes stay null until it completes.
+id: imos-auv
+adapter: needs:manifest
+license: CC-BY-4.0 (IMOS data licence)
+attribution: Integrated Marine Observing System (IMOS) — AUV Facility, University of Sydney ACFR
+citation: IMOS AUV Facility, https://imos.org.au/facility/autonomous-underwater-vehicles
+homepage: https://registry.opendata.aws/imos-data/
+candidate_endpoints:
+- s3://imos-data/IMOS/AUV/<campaign>/<dive>/ (i2jpg / full-res images + track csv)
+- https://squidle.org (CATAMI annotations; API access unverified anonymously)
+why_not_supported: The prefix holds >= 10.2M objects (all image variants + tracks); the target is a stratified pick
+  by campaign x depth band x region that needs the per-dive track CSV (depth, lat/lon) joined to image names ->
+  a manifest, not a whole-prefix bucket listing.
+measured:
+  items: null
+  bytes: null
+  method: anonymous ListObjectsV2 over IMOS/AUV/ — incomplete (>= 10,200,000 objects at 4,823 s)
+  date: '2026-09-25'
+  bytes_basis: listing incomplete; resume and read imos_agg.json (rows by campaign/dive/ext with n + bytes)
+  label_type: none on images; CATAMI points for a labelled subset (BENTHOZ-2015 / Squidle+)
+subset:
+  target_items: 300000
+  stratify:
+  - campaign
+  - depth_band
+  - region
+  cap_per_stratum: 5000
+  rule: every image of every CATAMI-labelled dive (BENTHOZ-2015 / Squidle+ dive list) + the remaining dives capped
+    at 5,000 images per (campaign x depth band [0-30,30-60,60-120,120+ m from track csv] x region); one image variant
+    only (full-res jpg/tif, not thumbnails)

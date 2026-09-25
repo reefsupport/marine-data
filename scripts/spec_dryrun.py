@@ -27,7 +27,7 @@ import yaml
 
 ROOT = Path(__file__).resolve().parent.parent
 SPECS = ROOT / "registry" / "ingest-specs"
-QUEUE = SPECS / "_queue-w2b.tsv"
+QUEUE = SPECS / "_queue-w2b.tsv"  # default; --queue overrides (w3 writes _queue-w3.tsv)
 WORK = Path("/tmp/spec-w2b-work")
 TIMEOUT_S = 90
 
@@ -46,8 +46,18 @@ ZERO_ITEM_OVERRIDE = {
     "oceaninstruct": "json-captions",  # pure JSON instruction/caption pairs, nothing to stage
 }
 COLUMNS = [
-    "id", "adapter", "version", "items", "bytes", "licence", "format",
-    "dry_run", "est_hours_at_100mbps", "priority",
+    "id",
+    "adapter",
+    "version",
+    "items",
+    "bytes",
+    "licence",
+    "format",
+    "dry_run",
+    "est_hours_at_100mbps",
+    "priority",
+    "measured_items",
+    "measured_bytes",
 ]
 
 # catalog id -> (value 1-5, size_gb-as-stated, label/format) from
@@ -90,15 +100,27 @@ CATALOG_META = {
 def run_dry(sid: str, adapter: str, spec_path: Path) -> dict:
     WORK.mkdir(parents=True, exist_ok=True)
     cmd = [
-        sys.executable, "-m", "marinedata.cli", "ingest-source", adapter, str(spec_path),
-        "--dry-run", "--work", str(WORK),
+        sys.executable,
+        "-m",
+        "marinedata.cli",
+        "ingest-source",
+        adapter,
+        str(spec_path),
+        "--dry-run",
+        "--work",
+        str(WORK),
     ]
     import os
 
     env = {"PYTHONPATH": str(ROOT / "src"), **os.environ}
     try:
         proc = subprocess.run(
-            cmd, cwd=ROOT, capture_output=True, text=True, timeout=TIMEOUT_S, env=env,
+            cmd,
+            cwd=ROOT,
+            capture_output=True,
+            text=True,
+            timeout=TIMEOUT_S,
+            env=env,
         )
     except subprocess.TimeoutExpired:
         return {"dry_run": "dead:timeout", "version": "-", "items": 0, "bytes": 0}
@@ -109,19 +131,48 @@ def run_dry(sid: str, adapter: str, spec_path: Path) -> dict:
     if proc.returncode != 0:
         status = re.search(r"HTTP Error (\d{3})", proc.stderr)
         code = status.group(1) if status else "error"
-        return {"dry_run": f"dead:{code}", "version": "-", "items": 0, "bytes": 0,
-                "_stderr": proc.stderr[-400:]}
+        return {
+            "dry_run": f"dead:{code}",
+            "version": "-",
+            "items": 0,
+            "bytes": 0,
+            "_stderr": proc.stderr[-400:],
+        }
     report = json.loads(proc.stdout)
     plan = report.get("plan", {})
     return {
-        "dry_run": "ok", "version": report.get("version", "-"),
-        "items": plan.get("items", 0), "bytes": plan.get("declared_bytes", 0),
+        "dry_run": "ok",
+        "version": report.get("version", "-"),
+        "items": plan.get("items", 0),
+        "bytes": plan.get("declared_bytes", 0),
     }
 
 
-def main() -> None:
+def zero_item_kind(sid: str, raw: dict) -> str:
+    """D-R4: a dry run that is ok but stages 0 items is ``needs_adapter:<kind>``."""
+    if sid in ZERO_ITEM_OVERRIDE:
+        return ZERO_ITEM_OVERRIDE[sid]
+    return str((raw.get("measured") or {}).get("zero_item_kind") or "unsupported-format")
+
+
+def main(argv: list[str] | None = None) -> None:
+    import argparse
+
+    ap = argparse.ArgumentParser(description=__doc__)
+    ap.add_argument(
+        "--glob", default="*.yaml", help="spec filename glob under registry/ingest-specs"
+    )
+    ap.add_argument("--queue", type=Path, default=QUEUE, help="output queue TSV")
+    ap.add_argument(
+        "--ids-file", type=Path, help="only run the spec ids listed (one per line) in this file"
+    )
+    args = ap.parse_args(argv)
+    paths = sorted(SPECS.glob(args.glob))
+    if args.ids_file:
+        wanted = {ln.strip() for ln in args.ids_file.read_text().splitlines() if ln.strip()}
+        paths = [p for p in paths if p.stem in wanted]
     rows = []
-    for spec_path in sorted(SPECS.glob("*.yaml")):
+    for spec_path in paths:
         sid = spec_path.stem
         raw = yaml.safe_load(spec_path.read_text()) or {}
         adapter = raw.get("adapter", "")
@@ -131,35 +182,47 @@ def main() -> None:
         if adapter in REAL_ADAPTERS:
             print(f"[{sid}] dry-run ({adapter})...", file=sys.stderr)
             result = run_dry(sid, adapter, spec_path)
-            if result["dry_run"] == "ok" and result["items"] == 0 and sid in ZERO_ITEM_OVERRIDE:
-                kind = ZERO_ITEM_OVERRIDE[sid]
-                result = {**result, "dry_run": f"needs_adapter:{kind}"}
+            if result["dry_run"] == "ok" and result["items"] == 0:
+                result = {**result, "dry_run": f"needs_adapter:{zero_item_kind(sid, raw)}"}
         elif adapter.startswith("needs:"):
             kind = adapter.split(":", 1)[1]
             result = {"dry_run": f"needs_adapter:{kind}", "version": "-", "items": 0, "bytes": 0}
         else:
             result = {
-                "dry_run": f"dead:unknown-adapter:{adapter}", "version": "-",
-                "items": 0, "bytes": 0,
+                "dry_run": f"dead:unknown-adapter:{adapter}",
+                "version": "-",
+                "items": 0,
+                "bytes": 0,
             }
 
+        measured = raw.get("measured") or {}
         n_bytes = result.get("bytes", 0) or 0
         est_hours = f"{n_bytes / (100 * 1024 * 1024) / 3600:.3f}" if n_bytes else "-"
         size_gb = (n_bytes / 1e9) if n_bytes else cat_size_gb
         priority = f"{cat_value / size_gb:.3f}" if (cat_value and size_gb) else "?"
 
-        rows.append({
-            "id": sid, "adapter": adapter, "version": result["version"],
-            "items": result["items"], "bytes": n_bytes, "licence": licence,
-            "format": cat_format, "dry_run": result["dry_run"],
-            "est_hours_at_100mbps": est_hours, "priority": priority,
-        })
+        rows.append(
+            {
+                "id": sid,
+                "adapter": adapter,
+                "version": result["version"],
+                "items": result["items"],
+                "bytes": n_bytes,
+                "licence": licence,
+                "format": cat_format,
+                "dry_run": result["dry_run"],
+                "est_hours_at_100mbps": est_hours,
+                "priority": priority,
+                "measured_items": measured.get("items", "-"),
+                "measured_bytes": measured.get("bytes", "-"),
+            }
+        )
 
-    with QUEUE.open("w") as f:
+    with args.queue.open("w") as f:
         f.write("\t".join(COLUMNS) + "\n")
         for r in rows:
             f.write("\t".join(str(r[c]) for c in COLUMNS) + "\n")
-    print(f"wrote {len(rows)} rows to {QUEUE}", file=sys.stderr)
+    print(f"wrote {len(rows)} rows to {args.queue}", file=sys.stderr)
 
 
 if __name__ == "__main__":

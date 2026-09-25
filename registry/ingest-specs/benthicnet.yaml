@@ -1,0 +1,29 @@
+# BenthicNet-1M (FRDR doi:10.20383/103.0614). FRDR publishes through a Globus collection (origin_path /9/published/publication_609/submitted_data).
+# Third-party partial mirror: hf ndotm/benthicnet_labelled (1.09 GB).
+id: benthicnet
+adapter: needs:frdr-globus
+license: CC-BY-4.0 (mixed per source survey)
+attribution: Lowe et al., BenthicNet
+citation: Lowe et al. 2025, Sci Data, doi:10.20383/103.0614
+homepage: https://www.frdr-dfdr.ca/repo/dataset/24c6c813-d0ff-4461-8174-3f960f1edc0d
+candidate_endpoints:
+- https://globus.frdr.ca/file-manager?origin_id=59ff4285-b842-47e7-bce9-56cf50ad34ab&origin_path=/9/published/publication_609/submitted_data
+- hf://datasets/ndotm/benthicnet_labelled (partial mirror, 1.09 GB)
+why_not_supported: The file list is rendered by FRDR's Globus widget (JS); no anonymous listing endpoint was found,
+  so neither items nor bytes could be enumerated here. Globus HTTPS download links are advertised (setDownloadLinks(true))
+  — anonymous download is plausible but unverified.
+measured:
+  items: null
+  bytes: null
+  method: FRDR landing page only (Globus listing not reachable anonymously)
+  date: '2026-09-25'
+  bytes_basis: 'unmeasured: no anonymous file listing'
+  label_type: cls (CATAMI) on a labelled subset
+subset:
+  target_items: 400000
+  stratify:
+  - source_survey
+  - depth_band
+  - catami_label
+  rule: every CATAMI-labelled image + unlabelled capped at 5,000 per (source survey x depth band); drop IMOS/Squidle-origin
+    rows already covered by imos-auv (dedupe by source image id)

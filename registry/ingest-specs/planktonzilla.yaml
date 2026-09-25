@@ -1,0 +1,31 @@
+# Planktonzilla-17M: 15 plankton imaging instruments pooled (UVP5/6, ZooScan, IFCB, FlowCam, ISIIS...). Stage ALL (91 GB, cheap);
+# the subset is a BUILD-time selection, not a storage filter (D-C).
+id: planktonzilla
+adapter: hf
+license: other (HF card); per-sample licence = the originating instrument dataset (column `dataset`)
+attribution: project-oceania — Planktonzilla-17M
+citation: project-oceania/planktonzilla-17M (HF)
+homepage: https://huggingface.co/datasets/project-oceania/planktonzilla-17M
+params:
+  repo: project-oceania/planktonzilla-17M
+  revision: 7fd542ef9fc99e6e850bed06bbd8884f43192347
+measured:
+  items: 17404047
+  bytes: 91176524886
+  method: parquet footers + `dataset`/`root_class`/`proposed_label` columns of all 189 files via HTTP range reads
+  date: '2026-09-25'
+  bytes_basis: hf-tree
+  by_root_class:
+    living: 3825388
+    non_living(detritus/artefact/inert): 13578659
+  n_source_datasets: 15
+  n_dataset_label_pairs: 1096
+  label_type: cls (proposed_label; taxonomic + WoRMS aphia_ID where resolved)
+subset:
+  target_items: 759694
+  stratify:
+  - dataset
+  - proposed_label
+  cap_per_stratum: 2000
+  rule: root_class == living and proposed_label not a non-object class; at most 2,000 per (instrument dataset, label);
+    all rows stay staged
