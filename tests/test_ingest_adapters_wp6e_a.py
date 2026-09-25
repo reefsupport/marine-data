@@ -112,6 +112,9 @@ def test_inat_adapter_urls_and_per_sample_metadata(tmp_path) -> None:
     hi = make_adapter("inat-open-data", {"manifest": str(man), "photo_size": "original"})
     (hi_item,) = list(hi.enumerate())
     assert hi_item.url == f"{base}/original.jpeg"
+    assert hi.resolve_version().endswith("-original") and not ad.resolve_version().endswith(
+        "-large"
+    )
 
 
 # ---- TreeOfLife-10M member filter -------------------------------------------------------
@@ -278,3 +281,29 @@ def test_new_adapters_registered_everywhere(name: str) -> None:
     assert name in mod.SUPPORTED_ADAPTERS
     src = Path("src/marinedata/cli_ingest_source.py").read_text()
     assert f'"{name}"' in src
+
+
+def test_inat_manifest_from_url_is_cached_and_sha_pinned(tmp_path, monkeypatch) -> None:
+    import hashlib
+
+    from marinedata.adapters import _http
+    from marinedata.adapters.inat import fetch_manifest
+
+    blob = b"PAR1-manifest-bytes"
+    calls: list[str] = []
+
+    def fake_download(url, dest):
+        calls.append(url)
+        dest.parent.mkdir(parents=True, exist_ok=True)
+        dest.write_bytes(blob)
+        return hashlib.sha256(blob).hexdigest(), "", len(blob)
+
+    monkeypatch.setattr(_http, "download", fake_download)
+    url = "https://b.example/sources/inat-marine/_manifest/m.parquet"
+    sha = hashlib.sha256(blob).hexdigest()
+    p = fetch_manifest(url, sha, cache=tmp_path)
+    assert p == tmp_path / "m.parquet" and p.read_bytes() == blob
+    assert fetch_manifest(url, sha, cache=tmp_path) == p and len(calls) == 1  # cache hit
+    with pytest.raises(ValueError, match="pinned"):
+        fetch_manifest(url, "0" * 64, cache=tmp_path)  # stale cache refetched, then refused
+    assert not p.exists()

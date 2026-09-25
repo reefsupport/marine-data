@@ -88,6 +88,32 @@ def select_subset(rows: Any, cap: int = 100) -> Any:
     return picked.reset_index(drop=True)
 
 
+def fetch_manifest(url: str, sha256: str | None, cache: Path | None = None) -> Path:
+    """The durable (D-AE: S3 ``sources/<id>/_manifest/``) manifest, cached locally once.
+
+    A cached copy is reused only if it matches the pinned ``sha256``; a fresh download that
+    does not match raises (a runner must never draw from a different manifest)."""
+    from ..fetch import cache_root
+    from ._http import download
+
+    dest = (cache or cache_root() / "_manifests") / url.rstrip("/").rsplit("/", 1)[-1]
+    if dest.exists() and (not sha256 or _sha256_file(dest) == sha256):
+        return dest
+    got, _, _ = download(url, dest)
+    if sha256 and got != sha256:
+        dest.unlink()
+        raise ValueError(f"manifest {url}: sha256 {got[:12]} != pinned {sha256[:12]}")
+    return dest
+
+
+def _sha256_file(path: Path) -> str:
+    h = hashlib.sha256()
+    with path.open("rb") as f:
+        for chunk in iter(lambda: f.read(1 << 20), b""):
+            h.update(chunk)
+    return h.hexdigest()
+
+
 class INatOpenDataAdapter(BaseAdapter):
     name = "inat-open-data"
 
@@ -101,6 +127,8 @@ class INatOpenDataAdapter(BaseAdapter):
         raw = self.params.get("manifest")
         if not raw:
             raise ValueError("inat-open-data needs params.manifest (scripts/inat_manifest.py)")
+        if str(raw).startswith(("https://", "http://")):
+            return fetch_manifest(str(raw), self.params.get("manifest_sha256"))
         p = Path(str(raw)).expanduser()
         return p if p.is_absolute() else REPO_ROOT / p
 
@@ -117,7 +145,9 @@ class INatOpenDataAdapter(BaseAdapter):
         self._load()
         if self.params.get("version"):
             return str(self.params["version"])
-        return f"inat-{self.params.get('metadata_date', 'meta')}-{self._digest[:12]}"
+        size = str(self.params.get("photo_size", DEFAULT_PHOTO_SIZE))
+        tail = "" if size == DEFAULT_PHOTO_SIZE else f"-{size}"  # a hi-res pass is its own version
+        return f"inat-{self.params.get('metadata_date', 'meta')}-{self._digest[:12]}{tail}"
 
     def list_items(self) -> Iterator[RemoteItem]:
         size = str(self.params.get("photo_size", DEFAULT_PHOTO_SIZE))

@@ -136,7 +136,7 @@ wildfish	hf	rev-5212c80f4d98	26	14517292127	research-only (non-commercial, per u
 afrl-stereo-vi	hf	rev-bdb079e7fef8			mit		needs_adapter:ros2-db3 (3 ROS1 .bag + 3 ROS2 .db3; .bag decoder exists, 0 items -> check include/size)	-	?	w3
 elliott-bay-benthic	hf	rev-cd20e627ba77	1000	45301235557	cc-by-nc-4.0		ok	0.120	?	w3
 gbif-marine	gbif-occurrence-media	api-20260925	832978		per record: CC0-1.0 / CC-BY-4.0 / CC-BY-NC-4.0 (GBIF licence facet)		ok	-	?	w3
-inat-marine	inat-open-data	inat-2026-09-178e7455bbab	1130014	1428996000000	per photo (photos.csv `license`): CC0 / CC-BY / CC-BY-NC / -SA / -ND variants		ok	3.97	?	w3
+inat-marine	inat-open-data	inat-2026-09-178e7455bbab	1130014	488228198770	per photo (photos.csv `license`): CC0 / CC-BY / CC-BY-NC / -SA / -ND variants		ok	3.97	?	w3
 muot3m	hf	rev-4294cb6a2537	3030	256556451094	CC-BY-NC-ND-4.0 (HF card)		ok	-	?	w3
 nautdata	hf	rev-3cf1dbd245dc			apache-2.0		needs_adapter:split-archive (*.aa/.ab/.ac not .tar.gz.NN; widen _MULTIPART_RE + sniff)	-	?	w3
 nes-plankton-2022	hf	rev-18fb2e57fd77	10	1576344309	cc-by-4.0		ok	0.004	?	w3

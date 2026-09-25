@@ -3,9 +3,13 @@
 id: inat-marine
 adapter: inat-open-data
 params:
-  manifest: /private/tmp/claude-501/-Users-yohanrunhaar-dev-reefsupport/0ca12ad3-aada-4ede-ab99-14fec1fa7cc2/scratchpad/wp6e-a/inat/inat-marine-manifest.parquet
+  # D-AE durable copy (S3 key sources/inat-marine/_manifest/inat-marine-manifest.parquet, 147,704,319 B);
+  # fetched once into the marinedata cache and refused if its sha256 differs from the pin.
+  manifest: https://rs-storage-open.hel1.your-objectstorage.com/sources/inat-marine/_manifest/inat-marine-manifest.parquet
+  manifest_sha256: 178e7455bbab9dad0ed2de59517d5c45044553bb5decb84c269032525ae7fc77
   metadata_date: '2026-09'
-  photo_size: original
+  # D-AE: `large` (1024 px long edge), not `original`; photo_id + original_url stay in labels.
+  photo_size: large
 notes: 'D-AB manifest (scripts/inat_manifest.py; research-grade, marine taxa per registry/ingest-specs/data/inat-marine-taxa-2026-09-25.csv.gz, 1 photo/obs, <=100/taxon by sha256(observation_uuid)); lat/lon/observed_on/licence per sample; manifest lives in scratch until phase 2 uploads it'
 license: 'per photo (photos.csv `license`): CC0 / CC-BY / CC-BY-NC / -SA / -ND variants'
 attribution: iNaturalist contributors (per photo observer)
@@ -59,3 +63,7 @@ subset:
   cap_per_stratum: 100
   rule: photo position 0 of each research-grade observation, at most 100 per species taxon (34,872 taxa); licence
     kept per photo, never filtered (D-C); cap 200 -> 1,708,445, cap 500 -> 2,734,961
+  # D-AE: `large` variant. INT-ingest5 smoke (50 fetched large.*, 2026-09-25) mean 432,055 B -> 1,130,014 x 432,055
+  # = ~488 GB (0.49 TB); the 20-HEAD mean above (248,853 B) gives ~281 GB as a low bound. `original` was ~1.43 TB.
+  target_bytes_estimate: 488228198770
+  target_bytes_basis: 1,130,014 fetchable photos x 432,055 B mean of 50 smoke-fetched large.* (INT-ingest5)
