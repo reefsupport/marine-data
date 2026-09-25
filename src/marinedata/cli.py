@@ -24,6 +24,27 @@ from .cli_splitmap import add_splitmap_subparser
 from .cli_splits import add_splits_subparser  # WP-11/12 P3: split v2 pools/OOD/allocator
 from .cli_verify import add_verify_subparsers
 from .eval.cli import add_eval_subparser
+
+try:  # WP-13 captions: captions/cli.py imports pandas at top level (optional extra)
+    from .captions.cli import add_captions_subparser
+except ImportError as _captions_import_error:  # pragma: no cover — depends on extras
+    _CAPTIONS_MISSING = str(_captions_import_error)
+
+    def add_captions_subparser(subparsers: argparse._SubParsersAction) -> None:
+        p = subparsers.add_parser(
+            "captions", help="WP-13 captions (needs the pandas extra: marinedata[pandas])"
+        )
+
+        def _missing(_args: argparse.Namespace) -> int:
+            print(
+                f"captions: unavailable ({_CAPTIONS_MISSING}); install marinedata[pandas]",
+                file=sys.stderr,
+            )
+            return 2
+
+        p.set_defaults(func=_missing)
+
+
 from .gate import evaluate
 from .lineage import build_lineage
 from .query import find
@@ -349,6 +370,7 @@ def build_parser() -> argparse.ArgumentParser:
     add_bench_subparser(sub)
     add_splits_subparser(sub)
     add_decon_subparser(sub)
+    add_captions_subparser(sub)  # WP-13; never run by `release build --v2`
 
     p_verify = sub.add_parser("verify", help="Check declared layouts against real fetched samples")
     p_verify.add_argument("source_id", nargs="*")

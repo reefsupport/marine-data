@@ -368,7 +368,8 @@ def add_release_subparser(sub: argparse._SubParsersAction) -> None:
         action="store_true",
         help="Preset (INT-core2): turns on --decon, --dedup-crop, --split-v2 and "
         "--tasks v2 together. Does not enable --dedup-v2 (needs an explicit "
-        "groups.parquet path). Default OFF, so an unflagged build is unchanged (D-X)",
+        "groups.parquet path) and never runs captions (a separate `marinedata "
+        "captions` step, WP-13). Default OFF, so an unflagged build is unchanged (D-X)",
     )
     p_build.add_argument(
         "--manifest-only",
