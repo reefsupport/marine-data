@@ -1,0 +1,16 @@
+# NOAA Gulf of Alaska 2019 deep-sea camera survey, NCEI accession 0305766.
+id: noaa-goa-2019
+adapter: needs:ncei-accession-resolve
+license: CC0-1.0 (DataCite)
+attribution: NOAA (NCEI accession 0305766)
+citation: doi:10.25921/022n-nd48
+homepage: https://doi.org/10.25921/022n-nd48
+why_not_supported: DataCite DOI resolves but the catalog record names an NCEI accession
+  number, not a direct file listing; the accession's file tree was not enumerated
+  anonymously within budget.
+measured:
+  method: DOI resolves (DataCite); accession file listing not enumerated
+  date: '2026-09-25'
+  per_item_license: CC0-1.0
+  by_depth_band_m: {}
+  label_type: cls

@@ -1,0 +1,15 @@
+# FathomNet 2024 'Megalodon' single-class object-detection benchmark (HF).
+id: fathomnet-megalodon
+adapter: hf
+license: other (HF card)
+attribution: FathomNet / MBARI
+citation: FathomNet/2024-megalodon-benchmark (HF)
+homepage: https://huggingface.co/datasets/FathomNet/2024-megalodon-benchmark
+params:
+  repo: FathomNet/2024-megalodon-benchmark
+measured:
+  bytes: 311000000
+  method: HF usedStorage (<=0.29 GB)
+  date: '2026-09-25'
+  per_item_license: other
+  label_type: bbox (1-class object)

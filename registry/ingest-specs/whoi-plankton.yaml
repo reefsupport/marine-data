@@ -1,0 +1,17 @@
+# WHOI IFCB plankton imagery, curated classifier set (train/val/test) mirrored on HF.
+id: whoi-plankton
+adapter: hf
+license: unknown (not stated on HF card)
+attribution: nf-whoi (WHOI IFCB dashboard mirror)
+citation: nf-whoi/whoi-plankton (HF)
+homepage: https://huggingface.co/datasets/nf-whoi/whoi-plankton
+params:
+  repo: nf-whoi/whoi-plankton
+measured:
+  items: 956867
+  bytes: 27333159816
+  method: HF API dataset_info splits sum (train 669,806 + val 95,686 + test 191,375)
+    + usedStorage
+  date: '2026-09-25'
+  per_item_license: unknown
+  label_type: cls (~100 taxa)

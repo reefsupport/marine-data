@@ -1,0 +1,14 @@
+# SMARTEX (Seabed Mining And Resilience to EXperimental impact) JC241/JC257 ROV/AUV benthic still images, CCZ abyssal plain, via BODC/NERC EDS.
+id: bodc-smartex
+adapter: needs:bodc-eds-listing
+license: OGL (UK Open Government Licence)
+attribution: SMARTEX consortium / NERC EDS BODC
+citation: doi:10.5285/298e66b2-d9d1-2f58-e063-7086abc085bf
+homepage: https://smartexccz.org/data
+why_not_supported: smartexccz.org and its /data path resolve (HTTP 200/206); the BODC
+  EDS DOI record was not enumerated to a file listing anonymously within budget.
+measured:
+  method: smartexccz.org and /data path both resolve; BODC DOI record not enumerated
+  date: '2026-09-25'
+  per_item_license: OGL
+  by_depth_band_m: {}

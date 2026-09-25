@@ -1,0 +1,15 @@
+# FathomNet full-coverage exhaustive-annotation test sets (HF). Small benchmark slice for detector eval, not a training corpus.
+id: fathomnet-coverage
+adapter: hf
+license: unknown (HF card states none)
+attribution: FathomNet / MBARI
+citation: FathomNet/full-coverage-test-sets (HF)
+homepage: https://huggingface.co/datasets/FathomNet/full-coverage-test-sets
+params:
+  repo: FathomNet/full-coverage-test-sets
+measured:
+  bytes: 41000000
+  method: HF usedStorage (<=0.04 GB rounds to near-zero)
+  date: '2026-09-25'
+  per_item_license: unknown
+  label_type: bbox exhaustive

@@ -1,0 +1,16 @@
+id: fishnet-2023
+adapter: needs:kaggle-login
+license: unknown (not stated)
+attribution: "Khan et al. \u2014 FishNet 2023"
+citation: fishnet-2023.github.io
+homepage: https://fishnet-2023.github.io/
+why_not_supported: Project site resolves (HTTP 200) but per the S57 catalog the data
+  itself is request/registration-gated ('access=request'), which D-E forbids.
+measured:
+  items: 94532
+  method: catalog measurement (S57)
+  date: '2026-09-25'
+  per_item_license: unknown
+  label_type: bbox+cls+traits, 17,357 species
+  bytes: null
+  bytes_basis: 'unmeasured: access-gated'

@@ -1,0 +1,14 @@
+# BIIGLE public annotation-platform volumes (multiple deep-sea and reef projects hosted by University of Bielefeld / GEOMAR groups).
+id: biigle-public
+adapter: needs:biigle-token
+license: per-volume (mostly CC-BY, per BIIGLE norms)
+attribution: BIIGLE / Biodata.pl consortium
+citation: biigle.de
+homepage: https://biigle.de/
+why_not_supported: GET /api/v1/projects (and any REST endpoint tried) 302-redirects
+  to /login even for nominally public volumes — confirmed live; BIIGLE's API requires
+  an authenticated session even to list public volumes.
+measured:
+  method: GET biigle.de/api/v1/projects -> 302 redirect to /login (anonymous rejected)
+  date: '2026-09-25'
+  per_item_license: per-volume

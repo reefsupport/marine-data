@@ -1,0 +1,19 @@
+# PANGAEA seafloor images from the German (BGR) CCZ nodule-mining trial area — Purser et al. 2021 dataset publication series (RV SONNE SO268/1+2), plus companion annotation set.
+id: pangaea-ccz-gsr
+adapter: needs:pangaea-series-enum
+license: CC-BY-4.0 (PANGAEA, verified unrestricted)
+attribution: Purser, Bodur, Ramalo, Stratmann, Schoening — AWI/GEOMAR
+citation: doi:10.1594/PANGAEA.935856 (series); 10.1594/PANGAEA.935215 (annotations);
+  doi:10.1594/PANGAEA.987009 (GSR trial)
+homepage: https://doi.org/10.1594/PANGAEA.935856
+why_not_supported: Each PANGAEA DOI in the series (935854/855/856/884/887/888/889/890/891/892/893/895/896,
+  plus 987009) is a single dive/profile; there is no flat bulk-zip for the whole series.
+  Needs a PANGAEA child-dataset enumerator (OAI-PMH or the citation's 'moredata' links)
+  before per-image counts and total bytes can be summed.
+measured:
+  method: page fetch confirms 200 + unrestricted CC-BY-4.0 license (meta tag conditionsOfAccess);
+    per-child image counts not enumerated (13+ child DOIs, budget)
+  date: '2026-09-25'
+  per_item_license: CC-BY-4.0
+  by_depth_band_m: {}
+  label_type: none (imagery only) + separate PANGAEA.935215 point annotations

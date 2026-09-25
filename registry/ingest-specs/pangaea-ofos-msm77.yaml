@@ -1,0 +1,13 @@
+# PANGAEA OFOS seafloor images, Fram Strait, RV Maria S. Merian cruise MSM77 (already the W3 baseline dataset; specced here for completeness since it lacked an ingest-spec).
+id: pangaea-ofos-msm77
+adapter: needs:pangaea-series-enum
+license: CC-BY-4.0 (PANGAEA)
+attribution: Boehringer, Bergmann — AWI
+citation: doi:10.1594/PANGAEA.989732
+homepage: https://doi.org/10.1594/PANGAEA.989732
+why_not_supported: Same PANGAEA series-enumeration gap as pangaea-ccz-gsr.
+measured:
+  method: catalog-verified (S57) 200; not independently re-measured here
+  date: '2026-09-25'
+  per_item_license: CC-BY-4.0
+  by_depth_band_m: {}

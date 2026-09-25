@@ -1,0 +1,15 @@
+# CoralNet-small: a 450-image curated slice of CoralNet exports, mirrored on HF (nf-whoi).
+id: coralnet-small
+adapter: hf
+license: unknown (not stated on HF card)
+attribution: nf-whoi
+citation: nf-whoi/coralnet-small (HF)
+homepage: https://huggingface.co/datasets/nf-whoi/coralnet-small
+params:
+  repo: nf-whoi/coralnet-small
+measured:
+  items: 450
+  bytes: 6947647488
+  method: 'catalog measurement (S57): 450 rows (HF viewer), <=6.47 GB usedStorage'
+  date: '2026-09-25'
+  per_item_license: unknown

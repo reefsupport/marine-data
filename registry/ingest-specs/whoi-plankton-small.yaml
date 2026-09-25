@@ -1,0 +1,17 @@
+# WHOI IFCB plankton imagery, small curated subset (MIT-licensed) mirrored on HF.
+id: whoi-plankton-small
+adapter: hf
+license: mit
+attribution: nf-whoi
+citation: nf-whoi/whoi-plankton-small (HF)
+homepage: https://huggingface.co/datasets/nf-whoi/whoi-plankton-small
+params:
+  repo: nf-whoi/whoi-plankton-small
+measured:
+  items: 57999
+  bytes: 2214396368
+  method: HF API dataset_info splits sum (train 40,599 + val 5,799 + test 11,601)
+    + usedStorage
+  date: '2026-09-25'
+  per_item_license: mit
+  label_type: cls

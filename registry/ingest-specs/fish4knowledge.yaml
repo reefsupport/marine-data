@@ -1,0 +1,17 @@
+# Fish4Knowledge: coral-reef fish species classification + tracking, Taiwan (Kenting), classic small benchmark.
+id: fish4knowledge
+adapter: needs:custom-index
+license: research-only (as stated)
+attribution: University of Edinburgh / F4K consortium
+citation: homepages.inf.ed.ac.uk/rbf/Fish4Knowledge/
+homepage: http://groups.inf.ed.ac.uk/f4k/
+why_not_supported: Site resolves (HTTP 301->200 per catalog); per-species folder layout,
+  no flat listing or API.
+measured:
+  items: 27000
+  bytes: 547608330
+  method: 'catalog measurement (S57, open-direct verified): ~27k fish crops, 0.51
+    GB'
+  date: '2026-09-25'
+  per_item_license: research-only
+  label_type: cls/track, 23 classes

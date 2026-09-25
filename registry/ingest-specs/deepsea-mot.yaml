@@ -1,0 +1,18 @@
+# MBARI DeepSea-MOT: multi-object tracking benchmark on ROV Doc Ricketts / Ventana deep-sea video (midwater + benthic).
+id: deepsea-mot
+adapter: hf
+license: cc-by-sa-4.0
+attribution: MBARI-org
+citation: MBARI-org/DeepSea-MOT (HF); arXiv:2509.03499
+homepage: https://huggingface.co/datasets/MBARI-org/DeepSea-MOT
+params:
+  repo: MBARI-org/DeepSea-MOT
+measured:
+  items: 19616
+  bytes: 20019333378
+  method: HF API siblings count + usedStorage
+  date: '2026-09-25'
+  per_item_license: cc-by-sa-4.0
+  by_depth_band_m:
+    200-4000: 19616
+  label_type: MOT bbox tracks (57,376 objects, 188 tracks over 2,400+ frames)

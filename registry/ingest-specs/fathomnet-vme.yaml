@@ -1,0 +1,17 @@
+# FathomNet 2024 Vulnerable Marine Ecosystem (VME) indicator-taxa benchmark (HF).
+id: fathomnet-vme
+adapter: hf
+license: other (HF card)
+attribution: FathomNet / MBARI
+citation: FathomNet/2024-vme-benchmark (HF)
+homepage: https://huggingface.co/datasets/FathomNet/2024-vme-benchmark
+params:
+  repo: FathomNet/2024-vme-benchmark
+measured:
+  bytes: 64000000
+  method: HF usedStorage (<=0.06 GB)
+  date: '2026-09-25'
+  per_item_license: other
+  label_type: bbox
+  n_concepts_note: VME indicator taxa (corals, sponges) — depth >200 m by definition
+    of habitat
