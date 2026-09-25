@@ -8,3 +8,5 @@ homepage: https://huggingface.co/datasets/da1018/UWBench
 params:
   repo: da1018/UWBench
   revision: 84af945003086821245a67ceba0bcc57aa93cbde
+
+disk_floor_gib: 34.0

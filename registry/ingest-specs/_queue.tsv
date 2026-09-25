@@ -141,7 +141,7 @@ noaa-oceaneyes	bucket	list-a11ed85b698b	20065	1807996738	public domain (US gover
 noaa-oer-video	needs:video				public domain (US government work)		needs_adapter:video	-	?	w3
 noaa-plankton-shadowgraphs	bucket	list-5502c2df8486			public domain (US government work) — NODD		needs_adapter:unsupported-format	-	?	w3
 plankton-interaction-videos	hf	rev-f7d40238215e	21221	5662987367	apache-2.0		ok	0.015	?	w3
-planktonzilla	hf	rev-7fd542ef9fc9	189	91174191772	other (HF card); per-sample licence = the originating instrument dataset (column `dataset`)		ok	0.242	?	w3
+planktonzilla	hf	rev-7fd542ef9fc9	189	91174191772	other (HF card); per-sample licence = the originating instrument dataset (column `dataset`)		needs_adapter:subset-filter — D-AB requires fetching only the living/label-capped subset (760k of 17.4M rows); the hf adapter has no per-row subset filter yet, held rather than fetched in full (INT-ingest3)	0.242	?	w3
 seattle-aquarium	hf	rev-78701c4efe73	6522	59049737152	CC-BY-NC-4.0 (HF card)		ok	0.156	?	w3
 seaturtleid2022	hf	rev-91cd6c1126c7	4	1755838391	?		ok	0.005	?	w3
 treeoflife-10m	needs:member-filter				HF card licence null; per image per upstream (EOL media licence, iNat21 photo licence) — not in the catalog.csv columns read		needs_adapter:member-filter	-	?	w3

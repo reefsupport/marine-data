@@ -20,3 +20,5 @@ measured:
   bytes_basis: hf-tree
   per_item_license: none per image; card licence CC-BY-NC-4.0
   label_type: per-image survey metadata (metadata.jsonl); catalog 'points/cls' not confirmed in the tree
+
+disk_floor_gib: 34.0

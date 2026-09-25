@@ -14,12 +14,12 @@ the D-R4 zero-item-to-`needs_adapter` downgrade.
 
 | status | rows | notes |
 |---|---:|---|
-| `ok` | 80 | dry-run resolved, ≥1 item enumerated — ready for ingest |
-| `needs_adapter:<kind>` | 35 | access confirmed, no adapter/decoder for the container/host yet |
+| `ok` | 79 | dry-run resolved, ≥1 item enumerated — ready for ingest |
+| `needs_adapter:<kind>` | 36 | access confirmed, no adapter/decoder for the container/host yet |
 | `needs_yohan:<reason>` | 7 | needs an account, key, or a human access decision (D-E: no new accounts) |
 | `dead` | 1 | `reefnet` — no resolvable download URL; superseded by `reefnet-hf` (D-R1) |
 
-**GB still to ingest (the `ok` rows):** ~1260.1 GB declared across 65 sources
+**GB still to ingest (the `ok` rows):** ~1168.9 GB declared across 64 sources
 with a known size; 15 `ok` rows (mostly the WP-6d-A `http-index`/`gdrive-public`
 adapters, plus `seamapd21`) have no declared size — those adapters don't probe
 `Content-Length`/quota pages pre-fetch, and `seamapd21`'s upstream NOAA host
@@ -27,6 +27,9 @@ was unreachable from this network on 2026-09-25 (pre-existing). This figure
 does not include the W3 deep sources' full upstream scope (iNat 9.59M,
 ToL-10M 577k, planktonzilla 3.83M, GBIF 986k) — those are `needs_adapter` or
 subset-fetched by runner 3, not counted as declared `ok` bytes here.
+`planktonzilla` (91.2 GB) is excluded from this total: held at
+`needs_adapter:subset-filter` per D-AB rather than fetched in full (see the
+"INT-ingest3 merge" section).
 
 ## By wave
 
@@ -36,7 +39,7 @@ subset-fetched by runner 3, not counted as declared `ok` bytes here.
 | w1a | 6  | 6  | 0  | 0 | 0 |
 | w2a | 32 | 19 | 12 | 1 | 0 |
 | w2b | 29 | 25 | 4  | 0 | 0 |
-| w3  | 21 | 8  | 13 | 0 | 0 |
+| w3  | 21 | 7  | 14 | 0 | 0 |
 
 w1a is the only wave at 100% `ok` — the 6 sources are HF/Zenodo-pinned,
 dry-run-verified benchmark data (see `$T/reports/2026-09-25-5star-W1A.md`),
@@ -49,7 +52,8 @@ Kind extracted from each row's `dry_run` value, stripping any repeated
 `needs_adapter:` prefix (2 pre-existing w0 rows — `heron-reef-benthic`,
 `noaa-ncrmp-structural-complexity` — double it; harmless but left as-is, out
 of this brief's scope) and taking the leading token up to the first space or
-em-dash. 25 distinct kinds across 35 rows post-INT-ingest3:
+em-dash. 26 distinct kinds across 36 rows post-INT-ingest3 (includes
+`planktonzilla`, held back from `ok` after the merge — see below):
 
 | kind | rows |
 |---|---:|
@@ -59,14 +63,14 @@ em-dash. 25 distinct kinds across 35 rows post-INT-ingest3:
 | parquet-index-only | 2 |
 | unknown-container | 2 |
 | video | 2 |
-| everything else (1 row each) | 20 |
+| everything else (1 row each) | 21 |
 
 The 1-row kinds are: annotation-overlay, baidu, bodc-catalogue, commons-api,
 coralnet-browse, csv-url-index, drum, erddap-csv-imagelist,
 figshare-id-unresolved, frdr-urls-unresolved, gbif-occurrence-media,
 index-404, index-unresponsive, js-rendered-site, member-filter,
 ncei-accession, paper-lookup, pawsey-js-migration, site-lookup,
-unknown-empty.
+subset-filter, unknown-empty.
 
 D-R4 re-dry-run fixes applied this pass (false `ok`/0-items → `needs_adapter`):
 `salmon-cage` (video), `underwater-images-2542305` (rar), `oceaninstruct`
@@ -156,7 +160,12 @@ mapped `version→pinned_version`, `format→label_format`; `measured_items`/
 `ok` 72→80 (+216.1 GB declared, one existing 481k/453GB-scope row —
 `fathomnet` — stays capped at its tested `params.max_items: 2000`, flagged in
 the INT-ingest3 report as a D-AB "fetch in full" gap, not closed here),
-`needs_adapter` 22→35, `needs_yohan` 9→7.
+`needs_adapter` 22→35, `needs_yohan` 9→7. `planktonzilla` was then held back
+from that `ok` count per the brief's explicit D-AB instruction (it names
+`planktonzilla` specifically as needing a subset filter the `hf` adapter
+doesn't have yet): `dry_run` flipped to `needs_adapter:subset-filter`, so the
+counts above the merge line in this doc read `ok` 79 / `needs_adapter` 36
+(w3: 7 ok / 14 needs_adapter), not the 80/35 the merge alone produced.
 
 `test_harmonize.py::test_every_source_with_labels_declares_a_schema`
 (`floating-marine-debris`, pre-existing since the QUEUE-local commit

@@ -9,3 +9,5 @@ params:
   endpoint: storage.googleapis.com
   bucket: nmfs_odp_hq
   prefix: nodd_tools/datasets/oceaneyes/full_dataset/
+
+disk_floor_gib: 34.0

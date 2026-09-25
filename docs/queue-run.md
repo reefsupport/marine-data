@@ -83,6 +83,57 @@ echo $! > "$SP/queue2/pid"
   `_run_one_hf_aware` in `src/marinedata/cli_ingest_batch.py`. This runner
   is the first to exercise it live (`ruod`, `marineeval`, `uiis10k`, `uiis`
   are all HF sources that 429'd on runner 1).
+- **Relaunched under a pass-loop wrapper (INT-ingest3, 2026-09-25):** the
+  `70215` process above had already run its one pass and exited (fully
+  paused, `disk_floor_gib: 34.0`, free disk 8-12 GiB at the time). Same 21
+  ids, same floor, same `--jobs 2` — nothing about the runner's scope
+  changed, only that it no longer needs a manual re-launch. New PID
+  **`17011`**, started via `$SP/queue2/wrapper.sh` (pass → grep the pass's
+  own stdout for `DiskFloorError` → if found, `sleep 900` and re-run the
+  pass; exit the loop on a pass with no match), bounded by
+  `perl -e 'alarm 259200; exec …'` sh wrapper.sh` (72 h hard cap). Log is
+  the same `$SP/queue2/run.log` (now prefixed with `=== PASS N ===`
+  markers per pass); stderr still `$SP/queue2/run.err`.
+
+## Runner 3 (INT-ingest3, 2026-09-25)
+
+Drains the 7 W3-wave `ok` rows (`elliott-bay-benthic, nes-plankton-2022,
+noaa-oceaneyes, plankton-interaction-videos, seattle-aquarium,
+seaturtleid2022, uwbench` — ~124 GB declared). `planktonzilla` (also W3,
+also `dry_run: ok`) is deliberately **excluded**: per D-AB it must be
+fetched as a subset only (759,694 of 17.4M rows via
+`stratify:[dataset, proposed_label]`), and the `hf` adapter has no
+per-row subset filter yet, so its queue row was flipped to
+`needs_adapter:subset-filter` instead of being fetched in full.
+
+```sh
+SP=/private/tmp/claude-501/-Users-yohanrunhaar-dev-reefsupport/0ca12ad3-aada-4ede-ab99-14fec1fa7cc2/scratchpad
+nohup perl -e 'alarm 259200; exec @ARGV' sh "$SP/queue3/wrapper.sh" \
+  > "$SP/queue3/wrapper.out" 2>"$SP/queue3/wrapper.err" &
+echo $! > "$SP/queue3/pid"
+```
+
+- **PID:** `16843` (recorded at `$SP/queue3/pid`)
+- **Log:** `$SP/queue3/run.log` (JSONL per source, `=== PASS N ===`
+  markers between passes); stderr `$SP/queue3/run.err`; wrapper's own
+  stdout/stderr at `$SP/queue3/wrapper.out` / `.err`
+- **Ids:** `$SP/queue3/ids.txt` (7 ids, comma-separated, matches `--only`)
+- **Jobs:** `--jobs 1` (per the brief, lower concurrency than runner 2)
+- **Disk floor:** `disk_floor_gib: 34.0` set on all 7 specs. Free disk was
+  8-12 GiB at launch (below both runner 1's 36 GiB and runner 2/3's 34 GiB
+  floors), so this runner **starts paused on every source** — expected;
+  do not lower the floor.
+- **Pass-loop wrapper:** `$SP/queue3/wrapper.sh` runs `$SP/queue3/run.sh`
+  (one pass over all 7 ids), greps that pass's stdout for `DiskFloorError`;
+  if found, appends the pass to `run.log`, sleeps 900s, and re-runs; if a
+  pass has zero `DiskFloorError` matches, it appends `QUEUE3_WRAPPER_DONE`
+  and exits. The whole wrapper is exec-chained under
+  `perl -e 'alarm 259200; exec …'` (72 h hard cap) so the same PID (`16843`)
+  is valid start to finish (`exec` replaces the process image, doesn't
+  fork). Every source is resumable (same `CHECKSUMS.sha256`-marker
+  skip-done as runners 1/2), so a `sleep 900`-triggered re-run is always
+  safe.
+- **Do not touch `16843` or `17011`** while alive, same rule as runners 1/2.
 
 ## Checking progress
 
