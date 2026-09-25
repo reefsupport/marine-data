@@ -1,0 +1,20 @@
+{
+  "backbone": "dinov2-small",
+  "best_C": 1.0,
+  "config": "configs/baselines/v2.yaml",
+  "config_sha": "6f327cd69701",
+  "img_per_s": 211.18745663977765,
+  "n_images": 2000,
+  "revision": "ed25f3a31f01632728cabb09d1542f84ab7b0056",
+  "splits": {
+    "test": {
+      "macro_f1": 0.732609299490415,
+      "n_images": 400
+    },
+    "val": {
+      "macro_f1": 0.4003496503496503,
+      "n_images": 200
+    }
+  },
+  "task": "bleaching-condition"
+}
