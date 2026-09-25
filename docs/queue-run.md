@@ -56,7 +56,8 @@ nohup sh "$SP/queue2/run.sh" > "$SP/queue2/run.log" 2>"$SP/queue2/run.err" &
 echo $! > "$SP/queue2/pid"
 ```
 
-- **PID:** `55020` (recorded at `$SP/queue2/pid`)
+- **PID:** `70215` (recorded at `$SP/queue2/pid`; the first launch, `55020`,
+  already ran its one pass and exited — see the note below)
 - **Log:** `$SP/queue2/run.log` (JSONL, one line per finished source; stderr
   separately at `$SP/queue2/run.err`)
 - **Ids:** `$SP/queue2/ids.txt` (21 ids, comma-separated, same file as passed
@@ -68,6 +69,13 @@ echo $! > "$SP/queue2/pid"
   That is expected; do not lower the floor further. It shares this Mac's
   disk with runner 1 (36 GiB floor) and `usis10k`, so it will start doing
   real work once either of those frees enough space or completes.
+- **Unlike runner 1, this process does not stay alive while paused** —
+  `DiskFloorError` is raised (and caught as `error`) within seconds per
+  source, so a fully-paused pass finishes and the `sh` process exits after
+  ~1-2 minutes (`QUEUE2_RUN_DONE` in the log), instead of blocking. Re-launch
+  the same command above whenever free space might have risen; every source
+  is resumable (same `CHECKSUMS.sha256`-marker skip-done as runner 1), so
+  re-running is always safe.
 - **D-AA (HF 429 backoff):** `ingest-batch` now cools an HF source down
   (>= 15 min) and retries it in place on a 429 rather than failing the
   batch, keeps HF concurrency at 1 regardless of `--jobs`, and gives up as
