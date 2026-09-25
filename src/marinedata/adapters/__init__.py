@@ -292,10 +292,13 @@ def make_adapter(name: str, params: Mapping[str, Any]) -> BaseAdapter:
     from .github import GitHubAdapter
     from .hf import HFAdapter
     from .http_index import HttpIndexAdapter
+    from .inat import INatOpenDataAdapter
     from .pangaea import PangaeaAdapter
     from .pawsey import FrdrHttpsAdapter, PawseyPortalAdapter
     from .seafile import SeafileAdapter
+    from .treeoflife import HFMemberFilterAdapter
     from .web import HttpAdapter
+    from .wikimedia import CommonsAdapter
 
     table: dict[str, type[BaseAdapter]] = {
         "hf": HFAdapter,
@@ -312,6 +315,9 @@ def make_adapter(name: str, params: Mapping[str, Any]) -> BaseAdapter:
         "girder": GirderAdapter,
         "pawsey-portal": PawseyPortalAdapter,
         "frdr-https": FrdrHttpsAdapter,
+        "inat-open-data": INatOpenDataAdapter,
+        "hf-member-filter": HFMemberFilterAdapter,
+        "commons-api": CommonsAdapter,
     }
     if name not in table:
         raise KeyError(f"unknown adapter {name!r}; known: {sorted(table)}")

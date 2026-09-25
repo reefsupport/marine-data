@@ -1,17 +1,19 @@
 # TreeOfLife-10M (Imageomics): 63 tar.gz shards; only ~5% marine, so stream every shard and keep matching members (member-filter).
 # bioscan (insects) contributes 0 marine rows; inat21 rows duplicate iNat photos -> dedupe against inat-marine.
 id: treeoflife-10m
-adapter: needs:member-filter
+adapter: hf-member-filter
+params:
+  repo: imageomics/TreeOfLife-10M
+  revision: 91debffb7146c32c89d76feb1eb575b555e2ecc7
+  include:
+  - dataset/*.tar.gz
+  cap_per_species: 500
+notes: 'member filter keyed by metadata/catalog.csv (marine clades or iNat/WoRMS-marine binomial, no BIOSCAN, <=500 per data_source x species by sha256(treeoflife_id)); streams all 63 shards (1.98 TB read) to keep ~5%; repo not gated (HF API gated=false 2026-09-25)'
 license: HF card licence null; per image per upstream (EOL media licence, iNat21 photo licence) — not in the catalog.csv
   columns read
 attribution: Imageomics Institute — TreeOfLife-10M (EOL, iNat21, BIOSCAN-1M)
 citation: Stevens et al. 2024, CVPR, BioCLIP
 homepage: https://huggingface.co/datasets/imageomics/TreeOfLife-10M
-candidate_endpoints:
-- hf://datasets/imageomics/TreeOfLife-10M@91debffb7146c32c89d76feb1eb575b555e2ecc7/dataset/*.tar.gz
-- hf://datasets/imageomics/TreeOfLife-10M/metadata/catalog.csv
-why_not_supported: Marine members are scattered across all 63 shards (1,984.9 GB); the hf adapter stages whole files.
-  Needs a streaming member filter keyed by catalog.csv rows.
 measured:
   items: 10988032
   bytes: 1984907071025
