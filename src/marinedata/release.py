@@ -20,7 +20,7 @@ from __future__ import annotations
 
 import hashlib
 import json
-from collections.abc import Iterable, Iterator
+from collections.abc import Callable, Iterable, Iterator
 from dataclasses import dataclass, field
 from pathlib import Path
 
@@ -157,6 +157,7 @@ def enumerate_release_rows(
     skipped: dict[str, str] | None = None,
     upstream_splits: dict[str, set[str]] | None = None,
     paths: dict[str, Path] | None = None,
+    digest: Callable[[Path], str] = file_digest,
 ) -> Iterator[Row]:
     """``(image_sha256, split_group, stratum)`` for every admitted source's staged tree.
 
@@ -251,10 +252,10 @@ def enumerate_release_rows(
                 upstream_split = record.get("upstream_split")
                 if upstream_split:
                     upstream_splits.setdefault(group, set()).add(upstream_split)
-            digest = file_digest(matches[0])
+            sha256 = digest(matches[0])
             if paths is not None:
-                paths.setdefault(digest, matches[0])
-            yield digest, group, source_id
+                paths.setdefault(sha256, matches[0])
+            yield sha256, group, source_id
 
 
 def generate_split_map(
@@ -435,6 +436,7 @@ def build_release(
     split_v2: bool = False,
     tasks: str = "v1",
     v2: bool = False,
+    digest: Callable[[Path], str] = file_digest,
 ) -> ReleaseResult:
     """Build every registry task against a frozen split map and write the release.
 
@@ -508,7 +510,7 @@ def build_release(
     near_dup_excluded: list[str] = []
     if near_dup is not None and never_eval_sources:
         near_dup_excluded = _never_eval_near_dups(
-            registry, admitted_roots, profile, never_eval_sources, near_dup
+            registry, admitted_roots, profile, never_eval_sources, near_dup, digest=digest
         )
     near_dup_excluded_set = frozenset(near_dup_excluded)
     near_dup_rows = 0
@@ -540,7 +542,7 @@ def build_release(
                 sample = dataset.samples[position]
                 if sample.image is None:
                     continue
-                sha256 = file_digest(Path(sample.image))
+                sha256 = digest(Path(sample.image))
                 if sample.source_id in never_eval_sources and sha256 in near_dup_excluded_set:
                     near_dup_rows += 1
                     continue
@@ -666,6 +668,8 @@ def _never_eval_near_dups(
     profile: str,
     never_eval_sources: set[str],
     config: NearDupConfig,
+    *,
+    digest: Callable[[Path], str] = file_digest,
 ) -> list[str]:
     """Sorted sha256 of never-eval images within ``config.exclude_max`` of any
     eval-capable admitted image (rule A). Enumerates the same staged-tree rows the split
@@ -673,7 +677,9 @@ def _never_eval_near_dups(
     paths: dict[str, Path] = {}
     never_eval: set[str] = set()
     eval_capable: set[str] = set()
-    for sha, _, source_id in enumerate_release_rows(registry, roots, profile, paths=paths):
+    for sha, _, source_id in enumerate_release_rows(
+        registry, roots, profile, paths=paths, digest=digest
+    ):
         (never_eval if source_id in never_eval_sources else eval_capable).add(sha)
     if not never_eval or not eval_capable:
         return []

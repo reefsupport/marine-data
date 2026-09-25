@@ -215,6 +215,8 @@ class ManifestIdentityReport:
 def compare_v1_manifest(
     rows: list[ManifestRow], published: dict[str, tuple[str, int]]
 ) -> ManifestIdentityReport:
+    from .hf_export import HF_SPLITS  # SPLIT_MAP `val` is published as HF `validation`
+
     rebuilt = {row.sha256: row for row in rows}
     missing = tuple(sorted(set(published) - set(rebuilt)))
     extra = tuple(sorted(set(rebuilt) - set(published)))
@@ -225,7 +227,7 @@ def compare_v1_manifest(
         if pub is None:
             continue
         pub_split, pub_min_side = pub
-        if pub_split != row.split:
+        if pub_split != HF_SPLITS.get(row.split, row.split):
             split_mismatches.append(sha256)
         if min(row.width, row.height) != pub_min_side:
             min_side_mismatches.append(sha256)
@@ -310,3 +312,170 @@ def compare_v1_metadata_columns(
             if not _same(row.get(column), pub.get(column)):
                 mismatches[column].append(row["image_sha256"])
     return {c: tuple(sorted(v)) for c, v in mismatches.items()}
+
+
+# --- D-X2 (INT-core3): task-file identity at manifest level --------------------------
+
+
+class ChecksumsDigest:
+    """A drop-in for :func:`marinedata.checksums.file_digest` that never reads a byte of
+    the file: the sha256 comes from the owning source's pinned ``CHECKSUMS.sha256``,
+    keyed by the path relative to that source's root. Used by ``release build
+    --manifest-only`` so the v1 task TSVs can be rebuilt byte-for-byte from the staged
+    trees' listings alone. A path under no root, or a key the manifest does not list,
+    raises (fail closed — never fall back to hashing, never guess)."""
+
+    def __init__(self, roots: dict[str, Path], checksums: dict[str, dict[str, str]]) -> None:
+        self._roots = sorted(
+            ((Path(root).resolve(), source_id) for source_id, root in roots.items()),
+            key=lambda item: len(str(item[0])),
+            reverse=True,
+        )
+        self._checksums = checksums
+
+    def __call__(self, path: Path) -> str:
+        resolved = Path(path).resolve()
+        for root, source_id in self._roots:
+            try:
+                key = resolved.relative_to(root).as_posix()
+            except ValueError:
+                continue
+            listing = self._checksums.get(source_id, {})
+            if key not in listing:
+                raise KeyError(f"{source_id}: {key!r} is not listed in CHECKSUMS.sha256")
+            return listing[key]
+        raise KeyError(f"{path} is under no resolved source root")
+
+
+def checksums_digest(
+    registry: Registry,
+    roots: dict[str, Path],
+    fetch_checksums: ChecksumsFetcher = fetch_source_checksums,
+) -> ChecksumsDigest:
+    return ChecksumsDigest(
+        roots, {source_id: fetch_checksums(registry.source(source_id)) for source_id in roots}
+    )
+
+
+def compare_task_dirs(expected: str | Path, actual: str | Path) -> dict[str, str]:
+    """``{task file name: status}`` for every ``*.tsv`` on either side — ``identical``
+    (byte-for-byte), ``differs``, ``missing`` (expected only) or ``extra`` (actual only)."""
+    exp = {p.name: p for p in Path(expected).glob("*.tsv")}
+    act = {p.name: p for p in Path(actual).glob("*.tsv")}
+    out: dict[str, str] = {}
+    for name in sorted(exp.keys() | act.keys()):
+        if name not in act:
+            out[name] = "missing"
+        elif name not in exp:
+            out[name] = "extra"
+        else:
+            same = exp[name].read_bytes() == act[name].read_bytes()
+            out[name] = "identical" if same else "differs"
+    return out
+
+
+def v1_primary_rows(rows: list[ManifestRow]) -> list[ManifestRow]:
+    """One row per sha256, chosen exactly as v1's ``hf_export.build_layout`` chose the
+    ``images`` config's primary member: ``min(members, key=(source_id, sample_key))``,
+    where the staged-tree loader's ``sample_key`` is the image path relative to the
+    source root — i.e. :attr:`ManifestRow.path`. Without this, a sha staged under more
+    than one stem (byte-identical duplicates) is compared once per stem and every
+    non-primary stem reads as an ``upstream_id`` change."""
+    best: dict[str, ManifestRow] = {}
+    for row in rows:
+        cur = best.get(row.sha256)
+        if cur is None or (row.source_id, row.path) < (cur.source_id, cur.path):
+            best[row.sha256] = row
+    return [best[sha] for sha in sorted(best)]
+
+
+class _NaN:
+    """Marker for "a float NaN" in :data:`NULL_SENTINELS` (NaN never equals itself, so
+    it cannot be matched by ``in``/``==``)."""
+
+    def __repr__(self) -> str:
+        return "NaN"
+
+
+NAN = _NaN()
+
+_ABSENT_STR: frozenset[object] = frozenset({""})
+_ABSENT_FLOAT: frozenset[object] = frozenset({NAN})
+
+NULL_SENTINELS: dict[str, frozenset[object]] = {
+    # geo: `none` is the geo_precision enum member for "this row has no lat/lon" — a v1
+    # `none` becoming `site` is the same enrichment as lat/lon going null -> value.
+    "geo_precision": frozenset({"none", ""}),
+    "geo_source": _ABSENT_STR,
+    "lat": _ABSENT_FLOAT,
+    "lon": _ABSENT_FLOAT,
+    "gps_precision_m": _ABSENT_FLOAT,
+    # capture context
+    "capture_datetime": _ABSENT_STR,
+    "depth_m": _ABSENT_FLOAT,
+    "depth_source": _ABSENT_STR,
+    "depth_zone": _ABSENT_STR,
+    "platform": _ABSENT_STR,
+    "camera": _ABSENT_STR,
+    "habitat": _ABSENT_STR,
+    # biogeography
+    "meow_realm": _ABSENT_STR,
+    "meow_province": _ABSENT_STR,
+    "meow_ecoregion": _ABSENT_STR,
+    # provenance fields v1 left unset
+    "upstream_url": _ABSENT_STR,
+    "lineage_root_digest": _ABSENT_STR,
+}
+"""D-X2a: per column, the v1 values that MEAN "absent". Such a value becoming a real
+value is enrichment, exactly like ``None`` -> value (``None`` is absent in every
+column). Listed explicitly per column: a column not listed has NO sentinel, so e.g.
+``""`` -> value in ``license`` or NaN -> value in ``q_blur`` (a byte-derived metric over
+byte-identical images) is a changed value and fails. Identity/provenance keys
+(``image_sha256``, ``source_*``, ``license``, ``attribution``, ``upstream_id``,
+``fetch_date``) and the byte-derived quality columns are deliberately absent.
+Published v1 (69,600 rows, 2026-09-25) carries 0 ``""`` and 0 NaN in every column;
+its only sentinel in use is ``geo_precision = none`` (68,350 rows)."""
+
+
+def _is_null(value: object, column: str = "") -> bool:
+    if value is None:
+        return True
+    for sentinel in NULL_SENTINELS.get(column, ()):
+        if sentinel is NAN:
+            if isinstance(value, float) and value != value:
+                return True
+        elif type(value) is type(sentinel) and value == sentinel:
+            return True
+    return False
+
+
+@dataclass(frozen=True)
+class ColumnDiff:
+    enriched: tuple[str, ...]
+    """sha256 whose v1 value was absent (``None`` or a :data:`NULL_SENTINELS` value for
+    that column) and whose rebuilt value is not — allowed (D-X2 / D-X2a)."""
+    changed: tuple[str, ...]
+    """sha256 whose value differs any other way (value->other value, value->null) —
+    a D-X2 violation."""
+
+
+def classify_v1_column_diffs(
+    rebuilt: list[dict], published: dict[str, dict]
+) -> dict[str, ColumnDiff]:
+    """D-X2: per published column, split every difference into allowed enrichment
+    (absent -> value, D-X2a sentinels included) and forbidden change (anything else)."""
+    columns = sorted({c for row in published.values() for c in row} - {"split"})
+    enriched: dict[str, list[str]] = {c: [] for c in columns}
+    changed: dict[str, list[str]] = {c: [] for c in columns}
+    for row in rebuilt:
+        sha = row["image_sha256"]
+        pub = published.get(sha)
+        if pub is None:
+            continue
+        for column in columns:
+            new, old = row.get(column), pub.get(column)
+            if _same(new, old):
+                continue
+            is_enrichment = _is_null(old, column) and not _is_null(new, column)
+            (enriched if is_enrichment else changed)[column].append(sha)
+    return {c: ColumnDiff(tuple(sorted(enriched[c])), tuple(sorted(changed[c]))) for c in columns}

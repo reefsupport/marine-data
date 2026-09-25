@@ -11,16 +11,19 @@ the open bucket yet.
 from __future__ import annotations
 
 import argparse
+import json
 import sys
 from datetime import UTC, datetime
 from pathlib import Path
 
+from .checksums import file_digest
 from .cli_splitmap import _parse_ratios
 from .decon import DeconError
 from .dedup.groups import DedupGateError
 from .fetch import FetchError, cache_root, fetch_sample
 from .fetchers_remote import _is_pinned_staged_tree
 from .gate import evaluate
+from .manifest_identity import checksums_digest
 from .neardup import NearDupConfig, NearDupError, default_workers, pil_version
 from .registry import Registry
 from .release import build_release, generate_split_map
@@ -82,6 +85,41 @@ def _resolve_roots(registry: Registry, profile: str, local: dict[str, Path]) -> 
     return roots
 
 
+def _cached_roots(
+    registry: Registry, profile: str, local: dict[str, Path], only: set[str] | None
+) -> dict[str, Path]:
+    """``--manifest-only`` roots: a ``--local`` override, else the source's already-staged
+    tree under :func:`cache_root` — NEVER a fetch. ``only`` (from ``--sources-from``)
+    restricts the admitted set to a published release's sources. Fails closed, naming
+    every admitted source that is not staged locally."""
+    prof = registry.profile(profile)
+    roots = {k: v for k, v in local.items() if only is None or k in only}
+    missing: list[str] = []
+    for source in registry:
+        if source.id in roots or (only is not None and source.id not in only):
+            continue
+        if not evaluate(source, prof).allowed or not _is_pinned_staged_tree(source):
+            continue
+        cached = cache_root() / source.id
+        if (cached / "metadata.parquet").is_file():
+            roots[source.id] = cached
+        else:
+            missing.append(source.id)
+    if missing:
+        raise ValueError(
+            "--manifest-only never fetches; not staged locally: "
+            + ", ".join(sorted(missing))
+            + " (pass --local or --sources-from)"
+        )
+    return roots
+
+
+def _sources_from(path: str | None) -> set[str] | None:
+    if path is None:
+        return None
+    return {entry["id"] for entry in json.loads(Path(path).read_text())["sources"]}
+
+
 def _cmd_release_build(args: argparse.Namespace) -> int:
     registry = Registry.load()
     try:
@@ -89,8 +127,22 @@ def _cmd_release_build(args: argparse.Namespace) -> int:
     except ValueError as exc:
         print(f"release build: {exc}", file=sys.stderr)
         return 1
+    digest = file_digest
+    if args.sources_from and not args.manifest_only:
+        print("release build: --sources-from needs --manifest-only", file=sys.stderr)
+        return 1
+    if args.manifest_only and args.generate_split_map:
+        print("release build: --manifest-only needs a frozen --split-map", file=sys.stderr)
+        return 1
     try:
-        roots = _resolve_roots(registry, args.profile, local)
+        if args.manifest_only:
+            roots = _cached_roots(registry, args.profile, local, _sources_from(args.sources_from))
+            digest = checksums_digest(registry, roots)
+        else:
+            roots = _resolve_roots(registry, args.profile, local)
+    except ValueError as exc:
+        print(f"release build: {exc}", file=sys.stderr)
+        return 1
     except ReleaseFetchError as exc:
         for source_id, error in exc.failures:
             print(
@@ -193,6 +245,7 @@ def _cmd_release_build(args: argparse.Namespace) -> int:
             split_v2=args.split_v2,
             tasks=args.tasks,
             v2=args.v2,
+            digest=digest,
         )
     except (NearDupError, DedupGateError, DeconError) as exc:
         print(f"release build: {exc}", file=sys.stderr)
@@ -316,5 +369,21 @@ def add_release_subparser(sub: argparse._SubParsersAction) -> None:
         help="Preset (INT-core2): turns on --decon, --dedup-crop, --split-v2 and "
         "--tasks v2 together. Does not enable --dedup-v2 (needs an explicit "
         "groups.parquet path). Default OFF, so an unflagged build is unchanged (D-X)",
+    )
+    p_build.add_argument(
+        "--manifest-only",
+        dest="manifest_only",
+        action="store_true",
+        help="D-X2: never fetch — roots come from already-staged trees in the local "
+        "cache only, and every image sha256 comes from the source's pinned "
+        "CHECKSUMS.sha256 (no image bytes read). Writes the same task TSVs / "
+        "RELEASE.json a full build would",
+    )
+    p_build.add_argument(
+        "--sources-from",
+        dest="sources_from",
+        metavar="RELEASE_JSON",
+        help="With --manifest-only: admit only the sources a published RELEASE.json "
+        "lists (e.g. to rebuild v1's task files under the current code)",
     )
     p_build.set_defaults(func=_cmd_release_build)
