@@ -37,6 +37,20 @@ IMAGES, MASKS, PSEUDO_MASKS = "images", "masks", "coralscop-pseudo-masks"
 PSEUDO_TAG = "pseudo-label"
 REPO_EXTRA_FILES = ("README.md", "LICENSE", ".gitattributes")
 
+DEFAULT_REPO_ID = "reefsupport/open-marine-imagery"
+"""D-A (2026-09-25, delegated): the public Hub repo id for this dataset."""
+
+DEFAULT_EXCLUDE_CONFIGS = ("coral-genus-caribbean",)
+"""D-A: dropped from the v1 Hub configs — the release TSVs themselves are untouched."""
+
+EXCLUDE_REASONS: dict[str, str] = {
+    "coral-genus-caribbean": (
+        "0 labels in v1 — every `label` and `mask_class_map` value is null. "
+        "The release `tasks/coral-genus-caribbean.tsv` is unchanged; only this Hub "
+        "export omits the config (D-A, 2026-09-25)."
+    ),
+}
+
 IMAGE_SPEC = ConfigSpec(
     IMAGES,
     (
@@ -218,6 +232,16 @@ def collect_rows(
     return out
 
 
+def drop_excluded(
+    rows_by_task: dict[str, list[SampleRow]], exclude: Sequence[str]
+) -> dict[str, list[SampleRow]]:
+    """Task configs to omit from the Hub export (D-A). Images already shared with a
+    kept config (e.g. ``general-pretraining``) stay in ``images``/``masks`` — this
+    only drops the excluded config's own label-only files."""
+    skip = frozenset(exclude)
+    return {task: rows for task, rows in rows_by_task.items() if task not in skip}
+
+
 def _by_split(rows: Sequence[ExportRow], splits: Sequence[str]) -> dict[str, list[ExportRow]]:
     grouped: dict[str, list[ExportRow]] = {s: [] for s in SPLIT_ORDER}
     for row, split in zip(rows, splits, strict=True):
@@ -356,11 +380,18 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--summary", type=Path, required=True)
     parser.add_argument("--sample", action="store_true", help="one shard per config only")
     parser.add_argument("--profile", default="research")
+    parser.add_argument(
+        "--exclude-configs",
+        default=",".join(DEFAULT_EXCLUDE_CONFIGS),
+        help="comma-separated task configs to drop from the Hub export (D-A); '' for none",
+    )
     args = parser.parse_args(argv)
 
     registry = Registry.load()
     roots = _roots(args.release_dir, cache_root())
     rows = collect_rows(registry, roots, args.release_dir, args.profile)
+    exclude = [c for c in args.exclude_configs.split(",") if c]
+    rows = drop_excluded(rows, exclude)
     pseudo = frozenset(s for s in roots if PSEUDO_TAG in registry.source(s).tags)
     layout = build_layout(rows, pseudo)
     summary = export(layout, args.out, sample=args.sample)

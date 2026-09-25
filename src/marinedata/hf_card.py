@@ -10,13 +10,27 @@ from __future__ import annotations
 
 import json
 
-from .hf_export import IMAGES, MASKS, PSEUDO_MASKS, SPLIT_ORDER
+from .hf_export import (
+    DEFAULT_EXCLUDE_CONFIGS,
+    DEFAULT_REPO_ID,
+    EXCLUDE_REASONS,
+    IMAGES,
+    MASKS,
+    PSEUDO_MASKS,
+    SPLIT_ORDER,
+)
+
+METADATA = "metadata"
 
 CONFIG_BLURB = {
     IMAGES: "every image once (pixels embedded), keyed by `image_sha256`",
     MASKS: "ground-truth dense masks, one row per (image, source)",
     PSEUDO_MASKS: "CoralSCOP **model output** masks — weak supervision only, never ground truth",
     "general-pretraining": "pretraining membership (train + validation; test excluded)",
+    METADATA: (
+        "no pixels — licence, provenance, position/depth, MEOW ecology and WP-1's quality "
+        "scores, one row per `image_sha256` (WP-2, D-K)"
+    ),
 }
 
 
@@ -45,7 +59,8 @@ def _sources_table(sources: list[dict]) -> list[str]:
             f"| `{s['id']}` ({s['version']}) | {s['licence']} | {s['tier']} | "
             f"{s.get('images', '—')} | {citation} |"
         )
-    return rows
+    notes = [f"- `{s['id']}`: {s['licence_note']}" for s in sources if s.get("licence_note")]
+    return rows + (["", *notes] if notes else [])
 
 
 def _split_table(summary: dict) -> list[str]:
@@ -62,8 +77,10 @@ def render_card(
     sources: list[dict],
     *,
     pretty_name: str,
-    repo_id: str = "<repo>",
+    repo_id: str = DEFAULT_REPO_ID,
     unsupervised: tuple[str, ...] = (),
+    excluded: dict[str, str] | None = None,
+    metadata_licence_rows: list[str] | None = None,
 ) -> str:
     near = release["near_dup"]
     empty_note = [
@@ -71,6 +88,13 @@ def render_card(
         "`mask_class_map` value is null. It is published for split membership only."
         for c in unsupervised
     ]
+    excluded = excluded or {}
+    not_included = (
+        ["", "## Not included", ""]
+        + [f"- `{c}` — {reason}" for c, reason in sorted(excluded.items())]
+        if excluded
+        else []
+    )
     n_images = sum(v["rows"] for v in summary["configs"][IMAGES]["splits"].values())
     ids = sorted({s["licence_hf"] for s in sources})
     yaml = [
@@ -124,6 +148,7 @@ def render_card(
         "it was reached, `native_label` is the source's own label. For mask sources, "
         "`mask_class_map` maps each mask pixel value to the task class (null = unlabelled or "
         "abstain); the mask itself is in `masks`.",
+        *not_included,
         "",
         "## Sources",
         "",
@@ -132,6 +157,31 @@ def render_card(
         "",
         *_sources_table(sources),
         "",
+        *(
+            [
+                "## Per-sample metadata",
+                "",
+                "`metadata` carries no pixels: licence/provenance, position/depth, MEOW "
+                "ecology and WP-1's quality scores, one row per `image_sha256`. `license` "
+                "is never null (D-C: record, never a storage filter) — counted here from "
+                "the config's own rows, not just declared per-source:",
+                "",
+                *metadata_licence_rows,
+                "",
+                "Filter by licence in one call:",
+                "",
+                "```python",
+                "from datasets import load_dataset",
+                "from marinedata.metadata_release import filter_by_license",
+                "",
+                f'meta = load_dataset("{repo_id}", "metadata", split="train")',
+                'allowed = filter_by_license(meta.data.table, allow=["CC-BY-4.0", "CC0-1.0"])',
+                "```",
+                "",
+            ]
+            if metadata_licence_rows
+            else []
+        ),
         "## Splits",
         "",
         "Split by `split_group` (site/station/transect for our own imagery, the upstream "
@@ -201,6 +251,44 @@ def unsupervised_configs(out, summary: dict) -> tuple[str, ...]:
     return tuple(empty)
 
 
+def metadata_config_summary(out) -> dict | None:
+    """A ``summary["configs"]["metadata"]``-shaped entry read back from the shards WP-2's
+    ``metadata_release`` already wrote — so the card's existing config/split rendering
+    (``_yaml_configs``, ``_split_table``) documents it with no per-config special-casing."""
+    import pyarrow.parquet as pq
+
+    paths = sorted((out / "data" / METADATA).glob("*.parquet"))
+    if not paths:
+        return None
+    splits: dict[str, dict] = {}
+    for path in paths:
+        split = path.name.split("-", 1)[0]
+        n = pq.read_metadata(path).num_rows
+        entry = splits.setdefault(split, {"rows": 0, "shards": 0, "embedded_bytes": 0})
+        entry["rows"] += n
+        entry["shards"] += 1
+    from .metadata_release import METADATA_COLUMNS
+
+    return {"columns": [list(c) for c in METADATA_COLUMNS], "splits": splits, "written": []}
+
+
+def metadata_licence_table(out) -> list[str]:
+    """A licence table **computed from the `metadata` config's own rows** (not the
+    registry's declared licence) — counts every ``license`` value actually shipped."""
+    import pyarrow.parquet as pq
+
+    paths = sorted((out / "data" / METADATA).glob("*.parquet"))
+    counts: dict[str, int] = {}
+    for path in paths:
+        for value in pq.read_table(path, columns=["license"]).column(0).to_pylist():
+            counts[value] = counts.get(value, 0) + 1
+    if not counts:
+        return []
+    rows = ["| Licence (as shipped in `metadata`) | Rows |", "|---|---|"]
+    rows += [f"| `{lic}` | {n} |" for lic, n in sorted(counts.items(), key=lambda kv: -kv[1])]
+    return rows
+
+
 def render_licence(sources: list[dict]) -> str:
     lines = [
         "This dataset combines sources under different licences. Each image and label keeps",
@@ -209,6 +297,7 @@ def render_licence(sources: list[dict]) -> str:
     ]
     lines += [
         f"- {s['id']}: {s['licence']} — {s.get('licence_url') or 'no URL recorded'}"
+        + (f" ({s['licence_note']})" if s.get("licence_note") else "")
         for s in sources
     ]
     return "\n".join(lines) + "\n"
@@ -227,6 +316,7 @@ def source_rows(registry, release: dict, image_counts: dict[str, int]) -> list[d
                 "licence": licence.id,
                 "licence_hf": licence.id.lower() if licence.id.startswith("CC-") else "other",
                 "licence_url": licence.url,
+                "licence_note": licence.notes,
                 "tier": licence.tier.value,
                 "citation": source.citation or source.homepage,
                 "images": image_counts.get(entry["id"], 0),
@@ -249,7 +339,12 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--summary", type=Path, required=True)
     parser.add_argument("--out", type=Path, required=True)
     parser.add_argument("--pretty-name", default="Reef Support coral-reef imagery v1")
-    parser.add_argument("--repo-id", default="<repo>")
+    parser.add_argument("--repo-id", default=DEFAULT_REPO_ID)
+    parser.add_argument(
+        "--exclude-configs",
+        default=",".join(DEFAULT_EXCLUDE_CONFIGS),
+        help="comma-separated configs dropped from the export (D-A); '' for none",
+    )
     args = parser.parse_args(argv)
 
     summary = json.loads(args.summary.read_text())
@@ -261,6 +356,12 @@ def main(argv: list[str] | None = None) -> int:
                 counts[sid] = counts.get(sid, 0) + 1
     sources = source_rows(Registry.load(), release, counts)
     empty = unsupervised_configs(args.out, summary)
+    exclude = [c for c in args.exclude_configs.split(",") if c]
+    excluded = {c: EXCLUDE_REASONS.get(c, "excluded from this release") for c in exclude}
+    metadata_entry = metadata_config_summary(args.out)
+    if metadata_entry is not None:
+        summary["configs"][METADATA] = metadata_entry
+    licence_rows = metadata_licence_table(args.out)
     (args.out / "README.md").write_text(
         render_card(
             summary,
@@ -269,6 +370,8 @@ def main(argv: list[str] | None = None) -> int:
             pretty_name=args.pretty_name,
             repo_id=args.repo_id,
             unsupervised=empty,
+            excluded=excluded,
+            metadata_licence_rows=licence_rows,
         )
     )
     (args.out / "LICENSE").write_text(render_licence(sources))

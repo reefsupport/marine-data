@@ -14,6 +14,7 @@ import sys
 from .cli_bench import add_bench_subparser  # WP-11 P1: registry/benchmarks.yaml validate+hash
 from .cli_dedup import add_dedup_subparser
 from .cli_ingest import _cmd_ingest, add_ingest_subparser  # noqa: F401 — re-exported
+from .cli_ingest_source import add_ingest_source_subparser
 from .cli_release import add_release_subparser
 from .cli_splitmap import add_splitmap_subparser
 from .gate import evaluate
@@ -291,6 +292,7 @@ def build_parser() -> argparse.ArgumentParser:
     p_fetch.set_defaults(func=_cmd_fetch)
 
     add_ingest_subparser(sub)
+    add_ingest_source_subparser(sub)
     add_splitmap_subparser(sub)
     add_release_subparser(sub)
     add_dedup_subparser(sub)
