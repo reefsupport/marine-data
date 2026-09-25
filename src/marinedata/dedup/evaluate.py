@@ -14,7 +14,7 @@ import numpy as np
 
 from .confirm import ConfirmRules, DedupIndex, FeatureTable, confirm, merge_channels, score_pairs
 from .corpus import Item, load_thumbs, read_payloads
-from .crop import THUMB_SIDE, crop_candidates, crop_refine
+from .crop import THUMB_SIDE, Thumb, crop_candidates, crop_refine
 from .features import features_from_image
 from .mih import MultiIndexHamming, unique_pairs
 
@@ -98,6 +98,7 @@ def synthetic_eval(
     rules: ConfirmRules,
     per_family: int = 400,
     seed: int = 0,
+    dedup_crop: bool = False,
     log=print,  # type: ignore[no-untyped-def]
 ) -> dict[str, object]:
     from .embed import SSCDEmbedder, prepare
@@ -121,13 +122,14 @@ def synthetic_eval(
                 aug, _, desc = augment(src, fam, rng)
             feats.append(features_from_image(aug, f"aug:{s}"))
             arrays.append(prepare(aug))
-            thumb = aug.convert("L")
-            thumb.thumbnail((THUMB_SIDE, THUMB_SIDE))
-            qthumbs.append(thumb)
+            rgb = aug.convert("RGB")
+            rgb.thumbnail((THUMB_SIDE, THUMB_SIDE))
+            qthumbs.append(Thumb(gray=rgb.convert("L"), rgb=rgb))
             meta.append((s, fam, desc))
     log(f"synthetic: {len(meta)} derivatives built")
     qt = FeatureTable.from_features(feats)
-    qemb = SSCDEmbedder(weights).embed_arrays(arrays)
+    embedder = SSCDEmbedder(weights)
+    qemb = embedder.embed_arrays(arrays)
     index = DedupIndex(table, emb, rules)
     results: dict[str, dict[str, object]] = {}
     for mode, use_knn in (("hash+embed-knn", True), ("hash-candidates-only", False)):
@@ -135,19 +137,32 @@ def synthetic_eval(
         a, b, _ = merge_channels(chans, len(uniq))
         sc = score_pairs(qt, table, a, b, qemb, emb)
         ok, kind = confirm(sc, rules)
-        area_q, area_c = qt["area"][a], table["area"][b]
-        need = {uniq[j] for j in b[crop_candidates(sc, ok, area_q, area_c, rules)].tolist()}
-        thumbs = load_thumbs(sorted(need & set(by_sha)), by_sha)  # type: ignore[arg-type]
-        ok, kind, _ = crop_refine(
-            sc,
-            ok,
-            kind,
-            area_q,
-            area_c,
-            lambda k, a=a: qthumbs[a[k]],
-            lambda k, b=b, thumbs=thumbs: thumbs.get(uniq[b[k]]),
-            rules,
-        )
+        if dedup_crop:
+            area_q, area_c = qt["area"][a], table["area"][b]
+            need = {uniq[j] for j in b[crop_candidates(sc, ok, area_q, area_c, rules)].tolist()}
+            thumbs = load_thumbs(sorted(need & set(by_sha)), by_sha)  # type: ignore[arg-type]
+
+            def _own(k, a_is_patch, qemb=qemb, emb=emb, a=a, b=b):  # type: ignore[no-untyped-def]
+                return qemb[a[k]] if a_is_patch else emb[b[k]]
+
+            def box_cos(k, parent_rgb, box, a_is_patch, _own=_own, embedder=embedder):  # type: ignore[no-untyped-def]
+                region = parent_rgb.crop(box)
+                if region.width < 8 or region.height < 8:
+                    return None
+                vec = embedder.embed_arrays([prepare(region)])[0]
+                return float(np.dot(vec, _own(k, a_is_patch)))
+
+            ok, kind, _ = crop_refine(
+                sc,
+                ok,
+                kind,
+                area_q,
+                area_c,
+                lambda k, a=a: qthumbs[a[k]],
+                lambda k, b=b, thumbs=thumbs: thumbs.get(uniq[b[k]]),
+                rules,
+                box_cos=box_cos,
+            )
         target = np.array([pos[meta[i][0]] for i in a.tolist()], dtype=np.int64)
         hit_pair = ok & (b == target)
         hit = np.zeros(len(meta), bool)

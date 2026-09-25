@@ -38,8 +38,10 @@ class ConfirmRules:
     knn_k: int = 10
     knn_min_cos: float = 0.50
     cos_crop: float = 0.50
-    ncc_crop: float = 0.85
+    ncc_crop: float = 0.50
     crop_area_max: float = 0.95
+    crop_scale_min: float = 0.30
+    cos_box_crop: float = 0.60
 
     def record(self) -> dict[str, object]:
         return dict(self.__dict__)

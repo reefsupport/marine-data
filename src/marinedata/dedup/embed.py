@@ -23,6 +23,9 @@ SSCD_URL = "https://dl.fbaipublicfiles.com/sscd-copy-detection/sscd_disc_mixup.t
 SSCD_SHA256 = "9f26bd4c848cc19b73d2ae92eea6e04886f61a7b764ceb7a13aeee62e6a6db56"
 EMBED_DIM = 512
 EMBED_SIDE = 288
+# NOAA 224-px point crops (~0.1) to near-full-frame crops (0.95); ``crop.crop_refine``
+# filters this to ``>= crop_scale_min`` for the confirmation pass.
+DEFAULT_SCALES = tuple(round(0.08 * 1.12**i, 4) for i in range(24) if 0.08 * 1.12**i <= 1.0)
 _MEAN = np.array([0.485, 0.456, 0.406], dtype=np.float32)
 _STD = np.array([0.229, 0.224, 0.225], dtype=np.float32)
 
@@ -176,7 +179,7 @@ def match_patch(
     """
     from PIL import Image
 
-    scales = scales or [round(0.08 * 1.12**i, 4) for i in range(24) if 0.08 * 1.12**i <= 1.0]
+    scales = scales or list(DEFAULT_SCALES)
     parent = parent_img.convert("L")
     pw0, ph0 = parent.size
     factor = side / pw0
