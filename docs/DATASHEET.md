@@ -116,8 +116,16 @@ negative sample found zero missed faces/persons (Wilson upper bound on the miss 
 3.7%). Full method, per-detector precision, the occlusion-heuristic calibration and
 raw counts are in [`docs/ETHICS_FACE_AUDIT.md`](ETHICS_FACE_AUDIT.md) and the audit TSV.
 No face has been identified to a named individual; no consent-tracking field exists per
-sample. Per `docs/PRIVACY.md`, the v2 build blurs every `face_identifiable` box in the
-released pixels and ships a `face_identifiable` column in `metadata`.
+sample. Per `docs/PRIVACY.md` (D-I2, WP-5e), the v2 build blurs (Gaussian, box padded
+20%) every box on an audited-true image plus every box a second-stage YuNet re-check
+(on the candidate crop, expanded 50%) confirms, behind a `--privacy-blur` release flag
+that defaults **off** — a release built without it is byte-identical to one that never
+imported the blur code. Every candidate also gets `face_candidate=true` in the privacy
+config regardless of the flag, so a consumer can filter out flagged images even on an
+unblurred release. **Not yet done**: the second-stage threshold is fit on only 18
+audited true faces (below the 25-positive floor for a final number), and the full
+candidate dry-run (blur counts, before/after contact sheet) has not been run — see
+"D-I2" in `docs/PRIVACY.md`.
 
 **Sensitive-species location policy.** v1 carries **zero** per-sample geographic
 coordinates — no `lat`/`lon` field exists anywhere in the current schema (r0 D8), so
