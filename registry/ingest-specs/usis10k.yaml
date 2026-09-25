@@ -1,0 +1,11 @@
+id: usis10k
+adapter: hf
+params:
+  repo: LiamLian0727/USIS10K
+  revision: b10f41ab819bcdd78459621aedae8ffb5cab3c59
+  include: ["*.zip"]
+  label_patterns: ["*annotations*.json"]
+license: Apache-2.0
+attribution: "Shijie Lian, Ziyi Zhang, Hua Li, Wenjie Li, Laurence Tianruo Yang, Sam Kwong, Runmin Cong — USIS10K dataset; HF mirror LiamLian0727/USIS10K"
+citation: "Lian et al. 2024, Diving into Underwater: Segment Anything Model Guided Underwater Salient Instance Segmentation and A Large-scale Dataset, ICML 2024 (PMLR v235:29545-29559)"
+homepage: https://huggingface.co/datasets/LiamLian0727/USIS10K
