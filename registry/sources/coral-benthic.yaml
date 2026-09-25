@@ -29,10 +29,24 @@ sources:
         text, which is not where the data is licensed.
       method: dataset-card
     access:
-      method: huggingface
-      uri: https://huggingface.co/datasets/EPFL-ECEO/coralscapes
-      size_bytes: 5855224073  # measured 2026-09-18
+      method: s3
+      uri: s3://rs-storage-open/sources/coralscapes/1.0/
+      size_bytes: 5848379518  # verified S61 2026-09-25, size+md5==ETag every object
+      notes: >
+        S61 (2026-09-25): re-pointed from the upstream HuggingFace dataset
+        (EPFL-ECEO/coralscapes) to our own durable copy on rs-storage-open, verified
+        object-by-object (size + md5 == ETag) against the local staged tree this pin
+        was taken from. S62 (2026-09-25, D-O): `loader.layout` flipped to `staged-tree`
+        — the staged tree already has `metadata.parquet` + `labels/masks/` in exactly
+        the shape `StagedTreeLoader` expects, so this is `_is_pinned_staged_tree`-true
+        now: a live `fetch`/`verify` reads `CHECKSUMS.sha256` by its known key rather
+        than listing the prefix, and no longer needs the anonymous `ListBucket` that
+        rs-storage-open denies (S7i). Anonymous `GetObject` on a known key works.
       params:
+        bucket: rs-storage-open
+        endpoint: hel1.your-objectstorage.com
+        region: hel1
+        prefix: sources/coralscapes/1.0/
         hf_id: EPFL-ECEO/coralscapes
         config: default
         split: train
@@ -45,10 +59,9 @@ sources:
       - bleaching-assessment
       - general-pretraining
     loader:
-      layout: image-mask-pairs
+      layout: staged-tree
       schema_id: coralscapes-39
       crosswalk_id: coralscapes-39
-      params: { images_dir: images, masks_dir: masks }
       verified_on: 2026-09-18
       verified_note: >
         Real ingest of all 13 upstream shards (9 train + 3 test + 1 validation)
@@ -633,16 +646,29 @@ sources:
       method: dataset-card
     access:
       method: s3
-      uri: s3://coral-reef-training
-      size_bytes: 68534501856  # measured 2026-09-18
-      notes: "no-sign-request - anonymously listable, no credentials needed"
+      uri: s3://rs-storage-open/sources/mermaid-aws/2026-09-19-bc53d5a2c0b6/
+      size_bytes: 50559907142  # verified S61 2026-09-25, size+md5==ETag every object
+      notes: >
+        S61 (2026-09-25): re-pointed from the upstream s3://coral-reef-training mirror
+        (public AWS open-data, no-sign-request, prefix mermaid/) to our own durable
+        copy on rs-storage-open, verified object-by-object (size + md5 == ETag)
+        against the local staged tree this pin was taken from — that upstream bucket
+        is live and growing, this pin is the 2026-09-19 snapshot only. S62 (2026-09-25,
+        D-O): `loader.layout` flipped to `staged-tree` — the staged tree already has
+        `metadata.parquet` + `labels/points.parquet` in exactly the shape
+        `StagedTreeLoader` expects, so this is `_is_pinned_staged_tree`-true now: a
+        live `fetch`/`verify` reads `CHECKSUMS.sha256` by its known key rather than
+        listing the prefix, and no longer needs the anonymous `ListBucket` that
+        rs-storage-open denies (S7i). Anonymous `GetObject` on a known key works fine
+        (this is how the upload was itself verified).
       params:
-        bucket: coral-reef-training
-        endpoint: s3.amazonaws.com
-        region: us-east-1
-        prefix: mermaid/
+        bucket: rs-storage-open
+        endpoint: hel1.your-objectstorage.com
+        region: hel1
+        prefix: sources/mermaid-aws/2026-09-19-bc53d5a2c0b6/
     modalities: [image, tabular]
     capabilities: [benthic-classification, coral-taxonomy]
+    items: 18561  # staged image count, S61 2026-09-25
     annotations:
       - kind: point-label
         schema_id: mermaid-attributes
@@ -650,14 +676,15 @@ sources:
     coverage:
       regions: [global]
     loader:
-      layout: flat-images
-      verified_on: 2026-08-17
+      layout: staged-tree
+      verified_on: 2026-09-25
       verified_note: >
-        Prefix mapped and listing verified anonymously. An earlier note said the prefix
-        was unidentified - it is `mermaid/`, flat, UUID-keyed. flat-images reads the
-        full-resolution PNGs; the per-image `_annotations.csv` files and precomputed
-        `_featurevector` blobs are NOT yet exposed by any layout and would need a
-        paired-sidecar reader.
+        S62 (2026-09-25, D-O): layout moved from `flat-images` (live anonymous listing
+        of the upstream `mermaid/` prefix) to `staged-tree` (own bucket copy, same move
+        S61 made for the source itself) — see `access.notes` for why. The prior
+        `flat-images` note (prefix `mermaid/`, flat, UUID-keyed, per-image
+        `_annotations.csv`/`_featurevector` sidecars not yet exposed by any layout) is
+        historical background on the corpus shape, not the current read path.
       schema_id: mermaid-attributes
       crosswalk_id: mermaid-attributes
     notes: >
