@@ -105,7 +105,12 @@ def restage_streaming(
     root = work / "stage" / base.SOURCE_ID / version
     root.mkdir(parents=True, exist_ok=True)
     cfg = base.WriterConfig(
-        base.SOURCE_ID, version, base.LICENSE, base.ATTRIBUTION, fetch_date or dt.date.today()
+        base.SOURCE_ID,
+        version,
+        base.LICENSE,
+        base.ATTRIBUTION,
+        fetch_date or dt.date.today(),
+        split_group=base.SPLIT_GROUP,
     )
     class_counts: dict[str, dict[str, int]] = {}
 

@@ -25,6 +25,7 @@ from pathlib import Path, PurePosixPath
 from typing import Any
 
 from .adapters import Decoded, RemoteItem
+from .models import SplitGroupRule
 from .sample_schema import SampleRow, depth_zone_for
 
 DEFAULT_THRESHOLD = 200_000
@@ -101,6 +102,9 @@ class WriterConfig:
     naive_datetime_is_utc: bool = False
     label_stem_suffix: str = ""
     lineage_root_digest: str | None = None
+    split_group: SplitGroupRule | None = None
+    """The source's registry rule; ``None`` = unknown here, so rows carry a null
+    ``split_group`` (D-AI2). Resolved against the flat D-K stem, partition ``""``."""
 
 
 class StagedWriter:
@@ -242,6 +246,18 @@ class StagedWriter:
         strs = {f: (str(vals[f]) if vals.get(f) not in (None, "") else None) for f in _STR_FIELDS}
         if floats["depth_m"] is not None and strs["depth_zone"] is None:
             strs["depth_zone"] = depth_zone_for(floats["depth_m"])
+        raw_split = decoded.fields.get("upstream_split") or decoded.split_hint
+        upstream_split = str(raw_split) if raw_split not in (None, "") else None
+        split_group = (
+            self.cfg.split_group.resolve(
+                source_id=self.cfg.source_id,
+                stem=stem,
+                upstream_path=decoded.upstream_id,
+                partition="",
+            )
+            if self.cfg.split_group is not None
+            else None
+        )
         row = SampleRow(
             sample_id=f"{self.cfg.source_id}/{stem}",
             source_id=self.cfg.source_id,
@@ -265,6 +281,9 @@ class StagedWriter:
             ),
             split_hint=decoded.split_hint,
             label_refs=tuple(refs),
+            split_group=split_group,
+            upstream_split=upstream_split,
+            upstream_path=decoded.upstream_id,
             **floats,
             **strs,
         )

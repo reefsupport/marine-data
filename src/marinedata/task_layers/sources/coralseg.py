@@ -27,11 +27,17 @@ from typing import Any
 from ... import checksums
 from ...adapters import Decoded, RemoteItem
 from ...ingest_source import IngestReport, IngestSpec, _Uploader
+from ...models import SplitGroupRule
 from ...s3_upload import DiskGuard, GiB, client_from_rclone
 from ...sample_schema import SampleRow, write_samples
 from ...staged_writer import StagedWriter, WriterConfig
 
 SOURCE_ID = "coralseg-ucsd-mosaics"
+SPLIT_GROUP = SplitGroupRule(
+    pattern=r"^(?:train|test|val)_([^_]+)_", match_field="stem", template="coralseg/{group}"
+)
+"""D-AI2: one group per source mosaic (16) — every tile of a mosaic shares it, so no
+mosaic straddles release splits. Must equal the registry entry's ``split_group``."""
 LEGACY_BUCKET = "rs-storage-open"
 LEGACY_PREFIX = "benthic_datasets/mask_labels/Coralseg/"
 DEST_PREFIX = "sources"
@@ -100,7 +106,14 @@ def restage(
     root = work / "stage" / SOURCE_ID / version
     writer = StagedWriter(
         root,
-        WriterConfig(SOURCE_ID, version, LICENSE, ATTRIBUTION, fetch_date or dt.date.today()),
+        WriterConfig(
+            SOURCE_ID,
+            version,
+            LICENSE,
+            ATTRIBUTION,
+            fetch_date or dt.date.today(),
+            split_group=SPLIT_GROUP,
+        ),
     )
     spec = IngestSpec(
         id=SOURCE_ID,

@@ -39,6 +39,11 @@ Null semantics (the contract — a null always means one specific thing):
   shard tar and ``image_member`` the tar member name.
 * ``split_hint`` null = upstream declared no split. It is a hint: releases re-split.
 * ``label_refs`` is an empty list (never null) when the sample carries no labels.
+* ``split_group`` / ``upstream_split`` / ``upstream_path`` (schema v2, D-AI2) null = not
+  known to the writer. ``split_group`` is the source's ``SplitGroupRule`` output, pinned
+  at staging time; ``upstream_split`` is the upstream's own split name (``split_hint`` is
+  its normalised form); ``upstream_path`` is the upstream-relative path. A v1 table without
+  these columns still validates and reads back with them null.
 """
 
 from __future__ import annotations
@@ -50,7 +55,7 @@ from collections.abc import Iterable, Mapping, Sequence
 from dataclasses import asdict, dataclass, field, fields
 from pathlib import Path
 
-SCHEMA_VERSION = "1"
+SCHEMA_VERSION = "2"
 
 DEPTH_SOURCES = frozenset({"sensor", "exif", "metadata", "site-nominal", "estimated"})
 PLATFORMS = frozenset(
@@ -156,9 +161,15 @@ class SampleRow:
     location_generalized: bool = False
     split_hint: str | None = None
     label_refs: tuple[str, ...] = field(default_factory=tuple)
+    split_group: str | None = None
+    upstream_split: str | None = None
+    upstream_path: str | None = None
 
 
 FIELD_NAMES: tuple[str, ...] = tuple(f.name for f in fields(SampleRow))
+V2_FIELDS: tuple[str, ...] = ("split_group", "upstream_split", "upstream_path")
+LEGACY_FIELD_NAMES: tuple[str, ...] = tuple(n for n in FIELD_NAMES if n not in V2_FIELDS)
+"""Schema-v1 column list: every ``metadata.parquet`` written before D-AI2."""
 REQUIRED: frozenset[str] = frozenset(
     {
         "sample_id",
@@ -216,6 +227,9 @@ def arrow_schema():
         "location_generalized": pa.bool_(),
         "split_hint": s,
         "label_refs": pa.list_(s),
+        "split_group": s,
+        "upstream_split": s,
+        "upstream_path": s,
     }
     non_nullable = REQUIRED | {"label_refs", "location_generalized"}
     return pa.schema(
@@ -329,11 +343,16 @@ def write_samples(path: Path, rows: Sequence[SampleRow]) -> None:
 
 
 def validate_table(table) -> None:
-    """Check a read-back table: exact column names/types, then every row."""
+    """Check a read-back table: exact column names/types, then every row.
+
+    A schema-v1 table (:data:`LEGACY_FIELD_NAMES`, no :data:`V2_FIELDS`) is accepted as
+    written; :func:`row_from_mapping` reads its missing columns back as null."""
     expected = arrow_schema()
-    if [f.name for f in table.schema] != list(FIELD_NAMES):
-        raise SampleSchemaError(f"columns differ from schema v{SCHEMA_VERSION}")
-    for got, want in zip(table.schema, expected, strict=True):
+    names = [f.name for f in table.schema]
+    if names not in (list(FIELD_NAMES), list(LEGACY_FIELD_NAMES)):
+        raise SampleSchemaError(f"columns differ from schema v{SCHEMA_VERSION} (or v1)")
+    for got in table.schema:
+        want = expected.field(got.name)
         if not got.type.equals(want.type):
             raise SampleSchemaError(f"{got.name}: type {got.type} != {want.type}")
     validate_rows(row_from_mapping(r) for r in table.to_pylist())
@@ -344,6 +363,19 @@ def row_from_mapping(values: Mapping[str, object]) -> SampleRow:
     kw = {n: values.get(n) for n in FIELD_NAMES}
     kw["label_refs"] = tuple(kw.get("label_refs") or ())
     return SampleRow(**kw)  # type: ignore[arg-type]
+
+
+def staged_partition(record: Mapping[str, object]) -> str:
+    """The ``images/<partition>/`` segment for one ``metadata.parquet`` record.
+
+    A D1 row carries ``partition``; a flat D-K row (this schema: ``image_path`` set, no
+    ``partition`` column) is ``""`` — ``images/<stem>.<ext>`` (D-AI2). A row with
+    neither is corruption and raises ``KeyError`` rather than guessing a layout."""
+    if "partition" in record:
+        return str(record["partition"] or "")
+    if "image_path" in record:
+        return ""
+    raise KeyError("partition")
 
 
 def licence_filter(table, allowed: Iterable[str]):

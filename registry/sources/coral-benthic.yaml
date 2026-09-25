@@ -1366,7 +1366,7 @@ sources:
       metadata.parquet via Source.split_group_for and re-PUTting it + CHECKSUMS.sha256
       (new root_digest). Task labels (semseg.parquet) are valid and tracked meanwhile.
     split_group:
-      pattern: '^(.+)_\d+$'
+      pattern: '^(?:train|test|val)_([^_]+)_'
       match_field: stem
       template: "coralseg/{group}"
     loader:

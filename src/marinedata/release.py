@@ -36,6 +36,7 @@ from .neardup import (
     near_pairs,
 )
 from .registry import Registry
+from .sample_schema import staged_partition
 from .splitmap import MergeInfo, Row, load_split_map, resolve_splits, rows_to_counts
 from .strata import DEFAULT_MIN_GROUPS, TRAIN
 from .tables import _require_pyarrow
@@ -237,7 +238,7 @@ def enumerate_release_rows(
                     "split_group — the registry's per-source split_group rule must run "
                     "before staging"
                 )
-            partition, stem = record["partition"], record["stem"]
+            partition, stem = staged_partition(record), record["stem"]
             index = partition_indexes.get(partition)
             if index is None:
                 index = _partition_stem_index(root / "images" / partition)

@@ -6,6 +6,12 @@ annotations), ``labels/image_labels.parquet`` (whole-image annotations, WS-D S23
 and/or ``labels/masks/<partition>/<stem>.png`` (dense masks), and ``CHECKSUMS.sha256``
 (not read here — that pins bytes for ingest, not for loading).
 
+A flat D-K tree (:mod:`marinedata.sample_schema`, D-AI2) is read too: no ``partition``
+column means partition ``""`` (``images/<stem>.<ext>``), and with no ``labels/masks/``
+the PNGs under ``labels/files/`` are the masks. ``mask_channel`` (``r``/``g``/``b``)
+decodes one channel of an RGB mask into an indexed PNG cached under ``decoded_dir``
+(default ``labels/masks_decoded``), refusing any value outside ``mask_values``.
+
 ``metadata.parquet`` is the sample index, not the ``images/`` directory tree, because
 the writer (:func:`marinedata.tables.write_metadata_table`) records ``stem`` and
 ``partition`` but never the file extension — resolving the real file means walking
@@ -20,10 +26,12 @@ from collections.abc import Iterator
 from pathlib import Path
 
 from ..models import SplitGroupRule
+from ..normalise import _encode_indexed_png
 from ..sample import Sample
+from ..sample_schema import staged_partition
 from ..tables import _require_pyarrow
 from .base import LoaderError, register_loader
-from .generic import _HarmonizingLoader
+from .generic import _HarmonizingLoader, _require_pillow_and_numpy
 
 
 def _by_partition_stem(directory: Path) -> dict[tuple[str, str], Path]:
@@ -127,6 +135,51 @@ class StagedTreeLoader(_HarmonizingLoader):
             result[value.strip()] = label.strip()
         return result
 
+    def _mask_channel(self) -> str:
+        channel = str(self._param("mask_channel", "")).strip().lower()
+        if channel not in ("", "r", "g", "b"):
+            raise LoaderError(f"{self.source.id}: mask_channel must be r, g or b, got {channel!r}")
+        return channel
+
+    def _masks_by_key(self) -> dict[tuple[str, str], Path]:
+        """Dense masks keyed like images. ``labels/masks/`` (D1) wins; without it, a flat
+        D-K tree's ``labels/files/*.png`` are the masks (D-AI2: coralseg keeps them there)."""
+        masks_dir = self.root / "labels" / "masks"
+        if masks_dir.is_dir():
+            return _by_partition_stem(masks_dir)
+        files = _by_partition_stem(self.root / "labels" / "files")
+        return {key: path for key, path in files.items() if path.suffix.lower() == ".png"}
+
+    def _decode_channel(
+        self, mask: Path, channel: str, partition: str, stem: str, mask_values: dict[str, str]
+    ) -> Path:
+        """One channel of an RGB mask -> indexed PNG (cached). Any value that is not a
+        declared ``mask_values`` key raises: guessing a class would corrupt the mask."""
+        decoded_dir = str(self._param("decoded_dir", "labels/masks_decoded"))
+        dest = self.root / decoded_dir / partition / f"{stem}.png"
+        if dest.is_file():
+            return dest
+        Image, np = _require_pillow_and_numpy()
+        label = f"{self.source.id}/{stem}"
+        allowed = sorted(int(v) for v in mask_values) if mask_values else None
+        with Image.open(mask) as im:
+            band = np.asarray(im.convert("RGB"))[:, :, "rgb".index(channel)].astype(np.uint8)
+            size = im.size
+        if allowed is not None:
+            bad = ~np.isin(band, allowed)
+            if bad.any():
+                y, x = (int(v) for v in np.argwhere(bad)[0])
+                raise LoaderError(
+                    f"{label}: pixel at (x={x}, y={y}) has {channel.upper()}={int(band[y, x])}, "
+                    f"not a declared mask_values key {allowed} — refusing to guess"
+                )
+        classes = (allowed[-1] if allowed else int(band.max())) + 1
+        dest.parent.mkdir(parents=True, exist_ok=True)
+        _encode_indexed_png(
+            Image.frombytes("L", size, band.tobytes()), dest, classes=classes, label=label
+        )
+        return dest
+
     def _points_by_key(self) -> dict[tuple[str, str], list[dict]]:
         path = self._points_path()
         if not path.is_file():
@@ -147,13 +200,14 @@ class StagedTreeLoader(_HarmonizingLoader):
 
     def _iter_samples(self) -> Iterator[Sample]:
         images_by_key = _by_partition_stem(self.root / "images")
-        masks_by_key = _by_partition_stem(self.root / "labels" / "masks")
+        masks_by_key = self._masks_by_key()
+        channel = self._mask_channel()
         points_by_key = self._points_by_key()
         image_labels_by_key = self._image_labels_by_key()
         mask_values = self._mask_values()
 
         for record in _read_parquet(self._metadata_path()).to_pylist():
-            partition = record["partition"]
+            partition = staged_partition(record)
             stem = record["stem"]
             key = (partition, stem)
             image = images_by_key.get(key)
@@ -192,9 +246,11 @@ class StagedTreeLoader(_HarmonizingLoader):
                 supervised = supervised - frozenset(conflicted_axes)
 
             mask = masks_by_key.get(key)
+            if mask is not None and channel:
+                mask = self._decode_channel(mask, channel, partition, stem, mask_values)
             meta: dict[str, object] = {
                 "partition": partition,
-                "upstream_path": record["upstream_path"],
+                "upstream_path": record.get("upstream_path"),
                 "split_group": record.get("split_group"),
             }
             if record.get("upstream_split"):

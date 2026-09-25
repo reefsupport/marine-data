@@ -122,7 +122,7 @@ def test_parquet_round_trip_and_licence_filter(tmp_path):
     ss.write_samples(path, rows)
     table = pq.read_table(path)
     ss.validate_table(table)
-    assert table.schema.metadata[b"marinedata.sample_schema"] == b"1"
+    assert table.schema.metadata[b"marinedata.sample_schema"] == b"2"  # v2: D-AI2 split columns
     assert ss.licence_filter(table, ["CC0-1.0"]).column("stem").to_pylist() == ["b2"]
     back = ss.row_from_mapping(table.to_pylist()[0])
     assert back.label_refs == ("labels/image_labels.parquet",)
