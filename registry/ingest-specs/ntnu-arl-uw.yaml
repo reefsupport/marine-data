@@ -1,0 +1,17 @@
+id: ntnu-arl-uw
+adapter: hf
+params:
+  repo: ntnu-arl/underwater-datasets
+  revision: d79489fc4742
+  # Repo has no parquet/image files at all — payload is 8 ROS bags (148.68 GB
+  # total, confirmed via the HF tree API). Default include (parquet-or-image)
+  # enumerates ~0 bytes. First pass: 3 bags spanning both sites, ~49 GB.
+  include:
+    - subset-mclab/mclab_1/mclab_1.bag
+    - subset-mclab/mclab_2/mclab_2.bag
+    - subset-fjord/fjord_5/fjord_5.bag
+license: bsd-3-clause
+attribution: NTNU ARL
+citation: NTNU Autonomous Robotics Lab
+homepage: https://huggingface.co/datasets/ntnu-arl/underwater-datasets
+max_images: 20000

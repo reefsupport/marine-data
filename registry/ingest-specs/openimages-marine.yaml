@@ -1,0 +1,14 @@
+id: openimages-marine
+adapter: csv-url-index
+params:
+  bucket: s3://open-images-dataset/
+  annotation_csv: https://storage.googleapis.com/openimages/v7/oidv7-train-annotations-bbox.csv
+license: cc-by-4.0
+attribution: Kuznetsova et al. / Open Images
+citation: Kuznetsova et al., IJCV 2020
+homepage: https://storage.googleapis.com/openimages/web/index.html
+notes: needs_adapter:csv-url-index — s3://open-images-dataset/ is anonymously listable
+  (confirmed 200 on ListObjectsV2) but is a flat <split>/<image_id>.jpg layout with
+  no class prefix; a marine-only subset needs the class-filtered image-id list from
+  the OIDv7 bbox/label CSVs first, then per-id fetch from the flat bucket — the bucket
+  adapter alone would pull the whole ~1.9M-image corpus

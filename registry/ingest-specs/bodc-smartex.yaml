@@ -1,0 +1,12 @@
+id: bodc-smartex
+adapter: bodc-catalogue
+params:
+  doi: 10.5285/298e66b2-d9d1-2f58-e063-7086abc085bf
+license: ogl-uk
+attribution: British Oceanographic Data Centre (BODC)
+citation: BODC doi:10.5285/298e66b2-d9d1-2f58-e063-7086abc085bf
+homepage: https://doi.org/10.5285/298e66b2-d9d1-2f58-e063-7086abc085bf
+notes: needs_adapter:bodc-catalogue — the DOI 302-redirects to a BODC catalogue record;
+  BODC typically serves bulk files via its own download-manager/FTP rather than flat
+  HTTP, needs a follow-up fetch of the resolved catalogue page to find the file access
+  route

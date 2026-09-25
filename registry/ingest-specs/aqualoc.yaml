@@ -1,0 +1,13 @@
+id: aqualoc
+adapter: seafile-share
+params:
+  landing: https://www.lirmm.fr/aqualoc/
+  share: https://seafile.lirmm.fr/d/79b03788f29148ca84e5/
+license: cc-by-nc-sa
+attribution: Ferrera et al. (LIRMM)
+citation: Ferrera et al., IJRR 2019
+homepage: https://www.lirmm.fr/aqualoc/
+notes: needs_adapter:seafile-share — the real download host is a Seafile share link
+  (https://seafile.lirmm.fr/d/79b03788f29148ca84e5/), not a flat file list; needs
+  a Seafile-share adapter (its API lists folder contents as JSON under /api/v2.1 given
+  the share token)

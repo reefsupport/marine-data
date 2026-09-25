@@ -1,0 +1,9 @@
+id: fathomnet-megalodon
+adapter: hf
+params:
+  repo: FathomNet/2024-megalodon-benchmark
+  revision: e4e11fd74821
+license: other-hf
+attribution: FathomNet / MBARI
+citation: FathomNet 2024
+homepage: https://huggingface.co/datasets/FathomNet/2024-megalodon-benchmark

@@ -1,0 +1,9 @@
+id: coralnet-small
+adapter: hf
+params:
+  repo: nf-whoi/coralnet-small
+  revision: df2570887c1a
+license: unknown
+attribution: CoralNet / WHOI mirror
+citation: nf-whoi/coralnet-small (HF)
+homepage: https://huggingface.co/datasets/nf-whoi/coralnet-small

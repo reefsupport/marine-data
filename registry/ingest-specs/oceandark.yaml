@@ -1,0 +1,11 @@
+id: oceandark
+adapter: gdrive
+params:
+  landing: https://sites.google.com/view/oceandark/home
+license: unknown
+attribution: Porto Marques et al.
+citation: Porto Marques et al. 2019
+homepage: https://sites.google.com/view/oceandark/home
+notes: needs_adapter:gdrive — the Google Sites page links to a Google Drive folder/viewer,
+  not a direct file URL; needs a Drive-aware fetcher (or a human export to a direct
+  zip link)

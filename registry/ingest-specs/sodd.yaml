@@ -1,0 +1,8 @@
+id: sodd
+adapter: zenodo
+params:
+  zenodo_record: 10230328
+license: cc-by-4.0
+attribution: Zenodo contributors
+citation: Zenodo doi:10.5281/zenodo.10230328
+homepage: https://zenodo.org/records/10230328

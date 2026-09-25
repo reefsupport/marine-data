@@ -8,3 +8,4 @@ attribution: WHOI-Plankton (Sosik et al.), via HF nf-whoi/whoi-plankton
 citation: Sosik+ WHOI-Plankton
 homepage: https://huggingface.co/datasets/nf-whoi/whoi-plankton
 expected_images: 956867
+max_images: 20000

@@ -1,0 +1,11 @@
+id: caddy
+adapter: site-scrape
+params:
+  landing: http://www.caddian.eu/
+license: cc-by-nc-sa
+attribution: Gomez Chavez et al.
+citation: Gomez Chavez et al., JMSE 2019
+homepage: http://www.caddian.eu/
+notes: needs_adapter:site-scrape — caddian.eu root and a guessed /index.php/downloads
+  path (404) exposed no direct zip links on this pass; the catalog's 'zip links' note
+  implies a subpage not yet located

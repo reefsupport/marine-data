@@ -1,0 +1,12 @@
+id: eilat-rsmas
+adapter: site-scrape
+params:
+  landing: https://sci2s.ugr.es/CNN-coral-image-classification
+license: research-use
+attribution: Shihavuddin et al.; Gomez-Rios et al.
+citation: Shihavuddin et al. 2013; Gomez-Rios et al. 2019
+homepage: https://sci2s.ugr.es/CNN-coral-image-classification
+notes: needs_adapter:site-scrape — page https://sci2s.ugr.es/CNN-coral-image-classification
+  only linked StructureRSMAS.zip on this pass (host needed -k/-L, plain http 301s
+  to https); the EILAT+RSMAS image archive itself is referenced from a same-page 'dataset'
+  anchor that needs a follow-up fetch to resolve to an exact file URL

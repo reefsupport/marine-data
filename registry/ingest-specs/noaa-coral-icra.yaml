@@ -1,0 +1,9 @@
+id: noaa-coral-icra
+adapter: hf
+params:
+  repo: NMFS-OSI/NOAA-PIFSC-ESD-ESA-CORAL-ICRA-Dataset
+  revision: b5e722f7c11e
+license: other-hf
+attribution: NOAA PIFSC
+citation: NOAA PIFSC ESD-ESA CORAL-ICRA
+homepage: https://huggingface.co/datasets/NMFS-OSI/NOAA-PIFSC-ESD-ESA-CORAL-ICRA-Dataset

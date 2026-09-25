@@ -1,0 +1,11 @@
+id: seathru-nerf
+adapter: gdrive
+params:
+  landing: https://sea-thru-nerf.github.io/
+  drive_link: https://drive.google.com/uc?export=download&id=1RzojBFvBWjUUhuJb95xJPSNP3nJwZWaT
+license: unknown
+attribution: Levy et al.
+citation: Levy et al., CVPR 2023
+homepage: https://sea-thru-nerf.github.io/
+notes: needs_adapter:gdrive — project page links a Google Drive file id (1RzojBFvBWjUUhuJb95xJPSNP3nJwZWaT);
+  needs a Drive-aware fetcher (large-file confirm-token handshake)

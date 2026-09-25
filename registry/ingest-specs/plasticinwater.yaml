@@ -1,0 +1,9 @@
+id: plasticinwater
+adapter: hf
+params:
+  repo: OceanCV/PlasticInWater
+  revision: c380143ae980
+license: unknown
+attribution: OceanCV
+citation: OceanCV/PlasticInWater (HF)
+homepage: https://huggingface.co/datasets/OceanCV/PlasticInWater
