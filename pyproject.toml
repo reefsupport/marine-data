@@ -45,6 +45,18 @@ eval = [
     "scikit-learn>=1.4",
     "pycocotools>=2.0.7",
 ]
+# P5 baselines: frozen linear probe + small fine-tune backbones (anonymous, no HF login).
+baselines = [
+    "numpy>=1.24",
+    "pandas>=2.0",
+    "pyarrow>=15",
+    "pillow>=10.0",
+    "scikit-learn>=1.4",
+    "torch>=2.2",
+    "torchvision>=0.17",
+    "transformers>=4.40",
+    "open-clip-torch>=2.24",
+]
 all = ["pandas>=2.0", "torch>=2.2", "numpy>=1.24", "pillow>=10.0"]
 dev = [
     "pytest>=8.0",

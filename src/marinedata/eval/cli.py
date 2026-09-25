@@ -2,7 +2,9 @@
 the same way :mod:`marinedata.cli_ingest` is — ``cli.py`` imports and wires
 :func:`add_eval_subparser` from here (its one call line, disclosed in the P4 report).
 
-Only ``score`` is implemented here; ``baseline``, ``reproduce`` and ``table`` are P5.
+``score`` is P4. ``reproduce`` (frozen-probe feature-extract + fit + score, the design
+§5 P5 acceptance check) and ``table`` (the §4.5 card table) are P5
+(:mod:`marinedata.eval.baselines`).
 
 **Ground-truth contract.** P3 (split-v2) and P1 (benchmark manifests) are not merged
 yet, so ``--gt`` is an explicit flag rather than derived from ``--release``: a parquet
@@ -178,3 +180,92 @@ def add_eval_subparser(sub: argparse._SubParsersAction) -> None:
     p_score.add_argument("--seed", type=int, default=20260925)
     p_score.add_argument("--out", required=True)
     p_score.set_defaults(func=_cmd_eval_score)
+
+    p_reproduce = eval_sub.add_parser(
+        "reproduce",
+        help="Extract cached features, fit a frozen probe and score it (design §5 P5 check)",
+    )
+    p_reproduce.add_argument("--config", required=True, help="configs/baselines/v2.yaml")
+    p_reproduce.add_argument(
+        "--fixture",
+        required=True,
+        help="Parquet: image_sha256, image_path, label, split, split_group",
+    )
+    p_reproduce.add_argument("--backbone", required=True, help="Backbone id from --config")
+    p_reproduce.add_argument(
+        "--task", required=True, help="Task id (recorded, not read from --config)"
+    )
+    p_reproduce.add_argument("--cache", required=True, help="Feature cache dir")
+    p_reproduce.add_argument("--out", required=True)
+    p_reproduce.set_defaults(func=_cmd_eval_reproduce)
+
+    p_table = eval_sub.add_parser("table", help="Render the design §4.5 card results table")
+    p_table.add_argument("--metrics", required=True, action="append", help="metrics.json path(s)")
+    p_table.add_argument("--out", required=True)
+    p_table.set_defaults(func=_cmd_eval_table)
+
+
+def _cmd_eval_reproduce(args: argparse.Namespace) -> int:
+    import yaml
+
+    from .baselines.features import BACKBONES, FeatureExtractor, extract_with_cache
+    from .baselines.probe import fit_probe, score_probe
+
+    config = yaml.safe_load(Path(args.config).read_text())
+    if args.backbone not in {b["id"] for b in config["backbones"]}:
+        raise ValueError(f"backbone {args.backbone!r} not in {args.config}")
+    if args.backbone not in BACKBONES:
+        raise ValueError(f"backbone {args.backbone!r} has no extractor implementation")
+
+    fixture = pd.read_parquet(args.fixture)
+    required = {"image_sha256", "image_path", "label", "split", "split_group"}
+    missing = required - set(fixture.columns)
+    if missing:
+        raise ValueError(f"{args.fixture}: fixture missing column(s) {missing}")
+
+    images = [
+        (row.image_sha256, Path(row.image_path).read_bytes()) for row in fixture.itertuples()
+    ]
+    extractor = FeatureExtractor(args.backbone)
+    feats_df, img_per_s = extract_with_cache(extractor, images, Path(args.cache))
+    merged = fixture.merge(feats_df, on="image_sha256", how="inner", validate="one_to_one")
+
+    def _split_xy(split_name: str) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
+        rows = merged[merged["split"] == split_name]
+        x = np.stack(rows["feature"].to_numpy()).astype(np.float32)
+        return x, rows["label"].to_numpy(), rows["split_group"].to_numpy()
+
+    x_train, y_train, g_train = _split_xy("train")
+    x_val, y_val, _ = _split_xy("val")
+    probe = fit_probe(x_train, y_train, x_val, y_val, group_ids=g_train)
+
+    out: dict = {
+        "config": args.config,
+        "backbone": args.backbone,
+        "revision": BACKBONES[args.backbone].revision,
+        "task": args.task,
+        "best_C": probe.best_C,
+        "img_per_s": img_per_s,
+        "n_images": len(merged),
+        "splits": {},
+    }
+    for split_name in sorted(set(merged["split"]) - {"train"}):
+        x, y, _ = _split_xy(split_name)
+        f1, _ = score_probe(probe, x, y)
+        out["splits"][split_name] = {"macro_f1": f1, "n_images": len(y)}
+
+    out_dir = Path(args.out)
+    out_dir.mkdir(parents=True, exist_ok=True)
+    (out_dir / "metrics.json").write_text(json.dumps(out, indent=2, sort_keys=True))
+    print(json.dumps(out, indent=2, sort_keys=True))
+    return 0
+
+
+def _cmd_eval_table(args: argparse.Namespace) -> int:
+    from .baselines.table import render_card_table
+
+    rows = [json.loads(Path(p).read_text()) for p in args.metrics]
+    md = render_card_table(rows)
+    Path(args.out).write_text(md)
+    print(md)
+    return 0
