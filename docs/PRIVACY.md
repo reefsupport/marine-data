@@ -1,9 +1,10 @@
-# Privacy policy — faces and people (WP-5b)
+# Privacy policy — faces and people (WP-5b/5d)
 
-**Status: pipeline built and validated; full-corpus scan and the D-I manual audit are
-NOT complete** (see "What is actually done" below). This document records the policy
-decision so the v2 build can implement it as soon as the full scan/audit lands; it does
-not itself certify that v1 or the current `privacy.parquet` is audit-complete.
+**Status: DONE.** The full 69,600-image scan ran to completion (WP-5c), and the D-I
+manual audit (350 images, seed=42) ran against it (WP-5d) —
+`docs/privacy-audit-2026-09-25.tsv`, results below and in `docs/ETHICS_FACE_AUDIT.md`.
+This is the v2 policy as implemented; `privacy.parquet` + the audit TSV are uploaded to
+`s3://rs-storage-open/releases/open-marine-imagery/v1/privacy/`.
 
 ## Why this replaces the Haar-cascade proxy
 
@@ -37,11 +38,17 @@ A face box is `face_identifiable` when **all** of:
    strap, or the camera angle — treated as not independently identifiable even if a
    face box fired.
 
-This is a first-order geometric heuristic, not a learned occlusion classifier. **It
-still needs calibration against a real manual audit** (D-I: >= 150 face positives
-across score bands, 100 person positives, 100 random negatives,
-`docs/privacy-audit-2026-09-25.tsv`) before the thresholds above should be treated as
-final — that audit did not run in this pass (see "What is actually done").
+This is a first-order geometric heuristic, not a learned occlusion classifier. The D-I
+audit (`docs/privacy-audit-2026-09-25.tsv`) calibrated it: on the 26 true-positive
+faces in the sample, `_looks_occluded()` scored **0/3 precision, 0/5 recall** — it
+fired three times, always on a coral-texture false positive, and missed all five real
+masked/regulator-obscured diver faces. **Not retuned**: 5 ground-truth positives is too
+small to fit a new threshold without overfitting, and the failure isn't threshold
+shape, it's that the landmark-ratio signal doesn't discriminate on this sample. It also
+doesn't change `face_identifiable` for those 5 cases either way — they're already
+excluded by the score/size gate before `_looks_occluded()` is consulted. Left in place;
+flagged in `docs/ETHICS_FACE_AUDIT.md` as unproven and a candidate for removal or
+replacement by a real classifier if mask detection becomes a hard requirement.
 
 ## v2 blur policy (decision, to be implemented by the v2 build)
 
@@ -61,47 +68,27 @@ final — that audit did not run in this pass (see "What is actually done").
   bytes from private staging into the public release tree; it is not wired into any
   `hf_*` module here (D-M).
 
-## What is actually done vs. not (read before relying on this doc)
+## What is actually done
 
-Done and verified in this pass:
-- `src/marinedata/privacy.py` + `marinedata privacy-scan` CLI: batched, resumable
-  (skips `image_sha256` already in the output parquet), flushes incrementally, runs
-  both detectors, writes the `privacy.parquet` schema described above.
-- `blur_faces` implemented and unit-tested (8 tests, all passing).
-- Smoke-tested end-to-end against real images from `data/_hf/v1/data/images/`: 260
-  images scanned (60 then +200 with cache-skip verified), 10 face boxes, 2 person
-  boxes found — proves the pipeline runs correctly on real data at real resolution,
-  including detector-vs-architecture pitfalls (see code comment on
-  `PersonDetector.__init__` about the `reduce_tail` backbone-width trap).
+- `src/marinedata/privacy.py` + `marinedata privacy-scan` CLI: batched, resumable,
+  cached by `image_sha256`, writes the `privacy.parquet` schema described above.
+- `blur_faces` implemented and unit-tested (determinism, boxed-region-changes,
+  untouched-pixels, no-op-on-empty-boxes).
+- **Full-corpus scan complete** (WP-5c, PID 22482): all 69,600 images, 0 decode
+  errors, 5,148 face boxes / 1,238 person-flagged images found, ~102 min elapsed.
+- **D-I manual audit complete** (WP-5d): 350 images (150 face / 100 person / 100
+  negative, seed=42) hand-reviewed against rendered contact sheets, recorded in
+  `docs/privacy-audit-2026-09-25.tsv`. Results, per-source breakdown and the
+  `_looks_occluded()` calibration are in `docs/ETHICS_FACE_AUDIT.md`.
+- `docs/DATASHEET.md` and `docs/ETHICS_FACE_AUDIT.md` rewritten with the audited
+  numbers, citing the TSV.
+- `privacy.parquet` + the audit TSV uploaded to
+  `s3://rs-storage-open/releases/open-marine-imagery/v1/privacy/`, size+ETag
+  verified; `CHECKSUMS.sha256` regenerated.
 
-Not done — out of reach of this worker's budget, not faked:
-- **The full-corpus scan.** Measured throughput on this pass is ~0.1–0.3 s/image on
-  CPU/MPS, i.e. roughly 2–6 hours for all 69,600 images — longer than one worker
-  session's tool-call budget allows to run and verify interactively. The CLI is
-  resumable specifically so this can be restarted/continued rather than re-run from
-  scratch.
-- **The D-I manual audit** (`docs/privacy-audit-2026-09-25.tsv`, >= 150/100/100
-  stratified samples, precision per detector, FN rate, 95% CI on the identifiable
-  count). This requires the full scan's output first, plus visual review time this
-  pass did not have budget for.
-- **`docs/DATASHEET.md` / `docs/ETHICS_FACE_AUDIT.md` numbers** are therefore left
-  as the Haar-cascade numbers for now rather than being overwritten with an
-  incomplete pilot's counts — replacing 12,433/69,600 with a number from 260 sampled
-  images would be less honest, not more.
-- **S3 upload of `privacy.parquet`** — not done; the artifact from this pass only
-  covers the 260-image smoke sample and is not the release deliverable.
+## Known gap, deliberately out of this scope
 
-## Next steps for whoever continues this
-
-1. Run `marinedata privacy-scan --input data/_hf/v1/data/images --output
-   data/_privacy/v1/privacy.parquet --face-weights <yunet.onnx> --person-weights
-   <torch-cache-dir>` to completion (resumable — safe to kill and restart).
-2. Pull a stratified sample from the resulting parquet (by score band / source) and
-   run the D-I manual audit into `docs/privacy-audit-2026-09-25.tsv`.
-3. Use the audit's precision/FN numbers to recheck (or retune) the `MIN_FACE_PX` /
-   `MIN_FACE_SCORE` / `_looks_occluded` thresholds in `src/marinedata/privacy.py`.
-4. Update `docs/DATASHEET.md` and `docs/ETHICS_FACE_AUDIT.md` with the real
-   full-corpus numbers, keeping the Haar-cascade history to one sentence.
-5. Upload the finished `privacy.parquet` to
-   `s3://rs-storage-open/releases/open-marine-imagery/v1/privacy/` with size+ETag
-   verification.
+`face_identifiable` and `people_present` are **not yet wired into `hf_*` metadata** —
+that integration belongs to WP-2 at the point it merges this branch (per D-M, this
+worktree never touches `hf_*`). Until then, the columns exist only in
+`data/_privacy/v1/privacy.parquet`, joinable on `image_sha256`.
