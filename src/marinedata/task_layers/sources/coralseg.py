@@ -9,8 +9,8 @@ charter, superseding D-Z's "never the images" for Coralseg only) authorizes open
 restaging Coralseg's images so masks can be keyed by the sha256 the staging step itself
 computes — see ``docs/task-layers.md``'s WP-8b finding this resolves.
 
-Each mask's class counts come from its red channel (values 0/1 only), per the registry's
-already-verified ``coralseg-r-channel`` loader note.
+Each mask's class counts come from its red channel: 0 Other, 1 Hard Coral, 2 Soft Coral (D-AI3; the
+``Mask conversion`` line of s3://rs-storage-open/benthic_datasets/README.md).
 """
 
 from __future__ import annotations
@@ -77,7 +77,7 @@ def list_pairs(client: Any, bucket: str = LEGACY_BUCKET, prefix: str = LEGACY_PR
 
 
 def class_counts_from_mask(data: bytes) -> dict[str, int]:
-    """Red-channel histogram (0/1 only, per the registered ``coralseg-r-channel`` loader)."""
+    """Red-channel histogram (0 Other / 1 Hard Coral / 2 Soft Coral, D-AI3)."""
     from PIL import Image
 
     with Image.open(io.BytesIO(data)) as im:

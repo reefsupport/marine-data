@@ -1320,16 +1320,30 @@ sources:
       verified_on: 2026-09-19
       verified_by: "2026-09-19 boto3 bucket listing (v4s-open-listing.tsv): 9,844 files / 829,917,530 bytes under benthic_datasets/mask_labels/Coralseg/. Root and benthic_datasets READMEs describe it as a UCSD mosaics dataset and link the Coralseg paper; neither states a licence (P1-B proposal)."
       method: absent
+    checksums:
+      version: "unversioned"
+      root_digest: 89c788ae29f42c1cbe2ac6a394360b7abf9223ae5ff82fd8f3ecee433bcec659
+      files: 9845
+      size_bytes: 831410317
     access:
       method: s3
-      uri: s3://rs-storage-open/benthic_datasets/mask_labels/Coralseg
+      uri: s3://rs-storage-open/sources/coralseg-ucsd-mosaics/unversioned/
       params:
         bucket: rs-storage-open
         endpoint: hel1.your-objectstorage.com
         region: hel1
-        prefix: benthic_datasets/mask_labels/Coralseg/
-        credentials_env: S3
-      size_bytes: 829917530
+        prefix: sources/coralseg-ucsd-mosaics/unversioned/
+      size_bytes: 831410317
+      notes: >
+        coralseg-flip-d (2026-09-25, D-AI3): flipped from the original
+        benthic_datasets/mask_labels/Coralseg/ prefix to our own staged copy.
+        metadata.parquet + CHECKSUMS.sha256 rewritten with split_group (one group
+        per of the 16 source mosaics)/upstream_split/upstream_path (D-AI2) and
+        re-uploaded; the two prior objects were server-side copied first to
+        `_superseded/20260925T103158Z/` (never deleted), both anonymous-HEAD
+        verified 200 alongside the two new ones. root_digest moved
+        22454a3c...cc80b -> 89c788ae...bcec659 (metadata.parquet content only;
+        no image/mask object touched).
     modalities: [image]
     capabilities: [benthic-segmentation, general-pretraining]
     items: 9844
@@ -1359,29 +1373,38 @@ sources:
       memory-only to s3://rs-storage-open/sources/coralseg-ucsd-mosaics/unversioned/
       (9,846 objects / 831,384,589 bytes, head_failed 0; CHECKSUMS.sha256 9,845 entries,
       sha256 22454a3cfbaced4e13ab2eeb7f80292d40ba708ddaeb1e121e9de2f8a42cc80b, anon-GET
-      digest match; 20/20 random anon HEADs 200). Still NOT flipped: that tree's
-      metadata.parquet has NO split_group column, and this source declares an explicit
-      split_group rule, so the staged-tree loader's validate() would reject all 4,922
-      rows (S28 guard) and the release enumerator would raise. Flip after rewriting
-      metadata.parquet via Source.split_group_for and re-PUTting it + CHECKSUMS.sha256
-      (new root_digest). Task labels (semseg.parquet) are valid and tracked meanwhile.
+      digest match; 20/20 random anon HEADs 200). NOT flipped yet at that point: that
+      tree's metadata.parquet had NO split_group column.
+      coralseg-flip-c (2026-09-25, D-AI2): added split_group (one group per of the 16
+      source mosaics, never per tile)/upstream_split/upstream_path to SampleRow; the
+      StagedTreeLoader mask fallback (`labels/files/` + red-channel decode) was wired.
+      Live-loader check found the masks carry a 3rd class (R=2) the old
+      `coralseg-r-channel` note didn't declare — flip deferred pending D-AI3.
+      coralseg-flip-d (2026-09-25, D-AI3): named class 2 from the upstream
+      benthic_datasets/README.md's own "Mask conversion" line — 0 (Other), 1 (Hard
+      Coral), 2 (Soft Coral) — a real third class, not an ignore value. Registry
+      `loader.params.mask_values` below declares all three. Flipped: see `access`
+      above for the new root_digest and the superseded-copy stamp.
     split_group:
       pattern: '^(?:train|test|val)_([^_]+)_'
       match_field: stem
       template: "coralseg/{group}"
     loader:
-      layout: coralseg-r-channel
-      verified_on: 2026-09-23
+      layout: staged-tree
+      verified_on: 2026-09-25
       verified_note: >
-        WSD S6x §2f/S7f: idx = red channel of Mask/<stem>.png (values 0/1 only; green
-        and blue are always 0), pairing Image/<stem>.jpg by stem within each split
-        directory (partition_glob covers train/test/val). No schema_id/crosswalk yet -
-        licence is unresolved (BLOCKED PENDING PERMISSION below), so harmonisation is
-        deferred; this only wires the mask decode.
+        D-AI3: red channel of labels/files/<stem>.png carries 3 values, not 2 -
+        0 (Other), 1 (Hard Coral), 2 (Soft Coral), per the
+        "Mask conversion" line of s3://rs-storage-open/benthic_datasets/README.md
+        (the exact upstream fetched here). Corrects the prior
+        `coralseg-r-channel` note (2026-09-23, "values 0/1 only"), which predates
+        this source's restage to the staged-tree layout and would refuse the
+        3,215 masks that contain a 2. Green/blue are always 0. No schema_id/
+        crosswalk yet - licence is unresolved (BLOCKED PENDING PERMISSION above),
+        so harmonisation is deferred; this only wires the mask decode.
       params:
-        images_dir: Image
-        masks_dir: Mask
-        partition_glob: "*"
+        mask_channel: r
+        mask_values: "0=Other,1=Hard Coral,2=Soft Coral"
     tags: [needs-permission]
 
   - id: seaview-survey-imagery

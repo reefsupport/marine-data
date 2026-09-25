@@ -162,8 +162,8 @@ def _coralseg_objects() -> dict[str, bytes]:
     Image.new("RGB", (4, 3), (10, 20, 30)).save(buf, format="JPEG")
     pre = "benthic_datasets/mask_labels/Coralseg/train"
     return {
-        f"{pre}/Image/s1.jpg": buf.getvalue(),
-        f"{pre}/Mask/s1.png": _png([[0, 1, 1, 0]] * 3, "RGB"),
+        f"{pre}/Image/s1_0.jpg": buf.getvalue(),
+        f"{pre}/Mask/s1_0.png": _png([[0, 1, 1, 0]] * 3, "RGB"),
     }
 
 

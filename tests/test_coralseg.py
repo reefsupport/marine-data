@@ -15,8 +15,7 @@ import pytest
 from conftest import make_source
 
 from marinedata import Registry
-from marinedata.loaders import LoaderError, build_loader, loader_for
-from marinedata.loaders.coralseg import CoralsegRMaskLoader
+from marinedata.loaders import LoaderError, build_loader
 
 FIXTURES = Path(__file__).parent / "fixtures" / "coralseg"
 
@@ -46,29 +45,31 @@ def test_fr3_tile_r_channel_pixel_counts(tmp_path: Path) -> None:
     assert sample.mask is not None
     counts = _pixel_counts(Path(sample.mask))
     assert counts == {0: 221_708, 1: 40_436}
-    assert sample.meta["mask_classes"] == {"0": "background", "1": "coral"}
+    assert sample.meta["mask_classes"] == {"0": "Other", "1": "Hard Coral", "2": "Soft Coral"}
 
 
 def test_unknown_r_value_raises(tmp_path: Path) -> None:
-    """A red value outside {0, 1} raises rather than being clipped/guessed."""
+    """A red value outside {0, 1, 2} raises rather than being clipped/guessed."""
     from PIL import Image
 
     root = _fixture_copy("fr3", tmp_path)
     mask_path = next((root / "Mask").glob("*.png"))
     with Image.open(mask_path) as im:
         im = im.convert("RGB")
-        im.putpixel((0, 0), (2, 0, 0))
+        im.putpixel((0, 0), (3, 0, 0))
         im.save(mask_path)
 
     source = make_source("coralseg-r-channel")
-    with pytest.raises(LoaderError, match="not in \\{0, 1\\}"):
+    with pytest.raises(LoaderError, match="not in \\{0, 1, 2\\}"):
         list(build_loader(source, root))
 
 
-def test_registry_source_resolves_to_coralseg_r_channel() -> None:
-    """The registry entry declares the new converter and it actually resolves."""
+def test_registry_source_resolves_to_staged_tree_with_all_three_mask_values() -> None:
+    """coralseg-flip-d (D-AI3): the registry entry now reads its own staged copy via
+    ``staged-tree``, declaring every red-channel value the live masks contain."""
     registry = Registry.load()
     source = registry.source("coralseg-ucsd-mosaics")
     assert source.loader is not None
-    assert source.loader.layout == "coralseg-r-channel"
-    assert loader_for(source.loader.layout) is CoralsegRMaskLoader
+    assert source.loader.layout == "staged-tree"
+    assert source.loader.params["mask_channel"] == "r"
+    assert source.loader.params["mask_values"] == "0=Other,1=Hard Coral,2=Soft Coral"

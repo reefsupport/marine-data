@@ -1,9 +1,10 @@
 """Coralseg (UCSD) R-channel mask converter (WSD S6x §2f / S7f).
 
 The Coralseg mosaics ship one RGB PNG per image where the class lives entirely in the
-red channel (0 background, 1 coral) and green/blue are always zero — a convention
-distinct from :mod:`.labelbox`'s fill+outline palette, so it gets its own tiny decode
-rather than overloading the labelbox LUT. Modelled on
+red channel (0 Other, 1 Hard Coral, 2 Soft Coral — the ``Mask conversion`` line of
+``s3://rs-storage-open/benthic_datasets/README.md``, D-AI3) and green/blue are always
+zero — a convention distinct from :mod:`.labelbox`'s fill+outline palette, so it gets
+its own tiny decode rather than overloading the labelbox LUT. Modelled on
 :class:`marinedata.loaders.labelbox.LabelboxRgbMaskLoader`: decode once, cache the
 derived indexed PNG next to the mask via
 :func:`marinedata.normalise._encode_indexed_png`, and raise rather than clip on any
@@ -20,27 +21,27 @@ from ..sample import Sample
 from .base import LoaderError, register_loader
 from .generic import _HarmonizingLoader, _images_under, _require_pillow_and_numpy
 
-_CLASSES = 2
-_MASK_CLASSES = {"0": "background", "1": "coral"}
+_CLASSES = 3
+_MASK_CLASSES = {"0": "Other", "1": "Hard Coral", "2": "Soft Coral"}
 
 
 def _r_channel_indices(im, *, label: str) -> bytes:
     """Decode the red channel of a Coralseg mask into raw per-pixel indices.
 
-    Raises if any observed red value is outside ``{0, 1}`` — an unrecognised value here
-    means the fixed 2-class convention this dataset was verified against (S6x §2f) does
+    Raises if any observed red value is outside ``{0, 1, 2}`` — an unrecognised value here
+    means the fixed 3-class convention this dataset was verified against (S6x §2f) does
     not hold for this file, and guessing which class it belongs to would silently
     corrupt the mask.
     """
     _Image, np = _require_pillow_and_numpy()
     arr = np.asarray(im.convert("RGB"))
     red = arr[:, :, 0]
-    bad = (red != 0) & (red != 1)
+    bad = red > 2
     if bad.any():
         y, x = (int(v) for v in np.argwhere(bad)[0])
         raise LoaderError(
             f"{label}: pixel at (x={x}, y={y}) has R={int(red[y, x])}, which is not in "
-            "{0, 1} for the coralseg R-channel convention — refusing to guess"
+            "{0, 1, 2} for the coralseg R-channel convention — refusing to guess"
         )
     return red.astype(np.uint8).tobytes()
 

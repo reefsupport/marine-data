@@ -43,8 +43,8 @@ def _write_tree(root: Path, pairs: list[tuple[str, str]], rule=None, mask_r=(0, 
     w = StagedWriter(root, cfg)
     for i, (split, uid) in enumerate(pairs):
         arr = np.zeros((4, 4, 3), dtype=np.uint8)
-        arr[:2, :, 0] = mask_r[0]
-        arr[2:, :, 0] = mask_r[1]
+        for band, value in enumerate(mask_r):  # later bands overwrite from row band*4//n
+            arr[band * 4 // len(mask_r) :, :, 0] = value
         mask = root.parent / f"m{i}.png"
         Image.fromarray(arr, "RGB").save(mask)
         stem_name = Path(uid).stem
@@ -86,14 +86,15 @@ def test_v1_parquet_without_the_new_columns_still_loads(tmp_path: Path) -> None:
 
 def test_flat_dk_tree_masks_fall_back_to_labels_files_with_red_decode(tmp_path: Path) -> None:
     root = tmp_path / "t"
-    _write_tree(root, [("train", "train/FR3_0_0_0_0.jpg")], coralseg.SPLIT_GROUP)
+    _write_tree(root, [("train", "train/FR3_0_0_0_0.jpg")], coralseg.SPLIT_GROUP, mask_r=(0, 1, 2))
     assert not (root / "labels/masks").exists()
-    params = {"mask_channel": "r", "mask_values": "0=background,1=coral"}
+    params = {"mask_channel": "r", "mask_values": "0=Other,1=Hard Coral,2=Soft Coral"}
     samples = list(build_loader(make_source("staged-tree", params), root))
     assert len(samples) == 1 and samples[0].mask is not None
     assert samples[0].meta["split_group"] == "coralseg/FR3"
     with Image.open(samples[0].mask) as im:
-        assert sorted(set(np.asarray(im).ravel().tolist())) == [0, 1]
+        assert sorted(set(np.asarray(im).ravel().tolist())) == [0, 1, 2]
+    assert samples[0].meta["mask_values"] == {"0": "Other", "1": "Hard Coral", "2": "Soft Coral"}
     raw = list(build_loader(make_source("staged-tree"), root))
     assert raw[0].mask is not None and raw[0].mask.parent.name == "files"
 
@@ -101,7 +102,7 @@ def test_flat_dk_tree_masks_fall_back_to_labels_files_with_red_decode(tmp_path: 
 def test_undeclared_red_value_raises(tmp_path: Path) -> None:
     root = tmp_path / "t"
     _write_tree(root, [("train", "train/FR3_0_0_0_0.jpg")], mask_r=(0, 7))
-    params = {"mask_channel": "r", "mask_values": "0=background,1=coral"}
+    params = {"mask_channel": "r", "mask_values": "0=Other,1=Hard Coral,2=Soft Coral"}
     with pytest.raises(LoaderError, match="R=7"):
         list(build_loader(make_source("staged-tree", params), root))
 
