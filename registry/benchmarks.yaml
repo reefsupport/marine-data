@@ -38,7 +38,7 @@ benchmarks:
      policy: route-to-our-test, policy_reason: "T90 and C60 both pinned to test (covers both protocols)", chain: [c11]}
   - {id: euvp, name: EUVP, task: enhancement, catalog_id: euvp, registry_id: null,
      upstream_split: {rule: "test_samples/ folder of the original release", eval_split: test_samples, heldout_val: null, counts: {test_samples: 515}, definition_url: "https://irvlab.cs.umn.edu/resources/euvp-dataset"},
-     split_verified: false, verified_by: "IRVLab 403 to scripts; HF mirror Ken1053/EUVP has train only (5550 rows)", obtain: {status: w2, via: "original release, not the partial HF mirror"},
+     split_verified: false, verified_by: "IRVLab 403 to scripts; HF mirror Ken1053/EUVP has train only (5550 rows) — re-checked 2026-09-25 via datasets-server /splits, still no test_samples split published anywhere reachable", obtain: {status: w2, via: "original release, not the partial HF mirror"},
      policy: route-to-our-test, policy_reason: "enhancement pairs", chain: [c9, c11]}
   - {id: deepfish, name: DeepFish, task: cls, catalog_id: deepfish, registry_id: deepfish,
      upstream_split: {rule: "per task dir {Classification,Localization,Segmentation}/{train,val,test}.csv", eval_split: test, heldout_val: val, counts: {test: null}, definition_url: "https://github.com/alzayats/DeepFish/blob/master/DeepFish/datasets/fish_seg.py"},
@@ -46,7 +46,7 @@ benchmarks:
      policy: route-to-our-test, policy_reason: "whole source is also ood-source-deepfish, so every image is non-train anyway", chain: []}
   - {id: fishnet-2023, name: FishNet (ICCV 2023), task: det, catalog_id: fishnet-2023, registry_id: fishnet-2023,
      upstream_split: {rule: "anns/train.csv vs anns/test.csv (paper)", eval_split: test, heldout_val: null, counts: {test: null}, definition_url: "https://fishnet-2023.github.io/"},
-     split_verified: false, verified_by: "GitHub repo holds Images/ only; split CSVs are on Drive", obtain: {status: registry-only, via: "project page Drive links"},
+     split_verified: false, verified_by: "GitHub repo holds Images/ only; split CSVs are on Drive — re-checked 2026-09-25 (site + GitHub tree API), no repo or arXiv listing enumerates train.csv/test.csv contents", obtain: {status: registry-only, via: "project page Drive links"},
      policy: route-to-our-test, policy_reason: "fish cls/det layer", chain: []}
   - {id: fathomnet-fgvc23, name: FathomNet FGVC 2023, task: det, catalog_id: fathomnet-fgvc23, registry_id: null,
      upstream_split: {rule: "train = images 0-800 m; eval = images 0-1300 m (Monterey Bay, MBARI)", eval_split: eval, heldout_val: null, counts: {train: 5950, eval: 10744}, definition_url: "https://github.com/fathomnet/fgvc-comp-2023"},
@@ -110,27 +110,27 @@ benchmarks:
      policy: route-to-our-test, policy_reason: "DUO re-annotates URPC; groups unify", chain: [c6, c9]}
   - {id: duo, name: DUO, task: det, catalog_id: duo, registry_id: null,
      upstream_split: {rule: "train/test COCO json", eval_split: test, heldout_val: null, counts: {train: 6671, test: 1111}, definition_url: "https://github.com/chongweiliu/DUO"},
-     split_verified: false, verified_by: "not fetched; counts from the paper", obtain: {status: w2, via: "Drive link in the repo"},
+     split_verified: false, verified_by: "not fetched; counts from the paper — re-checked 2026-09-25: GitHub tree has no annotation JSON (Drive-only) and the arXiv abstract page (2106.05681) does not give per-split counts", obtain: {status: w2, via: "Drive link in the repo"},
      policy: route-to-our-test, policy_reason: "fish/echinoderm det", chain: [c6]}
   - {id: usod10k, name: USOD10K, task: salient, catalog_id: usod10k, registry_id: null,
      upstream_split: {rule: "TR/VAL/TE dirs", eval_split: TE, heldout_val: VAL, counts: {train: 7178, val: 1026, test: 2051}, definition_url: "https://github.com/LinHong-HIT/USOD10K"},
-     split_verified: false, verified_by: "not fetched; counts from the paper", obtain: {status: w2, via: "Drive links"},
+     split_verified: true, verified_by: "https://raw.githubusercontent.com/LinHong-HIT/USOD10K/main/README.md (2026-09-25): folder tree names USOD10K-TR / USOD10K-Val / USOD10K-TE and states the ~7:2:1 split; per-split counts still from the paper, not enumerated in the README", obtain: {status: w2, via: "Drive links"},
      policy: route-to-our-test, policy_reason: "salient + depth", chain: [c7]}
   - {id: lsui, name: LSUI, task: enhancement, catalog_id: lsui, registry_id: null,
      upstream_split: {rule: "U-shape Transformer protocol: 3879 train / 400 test (Test-L400)", eval_split: test, heldout_val: null, counts: {train: 3879, test: 400}, definition_url: "https://github.com/LintaoPeng/U-shape_Transformer_for_Underwater_Image_Enhancement"},
-     split_verified: false, verified_by: "not fetched", obtain: {status: w2, via: "Drive links"},
+     split_verified: true, verified_by: "https://raw.githubusercontent.com/LintaoPeng/U-shape_Transformer_for_Underwater_Image_Enhancement/main/README.md (2026-09-25): 'randomly select 3879 picture pairs as the training set ... and the remaining 400 as the test set'", obtain: {status: w2, via: "Drive links"},
      policy: route-to-our-test, policy_reason: "LSUI contains UIEB images; the chain pins them", chain: [c11]}
   - {id: u45, name: U45, task: enhancement, catalog_id: u45, registry_id: null,
      upstream_split: {rule: "eval-only, 45 images", eval_split: all, heldout_val: null, counts: {all: 45}, definition_url: "https://github.com/IPNUISTlegal/underwater-test-dataset-U45-"},
-     split_verified: false, verified_by: "not fetched", obtain: {status: w2, via: "GitHub repo"},
+     split_verified: true, verified_by: "GitHub tree API (2026-09-25): upload/U45/U45/ contains exactly 45 files (1.png..45.png)", obtain: {status: w2, via: "GitHub repo"},
      policy: exclude, policy_reason: "eval-only; keep external", chain: [c11]}
   - {id: ufo120, name: UFO-120, task: enhancement, catalog_id: ufo120, registry_id: null,
      upstream_split: {rule: "train 1500 / TEST 120", eval_split: test, heldout_val: null, counts: {train: 1500, test: 120}, definition_url: "https://irvlab.cs.umn.edu/resources/ufo-120-dataset"},
-     split_verified: false, verified_by: "IRVLab 403 to scripts", obtain: {status: w2, via: "Google Drive (from the landing page)"},
+     split_verified: true, verified_by: "Wayback Machine snapshot 20260516225545 of irvlab.cs.umn.edu/resources/ufo-120-dataset (live site 403s): 'train_val/ contains 1500 paired samples for training/validation' and 'TEST/ contains 120 paired samples for benchmark evaluation'", obtain: {status: w2, via: "Google Drive (from the landing page)"},
      policy: route-to-our-test, policy_reason: "SR/enhancement pairs; shares raws with EUVP", chain: [c11]}
   - {id: squid, name: SQUID, task: depth, catalog_id: squid, registry_id: squid,
      upstream_split: {rule: "eval-only, 57 stereo pairs in 4 dive sites", eval_split: all, heldout_val: null, counts: {pairs: 57}, definition_url: "https://zenodo.org/records/5744037"},
-     split_verified: false, verified_by: "not fetched", obtain: {status: registry-only, via: "Zenodo 5744037"},
+     split_verified: true, verified_by: "Zenodo API record 5744037 (2026-09-25): 4 files, one zip per dive site (Satil, Nachsolim, Michmoret, Katzaa), matching the 4-site rule; the 57 stereo-pair count is from the paper, not enumerated by the API", obtain: {status: registry-only, via: "Zenodo 5744037"},
      policy: exclude, policy_reason: "colour-restoration eval set; keep external", chain: []}
   - {id: brackish, name: Brackish Dataset, task: det, catalog_id: brackish, registry_id: null,
      upstream_split: {rule: "train/valid/test.txt frame lists (video-level)", eval_split: test, heldout_val: valid, counts: {frames: 14500}, definition_url: "https://vap.aau.dk/the-brackish-dataset/"},
