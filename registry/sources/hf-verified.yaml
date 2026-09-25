@@ -7,6 +7,8 @@
 sources:
   - id: reefnet-hf
     name: ReefNet 1.0 (HuggingFace release)
+    # habitat inferred (WP-2b) from this source's own description/notes, not independently verified
+    habitat: [coral_reef]
     version: "1.0"
     description: >
       The ReefNet fine-grained coral benchmark, published openly on HuggingFace as
@@ -53,6 +55,8 @@ sources:
 
   - id: reefnet-species-images
     name: ReefNet species images
+    # habitat inferred (WP-2b) from this source's own description/notes, not independently verified
+    habitat: [coral_reef]
     version: "unversioned"
     description: Coral species image classification set derived from the ReefNet corpus.
     licence: CC-BY-4.0
@@ -97,6 +101,8 @@ sources:
 
   - id: reef-guidance-system
     name: QUT reef guidance system imagery
+    # habitat inferred (WP-2b) from this source's own description/notes, not independently verified
+    habitat: [mixed]
     version: "unversioned"
     description: >
       Underwater reef imagery from the QUT Centre for Robotics underwater-perception
@@ -130,6 +136,8 @@ sources:
 
   - id: marrs-reef-soundscapes
     name: MARRS global coral reef soundscapes
+    # habitat inferred (WP-2b) from this source's own description/notes, not independently verified
+    habitat: [coral_reef]
     version: "unversioned"
     description: >
       Global reef soundscape detections with sonotype, country and confidence - the
@@ -172,6 +180,8 @@ sources:
 
   - id: whoi-plankton-small
     name: WHOI-Plankton (small)
+    # habitat inferred (WP-2b) from this source's own description/notes, not independently verified
+    habitat: [pelagic]
     version: "unversioned"
     description: IFCB plankton imagery with expert class labels - the canonical plankton benchmark.
     licence: MIT
@@ -201,6 +211,8 @@ sources:
 
   - id: underwater-image-enhancement
     name: Underwater image enhancement set
+    # habitat inferred (WP-2b) from this source's own description/notes, not independently verified
+    habitat: [mixed]
     version: "unversioned"
     description: Paired/labelled underwater imagery for enhancement and restoration work.
     licence: CC-BY-4.0
@@ -231,6 +243,8 @@ sources:
 
   - id: satellite-coral-mapping
     name: AIMS satellite coral mapping
+    # habitat inferred (WP-2b) from this source's own description/notes, not independently verified
+    habitat: [coral_reef]
     version: "unversioned"
     description: >
       Paired Sentinel-2 / Landsat-8 reef scenes with label rasters, from AIMS - a rare

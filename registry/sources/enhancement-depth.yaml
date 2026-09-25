@@ -8,6 +8,8 @@
 sources:
   - id: uieb
     name: UIEB (Underwater Image Enhancement Benchmark)
+    # habitat inferred (WP-2b) from this source's own description/notes, not independently verified
+    habitat: [mixed]
     version: "2019"
     description: Reference-paired real underwater images — the standard enhancement benchmark.
     licence: PROVENANCE-DEFECTIVE
@@ -70,6 +72,8 @@ sources:
 
   - id: squid
     name: SQUID (Stereo Quantitative Underwater Image Dataset)
+    # habitat inferred (WP-2b) from this source's own description/notes, not independently verified
+    habitat: [mixed]
     version: "2019"
     description: Stereo underwater images with distance information and colour charts.
     licence: CC-BY-NC-SA-4.0
@@ -106,6 +110,8 @@ sources:
 
   - id: varos
     name: VAROS synthetic underwater dataset
+    # habitat inferred (WP-2b) from this source's own description/notes, not independently verified
+    habitat: [mixed]
     version: "2021"
     description: Physically-rendered synthetic sequences with depth, normals, poses and IMU.
     licence: CC-BY-4.0
@@ -133,6 +139,8 @@ sources:
 
   - id: flsea
     name: FLSea (visual-inertial and stereo)
+    # habitat inferred (WP-2b) from this source's own description/notes, not independently verified
+    habitat: [mixed]
     version: "2022"
     description: Forward-looking underwater depth ground truth with IMU and poses.
     licence: CC-BY-NC-SA-4.0
@@ -155,6 +163,8 @@ sources:
 
   - id: suim
     name: SUIM (Semantic Segmentation of Underwater Imagery)
+    # habitat inferred (WP-2b) from this source's own description/notes, not independently verified
+    habitat: [mixed]
     version: "2020"
     description: 8-class underwater semantic segmentation — fish, reef, diver, wrecks, seafloor.
     licence: MIT

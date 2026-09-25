@@ -17,12 +17,14 @@ separate, potentially-diverging selection), then joins three things per row:
 3. **WP-1's quality columns** (``_quality/v1/quality.parquet``), joined on
    ``image_sha256``.
 
-``capture_datetime``/``lat``/``lon``/``depth_m``/``platform``/``camera``/``habitat`` are
-null for the whole v1 corpus: none of the eight staged sources carry EXIF or a location
-column (checked directly — see the module docstring in :mod:`marinedata.geo_meow` and the
-WP-2 report). The MEOW and location-generalization machinery is implemented and tested
-against fixtures so it activates with no code change once a source with real coordinates
-lands.
+``capture_datetime``/``lat``/``lon``/``depth_m``/``platform``/``camera`` are null for the
+whole v1 corpus: none of the eight staged sources carry EXIF or a location column
+(checked directly — see the module docstring in :mod:`marinedata.geo_meow` and the WP-2
+report). ``habitat`` (WP-2b) is the exception — it comes from the registry's
+per-source :attr:`~marinedata.models.Source.habitat` field, not from staged pixels, so it
+is populated for every v1 row whose source declares one. The MEOW and
+location-generalization machinery is implemented and tested against fixtures so it
+activates with no code change once a source with real coordinates lands.
 """
 
 from __future__ import annotations
@@ -96,9 +98,8 @@ METADATA_SPEC = ConfigSpec(
 )
 
 LOCATION_SENSITIVE_TAG = "location-sensitive"
-"""Registry tag convention (D: no dedicated `Source.location_sensitive` field exists
-yet — adding one would be a `models.py` schema change outside this brief's scope,
-flagged in the WP-2 report). No v1 source carries this tag."""
+"""Fallback registry-tag convention, honoured for sources that predate the first-class
+`Source.location_sensitive` bool field (WP-2b). No v1 source carries this tag."""
 
 REQUIRED_NULL_REASONS = {
     "capture_datetime": "no source in v1 stages EXIF or a capture-time column",
@@ -113,7 +114,7 @@ REQUIRED_NULL_REASONS = {
     "meow_province": "requires lat/lon, which are null for all of v1",
     "meow_ecoregion": "requires lat/lon, which are null for all of v1",
     "depth_zone": "requires depth_m, which is null for all of v1",
-    "habitat": "the registry has no per-source habitat field yet (open item)",
+    "habitat": "populated from Source.habitat; null only for a source predating the WP-2b backfill",
     "upstream_url": "no per-item URL resolves; the source-level URL is in the registry",
     "lineage_root_digest": (
         "null for first-hop ingests; also null for coralscop-masks-rs "
@@ -201,8 +202,23 @@ def lineage_root_digest_for(source: Source, registry: Registry) -> str | None:
     return parent.checksums.root_digest if parent.checksums else None
 
 
-def is_location_sensitive(source: Source) -> bool:
-    return LOCATION_SENSITIVE_TAG in source.tags
+def is_location_sensitive(
+    source: Source,
+    *,
+    sample_labels: Sequence[str] = (),
+    cr_en_labels: frozenset[str] = frozenset(),
+) -> bool:
+    """True if the sample's position must be generalized: the source itself is flagged
+    (first-class `Source.location_sensitive`, falling back to the historical tag for
+    sources that predate it — see :data:`LOCATION_SENSITIVE_TAG`), **or** any of this
+    sample's own labels names a CR/EN taxon (WP-2b IUCN-via-WoRMS gate — a location-
+    sensitive *species* makes the sample sensitive regardless of what the source as a
+    whole is tagged). ``cr_en_labels`` is the label-string set built from
+    :mod:`marinedata.iucn_worms`'s output joined back through the taxonomy table (the
+    caller's responsibility — this function stays a pure lookup)."""
+    if source.location_sensitive or LOCATION_SENSITIVE_TAG in source.tags:
+        return True
+    return any(label in cr_en_labels for label in sample_labels)
 
 
 def _generalize(lat: float | None, lon: float | None, sensitive: bool):
@@ -255,7 +271,7 @@ def build_rows(
                 "meow_province": meow.province if meow else None,
                 "meow_ecoregion": meow.ecoregion if meow else None,
                 "depth_zone": None,
-                "habitat": None,
+                "habitat": ",".join(h.value for h in source.habitat) if source.habitat else None,
                 "location_generalized": generalized,
                 "min_side": q.get("min_side"),
                 "q_blur": q.get("q_blur"),
@@ -277,6 +293,77 @@ def filter_by_license(table, allow: Sequence[str]):
     from .sample_schema import licence_filter
 
     return licence_filter(table, allow)
+
+
+V2_PROJECTION_FIELDS = ("lat", "lon", "depth_m", "capture_datetime", "platform", "camera")
+"""WP-2b: the six fields a v2 projection reports on — the subset of WP-6's
+``sample_schema`` this brief was asked to project, read generically (no hardcoded
+per-source join) from whatever a staged ``metadata.parquet`` actually carries."""
+
+
+def project_v2_coverage(sources: Mapping[str, Path]) -> dict[str, dict]:
+    """Generic v2 coverage projection: for each ``source_id -> metadata.parquet`` path,
+    read whichever of :data:`V2_PROJECTION_FIELDS` the file's columns contain (a column
+    absent entirely is 0% — the file predates WP-6's schema for that field, not an
+    error) and report a per-source `%` plus an overall `%` across every source's rows
+    combined. Never assumes column presence, so it works unchanged for a v1-shaped
+    ``{stem, partition, upstream_path, ...}`` file and a full WP-6 ``sample_schema``
+    file alike."""
+    import pandas as pd
+
+    by_source: dict[str, dict] = {}
+    totals = {f: 0 for f in V2_PROJECTION_FIELDS}
+    total_rows = 0
+    for source_id, path in sources.items():
+        df = pd.read_parquet(path)
+        n = len(df)
+        total_rows += n
+        row = {}
+        for f in V2_PROJECTION_FIELDS:
+            present = int(df[f].notna().sum()) if f in df.columns else 0
+            totals[f] += present
+            row[f] = round(100 * present / n, 1) if n else 0.0
+        row["n_rows"] = n
+        by_source[source_id] = row
+    overall = {
+        f: (round(100 * totals[f] / total_rows, 1) if total_rows else 0.0)
+        for f in V2_PROJECTION_FIELDS
+    }
+    return {"by_source": by_source, "overall": overall, "n_rows": total_rows}
+
+
+def render_v2_projection_markdown(proj: dict, meow_realm_counts: Mapping[str, int] = {}) -> str:
+    """Render :func:`project_v2_coverage`'s dict as ``docs/metadata-coverage-v2-projection.md``."""
+    fields = list(V2_PROJECTION_FIELDS)
+    sources = list(proj["by_source"])
+    lines = [
+        "# Metadata coverage — v2 projection",
+        "",
+        f"{proj['n_rows']} rows across {len(sources)} staged source(s). Generated by "
+        "`marinedata.metadata_release.project_v2_coverage` — reads whatever columns a "
+        "staged `metadata.parquet` actually has; a missing column is 0%, not an error.",
+        "",
+        "## Overall",
+        "",
+        "| Field | Coverage |",
+        "|---|---|",
+    ]
+    lines += [f"| `{f}` | {proj['overall'][f]}% |" for f in fields]
+    header = "| Source | " + " | ".join(f"`{f}`" for f in fields) + " | rows |"
+    lines += ["", "## By source", "", header]
+    lines += ["|---|" + "---|" * (len(fields) + 1)]
+    for s in sources:
+        row = proj["by_source"][s]
+        cells = " | ".join(f"{row[f]}%" for f in fields)
+        lines.append(f"| `{s}` | {cells} | {row['n_rows']} |")
+    lines += ["", "## MEOW realm counts", ""]
+    if meow_realm_counts:
+        lines += ["| Realm | Rows |", "|---|---|"]
+        lines += [f"| {realm} | {n} |" for realm, n in sorted(meow_realm_counts.items())]
+    else:
+        lines += ["No rows carry a resolved MEOW realm (needs `lat`/`lon`, which are 0% here)."]
+    lines.append("")
+    return "\n".join(lines)
 
 
 def coverage(rows: Sequence[dict]) -> dict[str, dict]:
@@ -374,9 +461,9 @@ def main(argv: list[str] | None = None) -> int:
     refs = collect_image_refs(registry, args.release_dir, cache_root())
     quality_table = pq.read_table(args.quality)
     quality_by_sha = {r["image_sha256"]: r for r in quality_table.to_pylist()}
-    from .geo_meow import load_polygons
+    from .geo_meow import load_meow_polygons
 
-    polygons = load_polygons(args.meow) if args.meow and args.meow.is_file() else ()
+    polygons = load_meow_polygons(args.meow) if args.meow and args.meow.is_file() else ()
     rows = build_rows(refs, registry, args.stage_root, quality_by_sha, polygons)
     split_by_sha = {r.sha256: r.split for r in refs}  # already HF split names (build_layout)
     for row in rows:

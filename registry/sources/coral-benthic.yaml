@@ -3,6 +3,8 @@
 sources:
   - id: coralscapes
     name: Coralscapes
+    # habitat inferred (WP-2b) from this source's own description/notes, not independently verified
+    habitat: [coral_reef]
     version: "1.0"
     description: >
       The first general-purpose dense semantic segmentation dataset for coral reefs —
@@ -106,6 +108,8 @@ sources:
 
   - id: benthicnet-1m
     name: BenthicNet (curated 1M subset)
+    # habitat inferred (WP-2b) from this source's own description/notes, not independently verified
+    habitat: [mixed]
     version: "1.0"
     description: >
       The largest and most geographically diverse compilation of seafloor imagery.
@@ -164,6 +168,8 @@ sources:
 
   - id: reefnet
     name: ReefNet
+    # habitat inferred (WP-2b) from this source's own description/notes, not independently verified
+    habitat: [coral_reef]
     version: "2025"
     description: >
       Fine-grained hard-coral genus benchmark aggregating 76 CoralNet sources plus new
@@ -229,6 +235,8 @@ sources:
 
   - id: deolhonoscorais
     name: "#DeOlhoNosCorais"
+    # habitat inferred (WP-2b) from this source's own description/notes, not independently verified
+    habitat: [coral_reef]
     version: "2023"
     description: >
       Polygon-annotated Brazilian reef imagery from a citizen-science programme. One of
@@ -305,6 +313,8 @@ sources:
 
   - id: heron-reef-benthic
     name: Heron Reef benthic community time series
+    # habitat inferred (WP-2b) from this source's own description/notes, not independently verified
+    habitat: [coral_reef]
     version: "2021"
     description: 17-year georeferenced photoquadrat time series from the Great Barrier Reef.
     licence: CC-BY-4.0
@@ -366,6 +376,8 @@ sources:
 
   - id: coralvqa
     name: CoralVQA
+    # habitat inferred (WP-2b) from this source's own description/notes, not independently verified
+    habitat: [coral_reef]
     version: "2025"
     description: Large-scale visual question answering dataset for coral reef understanding.
     licence: CC-BY-4.0
@@ -418,6 +430,8 @@ sources:
 
   - id: noaa-pifsc-bleaching
     name: NOAA PIFSC-ESD coral bleaching dataset
+    # habitat inferred (WP-2b) from this source's own description/notes, not independently verified
+    habitat: [coral_reef]
     version: "1-image-labels"
     description: Purpose-built bleached vs healthy classification set from NOAA Pacific Islands.
     licence: US-GOV-PD
@@ -505,6 +519,8 @@ sources:
 
   - id: coralnet
     name: CoralNet
+    # habitat inferred (WP-2b) from this source's own description/notes, not independently verified
+    habitat: [coral_reef]
     version: "live"
     description: >
       The incumbent platform for point-count benthic classification: ~1.6M images and
@@ -557,6 +573,8 @@ sources:
 
   - id: seatizen-atlas
     name: Seatizen Atlas
+    # habitat inferred (WP-2b) from this source's own description/notes, not independently verified
+    habitat: [coral_reef]
     version: "2024"
     description: >
       1.6M geolocated underwater and aerial images from the SW Indian Ocean, 14,492
@@ -594,6 +612,8 @@ sources:
 
   - id: mermaid-aws
     name: MERMAID community coral reef image classification training data
+    # habitat inferred (WP-2b) from this source's own description/notes, not independently verified
+    habitat: [coral_reef]
     version: "2026-09-19-bc53d5a2c0b6"
     description: >
       Live, growing point-label corpus with a taxonomy crosswalk API (LabelMapping)
@@ -674,6 +694,8 @@ sources:
 
   - id: marineinst20m
     name: MarineInst20M
+    # habitat inferred (WP-2b) from this source's own description/notes, not independently verified
+    habitat: [mixed]
     version: "2024"
     description: >
       2.42M marine images with 19.2M instance masks, aggregated from ~50 sources —
@@ -712,6 +734,8 @@ sources:
 
   - id: noaa-esd-coral-bleaching
     name: NOAA ESD coral bleaching dataset (bucket mirror)
+    # habitat inferred (WP-2b) from this source's own description/notes, not independently verified
+    habitat: [coral_reef]
     version: "v1"
     description: >
       Bucket copy of a Hugging Face dataset-card checkout (git + LFS) of bleached vs.
@@ -780,6 +804,8 @@ sources:
 
   - id: roboflow-coral-bleaching-final-v6i
     name: Coral Bleaching Final (Roboflow v6i)
+    # habitat inferred (WP-2b) from this source's own description/notes, not independently verified
+    habitat: [coral_reef]
     version: "v6i-image-labels-r2"
     description: Roboflow-exported multiclass coral bleaching image set.
     licence: CC-BY-4.0
@@ -872,6 +898,8 @@ sources:
 
   - id: roboflow-coral-bleaching-general-v1-yolov8s
     name: Coral Bleaching_General (Roboflow v1, YOLOv8s)
+    # habitat inferred (WP-2b) from this source's own description/notes, not independently verified
+    habitat: [coral_reef]
     version: "v1-yolov8s-image-labels-r2"
     description: Roboflow-exported multiclass coral bleaching image set.
     licence: CC-BY-4.0
@@ -969,6 +997,8 @@ sources:
 
   - id: roboflow-coral-classification-copy-changed-v13i
     name: "Coral Classification Copy -Changed- (Roboflow v13i)"
+    # habitat inferred (WP-2b) from this source's own description/notes, not independently verified
+    habitat: [coral_reef]
     version: "v13i-image-labels"
     description: Roboflow-exported multiclass coral classification image set.
     licence: CC-BY-4.0
@@ -1070,6 +1100,8 @@ sources:
 
   - id: roboflow-coral-reef-bleach-detection-v2i
     name: Coral Reef Bleach Detection (Roboflow v2i)
+    # habitat inferred (WP-2b) from this source's own description/notes, not independently verified
+    habitat: [coral_reef]
     version: "v2i-image-labels"
     description: Roboflow-exported multiclass coral bleach detection image set.
     licence: CC-BY-4.0
@@ -1162,6 +1194,8 @@ sources:
 
   - id: roboflow-coral-reef-classification-v3i
     name: Coral Reef Classification (Roboflow v3i)
+    # habitat inferred (WP-2b) from this source's own description/notes, not independently verified
+    habitat: [coral_reef]
     version: "v3i-image-labels"
     description: Roboflow-exported folder-layout coral reef classification image set.
     licence: CC-BY-4.0
@@ -1245,6 +1279,8 @@ sources:
 
   - id: coralseg-ucsd-mosaics
     name: Coralseg (UCSD) coral reef mosaics
+    # habitat inferred (WP-2b) from this source's own description/notes, not independently verified
+    habitat: [coral_reef]
     version: "unversioned"
     description: >
       Coral reef photomosaics from UCSD, associated with the Coralseg segmentation
@@ -1302,6 +1338,8 @@ sources:
 
   - id: seaview-survey-imagery
     name: SEAVIEW raw survey imagery (UQ eSpace)
+    # habitat inferred (WP-2b) from this source's own description/notes, not independently verified
+    habitat: [coral_reef]
     version: "unversioned"
     description: >
       Raw reef-survey photographs mirrored from the University of Queensland eSpace
@@ -1354,6 +1392,8 @@ sources:
 
   - id: coral-bleaching-detection-v2i-multiclass
     name: Coral Bleaching Detection (v2i, multiclass) — tar-only
+    # habitat inferred (WP-2b) from this source's own description/notes, not independently verified
+    habitat: [coral_reef]
     version: "unversioned"
     description: >
       Roboflow-style multiclass coral bleaching image set found only inside the
@@ -1412,6 +1452,8 @@ sources:
 
   - id: coral-health-classification
     name: Coral Health Classification — tar-only
+    # habitat inferred (WP-2b) from this source's own description/notes, not independently verified
+    habitat: [coral_reef]
     version: "unversioned"
     description: >
       Coral health/bleaching classification image set found only inside the
@@ -1467,6 +1509,8 @@ sources:
 
   - id: kaggle-healthy-bleached-corals
     name: "Kaggle: healthy and bleached corals — tar-only"
+    # habitat inferred (WP-2b) from this source's own description/notes, not independently verified
+    habitat: [coral_reef]
     version: "unversioned"
     description: >
       Kaggle-sourced healthy-vs-bleached coral image set found only inside the

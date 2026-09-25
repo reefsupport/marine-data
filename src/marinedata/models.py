@@ -16,6 +16,7 @@ from .enums import (
     AccessMethod,
     AnnotationKind,
     Capability,
+    Habitat,
     LegalBasis,
     Modality,
     Provenance,
@@ -351,6 +352,20 @@ class Source(_Frozen):
     homepage: str | None = None
     tags: tuple[str, ...] = ()
     notes: str | None = None
+
+    habitat: tuple[Habitat, ...] | None = Field(default=None)
+    """WP-2b: controlled-vocabulary physical setting(s) this source's imagery was
+    captured in. ``None`` means not yet classified (never "no habitat") — most v1
+    sources are backfilled by inference from their own description/notes; see the
+    ``# habitat inferred from ...`` comment above each entry in ``registry/sources/*.yaml``.
+    A tuple (not a single value) because some sources genuinely mix habitats."""
+
+    location_sensitive: bool = False
+    """WP-2b: first-class flag for a source whose true coordinates must never be
+    published at full precision (e.g. a poaching-risk species site) — ``is_location_sensitive()``
+    treats this as authoritative. Defaults to ``False``; the historical
+    ``"location-sensitive"`` tag is still honoured as a fallback for sources that predate
+    this field, so no existing YAML needs an edit to keep working."""
 
     def split_group_for(self, *, stem: str, upstream_path: str, partition: str) -> str:
         """Apply this source's :class:`SplitGroupRule` to one staged image."""

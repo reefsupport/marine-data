@@ -23,6 +23,8 @@ def _source(**kw):
         verification=SimpleNamespace(verified_on=dt.date(2026, 9, 20)),
         checksums=SimpleNamespace(root_digest="a" * 64),
         images_from=(),
+        location_sensitive=False,
+        habitat=None,
     )
     return SimpleNamespace(**{**base, **kw})
 
@@ -42,6 +44,23 @@ def test_attribution_is_never_empty():
 def test_is_location_sensitive_reads_the_tag_convention():
     assert not mr.is_location_sensitive(_source())
     assert mr.is_location_sensitive(_source(tags=(mr.LOCATION_SENSITIVE_TAG,)))
+
+
+def test_is_location_sensitive_first_class_field_wins_over_tag_absence():
+    assert mr.is_location_sensitive(_source(location_sensitive=True))
+
+
+def test_is_location_sensitive_cr_en_taxon_gate():
+    """WP-2b: a sample carrying a CR/EN-labelled taxon is sensitive even when its
+    source is not flagged at all."""
+    source = _source()
+    cr_en = frozenset({"Epinephelus striatus"})  # Nassau grouper, IUCN CR
+    assert not mr.is_location_sensitive(
+        source, sample_labels=("Acropora cervicornis",), cr_en_labels=cr_en
+    )
+    assert mr.is_location_sensitive(
+        source, sample_labels=("Epinephelus striatus",), cr_en_labels=cr_en
+    )
 
 
 def test_generalize_rounds_and_flags_only_when_sensitive_and_positioned():
@@ -131,3 +150,24 @@ def test_render_coverage_markdown_documents_every_partial_field(tmp_path):
     for field, pct in cov["overall"].items():
         if pct < 100.0 and field in mr.REQUIRED_NULL_REASONS:
             assert f"`{field}`:" in doc
+
+
+def test_project_v2_coverage_reads_generically_and_handles_missing_columns(tmp_path):
+    import pandas as pd
+
+    full = tmp_path / "full.parquet"
+    pd.DataFrame(
+        {"lat": [1.0, None], "lon": [2.0, None], "depth_m": [3.0, 4.0],
+         "capture_datetime": [None, None], "platform": [None, None], "camera": [None, None]}
+    ).to_parquet(full)
+    bare = tmp_path / "bare.parquet"
+    pd.DataFrame({"stem": ["a", "b", "c"]}).to_parquet(bare)
+
+    proj = mr.project_v2_coverage({"has-some": full, "has-none": bare})
+    assert proj["by_source"]["has-some"]["lat"] == 50.0
+    assert proj["by_source"]["has-some"]["depth_m"] == 100.0
+    assert proj["by_source"]["has-none"]["lat"] == 0.0
+    assert proj["by_source"]["has-none"]["camera"] == 0.0
+    assert proj["n_rows"] == 5
+    md = mr.render_v2_projection_markdown(proj)
+    assert "has-some" in md and "has-none" in md

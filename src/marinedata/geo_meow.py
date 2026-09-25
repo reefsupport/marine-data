@@ -1,20 +1,13 @@
 """Point-in-polygon lookup against the TNC/WWF Marine Ecoregions of the World (MEOW,
 Spalding et al. 2007): realm / province / ecoregion for one ``(lat, lon)``.
 
-**v1 status (2026-09-25, WP-2):** the global MEOW polygon set is not yet vendored into
-this repo. ``docs/TAXONOMY.md`` already flagged this (Phase 4, "vendor the shapefile" —
-VLIZ's WFS/geometry endpoints 404 and OBIS ``/area`` does not carry MEOW geometry). None
-of the eight v1 sources carry per-image GPS (checked directly: no source's staged
-``metadata.parquet`` has a location column and a sample of ``reef-support-benthic-own``
-JPEGs carries no EXIF at all — GoPro stills, EXIF stripped upstream), so a real MEOW
-polygon set would classify zero v1 rows today. Rather than spend the vendoring effort on
-data that classifies nothing this pass, this module ships the lookup mechanism — pure
-Python ray-casting, no ``shapely`` dependency — proven against a fixture polygon in
-``tests/test_geo_meow.py``, so a future ingest that carries real coordinates (or the real
-MEOW GeoJSON landing in ``$SP/wp2/`` or committed under ``registry/geo/``) plugs in with
-no further code change. See the WP-2 report for the "needs Yohan" flag on sourcing the
-polygon file (TNC's public ArcGIS `MEOW` layer or a Zenodo mirror — direct download only,
-D-E: no accounts, no gated services).
+**v2 status (2026-09-25, WP-2b):** the global MEOW polygon set (232 ecoregions, 62
+provinces, 12 realms — the exact Spalding et al. 2007 attribute counts) is now vendored
+at ``registry/geo/meow-2026-09-25.parquet`` (simplified to a 0.01° tolerance, WKB
+geometry column). Provenance, licence text and sha256 are in ``registry/geo/SOURCES.md``.
+Load it with :func:`load_polygons_parquet` (needs the optional ``geo`` extra —
+``shapely`` — only at load time; the ray-casting lookup itself stays pure Python). The
+GeoJSON loader below is kept for any future mirror that ships that format instead.
 
 GeoJSON shape expected: a ``FeatureCollection`` of polygon/multipolygon features whose
 ``properties`` carry ``REALM`` / ``PROVINCE`` / ``ECOREGION`` (the field names in the
@@ -90,6 +83,35 @@ def load_polygons(path: Path) -> tuple[MeowFeature, ...]:
                 )
             )
     return tuple(features)
+
+
+def load_polygons_parquet(path: Path) -> tuple[MeowFeature, ...]:
+    """Load the vendored MEOW parquet (WKB geometry + ``realm``/``province``/``ecoregion``
+    columns — see ``registry/geo/SOURCES.md``). Requires the optional ``geo`` extra
+    (``shapely``) for WKB decoding only; the returned :class:`MeowFeature` rings feed the
+    same dependency-free :func:`classify` as the GeoJSON path."""
+    import pandas as pd
+    from shapely import from_wkb
+    from shapely.geometry import mapping
+
+    df = pd.read_parquet(path)
+    features = []
+    for row in df.itertuples(index=False):
+        geometry = mapping(from_wkb(row.wkb))
+        rings = _rings_from_geometry(geometry)
+        if rings:
+            features.append(
+                MeowFeature(
+                    realm=row.realm, province=row.province, ecoregion=row.ecoregion, rings=rings
+                )
+            )
+    return tuple(features)
+
+
+def load_meow_polygons(path: Path) -> tuple[MeowFeature, ...]:
+    """Dispatch on file suffix: ``.parquet`` -> :func:`load_polygons_parquet`, anything
+    else -> the GeoJSON :func:`load_polygons`."""
+    return load_polygons_parquet(path) if Path(path).suffix == ".parquet" else load_polygons(path)
 
 
 def classify(lat: float, lon: float, polygons: Sequence[MeowFeature]) -> MeowResult:

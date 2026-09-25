@@ -8,6 +8,8 @@
 sources:
   - id: global-mangrove-watch-v3
     name: Global Mangrove Watch v3.0
+    # habitat inferred (WP-2b) from this source's own description/notes, not independently verified
+    habitat: [mangrove]
     version: "3.0"
     description: >
       Definitive global mangrove extent and change, 11 epochs 1996–2020 at 25 m from
@@ -37,6 +39,8 @@ sources:
 
   - id: global-seagrass-10m
     name: Global 10 m Seagrass Maps
+    # habitat inferred (WP-2b) from this source's own description/notes, not independently verified
+    habitat: [seagrass]
     version: "2026"
     description: First high-resolution global seagrass extent map from Sentinel-2 deep learning.
     licence: CC-BY-4.0
@@ -62,6 +66,8 @@ sources:
 
   - id: allen-coral-atlas
     name: Allen Coral Atlas — Reef Habitat v2.0
+    # habitat inferred (WP-2b) from this source's own description/notes, not independently verified
+    habitat: [coral_reef]
     version: "2.0"
     description: >
       Global shallow-reef benthic and geomorphic thematic maps at 5 m — the standard
@@ -93,6 +99,8 @@ sources:
 
   - id: noaa-nccos-benthic-habitat
     name: NOAA NCCOS shallow-water benthic habitat maps
+    # habitat inferred (WP-2b) from this source's own description/notes, not independently verified
+    habitat: [mixed]
     version: "live"
     description: >
       High-resolution photo-interpreted benthic habitat maps for US reefs including
@@ -120,6 +128,8 @@ sources:
 
   - id: gebco-2024
     name: GEBCO 2024 Grid
+    # habitat inferred (WP-2b) from this source's own description/notes, not independently verified
+    habitat: [mixed]
     version: "2024"
     description: Global bathymetry and topography at 15 arc-seconds.
     licence: CC0-1.0
@@ -145,6 +155,8 @@ sources:
 
   - id: icesat2-atl24
     name: ICESat-2 ATL24 coastal bathymetry
+    # habitat inferred (WP-2b) from this source's own description/notes, not independently verified
+    habitat: [soft_sediment]
     version: "2"
     description: Photon-classified nearshore bathymetry — reference depths and SDB training labels.
     licence: US-GOV-PD
@@ -165,6 +177,8 @@ sources:
 
   - id: seaclear-marine-debris
     name: SeaCLEAR Marine Debris
+    # habitat inferred (WP-2b) from this source's own description/notes, not independently verified
+    habitat: [mixed]
     version: "2024"
     description: Underwater debris and marine-life instance segmentation, 40 categories.
     licence: CC-BY-4.0
@@ -220,6 +234,8 @@ sources:
 
   - id: floating-marine-debris
     name: Floating Marine Debris spectral data
+    # habitat inferred (WP-2b) from this source's own description/notes, not independently verified
+    habitat: [pelagic]
     version: "2023"
     description: Pixel-level spectral labels for floating debris detection from Sentinel-2.
     licence: CC-BY-4.0
@@ -246,6 +262,8 @@ sources:
 
   - id: copernicus-globcolour
     name: Copernicus-GlobColour Ocean Colour L4
+    # habitat inferred (WP-2b) from this source's own description/notes, not independently verified
+    habitat: [pelagic]
     version: "live"
     description: Chlorophyll-a, turbidity and water-quality retrievals — reef stress context.
     licence: CC-BY-4.0
@@ -270,6 +288,8 @@ sources:
 
   - id: obis
     name: OBIS — Ocean Biodiversity Information System
+    # habitat inferred (WP-2b) from this source's own description/notes, not independently verified
+    habitat: [mixed]
     version: "live"
     description: ~200M marine species occurrence records with taxonomy and coordinates.
     licence: CC-BY-4.0
