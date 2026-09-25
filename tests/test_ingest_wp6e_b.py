@@ -347,3 +347,19 @@ def test_imos_track_rows_take_left_camera_with_position():
     assert row["key"].endswith("i2016_gtif/PR_20160317_013753_929_LC16.tif")
     assert row["pair_right"].endswith("RM16.png") and row["depth_band"] == "20-40m"
     assert row["capture_datetime"] == "2016-03-17T01:37:53.920Z" and row["lat"] == -39.09
+
+
+def test_gbif_comma_joined_identifier_takes_the_first_url():
+    """INT-ingest5b: the smoke's 6 'dead links' were anecdata.org identifiers of the form
+    ``https://anecdata.org//a.jpeg,/b.jpeg`` — the first URL is live (206 image/jpeg)."""
+    from marinedata.adapters.gbif import media_url
+
+    joined = "https://anecdata.org//img/a-jpg.jpeg,/img/b-jpg.jpeg"
+    assert media_url({"identifier": joined}) == "https://anecdata.org//img/a-jpg.jpeg"
+    two = "https://h.org/a.jpg, https://h.org/b.jpg"
+    assert media_url({"identifier": two}) == "https://h.org/a.jpg"
+    for keep in (
+        "https://iiif.h.org/img/full/!1024,1024/0/default.jpg",
+        "https://res.cloudinary.com/x/image/upload/c_fill,w_100/y.jpg",
+    ):
+        assert media_url({"identifier": keep}) == keep

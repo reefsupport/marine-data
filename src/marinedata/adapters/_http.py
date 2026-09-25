@@ -20,6 +20,7 @@ from pathlib import Path
 from typing import IO
 
 from ..checksums import DOWNLOAD_USER_AGENT
+from ..concurrency import RetriesExhausted
 
 CHUNK = 1 << 20
 _RETRY_STATUS = frozenset({429, 500, 502, 503, 504})
@@ -58,7 +59,7 @@ def open_url(
         except (urllib.error.URLError, ConnectionError, TimeoutError) as exc:
             last = exc
         time.sleep(min(2**attempt, 30) + random.uniform(0, 1))  # WP-6b: jitter (D-G)
-    raise RuntimeError(f"GET {url} failed after {retries} attempts: {last}")
+    raise RetriesExhausted(f"GET {url} failed after {retries} attempts: {last}") from last
 
 
 def get_json(url: str) -> object:

@@ -18,6 +18,7 @@ from __future__ import annotations
 import datetime as dt
 import hashlib
 import heapq
+import re
 import urllib.parse
 from collections.abc import Iterable, Iterator, Mapping
 from typing import Any
@@ -39,11 +40,22 @@ _EXT = {
 }
 
 
+# Some publishers (anecdata.org) pack several images into one ``identifier``:
+# ``https://host//a.jpeg,/b.jpeg``. Split only where the next part is a path or a URL,
+# so commas inside one URL (IIIF regions, Cloudinary transforms) are left alone.
+_MULTI_ID = re.compile(r",\s*(?=/|https?://)")
+
+
+def media_url(media: Mapping[str, Any]) -> str:
+    """The first URL of a (possibly comma-joined) media ``identifier``."""
+    return _MULTI_ID.split(str(media.get("identifier") or ""), maxsplit=1)[0].strip()
+
+
 def media_ext(media: Mapping[str, Any]) -> str:
     fmt = str(media.get("format") or "").lower()
     if fmt in _EXT:
         return _EXT[fmt]
-    tail = urllib.parse.urlparse(str(media.get("identifier") or "")).path.lower()
+    tail = urllib.parse.urlparse(media_url(media)).path.lower()
     for ext in (".jpeg", ".jpg", ".png", ".tif", ".tiff", ".webp", ".gif"):
         if tail.endswith(ext):
             return ".jpg" if ext == ".jpeg" else ".tif" if ext == ".tiff" else ext
@@ -65,7 +77,7 @@ def occurrence_row(rec: Mapping[str, Any]) -> dict[str, Any] | None:
     ds, gid = rec.get("datasetKey"), rec.get("gbifID") or rec.get("key")
     return {
         "key": f"{ds}/{gid}{media_ext(media)}",
-        "url": str(media["identifier"]),
+        "url": media_url(media),
         "lat": rec.get("decimalLatitude"),
         "lon": rec.get("decimalLongitude"),
         "event_date": rec.get("eventDate"),

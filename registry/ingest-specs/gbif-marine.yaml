@@ -43,3 +43,4 @@ subset:
   cap_per_stratum: 100
   rule: non-iNat in-situ occurrences, first image per occurrence, at most 100 per speciesKey (adapter per_species_cap,
     enforced in enumeration); dedupe by media URL against inat-marine and obis at release
+disk_floor_gib: 34.0  # INT-ingest5b: runner floor like runner 4 (D-AE)

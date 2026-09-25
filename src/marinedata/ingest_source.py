@@ -34,6 +34,7 @@ from .adapters import SPOOLED, make_adapter, suffix_of
 from .adapters._http import HashingReader
 from .adapters.decode import IMAGE_SUFFIXES
 from .concurrency import HostLimiter, retry_with_backoff
+from .ingest_missing import MissingLedger, decode_status, fetch_status
 from .s3_upload import DEFAULT_PART, DiskGuard, GiB, local_digest, upload_file
 from .staged_writer import DEFAULT_SHARD_BYTES, DEFAULT_THRESHOLD, StagedWriter, WriterConfig
 from .subset_filter import SubsetFilter
@@ -199,6 +200,7 @@ class IngestReport:
     uploaded: int = 0
     skipped: int = 0
     verified: int = 0
+    missing: int = 0  # D-AF: items skipped into MISSING.tsv
     root_digest: str = ""
     peak_temp_bytes: int = 0
     dry_run: bool = False
@@ -295,6 +297,7 @@ def _stub(spec: IngestSpec, report: IngestReport) -> str:
             "layout": report.layout,
             "files": report.files,
             "bytes": report.bytes,
+            "missing_items": report.missing,
         },
     }
     return (
@@ -408,6 +411,7 @@ def run_ingest(
     live = 0
     upstream: list[dict[str, Any]] = []
     limiter = HostLimiter(max_per_host)
+    missing = MissingLedger(work / "missing" / f"{spec.id}-{version}.tsv")  # D-AF
     # WP-6b: fetch (network) is prefetched jobs-deep, consumed strictly in item order —
     # so decode/write/CHECKSUMS stay exactly as deterministic as `--jobs 1`. PUT (also
     # network) is likewise pooled: object identity, not order, decides the final state,
@@ -428,34 +432,54 @@ def run_ingest(
 
     try:
         for item in items:
-            fetched = (
-                prefetcher.next()
-                if prefetcher is not None
-                else _fetch_one(adapter, item, tmp, guard, limiter)
-            )
+            try:
+                fetched = (
+                    prefetcher.next()
+                    if prefetcher is not None
+                    else _fetch_one(adapter, item, tmp, guard, limiter)
+                )
+            except Exception as exc:
+                status = fetch_status(exc)
+                if status is None:
+                    raise
+                missing.skip(item.key, item.url, status)  # D-AF; raises past a threshold
+                continue
             live += fetched.size
             truncated = False
+            wrote = False
             try:
-                for decoded in adapter.decode(fetched):
-                    if subset is not None and not subset.admit(decoded):
-                        continue
-                    if writer.add(item, decoded) is not None:
-                        live += len(decoded.data)
-                    guard.observe(live)
-                    if live >= flush_at:
-                        flush()
-                    if spec.max_images and len(writer.rows) >= spec.max_images:
-                        truncated = True
-                        break
-                if truncated and fetched.stream is not None:
-                    fetched.stream.raw.close()
-                    fetched.stream = None
-                else:
-                    fetched.close()
+                try:
+                    for decoded in adapter.decode(fetched):
+                        if subset is not None and not subset.admit(decoded):
+                            continue
+                        wrote = True
+                        if writer.add(item, decoded) is not None:
+                            live += len(decoded.data)
+                        guard.observe(live)
+                        if live >= flush_at:
+                            flush()
+                        if spec.max_images and len(writer.rows) >= spec.max_images:
+                            truncated = True
+                            break
+                    if truncated and fetched.stream is not None:
+                        fetched.stream.raw.close()
+                        fetched.stream = None
+                    else:
+                        fetched.close()
+                except Exception as exc:
+                    status = decode_status(exc, wrote=wrote)
+                    if status is None:
+                        raise
+                    if fetched.stream is not None:
+                        fetched.stream.raw.close()
+                        fetched.stream = None
+                    missing.skip(item.key, item.url, status)
+                    continue
             finally:
                 if fetched.path is not None:
                     fetched.path.unlink(missing_ok=True)
                     live -= fetched.size
+            missing.ok()
             writer.finish_item(fetched.sha256)
             upstream.append(
                 {"key": item.key, "url": item.url, "sha256": fetched.sha256, "truncated": truncated}
@@ -470,8 +494,10 @@ def run_ingest(
         raise
     if prefetcher is not None:
         prefetcher.close()
+    missing.finish()  # D-AF: every attempted item failed -> abort, never an empty version
     writer.finalize()
     report.images = len(writer.rows)
+    report.missing = len(missing.rows)
     if subset is not None:
         report.plan["subset"] = subset.stats()
     sample_schema.write_samples(root / "metadata.parquet", writer.rows)
@@ -490,6 +516,8 @@ def run_ingest(
         "attribution": spec.attribution,
         "truncated_by_max_images": bool(upstream and upstream[-1]["truncated"]),
     }
+    if report.missing:  # D-AF: only then, so a clean source's INGEST.json is unchanged
+        ingest_json["missing_items"] = report.missing
     (root / "INGEST.json").write_text(json.dumps(ingest_json, indent=2, sort_keys=True) + "\n")
     (root / "LICENSE").write_text(
         f"License: {spec.license}\nAttribution: {spec.attribution}\n"
@@ -497,6 +525,9 @@ def run_ingest(
     )
     for name in ("metadata.parquet", "INGEST.json", "LICENSE"):
         writer.register(root / name)
+    missing_tsv = missing.write(root)
+    if missing_tsv is not None:
+        writer.register(missing_tsv)
     flush()
     digests = {rel: sha for rel, (sha, _) in writer.files.items()}
     manifest = "".join(checksums.iter_lines(digests)).encode()
@@ -528,6 +559,7 @@ def summary(report: IngestReport) -> Mapping[str, Any]:
             "uploaded",
             "skipped",
             "verified",
+            "missing",
             "root_digest",
         )
     }

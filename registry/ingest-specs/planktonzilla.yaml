@@ -41,3 +41,4 @@ subset:
   rule: root_class == living and proposed_label not in (other, unknown); at most 2,000 per (instrument dataset, label)
     by a blake2b hash draw over upstream_id (group counts from a metadata pass of all 189 parquet files, WP-6e-B);
     1009 groups, 3,792,567 living rows -> 710,548
+disk_floor_gib: 34.0  # INT-ingest5b: runner floor like runner 4 (D-AE)

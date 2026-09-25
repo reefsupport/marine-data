@@ -27,3 +27,4 @@ subset:
   - sequence
   rule: 1 frame per 10 frames capped at 1 frame/s (adapters/video_frames.py); video_id + frame_idx labels, split_group_id
     = video_id (D-AB); the per-sequence box txt is staged under labels/ (frame_idx joins a box row)
+disk_floor_gib: 34.0  # INT-ingest5b: runner floor like runner 4 (D-AE)

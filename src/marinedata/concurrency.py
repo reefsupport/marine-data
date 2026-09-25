@@ -35,9 +35,19 @@ _RETRYABLE_BOTO_CODES = frozenset(
 )
 
 
+class RetriesExhausted(RuntimeError):
+    """Every retry of a retryable failure (429/5xx/connection) failed; ``__cause__`` is the
+    last underlying exception. A ``RuntimeError`` so existing callers are unaffected;
+    the ``ingest-source`` runner uses the type to count it toward D-AF's thresholds."""
+
+
 def is_retryable_exc(exc: BaseException) -> bool:
     """429/5xx (HTTP or S3) and connection resets — never a 4xx auth/validation error."""
     code = getattr(exc, "code", None)  # urllib.error.HTTPError
+    if isinstance(exc, urllib.error.HTTPError):
+        # HTTPError subclasses URLError, so without this a 404/410 fell through to the
+        # URLError branch below and was retried `retries` times (D-AF: a dead link).
+        return isinstance(code, int) and code in _RETRYABLE_HTTP_STATUS
     if isinstance(code, int) and code in _RETRYABLE_HTTP_STATUS:
         return True
     response = getattr(exc, "response", None)  # botocore.exceptions.ClientError
@@ -75,7 +85,7 @@ def retry_with_backoff(
             if attempt == retries - 1:
                 break
             time.sleep(min(cap, base * (2**attempt)) + random.uniform(0, jitter))
-    raise RuntimeError(f"failed after {retries} attempts: {last}") from last
+    raise RetriesExhausted(f"failed after {retries} attempts: {last}") from last
 
 
 class HostLimiter:

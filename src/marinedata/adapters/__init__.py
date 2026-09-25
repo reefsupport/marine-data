@@ -179,13 +179,18 @@ class Fetched:
             self.stream = None
 
 
+class DigestMismatch(ValueError):
+    """Upstream bytes differ from the declared sha256/md5/size: a pin violation, never a
+    D-AF per-item skip — the runner aborts the source on it."""
+
+
 def _check_declared(item: RemoteItem, sha: str, md5: str, size: int) -> None:
     if item.sha256 and item.sha256 != sha:
-        raise ValueError(f"{item.key}: sha256 {sha} != declared {item.sha256}")
+        raise DigestMismatch(f"{item.key}: sha256 {sha} != declared {item.sha256}")
     if item.md5 and item.md5 != md5:
-        raise ValueError(f"{item.key}: md5 {md5} != declared {item.md5}")
+        raise DigestMismatch(f"{item.key}: md5 {md5} != declared {item.md5}")
     if item.size is not None and item.size != size:
-        raise ValueError(f"{item.key}: {size} bytes != declared {item.size}")
+        raise DigestMismatch(f"{item.key}: {size} bytes != declared {item.size}")
 
 
 @runtime_checkable
