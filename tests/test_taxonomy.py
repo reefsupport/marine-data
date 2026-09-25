@@ -181,8 +181,14 @@ def test_reefolution_meets_the_floor_without_an_exception(reg):
     assert "reefolution" not in (tx.load_meta(reg.root).get("coverage_exceptions") or {})
 
 
+FROZEN_TAXONOMY_VERSION = "2.1.0"
+"""Charter D-AD: the v2 release ships taxonomy 2.1.0. Bumping it is a deliberate act —
+freeze a new ``registry/taxonomy/releases/<v>.json`` and update this pin together."""
+
+
 def test_frozen_release_matches_working_tree(reg):
     version = tx.load_meta(reg.root)["version"]
+    assert version == FROZEN_TAXONOMY_VERSION
     d = tx.diff(tx.load_manifest(version, reg.root), tx.manifest(reg, reg.root))
     for key in ("nodes", "edges"):
         assert d[key] == {"added": [], "removed": [], "changed": {}}, key

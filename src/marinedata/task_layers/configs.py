@@ -90,6 +90,41 @@ def _tasklabels_path(base_dir: Path, source_id: str, task: str) -> Path:
     return base_dir / "_tasklabels" / source_id / f"{task}.parquet"
 
 
+TASKLABELS_DIR = "_tasklabels"
+
+
+def resolve_tasklabels_root(
+    registry: Registry | None = None, explicit: str | Path | None = None
+) -> Path:
+    """The directory holding ``_tasklabels/`` (and ``_labelquality/``) — ``<repo>/data``.
+
+    INT-core3c: the release used to read ``Path(".")``, so the configs depended on the
+    caller's cwd and came out empty from the repo root (``./_tasklabels`` does not exist
+    there). Now: an ``explicit`` path wins (a path ending in ``_tasklabels`` is taken to
+    mean its parent); otherwise the root is derived from the registry's location
+    (``<repo>/registry`` → ``<repo>/data``), falling back to the source-tree layout.
+    Fails closed — a root with no ``_tasklabels/`` raises rather than yield empty configs.
+    """
+    if explicit is not None:
+        root = Path(explicit).expanduser().resolve()
+        if root.name == TASKLABELS_DIR:
+            root = root.parent
+        candidates = [root]
+    else:
+        candidates = []
+        registry_root = getattr(registry, "root", None)
+        if registry_root is not None:
+            candidates.append(Path(registry_root).resolve().parent / "data")
+        candidates.append(Path(__file__).resolve().parents[3] / "data")
+    for root in candidates:
+        if (root / TASKLABELS_DIR).is_dir():
+            return root
+    tried = ", ".join(str(c / TASKLABELS_DIR) for c in candidates)
+    raise FileNotFoundError(
+        f"no {TASKLABELS_DIR}/ directory found (tried {tried}); pass --tasklabels-root"
+    )
+
+
 TASKLABELS_MANIFEST = "MANIFEST.json"
 """``<base_dir>/_tasklabels/MANIFEST.json``: ``{"files": {"<source_id>/<task>.parquet":
 {"status": "invalid", "reason": ...}}}``. A file marked ``invalid`` is tracked for the

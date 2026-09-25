@@ -245,6 +245,7 @@ def _cmd_release_build(args: argparse.Namespace) -> int:
             split_v2=args.split_v2,
             tasks=args.tasks,
             v2=args.v2,
+            tasklabels_root=args.tasklabels_root,
             digest=digest,
         )
     except (NearDupError, DedupGateError, DeconError) as exc:
@@ -360,7 +361,16 @@ def add_release_subparser(sub: argparse._SubParsersAction) -> None:
         help="'v1' (default) builds only the registry's task manifests, byte-identical "
         "to before this flag existed (D-X). 'v2' additionally builds the 5 WP-8c "
         "task-layer configs (points/vqa/semseg/benthic-coarse/benthic-cover) from "
-        "data/_tasklabels/** into <out>/releases/<release>/task_layers/",
+        "<--tasklabels-root>/_tasklabels/** into <out>/releases/<release>/task_layers/",
+    )
+    p_build.add_argument(
+        "--tasklabels-root",
+        dest="tasklabels_root",
+        default=None,
+        metavar="DIR",
+        help="Directory holding _tasklabels/ (and _labelquality/) for --tasks v2; a path "
+        "ending in _tasklabels means its parent. Default: <repo>/data, derived from the "
+        "registry's location, never the cwd",
     )
     p_build.add_argument(
         "--v2",

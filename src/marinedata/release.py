@@ -436,6 +436,7 @@ def build_release(
     split_v2: bool = False,
     tasks: str = "v1",
     v2: bool = False,
+    tasklabels_root: str | Path | None = None,
     digest: Callable[[Path], str] = file_digest,
 ) -> ReleaseResult:
     """Build every registry task against a frozen split map and write the release.
@@ -444,11 +445,13 @@ def build_release(
     configs below and produces byte-identical output to before this parameter existed.
     ``"v2"`` additionally builds the 5 WP-8 task-layer configs (``points``, ``vqa``,
     ``semseg``, ``benthic-coarse``, ``benthic-cover`` — see
-    :mod:`marinedata.task_layers.configs`) from whatever ``data/_tasklabels/**`` the
-    caller's working directory has (D-Z2 producers), and writes them as parquet under
+    :mod:`marinedata.task_layers.configs`) from ``<tasklabels_root>/_tasklabels/**``
+    (D-Z2 producers) and writes them as parquet under
     ``<out_dir>/releases/<release>/task_layers/``. Additive only: no v1 file changes
     shape or content when ``tasks="v2"`` is passed, so v1 byte-identity holds regardless
-    of this flag.
+    of this flag. ``tasklabels_root`` is the directory holding ``_tasklabels/`` (default:
+    ``<repo>/data``, derived from the registry's location, never the cwd — INT-core3c);
+    see :func:`marinedata.task_layers.configs.resolve_tasklabels_root`.
 
     ``decon`` (WP-12 P2) and ``dedup_crop`` (WP-10c) are independent switches: the latter
     only changes decon's S5 patch/crop stage when ``decon=True`` (INT-core2, D-T2).
@@ -641,9 +644,10 @@ def build_release(
 
     task_layer_configs: dict[str, int] = {}
     if tasks_mode == "v2":
-        from .task_layers.configs import build_all_configs, write_configs
+        from .task_layers.configs import build_all_configs, resolve_tasklabels_root, write_configs
 
-        base_dir = Path(".")  # data/_tasklabels/** is read relative to the cwd (D-Z2)
+        # INT-core3c: never the cwd — explicit root, else derived from the registry.
+        base_dir = resolve_tasklabels_root(registry, tasklabels_root)
         results = build_all_configs(registry, base_dir)
         write_configs(results, release_root / "task_layers")
         task_layer_configs = {config_id: result.n_images for config_id, result in results.items()}
