@@ -1,0 +1,27 @@
+# NOAA Ocean Exploration ROV dive video (Okeanos Explorer). NCEI video portal unreachable (curl 000) on 2026-09-25, three tries.
+id: noaa-oer-video
+adapter: needs:video
+license: public domain (US government work)
+attribution: NOAA Ocean Exploration
+citation: NOAA Ocean Exploration, Okeanos Explorer ROV dives
+homepage: https://www.ncei.noaa.gov/access/ocean-exploration/video/
+candidate_endpoints:
+- https://www.ncei.noaa.gov/access/ocean-exploration/video/
+- 'https://oer.hpc.msstate.edu/okeanos/ (145 cruise dirs: dive summaries, KML, sampling logs — no video objects)'
+why_not_supported: Video only (no decoder) and the NCEI archive that holds it did not answer; the msstate mirror
+  carries dive metadata, not video.
+measured:
+  items: null
+  bytes: null
+  method: 'NCEI portal 000 x3; msstate mirror listing: 145 cruise directories'
+  date: '2026-09-25'
+  bytes_basis: 'unmeasurable today: the video host did not respond'
+  label_type: none (+ SeaTube/VARS annotations elsewhere)
+subset:
+  target_items: 500000
+  stratify:
+  - cruise
+  - dive
+  - depth_band_200m
+  rule: 1 frame / 10 s of on-bottom ROV time, <= 2,000 frames per dive, skip transit/surface segments using the
+    dive summary times

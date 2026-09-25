@@ -1,0 +1,11 @@
+# SPEC-w3 discovery: NOAA OceanEyes (Zooniverse-labelled fish frames) (NOAA NODD public GCS bucket, anonymous).
+id: noaa-oceaneyes
+adapter: bucket
+license: public domain (US government work) — NODD
+attribution: NOAA Fisheries / NODD
+citation: NOAA OceanEyes (Zooniverse-labelled fish frames), NOAA NODD
+homepage: https://storage.googleapis.com/nmfs_odp_hq/nodd_tools/datasets/oceaneyes/
+params:
+  endpoint: storage.googleapis.com
+  bucket: nmfs_odp_hq
+  prefix: nodd_tools/datasets/oceaneyes/full_dataset/

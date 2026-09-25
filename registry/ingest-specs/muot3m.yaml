@@ -1,0 +1,25 @@
+# MUOT-3M: 3,030 MP4 tracking videos + per-frame box txt. No video decoder -> needs_adapter:video (D-R4).
+id: muot3m
+adapter: hf
+license: CC-BY-NC-ND-4.0 (HF card)
+attribution: MUOT-3M authors
+citation: MUOT-3M (2025), HF AhsanBB
+homepage: https://huggingface.co/datasets/AhsanBB/MUOT_3M-A_3_Million_Frame_Underwater_Object_Tracking_Dataset
+params:
+  repo: AhsanBB/MUOT_3M-A_3_Million_Frame_Underwater_Object_Tracking_Dataset
+  revision: 4294cb6a253741f3bb1b9ad729de9ae965e77248
+measured:
+  items: 3074016
+  bytes: 256605899220
+  method: 'datasets-server /size rows (frames) + HF tree: 3,030 mp4 (train 2,121 / test 909) + 6,048 txt'
+  date: '2026-09-25'
+  bytes_basis: hf-tree
+  unit: frames
+  zero_item_kind: video
+  label_type: track (single-object boxes per frame)
+subset:
+  target_items: 303000
+  stratify:
+  - split
+  - sequence
+  rule: decode every 10th frame of each of the 3,030 sequences (~1/10 of 3,074,016), keep the box of that frame

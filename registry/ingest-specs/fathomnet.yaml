@@ -1,10 +1,46 @@
+# FathomNet: MBARI-led expert deep-sea localizations, enumerated through POST /api/images/query
+# (limit/offset). 481k items / 453 GB is under the 1M-item / 1TB subset threshold (D-AB): fetch in
+# full, staged as shards (D-D, > 200k), deduped by sha256 against the 223,863 NOAA NODD GFISHER
+# frames (noaa-gfisher / seamapd21) that overlap FathomNet's storage.googleapis.com host.
 id: fathomnet
 adapter: fathomnet
 params:
   max_items: 2000
   page_size: 100
-license: NOASSERTION
-attribution: FathomNet (Katija et al., Sci Rep 2022)
-citation: Katija+ Sci Rep 2022
-homepage: https://database.fathomnet.org/
+notes: dedupe against GFISHER frames (noaa-gfisher, seamapd21) by sha256 before staging; no subset needed (481k items / 453 GB, both under the D-AB threshold)
+license: 'per box: CC-BY-NC-4.0 / CC0-1.0 / CC-BY-4.0 (annotationLicense); image rights per contributor'
+attribution: FathomNet / MBARI and contributors
+citation: Katija et al. 2022, Sci Rep, FathomNet
+homepage: https://database.fathomnet.org/fathomnet/
 disk_floor_gib: 34.0
+measured:
+  items: 481126
+  bytes: 453247058080
+  method: full API enumeration (241 pages x 2,000); boxes 1,288,067 seen vs /boundingboxes/count 1,296,895
+  date: '2026-09-25'
+  bytes_basis: 1224.3 Gpx (API width x height) x 0.370 B/px (mean of 20 HEAD Content-Length samples)
+  per_item_license: boundingBoxes[].annotationLicense
+  by_annotation_license:
+    CC-BY-NC-4.0: 650474
+    CC0-1.0: 624862
+    CC-BY-4.0: 12731
+  by_depth_band_m:
+    0-200: 238457
+    unknown: 130810
+    200-1000: 58529
+    1000-4000: 53155
+    4000+: 175
+  by_imaging_type:
+    Drop Camera: 223268
+    '?': 154836
+    ROV: 103022
+  by_host:
+    storage.googleapis.com: 223863
+    d2l7vcm2vanphr.cloudfront.net: 132608
+    database.fathomnet.org: 99606
+    oer.hpc.msstate.edu: 16802
+    ws.oncs.ca: 3934
+    hurlimage.soest.hawaii.edu: 3416
+    fathomnet.s3-us-east-2.amazonaws.com: 897
+  n_concepts: 2709
+  label_type: bbox (concept = WoRMS-aligned name)

@@ -163,6 +163,11 @@ class IngestSpec:
     remote: str = "rs-hel1"
     temp_cap_gb: float = 6.0
     disk_floor_gib: float = 40.0
+    # Documentation-only blocks (SPEC-w3): ignored by the runner, validated by
+    # marinedata.ingest_subset.check_spec. `measured` = totals read from upstream
+    # metadata; `subset` = the stratified target for sources > 1M items or > 1 TB.
+    measured: dict[str, Any] = field(default_factory=dict)
+    subset: dict[str, Any] = field(default_factory=dict)
 
     @classmethod
     def load(cls, path: Path, adapter: str | None = None) -> IngestSpec:

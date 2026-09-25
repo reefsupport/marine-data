@@ -1,0 +1,61 @@
+# iNaturalist Open Data (AWS ODR): research-grade observations of marine taxa. Marine = 34 wholly-marine clades, or a mixed-clade
+# species that WoRMS AphiaRecordsByMatchNames marks isMarine (40,387 names queried; 729 unmatched are excluded).
+id: inat-marine
+adapter: needs:manifest
+license: 'per photo (photos.csv `license`): CC0 / CC-BY / CC-BY-NC / -SA / -ND variants'
+attribution: iNaturalist contributors (per photo observer)
+citation: iNaturalist Open Data, AWS Open Data Registry, metadata 2026-09
+homepage: https://registry.opendata.aws/inaturalist-open-data/
+candidate_endpoints:
+- https://inaturalist-open-data.s3.amazonaws.com/metadata/ (observations/photos/taxa .csv.gz)
+- https://inaturalist-open-data.s3.amazonaws.com/photos/<photo_id>/large.<ext>
+why_not_supported: Photos are addressed by photo_id from the metadata CSVs (488,562,900 photo rows); the bucket
+  cannot be listed usefully and no adapter takes a (url, licence) manifest. The CSVs carry no byte size or checksum.
+measured:
+  items: 9594509
+  bytes: 2387622827902
+  method: full pass over observations.csv.gz (275,907,588 rows) + photos.csv.gz (488,562,900 rows) + taxa.csv.gz;
+    quality_grade=research; WoRMS REST for mixed clades
+  date: '2026-09-25'
+  bytes_basis: photo count x mean Content-Length of 20 HEAD large.* samples (248,853 B); CSV has pixel dims only
+    (25,677 Gpx at original size)
+  unit: photos (large, <= 1024 px)
+  research_grade_observations_with_photo: 6064101
+  n_taxa: 34872
+  per_item_license: photos.license
+  by_license:
+    CC-BY: 1121207
+    CC-BY-NC-ND: 323322
+    CC-BY-NC: 7561775
+    CC-BY-NC-SA: 257075
+    CC-BY-SA: 107420
+    CC0: 209252
+    CC-BY-ND: 14458
+  by_class_top:
+    Actinopterygii: 2805297
+    Gastropoda: 1926288
+    Malacostraca: 1153340
+    Bivalvia: 659306
+    Mammalia: 539704
+    Anthozoa: 405656
+    Asteroidea: 295338
+    Chondrichthyes: 247958
+    Phaeophyceae: 230234
+    Echinoidea: 146275
+    Cephalopoda: 114398
+    Scyphozoa: 109322
+    Polyplacophora: 101592
+    Reptilia: 100515
+  n_classes: 51
+  excluded:
+    worms_not_marine_photos: 3780733
+    worms_unmatched_photos: 233316
+  label_type: cls (species, iNat taxonomy; research grade = community-agreed)
+subset:
+  target_items: 1130256
+  stratify:
+  - taxon_id
+  - class
+  cap_per_stratum: 100
+  rule: photo position 0 of each research-grade observation, at most 100 per species taxon (34,872 taxa); licence
+    kept per photo, never filtered (D-C); cap 200 -> 1,708,445, cap 500 -> 2,734,961

@@ -1,0 +1,40 @@
+# Wikimedia Commons: files in 'Category:Underwater photographs' and every subcategory whose title contains 'nderwater' (depth <= 6).
+id: wikimedia-underwater
+adapter: needs:commons-api
+license: 'per file (Commons extmetadata LicenseShortName): CC-BY-SA / CC-BY / CC0 / PD'
+attribution: Wikimedia Commons contributors
+citation: Wikimedia Commons
+homepage: https://commons.wikimedia.org/wiki/Category:Underwater_photographs
+candidate_endpoints:
+- https://commons.wikimedia.org/w/api.php (generator=categorymembers, prop=imageinfo)
+why_not_supported: Commons files are enumerated by the MediaWiki API (category recursion + imageinfo url/size/extmetadata);
+  no adapter for it.
+measured:
+  items: 14247
+  bytes: 76955372449
+  method: 'MediaWiki API: 163 categories, imageinfo size per file'
+  date: '2026-09-25'
+  bytes_basis: imageinfo size
+  by_mime:
+    image/jpeg: 14044
+    image/png: 154
+    video/webm: 35
+    image/tiff: 8
+    image/webp: 3
+    application/pdf: 1
+    application/ogg: 1
+    image/gif: 1
+  licence_sample_500:
+    CC BY-SA 4.0: 314
+    CC BY 2.0: 55
+    Public domain: 44
+    CC BY-SA 3.0: 32
+    CC BY-SA 2.0: 18
+    CC BY 3.0: 14
+    CC0: 12
+    CC BY 4.0: 7
+    CC BY-SA 2.5: 2
+    CC BY 2.5: 1
+    CC BY-SA 2.0 fr: 1
+  label_type: caption (file description) + Commons categories
+  note: catalog '~100k+' estimate was 7x high

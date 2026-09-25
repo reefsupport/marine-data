@@ -55,6 +55,7 @@ import yaml
 
 ROOT = Path(__file__).resolve().parents[1]
 SPECDIR = ROOT / "registry" / "ingest-specs"
+SPECS = SPECDIR  # alias: SPEC-w3's --glob/--ids-file callers use this name
 SUPPORTED_ADAPTERS = {
     "hf",
     "http",
@@ -212,6 +213,18 @@ def _run_dry_run(spec_id: str, adapter: str, spec_path: Path) -> dict[str, str]:
     return result
 
 
+def zero_item_kind(sid: str, raw: dict) -> str:
+    """D-R4: a dry run that is ok but stages 0 items is ``needs_adapter:<kind>``.
+
+    Checks the hand-diagnosed ``ZERO_ITEM_KIND`` map first (existing ids), then a
+    spec's own ``measured.zero_item_kind`` override (new ids, SPEC-w3 convention),
+    falling back to ``unsupported-format`` so the gap is still visible.
+    """
+    if sid in ZERO_ITEM_KIND:
+        return ZERO_ITEM_KIND[sid]
+    return str((raw.get("measured") or {}).get("zero_item_kind") or "unsupported-format")
+
+
 def process_one(spec_path: Path, manifest_row: dict[str, str]) -> dict[str, str]:
     doc = yaml.safe_load(spec_path.read_text())
     spec_id = doc["id"]
@@ -274,8 +287,12 @@ def main(argv: list[str]) -> int:
     group = parser.add_mutually_exclusive_group(required=True)
     group.add_argument("--slice", help="slice name; reads _manifest-<slice>.tsv for every id")
     group.add_argument("--ids", nargs="+", help="explicit spec ids to dry-run")
+    group.add_argument(
+        "--ids-file", type=Path, help="explicit spec ids, one per line (SPEC-w3 convention)"
+    )
+    parser.add_argument("--glob", help="unused; kept for SPEC-w3 CLI compatibility")
     parser.add_argument(
-        "--out", help="queue tsv path (default: _queue-<slice>.tsv, or stdout for --ids)"
+        "--out", "--queue", dest="out", help="queue tsv path (default: _queue-<slice>.tsv, or stdout for --ids)"
     )
     args = parser.parse_args(argv[1:])
 
@@ -285,6 +302,9 @@ def main(argv: list[str]) -> int:
         if not ids:
             print(f"no manifest rows for slice {args.slice!r}", file=sys.stderr)
             return 2
+    elif args.ids_file:
+        manifest = {}
+        ids = [ln.strip() for ln in args.ids_file.read_text().splitlines() if ln.strip()]
     else:
         manifest = {}
         ids = args.ids
