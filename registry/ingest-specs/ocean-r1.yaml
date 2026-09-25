@@ -8,3 +8,5 @@ homepage: https://huggingface.co/datasets/minglingfeng/Ocean_R1_collected_visual
 params:
   repo: minglingfeng/Ocean_R1_collected_visual_data
   revision: main
+
+disk_floor_gib: 36.0

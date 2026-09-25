@@ -7,3 +7,5 @@ license: CC-BY-4.0
 attribution: Brackish Dataset (Pedersen et al., CVPRW 2019), via HF mirror dronefreak/Brackish
 citation: Pedersen+ CVPRW2019
 homepage: https://huggingface.co/datasets/dronefreak/Brackish
+
+disk_floor_gib: 36.0

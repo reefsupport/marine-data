@@ -7,3 +7,5 @@ license: other-hf
 attribution: NOAA PIFSC
 citation: NOAA PIFSC ESD-ESA CORAL-ICRA
 homepage: https://huggingface.co/datasets/NMFS-OSI/NOAA-PIFSC-ESD-ESA-CORAL-ICRA-Dataset
+
+disk_floor_gib: 36.0

@@ -9,3 +9,5 @@ license: CC-BY-4.0
 attribution: DeepFish (Saleh et al., Sci Rep 2020)
 citation: Saleh+ Sci Rep 2020
 homepage: https://alzayats.github.io/DeepFish/
+
+disk_floor_gib: 36.0

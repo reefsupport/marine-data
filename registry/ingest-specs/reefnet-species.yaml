@@ -7,3 +7,5 @@ license: NOASSERTION
 attribution: TsinghuaCorals reefnet_species_images (HF)
 citation: '-'
 homepage: https://huggingface.co/datasets/TsinghuaCorals/reefnet_species_images
+
+disk_floor_gib: 36.0

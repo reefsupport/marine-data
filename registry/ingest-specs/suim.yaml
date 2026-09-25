@@ -7,3 +7,5 @@ license: MIT
 attribution: SUIM (Islam et al., IROS 2020), via HF mirror SatwikKambham/suim
 citation: Islam+ IROS2020
 homepage: https://huggingface.co/datasets/SatwikKambham/suim
+
+disk_floor_gib: 36.0

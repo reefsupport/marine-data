@@ -7,3 +7,5 @@ license: unknown
 attribution: CoralNet / WHOI mirror
 citation: nf-whoi/coralnet-small (HF)
 homepage: https://huggingface.co/datasets/nf-whoi/coralnet-small
+
+disk_floor_gib: 36.0

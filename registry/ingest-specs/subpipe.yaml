@@ -7,3 +7,5 @@ attribution: Alvarez-Tunon et al.
 citation: Alvarez-Tunon et al. 2024
 homepage: https://zenodo.org/records/12666132
 max_images: 20000
+
+disk_floor_gib: 36.0

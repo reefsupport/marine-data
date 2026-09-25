@@ -9,3 +9,5 @@ citation: Sosik+ WHOI-Plankton
 homepage: https://huggingface.co/datasets/nf-whoi/whoi-plankton
 expected_images: 956867
 max_images: 20000
+
+disk_floor_gib: 36.0

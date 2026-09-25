@@ -7,3 +7,5 @@ license: CC-BY-NC-SA-4.0
 attribution: Reef Guidance System (QUT QCR)
 citation: QUT QCR
 homepage: https://huggingface.co/datasets/QCR-Underwater-Perception/reef-guidance-system
+
+disk_floor_gib: 36.0

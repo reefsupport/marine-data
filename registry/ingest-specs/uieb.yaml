@@ -7,3 +7,5 @@ license: NOASSERTION
 attribution: UIEB (Li et al., TIP 2019), via HF mirror Hikari0608/UIEB
 citation: Li+ TIP2019
 homepage: https://huggingface.co/datasets/Hikari0608/UIEB
+
+disk_floor_gib: 36.0

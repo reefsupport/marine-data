@@ -7,3 +7,5 @@ license: MIT
 attribution: WHOI-Plankton (small), via HF nf-whoi/whoi-plankton-small
 citation: Sosik+ WHOI-Plankton
 homepage: https://huggingface.co/datasets/nf-whoi/whoi-plankton-small
+
+disk_floor_gib: 36.0

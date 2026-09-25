@@ -7,3 +7,5 @@ citation: Zenodo 19408363 (dataset also splits into parts 4, 6)
 homepage: https://zenodo.org/records/19408363
 params:
   zenodo_record: 19408363
+
+disk_floor_gib: 36.0

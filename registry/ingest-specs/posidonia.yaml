@@ -6,3 +6,5 @@ license: cc-by-4.0
 attribution: Zenodo contributors
 citation: Zenodo doi:10.5281/zenodo.4526867
 homepage: https://zenodo.org/records/4526867
+
+disk_floor_gib: 36.0

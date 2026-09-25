@@ -10,3 +10,5 @@ params:
   repo: bhowmikabhimanyu/seathru-dataset
   revision: main
 max_images: 15000
+
+disk_floor_gib: 36.0

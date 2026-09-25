@@ -9,3 +9,5 @@ homepage: https://github.com/IPNUISTlegal/underwater-test-dataset-U45-
 params:
   repo: IPNUISTlegal/underwater-test-dataset-U45-
   ref: master
+
+disk_floor_gib: 36.0

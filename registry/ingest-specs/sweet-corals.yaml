@@ -7,3 +7,5 @@ license: CC-BY-4.0
 attribution: wildflow sweet-corals
 citation: wildflow
 homepage: https://huggingface.co/datasets/wildflow/sweet-corals
+
+disk_floor_gib: 36.0

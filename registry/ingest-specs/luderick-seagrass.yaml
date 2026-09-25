@@ -7,3 +7,5 @@ citation: Ditria et al. 2021
 homepage: https://zenodo.org/records/7659203
 params:
   zenodo_record: 7659203
+
+disk_floor_gib: 36.0

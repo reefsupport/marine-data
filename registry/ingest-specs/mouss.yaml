@@ -7,3 +7,5 @@ license: NOASSERTION
 attribution: NOAA PIFSC MOUSS fish imagery (grayscale small), via HF akridge/MOUSS_fish_imagery_dataset_grayscale_small
 citation: NOAA PIFSC MOUSS
 homepage: https://huggingface.co/datasets/akridge/MOUSS_fish_imagery_dataset_grayscale_small
+
+disk_floor_gib: 36.0

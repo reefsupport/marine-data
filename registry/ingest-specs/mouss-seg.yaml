@@ -8,3 +8,5 @@ homepage: https://huggingface.co/datasets/akridge/MOUSS_fish_segment_dataset_gra
 params:
   repo: akridge/MOUSS_fish_segment_dataset_grayscale
   revision: main
+
+disk_floor_gib: 36.0

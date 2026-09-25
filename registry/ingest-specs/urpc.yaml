@@ -9,3 +9,5 @@ homepage: https://huggingface.co/datasets/fuhao7i/URPC
 params:
   repo: fuhao7i/URPC
   revision: main
+
+disk_floor_gib: 36.0

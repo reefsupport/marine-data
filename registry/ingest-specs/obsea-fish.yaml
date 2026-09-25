@@ -9,3 +9,5 @@ license: CC-BY-4.0
 attribution: "OBSEA project — Underwater images from OBSEA fish detection training dataset (YOLO); Zenodo record 14888440. Record 14888328 is a duplicate upload and is excluded."
 citation: "OBSEA fish detection training dataset (YOLO), Zenodo, doi:10.5281/zenodo.14888440"
 homepage: https://zenodo.org/records/14888440
+
+disk_floor_gib: 36.0

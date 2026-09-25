@@ -7,3 +7,5 @@ citation: Zenodo 7534425
 homepage: https://zenodo.org/records/7534425
 params:
   zenodo_record: 7534425
+
+disk_floor_gib: 36.0

@@ -9,3 +9,5 @@ homepage: https://irvlab.cs.umn.edu/resources/euvp-dataset
 params:
   repo: Ken1053/EUVP
   revision: main
+
+disk_floor_gib: 36.0

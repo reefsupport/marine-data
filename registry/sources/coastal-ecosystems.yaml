@@ -220,27 +220,33 @@ sources:
 
   - id: floating-marine-debris
     name: Floating Marine Debris spectral data
-    version: "2023"
+    version: "git-427059e47f99"
     description: Pixel-level spectral labels for floating debris detection from Sentinel-2.
     licence: CC-BY-4.0
     legal_basis: licence
     redistribution: ok
     provenance: public
     verification:
-      verified_on: 2026-08-17
+      verified_on: 2026-09-25
       verified_by: "github.com/miguelmendesduarte/Floating-Marine-Debris-Data — CC-BY 4.0"
       method: licence-file
+    checksums:
+      version: "git-427059e47f99"
+      root_digest: 5f1dbef348ff69107de08e9b767df5a9b25388d9b8da579c1c30b6434656d1a8
+      files: 15
+      size_bytes: 5847793
     access:
-      method: http
-      uri: https://github.com/miguelmendesduarte/Floating-Marine-Debris-Data
-      size_bytes: 19306000  # documented upstream, not measured — 2026-09-18
+      method: s3
+      uri: s3://rs-storage-open/sources/floating-marine-debris/git-427059e47f99/
+      size_bytes: 5847793
+      params: { upstream: github, git_ref: 427059e47f99 }
     modalities: [satellite]
     capabilities: [marine-debris]
     items: 60680
-    items_note: "60,680 real labelled pixels plus synthetic."
+    items_note: "60,680 real labelled pixels plus synthetic (11 image files staged)."
     annotations: [{ kind: tabular, classes: 7, supervises: [taxon] }]
     coverage: { regions: [global] }
-    loader: { layout: metadata-only }
+    loader: { layout: staged-tree }
     citation: 'M. M. Duarte and L. Azevedo, "Automatic Detection and Identification of Floating Marine Debris Using Multispectral Satellite Imagery," in IEEE Transactions on Geoscience and Remote Sensing, vol. 61, pp. 1-15, 2023, Art no. 2002315, doi: 10.1109/TGRS.2023.3283607.'
     tags: [debris, spectral]
 

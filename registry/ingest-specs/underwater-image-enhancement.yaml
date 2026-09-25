@@ -7,3 +7,5 @@ license: CC-BY-4.0
 attribution: Underwater Image Enhancement (HF iamvastava/underwater_image_enhancement)
 citation: '-'
 homepage: https://huggingface.co/datasets/iamvastava/underwater_image_enhancement
+
+disk_floor_gib: 36.0

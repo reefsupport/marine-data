@@ -8,3 +8,5 @@ homepage: https://github.com/PeiqinZhuang/WildFish
 params:
   repo: Arex-Vision/WildFish
   revision: main
+
+disk_floor_gib: 36.0

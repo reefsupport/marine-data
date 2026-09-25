@@ -12,3 +12,5 @@ homepage: https://huggingface.co/datasets/wildflow/soneva-corals
 # average -> ~15000 items estimates ~44.6 GB. A real run stays at or under 50 GB;
 # the dry-run plan above will still report the full 66.68 GB (uncapped enumeration).
 max_images: 15000
+
+disk_floor_gib: 36.0

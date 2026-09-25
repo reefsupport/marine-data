@@ -8,3 +8,5 @@ homepage: https://huggingface.co/datasets/Hariprasath5128/marine-animals-multimo
 params:
   repo: Hariprasath5128/marine-animals-multimodal-dataset
   revision: main
+
+disk_floor_gib: 36.0

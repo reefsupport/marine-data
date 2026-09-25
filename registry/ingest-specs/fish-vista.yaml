@@ -10,3 +10,5 @@ params:
   repo: imageomics/fish-vista
   revision: main
 max_images: 45000
+
+disk_floor_gib: 36.0

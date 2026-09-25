@@ -10,3 +10,5 @@ params:
   repo: MarineLife-16K/MarineLife-16K
   revision: main
 max_images: 8000
+
+disk_floor_gib: 36.0
