@@ -31,9 +31,10 @@ import yaml
 
 from . import checksums, sample_schema
 from .adapters import SPOOLED, make_adapter, suffix_of
-from .adapters._http import HashingReader
+from .adapters._http import HashingReader, TapeRecall
 from .adapters.decode import IMAGE_SUFFIXES
 from .concurrency import HostLimiter, retry_with_backoff
+from .ingest_deferred import DeferredLedger
 from .ingest_listing import list_source
 from .ingest_missing import MISSING_FILE, MissingLedger, decode_status, fetch_status
 from .s3_upload import DEFAULT_PART, DiskGuard, GiB, local_digest, upload_file
@@ -405,6 +406,8 @@ def run_ingest(
         guard.check()
     adapter = make_adapter(spec.adapter, spec.params)
     version, items = list_source(spec, adapter, listing_cache)
+    deferred = DeferredLedger(work / "deferred" / f"{spec.id}-{version}.tsv")  # D-AJ
+    items = deferred.order(items)
     layout = _choose_layout(spec, items)
     key_prefix = f"{spec.prefix}/{spec.id}/{version}"
     report = IngestReport(spec.id, version, key_prefix, layout, dry_run=dry_run)
@@ -481,6 +484,9 @@ def run_ingest(
                     else _fetch_one(adapter, item, tmp, guard, limiter)
                 )
             except Exception as exc:
+                if isinstance(exc, TapeRecall):
+                    deferred.defer(item.key, item.url)  # D-AJ: pending, not dead
+                    continue
                 status = fetch_status(exc)
                 if status is None:
                     raise
@@ -522,6 +528,7 @@ def run_ingest(
                     fetched.path.unlink(missing_ok=True)
                     live -= fetched.size
             missing.ok()
+            deferred.resolve(item.key)  # D-AJ: clears a previously-deferred key
             writer.finish_item(fetched.sha256)
             upstream.append(
                 {

@@ -64,6 +64,32 @@ class AccessRefused(RuntimeError):
         self.needs = needs
 
 
+# D-AJ: a PANGAEA 503 saying the file is being recalled from tape is a pending item, not
+# a dead one — it goes on the run's deferred checkpoint (``ingest_deferred``), never
+# ``MISSING.tsv``, and is never counted against the D-AF abort threshold.
+_TAPE_MARKERS = ("loading from tape", "recalled from tape", "tape system", "tape archive")
+
+
+class TapeRecall(RuntimeError):
+    """``url`` is mid tape-recall (D-AJ): defer it, don't spend the 503 retry budget on it."""
+
+    def __init__(self, url: str, retry_after: float | None) -> None:
+        super().__init__(f"{url}: tape recall in progress")
+        self.url = url
+        self.retry_after = retry_after
+
+
+def _is_tape_recall(exc: urllib.error.HTTPError) -> bool:
+    try:
+        body = exc.read(4096).decode("utf-8", errors="replace").lower()
+    except Exception:
+        body = ""
+    if any(marker in body for marker in _TAPE_MARKERS):
+        return True
+    headers = exc.headers or {}
+    return any("tape" in str(v).lower() for v in headers.values())
+
+
 def open_url(
     url: str, *, headers: dict[str, str] | None = None, retries: int = 4, timeout: int = 120
 ) -> IO[bytes]:
@@ -89,6 +115,8 @@ def open_url(
         except urllib.error.HTTPError as exc:
             if exc.code in (401, 403):
                 raise AccessRefused(url, f"HTTP {exc.code}: login/terms/gate required") from exc
+            if exc.code == 503 and _is_tape_recall(exc):
+                raise TapeRecall(url, retry_after_s(exc.headers)) from exc
             if exc.code not in _RETRY_STATUS:
                 raise
             last = exc
