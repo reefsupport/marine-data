@@ -175,3 +175,17 @@ confirms `CHECKSUMS.sha256` has the latest `LastModified` (uploaded last, the
 version-complete marker). Anonymous GETs are
 `https://rs-storage-open.hel1.your-objectstorage.com/<key>` (virtual-hosted
 style — the path-style `hel1.../rs-storage-open/<key>` 403s).
+
+## Runner 4 (INT-ingest4, 2026-09-25)
+
+Drains the 3 SPEC-w4 `ok` rows: `noaa-pifsc-esa-coral-icra, noaa-pifsc-bleaching, aqua20` (~6.1 GB dry-run).
+Deep-sea-first ordering was requested, but no w4 deep-sea id is `ok` and not already owned by another runner
+(`deepsea-mot` is in runner 1). Same shape as runner 3: `--jobs 1`, `disk_floor_gib: 34.0` on all 3 specs,
+D-AA via `ingest-batch` (plus `HF_HUB_DISABLE_IMPLICIT_TOKEN=1`, token env unset in `run.sh`), pass-loop
+wrapper (`sleep 900` after any `DiskFloorError` pass) under `perl -e 'alarm 259200; exec …'`.
+
+- **Wrapper PID:** `71389` (`$SP/queue4/pid`). **Runner:** spawned per pass as `sh run.sh` → `.venv/bin/python -m
+  marinedata.cli ingest-batch`; transient (pass 1 exited in ~1 s on the floor). Between passes the child is
+  `sleep 900` (`71537` at launch).
+- **Log:** `$SP/queue4/run.log`; stderr `run.err`; ids `$SP/queue4/ids.txt`.
+- Launched at 10 GiB free: paused on the floor by design until the disk cleanup runs. Do not lower the floor.

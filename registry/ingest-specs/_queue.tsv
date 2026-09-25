@@ -24,6 +24,10 @@
 # changed here). coralnet-public and marineinst20m are REPLACED: their w0
 # needs_yohan status predates SPEC-w3's finding that both are partially fetchable
 # anonymously (needs_adapter:coralnet-browse / needs_adapter:annotation-overlay).
+# INT-ingest4 (2026-09-25): 25 new SPEC-w4 rows folded in (wave=w4). 15 SPEC-w4 ids already had a
+# tested row (add/add spec conflict): their rows are kept unchanged and the spec keeps ingest-int's adapter/params
+# with SPEC-w4's `measured` block folded in. dry_run for hf/zenodo rows is the real INT-ingest4 dry-run, not
+# SPEC-w4's reachability check. whoi-plankton flipped ok→needs_adapter:subset-filter (D-AB, >500k images).
 id	adapter	pinned_version	items	bytes	licence	label_format	dry_run	est_hours_at_100mbps	priority	wave
 aqualoc	seafile-share	share-79b03788f29148ca84e5	34	69234799122	cc-by-nc-sa	ROS bags/PNG	ok	0.19	2	w2a
 atlantis	http	-			NOASSERTION		needs_yohan:hosted on Kaggle; login/API key required (D-E: never create accounts)	0.01	1.0	w0
@@ -126,7 +130,7 @@ uw-img-imu-sonar	hf	rev-96385ed27da0	0	0	apache-2.0	unknown	needs_adapter:unknow
 varos	zenodo	record-5567209	2	17961670090	CC-BY-4.0		ok	0.05	0.111	w0
 vdd-c	drum				cc-by-4.0	YOLO/VOC	needs_adapter:drum — DRUM (Univ. of Minnesota's DSpace repository) 403s plain curl (bot-blocked); needs the DRUM/DSpace REST API (same family as trashcan/trash-icra19 in W1) rather than scraping the HTML landing page		2	w2a
 viame-public	girder	girder-pinned	325	74922518907	per-dataset (mostly NOAA public domain)	mixed	ok	0.21	?	w2b
-whoi-plankton	hf	rev-ba1e637e4cb8	19	9098273854	NOASSERTION	PNG	ok	0.03	0.22	w0
+whoi-plankton	hf	rev-ba1e637e4cb8	19	9098273854	NOASSERTION	PNG	needs_adapter:subset-filter — 956,867 images (> 500k, D-AB); ≤2,000 per label subset declared, runner ignores `subset`	0.03	0.22	w0
 whoi-plankton-small	hf	rev-2d0ddc911aa8	4	1107677510	MIT		ok	0.0	2.708	w0
 wildfish	hf	rev-5212c80f4d98	26	14517292127	research-only (non-commercial, per upstream)	JPEG	ok	0.038	0.207	w2b
 afrl-stereo-vi	hf	rev-bdb079e7fef8			mit		needs_adapter:unsupported-format	-	?	w3
@@ -148,3 +152,28 @@ treeoflife-10m	needs:member-filter				HF card licence null; per image per upstre
 uwbench	hf	rev-84af94500308	7	9770800777	?		ok	0.026	?	w3
 wikimedia-underwater	needs:commons-api				per file (Commons extmetadata LicenseShortName): CC-BY-SA / CC-BY / CC0 / PD		needs_adapter:commons-api	-	?	w3
 imos-auv	needs:manifest				CC-BY-4.0 (IMOS data licence)		needs_adapter:manifest	-	?	w3
+fathomnet-fgvc23	needs:coco-remote-fetch	-	10700	17179869184	CC-BY-4.0	?	needs_adapter:coco-remote-fetch	-	?	w4
+fathomnet-vme	hf	rev-51222f42a8ea	3	35519865	other (HF card)	?	needs_adapter:coco-remote-fetch — HF repo holds only coco_{train,val,test}.json (image URLs point at FathomNet); dry-run 'ok' is 3 JSON files, 0 images (D-R4 spirit)	0.00	?	w4
+squidle	needs:squidle-api-auth	-	11398834	0	per-campaign, mostly CC-BY (stated per collection)	?	needs_adapter:squidle-api-auth	-	?	w4
+jamstec-jedi	needs:jamstec-request	-	0	0	JAMSTEC terms (request-based)	?	dead:unreachable (SPEC-w4: no anonymous route found)	-	?	w4
+jamstec-debris	needs:jamstec-scrape	-	3400	0	JAMSTEC terms	?	dead:unreachable (SPEC-w4: no anonymous route found)	-	?	w4
+discol-peru-basin-ofos	needs:pangaea-series-enum	-	0	0	CC-BY-3.0 (verified via page meta tag, unrestricted)	?	needs_adapter:pangaea-series-enum	-	?	w4
+hacon-aurora-vent-ofos	needs:pangaea-series-enum	-	0	0	CC-BY (PANGAEA, per series convention)	?	needs_adapter:pangaea-series-enum	-	?	w4
+so268-ofos-analysis-ready	needs:pangaea-series-enum	-	0	0	CC-BY (PANGAEA, per series convention)	?	needs_adapter:pangaea-series-enum	-	?	w4
+onc	needs:onc-token	-	0	0	CC-BY-4.0 (with account)	?	needs_yohan:token	-	?	w4
+biigle-public	needs:biigle-token	-	0	0	per-volume (mostly CC-BY, per BIIGLE norms)	?	needs_yohan:login	-	?	w4
+schmidt-ocean-rov	needs:unresolved-host	-	0	0	CC-BY-NC (per SOI media policy, stated)	?	dead:unreachable (SPEC-w4: no anonymous route found)	-	?	w4
+habcam	needs:nefsc-request	-	0	0	public domain (US government work, per NOAA norm), request-based access	?	needs_yohan:request	-	?	w4
+planktonset-1-0	hf	-			other (HF card)	?	needs_yohan:gated (manual): accept the terms on the page		?	w4
+zooscannet	hf	-			cc-by-nc-4.0	?	needs_yohan:gated (HF terms page) — and SPEC-w4 flags it as a constituent of planktonzilla (dedup:planktonzilla)		?	w4
+ecotaxa-public-export	needs:ecotaxa-api	-	0	0	per-project (stated per EcoTaxa project metadata)	?	needs_adapter:ecotaxa-api	-	?	w4
+kaggle-ndsb-2015	needs:kaggle-login	-	0	0	unknown (Kaggle competition terms)	?	needs_yohan:login	-	?	w4
+aqua20	hf	rev-5ccc9d6b8d87	2	199773745	unknown (not stated on HF card)	?	ok	0.00	?	w4
+noaa-pifsc-esa-coral-icra	hf	rev-b5e722f7c11e	470	5139793904	other (HF card)	?	ok	0.01	?	w4
+noaa-pifsc-bleaching	hf	rev-8175d66ef034	10419	767731471	unknown (not stated on HF card)	?	ok	0.00	?	w4
+seaclef-lifeclef-fish	needs:aicrowd-login	-	0	0	unknown (challenge terms)	?	needs_yohan:login	-	?	w4
+marinedet	needs:unresolved-source	-	0	0	unknown	?	dead:unreachable (SPEC-w4: no anonymous route found)	-	?	w4
+coralvos	needs:gdrive-login	-	0	0	unknown (not stated in repo)	?	needs_yohan:gated-host	-	?	w4
+rls-photo-archive	needs:unresolved-host	-	0	0	unknown (RLS data-sharing policy applies to counts; photo archive terms unclear)	?	needs_yohan:unclear-access	-	?	w4
+plc-beijbom2015	zenodo	-			cc0-1.0	?	needs_adapter:multipart-zip — Zenodo 5000003 ships heron_reef.zip.partNN / nanwan_bay.zip.partNN; dry-run enumerates only the README (spec param fixed record→zenodo_record)		?	w4
+mlc-moorea	needs:pasta-api	-	2055	5368709120	CC-BY-4.0 (MCR LTER policy)	?	needs_adapter:pasta-api	-	?	w4
