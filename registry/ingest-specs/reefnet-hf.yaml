@@ -1,0 +1,9 @@
+id: reefnet-hf
+adapter: hf
+params:
+  repo: ReefNet/ReefNet-1.0
+  revision: 031c5df31f0018bcab10163aeb2eae28c48f76b7
+license: CC-BY-NC-SA-4.0
+attribution: ReefNet 2025 (arXiv:2510.16822)
+citation: ReefNet 2025 arXiv:2510.16822
+homepage: https://huggingface.co/datasets/ReefNet/ReefNet-1.0

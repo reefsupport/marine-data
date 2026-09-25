@@ -1,0 +1,7 @@
+id: fish4knowledge
+adapter: http
+params: {}
+license: NOASSERTION
+attribution: Fish4Knowledge (Fisher et al. 2016)
+citation: Fisher+ 2016 Springer
+homepage: http://groups.inf.ed.ac.uk/f4k/

@@ -1,0 +1,40 @@
+id	adapter	pinned_version	items	bytes	licence	format	dry_run	est_hours_at_100MBps	priority
+coralnet-public	http	-			NOASSERTION		needs_yohan:account + CoralNet ToS required for bulk/per-source export	?	5
+seatizen-atlas	zenodo	1.0.0	1	35473744193	CC-BY-4.0		ok	0.1	0.113
+sweet-corals	hf	rev-265724cf6f1a	96895	300397994853	CC-BY-4.0		ok	0.83	0.01
+reefnet	hf	-			CC-BY-NC-SA-4.0		dead:no resolvable download_urls; duplicate registry stub of reefnet-hf (same arXiv id)	?	4
+reefnet-hf	hf	rev-031c5df31f00	1	1214605910	CC-BY-NC-SA-4.0		ok	0.0	3.293
+reefnet-species	hf	rev-924117ab279f	1	3033631	NOASSERTION		ok	0.0	988.914
+deolhonoscorais	zenodo	v1	2	12890450293	CC-BY-4.0		ok	0.04	0.233
+mermaid	bucket	list-9aff83837d7b	53143	65864161628	NOASSERTION		ok	0.18	0.076
+marineinst20m	http	-			CC-BY-NC		needs_yohan:README has no data link, no HF dataset found; email the authors	?	5
+fathomnet	http	-			NOASSERTION		needs_adapter:needs_adapter:fathomnet-api - paginated REST at https://database.fathomnet.org/api/images/query/filter returns per-image JSON (uuid, url, boundingBoxes); per-image licence varies CC-BY/CC-BY-NC. W3-scale (Phase A subset) is out of scope for this slice.	1.94	0.007
+deepsea-mot	hf	rev-61ecbda8acb2	6598	5922079214	CC-BY-SA-4.0		ok	0.02	0.675
+benthicnet	http	-			CC-BY		needs_adapter:needs_adapter:frdr-globus - FRDR record exposes a Globus collection + a per-file HTTPS listing at https://www.frdr-dfdr.ca/repo/handle/... ; no plain enumerable file list yet. W3-scale (CATAMI-labelled subset) is out of scope for this slice.	?	5
+deepfish	http	2020	1		CC-BY-4.0		ok	0.02	0.526
+ozfish	bucket	-			CC-BY-3.0-AU		needs_adapter:needs_adapter:pawsey-portal - storage.pawsey.org.au/public/... is the Pawsey Data Portal front-end (200 on a directory path, 403 with a listing query string), not a raw anonymous S3 ListObjectsV2 endpoint; the bucket adapter's path-style listing 404s. frames/crops/labelled are the three known top-level prefixes; per-file URLs need a portal-specific crawler.	?	5
+fishnet-2023	http	-			NOASSERTION		needs_yohan:project page only, no anonymous download; request access	?	3
+fish4knowledge	http	-			NOASSERTION		needs_adapter:needs_adapter:site-navigation - homepage links to an HTML index of per-video archives (no stable file list resolved from here)	0.0	5.882
+brackish	hf	rev-ee9d8f01ea49	14675	712437053	CC-BY-4.0		ok	0.0	5.615
+lfitw	http	-			NOASSERTION		needs_adapter:needs_adapter:site-navigation - NOAA SWFSC page has no stable direct file list resolved from here	0.0	6.818
+mouss	hf	rev-fc8851db5ff3	3689	60712244	NOASSERTION		ok	0.0	49.413
+seamapd21	http	-			NOASSERTION		needs_adapter:needs_adapter:multipart-tar - 6 split parts (SEAMAPD21.tar.gz.aa..af) on grunt.sefsc.noaa.gov; the http adapter's enumerate() only keeps known streamable/spooled suffixes (.tar/.tar.gz/.zip/...), so '.tar.gz.aa' is silently dropped (0 items) - needs a part-concatenating adapter, not a filter tweak	?	4
+whoi-plankton	hf	rev-ba1e637e4cb8	19	9098273854	NOASSERTION		ok	0.03	0.22
+seaclear	http	-			CC-BY-4.0		needs_adapter:needs_adapter:figshare-api - Sci Data supplementary data is on figshare, not Zenodo; no zenodo/http adapter fits figshare's own REST API	0.0	2.339
+suim	hf	rev-0f07fb8db0e0	1	173794160	MIT		ok	0.0	23.016
+uieb	hf	rev-4f34d1c3eb04	4	1487875235	NOASSERTION		ok	0.0	2.688
+squid	zenodo	record-5744037	4	45817907950	CC-BY-NC-SA-4.0		ok	0.13	0.087
+flsea	http	-			CC-BY-NC-SA-4.0		needs_yohan:Kaggle login required	?	4
+varos	zenodo	record-5567209	2	17961670090	CC-BY-4.0		ok	0.05	0.111
+atlantis	http	-			NOASSERTION		needs_yohan:hosted on Kaggle; login/API key required (D-E: never create accounts)	0.01	1.0
+deepreefmap	zenodo	record-10624794	1	10340125342	CC-BY-4.0		ok	0.03	0.387
+reef-guidance	hf	rev-2978f343129b	29606	31980066947	CC-BY-NC-SA-4.0		ok	0.09	0.094
+reefset-v1	zenodo	record-11071202	3	4938305701	CC-BY-4.0		ok	0.01	0.607
+floating-marine-debris	github	git-427059e47f99	11	5847793	CC-BY-4.0		ok	0.0	513.014
+heron-reef-benthic	http	-			CC-BY-4.0		needs_adapter:needs_adapter:paper-lookup - article landing page only, actual data repository (likely a supplementary Zenodo/figshare record) not yet resolved	?	3
+coralnet	http	-			NOASSERTION		needs_yohan:CoralNet's API requires an account/API token even for source-scoped exports	?	3
+mft25	http	-			Apache-2.0		needs_yohan:project page is request-based (no anonymous download link)	?	3
+sea-urchin-detection	http	-			CC-BY-4.0		needs_yohan:Roboflow export requires a free API key (account, forbidden by D-E)	?	3
+noaa-ncrmp-structural-complexity	http	-			NOASSERTION		needs_adapter:needs_adapter:site-lookup - InPort metadata record only, the underlying data host is not resolved	?	3
+whoi-plankton-small	hf	rev-2d0ddc911aa8	4	1107677510	MIT		ok	0.0	2.708
+underwater-image-enhancement	hf	rev-eef27aacee4e	1	449114557	CC-BY-4.0		ok	0.0	6.68

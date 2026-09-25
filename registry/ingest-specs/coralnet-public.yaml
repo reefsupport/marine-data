@@ -1,0 +1,7 @@
+id: coralnet-public
+adapter: http
+params: {}
+license: NOASSERTION
+attribution: CoralNet (Chen et al. 2021, CoralNet 1.0)
+citation: Chen+ 2021 CoralNet 1.0
+homepage: https://coralnet.ucsd.edu/source/about/

@@ -1,0 +1,9 @@
+id: underwater-image-enhancement
+adapter: hf
+params:
+  repo: iamvastava/underwater_image_enhancement
+  revision: eef27aacee4eaa0d254e4d2012afb1c2d2beafef
+license: CC-BY-4.0
+attribution: Underwater Image Enhancement (HF iamvastava/underwater_image_enhancement)
+citation: '-'
+homepage: https://huggingface.co/datasets/iamvastava/underwater_image_enhancement

@@ -1,0 +1,8 @@
+id: squid
+adapter: zenodo
+params:
+  zenodo_record: 5744037
+license: CC-BY-NC-SA-4.0
+attribution: SQUID (Berman et al., TPAMI 2021)
+citation: Berman+ TPAMI2021
+homepage: https://zenodo.org/records/5744037

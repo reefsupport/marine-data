@@ -1,0 +1,7 @@
+id: fishnet-2023
+adapter: http
+params: {}
+license: NOASSERTION
+attribution: FishNet (Khan et al., ICCV 2023)
+citation: Khan+ ICCV2023
+homepage: https://fishnet-2023.github.io/
