@@ -12,12 +12,16 @@ which also applies the D-R4 zero-item-to-`needs_adapter` downgrade.
 
 | status | rows | notes |
 |---|---:|---|
-| `ok` | 55 | dry-run resolved, ≥1 item enumerated — ready for WP-6d ingest |
-| `needs_adapter:<kind>` | 39 | access confirmed, no adapter/decoder for the container/host yet |
+| `ok` | 60 | dry-run resolved, ≥1 item enumerated — ready for WP-6d ingest |
+| `needs_adapter:<kind>` | 34 | access confirmed, no adapter/decoder for the container/host yet |
 | `needs_yohan:<reason>` | 9 | needs an account, key, or a human access decision (D-E: no new accounts) |
 | `dead` | 1 | `reefnet` — no resolvable download URL; superseded by `reefnet-hf` (D-R1) |
 
-**GB still to ingest (the `ok` rows):** ~814.2 GB declared across 55 sources.
+**GB still to ingest (the `ok` rows):** ~899.8 GB declared across 59 sources
+with a known size; `seamapd21` is the 60th `ok` row but its declared size is
+unknown — the multipart-tar parts don't expose `Content-Length` in the
+dry-run listing, and the upstream NOAA host was unreachable from this
+network on 2026-09-25 (pre-existing, see `needs_adapter` kinds below).
 
 ## By wave
 
@@ -25,8 +29,8 @@ which also applies the D-R4 zero-item-to-`needs_adapter` downgrade.
 |---|---:|---:|---:|---:|---:|
 | w0  | 37 | 21 | 7  | 8 | 1 |
 | w1a | 6  | 6  | 0  | 0 | 0 |
-| w2a | 32 | 12 | 19 | 1 | 0 |
-| w2b | 29 | 16 | 13 | 0 | 0 |
+| w2a | 32 | 13 | 18 | 1 | 0 |
+| w2b | 29 | 20 | 9  | 0 | 0 |
 
 w1a is the only wave at 100% `ok` — the 6 sources are HF/Zenodo-pinned,
 dry-run-verified benchmark data (see `$T/reports/2026-09-25-5star-W1A.md`),
@@ -37,21 +41,20 @@ benchmark-first directive.
 
 Kind extracted from each row's `dry_run` value (some upstream w0 rows encode
 a longer diagnosis after the kind; only the leading token is counted here —
-the full reason is in the TSV). 27 distinct kinds across 39 rows; top ones:
+the full reason is in the TSV). 22 distinct kinds across 34 rows; top ones:
 
 | kind | rows |
 |---|---:|
 | gdrive | 8 |
 | site-scrape / site-navigation / js-rendered-site | 5 |
-| video | 2 |
 | parquet-index-only | 2 |
 | pangaea | 2 |
-| everything else (1 row each) | 20 |
+| unknown-container | 2 |
+| everything else (1 row each) | 15 |
 
 The 1-row kinds are: seafile-share, frdr-globus, bodc-catalogue,
 fathomnet-api, paper-lookup, erddap-csv-imagelist, ncei-accession,
-site-lookup, rosbag-decoder, unknown-container, json-captions,
-csv-url-index, pawsey, baidu, figshare-api, multipart-tar, rar,
+site-lookup, csv-url-index, pawsey, baidu, figshare-api,
 unknown-empty, drum, girder.
 
 D-R4 re-dry-run fixes applied this pass (false `ok`/0-items → `needs_adapter`):
@@ -60,6 +63,27 @@ D-R4 re-dry-run fixes applied this pass (false `ok`/0-items → `needs_adapter`)
 `fathomnet-megalodon` (parquet-index-only), `oceancv-rovtransect`
 (unknown-container), `deepsea-coral-cornerrise` (video) — 7 rows, matching
 the charter's known list.
+
+### WP-6d-B payload decoders (this pass, 2026-09-25)
+
+Built the 5 decoders `needs_adapter` was blocked on and re-dry-ran every row
+they unlock: `seamapd21` (multipart-tar → `http` adapter streaming
+`.tar.gz.aa`..`.af` with `ConcatReader`, no full local copy),
+`underwater-images-2542305` (rar, via `bsdtar`/libarchive), `salmon-cage`
+(video → 1fps frames, dHash-deduped), `ntnu-arl-uw` (rosbag →
+`sensor_msgs/CompressedImage` frames via pure-python `rosbags`), and
+`oceaninstruct` (caption JSON, image resolved via `image_index`/URL, unresolved
+counted not dropped). 5 of the 6 targeted rows flip to `ok`.
+`deepsea-coral-cornerrise` does **not** flip: live enumeration shows the
+Zenodo record is XLSX/CSV/CNV tabular data only (no video/rar/rosbag/json-
+caption/archive payload at all), so its `dry_run` reason is corrected from
+the earlier `video` guess to `unknown-container` — a true 0-image source, not
+a decoder gap this brief's formats cover. Also fixed the D-R4 root cause
+structurally: `BaseAdapter.enumerate()` now raises `NoStageableItems` (CLI
+exit 4, `NEEDS-ADAPTER\t<kind>\t<detail>` on stderr) whenever the filtered
+item list is empty, so any future source with 0 stageable items is a real
+non-zero exit classified by kind — never a silent `ok` — without a
+hand-maintained per-id lookup table.
 
 ## `needs_yohan` rows (access decisions, not adapter gaps)
 

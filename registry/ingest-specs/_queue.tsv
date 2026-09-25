@@ -28,7 +28,7 @@ coralnet-public	http	-			NOASSERTION		needs_yohan:account + CoralNet ToS require
 coralnet-small	hf	rev-df2570887c1a	6	2155705209	unknown	parquet	ok	0.01	2	w2a
 deepfish	http	2020	1		CC-BY-4.0		ok	0.02	0.526	w0
 deepreefmap	zenodo	record-10624794	1	10340125342	CC-BY-4.0		ok	0.03	0.387	w0
-deepsea-coral-cornerrise	zenodo	record-18171047	0	0	cc-by-4.0	CSV(+imgs?)	needs_adapter:video		2	w2a
+deepsea-coral-cornerrise	zenodo		0		cc-by-4.0	CSV(+imgs?)	needs_adapter:unknown-container		2	w2a
 deepsea-mot	hf	rev-61ecbda8acb2	6598	5922079214	CC-BY-SA-4.0		ok	0.02	0.675	w0
 deolhonoscorais	zenodo	v1	2	12890450293	CC-BY-4.0		ok	0.04	0.233	w0
 duo	needs:gdrive	-	0	0	research (non-commercial, per upstream)	COCO	needs_adapter:gdrive	-	?	w2b
@@ -64,12 +64,12 @@ noaa-coral-icra	hf	rev-b5e722f7c11e	470	5139793904	other-hf	parquet	ok	0.01	3	w2
 noaa-dscrtp	erddap-csv-imagelist				public-domain-us-gov	CSV+JPEG URLs	"needs_adapter:erddap-csv-imagelist — the ERDDAP tabledap CSV lists one row per specimen record with an ImageURL column (no bulk archive); needs an adapter that streams the CSV, dedupes/filters to rows with a non-empty ImageURL, then fetches each URL individually. Endpoint: https://www.ncei.noaa.gov/erddap/tabledap/deep_sea_corals.csv?ImageURL,CatalogNumber,ScientificName,ObservationYear&ImageURL!="""""		4	w2a
 noaa-goa-2019	ncei-accession				cc0-1.0	JPEG	needs_adapter:ncei-accession — doi.org/10.25921/022n-nd48 302-redirects to an NCEI accession/archive landing page; needs a follow-up fetch of the resolved URL to find the file manifest (likely an NCEI archive info/download API, not a flat file list)		3	w2a
 noaa-ncrmp-structural-complexity	http	-			NOASSERTION		needs_adapter:needs_adapter:site-lookup - InPort metadata record only, the underlying data host is not resolved	?	3	w0
-ntnu-arl-uw	hf				bsd-3-clause	rosbag	needs_adapter:rosbag-decoder — hf enumeration finds the 8 .bag files fine (pinned rev d79489fc4742, 148.68 GB total: 6 subset-fjord + 2 subset-mclab), but .bag is not in STREAMABLE/SPOOLED so the decode/fetch pipeline has no reader for it; needs a rosbag-to-frames extractor before this can go through hf ingest. First-pass subset if built: mclab_1+mclab_2+fjord_5 (~49 GB).		2	w2a
+ntnu-arl-uw	hf	rev-d79489fc4742	3	49014772562	bsd-3-clause		ok	0.14		w2a
 obsea-fish	zenodo	v1		3784147485	CC-BY-4.0	YOLO txt (bbox)	ok	0.01	1994	w1a
 ocean-r1	hf	rev-2b28d68647c5	42	20606311334	Apache-2.0 (HF card)	parquet	ok	0.055	0.194	w2b
 oceancv-rovtransect	hf	rev-746b1e4dd47a	0	0	mit	unknown	needs_adapter:unknown-container		2	w2a
 oceandark	gdrive				unknown	JPEG	needs_adapter:gdrive — the Google Sites page links to a Google Drive folder/viewer, not a direct file URL; needs a Drive-aware fetcher (or a human export to a direct zip link)		1	w2a
-oceaninstruct	hf	rev-9f5558a8c8f1	0	0	MIT (HF card)	JSON	needs_adapter:json-captions	-	66.667	w2b
+oceaninstruct	hf	rev-9f5558a8c8f1	1	12784203	MIT (HF card)	JSON	ok	0.00	2	w2b
 openimages-marine	csv-url-index				cc-by-4.0	CSV+JPEG	needs_adapter:csv-url-index — s3://open-images-dataset/ is anonymously listable (confirmed 200 on ListObjectsV2) but is a flat <split>/<image_id>.jpg layout with no class prefix; a marine-only subset needs the class-filtered image-id list from the OIDv7 bbox/label CSVs first, then per-id fetch from the flat bucket — the bucket adapter alone would pull the whole ~1.9M-image corpus		3	w2a
 ozfish	needs:pawsey	-	0	0	CC-BY-3.0-AU (README)	CSV+JPEG+MP4	needs_adapter:pawsey	-	?	w2b
 pangaea-ccz-gsr	pangaea				cc-by-4.0	JPEG	needs_adapter:pangaea — PANGAEA serves data via its own OAI/REST API (https://doi.pangaea.de/10.1594/PANGAEA.987009 resolves to a dataset page listing linked image files/collections, not a flat archive); needs a PANGAEA-dataset adapter that follows child datasets		3	w2a
@@ -85,12 +85,12 @@ reefnet-species	hf	rev-924117ab279f	1	3033631	NOASSERTION		ok	0.0	988.914	w0
 reefset-v1	zenodo	record-11071202	3	4938305701	CC-BY-4.0		ok	0.01	0.607	w0
 ruie	needs:baidu	-	0	0	research (non-commercial, per upstream)	JPEG	needs_adapter:baidu	-	?	w2b
 ruod	hf	rev-c22094e45b7f	14000		NOASSERTION	COCO (bbox, 10 classes)	ok		1996	w1a
-salmon-cage	zenodo	record-4931418	0	0	CC0-1.0 (Zenodo API)	MP4	needs_adapter:video	-	0.357	w2b
+salmon-cage	zenodo	record-4931418	7	2854190539	CC0-1.0 (Zenodo API)	MP4	ok	0.01	2	w2b
 sea-undistort	zenodo	v.1.0.0	1	2267334496	CC-BY-NC-SA-4.0 (Zenodo API)	PNG	ok	0.006	0.441	w2b
 sea-urchin-detection	http	-			CC-BY-4.0		needs_yohan:Roboflow export requires a free API key (account, forbidden by D-E)	?	3	w0
 seaclear	http	-			CC-BY-4.0		needs_adapter:needs_adapter:figshare-api - Sci Data supplementary data is on figshare, not Zenodo; no zenodo/http adapter fits figshare's own REST API	0.0	2.339	w0
 seagrassfinder	zenodo	record-13904604	1	1907310017	cc-by-nc-nd-4.0	JPEG	ok	0.01	3	w2a
-seamapd21	needs:multipart-tar	-	0	0	public domain (US federal government work)	YOLO	needs_adapter:multipart-tar	-	?	w2b
+seamapd21	http	1	1		public domain (US federal government work)	YOLO	ok		4	w2b
 seathru	hf	rev-528fa622018c	2421	38439305674	CC-BY-NC-SA-4.0 (HF card)	RAW+TIFF depth	ok	0.102	0.104	w2b
 seathru-nerf	gdrive				unknown	COLMAP	needs_adapter:gdrive — project page links a Google Drive file id (1RzojBFvBWjUUhuJb95xJPSNP3nJwZWaT); needs a Drive-aware fetcher (large-file confirm-token handshake)		3	w2a
 seatizen-atlas	zenodo	1.0.0	1	35473744193	CC-BY-4.0	JPEG+CSV	ok	0.1	0.113	w0
@@ -108,7 +108,7 @@ uieb	hf	rev-4f34d1c3eb04	4	1487875235	NOASSERTION		ok	0.0	2.688	w0
 uiis	hf	rev-44ca5db46599	4628		Apache-2.0	COCO JSON (inst, 7 classes)	ok		1997	w1a
 uiis10k	hf	rev-5c4316368a8e	10048	393832528	Apache-2.0	COCO JSON (inst, 10 classes)	ok	0.00	1998	w1a
 underwater-image-enhancement	hf	rev-eef27aacee4e	1	449114557	CC-BY-4.0		ok	0.0	6.68	w0
-underwater-images-2542305	zenodo	record-2542305	0	0	CC-BY-4.0 (Zenodo API)	?	needs_adapter:rar	-	0.059	w2b
+underwater-images-2542305	zenodo	record-2542305	5	33736315143	CC-BY-4.0 (Zenodo API)	?	ok	0.09	2	w2b
 urpc	hf	rev-c12202f7e4a7	6575	1827915303	Apache-2.0 (HF card)	VOC/YOLO	ok	0.005	1.094	w2b
 usis10k	hf	rev-b10f41ab819b	10632	460014041	Apache-2.0	COCO JSON (inst+salient, 7 classes)	ok	0.00	1999	w1a
 usod10k	needs:gdrive	-	0	0	research (non-commercial, per upstream)	PNG	needs_adapter:gdrive	-	?	w2b

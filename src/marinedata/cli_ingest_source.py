@@ -10,7 +10,7 @@ from pathlib import Path
 def _cmd_ingest_source(args: argparse.Namespace) -> int:
     import json
 
-    from .adapters import AccessRefused
+    from .adapters import AccessRefused, NoStageableItems
     from .ingest_source import IngestSpec, fetch_throughput, report_json, run_ingest
     from .s3_upload import MiB
 
@@ -46,6 +46,11 @@ def _cmd_ingest_source(args: argparse.Namespace) -> int:
     except AccessRefused as exc:
         print(f"NEEDS-YOHAN\t{exc.url}\t{exc.needs}", file=sys.stderr)
         return 3
+    except NoStageableItems as exc:
+        # D-R4 root cause fix: 0 stageable items is never a false "ok" (see
+        # marinedata.adapters.NoStageableItems) — a real, non-zero exit + reason.
+        print(f"NEEDS-ADAPTER\t{exc.reason}\t{exc}", file=sys.stderr)
+        return 4
     print(report_json(report))
     return 0
 

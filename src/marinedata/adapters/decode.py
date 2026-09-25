@@ -9,16 +9,20 @@ from __future__ import annotations
 
 import fnmatch
 import json
+import shutil
+import subprocess
 import tarfile
+import tempfile
 import zipfile
 from collections.abc import Callable, Iterable, Iterator, Mapping
-from pathlib import PurePosixPath
+from pathlib import Path, PurePosixPath
 from typing import Any
 
 from ..sample_schema import FIELD_NAMES, normalise_split
-from . import Decoded, Fetched, suffix_of
+from . import RAR, ROSBAG, VIDEO, Decoded, Fetched, suffix_of
 
 IMAGE_SUFFIXES = frozenset({".jpg", ".jpeg", ".png", ".tif", ".tiff", ".bmp", ".webp"})
+CAPTION_JSON_SUFFIXES = frozenset({".json", ".jsonl"})
 _SIDE_FIELDS = frozenset(FIELD_NAMES) & {
     "capture_datetime",
     "lat",
@@ -143,6 +147,230 @@ def _zip_members(fetched: Fetched) -> Iterator[tuple[str, Callable[[], bytes]]]:
             yield info.filename, (lambda i=info: zf.read(i))
 
 
+def _rar_members(fetched: Fetched) -> Iterator[tuple[str, Callable[[], bytes]]]:
+    """WP-6d-B: extract member-by-member via ``bsdtar`` (libarchive), never a bulk
+    unpack — one member's bytes are ever held at once, same as ``_zip_members``.
+    libarchive detects the RAR format from content, not the ``.rar`` extension."""
+    assert fetched.path is not None
+    listing = subprocess.run(
+        ["bsdtar", "-tf", str(fetched.path)],
+        capture_output=True,
+        text=True,
+        check=True,
+    ).stdout.splitlines()
+    names = sorted(n for n in listing if n and not n.endswith("/") and "__MACOSX" not in n)
+
+    def _read(path, name: str) -> bytes:
+        return subprocess.run(
+            ["bsdtar", "-xOf", str(path), name],
+            capture_output=True,
+            check=True,
+        ).stdout
+
+    for name in names:
+        yield name, (lambda n=name: _read(fetched.path, n))
+
+
+def _dhash(data: bytes, hash_size: int = 8) -> int | None:
+    """8x8 difference hash (Hamming-comparable) — near-duplicate consecutive video/rosbag
+    frames are dropped when two hashes differ by <= 6 bits. Returns ``None`` if the frame
+    can't be decoded as an image (kept rather than dropped)."""
+    try:
+        import io as _io
+
+        from PIL import Image
+
+        img = Image.open(_io.BytesIO(data)).convert("L").resize((hash_size + 1, hash_size))
+        pixels = list(img.getdata())
+    except Exception:
+        return None
+    bits = 0
+    for row in range(hash_size):
+        off = row * (hash_size + 1)
+        for col in range(hash_size):
+            bits = (bits << 1) | int(pixels[off + col] > pixels[off + col + 1])
+    return bits
+
+
+def _hamming(a: int, b: int) -> int:
+    return bin(a ^ b).count("1")
+
+
+def _ffmpeg_bin() -> str:
+    exe = shutil.which("ffmpeg")
+    if exe:
+        return exe
+    from imageio_ffmpeg import get_ffmpeg_exe  # optional decoders-extra fallback
+
+    return get_ffmpeg_exe()
+
+
+def _video_frames(fetched: Fetched, params: Mapping[str, Any]) -> Iterator[Decoded]:
+    """WP-6d-B: sample at ``video_fps`` (default 1), drop near-duplicate consecutive
+    frames (dHash <= 6). ``video_id``/``frame_ts`` go in ``labels`` (D-D: parquet-
+    compatible sample metadata); ``upstream_id`` keeps the existing ``key#member``
+    convention so a registry ``split_group`` pattern can group frames by video (leak-safe)
+    the same way it already groups tar/zip members."""
+    assert fetched.path is not None
+    fps = float(params.get("video_fps", 1))
+    video_id = PurePosixPath(fetched.item.key).stem
+    with tempfile.TemporaryDirectory(prefix="vidframes-") as td:
+        pattern = str(Path(td) / "f-%08d.jpg")
+        subprocess.run(
+            [
+                _ffmpeg_bin(),
+                "-nostdin",
+                "-loglevel",
+                "error",
+                "-i",
+                str(fetched.path),
+                "-vf",
+                f"fps={fps}",
+                "-qscale:v",
+                "2",
+                pattern,
+            ],
+            check=True,
+        )
+        last_hash: int | None = None
+        for i, frame_path in enumerate(sorted(Path(td).glob("f-*.jpg"))):
+            data = frame_path.read_bytes()
+            h = _dhash(data)
+            if h is not None and last_hash is not None and _hamming(h, last_hash) <= 6:
+                continue
+            last_hash = h if h is not None else last_hash
+            yield Decoded(
+                upstream_id=f"{fetched.item.key}#frame_{i:06d}",
+                data=data,
+                suffix=".jpg",
+                upstream_url=fetched.item.url,
+                labels={"video_id": video_id, "frame_ts": f"{i / fps:.3f}"},
+            )
+
+
+def _rosbag_frames(fetched: Fetched, params: Mapping[str, Any]) -> Iterator[Decoded]:
+    """WP-6d-B: sensor_msgs/Image + CompressedImage topics via the pure-Python
+    ``rosbags`` reader (no ROS install needed), same 1 fps + dHash sampling/grouping as
+    video. ``bag_id``/``topic``/``stamp`` go in ``labels``; ``upstream_id`` groups by
+    ``key#topic`` the same leak-safe way ``_video_frames`` groups by video."""
+    from rosbags.highlevel import AnyReader
+
+    assert fetched.path is not None
+    fps = float(params.get("video_fps", 1))
+    bag_id = PurePosixPath(fetched.item.key).stem
+    min_gap_ns = int(1e9 / fps) if fps > 0 else 0
+    topics = params.get("rosbag_topics")
+    with AnyReader([fetched.path]) as reader:
+        connections = [
+            c
+            for c in reader.connections
+            if c.msgtype in ("sensor_msgs/msg/Image", "sensor_msgs/msg/CompressedImage")
+            and (not topics or c.topic in topics)
+        ]
+        last_ts: dict[str, int] = {}
+        last_hash: dict[str, int] = {}
+        for i, (connection, timestamp, rawdata) in enumerate(reader.messages(connections)):
+            if timestamp - last_ts.get(connection.topic, -min_gap_ns) < min_gap_ns:
+                continue
+            msg = reader.deserialize(rawdata, connection.msgtype)
+            data, suffix = _rosbag_image_bytes(msg, connection.msgtype)
+            if data is None:
+                continue
+            h = _dhash(data)
+            prev = last_hash.get(connection.topic)
+            if h is not None and prev is not None and _hamming(h, prev) <= 6:
+                continue
+            last_ts[connection.topic] = timestamp
+            if h is not None:
+                last_hash[connection.topic] = h
+            yield Decoded(
+                upstream_id=f"{fetched.item.key}#{connection.topic}#{i:08d}",
+                data=data,
+                suffix=suffix,
+                upstream_url=fetched.item.url,
+                labels={
+                    "bag_id": bag_id,
+                    "topic": connection.topic,
+                    "stamp": f"{timestamp / 1e9:.6f}",
+                },
+            )
+
+
+def _rosbag_image_bytes(msg: Any, msgtype: str) -> tuple[bytes | None, str]:
+    if msgtype == "sensor_msgs/msg/CompressedImage":
+        fmt = str(getattr(msg, "format", "jpeg")).split(";")[0].strip().lower()
+        return bytes(msg.data), f".{fmt}" if fmt else ".jpg"
+    encoding = str(getattr(msg, "encoding", "")).lower()
+    try:
+        import io as _io
+
+        from PIL import Image
+
+        if encoding in {"rgb8", "bgr8"}:
+            img = Image.frombytes("RGB", (msg.width, msg.height), bytes(msg.data))
+            if encoding == "bgr8":
+                b, g, r = img.split()
+                img = Image.merge("RGB", (r, g, b))
+        elif encoding in {"mono8", "8uc1"}:
+            img = Image.frombytes("L", (msg.width, msg.height), bytes(msg.data))
+        else:
+            return None, ".jpg"  # unsupported raw encoding: skip, don't guess
+        buf = _io.BytesIO()
+        img.save(buf, format="JPEG")
+        return buf.getvalue(), ".jpg"
+    except Exception:
+        return None, ".jpg"
+
+
+def _caption_json(fetched: Fetched, params: Mapping[str, Any]) -> Iterator[Decoded]:
+    """WP-6d-B: caption/VQA JSON (json or jsonl) staged as label-only records under
+    ``labels/`` (D-D). Each record's image reference resolves against
+    ``params.image_index`` (an already-staged upstream key/sha -> url map built by the
+    caller) or, failing that, is fetched directly if it is an absolute URL. Unresolvable
+    references are counted (``unresolved`` label) rather than silently dropped."""
+    assert fetched.stream is not None
+    raw = fetched.stream.read()
+    text = raw.decode("utf-8", "replace")
+    if suffix_of(fetched.item.key) == ".jsonl":
+        records: list[Any] = [json.loads(line) for line in text.splitlines() if line.strip()]
+    else:
+        obj = json.loads(text) if text.strip() else []
+        records = obj if isinstance(obj, list) else obj.get("data") or obj.get("records") or [obj]
+
+    image_index: Mapping[str, str] = params.get("image_index") or {}
+    image_field = params.get("caption_image_field", "image")
+    from . import open_url as _open_url
+
+    for i, rec in enumerate(records):
+        if not isinstance(rec, dict):
+            continue
+        ref = rec.get(image_field)
+        labels = {k: str(v) for k, v in rec.items() if k != image_field and v is not None}
+        data = b""
+        resolved = False
+        url = None
+        if isinstance(ref, str):
+            url = image_index.get(ref)
+            if url is None and ref.startswith(("http://", "https://")):
+                url = ref
+        if url:
+            try:
+                with _open_url(url) as resp:
+                    data = resp.read()
+                resolved = True
+            except Exception:
+                resolved = False
+        labels["unresolved"] = "false" if resolved else "true"
+        yield Decoded(
+            upstream_id=f"{fetched.item.key}#{i}",
+            data=data,
+            suffix=_sniff(data) if resolved else ".bin",
+            upstream_url=fetched.item.url,
+            labels=labels,
+            label_files={} if resolved else {f"unresolved-{i}.json": json.dumps(rec).encode()},
+        )
+
+
 def _class_names(pf) -> dict[str, list[str]]:
     """ClassLabel names from HF's parquet ``huggingface`` schema metadata, if present."""
     meta = (pf.schema_arrow.metadata or {}).get(b"huggingface")
@@ -248,5 +476,13 @@ def decode_item(fetched: Fetched, params: Mapping[str, Any]) -> Iterator[Decoded
         yield from _group(_zip_members(fetched), fetched, params)
     elif suffix == ".parquet":
         yield from _parquet(fetched, params)
+    elif suffix in RAR:
+        yield from _group(_rar_members(fetched), fetched, params)
+    elif suffix in VIDEO:
+        yield from _video_frames(fetched, params)
+    elif suffix in ROSBAG:
+        yield from _rosbag_frames(fetched, params)
+    elif suffix in CAPTION_JSON_SUFFIXES:
+        yield from _caption_json(fetched, params)
     else:
         raise ValueError(f"{key}: no decoder for {suffix!r}")
