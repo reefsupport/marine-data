@@ -55,7 +55,22 @@ import yaml
 
 ROOT = Path(__file__).resolve().parents[1]
 SPECDIR = ROOT / "registry" / "ingest-specs"
-SUPPORTED_ADAPTERS = {"hf", "http", "zenodo", "bucket", "github"}
+SUPPORTED_ADAPTERS = {
+    "hf",
+    "http",
+    "zenodo",
+    "bucket",
+    "github",
+    "fathomnet",
+    "figshare",
+    "pangaea",
+    "http-index",
+    "gdrive-public",
+    "seafile-share",
+    "girder",
+    "pawsey-portal",
+    "frdr-https",
+}
 TIMEOUT_S = 180
 BYTES_PER_HOUR_AT_100MBPS = 100_000_000 * 3600  # planning rate, S57 catalog convention
 

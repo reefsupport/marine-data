@@ -147,6 +147,7 @@ class IngestSpec:
     attribution: str
     citation: str = ""
     homepage: str = ""
+    notes: str = ""
     version: str | None = None
     layout: str = "auto"
     expected_images: int | None = None

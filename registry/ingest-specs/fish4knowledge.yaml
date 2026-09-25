@@ -1,6 +1,9 @@
 id: fish4knowledge
-adapter: http
-params: {}
+adapter: http-index
+params:
+  index_url: http://groups.inf.ed.ac.uk/f4k/
+  version: fish4knowledge-idx1
+  depth: 2
 license: NOASSERTION
 attribution: Fish4Knowledge (Fisher et al. 2016)
 citation: Fisher+ 2016 Springer

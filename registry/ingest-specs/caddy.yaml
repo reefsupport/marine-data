@@ -1,7 +1,9 @@
 id: caddy
-adapter: site-scrape
+adapter: http-index
 params:
-  landing: http://www.caddian.eu/
+  index_url: http://www.caddian.eu/
+  version: caddy-idx1
+  depth: 2
 license: cc-by-nc-sa
 attribution: Gomez Chavez et al.
 citation: Gomez Chavez et al., JMSE 2019

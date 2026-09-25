@@ -54,7 +54,25 @@ def add_ingest_source_subparser(sub: argparse._SubParsersAction) -> None:
     p = sub.add_parser(
         "ingest-source", help="Adapter-driven ingest of an open source to sources/<id>/<version>/"
     )
-    p.add_argument("adapter", choices=["hf", "http", "zenodo", "bucket", "github"])
+    p.add_argument(
+        "adapter",
+        choices=[
+            "hf",
+            "http",
+            "zenodo",
+            "bucket",
+            "github",
+            "fathomnet",
+            "figshare",
+            "pangaea",
+            "http-index",
+            "gdrive-public",
+            "seafile-share",
+            "girder",
+            "pawsey-portal",
+            "frdr-https",
+        ],
+    )
     p.add_argument("spec", help="Ingest spec yaml (see docs/ingest-howto.md)")
     p.add_argument("--dry-run", action="store_true", help="Resolve + enumerate only")
     p.add_argument("--work", help="Work/temp dir (bounded by the spec's temp_cap_gb)")

@@ -192,8 +192,16 @@ class BaseAdapter:
 
 def make_adapter(name: str, params: Mapping[str, Any]) -> BaseAdapter:
     from .bucket import BucketAdapter
+    from .fathomnet import FathomNetAdapter
+    from .figshare import FigshareAdapter
+    from .gdrive import GDriveAdapter
+    from .girder import GirderAdapter
     from .github import GitHubAdapter
     from .hf import HFAdapter
+    from .http_index import HttpIndexAdapter
+    from .pangaea import PangaeaAdapter
+    from .pawsey import FrdrHttpsAdapter, PawseyPortalAdapter
+    from .seafile import SeafileAdapter
     from .web import HttpAdapter
 
     table: dict[str, type[BaseAdapter]] = {
@@ -202,6 +210,15 @@ def make_adapter(name: str, params: Mapping[str, Any]) -> BaseAdapter:
         "zenodo": HttpAdapter,
         "bucket": BucketAdapter,
         "github": GitHubAdapter,
+        "fathomnet": FathomNetAdapter,
+        "figshare": FigshareAdapter,
+        "pangaea": PangaeaAdapter,
+        "http-index": HttpIndexAdapter,
+        "gdrive-public": GDriveAdapter,
+        "seafile-share": SeafileAdapter,
+        "girder": GirderAdapter,
+        "pawsey-portal": PawseyPortalAdapter,
+        "frdr-https": FrdrHttpsAdapter,
     }
     if name not in table:
         raise KeyError(f"unknown adapter {name!r}; known: {sorted(table)}")
