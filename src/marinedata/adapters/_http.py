@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+import random
 import re
 import shutil
 import time
@@ -56,7 +57,7 @@ def open_url(
             last = exc
         except (urllib.error.URLError, ConnectionError, TimeoutError) as exc:
             last = exc
-        time.sleep(min(2**attempt, 30))
+        time.sleep(min(2**attempt, 30) + random.uniform(0, 1))  # WP-6b: jitter (D-G)
     raise RuntimeError(f"GET {url} failed after {retries} attempts: {last}")
 
 

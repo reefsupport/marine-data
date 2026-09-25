@@ -16,8 +16,13 @@ from __future__ import annotations
 import dataclasses
 import datetime as dt
 import hashlib
+import io
 import json
+import threading
+import time
+from collections import deque
 from collections.abc import Mapping
+from concurrent.futures import Future, ThreadPoolExecutor
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
@@ -26,12 +31,111 @@ import yaml
 
 from . import checksums, sample_schema
 from .adapters import SPOOLED, make_adapter, suffix_of
+from .adapters._http import HashingReader
 from .adapters.decode import IMAGE_SUFFIXES
+from .concurrency import HostLimiter, retry_with_backoff
 from .s3_upload import DEFAULT_PART, DiskGuard, GiB, local_digest, upload_file
 from .staged_writer import DEFAULT_SHARD_BYTES, DEFAULT_THRESHOLD, StagedWriter, WriterConfig
 
 _BIG_PREFIXES = ("images/", "labels/")
 _CONTAINERS = (".tar", ".tar.gz", ".tgz", *SPOOLED)
+
+DEFAULT_JOBS = 8
+MAX_JOBS = 32
+DEFAULT_MAX_PER_HOST = 4
+DEFAULT_PART_JOBS = 4
+# A killed-then-resumed spooled fetch can wait this long for another in-flight fetch to
+# drain (guard.reserve_blocking) before it gives up and raises TempCapError (D-L).
+_RESERVE_WAIT_S = 300.0
+
+
+def _materialize(fetched: Any) -> Any:
+    """Fully drain a *simple* (non-container) stream now, in the fetch worker thread —
+    this is the network-bound part worth overlapping across ``--jobs``. ``decode()``
+    then replays the bytes through a fresh :class:`HashingReader`, so its hash/size
+    accounting (and upstream-digest verification) is unchanged; only when the bytes
+    were transferred moves earlier. Tar/zip/parquet containers are untouched: they are
+    read member-by-member to keep memory bounded (see staged_writer/decode module docs).
+    """
+    if fetched.stream is not None:
+        data = fetched.stream.raw.read()
+        fetched.stream.raw.close()
+        fetched.stream = HashingReader(io.BytesIO(data))
+    return fetched
+
+
+def _fetch_one(
+    adapter: Any,
+    item: Any,
+    tmp: Path,
+    guard: DiskGuard,
+    limiter: HostLimiter,
+    *,
+    reserve_timeout: float = 0.0,
+) -> Any:
+    """One item's fetch, with (D-L) disk-budget admission for spooled downloads and
+    (D-G) per-host politeness + retry-with-backoff-and-jitter for the network call.
+    Used on both the sequential (``--jobs 1``) and pooled paths, so behaviour is
+    identical either way — only *when* the bytes move differs. ``reserve_timeout=0``
+    (the sequential path) fails fast exactly like the pre-WP-6b ``guard.reserve()``;
+    the pooled path waits (``_RESERVE_WAIT_S``) for a sibling fetch to drain instead."""
+    if suffix_of(item.key) in SPOOLED:
+        guard.reserve_blocking(item.size or 0, timeout=reserve_timeout)
+    with limiter.acquire(item.url):
+        fetched = retry_with_backoff(lambda: adapter.fetch(item, tmp))
+    if suffix_of(item.key) not in _CONTAINERS:
+        fetched = _materialize(fetched)
+    return fetched
+
+
+class _Prefetcher:
+    """Bounded (``--jobs``) sliding window of fetch futures, consumed strictly in
+    enumeration order — so staging (shard offsets, sample order, CHECKSUMS) is exactly
+    as deterministic as the ``--jobs 1`` sequential path regardless of N (fetch
+    *completion* order may differ; *consumption* order never does)."""
+
+    def __init__(
+        self,
+        adapter: Any,
+        items: list,
+        tmp: Path,
+        guard: DiskGuard,
+        jobs: int,
+        limiter: HostLimiter,
+    ) -> None:
+        self._items = deque(items)
+        self._adapter, self._tmp, self._guard, self._limiter = adapter, tmp, guard, limiter
+        self.pool = ThreadPoolExecutor(max_workers=jobs)
+        self._futures: deque[Future] = deque()
+        for _ in range(jobs):
+            self._submit_next()
+
+    def _submit_next(self) -> None:
+        if not self._items:
+            return
+        item = self._items.popleft()
+        self._futures.append(
+            self.pool.submit(
+                _fetch_one,
+                self._adapter,
+                item,
+                self._tmp,
+                self._guard,
+                self._limiter,
+                reserve_timeout=_RESERVE_WAIT_S,
+            )
+        )
+
+    def __bool__(self) -> bool:
+        return bool(self._futures)
+
+    def next(self) -> Any:
+        fut = self._futures.popleft()
+        self._submit_next()
+        return fut.result()
+
+    def close(self) -> None:
+        self.pool.shutdown(wait=False, cancel_futures=True)
 
 
 @dataclass
@@ -117,6 +221,7 @@ class _Uploader:
         work: Path,
         part_size: int,
         report: IngestReport,
+        part_jobs: int = 1,
     ) -> None:
         self.client, self.spec, self.key_prefix, self.root = client, spec, key_prefix, root
         self.ckpt = work / "checkpoints"
@@ -124,7 +229,8 @@ class _Uploader:
         self.ledger: dict[str, dict[str, Any]] = (
             json.loads(self.ledger_path.read_text()) if self.ledger_path.exists() else {}
         )
-        self.part_size, self.report = part_size, report
+        self.part_size, self.report, self.part_jobs = part_size, report, part_jobs
+        self._lock = threading.Lock()  # WP-6b: push() may run from several PUT threads
 
     def push(self, rel: str) -> None:
         path = self.root / rel
@@ -137,13 +243,15 @@ class _Uploader:
             checkpoint_dir=self.ckpt,
             part_size=self.part_size,
             digest=d,
+            part_jobs=self.part_jobs,
         )
-        self.ledger[rel] = {"sha256": d.sha256, "size": d.size, "etag": res.etag}
-        tmp = self.ledger_path.with_suffix(".tmp")
-        tmp.write_text(json.dumps(self.ledger, sort_keys=True))
-        tmp.replace(self.ledger_path)
-        self.report.skipped += int(res.skipped)
-        self.report.uploaded += int(not res.skipped)
+        with self._lock:
+            self.ledger[rel] = {"sha256": d.sha256, "size": d.size, "etag": res.etag}
+            tmp = self.ledger_path.with_suffix(".tmp")
+            tmp.write_text(json.dumps(self.ledger, sort_keys=True))
+            tmp.replace(self.ledger_path)
+            self.report.skipped += int(res.skipped)
+            self.report.uploaded += int(not res.skipped)
         if rel.startswith(_BIG_PREFIXES):
             path.unlink()
 
@@ -189,6 +297,46 @@ def _stub(spec: IngestSpec, report: IngestReport) -> str:
     )
 
 
+def fetch_throughput(
+    spec: IngestSpec,
+    work: Path,
+    *,
+    jobs: int = 1,
+    max_per_host: int = DEFAULT_MAX_PER_HOST,
+    limit: int | None = None,
+) -> dict[str, Any]:
+    """WP-6b ``--fetch-only`` benchmark: drain up to ``limit`` items through the exact
+    fetch path ``run_ingest`` uses (retry+jitter, per-host limiting, `--jobs` prefetch) —
+    no staging, no S3 — to measure files/s scaling of ``--jobs`` alone."""
+    jobs = max(1, min(int(jobs), MAX_JOBS))
+    adapter = make_adapter(spec.adapter, spec.params)
+    items = list(adapter.enumerate())
+    if limit is not None:
+        items = items[:limit]
+    tmp = work / "tmp"
+    tmp.mkdir(parents=True, exist_ok=True)
+    guard = DiskGuard(work, int(spec.temp_cap_gb * GiB), int(spec.disk_floor_gib * GiB))
+    limiter = HostLimiter(max_per_host)
+    started = time.monotonic()
+    if jobs > 1:
+        prefetcher = _Prefetcher(adapter, items, tmp, guard, jobs, limiter)
+        try:
+            for _ in items:
+                prefetcher.next()
+        finally:
+            prefetcher.close()
+    else:
+        for item in items:
+            _fetch_one(adapter, item, tmp, guard, limiter)
+    elapsed = time.monotonic() - started
+    return {
+        "items": len(items),
+        "jobs": jobs,
+        "seconds": elapsed,
+        "files_per_s": (len(items) / elapsed) if elapsed > 0 else float(len(items)),
+    }
+
+
 def run_ingest(
     spec: IngestSpec,
     work: Path,
@@ -198,7 +346,11 @@ def run_ingest(
     part_size: int = DEFAULT_PART,
     guard: DiskGuard | None = None,
     fetch_date: dt.date | None = None,
+    jobs: int = DEFAULT_JOBS,
+    max_per_host: int = DEFAULT_MAX_PER_HOST,
+    part_jobs: int = DEFAULT_PART_JOBS,
 ) -> IngestReport:
+    jobs = max(1, min(int(jobs), MAX_JOBS))
     adapter = make_adapter(spec.adapter, spec.params)
     version = spec.version or adapter.resolve_version()
     if spec.version:
@@ -240,49 +392,71 @@ def run_ingest(
             lineage_root_digest=spec.lineage_root_digest,
         ),
     )
-    up = _Uploader(client, spec, key_prefix, root, work, part_size, report)
+    up = _Uploader(client, spec, key_prefix, root, work, part_size, report, part_jobs=part_jobs)
     flush_at = guard.temp_cap_bytes // 2
     live = 0
     upstream: list[dict[str, Any]] = []
+    limiter = HostLimiter(max_per_host)
+    # WP-6b: fetch (network) is prefetched jobs-deep, consumed strictly in item order —
+    # so decode/write/CHECKSUMS stay exactly as deterministic as `--jobs 1`. PUT (also
+    # network) is likewise pooled: object identity, not order, decides the final state,
+    # and CHECKSUMS.sha256 is only pushed once every earlier push has completed (below).
+    prefetcher = _Prefetcher(adapter, items, tmp, guard, jobs, limiter) if jobs > 1 else None
+    put_pool = ThreadPoolExecutor(max_workers=jobs) if jobs > 1 else None
 
     def flush() -> None:
         nonlocal live
         guard.sample()  # a real walk at the local maximum -> honest peak
-        for rel in writer.drain_closed():
-            up.push(rel)
+        rels = writer.drain_closed()
+        if put_pool is not None and len(rels) > 1:
+            list(put_pool.map(up.push, rels))
+        else:
+            for rel in rels:
+                up.push(rel)
         live = guard.sample()
 
-    for item in items:
-        if suffix_of(item.key) in SPOOLED:
-            guard.reserve(item.size or 0)
-        fetched = adapter.fetch(item, tmp)
-        live += fetched.size
-        truncated = False
-        try:
-            for decoded in adapter.decode(fetched):
-                if writer.add(item, decoded) is not None:
-                    live += len(decoded.data)
-                guard.observe(live)
-                if live >= flush_at:
-                    flush()
-                if spec.max_images and len(writer.rows) >= spec.max_images:
-                    truncated = True
-                    break
-            if truncated and fetched.stream is not None:
-                fetched.stream.raw.close()
-                fetched.stream = None
-            else:
-                fetched.close()
-        finally:
-            if fetched.path is not None:
-                fetched.path.unlink(missing_ok=True)
-                live -= fetched.size
-        writer.finish_item(fetched.sha256)
-        upstream.append(
-            {"key": item.key, "url": item.url, "sha256": fetched.sha256, "truncated": truncated}
-        )
-        if truncated:
-            break
+    try:
+        for item in items:
+            fetched = (
+                prefetcher.next()
+                if prefetcher is not None
+                else _fetch_one(adapter, item, tmp, guard, limiter)
+            )
+            live += fetched.size
+            truncated = False
+            try:
+                for decoded in adapter.decode(fetched):
+                    if writer.add(item, decoded) is not None:
+                        live += len(decoded.data)
+                    guard.observe(live)
+                    if live >= flush_at:
+                        flush()
+                    if spec.max_images and len(writer.rows) >= spec.max_images:
+                        truncated = True
+                        break
+                if truncated and fetched.stream is not None:
+                    fetched.stream.raw.close()
+                    fetched.stream = None
+                else:
+                    fetched.close()
+            finally:
+                if fetched.path is not None:
+                    fetched.path.unlink(missing_ok=True)
+                    live -= fetched.size
+            writer.finish_item(fetched.sha256)
+            upstream.append(
+                {"key": item.key, "url": item.url, "sha256": fetched.sha256, "truncated": truncated}
+            )
+            if truncated:
+                break
+    except BaseException:
+        if prefetcher is not None:
+            prefetcher.close()
+        if put_pool is not None:
+            put_pool.shutdown(wait=False)
+        raise
+    if prefetcher is not None:
+        prefetcher.close()
     writer.finalize()
     report.images = len(writer.rows)
     sample_schema.write_samples(root / "metadata.parquet", writer.rows)
@@ -316,6 +490,8 @@ def run_ingest(
     report.files = len(digests) + 1
     report.bytes = sum(size for _, size in writer.files.values()) + len(manifest)
     up.push(checksums.CHECKSUM_FILE)  # LAST: the version-complete marker
+    if put_pool is not None:
+        put_pool.shutdown(wait=True)
     report.verified = up.verify(sorted([*digests, checksums.CHECKSUM_FILE]))
     report.peak_temp_bytes = guard.peak_bytes
     (work / f"registry-stub-{spec.id}.yaml").write_text(_stub(spec, report))
