@@ -154,8 +154,12 @@ def test_no_source_claims_own_tier_over_third_party_pixels(registry: Registry) -
     Rights now attach to (source, partition). This asserts the split stayed split.
     """
     own = registry.source("reef-support-benthic-own")
-    assert own.licence.tier is Tier.OWN
-    assert own.items == 1250, "T0_OWN must cover only pixels we actually own"
+    # D-B (2026-09-25, delegated): relicensed CC-BY-4.0 for the open dataset — tier is
+    # now PERMISSIVE, but `legal_basis` staying OWN is the part this regression guards:
+    # we relicense only pixels we actually hold outright, never a source we merely mask.
+    assert own.licence.tier is Tier.PERMISSIVE
+    assert own.legal_basis is LegalBasis.OWN
+    assert own.items == 1250, "the relicensed pixels must be only the ones we actually own"
 
     borrowed = registry.source("reef-support-seaview-labels")
     assert borrowed.licence.tier is not Tier.OWN

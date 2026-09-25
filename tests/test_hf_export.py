@@ -11,11 +11,15 @@ import pytest
 
 from marinedata.hf_card import _supervises, render_card, render_licence, unsupervised_configs
 from marinedata.hf_export import (
+    DEFAULT_EXCLUDE_CONFIGS,
+    DEFAULT_REPO_ID,
+    EXCLUDE_REASONS,
     IMAGES,
     MASKS,
     HFExportError,
     SampleRow,
     build_layout,
+    drop_excluded,
     export,
     hf_split,
     read_manifest,
@@ -195,6 +199,83 @@ def test_export_summary_and_card_list_every_config(tmp_path):
     assert _supervises("mask_class_map", '{"0": null}') is False
 
 
+def test_drop_excluded_omits_only_the_named_task(tmp_path):
+    """D-A: `coral-genus-caribbean` is dropped from v1 by default; other tasks and the
+    shared images/masks pool are untouched by the filter."""
+    rows = {
+        "coral-genus-caribbean": [_row(tmp_path, 1)],
+        "coral-health-binary": [_row(tmp_path, 2)],
+    }
+    assert DEFAULT_EXCLUDE_CONFIGS == ("coral-genus-caribbean",)
+    kept = drop_excluded(rows, DEFAULT_EXCLUDE_CONFIGS)
+    assert set(kept) == {"coral-health-binary"}
+    assert drop_excluded(rows, []) == rows
+
+
+def test_default_repo_id_is_open_marine_imagery():
+    assert DEFAULT_REPO_ID == "reefsupport/open-marine-imagery"
+
+
+def test_card_lists_excluded_configs_with_their_reason():
+    summary = {
+        "configs": {
+            IMAGES: {"splits": {"train": {"rows": 1}}},
+            "coral-health-binary": {"splits": {"train": {"rows": 1}}},
+        }
+    }
+    release = {
+        "release": "v1",
+        "split_map_sha256": "x",
+        "never_eval_near_dup_excluded": {"count": 0},
+        "near_dup": {
+            "algorithm": "dhash-64",
+            "pil_version": "12.3.0",
+            "union_max_hamming": 4,
+            "never_eval_exclude_max_hamming": 8,
+            "chain_guard_fraction": 0.01,
+        },
+    }
+    card = render_card(
+        summary,
+        release,
+        [],
+        pretty_name="RS v1",
+        excluded={"coral-genus-caribbean": EXCLUDE_REASONS["coral-genus-caribbean"]},
+    )
+    assert "## Not included" in card
+    assert "`coral-genus-caribbean` — 0 labels in v1" in card
+    assert "## Not included" not in render_card(summary, release, [], pretty_name="RS v1")
+
+
+def test_card_and_licence_surface_a_relicensed_source_note():
+    summary = {"configs": {"images": {"splits": {"train": {"rows": 1}}}}}
+    release = {
+        "release": "v1",
+        "split_map_sha256": "x",
+        "never_eval_near_dup_excluded": {"count": 0},
+        "near_dup": {
+            "algorithm": "dhash-64",
+            "pil_version": "12.3.0",
+            "union_max_hamming": 4,
+            "never_eval_exclude_max_hamming": 8,
+            "chain_guard_fraction": 0.01,
+        },
+    }
+    sources = [
+        {
+            "id": "reef-support-benthic-own",
+            "version": "2026-09-24",
+            "licence": "CC-BY-4.0",
+            "licence_hf": "cc-by-4.0",
+            "licence_note": "set 2026-09-25 by delegation; confirm before publish",
+            "tier": "T1",
+        }
+    ]
+    card = render_card(summary, release, sources, pretty_name="RS v1")
+    assert "set 2026-09-25 by delegation; confirm before publish" in card
+    assert "set 2026-09-25 by delegation; confirm before publish" in render_licence(sources)
+
+
 def test_commit_plan_bounds_files_and_puts_readme_last(tmp_path):
     for i in range(205):
         (tmp_path / "data").mkdir(exist_ok=True)
@@ -216,6 +297,12 @@ def test_upload_is_dry_run_unless_both_flags(tmp_path, capsys):
     assert (
         upload_main([str(tmp_path), "--repo-id", "org/x", "--execute", "--confirm-yohan-go"]) == 2
     )  # visibility must be explicit
+
+
+def test_upload_defaults_to_the_open_marine_imagery_repo(tmp_path, capsys):
+    (tmp_path / "README.md").write_text("card")
+    assert upload_main([str(tmp_path)]) == 0
+    assert f"repo {DEFAULT_REPO_ID}" in capsys.readouterr().out
 
 
 def test_files_per_folder_counts_direct_entries():
