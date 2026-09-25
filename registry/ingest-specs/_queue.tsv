@@ -43,7 +43,7 @@ deolhonoscorais	zenodo	v1	2	12890450293	CC-BY-4.0		ok	0.04	0.233	w0
 duo	gdrive-public	gdrive-pinned	1		research (non-commercial, per upstream)	COCO	ok		?	w2b
 eilat-rsmas	http-index	eilat-rsmas-idx1	2		research-use	PNG patches	ok		2	w2a
 euvp	hf	rev-e3c6d08a8b07	1	189288867	research (non-commercial, per upstream)	JPEG pairs	ok	0.001	21.132	w2b
-fathomnet	fathomnet	fathomnet-f4f9b794691e	2000		NOASSERTION		ok		0.007	w0
+fathomnet	fathomnet	fathomnet-f4f9b794691e	481126	453247058080	NOASSERTION		ok	1.26	0.007	w0
 fathomnet-coverage	hf	rev-da92727f89f9	0	0	unknown	parquet	needs_adapter:parquet-index-only		5	w2a
 fathomnet-megalodon	hf	rev-e4e11fd74821	0	0	other-hf	parquet	needs_adapter:parquet-index-only		3	w2a
 fish-length-stereo	zenodo	record-19408363	1	25180242944	CC-BY-4.0 (Zenodo API)	images	ok	0.067	0.119	w2b
@@ -132,7 +132,7 @@ wildfish	hf	rev-5212c80f4d98	26	14517292127	research-only (non-commercial, per u
 afrl-stereo-vi	hf	rev-bdb079e7fef8			mit		needs_adapter:ros2-db3 (3 ROS1 .bag + 3 ROS2 .db3; .bag decoder exists, 0 items -> check include/size)	-	?	w3
 elliott-bay-benthic	hf	rev-cd20e627ba77	1000	45301235557	cc-by-nc-4.0		ok	0.120	?	w3
 gbif-marine	gbif-occurrence-media	api-20260925	832978		per record: CC0-1.0 / CC-BY-4.0 / CC-BY-NC-4.0 (GBIF licence facet)		ok	-	?	w3
-inat-marine	needs:manifest				per photo (photos.csv `license`): CC0 / CC-BY / CC-BY-NC / -SA / -ND variants		needs_adapter:manifest	-	?	w3
+inat-marine	inat-open-data	inat-2026-09-178e7455bbab	1130014	1428996000000	per photo (photos.csv `license`): CC0 / CC-BY / CC-BY-NC / -SA / -ND variants		ok	3.97	?	w3
 muot3m	hf	rev-4294cb6a2537	3030	256556451094	CC-BY-NC-ND-4.0 (HF card)		ok	-	?	w3
 nautdata	hf	rev-3cf1dbd245dc			apache-2.0		needs_adapter:split-archive (*.aa/.ab/.ac not .tar.gz.NN; widen _MULTIPART_RE + sniff)	-	?	w3
 nes-plankton-2022	hf	rev-18fb2e57fd77	10	1576344309	cc-by-4.0		ok	0.004	?	w3
@@ -144,8 +144,8 @@ plankton-interaction-videos	hf	rev-f7d40238215e	21221	5662987367	apache-2.0		ok	
 planktonzilla	hf	rev-7fd542ef9fc9	189	91174191772	other (HF card); per-sample licence = the originating instrument dataset (column `dataset`)		ok	0.242	?	w3
 seattle-aquarium	hf	rev-78701c4efe73	6522	59049737152	CC-BY-NC-4.0 (HF card)		ok	0.156	?	w3
 seaturtleid2022	hf	rev-91cd6c1126c7	4	1755838391	?		ok	0.005	?	w3
-treeoflife-10m	needs:member-filter				HF card licence null; per image per upstream (EOL media licence, iNat21 photo licence) — not in the catalog.csv columns read		needs_adapter:member-filter	-	?	w3
+treeoflife-10m	hf-member-filter	rev-91debffb7146	63	1984907071025	HF card licence null; per image per upstream (EOL media licence, iNat21 photo licence) — not in the catalog.csv columns read		needs_adapter:member-filter-live-smoke-pending	5.51	?	w3
 uwbench	hf	rev-84af94500308	7	9770800777	?		ok	0.026	?	w3
-wikimedia-underwater	needs:commons-api				per file (Commons extmetadata LicenseShortName): CC-BY-SA / CC-BY / CC0 / PD		needs_adapter:commons-api	-	?	w3
+wikimedia-underwater	commons-api	commons-89318e0046e9	14244	76934349594	per file (Commons extmetadata LicenseShortName): CC-BY-SA / CC-BY / CC0 / PD		ok	0.21	?	w3
 imos-auv	needs:manifest				CC-BY-4.0 (IMOS data licence)		needs_adapter:manifest	-	?	w3
 marineinst20m-web	manifest	manifest-c596e4376e6f	56255		per upstream website (recorded per sample)	overlay join (COCO RLE)	ok	-	?	w3

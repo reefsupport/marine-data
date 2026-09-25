@@ -5,8 +5,9 @@
 id: fathomnet
 adapter: fathomnet
 params:
-  max_items: 2000
-  page_size: 100
+  full: true
+  page_size: 1000
+  # exclude_sha256: [<seamapd21/noaa-gfisher metadata.parquet>]  set when GFISHER is staged
 notes: dedupe against GFISHER frames (noaa-gfisher, seamapd21) by sha256 before staging; no subset needed (481k items / 453 GB, both under the D-AB threshold)
 license: 'per box: CC-BY-NC-4.0 / CC0-1.0 / CC-BY-4.0 (annotationLicense); image rights per contributor'
 attribution: FathomNet / MBARI and contributors

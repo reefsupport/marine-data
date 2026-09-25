@@ -1,16 +1,16 @@
 # iNaturalist Open Data (AWS ODR): research-grade observations of marine taxa. Marine = 34 wholly-marine clades, or a mixed-clade
 # species that WoRMS AphiaRecordsByMatchNames marks isMarine (40,387 names queried; 729 unmatched are excluded).
 id: inat-marine
-adapter: needs:manifest
+adapter: inat-open-data
+params:
+  manifest: /private/tmp/claude-501/-Users-yohanrunhaar-dev-reefsupport/0ca12ad3-aada-4ede-ab99-14fec1fa7cc2/scratchpad/wp6e-a/inat/inat-marine-manifest.parquet
+  metadata_date: '2026-09'
+  photo_size: original
+notes: 'D-AB manifest (scripts/inat_manifest.py; research-grade, marine taxa per registry/ingest-specs/data/inat-marine-taxa-2026-09-25.csv.gz, 1 photo/obs, <=100/taxon by sha256(observation_uuid)); lat/lon/observed_on/licence per sample; manifest lives in scratch until phase 2 uploads it'
 license: 'per photo (photos.csv `license`): CC0 / CC-BY / CC-BY-NC / -SA / -ND variants'
 attribution: iNaturalist contributors (per photo observer)
 citation: iNaturalist Open Data, AWS Open Data Registry, metadata 2026-09
 homepage: https://registry.opendata.aws/inaturalist-open-data/
-candidate_endpoints:
-- https://inaturalist-open-data.s3.amazonaws.com/metadata/ (observations/photos/taxa .csv.gz)
-- https://inaturalist-open-data.s3.amazonaws.com/photos/<photo_id>/large.<ext>
-why_not_supported: Photos are addressed by photo_id from the metadata CSVs (488,562,900 photo rows); the bucket
-  cannot be listed usefully and no adapter takes a (url, licence) manifest. The CSVs carry no byte size or checksum.
 measured:
   items: 9594509
   bytes: 2387622827902

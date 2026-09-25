@@ -78,6 +78,9 @@ def add_ingest_source_subparser(sub: argparse._SubParsersAction) -> None:
             "frdr-https",
             "manifest",
             "gbif-occurrence-media",
+            "inat-open-data",
+            "hf-member-filter",
+            "commons-api",
         ],
     )
     p.add_argument("spec", help="Ingest spec yaml (see docs/ingest-howto.md)")
