@@ -73,6 +73,57 @@ tail -30 $SP/<n>/<id>.log
 - **Killed or failed?** Re-run the exact same command. Finished files are skipped and
   multipart uploads resume.
 
+### 3a. Bounded concurrency (`--jobs`, WP-6b)
+
+Fetch and PUT are network-bound, so both are pooled behind a bounded thread pool.
+Output is byte-identical to `--jobs 1` regardless of `N`: only fetch (network) and PUT
+(network) are parallel; decode and write stay single-threaded and strictly in
+enumeration order, so shard layout, `metadata.parquet`/`index.parquet` row order, and
+`CHECKSUMS.sha256` — and therefore `root_digest` — never depend on `N`.
+
+```bash
+PYTHONPATH=src nohup .venv/bin/python -m marinedata.cli ingest-source hf $SP/<n>/<id>.yaml \
+  --work $SP/<n>/work --jobs 8 > $SP/<n>/<id>.log 2>&1 &
+```
+
+- `--jobs N` (default 8, max 32): in-flight fetch prefetch depth and PUT pool size.
+  `--jobs 1` takes the original sequential code path unchanged — no pool is created.
+- `--max-per-host N` (default 4): per-host semaphore, independent of `--jobs` — one slow
+  or rate-limited host never starves the others.
+- `--part-jobs N` (default 4): parallel part upload for one multipart object; only
+  matters for files large enough to need more than one part.
+- 429/5xx/connection-reset errors (HTTP or S3) retry with capped exponential backoff
+  + jitter; a 4xx auth/validation error, or a real interrupt (Ctrl-C/kill), never retries.
+- The D-L temp-disk cap (`temp_cap_gb`) stays authoritative under concurrency: fetches
+  that spool to disk block on the cap via a bounded wait, they don't bypass it. Loose
+  in-memory items (the common case `--jobs` speeds up) never touch disk during fetch,
+  so they don't count against the cap at all.
+- Killed mid-run at any `--jobs N`? Re-run the exact same command — already-uploaded
+  objects are skipped by ETag/sha and in-progress multipart uploads resume from their
+  checkpoint, same as `--jobs 1`.
+
+**`--fetch-only` (network-light throughput probe).** Measures fetch files/s at a given
+`--jobs` with no staging and no S3 — useful before committing to a full run:
+
+```bash
+PYTHONPATH=src .venv/bin/python -m marinedata.cli ingest-source hf $SP/<n>/<id>.yaml \
+  --fetch-only --jobs 8 --limit 500
+```
+
+| Check | N=1 | N=8 | N=16 |
+|---|---|---|---|
+| `rf100-coral-lwptl` smoke re-run (0 B expected, skip-on-ETag) | — | not yet measured live | — |
+| `fathomnet-vme` COCO, 500 image URLs, fetch-only | not yet measured live | not yet measured live | not yet measured live |
+
+The table above is intentionally unfilled: the runner this change landed on had less
+than the D-F 40 GiB free-disk floor at verification time (`DiskGuard` correctly refused
+non-dry-run work), so the real-network smoke re-run and the fathomnet-vme throughput
+probe were not run live. `--fetch-only` and `--jobs` are implemented and covered by
+`tests/test_ingest_source.py` (`test_jobs_n_matches_jobs_1_root_digest`,
+`test_temp_cap_never_exceeded_with_jobs`, `test_kill_mid_run_then_resume_uploads_only_missing`)
+plus `tests/test_s3_upload.py` (429 retry, parallel part upload); fill this table the
+next time free disk is back above the floor.
+
 ## 4. Check it is done
 
 - The log's final JSON must show all of these:
