@@ -228,7 +228,7 @@ def _cmd_taxonomy(args: argparse.Namespace) -> int:
     import json as _json
 
     from .registry import _default_root
-    from .taxonomy import audit_all, diff, gate, load_manifest, manifest, node_counts
+    from .taxonomy import audit_all, diff, load_manifest, manifest, node_counts, scoped_gate
 
     root = _default_root()
     registry = Registry.load(root)
@@ -251,9 +251,14 @@ def _cmd_taxonomy(args: argparse.Namespace) -> int:
     )
     for audit in audit_all(registry, root):
         print(audit.line())
-    fails = gate(registry, root)
+    fails, listed = scoped_gate(registry, root, releases=args.release or [])
     for line in fails:
         print(f"  FAIL {line}")
+    if args.strict:
+        for line in listed:
+            print(f"  LIST {line}")
+    elif listed:
+        print(f"  {len(listed)} not-staged source issue(s) listed by --strict (not failing)")
     return 1 if fails else 0
 
 
@@ -388,6 +393,15 @@ def build_parser() -> argparse.ArgumentParser:
     )
     p_tax.add_argument("action", choices=["check", "export", "diff"])
     p_tax.add_argument("refs", nargs="*", help="diff: two versions/paths (HEAD = working tree)")
+    p_tax.add_argument(
+        "--strict", action="store_true", help="check: also list not-staged sources (never fails)"
+    )
+    p_tax.add_argument(
+        "--release",
+        action="append",
+        metavar="RELEASE_JSON",
+        help="check: also gate the sources named in this release manifest (repeatable)",
+    )
     p_tax.set_defaults(func=_cmd_taxonomy)
 
     return parser

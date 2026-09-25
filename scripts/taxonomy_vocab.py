@@ -4,6 +4,7 @@ Input: the per-source label caches written by the WP-7 fetchers (label lists and
 annotation counts only; no images were downloaded). Output: one TSV per labelled
 source — the observed vocabulary the release gate audits a crosswalk against.
 Usage: python scripts/taxonomy_vocab.py <cache_dir> <repo_root>
+       python scripts/taxonomy_vocab.py --reefolution <cache_dir> <repo_root>  (WP-7c)
 """
 
 from __future__ import annotations
@@ -206,5 +207,37 @@ def main(cache: Path, repo: Path) -> None:
     )
 
 
+def reefolution(cache: Path, repo: Path) -> None:
+    """WP-7c: point counts from the staged points.parquet; names from labelset.csv (label
+    id -> code) joined to the cached public CoralNet label pages ``coralnet/<id>.html``."""
+    import html
+
+    import pyarrow.parquet as pq
+
+    counts = Counter(
+        pq.read_table(cache / "points.parquet", columns=["label"])["label"].to_pylist()
+    )
+    desc = {}
+    for row in csv.DictReader((cache / "labelset.csv").open()):
+        page = (cache / "coralnet" / f"{row['Label ID']}.html").read_text(encoding="utf-8")
+        text = html.unescape(re.sub(r"\s+", " ", re.sub(r"<[^>]+>", " ", page)))
+        m = re.search(r"Name:\s*(.*?)\s*Functional Group:\s*(.*?)\s+(?:Description:|Default)", text)
+        name, group = m.groups() if m else ("?", "?")
+        desc[row["Short Code"]] = f"CoralNet {row['Label ID']} {name} ({group})"
+    write(
+        repo,
+        "reefolution",
+        "reefolution",
+        counts,
+        kind="annotations",
+        origin="rs-storage-open sources/reefolution/2026-09-23-2c84cb0c9cda/labels/points.parquet"
+        " + labelset.csv (rs-storage-private cache/) + coralnet.ucsd.edu/label/<id>/ pages",
+        desc=desc,
+    )
+
+
 if __name__ == "__main__":
-    main(Path(sys.argv[1]), Path(sys.argv[2]))
+    if sys.argv[1] == "--reefolution":
+        reefolution(Path(sys.argv[2]), Path(sys.argv[3]))
+    else:
+        main(Path(sys.argv[1]), Path(sys.argv[2]))

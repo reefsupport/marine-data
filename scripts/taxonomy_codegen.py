@@ -118,6 +118,7 @@ EXACT_BY_CONSTRUCTION = {
 NODE_NOTES = {"Vertebrata": "Target of paraphyletic 'fish' labels (coarsened). " + FISH_NOTE}
 """Notes carried on generated rs-taxa-v1 nodes so downstream users can narrow."""
 PREFER = {"Halophila": ("Plantae",), "Turbinaria": ("Animalia",)}
+HAND_AUTHORED = {"reefolution"}  # crosswalks this generator must never overwrite (WP-7c)
 """Homonyms: the kingdom each vocabulary means (seagrass Halophila, coral Turbinaria)."""
 # ── rs-benthic-v1 (point / patch cover sources) ───────────────────────────────────
 BENTHIC = {  # lowercased label or CoralNet name -> (taxon, form, fidelity, note)
@@ -299,6 +300,8 @@ def main(cache: Path, offline: bool) -> None:
     plans: dict[str, dict[str, tuple]] = {}
     for _sid, (head, rows) in vocabs.items():
         xw = head["crosswalk"]
+        if xw in HAND_AUTHORED:
+            continue
         for label, _count, desc in rows:
             if xw in benthic_xw:
                 plan = benthic_rule(label, desc)

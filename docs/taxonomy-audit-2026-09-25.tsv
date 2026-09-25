@@ -23,3 +23,36 @@ fathomnet-concepts	Lyssacinosida sp. 1 -> Lyssacinosida	coarsened	ok	morphospeci
 fathomnet-concepts	Paralomis cf. papillata -> Paralomis	coarsened	ok	a cf. identification is not a species claim; genus is the honest level
 fathomnet-concepts	Funiculina-Halipteris complex -> Pennatulacea	coarsened	ok	two sea-pen genera in different families; the order is their smallest shared accepted clade in the snapshot
 ruod	fish -> Vertebrata	coarsened	ok	fish is paraphyletic and WoRMS Pisces is unaccepted; Vertebrata is the smallest accepted clade holding all fish, note lists includes: [Actinopterygii, Elasmobranchii, Holocephali, Myxini, Petromyzonti]
+# WP-7c +30, 2026-09-25: stratified, 16 Reefolution (weighted: 5 fixed + the 11 highest-risk edges, each against its
+# public CoralNet label page) and 14 more, drawn by sha1(crosswalk:label) order over the other 14 vocabularies' crosswalks,
+# mostly exact edges, which the first 20 did not sample. Reefolution fixes are in registry/crosswalks/reefolution.yaml.
+reefolution	Mil -> MIL	exact	fixed	CoralNet 79 = Millepora; MIL (Millepora 205902) existed, the WP-7b note 'no genus node yet' was false. Was CN_HYDROZOA coarsened
+reefolution	Hal -> HA	exact	fixed	CoralNet 403 = Halimeda; HA (Halimeda 143820) existed. Was SW (macroalgae) coarsened with a false 'no genus node' note
+reefolution	Urchins -> URCH	exact	fixed	CoralNet 342 = sea urchins; URCH (Echinoidea 123082) existed. Was OTHER_FAUNA coarsened
+reefolution	Anemone -> ANEM	exact	fixed	CoralNet 3208 = Anemone; ANEM (Actiniaria 1360) existed. Was CNIDARIA coarsened
+reefolution	GA -> ALG_CHLOROPHYTA	exact	fixed	CoralNet 4095 = Chlorophyta, not generic algae: GA was read as 'green/generic algae' from the code alone. Was ALGAE coarsened
+reefolution	Xendae -> SC_XENIIDAE	exact	ok	CoralNet 1175 XENIIDAE 'Family Xeniidae'; WoRMS 125271 accepted, lineage Octocorallia > Malacalcyonacea. 21% of points
+reefolution	SP -> SP	exact	ok	CoralNet 102 Sponge 'group label for all types of sponges' = Porifera
+reefolution	HS_AR -> HS	exact	ok	CoralNet 3438 Hard Substrate 'can be pavement, dead coral, turf algae'; spans abiotic, transition and algae, so a root non_taxon node, not RK (rock/pavement only)
+reefolution	Rhy -> SC_RHYTISMA	exact	ok	CoralNet 2040 Rhytisma; the page's functional group says Soft Substrate, but the name is the octocoral genus (WoRMS 267812, Lemnaliidae, Animalia) used by the Red Sea sources that share the label
+reefolution	Agl -> CN_AGLAOPHENIA	exact	ok	CoralNet 1012 'Aglaophenia spp., ostrich-plume hydroid'; WoRMS 116999 accepted (Aglaopheniidae)
+reefolution	RA -> ALG_RHODOPHYTA	exact	ok	CoralNet 4081 Rhodophyta; WoRMS 852 accepted. Parent ALGAE, as for the other phylum nodes
+reefolution	Fila -> TA	exact	ok	CoralNet 642 'Algae (filamentous): uniseriate, simple, AKA turf'; the label's own definition equates it with turf
+reefolution	Frame -> TWS	exact	ok	CoralNet 1637 'Framer in the photograph' = quadrat frame; TWS is the survey-equipment node and carries the 'quadrat' alias
+reefolution	SC -> SC	exact	ok	CoralNet 80 'Cnidaria: Octocorallia' = SC (Octocorallia 1341)
+reefolution	dead -> DC	exact	ok	CoralNet 105 'Dead skeletons - not colonized' = DC (dead coral)
+reefolution	PorM -> HC_PORITES + form CM	coarsened	ok	CoralNet 1974 Porites (massive): taxon + morphology attribute (CATAMI style); coarsened is conservative but not wrong
+coralnet-noaa-pifsc	ACTA -> HC_ACROPORA + form CT	exact	ok	PIFSC ACTA = Acropora, tabulate; genus + form attribute
+coralnet-noaa-pifsc	POCS -> HC_POCILLOPORA	exact	ok	POCS = Pocillopora sp.
+coralnet-noaa-pifsc	DISP -> HC_DIPLOASTREA	exact	ok	DISP = Diploastrea sp.
+deepseagrass	Rounded -> SG_HALOPHILA + form SG_ROUND	coarsened	ok	rounded-leaf morphotype = Halophila ovalis group; genus is a strict ancestor
+fathomnet-concepts	Mediaster tenellus -> A368837	exact	ok	concept is the WoRMS species name; node name identical
+fathomnet-concepts	Funiculina -> A128490	exact	ok	concept is the WoRMS genus name; node name identical
+fathomnet-concepts	Hyalonema (Corynonema) populiferum -> A171425	exact	ok	subgenus form matches the WoRMS record verbatim
+mlc-moorea	Sand -> SD	exact	ok	MLC Sand = SD
+obsea-fish	Oblada melanura -> A1577363	exact	ok	WoRMS treats melanura as a spelling variant of accepted Oblada melanurus; the same species, so exact
+plc-beijbom2015	Turf -> TA	exact	ok	PLC Turf = turf algae
+ruod	echinus -> A123082	exact	ok	RUOD 'echinus' is its sea-urchin class (not the genus Echinus); Echinoidea
+trash-icra19	plastic -> NT_DEBRIS	coarsened	ok	material kept only in the source label; debris is the strict parent
+trashcan	trash_wood -> NT_DEBRIS	coarsened	ok	processed-wood litter (natural wood is trash_branch, approximate); debris is the strict parent
+usis-uiis	reefs -> NT_REEF	exact	ok	reef structure class = NT_REEF

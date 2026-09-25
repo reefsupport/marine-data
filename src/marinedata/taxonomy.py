@@ -13,6 +13,9 @@ Three checks, all offline:
   edge is a *silent drop* and fails; an ``unmappable`` edge is a listed, reasoned drop
   and counts against the mapped share (instance-weighted where counts exist).
 * **coverage** — every labelled image source has a crosswalk or a documented exception.
+
+The CI gate is scoped (D-Q, :func:`scoped_gate`): it fails only for sources staged in
+rs-storage-open ``sources/`` or named in a release manifest; the rest are listed.
 """
 
 from __future__ import annotations
@@ -196,6 +199,83 @@ def labelled_sources(registry: Registry) -> list[str]:
     return out
 
 
+OPEN_BUCKET = "rs-storage-open"
+OPEN_VOCABULARY = "open_vocabulary"
+
+
+def staged_sources(registry: Registry) -> list[str]:
+    """Sources whose registry ``access`` points at ``sources/`` in rs-storage-open (D-D)."""
+    out = []
+    for s in registry.sources:
+        uri, params = s.access.uri or "", s.access.params or {}
+        if uri.startswith(f"s3://{OPEN_BUCKET}/sources/") or (
+            params.get("bucket") == OPEN_BUCKET
+            and str(params.get("prefix", "")).startswith("sources/")
+        ):
+            out.append(s.id)
+    return out
+
+
+def release_sources(manifests: list[str | Path]) -> set[str]:
+    """Source ids named in release manifests (``RELEASE.json`` ``sources[].id``)."""
+    out: set[str] = set()
+    for path in manifests:
+        out |= {s["id"] for s in json.loads(Path(path).read_text()).get("sources", [])}
+    return out
+
+
+def _gate_items(
+    registry: Registry, registry_root: str | Path, min_mapped: float
+) -> list[tuple[str | None, str]]:
+    """Every failure as ``(source_id, message)``; ``None`` = schema-wide (never scoped out)."""
+    meta = load_meta(registry_root)
+    exceptions: dict[str, str] = meta.get("coverage_exceptions") or {}
+    no_crosswalk: dict[str, str] = meta.get("no_crosswalk_yet") or {}
+    declared: dict[str, dict] = meta.get("source_crosswalks") or {}
+    items: list[tuple[str | None, str]] = [
+        (None, f) for f in check_nodes(registry, load_snapshot(registry_root))
+    ]
+    audits = audit_all(registry, registry_root)
+    for a in audits:
+        sid = a.source_id
+        items += [(sid, f"{sid}: SILENT DROP {label!r}") for label in a.silent_drops]
+        items += [(sid, f"{sid}: dead target {t}") for t in a.dead_targets]
+        items += [
+            (sid, f"{sid}: unmappable {k!r} has no reason")
+            for k, v in a.unmappable.items()
+            if not v
+        ]
+        if a.coverage < min_mapped and sid not in exceptions:
+            items.append(
+                (sid, f"{sid}: {a.coverage:.2%} mapped < {min_mapped:.0%} and no exception")
+            )
+    covered = {a.source_id for a in audits}
+    for sid in labelled_sources(registry):
+        spec = registry.source(sid).loader
+        if sid in covered or (spec and spec.crosswalk_id):
+            continue
+        kind = (declared.get(sid) or {}).get("crosswalk")
+        if kind == OPEN_VOCABULARY and (declared[sid].get("reason") or "").strip():
+            continue
+        if kind is not None:
+            items.append(
+                (sid, f"{sid}: declared crosswalk {kind!r} needs {OPEN_VOCABULARY!r} + a reason")
+            )
+        elif sid in no_crosswalk:
+            items.append(
+                (
+                    sid,
+                    f"{sid}: no_crosswalk_yet is not a release-gate exemption for 1.0+ "
+                    f"({no_crosswalk[sid]})",
+                )
+            )
+        else:
+            items.append(
+                (sid, f"{sid}: labelled source with no crosswalk and no documented exception")
+            )
+    return items
+
+
 def gate(
     registry: Registry,
     registry_root: str | Path,
@@ -207,41 +287,29 @@ def gate(
 
     ``source_ids`` narrows the vocabulary and coverage checks to one release's sources.
     """
-    meta = load_meta(registry_root)
-    exceptions: dict[str, str] = meta.get("coverage_exceptions") or {}
-    no_crosswalk: dict[str, str] = meta.get("no_crosswalk_yet") or {}
-    fails = check_nodes(registry, load_snapshot(registry_root))
-    audits = audit_all(registry, registry_root)
     scope = set(source_ids) if source_ids is not None else None
-    for a in audits:
-        if scope is not None and a.source_id not in scope:
-            continue
-        fails += [f"{a.source_id}: SILENT DROP {label!r}" for label in a.silent_drops]
-        fails += [f"{a.source_id}: dead target {t}" for t in a.dead_targets]
-        fails += [
-            f"{a.source_id}: unmappable {k!r} has no reason"
-            for k, v in a.unmappable.items()
-            if not v
-        ]
-        if a.coverage < min_mapped and a.source_id not in exceptions:
-            fails.append(
-                f"{a.source_id}: {a.coverage:.2%} mapped < {min_mapped:.0%} and no exception"
-            )
-    covered = {a.source_id for a in audits}
-    for sid in labelled_sources(registry):
-        if scope is not None and sid not in scope:
-            continue
-        spec = registry.source(sid).loader
-        if sid in covered or (spec and spec.crosswalk_id):
-            continue
-        if sid in no_crosswalk:
-            fails.append(
-                f"{sid}: no_crosswalk_yet is not a release-gate exemption for 1.0+ "
-                f"({no_crosswalk[sid]})"
-            )
-            continue
-        fails.append(f"{sid}: labelled source with no crosswalk and no documented exception")
-    return fails
+    return [
+        msg
+        for sid, msg in _gate_items(registry, registry_root, min_mapped)
+        if sid is None or scope is None or sid in scope
+    ]
+
+
+def scoped_gate(
+    registry: Registry,
+    registry_root: str | Path,
+    *,
+    releases: list[str | Path] = (),
+    min_mapped: float = MIN_MAPPED,
+) -> tuple[list[str], list[str]]:
+    """D-Q: ``(fails, listed)``. Failures count only for staged sources, sources named in a
+    release manifest, and schema-wide node problems; registered-but-not-staged sources
+    are returned in ``listed`` (``taxonomy check --strict`` prints them, never fails)."""
+    scope = set(staged_sources(registry)) | release_sources(list(releases))
+    fails, listed = [], []
+    for sid, msg in _gate_items(registry, registry_root, min_mapped):
+        (fails if sid is None or sid in scope else listed).append(msg)
+    return fails, listed
 
 
 def assert_release_gate(

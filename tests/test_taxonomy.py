@@ -67,12 +67,14 @@ def test_gate_on_the_full_registry_fails_only_on_no_crosswalk_yet(reg):
     labeled-fishes-in-the-wild, mouss-detection); the other 19 are not staged in
     rs-storage-open (or are access-blocked / have no closed label vocabulary at all —
     coralvqa, marineinst20m) and cannot be honestly crosswalked without inventing label
-    names. Every remaining failure must be exactly one of those 19, never a silent
-    drop, a dead target or an unmappable-with-no-reason."""
+    names. WP-7c moved coralvqa and marineinst20m to `crosswalk: open_vocabulary`, so 17
+    remain. Every remaining failure must be one of them, never a silent drop, a dead
+    target or an unmappable-with-no-reason. (The unscoped gate; CI runs scoped_gate.)"""
     meta = tx.load_meta(reg.root)
     no_crosswalk = set(meta.get("no_crosswalk_yet") or {})
+    assert len(no_crosswalk) == 17
     fails = tx.gate(reg, reg.root)
-    assert fails, "expected the 19 unresolved no_crosswalk_yet sources to fail"
+    assert fails, "expected the 17 unresolved no_crosswalk_yet sources to fail"
     for line in fails:
         sid = line.split(":", 1)[0]
         assert sid in no_crosswalk, f"unexpected gate failure outside no_crosswalk_yet: {line}"
@@ -108,6 +110,69 @@ def test_gate_fails_on_uncovered_labelled_source(reg, tmp_path):
     meta.write_text(meta.read_text().replace("  ozfish:", "  ozfish-x:"))
     fails = tx.gate(reg, root, source_ids=["ozfish"])
     assert fails == ["ozfish: labelled source with no crosswalk and no documented exception"]
+
+
+def _copy_registry(tmp_path, old: str, new: str):
+    root = tmp_path / "registry"
+    shutil.copytree(Registry.load().root, root)
+    path = root / "sources" / "fish.yaml"
+    assert old in path.read_text()
+    path.write_text(path.read_text().replace(old, new))
+    return Registry.load(root), root
+
+
+def test_scoped_gate_passes_the_registry_and_lists_the_rest(reg):
+    """D-Q: nothing staged or released fails today; the 17 not-staged no_crosswalk_yet
+    sources are listed (for --strict), not failed."""
+    fails, listed = tx.scoped_gate(reg, reg.root)
+    assert fails == []
+    no_crosswalk = set(tx.load_meta(reg.root)["no_crosswalk_yet"])
+    assert {line.split(":", 1)[0] for line in listed} == no_crosswalk
+    assert {"reefolution", "coralscop-masks-rs"} <= set(tx.staged_sources(reg))
+    assert "ozfish" not in tx.staged_sources(reg)
+
+
+def test_scoped_gate_fails_a_staged_source_missing_a_crosswalk(tmp_path):
+    staged, root = _copy_registry(
+        tmp_path,
+        "      uri: https://github.com/open-AIMS/ozfish\n",
+        "      uri: s3://rs-storage-open/sources/ozfish/2026-09-25-test\n",
+    )
+    assert "ozfish" in tx.staged_sources(staged)
+    fails, listed = tx.scoped_gate(staged, root)
+    assert [f.split(":", 1)[0] for f in fails] == ["ozfish"]
+    assert "no_crosswalk_yet is not a release-gate exemption" in fails[0]
+    assert not any(line.startswith("ozfish:") for line in listed)
+
+
+def test_scoped_gate_fails_a_source_named_in_a_release_manifest(reg, tmp_path):
+    release = tmp_path / "RELEASE.json"
+    release.write_text('{"sources": [{"id": "ozfish"}, {"id": "ruod"}]}')
+    fails, _listed = tx.scoped_gate(reg, reg.root, releases=[release])
+    assert [f.split(":", 1)[0] for f in fails] == ["ozfish"]
+
+
+def test_open_vocabulary_passes_and_needs_the_declaration(reg, tmp_path):
+    release = tmp_path / "RELEASE.json"
+    release.write_text('{"sources": [{"id": "coralvqa"}, {"id": "marineinst20m"}]}')
+    fails, listed = tx.scoped_gate(reg, reg.root, releases=[release])
+    assert fails == []
+    assert not any(line.split(":", 1)[0] in {"coralvqa", "marineinst20m"} for line in listed)
+    root = _copy_root(reg, tmp_path)
+    meta = root / "taxonomy" / "taxonomy.yaml"
+    meta.write_text(
+        meta.read_text().replace("    crosswalk: open_vocabulary", "    crosswalk: guess", 1)
+    )
+    fails, _listed = tx.scoped_gate(reg, root, releases=[release])
+    assert fails == ["coralvqa: declared crosswalk 'guess' needs 'open_vocabulary' + a reason"]
+
+
+def test_reefolution_meets_the_floor_without_an_exception(reg):
+    """WP-7c: every observed Reefolution code resolves via its CoralNet label id."""
+    audit = next(a for a in tx.audit_all(reg, reg.root) if a.source_id == "reefolution")
+    assert audit.weighted and sum(audit.counts.values()) == 43500
+    assert audit.coverage >= tx.MIN_MAPPED
+    assert "reefolution" not in (tx.load_meta(reg.root).get("coverage_exceptions") or {})
 
 
 def test_frozen_release_matches_working_tree(reg):

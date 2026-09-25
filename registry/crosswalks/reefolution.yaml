@@ -1,21 +1,18 @@
-# Hand-authored (WP-7b), from the real staged data: fetched
-# sources/reefolution/2026-09-23-2c84cb0c9cda/labels/points.parquet (43,500 points,
-# schema_id reefolution-coralnet-native, 64 distinct labels) via boto3 2026-09-25. No
-# CoralNet labelset export (full names) is staged alongside the points — only the
-# abbreviated codes — so every edge below is a code this repo can already verify
-# against an existing resolved node (mostly via mlc-moorea/agrra-benthic precedent or
-# nodes WP-7's own codegen already resolved for other Indo-Pacific vocabularies).
+# Hand-authored (WP-7b, completed WP-7c for taxonomy 1.2.0). Codes come from the staged
+# sources/reefolution/2026-09-23-2c84cb0c9cda/labels/points.parquet (43,500 points, 64 codes
+# observed, anonymous HTTPS GET 2026-09-25). Meanings come from the source's own label set:
+# `labelset.csv` (CoralNet Label ID -> Short Code; rs-storage-private
+# cache/reefolution/2026-09-23-2c84cb0c9cda/, md5 c684d673) joined to each label's public
+# CoralNet page https://coralnet.ucsd.edu/label/<id>/ (name, functional group, definition),
+# fetched at <= 2 req/s on 2026-09-25. Taxon names then resolve through the pinned WoRMS
+# snapshot. Every edge note quotes the CoralNet label id it rests on where the code alone is
+# ambiguous. Point counts per code: registry/taxonomy/vocab/reefolution.tsv.
 #
-# 24 of the 64 codes are NOT mapped and are the coverage_exceptions entry in
-# taxonomy.yaml: Xendae (9,190, the single largest unmapped code — a plausible
-# Xeniidae reading was considered and rejected as a guess), SP, HS_AR, Rhy, Agl, RA,
-# Didae, biofilm, Lobvar, Frame, Gonio, Dipsa, Pad, Fila, Leptor, Tubmus, Gardineros
-# and others. None of these abbreviations has a second, independent source (a labelset
-# export, a paper, a README) to confirm against, and several are genuinely ambiguous
-# between two plausible genera (Gonio = Goniastrea or Goniopora) or between a taxon and
-# an equipment/state code (HS_AR, RA, Frame). Guessing would risk exactly the "3 of the
-# first 8 AphiaIDs were wrong" failure mode WP-7 already hit once. Needs the source's
-# original CoralNet label-set export (id -> full name) to resolve honestly.
+# WP-7b left 24 codes unmapped (37.8% of points) because only the abbreviations were known.
+# The label ids resolve all 24 (e.g. Xendae = label 1175 "XENIIDAE", Gonio = 130 "Goniopora",
+# not Goniastrea, which is Gonia = 117). WP-7c also corrected five WP-7b edges that claimed a
+# node did not exist when it did (Mil, Hal, Urchins, Anemone) or misread the code (GA = 4095
+# "Chlorophyta", not generic algae).
 crosswalks:
   - id: reefolution
     source_schema: dataset-native
@@ -30,7 +27,7 @@ crosswalks:
       - { source_label: Rock, targets: { taxon: RK }, fidelity: exact }
       - { source_label: SC, targets: { taxon: SC }, fidelity: exact, note: "source's own generic soft-coral bucket" }
       - { source_label: Cyano, targets: { taxon: CYANOBACTERIA }, fidelity: exact }
-      - { source_label: Mil, targets: { taxon: CN_HYDROZOA }, fidelity: coarsened, note: "Millepora; no genus node yet, coarsened to class" }
+      - { source_label: Mil, targets: { taxon: MIL }, fidelity: exact, note: "CoralNet 79 Millepora; fixed WP-7c (was CN_HYDROZOA, coarsened)" }
       - { source_label: Gal, targets: { taxon: HC_GALAXEA }, fidelity: exact }
       - { source_label: SG, targets: { taxon: SG }, fidelity: exact }
       - { source_label: Poc, targets: { taxon: HC_POCILLOPORA }, fidelity: exact }
@@ -39,13 +36,13 @@ crosswalks:
       - { source_label: PorB, targets: { taxon: HC_PORITES, form: CB }, fidelity: coarsened, note: "Porites, branching growth form" }
       - { source_label: Styl, targets: { taxon: HC_STYLOPHORA }, fidelity: exact }
       - { source_label: Dic, targets: { taxon: ALG_DICTYOTACEAE }, fidelity: coarsened, note: "Dictyota; family-level node only" }
-      - { source_label: Urchins, targets: { taxon: OTHER_FAUNA }, fidelity: coarsened, note: "no Echinoidea node in rs-benthic-v1 yet" }
+      - { source_label: Urchins, targets: { taxon: URCH }, fidelity: exact, note: "CoralNet 342 sea urchin; fixed WP-7c (was OTHER_FAUNA, coarsened)" }
       - { source_label: CCA, targets: { taxon: CCA }, fidelity: exact }
       - { source_label: Echpo, targets: { taxon: HC_ECHINOPORA }, fidelity: exact }
       - { source_label: Favit, targets: { taxon: HC_FAVITES }, fidelity: exact }
-      - { source_label: Anemone, targets: { taxon: CNIDARIA }, fidelity: coarsened, note: "no Actiniaria node yet" }
+      - { source_label: Anemone, targets: { taxon: ANEM }, fidelity: exact, note: "CoralNet 3208 Anemone; fixed WP-7c (was CNIDARIA, coarsened)" }
       - { source_label: Platy, targets: { taxon: HC_PLATYGYRA }, fidelity: exact }
-      - { source_label: Hal, targets: { taxon: SW }, fidelity: coarsened, note: "Halimeda; no genus node yet" }
+      - { source_label: Hal, targets: { taxon: HA }, fidelity: exact, note: "CoralNet 403 Halimeda; fixed WP-7c (was SW, coarsened)" }
       - { source_label: Astreo, targets: { taxon: HC_ASTREOPORA }, fidelity: exact }
       - { source_label: Aca, targets: { taxon: HC_ACANTHASTREA }, fidelity: exact }
       - { source_label: Hydno, targets: { taxon: HC_HYDNOPHORA }, fidelity: exact }
@@ -58,7 +55,31 @@ crosswalks:
       - { source_label: MA, targets: { taxon: SW }, fidelity: exact }
       - { source_label: Pachy, targets: { taxon: HC_PACHYSERIS }, fidelity: exact }
       - { source_label: Bryo, targets: { taxon: INV_BRYOZOA }, fidelity: exact }
-      - { source_label: GA, targets: { taxon: ALGAE }, fidelity: coarsened, note: "generic algae, functional-group only" }
+      - { source_label: GA, targets: { taxon: ALG_CHLOROPHYTA }, fidelity: exact, note: "CoralNet 4095 Chlorophyta; fixed WP-7c (was ALGAE as generic algae)" }
       - { source_label: Iso, targets: { taxon: HC_ISOPORA }, fidelity: exact }
       - { source_label: Pav, targets: { taxon: HC_PAVONA }, fidelity: exact }
       - { source_label: Merulina, targets: { taxon: HC_MERULINA }, fidelity: exact }
+      - { source_label: Xendae, targets: { taxon: SC_XENIIDAE }, fidelity: exact, note: "CoralNet 1175 XENIIDAE, family Xeniidae" }
+      - { source_label: SP, targets: { taxon: SP }, fidelity: exact, note: "CoralNet 102 Sponge, all sponges" }
+      - { source_label: HS_AR, targets: { taxon: HS }, fidelity: exact, note: "CoralNet 3438 Hard Substrate: pavement, dead coral, turf etc." }
+      - { source_label: Rhy, targets: { taxon: SC_RHYTISMA }, fidelity: exact, note: "CoralNet 2040 Rhytisma; the page's functional group reads Soft Substrate, but the name is the octocoral genus" }
+      - { source_label: Agl, targets: { taxon: CN_AGLAOPHENIA }, fidelity: exact, note: "CoralNet 1012 Aglaophenia spp., ostrich-plume hydroid" }
+      - { source_label: RA, targets: { taxon: ALG_RHODOPHYTA }, fidelity: exact, note: "CoralNet 4081 Rhodophyta" }
+      - { source_label: Sar, targets: { taxon: ALG_SARGASSUM }, fidelity: exact, note: "CoralNet 429 Sargassum spp." }
+      - { source_label: Didae, targets: { taxon: INV_DIDEMNIDAE }, fidelity: exact, note: "CoralNet 3686 Didemnidae" }
+      - { source_label: biofilm, targets: { taxon: BIOFILM }, fidelity: exact, note: "CoralNet 2237 Biofilm: sediment with microbial-mat cover" }
+      - { source_label: Lobvar, targets: { taxon: ALG_LOBOPHORA }, fidelity: coarsened, note: "CoralNet 504 Lobophora variegata (WoRMS 145381, accepted); genus node" }
+      - { source_label: Frame, targets: { taxon: TWS }, fidelity: exact, note: "CoralNet 1637 Framer (quadrat frame in photo); TWS carries the quadrat alias" }
+      - { source_label: Hydroid, targets: { taxon: CN_HYDROZOA }, fidelity: coarsened, note: "CoralNet 456 Hydroid species; class node" }
+      - { source_label: Tubmus, targets: { taxon: SC_TUBIPORA }, fidelity: coarsened, note: "CoralNet 634 Tubipora musica (WoRMS 207409, accepted); genus node" }
+      - { source_label: Gonio, targets: { taxon: HC_GONIOPORA }, fidelity: exact, note: "CoralNet 130 Goniopora" }
+      - { source_label: Dipsa, targets: { taxon: HC_DIPSASTRAEA }, fidelity: exact, note: "CoralNet 1609 Dipsastraea" }
+      - { source_label: Monti, targets: { taxon: HC_MONTIPORA }, fidelity: exact, note: "CoralNet 70 Montipora" }
+      - { source_label: Pad, targets: { taxon: ALG_PADINA }, fidelity: exact, note: "CoralNet 428 Padina spp." }
+      - { source_label: Fila, targets: { taxon: TA }, fidelity: exact, note: "CoralNet 642 Algae (filamentous): uniseriate, simple, AKA turf" }
+      - { source_label: Leptor, targets: { taxon: HC_LEPTORIA }, fidelity: exact, note: "CoralNet 623 Leptoria" }
+      - { source_label: Gardineros, targets: { taxon: HC_GARDINEROSERIS }, fidelity: exact, note: "CoralNet 64 Gardineroseris" }
+      - { source_label: Myc, targets: { taxon: HC_MYCEDIUM }, fidelity: exact, note: "CoralNet 194 Mycedium" }
+      - { source_label: Gonia, targets: { taxon: HC_GONIASTREA }, fidelity: exact, note: "CoralNet 117 Goniastrea" }
+      - { source_label: BA, targets: { taxon: ALG_OCHROPHYTA }, fidelity: exact, note: "CoralNet 4071 Ochrophyta" }
+      - { source_label: Fungii, targets: { taxon: HC_FUNGIIDAE }, fidelity: exact, note: "CoralNet 191 Fungiidae" }

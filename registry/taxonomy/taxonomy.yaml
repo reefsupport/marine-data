@@ -2,7 +2,7 @@
 # retargeted; MINOR = nodes/edges/vocabularies added; PATCH = notes and reasons only.
 # `marinedata taxonomy export` freezes releases/<version>.json;
 # `marinedata taxonomy diff <a> <b>` compares two of them (HEAD = working tree).
-version: 1.1.0
+version: 1.2.0
 snapshot: worms-2026-09-25.parquet
 
 # Sources under the 95% mapped floor. Each entry says what is lost and why.
@@ -12,18 +12,23 @@ coverage_exceptions:
     bucket for every non-target substrate and organism. It has no canonical meaning, so
     it is an unmappable edge (the point is unsupervised on the taxon axis), not forced
     into a class.
-  reefolution: >-
-    24 of 64 observed CoralNet-native codes (16,431 of 43,500 points, ~37.8%) are not
-    mapped, led by `Xendae` alone (9,190, 21.1%). No CoralNet label-set export (code ->
-    full name) is staged alongside the points, only the abbreviated codes themselves, so
-    every unmapped code is one this repo cannot verify from a second independent source.
-    A plausible reading of `Xendae` as Xeniidae was considered and rejected as an
-    unverified guess (see registry/crosswalks/reefolution.yaml for the full list and
-    reasoning). Needs the source's original label-set export to resolve honestly.
 
 # Labelled image/video sources whose label vocabulary WP-7 has not harvested. The
 # W1 vocabularies are all crosswalked; each of these gets one when its labels are
 # ingested. The gate fails any labelled source that is neither crosswalked nor listed.
+# D-Q scoping: `make taxonomy-check` fails on an entry here only once that source is
+# staged (registry access under rs-storage-open `sources/`) or named in a release
+# manifest; until then `marinedata taxonomy check --strict` lists it.
+# Labelled sources whose labels are free text, not a closed class list (D-Q). They pass the
+# gate with `crosswalk: open_vocabulary`; noun-phrase -> taxon linking is WP-13.
+source_crosswalks:
+  coralvqa:
+    crosswalk: open_vocabulary
+    reason: VQA question/answer text, not a class vocabulary; answers need noun-phrase -> taxon linking (WP-13).
+  marineinst20m:
+    crosswalk: open_vocabulary
+    reason: open-vocabulary instance captions, not a closed class list; noun-phrase -> taxon linking is WP-13.
+
 no_crosswalk_yet:
   coralnet: >-
     ~2k CoralNet sources, each with its own label set. The PIFSC, PLC and MLC sets are
@@ -33,9 +38,7 @@ no_crosswalk_yet:
     The full FathomNet concept tree (~2.4k concepts). fathomnet-concepts covers the FGVC23
     (290) and VME (4) subsets; the rest is resolved at ingest through the same WoRMS path.
   deolhonoscorais: vocabulary not harvested in WP-7 (not a W1 vocabulary); crosswalk at ingest.
-  coralvqa: VQA question/answer text, not a class vocabulary; the answers need a text-to-label step first.
   seatizen-atlas: multilabel species/habitat set not harvested in WP-7; crosswalk at ingest.
-  marineinst20m: open-vocabulary instance captions, not a closed class list; crosswalk needs caption parsing.
   ozfish: fish bbox vocabulary not harvested in WP-7; crosswalk at ingest.
   deepfish: fish/no-fish and counting labels not harvested in WP-7; crosswalk at ingest.
   seamapd21: species label set not harvested in WP-7; crosswalk at ingest.
