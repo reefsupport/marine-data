@@ -292,7 +292,10 @@ def main(argv: list[str]) -> int:
     )
     parser.add_argument("--glob", help="unused; kept for SPEC-w3 CLI compatibility")
     parser.add_argument(
-        "--out", "--queue", dest="out", help="queue tsv path (default: _queue-<slice>.tsv, or stdout for --ids)"
+        "--out",
+        "--queue",
+        dest="out",
+        help="queue tsv path (default: _queue-<slice>.tsv, or stdout for --ids)",
     )
     args = parser.parse_args(argv[1:])
 

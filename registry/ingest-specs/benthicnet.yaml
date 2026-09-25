@@ -11,9 +11,10 @@ license: CC-BY-4.0 (mixed per source survey)
 attribution: Lowe et al., BenthicNet
 citation: Lowe et al. 2025, Sci Data, doi:10.20383/103.0614
 homepage: https://www.frdr-dfdr.ca/repo/dataset/24c6c813-d0ff-4461-8174-3f960f1edc0d
-candidate_endpoints:
-- https://globus.frdr.ca/file-manager?origin_id=59ff4285-b842-47e7-bce9-56cf50ad34ab&origin_path=/9/published/publication_609/submitted_data
-- hf://datasets/ndotm/benthicnet_labelled (partial mirror, 1.09 GB)
+# candidate_endpoints (not a loadable IngestSpec field — this spec uses a real adapter, unlike
+# the needs:-family specs that carry this key for documentation only):
+# - https://globus.frdr.ca/file-manager?origin_id=59ff4285-b842-47e7-bce9-56cf50ad34ab&origin_path=/9/published/publication_609/submitted_data
+# - hf://datasets/ndotm/benthicnet_labelled (partial mirror, 1.09 GB)
 measured:
   items: null
   bytes: null

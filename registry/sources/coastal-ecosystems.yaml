@@ -246,7 +246,7 @@ sources:
     items_note: "60,680 real labelled pixels plus synthetic (11 image files staged)."
     annotations: [{ kind: tabular, classes: 7, supervises: [taxon] }]
     coverage: { regions: [global] }
-    loader: { layout: staged-tree }
+    loader: { layout: staged-tree, schema_id: dataset-native }
     citation: 'M. M. Duarte and L. Azevedo, "Automatic Detection and Identification of Floating Marine Debris Using Multispectral Satellite Imagery," in IEEE Transactions on Geoscience and Remote Sensing, vol. 61, pp. 1-15, 2023, Art no. 2002315, doi: 10.1109/TGRS.2023.3283607.'
     tags: [debris, spectral]
 
