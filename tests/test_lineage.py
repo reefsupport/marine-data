@@ -87,13 +87,33 @@ def test_licence_flags_are_present_on_every_entry(registry: Registry) -> None:
 def test_build_populates_registry_commit_and_consumed_items(
     tmp_path: Path, registry: Registry
 ) -> None:
-    """End-to-end: a real build() must thread both fixes through, not just the helper."""
+    """End-to-end: a real build() must thread both fixes through, not just the helper.
+
+    coralscapes' registry entry declares `loader.layout: staged-tree` (S62, D-O), so
+    this fixture is a staged tree: `images/`+`labels/masks/`+`metadata.parquet`.
+    """
+    from marinedata.tables import StagedImage, write_metadata_table
+
     root = tmp_path / "coralscapes"
-    (root / "images").mkdir(parents=True)
-    (root / "masks").mkdir(parents=True)
+    rows = []
     for i in range(3):
-        (root / "images" / f"f{i}.jpg").write_bytes(b"\x89PNG")
-        (root / "masks" / f"f{i}.png").write_bytes(b"\x89PNG")
+        stem = f"f{i}"
+        (root / "images" / "default").mkdir(parents=True, exist_ok=True)
+        (root / "labels" / "masks" / "default").mkdir(parents=True, exist_ok=True)
+        (root / "images" / "default" / f"{stem}.jpg").write_bytes(b"\x89PNG")
+        (root / "labels" / "masks" / "default" / f"{stem}.png").write_bytes(b"\x89PNG")
+        rows.append(
+            StagedImage(
+                stem=stem,
+                partition="default",
+                upstream_path=f"orig/{stem}.jpg",
+                upstream_split=None,
+                width=10,
+                height=10,
+                split_group=f"coralscapes/site{i}",
+            )
+        )
+    write_metadata_table(root / "metadata.parquet", rows)
 
     dataset = DatasetBuilder(registry, profile="research", roots={"coralscapes": root}).build()
     entry = next(d for d in dataset.lineage.datasets if d.id == "coralscapes")

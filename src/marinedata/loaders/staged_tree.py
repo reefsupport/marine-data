@@ -210,6 +210,15 @@ class StagedTreeLoader(_HarmonizingLoader):
                 meta["mask_is_dense"] = True
                 if mask_values:
                     meta["mask_values"] = mask_values
+                # A dense mask's real classes live in the raster, not in a native
+                # label string this loader could resolve through `_resolve()` — the
+                # same reason ImageMaskPairLoader/DualConditionMaskLoader (generic.py)
+                # and every other dense-mask loader credit
+                # `source.declared_supervision()` rather than leaving a masked sample
+                # unsupervised. Without this, a staged-tree source whose only
+                # annotation is a dense mask (coralscapes: no points/image_labels
+                # rows at all) would silently report zero supervised samples.
+                supervised = supervised | self.source.declared_supervision()
 
             yield Sample(
                 source_id=self.source.id,

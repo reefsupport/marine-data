@@ -383,13 +383,39 @@ def test_split_never_divides_a_group(registry: Registry) -> None:
 @pytest.fixture
 def mixed_roots(tmp_path: Path) -> dict[str, Path]:
     """A labelled source (coralscapes: real dense masks) and an unlabelled one
-    (sweet-corals: bare images), both real registry entries, faked on disk."""
+    (sweet-corals: bare images), both real registry entries, faked on disk.
+
+    coralscapes' registry entry declares `loader.layout: staged-tree` (S62, D-O) —
+    the shape its bucket copy actually is — so this fixture is a staged tree:
+    `images/`+`labels/masks/`+`metadata.parquet`, not bare `images/`+`masks/` dirs.
+    """
+    from marinedata.tables import StagedImage, write_metadata_table
+
     labelled = tmp_path / "coralscapes"
+    rows = []
     for i in range(4):
-        (labelled / "images").mkdir(parents=True, exist_ok=True)
-        (labelled / "masks").mkdir(parents=True, exist_ok=True)
-        (labelled / "images" / f"f{i}.jpg").write_bytes(b"\x89PNG\r\n\x1a\n")
-        (labelled / "masks" / f"f{i}.png").write_bytes(b"\x89PNG\r\n\x1a\n")
+        stem = f"f{i}"
+        (labelled / "images" / "default").mkdir(parents=True, exist_ok=True)
+        (labelled / "labels" / "masks" / "default").mkdir(parents=True, exist_ok=True)
+        (labelled / "images" / "default" / f"{stem}.jpg").write_bytes(b"\x89PNG\r\n\x1a\n")
+        (labelled / "labels" / "masks" / "default" / f"{stem}.png").write_bytes(
+            b"\x89PNG\r\n\x1a\n"
+        )
+        rows.append(
+            StagedImage(
+                stem=stem,
+                partition="default",
+                upstream_path=f"orig/{stem}.jpg",
+                upstream_split=None,
+                width=10,
+                height=10,
+                # coralscapes declares an explicit split_group rule (pattern
+                # `(?i)(site[0-9]+)` on `stem`) — StagedTreeLoader.validate() rejects
+                # a null split_group when the source has one.
+                split_group=f"coralscapes/site{i}",
+            )
+        )
+    write_metadata_table(labelled / "metadata.parquet", rows)
 
     unlabelled = tmp_path / "sweet-corals"
     unlabelled.mkdir(parents=True, exist_ok=True)

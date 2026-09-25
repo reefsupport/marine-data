@@ -299,12 +299,41 @@ def test_strict_mode_raises_on_missing_image(shardable: Dataset, tmp_path: Path)
 
 @pytest.fixture
 def coralscapes_root(tmp_path: Path) -> Path:
+    """S62 (D-O): coralscapes' registry entry now declares `loader.layout:
+    staged-tree` (its bucket copy IS a staged tree — `images/` + `labels/masks/` +
+    `metadata.parquet`, per registry/sources/coral-benthic.yaml), so this fixture
+    must be a staged tree too, not the old bare `images/`+`masks/` dirs
+    `image-mask-pairs` read directly."""
+    from marinedata.tables import StagedImage, write_metadata_table
+
     root = tmp_path / "coralscapes"
+    rows = []
     for i in range(8):
-        (root / "images").mkdir(parents=True, exist_ok=True)
-        (root / "masks").mkdir(parents=True, exist_ok=True)
-        (root / "images" / f"f{i}.jpg").write_bytes(b"\xff\xd8\xff" + bytes([i]) * 512)
-        (root / "masks" / f"f{i}.png").write_bytes(bytes([i]) * 64)
+        stem = f"f{i}"
+        (root / "images" / "default" / f"{stem}.jpg").parent.mkdir(parents=True, exist_ok=True)
+        (root / "labels" / "masks" / "default" / f"{stem}.png").parent.mkdir(
+            parents=True, exist_ok=True
+        )
+        (root / "images" / "default" / f"{stem}.jpg").write_bytes(
+            b"\xff\xd8\xff" + bytes([i]) * 512
+        )
+        (root / "labels" / "masks" / "default" / f"{stem}.png").write_bytes(bytes([i]) * 64)
+        rows.append(
+            StagedImage(
+                stem=stem,
+                partition="default",
+                upstream_path=f"orig/{stem}.jpg",
+                upstream_split=None,
+                width=10,
+                height=10,
+                # coralscapes declares an explicit split_group rule (pattern
+                # `(?i)(site[0-9]+)` on `stem`) — StagedTreeLoader.validate() rejects
+                # a null split_group when the source has one, so this must be set
+                # explicitly rather than left to default.
+                split_group=f"coralscapes/site{i}",
+            )
+        )
+    write_metadata_table(root / "metadata.parquet", rows)
     return root
 
 

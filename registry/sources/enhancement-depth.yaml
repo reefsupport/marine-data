@@ -176,18 +176,30 @@ sources:
         Corrected from CC-BY-4.0, which had no supporting primary source.
       method: licence-file
     access:
-      method: http
-      uri: https://irvlab.cs.umn.edu/resources/suim-dataset
-      size_bytes: 173794160
+      method: s3
+      uri: s3://rs-storage-open/sources/suim/2020/
+      size_bytes: 178515331  # verified S62 2026-09-25, size+md5==ETag every object, CHECKSUMS.sha256 uploaded last
       params:
+        bucket: rs-storage-open
+        endpoint: hel1.your-objectstorage.com
+        region: hel1
+        prefix: sources/suim/2020/
         sample_url: https://huggingface.co/datasets/SatwikKambham/suim/resolve/main/SUIM.zip
       notes: >
-        The official host only offers a 2.85GB Google Drive link. sample_url is a
-        third-party HuggingFace re-host of the same archive (166MB) — the full
-        train_val split, not a trimmed sample, but small enough to fetch whole.
-        2026-09-18 (brief D2c): staged bytes come from this re-host
+        S62 (2026-09-25): staged the local suim/2020 tree (already in the
+        StagedImage/staged-tree convention — images/, labels/masks/,
+        metadata.parquet, CHECKSUMS.sha256) and uploaded it to our own durable copy
+        on rs-storage-open, verified object-by-object (size + md5 == ETag),
+        CHECKSUMS.sha256 uploaded only after every other object verified clean.
+        `loader.layout` moved to `staged-tree` accordingly — no anonymous
+        `ListBucket` needed for a live `fetch`/`verify`, only `GetObject` on known
+        keys. The original upstream re-host (sample_url below) is kept as
+        provenance, not the current read path. The official host only offers a
+        2.85GB Google Drive link; sample_url is a third-party HuggingFace re-host of
+        the same archive (166MB) — the full train_val split, not a trimmed sample.
+        2026-09-18 (brief D2c): staged bytes came from this re-host
         (huggingface.co/datasets/SatwikKambham/suim), not the authors' own release
-        (irvlab.cs.umn.edu → Google Drive) — SOURCE.json now records this as
+        (irvlab.cs.umn.edu → Google Drive) — SOURCE.json records this as
         fetched_uri. The re-host converted the authors' RGB masks to the 0-7 class
         indices this pipeline consumes; its jpg re-encoding of the images is
         unverified.
@@ -199,15 +211,20 @@ sources:
     domain_shift:
       caveats: ["Coarse 8-class scheme — a scene-understanding baseline, not a benthic-cover asset."]
     loader:
-      layout: image-mask-pairs
-      params: { images_dir: SUIM/train_val/images, masks_dir: SUIM/train_val/masks }
+      layout: staged-tree
       schema_id: dataset-native
       crosswalk_id: suim-8class
-      verified_on: 2026-09-18
+      verified_on: 2026-09-25
       verified_note: >
-        Real ingest confirms SUIM/train_val/{images,masks}/ (1488 pairs) plus a
-        separate SUIM/TEST/ split (110 pairs) — 1598 items total, image↔mask pairing
-        exact, no unpaired files. Masks are palette-indexed .bmp files (not .png) in
-        the upstream distribution, values 0-7 — see
-        registry/crosswalks/suim-8class.yaml for the index table.
-    tags: [scene-understanding, baseline]
+        S62 (2026-09-25): layout moved from `image-mask-pairs` (raw
+        SUIM/train_val/{images,masks}/ dirs) to `staged-tree` (own bucket copy) —
+        the staged tree's metadata.parquet marks each row's `upstream_split`
+        (`train_val`: 1488, `TEST`: 110), so the upstream benchmark split survives
+        the move; see the source-level `tags: [..., benchmark-test]` below, which
+        flags the TEST rows for WP-11 routing. Real ingest confirmed
+        SUIM/train_val/{images,masks}/ (1488 pairs) plus a separate SUIM/TEST/
+        split (110 pairs) — 1598 items total, image↔mask pairing exact, no
+        unpaired files. Masks are palette-indexed .bmp files (not .png) in the
+        upstream distribution, values 0-7 — see registry/crosswalks/suim-8class.yaml
+        for the index table.
+    tags: [scene-understanding, baseline, benchmark-test]
