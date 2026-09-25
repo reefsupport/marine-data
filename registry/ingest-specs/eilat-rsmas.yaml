@@ -1,7 +1,9 @@
 id: eilat-rsmas
-adapter: site-scrape
+adapter: http-index
 params:
-  landing: https://sci2s.ugr.es/CNN-coral-image-classification
+  index_url: https://sci2s.ugr.es/CNN-coral-image-classification
+  version: eilat-rsmas-idx1
+  depth: 2
 license: research-use
 attribution: Shihavuddin et al.; Gomez-Rios et al.
 citation: Shihavuddin et al. 2013; Gomez-Rios et al. 2019

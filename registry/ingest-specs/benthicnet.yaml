@@ -1,6 +1,7 @@
 id: benthicnet
-adapter: http
+adapter: frdr-https
 params: {}
+notes: needs_adapter:frdr-urls-unresolved — frdr-https adapter built + tested (WP-6d-A); the FRDR record page (frdr-dfdr.ca) is a JS-rendered app with no plain per-file HTTPS listing found this pass (same shape as liaci's js-rendered-site gap), so params.urls has no entries yet. W3-scale (CATAMI-labelled subset) stays out of scope.
 license: CC-BY
 attribution: BenthicNet (Lowe et al., Sci Data 2025)
 citation: doi:10.20383/103.0614

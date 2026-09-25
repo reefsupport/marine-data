@@ -1,12 +1,11 @@
-# hicrd: NOT loadable by marinedata.cli today (needs:gdrive). Documentation-only spec for WP-6d.
 id: hicrd
-adapter: needs:gdrive
+adapter: gdrive-public
+params:
+  files:
+  - {id: 1-Ouzzup2jNdg1PoYaQIjd-tm9K3LvwVl, name: hicrd_low.zip}
+  - {id: 1MCYZcAjKAf3y_rSNes_Fs3tm7L0U_77e, name: hicrd_high.zip}
 license: MIT (code only) / research (data, per upstream)
 attribution: Han et al. — HICRD (CWR)
 citation: Han et al. 2021 (CWR)
 homepage: https://github.com/JunlinHan/CWR
-candidate_endpoints:
-- https://drive.google.com/file/d/1-Ouzzup2jNdg1PoYaQIjd-tm9K3LvwVl/view
-- https://drive.google.com/file/d/1MCYZcAjKAf3y_rSNes_Fs3tm7L0U_77e/view
-why_not_supported: ~9.7k images (6,003 low + 3,673 high); repo code only, data on
-  Google Drive.
+notes: WP-6d-A gdrive-public adapter; ~9.7k images (6,003 low + 3,673 high).

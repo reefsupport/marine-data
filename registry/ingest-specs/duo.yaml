@@ -1,13 +1,10 @@
-# duo: NOT loadable by marinedata.cli today (needs:gdrive). Documentation-only spec for WP-6d.
 id: duo
-adapter: needs:gdrive
+adapter: gdrive-public
+params:
+  files:
+  - {id: 1w-bWevH7jFs7A1bIBlAOvXOxe2OFSHHs, name: duo.zip}
 license: research (non-commercial, per upstream)
 attribution: Liu et al. — DUO (Detecting Underwater Objects)
 citation: Liu et al. 2021, ICMEW
 homepage: https://github.com/chongweiliu/DUO
-candidate_endpoints:
-- https://drive.google.com/file/d/1w-bWevH7jFs7A1bIBlAOvXOxe2OFSHHs/view
-- https://pan.baidu.com/s/1Be8zc9UdR_Pdsyotg_vR2Q
-why_not_supported: COCO-format underwater detection set; the GitHub repo has code
-  only, actual images+annotations are a single Google Drive zip (+ Baidu mirror),
-  no anonymous HTTP path.
+notes: WP-6d-A gdrive-public adapter; Baidu mirror not used (D-E).

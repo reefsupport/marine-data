@@ -1,11 +1,11 @@
-# lsui: NOT loadable by marinedata.cli today (needs:gdrive). Documentation-only spec for WP-6d.
 id: lsui
-adapter: needs:gdrive
+adapter: gdrive-public
+params:
+  files:
+  - {id: 10gD4s12uJxCHcuFdX9Khkv37zzBwNFbL, name: lsui_input.zip}
+  - {id: 19a_kDJTT5S96kzwQntEMhSxAPYw4xY2P, name: lsui_gt.zip}
 license: research (non-commercial, per upstream)
 attribution: Peng et al. — LSUI (U-shape Transformer)
 citation: Peng et al. 2023, TIP
 homepage: https://github.com/LintaoPeng/U-shape_Transformer_for_Underwater_Image_Enhancement
-candidate_endpoints:
-- https://drive.google.com/file/d/10gD4s12uJxCHcuFdX9Khkv37zzBwNFbL/view
-- https://drive.google.com/file/d/19a_kDJTT5S96kzwQntEMhSxAPYw4xY2P/view
-why_not_supported: 4,279 paired images; repo code only, data on Google Drive/Baidu.
+notes: WP-6d-A gdrive-public adapter; 4,279 paired images; Baidu mirror not used (D-E).

@@ -1,12 +1,9 @@
-# viame-public: NOT loadable by marinedata.cli today (needs:girder). Documentation-only spec for WP-6d.
 id: viame-public
-adapter: needs:girder
+adapter: girder
+params:
+  collection: 58b747ec8d777f0aef5d0f6a
+  api: https://data.kitware.com/api/v1
 license: per-dataset (mostly NOAA public domain)
 attribution: Kitware / VIAME community data collection
 citation: Kitware VIAME public data
 homepage: https://data.kitware.com/#collection/58b747ec8d777f0aef5d0f6a
-candidate_endpoints:
-- https://data.kitware.com/api/v1/ (Girder REST, collection 58b747ec8d777f0aef5d0f6a)
-why_not_supported: Kitware Girder REST API (folder/item/file tree under a collection
-  id), not S3/HTTP/HF/Zenodo/GitHub — needs a girder adapter (GET .../api/v1/folder?parentId=..&parentType=collection,
-  then .../item, then .../file/{id}/download).

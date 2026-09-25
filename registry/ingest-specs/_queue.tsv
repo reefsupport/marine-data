@@ -16,13 +16,13 @@
 # oceancv-rovtransect, deepsea-coral-cornerrise, uw-img-imu-sonar were re-dry-run
 # 2026-09-25 and flipped from a false ok/0-items to needs_adapter:<reason>.
 id	adapter	pinned_version	items	bytes	licence	label_format	dry_run	est_hours_at_100mbps	priority	wave
-aqualoc	seafile-share				cc-by-nc-sa	ROS bags/PNG	needs_adapter:seafile-share — the real download host is a Seafile share link (https://seafile.lirmm.fr/d/79b03788f29148ca84e5/), not a flat file list; needs a Seafile-share adapter (its API lists folder contents as JSON under /api/v2.1 given the share token)		2	w2a
+aqualoc	seafile-share	share-79b03788f29148ca84e5	34	69234799122	cc-by-nc-sa	ROS bags/PNG	ok	0.19	2	w2a
 atlantis	http	-			NOASSERTION		needs_yohan:hosted on Kaggle; login/API key required (D-E: never create accounts)	0.01	1.0	w0
-benthicnet	http	-			CC-BY		needs_adapter:needs_adapter:frdr-globus - FRDR record exposes a Globus collection + a per-file HTTPS listing at https://www.frdr-dfdr.ca/repo/handle/... ; no plain enumerable file list yet. W3-scale (CATAMI-labelled subset) is out of scope for this slice.	?	5	w0
+benthicnet	frdr-https		0		CC-BY		needs_adapter:frdr-urls-unresolved — frdr-https adapter built + tested (WP-6d-A, fixture-verified); the FRDR record page (frdr-dfdr.ca) is a JS-rendered app with no plain per-file HTTPS listing found this pass (same shape as liaci's js-rendered-site gap), so params.urls has no entries yet.		5	w0
 benthoz15	bucket				cc-by-4.0	JPEG+CSV	needs_yohan:the bucket prefix IMOS/AUV/ holds ~30 AUV campaigns 2007-2023 (confirmed via delimiter listing); the exact per-dive subset that makes up the published BENTHOZ-2015 9,874-image set (Bewley et al. 2015 supplementary) is not identifiable from the bucket alone		4	w2a
 bodc-smartex	bodc-catalogue				ogl-uk	JPEG	needs_adapter:bodc-catalogue — the DOI 302-redirects to a BODC catalogue record; BODC typically serves bulk files via its own download-manager/FTP rather than flat HTTP, needs a follow-up fetch of the resolved catalogue page to find the file access route		3	w2a
 brackish	hf	rev-ee9d8f01ea49	14675	712437053	CC-BY-4.0		ok	0.0	5.615	w0
-caddy	site-scrape				cc-by-nc-sa	PNG stereo	needs_adapter:site-scrape — caddian.eu root and a guessed /index.php/downloads path (404) exposed no direct zip links on this pass; the catalog's 'zip links' note implies a subpage not yet located		2	w2a
+caddy	http-index	caddy-idx1	1		cc-by-nc-sa	PNG stereo	ok		2	w2a
 coralnet	http	-			NOASSERTION		needs_yohan:CoralNet's API requires an account/API token even for source-scoped exports	?	3	w0
 coralnet-public	http	-			NOASSERTION		needs_yohan:account + CoralNet ToS required for bulk/per-source export	?	5	w0
 coralnet-small	hf	rev-df2570887c1a	6	2155705209	unknown	parquet	ok	0.01	2	w2a
@@ -31,24 +31,24 @@ deepreefmap	zenodo	record-10624794	1	10340125342	CC-BY-4.0		ok	0.03	0.387	w0
 deepsea-coral-cornerrise	zenodo	record-18171047	0	0	cc-by-4.0	CSV(+imgs?)	needs_adapter:video		2	w2a
 deepsea-mot	hf	rev-61ecbda8acb2	6598	5922079214	CC-BY-SA-4.0		ok	0.02	0.675	w0
 deolhonoscorais	zenodo	v1	2	12890450293	CC-BY-4.0		ok	0.04	0.233	w0
-duo	needs:gdrive	-	0	0	research (non-commercial, per upstream)	COCO	needs_adapter:gdrive	-	?	w2b
-eilat-rsmas	site-scrape				research-use	PNG patches	needs_adapter:site-scrape — page https://sci2s.ugr.es/CNN-coral-image-classification only linked StructureRSMAS.zip on this pass (host needed -k/-L, plain http 301s to https); the EILAT+RSMAS image archive itself is referenced from a same-page 'dataset' anchor that needs a follow-up fetch to resolve to an exact file URL		2	w2a
+duo	gdrive-public	gdrive-pinned	1		research (non-commercial, per upstream)	COCO	ok		?	w2b
+eilat-rsmas	http-index	eilat-rsmas-idx1	2		research-use	PNG patches	ok		2	w2a
 euvp	hf	rev-e3c6d08a8b07	1	189288867	research (non-commercial, per upstream)	JPEG pairs	ok	0.001	21.132	w2b
-fathomnet	http	-			NOASSERTION		needs_adapter:needs_adapter:fathomnet-api - paginated REST at https://database.fathomnet.org/api/images/query/filter returns per-image JSON (uuid, url, boundingBoxes); per-image licence varies CC-BY/CC-BY-NC. W3-scale (Phase A subset) is out of scope for this slice.	1.94	0.007	w0
+fathomnet	fathomnet	fathomnet-f4f9b794691e	2000		NOASSERTION		ok		0.007	w0
 fathomnet-coverage	hf	rev-da92727f89f9	0	0	unknown	parquet	needs_adapter:parquet-index-only		5	w2a
 fathomnet-megalodon	hf	rev-e4e11fd74821	0	0	other-hf	parquet	needs_adapter:parquet-index-only		3	w2a
 fish-length-stereo	zenodo	record-19408363	1	25180242944	CC-BY-4.0 (Zenodo API)	images	ok	0.067	0.119	w2b
 fish-vista	hf	rev-2ad04be108c9	75811	11868010411	CC-BY-4.0 / CC-BY-NC-4.0 mix (per-image, HF card)	PNG+CSV	ok	0.031	0.169	w2b
-fish4knowledge	http	-			NOASSERTION		needs_adapter:needs_adapter:site-navigation - homepage links to an HTML index of per-video archives (no stable file list resolved from here)	0.0	5.882	w0
+fish4knowledge	http-index	fish4knowledge-idx1	0		NOASSERTION		needs_adapter:index-unresponsive — http-index adapter built + tried live (WP-6d-A); groups.inf.ed.ac.uk/f4k returned no crawlable index this pass (host slow/unreachable), so 0 items enumerated.		5.882	w0
 fishnet-2023	http	-			NOASSERTION		needs_yohan:project page only, no anonymous download; request access	?	3	w0
 floating-marine-debris	github	git-427059e47f99	11	5847793	CC-BY-4.0		ok	0.0	513.014	w0
 flsea	http	-			CC-BY-NC-SA-4.0		needs_yohan:Kaggle login required	?	4	w0
 galapagos-3d	zenodo	record-14914807	3	2779165912	cc-by-4.0	models+imgs	ok	0.01	3	w2a
 heron-reef-benthic	http	-			CC-BY-4.0		needs_adapter:needs_adapter:paper-lookup - article landing page only, actual data repository (likely a supplementary Zenodo/figshare record) not yet resolved	?	3	w0
-hicrd	needs:gdrive	-	0	0	MIT (code only) / research (data, per upstream)	PNG	needs_adapter:gdrive	-	?	w2b
-lfitw	http	-			NOASSERTION		needs_adapter:needs_adapter:site-navigation - NOAA SWFSC page has no stable direct file list resolved from here	0.0	6.818	w0
+hicrd	gdrive-public	gdrive-pinned	2		MIT (code only) / research (data, per upstream)	PNG	ok		?	w2b
+lfitw	http-index	lfitw-idx1	0		NOASSERTION		needs_adapter:index-404 — http-index adapter built + tried live (WP-6d-A); the github.io URL now returns GitHub's 404 shell, not a real directory listing, so 0 items enumerated.		6.818	w0
 liaci	js-rendered-site				unknown	PNG masks	needs_adapter:js-rendered-site — liaci.sintef.cloud serves a JS app shell with no data links in the raw HTML; needs either the app's underlying API endpoint (undiscovered on this pass) or a headless-browser fetch		3	w2a
-lsui	needs:gdrive	-	0	0	research (non-commercial, per upstream)	PNG pairs	needs_adapter:gdrive	-	?	w2b
+lsui	gdrive-public	gdrive-pinned	2		research (non-commercial, per upstream)	PNG pairs	ok		?	w2b
 luderick-seagrass	zenodo	record-7659203	1	1170972899	CC-BY-4.0 (Zenodo API)	images+json	ok	0.003	2.562	w2b
 marine-animals-mm	hf	rev-a3b5ba3ff9a3	96	2534775497	CC-BY-4.0 (HF card)	parquet	ok	0.007	0.789	w2b
 marine-snow	zenodo	record-6424752	2	14213316419	CC-BY-4.0 (Zenodo API)	PNG	ok	0.038	0.141	w2b
@@ -71,9 +71,9 @@ oceancv-rovtransect	hf	rev-746b1e4dd47a	0	0	mit	unknown	needs_adapter:unknown-co
 oceandark	gdrive				unknown	JPEG	needs_adapter:gdrive — the Google Sites page links to a Google Drive folder/viewer, not a direct file URL; needs a Drive-aware fetcher (or a human export to a direct zip link)		1	w2a
 oceaninstruct	hf	rev-9f5558a8c8f1	0	0	MIT (HF card)	JSON	needs_adapter:json-captions	-	66.667	w2b
 openimages-marine	csv-url-index				cc-by-4.0	CSV+JPEG	needs_adapter:csv-url-index — s3://open-images-dataset/ is anonymously listable (confirmed 200 on ListObjectsV2) but is a flat <split>/<image_id>.jpg layout with no class prefix; a marine-only subset needs the class-filtered image-id list from the OIDv7 bbox/label CSVs first, then per-id fetch from the flat bucket — the bucket adapter alone would pull the whole ~1.9M-image corpus		3	w2a
-ozfish	needs:pawsey	-	0	0	CC-BY-3.0-AU (README)	CSV+JPEG+MP4	needs_adapter:pawsey	-	?	w2b
-pangaea-ccz-gsr	pangaea				cc-by-4.0	JPEG	needs_adapter:pangaea — PANGAEA serves data via its own OAI/REST API (https://doi.pangaea.de/10.1594/PANGAEA.987009 resolves to a dataset page listing linked image files/collections, not a flat archive); needs a PANGAEA-dataset adapter that follows child datasets		3	w2a
-pangaea-ofos-msm77	pangaea				cc-by-4.0	JPEG	needs_adapter:pangaea — same PANGAEA-dataset adapter need as pangaea-ccz-gsr; this DOI is one of ~50 sibling OFOS profile datasets under the MSM77 cruise series that a real ingest would need to enumerate		3	w2a
+ozfish	pawsey-portal	ozfish-frames-2019	0		CC-BY-3.0-AU (README)	CSV+JPEG+MP4	needs_adapter:pawsey-js-migration — pawsey-portal adapter built + tried live (WP-6d-A); storage.pawsey.org.au now serves a JS-only SPA shell for the container listing (even with ?format=json), so it enumerates 0 items until Pawsey exposes a real listing route again.		?	w2b
+pangaea-ccz-gsr	pangaea	PANGAEA.987009	3167		cc-by-4.0	JPEG	ok		3	w2a
+pangaea-ofos-msm77	pangaea	PANGAEA.989732	870		cc-by-4.0	JPEG	ok		3	w2a
 plasticinwater	hf	rev-c380143ae980	301	400695537	unknown	unknown	ok	0.00	2	w2a
 port-royal	zenodo	record-10271767	5	641863	cc-by-4.0	imgs	ok	0.00	2	w2a
 posidonia	zenodo	record-4526867	1	125314957	cc-by-4.0	imgs	ok	0.00	3	w2a
@@ -88,11 +88,11 @@ ruod	hf	rev-c22094e45b7f	14000		NOASSERTION	COCO (bbox, 10 classes)	ok		1996	w1a
 salmon-cage	zenodo	record-4931418	0	0	CC0-1.0 (Zenodo API)	MP4	needs_adapter:video	-	0.357	w2b
 sea-undistort	zenodo	v.1.0.0	1	2267334496	CC-BY-NC-SA-4.0 (Zenodo API)	PNG	ok	0.006	0.441	w2b
 sea-urchin-detection	http	-			CC-BY-4.0		needs_yohan:Roboflow export requires a free API key (account, forbidden by D-E)	?	3	w0
-seaclear	http	-			CC-BY-4.0		needs_adapter:needs_adapter:figshare-api - Sci Data supplementary data is on figshare, not Zenodo; no zenodo/http adapter fits figshare's own REST API	0.0	2.339	w0
+seaclear	figshare		0		CC-BY-4.0		needs_adapter:figshare-id-unresolved — figshare adapter built + tested (WP-6d-A, fixture-verified); the exact figshare article/collection id for SeaClear's Sci Data supplementary data was not resolved this pass (author/title search on api.figshare.com/v2/articles/search did not surface it).		2.339	w0
 seagrassfinder	zenodo	record-13904604	1	1907310017	cc-by-nc-nd-4.0	JPEG	ok	0.01	3	w2a
 seamapd21	needs:multipart-tar	-	0	0	public domain (US federal government work)	YOLO	needs_adapter:multipart-tar	-	?	w2b
 seathru	hf	rev-528fa622018c	2421	38439305674	CC-BY-NC-SA-4.0 (HF card)	RAW+TIFF depth	ok	0.102	0.104	w2b
-seathru-nerf	gdrive				unknown	COLMAP	needs_adapter:gdrive — project page links a Google Drive file id (1RzojBFvBWjUUhuJb95xJPSNP3nJwZWaT); needs a Drive-aware fetcher (large-file confirm-token handshake)		3	w2a
+seathru-nerf	gdrive-public	gdrive-pinned	1		unknown	COLMAP	ok		3	w2a
 seatizen-atlas	zenodo	1.0.0	1	35473744193	CC-BY-4.0	JPEG+CSV	ok	0.1	0.113	w0
 smartbay	zenodo	record-17018426	1	193241624	cc-by-4.0	YOLO	ok	0.00	3	w2a
 sodd	zenodo	record-10230328	1	704458058	cc-by-4.0	YOLO	ok	0.00	2	w2a
@@ -111,12 +111,12 @@ underwater-image-enhancement	hf	rev-eef27aacee4e	1	449114557	CC-BY-4.0		ok	0.0	6
 underwater-images-2542305	zenodo	record-2542305	0	0	CC-BY-4.0 (Zenodo API)	?	needs_adapter:rar	-	0.059	w2b
 urpc	hf	rev-c12202f7e4a7	6575	1827915303	Apache-2.0 (HF card)	VOC/YOLO	ok	0.005	1.094	w2b
 usis10k	hf	rev-b10f41ab819b	10632	460014041	Apache-2.0	COCO JSON (inst+salient, 7 classes)	ok	0.00	1999	w1a
-usod10k	needs:gdrive	-	0	0	research (non-commercial, per upstream)	PNG	needs_adapter:gdrive	-	?	w2b
+usod10k	gdrive-public	gdrive-pinned	2		research (non-commercial, per upstream)	PNG	ok		?	w2b
 usr248	needs:gdrive	-	0	0	research (non-commercial, per upstream)	PNG	needs_adapter:gdrive	-	?	w2b
 uw-img-imu-sonar	hf	rev-96385ed27da0	0	0	apache-2.0	unknown	needs_adapter:unknown-empty		1	w2a
 varos	zenodo	record-5567209	2	17961670090	CC-BY-4.0		ok	0.05	0.111	w0
 vdd-c	drum				cc-by-4.0	YOLO/VOC	needs_adapter:drum — DRUM (Univ. of Minnesota's DSpace repository) 403s plain curl (bot-blocked); needs the DRUM/DSpace REST API (same family as trashcan/trash-icra19 in W1) rather than scraping the HTML landing page		2	w2a
-viame-public	needs:girder	-	0	0	per-dataset (mostly NOAA public domain)	mixed	needs_adapter:girder	-	?	w2b
+viame-public	girder	girder-pinned	325	74922518907	per-dataset (mostly NOAA public domain)	mixed	ok	0.21	?	w2b
 whoi-plankton	hf	rev-ba1e637e4cb8	19	9098273854	NOASSERTION	PNG	ok	0.03	0.22	w0
 whoi-plankton-small	hf	rev-2d0ddc911aa8	4	1107677510	MIT		ok	0.0	2.708	w0
 wildfish	hf	rev-5212c80f4d98	26	14517292127	research-only (non-commercial, per upstream)	JPEG	ok	0.038	0.207	w2b

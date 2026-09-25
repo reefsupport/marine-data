@@ -1,20 +1,15 @@
-# ozfish: NOT loadable by marinedata.cli today (needs:pawsey). Documentation-only spec for WP-6d.
-# The w0 slice's earlier `adapter: bucket` attempt 404s (Pawsey/Nectar Swift, not a plain S3
-# listing) — kept here as `needs:pawsey` per the w2b diagnosis, which is the accurate one.
 id: ozfish
-adapter: needs:pawsey
+adapter: pawsey-portal
+params:
+  container_url: https://storage.pawsey.org.au/public/m/FDFML/frames
+  version: ozfish-frames-2019
 license: CC-BY-3.0-AU (README)
 attribution: AIMS, UWA and Curtin University — OzFish
 citation: AIMS OzFish, doi:10.25845/5e28f062c5097
 homepage: https://github.com/open-AIMS/ozfish
-candidate_endpoints:
-- https://storage.pawsey.org.au/public/m/FDFML/frames
-- https://storage.pawsey.org.au/public/m/FDFML/crops
-- https://storage.pawsey.org.au/public/m/FDFML/labelled
-why_not_supported: 'Public Pawsey (Nectar Swift) object-storage container, anonymous
-  HTTP GET but no S3 API / listing convention our bucket adapter understands; needs
-  a Pawsey container-listing adapter (Swift `?format=json` listing) then plain GET
-  per object. NOTE: already in registry/sources/fish.yaml with access.method=request;
-  that is stale per this catalog sweep (README gives these three open prefixes, 206
-  verified) — flagged for the integrator, not changed here (w0/w2 rule: don''t edit
-  existing entries).'
+notes: 'D-R (5): fish.yaml access.method flipped to pawsey-portal per the manager. WP-6d-A built
+  the pawsey-portal adapter (Swift ?format=json listing); a 2026-09-25 live check found
+  storage.pawsey.org.au now serves a JS-app shell for the plain listing path (portal
+  migrated since the w0/w2 catalog sweep) — the adapter enumerates 0 items until Pawsey
+  exposes a real listing route again, or a human resolves one. crops/ and labelled/ are
+  separate container prefixes, not yet split into their own specs.'
