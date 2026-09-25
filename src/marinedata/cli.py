@@ -12,6 +12,7 @@ import argparse
 import sys
 
 from .cli_ingest import _cmd_ingest, add_ingest_subparser  # noqa: F401 — re-exported
+from .cli_ingest_source import add_ingest_source_subparser
 from .cli_privacy import add_privacy_subparser
 from .cli_quality import add_quality_subparser
 from .cli_release import add_release_subparser
@@ -291,6 +292,7 @@ def build_parser() -> argparse.ArgumentParser:
     p_fetch.set_defaults(func=_cmd_fetch)
 
     add_ingest_subparser(sub)
+    add_ingest_source_subparser(sub)
     add_splitmap_subparser(sub)
     add_release_subparser(sub)
     add_privacy_subparser(sub)
