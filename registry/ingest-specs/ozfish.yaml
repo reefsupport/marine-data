@@ -1,0 +1,18 @@
+# ozfish: NOT loadable by marinedata.cli today (needs:pawsey). Documentation-only spec for WP-6d.
+id: ozfish
+adapter: needs:pawsey
+license: CC-BY-3.0-AU (README)
+attribution: AIMS, UWA and Curtin University — OzFish
+citation: AIMS OzFish, doi:10.25845/5e28f062c5097
+homepage: https://github.com/open-AIMS/ozfish
+candidate_endpoints:
+- https://storage.pawsey.org.au/public/m/FDFML/frames
+- https://storage.pawsey.org.au/public/m/FDFML/crops
+- https://storage.pawsey.org.au/public/m/FDFML/labelled
+why_not_supported: 'Public Pawsey (Nectar Swift) object-storage container, anonymous
+  HTTP GET but no S3 API / listing convention our bucket adapter understands; needs
+  a Pawsey container-listing adapter (Swift `?format=json` listing) then plain GET
+  per object. NOTE: already in registry/sources/fish.yaml with access.method=request;
+  that is stale per this catalog sweep (README gives these three open prefixes, 206
+  verified) — flagged for the integrator, not changed here (w0/w2 rule: don''t edit
+  existing entries).'

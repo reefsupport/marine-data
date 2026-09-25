@@ -1,0 +1,11 @@
+# urpc: URPC competition dataset
+id: urpc
+adapter: hf
+license: Apache-2.0 (HF card)
+attribution: Underwater Robot Professional Contest (URPC) organizers, via fuhao7i
+  HF mirror
+citation: URPC competition dataset
+homepage: https://huggingface.co/datasets/fuhao7i/URPC
+params:
+  repo: fuhao7i/URPC
+  revision: main

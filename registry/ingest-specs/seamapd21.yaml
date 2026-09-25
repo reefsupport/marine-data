@@ -1,0 +1,14 @@
+# seamapd21: NOT loadable by marinedata.cli today (needs:multipart-tar). Documentation-only spec for WP-6d.
+id: seamapd21
+adapter: needs:multipart-tar
+license: public domain (US federal government work)
+attribution: NOAA SEFSC — SEAMAPD21
+citation: Boulais et al. 2021
+homepage: https://github.com/SEFSC/SEAMAPD21
+candidate_endpoints:
+- https://grunt.sefsc.noaa.gov/parr/SEAMAPD21.tar.gz.aa
+- '... .ab .ac .ad .ae .af (6 parts)'
+why_not_supported: 6-part split tar.gz (`cat *.aa..af > x.tar.gz`) on a plain HTTPS
+  host; the http adapter can fetch each part as an opaque file but can't concatenate+untar.
+  Host also timed out (000) from this machine on 2026-09-25 — retry before building
+  the adapter.

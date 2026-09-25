@@ -1,0 +1,9 @@
+# luderick-seagrass: Ditria et al. 2021
+id: luderick-seagrass
+adapter: zenodo
+license: CC-BY-4.0 (Zenodo API)
+attribution: Ditria et al. — Luderick/seagrass fish detection dataset
+citation: Ditria et al. 2021
+homepage: https://zenodo.org/records/7659203
+params:
+  zenodo_record: 7659203
