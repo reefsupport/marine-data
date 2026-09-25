@@ -17,6 +17,7 @@ from .cli_ingest import _cmd_ingest, add_ingest_subparser  # noqa: F401 — re-e
 from .cli_ingest_source import add_ingest_source_subparser
 from .cli_release import add_release_subparser
 from .cli_splitmap import add_splitmap_subparser
+from .cli_splits import add_splits_subparser  # WP-11/12 P3: split v2 pools/OOD/allocator
 from .gate import evaluate
 from .lineage import build_lineage
 from .query import find
@@ -297,6 +298,7 @@ def build_parser() -> argparse.ArgumentParser:
     add_release_subparser(sub)
     add_dedup_subparser(sub)
     add_bench_subparser(sub)
+    add_splits_subparser(sub)
 
     p_verify = sub.add_parser("verify", help="Check declared layouts against real fetched samples")
     p_verify.add_argument("source_id", nargs="*")
