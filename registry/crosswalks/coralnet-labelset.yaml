@@ -16,5 +16,9 @@ crosswalks:
       - { source_label: "Other Invertebrates", targets: { taxon: OT }, fidelity: coarsened }
       - { source_label: "Bare substrate", targets: { taxon: ABIOTIC }, fidelity: coarsened,
           note: "Sand, rubble and pavement are one group in CoralNet. Rolls up to the ABIOTIC parent rather than guessing which." }
+      - { source_label: "Hard Substrate", targets: { taxon: HS }, fidelity: coarsened,
+          note: "WP-7d: a current CoralNet group (401 of 12,644 public labels, /label/list/ 2026-09-25). It holds pavement, dead coral and turf-on-hard-substrate labels alike, the exact span of the HS grouping node (WP-7c, CoralNet HS_AR)." }
+      - { source_label: "Soft Substrate", targets: { taxon: ABIOTIC }, fidelity: approximate,
+          note: "WP-7d: a current CoralNet group (167 public labels). Mostly sand, silt and mud, but curators also file a few biota here (reefolution Rhy, CoralNet 'Soft Substrate'), so the ABIOTIC roll-up is approximate, never coarsened." }
       - { source_label: "Other",      fidelity: unmappable,
           note: "A genuine catch-all with no canonical equivalent. Dropped, leaving the axis unsupervised, rather than forced into OT." }

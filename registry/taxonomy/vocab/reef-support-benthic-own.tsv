@@ -1,0 +1,8 @@
+# source: reef-support-benthic-own
+# crosswalk: reef-support-labelbox
+# counts: annotations
+# retrieved: 2026-09-25 from rs-storage-open sources/reef-support-benthic-own/2026-09-24/labels/masks/*.png (1250 masks, keys from CHECKSUMS.sha256, anonymous GET, streamed, not stored)
+# note: one annotation = one mask containing the class value; 0=unlabelled is not a label
+label	count	description
+Hard Coral	1202	
+Soft Coral	547	

@@ -31,5 +31,5 @@ crosswalks:
           note: "The source only ever recorded a binary healthy/not-healthy call; PALE was never distinguished, so 'Healthy' can only map to the coarsest true statement." }
       - { source_label: "Bleached", targets: { condition: BLEACHED }, fidelity: exact,
           note: "WS-D S25: v6i/v1-yolov8s's one-hot _classes.csv names this class 'Bleached' outright — it IS the BLEACHED leaf, not a coarsening onto it, so this edge is exact rather than coarsened like the other two." }
-      - { source_label: "Non-Corals", fidelity: unmappable,
-          note: "WS-D S37: v13i-only third column. The subject is not coral at all, so there is no condition-axis statement to make — dropped, leaving the image unsupervised on `condition` (still usable for general-pretraining), rather than forced into HEALTHY or BLEACHED." }
+      - { source_label: "Non-Corals", targets: { taxon: UNKNOWN }, fidelity: approximate,
+          note: "WP-7d (was unmappable, WS-D S37): a v13i-only multi-label PRESENCE tag, not a class of image. In the staged labels/image_labels.parquet (2026-09-25) 379 of its 384 images also carry Healthy and/or Bleached; only 5 are Non-Corals alone. So it says the frame also holds content that is not coral and was never classified further. That is the UNKNOWN (unclassified) non-taxon node on the taxon axis; it asserts no taxon and nothing on `condition`." }
