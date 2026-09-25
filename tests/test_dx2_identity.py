@@ -250,8 +250,9 @@ def test_manifest_only_task_files_match_full_build(
 ) -> None:
     """The e2e fixture built twice — full (hashes image bytes) and --manifest-only
     (sha256 from each staged tree's CHECKSUMS.sha256) — yields byte-identical task TSVs."""
+    from test_e2e_release import _registry, _stage_all  # sibling module (prepend import mode)
+
     from marinedata import cli_release
-    from tests.test_e2e_release import _registry, _stage_all
 
     registry = _registry()
     monkeypatch.setattr(Registry, "load", classmethod(lambda cls, root=None: registry))

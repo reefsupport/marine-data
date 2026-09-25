@@ -1,0 +1,14 @@
+# source: suim
+# crosswalk: suim-8class
+# counts: annotations
+# retrieved: 2026-09-25 from rs-storage-open sources/suim/2020/labels/masks/*.png (1598 masks, keys from CHECKSUMS.sha256, anonymous GET, streamed, not stored)
+# note: one annotation = one mask containing the class value; every value is a class
+label	count	description
+BW	1330	
+RI	1059	
+FV	1052	
+SR	660	
+HD	425	
+WR	284	
+PF	243	
+RO	134	

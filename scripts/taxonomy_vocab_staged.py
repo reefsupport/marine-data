@@ -1,10 +1,11 @@
 """WP-7d: vocab TSVs for the staged sources that had a crosswalk but no measured vocabulary.
 
-    python scripts/taxonomy_vocab_staged.py <cache_dir> <repo_root>
+    python scripts/taxonomy_vocab_staged.py <cache_dir> <repo_root> [source_id ...]
 
 Reads only labels and indexes, by anonymous HTTPS GET of known keys on rs-storage-open
 (D-O: no ListBucket). Whole-image sources: ``labels/image_labels.parquet`` (one row per
-image label). Dense-mask sources: every ``labels/masks/**.png`` named in the tree's
+image label). Point sources: ``labels/points.parquet`` (one row per point).
+Dense-mask sources: every ``labels/masks/**.png`` named in the tree's
 ``CHECKSUMS.sha256`` is streamed into memory, its distinct pixel values counted, and
 dropped (nothing is written to disk but the per-source count JSON). Needs numpy + Pillow
 + pyarrow. The count unit is written into each TSV header.
@@ -23,6 +24,10 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 from taxonomy_vocab import write
+
+from marinedata.task_layers.producers.coralscapes_semseg import (
+    _ID_TO_LABEL as CORALSCAPES_ID_TO_LABEL,
+)
 
 BASE = "https://rs-storage-open.hel1.your-objectstorage.com/sources/"
 
@@ -65,7 +70,19 @@ MASKS = {
         "reef-support-bleaching-condition",
         {1: "bleached", 2: "non_bleached"},
     ),
+    # Upstream id2label 1-39, as used by the semseg producer; 0 = raster_ignore_value.
+    "coralscapes": ("coralscapes/1.0", "coralscapes-39", CORALSCAPES_ID_TO_LABEL),
+    # Re-host grayscale table (4R+2G+B), documented in registry/crosswalks/suim-8class.yaml.
+    "suim": (
+        "suim/2020",
+        "suim-8class",
+        {0: "BW", 1: "HD", 2: "PF", 3: "WR", 4: "RO", 5: "RI", 6: "FV", 7: "SR"},
+    ),
 }
+# Mask value that is "unlabelled", not a class. Default 0; SUIM has no ignore value.
+MASK_IGNORE: dict[str, int | None] = {"suim": None}
+# Point-label sources: one annotation = one ``labels/points.parquet`` row.
+POINTS = {"mermaid-aws": ("mermaid-aws/2026-09-19-bc53d5a2c0b6", "mermaid-attributes")}
 # CoralSCOP masks are class-agnostic: every mask file is one "coral" annotation.
 AGNOSTIC = {
     "coralscop-masks-rs": (
@@ -132,10 +149,15 @@ def _resumable_mask_values(tree: str, keys: list[str], log: Path) -> dict[str, l
     return have
 
 
-def main(cache: Path, repo: Path) -> None:
+def main(cache: Path, repo: Path, only: set[str] | None = None) -> None:
     import pyarrow.parquet as pq
 
+    def wanted(sid: str) -> bool:
+        return not only or sid in only
+
     for sid, (tree, xw) in IMAGE_LABELS.items():
+        if not wanted(sid):
+            continue
         local = cache / sid / "image_labels.parquet"
         if not local.exists():
             local.parent.mkdir(parents=True, exist_ok=True)
@@ -150,7 +172,27 @@ def main(cache: Path, repo: Path) -> None:
             origin=f"rs-storage-open sources/{tree}/labels/image_labels.parquet (anonymous GET)",
             note="one annotation = one image_labels.parquet row (whole-image label)",
         )
+    for sid, (tree, xw) in POINTS.items():
+        if not wanted(sid):
+            continue
+        local = cache / sid / "points.parquet"
+        if not local.exists():
+            local.parent.mkdir(parents=True, exist_ok=True)
+            local.write_bytes(_get(BASE + tree + "/labels/points.parquet"))
+        counts = Counter(pq.read_table(local, columns=["label"])["label"].to_pylist())
+        write(
+            repo,
+            sid,
+            xw,
+            counts,
+            kind="annotations",
+            origin=f"rs-storage-open sources/{tree}/labels/points.parquet (anonymous GET)",
+            note="one annotation = one labelled point (points.parquet row)",
+        )
     for sid, (tree, xw, values) in MASKS.items():
+        if not wanted(sid):
+            continue
+        ignore = MASK_IGNORE.get(sid, 0)
         done = cache / sid / "mask_value_counts.json"
         if not done.exists():
             keys = _mask_keys(tree, cache)
@@ -158,7 +200,8 @@ def main(cache: Path, repo: Path) -> None:
             seen = Counter(v for vals in per_mask.values() for v in vals)
             done.write_text(json.dumps({"masks": len(keys), "value_masks": seen}))
         stats = json.loads(done.read_text())
-        extra = sorted(int(v) for v in stats["value_masks"] if int(v) not in values and v != "0")
+        observed = (int(v) for v in stats["value_masks"])
+        extra = sorted(v for v in observed if v not in values and v != ignore)
         if extra:
             sys.exit(f"{sid}: undeclared mask values {extra}")
         counts = {name: stats["value_masks"].get(str(v), 0) for v, name in values.items()}
@@ -171,9 +214,11 @@ def main(cache: Path, repo: Path) -> None:
             origin=f"rs-storage-open sources/{tree}/labels/masks/*.png ({stats['masks']} masks, "
             "keys from CHECKSUMS.sha256, anonymous GET, streamed, not stored)",
             note="one annotation = one mask containing the class value; "
-            "0=unlabelled is not a label",
+            + ("0=unlabelled is not a label" if ignore == 0 else "every value is a class"),
         )
     for sid, (tree, xw, label) in AGNOSTIC.items():
+        if not wanted(sid):
+            continue
         n = len(_mask_keys(tree, cache))
         write(
             repo,
@@ -187,4 +232,4 @@ def main(cache: Path, repo: Path) -> None:
 
 
 if __name__ == "__main__":
-    main(Path(sys.argv[1]), Path(sys.argv[2]))
+    main(Path(sys.argv[1]), Path(sys.argv[2]), set(sys.argv[3:]) or None)

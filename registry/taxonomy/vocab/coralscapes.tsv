@@ -1,0 +1,45 @@
+# source: coralscapes
+# crosswalk: coralscapes-39
+# counts: annotations
+# retrieved: 2026-09-25 from rs-storage-open sources/coralscapes/1.0/labels/masks/*.png (2075 masks, keys from CHECKSUMS.sha256, anonymous GET, streamed, not stored)
+# note: one annotation = one mask containing the class value; 0=unlabelled is not a label
+label	count	description
+unknown hard substrate	1887	
+dark	1876	
+background	1850	
+fish	1669	
+massive/meandering alive	1589	
+sand	1210	
+other coral alive	1176	
+transect line	1070	
+rubble	1044	
+branching dead	966	
+algae covered substrate	915	
+branching alive	914	
+massive/meandering dead	830	
+meandering alive	718	
+pocillopora alive	716	
+acropora alive	592	
+stylophora alive	351	
+table acropora alive	329	
+sponge	300	
+branching bleached	271	
+transect tools	259	
+meandering dead	232	
+other coral dead	220	
+table acropora dead	207	
+other coral bleached	201	
+millepora	160	
+human	153	
+other animal	134	
+massive/meandering bleached	129	
+sea urchin	125	
+clam	104	
+sea cucumber	98	
+trash	75	
+crown of thorn	66	
+dead clam	60	
+anemone	50	
+turbinaria	48	
+meandering bleached	42	
+seagrass	33	
