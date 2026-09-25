@@ -1,0 +1,14 @@
+# MarineInst20M upstream-only images that are open + anonymous (WP-6e-B): the four Public_Websites folders that ship
+# a plain URL list in the GitHub release. Their masks join via registry/overlays/marineinst20m.parquet on basename.
+id: marineinst20m-web
+adapter: manifest
+license: per upstream website (Corals of the World, EOL, FishDB, Meerwasser-Lexikon/Reeflex); recorded per sample, never a filter (D-C)
+attribution: MarineInst20M (Zheng et al., ECCV 2024) URL lists; images by the named websites
+citation: Zheng et al. 2024, ECCV, MarineInst
+homepage: https://github.com/zhengziqiang/MarineInst20M
+params:
+  manifest: registry/manifests/marineinst20m-web.parquet
+  label_columns: [upstream_dataset, basename]
+notes: 'Built from Public_Websites/{Corals-of-the-world/urls.txt, EOL/eol_urls.txt, FishDB/fishdb.txt, Reeflex/Reeflex.txt}
+  (56,257 unique URLs). The other website folders ship scrape scripts or zipped URL lists only; Flickr/Gettyimages/
+  Shutterstock/Private_Data ship a README only (not fetchable).'

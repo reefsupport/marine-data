@@ -1,16 +1,21 @@
 # GBIF occurrences with StillImage media in wholly-marine clades, EXCLUDING iNaturalist (inat-marine covers it) and specimens/fossils.
 id: gbif-marine
-adapter: needs:gbif-occurrence-media
+adapter: gbif-occurrence-media
 license: 'per record: CC0-1.0 / CC-BY-4.0 / CC-BY-NC-4.0 (GBIF licence facet)'
 attribution: GBIF.org and the publishing institutions
 citation: GBIF.org occurrence search, 2026-09-25
 homepage: https://registry.opendata.aws/gbif/
-candidate_endpoints:
-- https://api.gbif.org/v1/occurrence/search (media[].identifier; partition by datasetKey x year to stay < 100k offset)
-- s3://gbif-open-data-eu-central-1/occurrence/ (parquet; mediatype only)
-why_not_supported: Image URLs live in each record's media[] and point at thousands of publisher hosts; the anonymous
-  route is the paged search API (offset cap 100k -> partitioned queries). Downloads API needs a GBIF login (not
-  used).
+params:
+  snapshot: api-20260925
+  taxon_keys: [206, 352, 176, 50, 356, 207, 136, 346, 121, 120, 733, 9413, 110, 7073593, 980, 354, 205, 105, 137, 229]
+  basis_of_record: [HUMAN_OBSERVATION, MACHINE_OBSERVATION]
+  exclude_dataset_keys: ['50c9509d-22c7-4a22-a47d-8c48425ef4a7']  # iNaturalist (inat-marine covers it)
+  per_species_cap: 100
+  page_limit: 300
+notes: 'WP-6e-B: anonymous api.gbif.org/v1/occurrence/search, datasetKey facet then paged per dataset (year facets
+  past the 100k offset window). The AWS snapshot (s3://gbif-open-data-eu-central-1/occurrence/) carries mediatype
+  only, no media URLs, so it cannot list images. Bulk downloads need an account: not used. First StillImage per
+  occurrence; lat/lon/depth -> schema fields; licence/rightsHolder/creator/species/eventDate -> per-sample labels.'
 measured:
   items: 346842
   bytes: null
@@ -35,5 +40,6 @@ subset:
   stratify:
   - datasetKey
   - class
-  rule: non-iNat in-situ occurrences, first image per occurrence; dedupe by occurrenceID/media URL against inat-marine
-    and obis
+  cap_per_stratum: 100
+  rule: non-iNat in-situ occurrences, first image per occurrence, at most 100 per speciesKey (adapter per_species_cap,
+    enforced in enumeration); dedupe by media URL against inat-marine and obis at release

@@ -36,6 +36,7 @@ from .adapters.decode import IMAGE_SUFFIXES
 from .concurrency import HostLimiter, retry_with_backoff
 from .s3_upload import DEFAULT_PART, DiskGuard, GiB, local_digest, upload_file
 from .staged_writer import DEFAULT_SHARD_BYTES, DEFAULT_THRESHOLD, StagedWriter, WriterConfig
+from .subset_filter import SubsetFilter
 
 _BIG_PREFIXES = ("images/", "labels/")
 _CONTAINERS = (".tar", ".tar.gz", ".tgz", *SPOOLED)
@@ -371,6 +372,10 @@ def run_ingest(
         "first_keys": [i.key for i in items[:5]],
         "target": f"s3://{spec.bucket}/{key_prefix}/",
     }
+    # WP-6e-B: `subset.enforce: true` -> per-sample predicates + per-group cap (D-AB).
+    subset = SubsetFilter.from_spec(spec.subset, Path(__file__).resolve().parents[2])
+    if subset is not None:
+        report.plan["subset"] = "enforced"
     if dry_run:
         return report
     guard = guard or DiskGuard(work, int(spec.temp_cap_gb * GiB), int(spec.disk_floor_gib * GiB))
@@ -432,6 +437,8 @@ def run_ingest(
             truncated = False
             try:
                 for decoded in adapter.decode(fetched):
+                    if subset is not None and not subset.admit(decoded):
+                        continue
                     if writer.add(item, decoded) is not None:
                         live += len(decoded.data)
                     guard.observe(live)
@@ -465,6 +472,8 @@ def run_ingest(
         prefetcher.close()
     writer.finalize()
     report.images = len(writer.rows)
+    if subset is not None:
+        report.plan["subset"] = subset.stats()
     sample_schema.write_samples(root / "metadata.parquet", writer.rows)
     ingest_json = {
         "ingest": "marinedata.ingest_source",

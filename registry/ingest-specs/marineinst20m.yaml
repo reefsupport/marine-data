@@ -10,6 +10,10 @@ candidate_endpoints:
 - https://github.com/zhengziqiang/MarineInst20M (Public_Datasets/*.zip x14, Public_Websites/*.zip x14)
 why_not_supported: 'Labels-only release: masks/captions must be joined to images fetched from each upstream source
   (overlay adapter keyed by upstream image id). Private_Data / Flickr / Gettyimages folders ship README only.'
+overlay: 'WP-6e-B: registry/overlays/marineinst20m.parquet (161,025 images, 680,200 COCO-RLE instances, 0 caption
+  fields in the released JSONs; 204 MB, gitignored, summary in marineinst20m.summary.json). Join key = upstream path,
+  then basename (overlay_marineinst.match_rates). None of the 8 matching sources is staged yet, so the match rate is
+  pending; the open website subset is the marineinst20m-web spec.'
 measured:
   items: null
   bytes: 418674832
