@@ -189,6 +189,7 @@ def _cmd_release_build(args: argparse.Namespace) -> int:
             near_dup=near_dup,
             dedup_v2_groups=args.dedup_v2,
             decon=args.decon,
+            tasks=args.tasks,
         )
     except (NearDupError, DedupGateError, DeconError) as exc:
         print(f"release build: {exc}", file=sys.stderr)
@@ -205,6 +206,8 @@ def _cmd_release_build(args: argparse.Namespace) -> int:
         print(f"  {task.task_id}: {len(task.rows)} images")
     for task_id, reason in result.skipped_tasks:
         print(f"  skipped {task_id}: {reason}", file=sys.stderr)
+    for config_id, n_images in sorted(result.task_layer_configs.items()):
+        print(f"  task_layer {config_id}: {n_images} images")
     for exclusion in result.partial_abstain_excluded:
         labels = ", ".join(exclusion.abstaining_labels)
         print(
@@ -278,5 +281,14 @@ def add_release_subparser(sub: argparse._SubParsersAction) -> None:
         dest="local",
         metavar="SOURCE_ID=PATH",
         help="Use a local staged tree instead of fetching one; repeatable",
+    )
+    p_build.add_argument(
+        "--tasks",
+        choices=("v1", "v2"),
+        default="v1",
+        help="'v1' (default) builds only the registry's task manifests, byte-identical "
+        "to before this flag existed (D-X). 'v2' additionally builds the 5 WP-8c "
+        "task-layer configs (points/vqa/semseg/benthic-coarse/benthic-cover) from "
+        "data/_tasklabels/** into <out>/releases/<release>/task_layers/",
     )
     p_build.set_defaults(func=_cmd_release_build)

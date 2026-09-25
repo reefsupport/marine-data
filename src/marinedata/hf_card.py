@@ -379,5 +379,31 @@ def main(argv: list[str] | None = None) -> int:
     return 0
 
 
+def task_layer_config_table(results: dict) -> str:
+    """Markdown table for the 5 WP-8c v2 task-layer configs (per config: images,
+    annotation rows, class count where the config has a fixed vocabulary, and human vs
+    model row counts) — appended to the card when a ``v2`` release built any of them.
+    ``results`` is ``{config_id: marinedata.task_layers.configs.ConfigResult}``.
+    """
+    classes_by_config = {
+        "benthic-coarse": 6,  # HC, MIL, SC, ALGAE, ABIOTIC, OTHER_FAUNA (D-Z)
+        "benthic-cover": 6,
+    }
+    lines = [
+        "| config | images | annotation rows | classes | human rows | model rows |",
+        "|---|---|---|---|---|---|",
+    ]
+    for config_id in sorted(results):
+        result = results[config_id]
+        human = sum(1 for row in result.rows if row.get("label_origin") == "human")
+        model = sum(1 for row in result.rows if row.get("label_origin") == "model")
+        classes = classes_by_config.get(config_id, "-")
+        lines.append(
+            f"| {config_id} | {result.n_images} | {len(result.rows)} | {classes} | "
+            f"{human} | {model} |"
+        )
+    return "\n".join(lines)
+
+
 if __name__ == "__main__":
     raise SystemExit(main())

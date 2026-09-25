@@ -21,7 +21,7 @@ from __future__ import annotations
 import hashlib
 import json
 from collections.abc import Iterable, Iterator
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from pathlib import Path
 
 from .builder import SUPERVISED_DEFAULT_RATIOS, DatasetBuilder, PartialAbstainExclusion, SplitName
@@ -77,6 +77,9 @@ class ReleaseResult:
     task, train included: a re-encoded twin of an evaluation image must not train."""
     never_eval_near_dup_rows: int = 0
     """Task-manifest rows those images would have contributed, summed over tasks."""
+    task_layer_configs: dict[str, int] = field(default_factory=dict)
+    """``{config_id: n_images}`` for the 5 WP-8c v2 configs — empty unless ``tasks="v2"``
+    was passed to :func:`build_release` (D-X: v1 default leaves this empty, always)."""
 
 
 @dataclass(frozen=True)
@@ -428,8 +431,19 @@ def build_release(
     near_dup: NearDupConfig | None = None,
     dedup_v2_groups: str | Path | None = None,
     decon: bool = False,
+    tasks: str = "v1",
 ) -> ReleaseResult:
     """Build every registry task against a frozen split map and write the release.
+
+    ``tasks`` (WP-8c, charter D-X): ``"v1"`` (default) never touches the task-layer
+    configs below and produces byte-identical output to before this parameter existed.
+    ``"v2"`` additionally builds the 5 WP-8 task-layer configs (``points``, ``vqa``,
+    ``semseg``, ``benthic-coarse``, ``benthic-cover`` — see
+    :mod:`marinedata.task_layers.configs`) from whatever ``data/_tasklabels/**`` the
+    caller's working directory has (D-Z2 producers), and writes them as parquet under
+    ``<out_dir>/releases/<release>/task_layers/``. Additive only: no v1 file changes
+    shape or content when ``tasks="v2"`` is passed, so v1 byte-identity holds regardless
+    of this flag.
 
     Raises if ``split_map`` does not exist yet (a release never allocates one — see
     :mod:`marinedata.splitmap`), or if any admitted source contributes a group absent
@@ -587,6 +601,15 @@ def build_release(
     release_json_text = json.dumps(release_json, indent=2, sort_keys=True) + "\n"
     (release_root / "RELEASE.json").write_text(release_json_text)
 
+    task_layer_configs: dict[str, int] = {}
+    if tasks == "v2":
+        from .task_layers.configs import build_all_configs, write_configs
+
+        base_dir = Path(".")  # data/_tasklabels/** is read relative to the cwd (D-Z2)
+        results = build_all_configs(registry, base_dir)
+        write_configs(results, release_root / "task_layers")
+        task_layer_configs = {config_id: result.n_images for config_id, result in results.items()}
+
     return ReleaseResult(
         release=release,
         out_dir=release_root,
@@ -597,6 +620,7 @@ def build_release(
         partial_abstain_excluded=tuple(partial_abstain_excluded),
         never_eval_near_dup_excluded=tuple(near_dup_excluded),
         never_eval_near_dup_rows=near_dup_rows,
+        task_layer_configs=task_layer_configs,
     )
 
 
