@@ -1,0 +1,15 @@
+# JAMSTEC J-EDI deep-sea image database (trench/hadal imagery, to 11,000 m). Retried per brief; still unreachable.
+id: jamstec-jedi
+adapter: needs:jamstec-request
+license: JAMSTEC terms (request-based)
+attribution: JAMSTEC GODAC
+citation: J-EDI (JAMSTEC E-library of Deep-sea Images)
+homepage: https://www.godac.jamstec.go.jp/jedi/e/
+why_not_supported: DNS does not resolve from this host for godac.jamstec.go.jp or
+  jedi.jamstec.go.jp (curl 6, three attempts, both jedi.jamstec.go.jp and www.godac.jamstec.go.jp)
+  — same connect failure the S57 catalog recorded.
+measured:
+  method: DNS resolution failed (curl exit 6), retried 2026-09-25
+  date: '2026-09-25'
+  per_item_license: request-based
+  by_depth_band_m: {}

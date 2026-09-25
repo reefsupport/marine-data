@@ -10,3 +10,8 @@ notes: needs_adapter:pangaea — same PANGAEA-dataset adapter need as pangaea-cc
   this DOI is one of ~50 sibling OFOS profile datasets under the MSM77 cruise series
   that a real ingest would need to enumerate
 disk_floor_gib: 34.0
+measured:
+  method: catalog-verified (S57) 200; not independently re-measured here
+  date: '2026-09-25'
+  per_item_license: CC-BY-4.0
+  by_depth_band_m: {}

@@ -1,0 +1,41 @@
+id	adapter	version	items	bytes	licence	format	dry_run	est_hours_at_100mbps	priority	measured_items	measured_bytes
+fathomnet-fgvc23	needs:coco-remote-fetch	-	10700	17179869184	CC-BY-4.0	?	needs_adapter:coco-remote-fetch	-	?	10700	17179869184
+fathomnet-coverage	hf	-	0	41000000	unknown (HF card states none)	?	needs_adapter:unsupported-format	-	?	-	41000000
+fathomnet-vme	hf	-	0	64000000	other (HF card)	?	ok	-	?	-	64000000
+fathomnet-megalodon	hf	-	0	311000000	other (HF card)	?	ok	-	?	-	311000000
+deepsea-mot	hf	-	19616	20019333378	cc-by-sa-4.0	?	ok	-	?	19616	20019333378
+squidle	needs:squidle-api-auth	-	11398834	0	per-campaign, mostly CC-BY (stated per collection)	?	needs_adapter:squidle-api-auth	-	?	11398834	-
+noaa-dscrtp	needs:ncei-erddap-export	-	0	0	public domain (US government work) / per-image	?	needs_adapter:ncei-erddap-export	-	?	-	-
+noaa-goa-2019	needs:ncei-accession-resolve	-	0	0	CC0-1.0 (DataCite)	?	needs_adapter:ncei-accession-resolve	-	?	-	-
+jamstec-jedi	needs:jamstec-request	-	0	0	JAMSTEC terms (request-based)	?	unreachable	-	?	-	-
+jamstec-debris	needs:jamstec-scrape	-	3400	0	JAMSTEC terms	?	unreachable	-	?	3400	-
+pangaea-ccz-gsr	needs:pangaea-series-enum	-	0	0	CC-BY-4.0 (PANGAEA, verified unrestricted)	?	needs_adapter:pangaea-series-enum	-	?	-	-
+pangaea-ofos-msm77	needs:pangaea-series-enum	-	0	0	CC-BY-4.0 (PANGAEA)	?	needs_adapter:pangaea-series-enum	-	?	-	-
+deepsea-coral-cornerrise	zenodo	-	0	107374182	cc-by-4.0	?	ok	-	?	-	107374182
+bodc-smartex	needs:bodc-eds-listing	-	0	0	OGL (UK Open Government Licence)	?	needs_adapter:bodc-eds-listing	-	?	-	-
+discol-peru-basin-ofos	needs:pangaea-series-enum	-	0	0	CC-BY-3.0 (verified via page meta tag, unrestricted)	?	needs_adapter:pangaea-series-enum	-	?	-	-
+hacon-aurora-vent-ofos	needs:pangaea-series-enum	-	0	0	CC-BY (PANGAEA, per series convention)	?	needs_adapter:pangaea-series-enum	-	?	-	-
+so268-ofos-analysis-ready	needs:pangaea-series-enum	-	0	0	CC-BY (PANGAEA, per series convention)	?	needs_adapter:pangaea-series-enum	-	?	-	-
+onc	needs:onc-token	-	0	0	CC-BY-4.0 (with account)	?	needs_yohan:token	-	?	-	-
+biigle-public	needs:biigle-token	-	0	0	per-volume (mostly CC-BY, per BIIGLE norms)	?	needs_yohan:login	-	?	-	-
+schmidt-ocean-rov	needs:unresolved-host	-	0	0	CC-BY-NC (per SOI media policy, stated)	?	unreachable	-	?	-	-
+habcam	needs:nefsc-request	-	0	0	public domain (US government work, per NOAA norm), request-based access	?	needs_yohan:request	-	?	-	-
+whoi-plankton	hf	-	956867	27333159816	unknown (not stated on HF card)	?	ok	-	?	956867	27333159816
+whoi-plankton-small	hf	-	57999	2214396368	mit	?	ok	-	?	57999	2214396368
+planktonset-1-0	hf	-	60736	111682933	other (HF card)	?	ok	-	?	60736	111682933
+zooscannet	hf	-	0	8568636919	cc-by-nc-4.0	?	dedup:planktonzilla	-	?	-	8568636919
+ecotaxa-public-export	needs:ecotaxa-api	-	0	0	per-project (stated per EcoTaxa project metadata)	?	needs_adapter:ecotaxa-api	-	?	-	-
+kaggle-ndsb-2015	needs:kaggle-login	-	0	0	unknown (Kaggle competition terms)	?	needs_yohan:login	-	?	-	-
+deepfish	needs:custom-index	-	40000	8160437862	CC-BY-4.0 (as stated)	?	needs_adapter:custom-index	-	?	40000	8160437862
+fishnet-2023	needs:kaggle-login	-	94532	0	unknown (not stated)	?	needs_yohan:request	-	?	94532	-
+fish4knowledge	needs:custom-index	-	27000	547608330	research-only (as stated)	?	needs_adapter:custom-index	-	?	27000	547608330
+aqua20	hf	-	0	199773745	unknown (not stated on HF card)	?	ok	-	?	-	199773745
+noaa-pifsc-esa-coral-icra	hf	-	944	10279634184	other (HF card)	?	ok	-	?	944	10279634184
+noaa-pifsc-bleaching	hf	-	10422	1535712286	unknown (not stated on HF card)	?	ok	-	?	10422	1535712286
+seaclef-lifeclef-fish	needs:aicrowd-login	-	0	0	unknown (challenge terms)	?	needs_yohan:login	-	?	-	-
+marinedet	needs:unresolved-source	-	0	0	unknown	?	unreachable	-	?	-	-
+coralvos	needs:gdrive-login	-	0	0	unknown (not stated in repo)	?	needs_yohan:gated-host	-	?	-	-
+rls-photo-archive	needs:unresolved-host	-	0	0	unknown (RLS data-sharing policy applies to counts; photo archive terms unclear)	?	needs_yohan:unclear-access	-	?	-	-
+plc-beijbom2015	zenodo	-	5090	9083798118	cc0-1.0	?	ok	-	?	5090	9083798118
+mlc-moorea	needs:pasta-api	-	2055	5368709120	CC-BY-4.0 (MCR LTER policy)	?	needs_adapter:pasta-api	-	?	2055	5368709120
+coralnet-small	hf	-	450	6947647488	unknown (not stated on HF card)	?	ok	-	?	450	6947647488

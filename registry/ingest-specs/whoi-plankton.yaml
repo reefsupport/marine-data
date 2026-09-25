@@ -11,3 +11,11 @@ expected_images: 956867
 max_images: 20000
 
 disk_floor_gib: 36.0
+measured:
+  items: 956867
+  bytes: 27333159816
+  method: HF API dataset_info splits sum (train 669,806 + val 95,686 + test 191,375)
+    + usedStorage
+  date: '2026-09-25'
+  per_item_license: unknown
+  label_type: cls (~100 taxa)

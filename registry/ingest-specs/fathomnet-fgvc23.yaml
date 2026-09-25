@@ -1,0 +1,20 @@
+# FathomNet FGVC-comp-2023 competition split: fine-grained classification over 290 taxa, Monterey Bay ROV imagery.
+id: fathomnet-fgvc23
+adapter: needs:coco-remote-fetch
+license: CC-BY-4.0
+attribution: FathomNet / MBARI, FGVC10 workshop
+citation: fathomnet/fgvc-comp-2023 (GitHub)
+homepage: https://github.com/fathomnet/fgvc-comp-2023
+why_not_supported: COCO-format JSON on GitHub; each image is a FathomNet URL reference,
+  not a bundled file. Needs a COCO-loader that resolves image URLs and verifies against
+  FathomNet's own manifest (dedupe against fathomnet.yaml).
+measured:
+  items: 10700
+  bytes: 17179869184
+  method: 'catalog estimate (S57): 10.7k images x ~1.5 MB mean FathomNet JPEG size'
+  date: '2026-09-25'
+  per_item_license: CC-BY-4.0
+  by_depth_band_m:
+    0-1300: 10700
+  n_concepts: 290
+  label_type: bbox + multilabel

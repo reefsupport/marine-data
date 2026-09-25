@@ -11,3 +11,10 @@ citation: Saleh+ Sci Rep 2020
 homepage: https://alzayats.github.io/DeepFish/
 
 disk_floor_gib: 36.0
+measured:
+  items: 40000
+  bytes: 8160437862
+  method: 'catalog measurement (S57, open-direct verified): ~40k images, 7.6 GB'
+  date: '2026-09-25'
+  per_item_license: CC-BY-4.0
+  label_type: cls/count/sem, 2 classes

@@ -8,3 +8,11 @@ license: NOASSERTION
 attribution: Fish4Knowledge (Fisher et al. 2016)
 citation: Fisher+ 2016 Springer
 homepage: http://groups.inf.ed.ac.uk/f4k/
+measured:
+  items: 27000
+  bytes: 547608330
+  method: 'catalog measurement (S57, open-direct verified): ~27k fish crops, 0.51
+    GB'
+  date: '2026-09-25'
+  per_item_license: research-only
+  label_type: cls/track, 23 classes

@@ -7,3 +7,9 @@ license: unknown
 attribution: FathomNet / MBARI
 citation: FathomNet 2024
 homepage: https://huggingface.co/datasets/FathomNet/full-coverage-test-sets
+measured:
+  bytes: 41000000
+  method: HF usedStorage (<=0.04 GB rounds to near-zero)
+  date: '2026-09-25'
+  per_item_license: unknown
+  label_type: bbox exhaustive

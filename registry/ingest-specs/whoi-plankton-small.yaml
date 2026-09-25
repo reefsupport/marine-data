@@ -9,3 +9,11 @@ citation: Sosik+ WHOI-Plankton
 homepage: https://huggingface.co/datasets/nf-whoi/whoi-plankton-small
 
 disk_floor_gib: 36.0
+measured:
+  items: 57999
+  bytes: 2214396368
+  method: HF API dataset_info splits sum (train 40,599 + val 5,799 + test 11,601)
+    + usedStorage
+  date: '2026-09-25'
+  per_item_license: mit
+  label_type: cls

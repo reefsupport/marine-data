@@ -1,0 +1,16 @@
+id: kaggle-ndsb-2015
+adapter: needs:kaggle-login
+license: unknown (Kaggle competition terms)
+attribution: Kaggle / NDSB 2015 organizers, Hastings/WHOI
+citation: kaggle.com/c/datasciencebowl
+homepage: https://www.kaggle.com/c/datasciencebowl
+why_not_supported: Kaggle competition data downloads require a Kaggle account/login
+  (D-E forbids). No anonymous third-party mirror of the exact NDSB competition split
+  was found within budget; planktonset-1-0 (project-oceania, HF) is the closest open
+  equivalent from the same lineage.
+measured:
+  method: not independently verified; alias entry only
+  items: null
+  bytes: null
+  date: '2026-09-25'
+  bytes_basis: 'unmeasured: verification incomplete'

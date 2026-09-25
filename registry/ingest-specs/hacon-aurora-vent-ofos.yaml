@@ -1,0 +1,14 @@
+# HACON expedition (RV Kronprins Haakon) seafloor images of the AURORA hydrothermal vent field, high Arctic.
+id: hacon-aurora-vent-ofos
+adapter: needs:pangaea-series-enum
+license: CC-BY (PANGAEA, per series convention)
+attribution: Purser, Ramalho, Hoge — AWI
+citation: doi:10.1594/PANGAEA.943364
+homepage: https://doi.pangaea.de/10.1594/PANGAEA.943364
+why_not_supported: Same PANGAEA series-enumeration gap.
+measured:
+  method: page fetch 200; license not independently re-scraped (assumed CC-BY per
+    Purser series convention, confirm before staging)
+  date: '2026-09-25'
+  per_item_license: CC-BY (unconfirmed for this specific DOI)
+  by_depth_band_m: {}

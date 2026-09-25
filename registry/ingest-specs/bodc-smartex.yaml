@@ -10,3 +10,8 @@ notes: needs_adapter:bodc-catalogue — the DOI 302-redirects to a BODC catalogu
   BODC typically serves bulk files via its own download-manager/FTP rather than flat
   HTTP, needs a follow-up fetch of the resolved catalogue page to find the file access
   route
+measured:
+  method: smartexccz.org and /data path both resolve; BODC DOI record not enumerated
+  date: '2026-09-25'
+  per_item_license: OGL
+  by_depth_band_m: {}

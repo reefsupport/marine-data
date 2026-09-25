@@ -7,3 +7,9 @@ license: other-hf
 attribution: FathomNet / MBARI
 citation: FathomNet 2024
 homepage: https://huggingface.co/datasets/FathomNet/2024-megalodon-benchmark
+measured:
+  bytes: 311000000
+  method: HF usedStorage (<=0.29 GB)
+  date: '2026-09-25'
+  per_item_license: other
+  label_type: bbox (1-class object)
