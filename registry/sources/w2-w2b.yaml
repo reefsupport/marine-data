@@ -26,6 +26,8 @@ sources:
     size_bytes: 11868010411
     params:
       hf_id: imageomics/fish-vista
+  loader:
+    layout: metadata-only
   modalities:
   - image
   capabilities:
@@ -67,6 +69,8 @@ sources:
     size_bytes: 14517292127
     params:
       hf_id: Arex-Vision/WildFish
+  loader:
+    layout: metadata-only
   modalities:
   - image
   capabilities:
@@ -103,6 +107,8 @@ sources:
     size_bytes: 25180242944
     params:
       zenodo_record: 19408363
+  loader:
+    layout: metadata-only
   modalities:
   - image
   capabilities:
@@ -139,6 +145,8 @@ sources:
     size_bytes: 5610000000
     params:
       zenodo_record: 4931418
+  loader:
+    layout: metadata-only
   modalities:
   - video
   capabilities:
@@ -174,6 +182,8 @@ sources:
     size_bytes: 1170972899
     params:
       zenodo_record: 7659203
+  loader:
+    layout: metadata-only
   modalities:
   - image
   capabilities:
@@ -206,6 +216,8 @@ sources:
     size_bytes: 638492593
     params:
       zenodo_record: 7534425
+  loader:
+    layout: metadata-only
   modalities:
   - image
   capabilities:
@@ -239,6 +251,8 @@ sources:
     size_bytes: 30380649
     params:
       hf_id: akridge/MOUSS_fish_segment_dataset_grayscale
+  loader:
+    layout: metadata-only
   modalities:
   - image
   capabilities:
@@ -275,6 +289,8 @@ sources:
     size_bytes: 1827915303
     params:
       hf_id: fuhao7i/URPC
+  loader:
+    layout: metadata-only
   modalities:
   - image
   capabilities:
@@ -309,6 +325,8 @@ sources:
     size_bytes: 458129645
     params:
       hf_id: MarineLife-16K/MarineLife-16K
+  loader:
+    layout: metadata-only
   modalities:
   - image
   capabilities:
@@ -346,6 +364,8 @@ sources:
     size_bytes: 20606311334
     params:
       hf_id: minglingfeng/Ocean_R1_collected_visual_data
+  loader:
+    layout: metadata-only
   modalities:
   - image
   capabilities:
@@ -380,6 +400,8 @@ sources:
     size_bytes: 2534775497
     params:
       hf_id: Hariprasath5128/marine-animals-multimodal-dataset
+  loader:
+    layout: metadata-only
   modalities:
   - image
   capabilities:
@@ -414,6 +436,8 @@ sources:
     size_bytes: 0
     params:
       hf_id: zjunlp/OceanInstruct-v0.1
+  loader:
+    layout: metadata-only
   modalities:
   - tabular
   capabilities:
@@ -449,6 +473,8 @@ sources:
     size_bytes: 38439305674
     params:
       hf_id: bhowmikabhimanyu/seathru-dataset
+  loader:
+    layout: metadata-only
   modalities:
   - image
   capabilities:
@@ -486,6 +512,8 @@ sources:
       hf_id: Ken1053/EUVP
     notes: HF mirror is PARTIAL (5,550 rows vs ~30k paired+unpaired). The IRVLab origin returns 403 to
       scripts; the full set needs a browser fetch (needs_yohan).
+  loader:
+    layout: metadata-only
   modalities:
   - image
   capabilities:
@@ -521,6 +549,8 @@ sources:
     size_bytes: 33740000000
     params:
       zenodo_record: 2542305
+  loader:
+    layout: metadata-only
   modalities:
   - image
   capabilities:
@@ -555,6 +585,8 @@ sources:
     size_bytes: 14213316419
     params:
       zenodo_record: 6424752
+  loader:
+    layout: metadata-only
   modalities:
   - image
   capabilities:
@@ -588,6 +620,8 @@ sources:
     size_bytes: 10566641604
     params:
       zenodo_record: 10728861
+  loader:
+    layout: metadata-only
   modalities:
   - image
   - video
@@ -621,6 +655,8 @@ sources:
     size_bytes: 2267334496
     params:
       zenodo_record: 15639838
+  loader:
+    layout: metadata-only
   modalities:
   - image
   capabilities:
@@ -651,6 +687,8 @@ sources:
     method: http
     uri: https://github.com/LintaoPeng/U-shape_Transformer_for_Underwater_Image_Enhancement
     notes: Data is a Google Drive zip (2 files), no anonymous HTTP path; needs_adapter:gdrive, see registry/ingest-specs/lsui.yaml.
+  loader:
+    layout: metadata-only
   modalities:
   - image
   capabilities:
@@ -684,6 +722,8 @@ sources:
     params:
       repo: IPNUISTlegal/underwater-test-dataset-U45-
       ref: master
+  loader:
+    layout: metadata-only
   modalities:
   - image
   capabilities:
@@ -718,6 +758,8 @@ sources:
     uri: https://github.com/dlut-dimt/Realworld-Underwater-Image-Enhancement-RUIE-Benchmark
     notes: README points to a Baidu netdisk share with no URL captured by the catalog sweep; needs_adapter:baidu,
       see registry/ingest-specs/ruie.yaml.
+  loader:
+    layout: metadata-only
   modalities:
   - image
   capabilities:
@@ -749,6 +791,8 @@ sources:
     uri: https://irvlab.cs.umn.edu/resources/usr-248-dataset
     notes: Site 403s scripted requests (Cloudflare); payload is a Google Drive folder whose id is not
       exposed without rendering the page. needs_adapter:gdrive.
+  loader:
+    layout: metadata-only
   modalities:
   - image
   capabilities:
@@ -779,6 +823,8 @@ sources:
     method: http
     uri: https://irvlab.cs.umn.edu/resources/ufo-120-dataset
     notes: Same IRVLab Cloudflare 403 as usr248; payload on Google Drive. needs_adapter:gdrive.
+  loader:
+    layout: metadata-only
   modalities:
   - image
   capabilities:
@@ -813,6 +859,8 @@ sources:
     method: http
     uri: https://github.com/JunlinHan/CWR
     notes: Data is a Google Drive zip (2 files), no anonymous HTTP path; needs_adapter:gdrive.
+  loader:
+    layout: metadata-only
   modalities:
   - image
   capabilities:
@@ -843,6 +891,8 @@ sources:
     method: http
     uri: https://github.com/LinHong-HIT/USOD10K
     notes: Data is a Google Drive/Baidu zip (2 Drive files), no anonymous HTTP path; needs_adapter:gdrive.
+  loader:
+    layout: metadata-only
   modalities:
   - image
   capabilities:
@@ -872,10 +922,14 @@ sources:
       public domain
     method: secondary
   access:
-    method: api
+    method: request
     uri: https://data.kitware.com/#collection/58b747ec8d777f0aef5d0f6a
-    notes: Kitware Girder REST API (collection 58b747ec8d777f0aef5d0f6a); not S3/HTTP/HF/Zenodo/GitHub.
-      needs_adapter:girder, see registry/ingest-specs/viame-public.yaml.
+    notes: 'INT-ingest (2026-09-25): downgraded from method:api -- Kitware Girder REST API
+      (collection 58b747ec8d777f0aef5d0f6a) has a real endpoint but no dispatch client
+      exists in _API_CLIENTS (fetch.py), and one is out of this brief''s scope. needs_adapter:girder,
+      see registry/ingest-specs/viame-public.yaml.'
+  loader:
+    layout: metadata-only
   modalities:
   - image
   - video
@@ -910,6 +964,8 @@ sources:
     uri: https://github.com/chongweiliu/DUO
     notes: COCO images+annotations are a single Google Drive zip (+ Baidu mirror), no anonymous HTTP path.
       needs_adapter:gdrive.
+  loader:
+    layout: metadata-only
   modalities:
   - image
   capabilities:

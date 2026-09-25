@@ -252,7 +252,9 @@ def main(argv: list[str]) -> int:
     group = parser.add_mutually_exclusive_group(required=True)
     group.add_argument("--slice", help="slice name; reads _manifest-<slice>.tsv for every id")
     group.add_argument("--ids", nargs="+", help="explicit spec ids to dry-run")
-    parser.add_argument("--out", help="queue tsv path (default: _queue-<slice>.tsv, or stdout for --ids)")
+    parser.add_argument(
+        "--out", help="queue tsv path (default: _queue-<slice>.tsv, or stdout for --ids)"
+    )
     args = parser.parse_args(argv[1:])
 
     if args.slice:
@@ -275,7 +277,8 @@ def main(argv: list[str]) -> int:
         rows.append(row)
         print(f"{spec_id}: {row['dry_run']}")
 
-    out_path = Path(args.out) if args.out else (SPECDIR / f"_queue-{args.slice}.tsv" if args.slice else None)
+    default_out = SPECDIR / f"_queue-{args.slice}.tsv" if args.slice else None
+    out_path = Path(args.out) if args.out else default_out
     if out_path:
         _write_queue(rows, out_path)
         print(f"wrote {out_path}")

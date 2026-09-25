@@ -181,6 +181,12 @@ sources:
       method: request
       uri: https://arxiv.org/abs/2510.16822
       notes: "Code and data stated as released 'upon acceptance' — confirm availability."
+    notes: >
+      D-R1 (2026-09-25 charter): superseded_by reefnet-hf. This stub has no resolvable
+      download_urls (arXiv/GitHub only, "upon acceptance"); the same dataset (arXiv
+      2510.16822) is live and ingestible via the reefnet-hf Source. Kept as an alias
+      only — access.method stays "request" so it is never picked up by an ingest
+      drain; never ingest this entry directly, never delete it.
     modalities: [image]
     capabilities: [coral-taxonomy, benthic-classification, general-pretraining]
     items: 181223
