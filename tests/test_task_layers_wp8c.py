@@ -151,7 +151,14 @@ def test_build_all_configs_and_rollup(tmp_path, registry):
     base, *_ = _stage_tasklabels(tmp_path, registry, reef, coral, jsonl, images_dir)
 
     results = build_all_configs(registry, base)
-    assert set(results) == {"points", "vqa", "semseg", "benthic-coarse", "benthic-cover"}
+    assert set(results) == {
+        "points",
+        "vqa",
+        "semseg",
+        "benthic-coarse",
+        "benthic-cover",
+        "bleaching",
+    }
 
     points = results["points"]
     assert points.n_images == 2

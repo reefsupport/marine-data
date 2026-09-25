@@ -1344,6 +1344,17 @@ sources:
       BLOCKED PENDING PERMISSION. No licence stated anywhere in the bucket; the Coralseg
       paper (Journal of Field Robotics) is cited but does not itself grant redistribution
       terms.
+      WP-8d (2026-09-25): `src/marinedata/task_layers/sources/coralseg.py` restages this
+      source into the D-D staged-tree layout, keying its masks' class_counts by the
+      sha256 the restage itself computes (D-Z2 override of the general "never the
+      images" rule, for this source only, pending the licence question above). The
+      restage was attempted for real and immediately hit the campaign's disk floor
+      (df at 33.8 GiB free < the brief's 34 GiB floor) before uploading a single pair —
+      `DiskFloorError` raised by `DiskGuard.check()` before any S3 write, exactly as
+      designed. Still NOT flipped to `staged-tree`: no bytes were restaged this pass.
+      Resume path: re-run `coralseg.py`'s `main()` once free disk is safely above the
+      floor (no local scratch was left behind; `restage()` deletes each closed batch
+      after S3 verification).
     split_group:
       pattern: '^(.+)_\d+$'
       match_field: stem
@@ -1411,6 +1422,18 @@ sources:
       `reef-support-seaview-labels`'s masks (that entry's own legal_basis is kept
       `unknown` pending independent reconfirmation for its exact site directories).
       No longer BLOCKED PENDING PERMISSION.
+      WP-8d (2026-09-25): `src/marinedata/task_layers/sources/seaview.py` implements the
+      D-Z2-authorized path for the excluded pickle — a static `pickletools.genops`
+      opcode scan against an allowlist, then (only if clean) a restricted-Unpickler
+      conversion inside a `--network none --read-only` container. A full paginated
+      `list_objects_v2` of `benthic_datasets/point_labels/SEAVIEW/labelled_data/` in
+      both `rs-storage-open` and `rs-storage-private` this pass found no
+      `labelled_segmentation_data.pickle` object in either bucket: it no longer exists
+      (already removed, presumably by the deletion this entry's description already
+      slates it for). SEAVIEW therefore stays images-only because there is nothing left
+      to scan or convert, not because a scan found a disallowed global — the scan/convert
+      code path is implemented and unit-tested (accept/reject on synthetic pickles) for
+      if a copy resurfaces.
     split_group:
       pattern: '^(.{5})'
       match_field: stem

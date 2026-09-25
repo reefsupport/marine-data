@@ -13,6 +13,13 @@
 # prose: "specifically identifying **healthy hard coral (CORAL)** and **bleached hard
 # coral (CORAL_BL)**." (https://huggingface.co/datasets/NMFS-OSI/NOAA-PIFSC-ESD-CORAL-Bleaching-Dataset,
 # revision 8175d66ef0346795ace415b8b3950ee612ae1463).
+#
+# REVISED (WP-7d, vocabulary 2.0.0, manager decision 2026-09-25): CORAL -> HEALTHY is
+# now `coarsened`, not `exact`. The card names the class "Healthy Hard Coral", but the
+# dataset is a binary bleached/not-bleached split: no other condition (pale, diseased,
+# dead) was ever assessed, so what the label actually asserts is "not bleached". That is
+# the same situation as Roboflow's `Healthy` and Reef Support's `non_bleached`, and one
+# rule now covers all three (tests/test_taxonomy.py asserts they agree).
 
 crosswalks:
   - id: noaa-pifsc-bleaching-condition
@@ -22,7 +29,7 @@ crosswalks:
     edges:
       - { source_label: "CORAL_BL", targets: { condition: BLEACHED }, fidelity: exact,
           note: "Card: \"| CORAL_BL | Bleached Hard Coral | Hard Coral |\"." }
-      - { source_label: "CORAL", targets: { condition: HEALTHY }, fidelity: exact,
-          note: "Card: \"| CORAL | Healthy Hard Coral | Hard Coral |\" — the class is
-          explicitly defined as healthy coral, not merely 'not bleached', so this is
-          not a coarsening." }
+      - { source_label: "CORAL", targets: { condition: HEALTHY }, fidelity: coarsened,
+          note: "Card: \"| CORAL | Healthy Hard Coral | Hard Coral |\", but the split is
+          binary (CORAL vs CORAL_BL), so the class only asserts 'not bleached'. Same rule
+          as Roboflow 'Healthy': coarsened, never exact (WP-7d, 2.0.0; was exact)." }

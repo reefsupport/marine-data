@@ -1,0 +1,9 @@
+# source: roboflow-coral-classification-copy-changed-v13i
+# crosswalk: roboflow-bleaching-condition-hb
+# counts: annotations
+# retrieved: 2026-09-25 from rs-storage-open sources/roboflow-coral-classification-copy-changed-v13i/v13i-image-labels/labels/image_labels.parquet (anonymous GET)
+# note: one annotation = one image_labels.parquet row (whole-image label)
+label	count	description
+Bleached	1926	
+Healthy	1906	
+Non-Corals	384	

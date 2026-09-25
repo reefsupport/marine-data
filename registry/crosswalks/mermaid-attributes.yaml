@@ -46,7 +46,7 @@ crosswalks:
           note: "RETARGETED 2026-09-24 (R3 Q12b): DC asserts recency, which this attribute does not - MERMAID scores 'Dead coral with algae' separately, so this is dead coral without algal cover, but the attribute alone can't confirm it is recently dead. TRANSITION is the parent of both dead-coral taxon nodes (DC, DCA) in rs-benthic-v1, so it is a strict ancestor - the definition of `coarsened`, not a guess. 8,710 rows move from excluded/unreliable (approximate) to supervised at TRANSITION." }
       - { source_label: "Sargassum", targets: { taxon: SW }, fidelity: coarsened,
           note: "Ochrophyta macroalga (Fucales) -> SW." }
-      - { source_label: "Tape", targets: { taxon: TWS }, fidelity: exact,
+      - { source_label: "Tape", targets: { taxon: TWS }, fidelity: coarsened,
           note: "Transect tape - survey artefact, not benthos." }
       - { source_label: "Galaxea", targets: { taxon: HC }, fidelity: coarsened,
           note: "genus of Scleractinia (Euphylliidae) -> HC." }

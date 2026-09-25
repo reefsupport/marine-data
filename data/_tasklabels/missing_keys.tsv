@@ -1,0 +1,3 @@
+task	key	last_status
+reef-support-benthic-own/semseg	sources/reef-support-benthic-own/2026-09-24/labels/masks/SEAFLOWER_BOLIVAR/20220913_AnB_CB11_433_.png	TimeoutError
+reef-support-benthic-own/semseg	sources/reef-support-benthic-own/2026-09-24/labels/masks/UNAL_BLEACHING_TAYRONA/C2_BC_EP_T3_29nov24_CDaza_corr.png	TimeoutError

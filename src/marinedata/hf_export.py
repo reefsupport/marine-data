@@ -30,6 +30,7 @@ from .hf_parquet import ConfigSpec, ExportRow, files_per_folder, plan_config, wr
 from .registry import Registry
 from .release import DEFAULT_SCHEMA_ID, _admitted_source_ids, _never_eval_source_ids
 from .strata import TRAIN
+from .task_layers import hf_wiring as _tl
 
 HF_SPLITS = {"train": "train", "val": "validation", "probe": "validation", "test": "test"}
 SPLIT_ORDER = ("train", "validation", "test")
@@ -43,8 +44,8 @@ DEFAULT_REPO_ID = "reefsupport/open-marine-imagery"
 DEFAULT_EXCLUDE_CONFIGS = ("coral-genus-caribbean",)
 """D-A: dropped from the v1 Hub configs — the release TSVs themselves are untouched."""
 
-TASK_LAYER_CONFIGS = ("points", "vqa", "semseg", "benthic-coarse", "benthic-cover")
-"""WP-8c (D-Z2), ``--tasks v2`` only: the 5 additional HF config entries for whatever
+TASK_LAYER_CONFIGS = _tl.CONFIG_IDS
+"""WP-8c (D-Z2), ``--tasks v2`` only: the 6 additional HF config entries for whatever
 ``<release>/task_layers/<config_id>.parquet`` :func:`marinedata.release.build_release`
 wrote (v1's :data:`IMAGES`/:data:`MASKS`/:data:`PSEUDO_MASKS` configs are unaffected —
 this is a sibling list, not a replacement, and v1 exports never read it)."""
@@ -260,7 +261,9 @@ def _file_row(values: dict, file: Path, name: str) -> ExportRow:
 
 
 def build_layout(
-    rows_by_task: dict[str, list[SampleRow]], pseudo_sources: frozenset[str] = frozenset()
+    rows_by_task: dict[str, list[SampleRow]],
+    pseudo_sources: frozenset[str] = frozenset(),
+    task_layers: dict[str, list[dict]] | None = None,
 ) -> dict[str, tuple[ConfigSpec, dict[str, list[ExportRow]]]]:
     """``{config: (spec, {hf_split: rows})}`` — images once, tasks label-only, masks apart."""
     by_sha: dict[str, list[SampleRow]] = defaultdict(list)
@@ -317,6 +320,7 @@ def build_layout(
         names = [name for name, _ in columns]
         export = [ExportRow(values={n: getattr(r, n) for n in names}) for r in rows]
         layout[task_id] = (ConfigSpec(task_id, columns), _by_split(export, [r.split for r in rows]))
+    layout.update(_tl.layout_entries(task_layers or {}, {k: v[0].split for k, v in by_sha.items()}))
     return layout
 
 
@@ -399,7 +403,7 @@ def main(argv: list[str] | None = None) -> int:
     exclude = [c for c in args.exclude_configs.split(",") if c]
     rows = drop_excluded(rows, exclude)
     pseudo = frozenset(s for s in roots if PSEUDO_TAG in registry.source(s).tags)
-    layout = build_layout(rows, pseudo)
+    layout = build_layout(rows, pseudo, task_layers=_tl.read_task_layers(args.release_dir))
     summary = export(layout, args.out, sample=args.sample)
     summary["per_task_embedding_bytes"] = per_task_embedding_bytes(rows)
     args.summary.parent.mkdir(parents=True, exist_ok=True)

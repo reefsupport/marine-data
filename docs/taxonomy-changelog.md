@@ -1,5 +1,34 @@
 # Taxonomy changelog
 
+## 2.0.0 — 2026-09-25 (WP-7d)
+
+MAJOR: one edge retargeted (`coralscop-masks-rs` `coral`: HC -> CNIDARIA). v2 is unreleased,
+so nothing downstream pins the old target. Everything else in this release is additive.
+
+- **Retarget (manager decision 1).** CoralSCOP masks are class-agnostic coral (hard and
+  soft), so HC (Scleractinia) asserted a taxon the source never distinguished. The edge now
+  targets the lowest node holding both HC and SC. rs-benthic-v1 has no Anthozoa/"coral"
+  node, so that node is CNIDARIA. Task fits that need HC vs SC now see CoralSCOP as coarser.
+- **Fidelity (manager decision 2).** `noaa-pifsc-bleaching-condition` `CORAL -> HEALTHY` is
+  `coarsened`, not `exact`: a binary bleached/not-bleached split only asserts "not
+  bleached". NOAA CORAL, Roboflow Healthy (hb, hu) and RS non_bleached share one rule,
+  and a test asserts it.
+- **The 9 unmeasured staged sources now have vocab TSVs** (D-S1): noaa-pifsc-bleaching,
+  5 Roboflow bleaching sets, reef-support-benthic-own, reef-support-bleaching (mask pixel
+  values streamed, not stored) and coralscop-masks-rs (one annotation per mask file). All 9
+  are at 100% mapped. v13i `Non-Corals` (a presence tag) -> UNKNOWN, approximate.
+- **Scoped gate:** a staged or released source with a crosswalk but no vocab TSV FAILS.
+- **CoralNet label table** `taxonomy/coralnet-labels-2026-09-25.parquet`: all 12,644 public
+  labels (id, name, short code, functional group, verified/duplicate/calcification flags)
+  from `/label/list/`; descriptions for 2,013 of them (per-label pages,
+  <= 2 req/s, cached, no login; a later brief refreshes the rest).
+- **`coralnet-label-id` crosswalk** (generated, 160 curated ids: 64 Reefolution + 96 NOAA
+  tier-3, 0 conflicts) + `CoralNetLabelIdResolver`, which falls back through the label's
+  functional group via `coralnet-labelset` (+2 group edges: Hard Substrate -> HS,
+  Soft Substrate -> ABIOTIC). Reefolution re-derived through it: 43,500/43,500 points, same
+  targets as WP-7c. 6 NOAA "NO RULE" ids get their coarsest true node here.
+- D-I audit +20 (2 fixed, 3 uncertain); see `docs/taxonomy-audit-2026-09-25.tsv`.
+
 ## 1.2.0 — 2026-09-25 (WP-7c)
 
 MINOR: nodes, edges, snapshot rows and one vocabulary added; five edges retargeted to finer

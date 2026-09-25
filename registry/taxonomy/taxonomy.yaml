@@ -2,7 +2,7 @@
 # retargeted; MINOR = nodes/edges/vocabularies added; PATCH = notes and reasons only.
 # `marinedata taxonomy export` freezes releases/<version>.json;
 # `marinedata taxonomy diff <a> <b>` compares two of them (HEAD = working tree).
-version: 1.2.0
+version: 2.1.0
 snapshot: worms-2026-09-25.parquet
 
 # Sources under the 95% mapped floor. Each entry says what is lost and why.

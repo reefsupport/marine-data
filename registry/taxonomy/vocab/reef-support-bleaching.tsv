@@ -1,0 +1,8 @@
+# source: reef-support-bleaching
+# crosswalk: reef-support-bleaching-condition
+# counts: annotations
+# retrieved: 2026-09-25 from rs-storage-open sources/reef-support-bleaching/2026-09-24/labels/masks/*.png (658 masks, keys from CHECKSUMS.sha256, anonymous GET, streamed, not stored)
+# note: one annotation = one mask containing the class value; 0=unlabelled is not a label
+label	count	description
+non_bleached	625	
+bleached	525	

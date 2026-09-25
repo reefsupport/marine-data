@@ -33,7 +33,7 @@ crosswalks:
 
       # ── non-benthic ─────────────────────────────────────────────────
       - { source_label: "human",           targets: { taxon: DIV } }
-      - { source_label: "transect tools",  targets: { taxon: TWS } }
+      - { source_label: "transect tools",  targets: { taxon: TWS }, fidelity: coarsened, note: "tools, no shadow; TWS is tape+wand+shadow" }
       - { source_label: "transect line",   targets: { taxon: TL } }
       - { source_label: "background",      targets: { taxon: WC } }
       - { source_label: "dark",            targets: { taxon: DRK } }
