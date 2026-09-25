@@ -71,6 +71,7 @@ def add_ingest_source_subparser(sub: argparse._SubParsersAction) -> None:
             "fathomnet",
             "figshare",
             "pangaea",
+            "pangaea-series",
             "http-index",
             "gdrive-public",
             "seafile-share",

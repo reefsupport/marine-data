@@ -1,0 +1,22 @@
+# WP-6g (2026-09-25) new source: candidate — WP-6g gap 6,5: turbid water graded by level: turbidity-robustness data we lack
+id: malaysian-fish-turbid
+adapter: zenodo
+params:
+  zenodo_record: 21875554
+license: cc-by-4.0
+attribution: Mahadi, Hashim, Sulistiyo (2026), Zenodo
+citation: doi:10.5281/zenodo.21875554 — 5 Malaysian Fish Species in Turbid Water
+homepage: https://zenodo.org/records/21875554
+notes: 'candidate — WP-6g gap 6,5: turbid water graded by level: turbidity-robustness data we lack'
+disk_floor_gib: 39.0
+measured:
+  items: 5400
+  bytes: 4371436892
+  method: 'remote zip CD: 5,400 jpg in Turbidity 0..n folders; Zenodo API bytes'
+  date: '2026-09-25'
+  per_item_license: cc-by-4.0
+  by_depth_band_m: {}
+  label_type: species class, graded turbidity levels
+  wp6g_gaps:
+  - 6
+  - 5

@@ -20,6 +20,7 @@ from typing import Any
 
 from ..sample_schema import FIELD_NAMES, normalise_split
 from . import RAR, ROSBAG, VIDEO, Decoded, Fetched, suffix_of
+from .zipread import read_member
 
 IMAGE_SUFFIXES = frozenset({".jpg", ".jpeg", ".png", ".tif", ".tiff", ".bmp", ".webp"})
 CAPTION_JSON_SUFFIXES = frozenset({".json", ".jsonl"})
@@ -144,7 +145,7 @@ def _zip_members(fetched: Fetched) -> Iterator[tuple[str, Callable[[], bytes]]]:
         for info in sorted(zf.infolist(), key=lambda i: i.filename):
             if info.is_dir() or "__MACOSX" in info.filename:
                 continue
-            yield info.filename, (lambda i=info: zf.read(i))
+            yield info.filename, (lambda i=info: read_member(zf, i))
 
 
 def _rar_members(fetched: Fetched) -> Iterator[tuple[str, Callable[[], bytes]]]:

@@ -467,6 +467,8 @@ def _extract_remote_zip(file_obj: _RemoteFile, root: Path, limit: int, *, label:
     another. The counterpart to :func:`_extract_archive` for archives too large to
     pull in full — see ``MAX_DOWNLOAD_WITHOUT_RANGE``.
     """
+    from .adapters.zipread import read_member  # Deflate64 members (WP-6j)
+
     resolved_root = root.resolve()
     count = 0
     with zipfile.ZipFile(file_obj) as archive:
@@ -476,7 +478,7 @@ def _extract_remote_zip(file_obj: _RemoteFile, root: Path, limit: int, *, label:
             if target is None:
                 continue
             target.parent.mkdir(parents=True, exist_ok=True)
-            target.write_bytes(archive.read(member))
+            target.write_bytes(read_member(archive, member))
             count += 1
 
     if count == 0:
@@ -556,6 +558,8 @@ def _extract_archive(payload: bytes, root: Path, name: str, limit: int) -> int:
     """
     import io
 
+    from .adapters.zipread import read_member  # Deflate64 members (WP-6j)
+
     resolved_root = root.resolve()
     count = 0
     lower = name.lower()
@@ -567,7 +571,7 @@ def _extract_archive(payload: bytes, root: Path, name: str, limit: int) -> int:
                 if target is None:
                     continue
                 target.parent.mkdir(parents=True, exist_ok=True)
-                target.write_bytes(archive.read(member))
+                target.write_bytes(read_member(archive, member))
                 count += 1
     else:
         mode = "r:*"  # autodetect gz/bz2/xz/plain from the stream itself

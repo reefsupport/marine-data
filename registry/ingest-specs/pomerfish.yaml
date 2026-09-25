@@ -1,0 +1,23 @@
+# WP-6g (2026-09-25) new source: candidate — WP-6g gap 3,6: freshwater fish in situ across Pomeranian lakes/rivers; RAR via bsdtar
+id: pomerfish
+adapter: zenodo
+params:
+  zenodo_record: 17432128
+license: cc-by-4.0
+attribution: Shi, Tanwari, Krepski (2025), Zenodo
+citation: 'doi:10.5281/zenodo.17432128 — PomerFish: A dataset for fishes across Pomerania freshwater waterbodies
+  in-situ environments'
+homepage: https://zenodo.org/records/17432128
+notes: 'candidate — WP-6g gap 3,6: freshwater fish in situ across Pomeranian lakes/rivers; RAR via bsdtar'
+temp_cap_gb: 27.0
+disk_floor_gib: 58.0
+measured:
+  bytes: 25164783809
+  method: RAR (25 GB incl. a subset rar), members not countable remotely; Zenodo API bytes
+  date: '2026-09-25'
+  per_item_license: cc-by-4.0
+  by_depth_band_m: {}
+  label_type: detection + segmentation (per notebooks shipped)
+  wp6g_gaps:
+  - 3
+  - 6

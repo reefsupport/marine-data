@@ -1,0 +1,22 @@
+# WP-6g (2026-09-25) new source: candidate — WP-6g gap 3: aquaculture sea-cage salmon: masks + individual re-ID, a label type we lack
+id: caige-salmon-seg-reid
+adapter: zenodo
+params:
+  zenodo_record: 20280854
+license: cc-by-4.0
+attribution: Høgstedt, Schellewald, Stahl (2026), Zenodo
+citation: doi:10.5281/zenodo.20280854 — cAIge Salmon Re-Identification Dataset, Segmentation Annotations, and Evaluation
+  Results
+homepage: https://zenodo.org/records/20280854
+notes: 'candidate — WP-6g gap 3: aquaculture sea-cage salmon: masks + individual re-ID, a label type we lack'
+disk_floor_gib: 38.0
+measured:
+  items: 20317
+  bytes: 17597217161
+  method: 'remote zip CD: segmentation.zip 5,027 png, reid_dataset.zip 15,290 png; Zenodo API bytes'
+  date: '2026-09-25'
+  per_item_license: cc-by-4.0
+  by_depth_band_m: {}
+  label_type: segmentation patches (5,027) + re-identification crops (15,290)
+  wp6g_gaps:
+  - 3

@@ -313,6 +313,7 @@ def make_adapter(name: str, params: Mapping[str, Any]) -> BaseAdapter:
     from .inat import INatOpenDataAdapter
     from .manifest import ManifestAdapter
     from .pangaea import PangaeaAdapter
+    from .pangaea_series import PangaeaSeriesAdapter
     from .pawsey import FrdrHttpsAdapter, PawseyPortalAdapter
     from .seafile import SeafileAdapter
     from .treeoflife import HFMemberFilterAdapter
@@ -328,6 +329,7 @@ def make_adapter(name: str, params: Mapping[str, Any]) -> BaseAdapter:
         "fathomnet": FathomNetAdapter,
         "figshare": FigshareAdapter,
         "pangaea": PangaeaAdapter,
+        "pangaea-series": PangaeaSeriesAdapter,  # WP-6j
         "http-index": HttpIndexAdapter,
         "gdrive-public": GDriveAdapter,
         "seafile-share": SeafileAdapter,
