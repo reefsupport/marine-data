@@ -11,6 +11,7 @@ from __future__ import annotations
 import argparse
 import sys
 
+from .cli_dedup import add_dedup_subparser
 from .cli_ingest import _cmd_ingest, add_ingest_subparser  # noqa: F401 — re-exported
 from .cli_ingest_source import add_ingest_source_subparser
 from .cli_privacy import add_privacy_subparser
@@ -335,6 +336,7 @@ def build_parser() -> argparse.ArgumentParser:
     add_release_subparser(sub)
     add_privacy_subparser(sub)
     add_quality_subparser(sub)
+    add_dedup_subparser(sub)
 
     p_verify = sub.add_parser("verify", help="Check declared layouts against real fetched samples")
     p_verify.add_argument("source_id", nargs="*")

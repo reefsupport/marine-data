@@ -426,6 +426,7 @@ def build_release(
     profile: str = "research",
     allow_unmapped: bool = False,
     near_dup: NearDupConfig | None = None,
+    dedup_v2_groups: str | Path | None = None,
 ) -> ReleaseResult:
     """Build every registry task against a frozen split map and write the release.
 
@@ -558,6 +559,25 @@ def build_release(
         release_json["never_eval_near_dup_excluded"] = {
             "count": len(near_dup_excluded),
             "sha256": near_dup_excluded,
+        }
+    if dedup_v2_groups is not None:
+        # WP-10 split-leak gate, OFF by default: when off nothing below changes, so v1
+        # outputs stay byte-identical. The gate report is written even on failure, and a
+        # failing release never gets a RELEASE.json.
+        from .dedup.groups import DedupGateError, gate_release, write_gate_report
+
+        gate = gate_release(release_root, dedup_v2_groups)
+        write_gate_report(gate, release_root / "DEDUP_GATE.json")
+        if not gate.ok:
+            raise DedupGateError(
+                f"split-leak gate failed: {len(gate.spanning)} group(s) span splits, "
+                f"{len(gate.upstream_test_in_train)} upstream-test group(s) in train, "
+                f"{len(gate.ungrouped)} ungrouped image(s) — see {release_root / 'DEDUP_GATE.json'}"
+            )
+        release_json["dedup_v2"] = {
+            "groups_sha256": file_digest(Path(dedup_v2_groups)),
+            "gate": "pass",
+            "groups": gate.groups,
         }
     release_json_text = json.dumps(release_json, indent=2, sort_keys=True) + "\n"
     (release_root / "RELEASE.json").write_text(release_json_text)
