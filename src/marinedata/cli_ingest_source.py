@@ -42,6 +42,7 @@ def _cmd_ingest_source(args: argparse.Namespace) -> int:
             jobs=args.jobs,
             max_per_host=args.max_per_host,
             part_jobs=args.part_jobs,
+            stream=getattr(args, "stream", False),
         )
     except AccessRefused as exc:
         print(f"NEEDS-YOHAN\t{exc.url}\t{exc.needs}", file=sys.stderr)
@@ -85,6 +86,7 @@ def add_ingest_source_subparser(sub: argparse._SubParsersAction) -> None:
     )
     p.add_argument("spec", help="Ingest spec yaml (see docs/ingest-howto.md)")
     p.add_argument("--dry-run", action="store_true", help="Resolve + enumerate only")
+    p.add_argument("--stream", action="store_true", help="WP-6h: stage from memory straight to S3")
     p.add_argument("--work", help="Work/temp dir (bounded by the spec's temp_cap_gb)")
     p.add_argument("--max-images", type=int, default=None, help="Smoke cap")
     p.add_argument("--part-size-mib", type=int, default=64)
