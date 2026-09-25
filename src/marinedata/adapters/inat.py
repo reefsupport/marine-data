@@ -4,7 +4,9 @@ The bucket ``s3://inaturalist-open-data`` is addressed by ``photo_id`` from its 
 CSVs and can't be listed usefully, so this adapter reads a **manifest** (D-AB subset,
 built once by ``scripts/inat_manifest.py`` from ``observations.csv.gz`` +
 ``photos.csv.gz``) and turns each row into a :class:`RemoteItem` for
-``photos/<photo_id>/<size>.<ext>`` (anonymous HTTPS, ``size`` defaults to ``original``).
+``photos/<photo_id>/<size>.<ext>`` (anonymous HTTPS). ``size`` defaults to ``large``
+(1024 px long edge, D-AE: ~0.3 TB instead of ~1.4 TB at ``original``); every sample keeps
+``photo_id`` and the ``original`` URL so a hi-res pass can be added later.
 
 Subset rule (D-AB, SPEC-w3): research-grade observations of the marine taxon set
 (34 wholly-marine clades, or a mixed-clade species WoRMS marks ``isMarine``; the set is
@@ -13,8 +15,9 @@ Subset rule (D-AB, SPEC-w3): research-grade observations of the marine taxon set
 lowest ``sha256(observation_uuid)`` — deterministic, order-independent, no RNG.
 
 Per sample: ``lat``/``lon``, ``capture_datetime`` (= ``observed_on``) and ``license`` go
-into ``metadata.parquet`` (the D-K schema); ``taxon_id``, species, class and the
-observation uuid go into ``labels/image_labels.parquet`` (the schema has no taxon field).
+into ``metadata.parquet`` (the D-K schema, ``upstream_url`` = the fetched ``large`` URL);
+``taxon_id``, species, class, the observation uuid, ``photo_id`` and ``original_url`` go
+into ``labels/image_labels.parquet`` (the schema has no taxon or second-URL field).
 """
 
 from __future__ import annotations
@@ -29,6 +32,7 @@ from typing import Any
 from . import BaseAdapter, Decoded, Fetched, RemoteItem
 
 BASE_URL = "https://inaturalist-open-data.s3.amazonaws.com"
+DEFAULT_PHOTO_SIZE = "large"  # D-AE: 1024 px long edge; `original` stays reachable via labels
 MANIFEST_COLUMNS = (
     "photo_id",
     "extension",
@@ -116,11 +120,12 @@ class INatOpenDataAdapter(BaseAdapter):
         return f"inat-{self.params.get('metadata_date', 'meta')}-{self._digest[:12]}"
 
     def list_items(self) -> Iterator[RemoteItem]:
-        size = str(self.params.get("photo_size", "original"))
+        size = str(self.params.get("photo_size", DEFAULT_PHOTO_SIZE))
         base = str(self.params.get("base_url", BASE_URL)).rstrip("/")
         for r in self._load():
             ext = str(r.get("extension") or "jpg").lower().lstrip(".")
-            key = f"{int(r['photo_id'])}.{ext}"
+            photo_id = int(r["photo_id"])
+            key = f"{photo_id}.{ext}"
             self._meta[key] = {
                 "fields": {
                     "lat": r.get("latitude"),
@@ -135,9 +140,13 @@ class INatOpenDataAdapter(BaseAdapter):
                     k: str(r[k])
                     for k in ("taxon_id", "species", "class", "observation_uuid", "observed_on")
                     if r.get(k) not in (None, "")
+                }
+                | {
+                    "photo_id": str(photo_id),
+                    "original_url": f"{base}/photos/{photo_id}/original.{ext}",
                 },
             }
-            yield RemoteItem(key=key, url=f"{base}/photos/{int(r['photo_id'])}/{size}.{ext}")
+            yield RemoteItem(key=key, url=f"{base}/photos/{photo_id}/{size}.{ext}")
 
     def decode(self, fetched: Fetched) -> Iterator[Decoded]:
         meta = self._meta.get(fetched.item.key, {"fields": {}, "labels": {}})

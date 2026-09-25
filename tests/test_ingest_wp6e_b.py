@@ -16,7 +16,13 @@ import pytest
 
 from marinedata.adapters import Decoded, Fetched, RemoteItem, make_adapter
 from marinedata.adapters._http import HashingReader
-from marinedata.adapters.gbif import INAT_DATASET, media_ext, occurrence_row
+from marinedata.adapters.gbif import (
+    INAT_DATASET,
+    cap_by_hash,
+    media_ext,
+    occurrence_hash,
+    occurrence_row,
+)
 from marinedata.adapters.video_frames import effective_step, frame_indices, sample_video
 from marinedata.ingest_source import IngestSpec
 from marinedata.overlay_marineinst import match_rates, overlay_rows
@@ -219,9 +225,11 @@ def test_gbif_adapter_excludes_inat_and_caps_per_species(monkeypatch):
 
     monkeypatch.setattr(ad, "_get", fake_get)
     items = list(ad.enumerate())
+    # D-AC: the 2 lowest sha256(occurrence key) of {1, 2, 3} are 3 (4e07…) and 1 (6b86…);
+    # API order would have kept 1 and 2. (enumerate() sorts by key.)
     assert [i.key for i in items] == [
         "ds-a/1.jpg",
-        "ds-a/2.jpg",
+        "ds-a/3.jpg",
     ] and ad.resolve_version() == "api-20260925"
     (d,) = list(ad.decode(Fetched(items[0], stream=HashingReader(io.BytesIO(JPEG)))))
     assert (
@@ -229,6 +237,53 @@ def test_gbif_adapter_excludes_inat_and_caps_per_species(monkeypatch):
         and d.labels["license"].endswith("by/4.0/")
         and d.labels["species_key"] == "7"
     )
+
+
+def _row(gid, sp):
+    return {"key": f"ds/{gid}.jpg", "gbif_id": gid, "species_key": sp, "url": f"https://i/{gid}"}
+
+
+def test_gbif_cap_is_a_hash_draw_independent_of_api_order():
+    rows = [_row(g, g % 3) for g in range(1, 301)] + [_row(999, None)]
+    fwd = cap_by_hash(rows, 5)
+    rev = cap_by_hash(list(reversed(rows)), 5)
+    assert [r["key"] for r in fwd] == [r["key"] for r in rev]
+    assert len(fwd) == 15  # 3 species x cap 5; the species-less row is dropped
+    for sp in range(3):
+        mine = sorted(
+            (occurrence_hash(r["gbif_id"]), r["gbif_id"]) for r in rows if r["species_key"] == sp
+        )
+        assert {r["gbif_id"] for r in fwd if r["species_key"] == sp} == {g for _, g in mine[:5]}
+    hashes = [occurrence_hash(r["gbif_id"]) for r in fwd]
+    assert hashes == sorted(hashes)  # yielded in hash order, so max_items is order-free too
+    # A repeated occurrence (shifted page) counts once.
+    assert cap_by_hash(rows + rows[:50], 5) == fwd
+
+
+def test_gbif_adapter_selection_ignores_dataset_and_page_order(monkeypatch):
+    recs = [_occ(g, "ds-a" if g % 2 else "ds-b", 7) for g in range(1, 41)]
+
+    def run(order):
+        ad = make_adapter("gbif-occurrence-media", {"taxon_keys": [206], "per_species_cap": 4})
+
+        def fake_get(query):
+            q = dict(query)
+            if q.get("facet") == "datasetKey":
+                return {
+                    "facets": [
+                        {"counts": [{"name": "ds-a", "count": 20}, {"name": "ds-b", "count": 20}]}
+                    ]
+                }
+            mine = [r for r in recs if r["datasetKey"] == q["datasetKey"]]
+            return {"endOfRecords": True, "results": order(mine)}
+
+        monkeypatch.setattr(ad, "_get", fake_get)
+        return [i.key for i in ad.enumerate()]
+
+    fwd, rev = run(list), run(lambda r: list(reversed(r)))
+    assert fwd == rev and len(fwd) == 4
+    want = set(sorted(range(1, 41), key=occurrence_hash)[:4])
+    assert {int(k.split("/")[1].split(".")[0]) for k in fwd} == want
 
 
 def test_gbif_row_helpers():

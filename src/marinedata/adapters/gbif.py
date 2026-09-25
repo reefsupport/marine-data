@@ -5,14 +5,21 @@ occurrence search API (bulk downloads need an account: never used).
 Enumeration: one ``facet=datasetKey`` call over the marine clade ``taxon_keys``, then
 every non-excluded dataset in sorted key order, paged ``limit=300``; a dataset over the
 100k offset window is split by ``year`` facets. The first StillImage per occurrence is
-the item; lat/lon go to schema fields, date/licence/taxon/ids to inline labels."""
+the item; lat/lon go to schema fields, date/licence/taxon/ids to inline labels.
+
+Per-species cap (D-AC, last line): a HASH DRAW, not API order. The whole listing is read
+first; per ``species_key`` the ``per_species_cap`` occurrences with the lowest
+``sha256(gbif occurrence key)`` are kept, so the selection depends only on the set of
+occurrences, never on dataset/page order. ``max_items`` slices that hash order before
+``enumerate`` sorts by key, so a smoke's sample is order-independent too."""
 
 from __future__ import annotations
 
 import datetime as dt
+import hashlib
+import heapq
 import urllib.parse
-from collections import Counter
-from collections.abc import Iterator, Mapping
+from collections.abc import Iterable, Iterator, Mapping
 from typing import Any
 
 from . import BaseAdapter, RemoteItem
@@ -75,6 +82,35 @@ def occurrence_row(rec: Mapping[str, Any]) -> dict[str, Any] | None:
     }
 
 
+def occurrence_hash(gbif_id: Any) -> str:
+    """``sha256`` of the GBIF occurrence key: the per-species draw order (D-AC)."""
+    return hashlib.sha256(str(gbif_id).encode()).hexdigest()
+
+
+def cap_by_hash(rows: Iterable[Mapping[str, Any]], cap: int) -> list[Mapping[str, Any]]:
+    """Per ``species_key``, the ``cap`` rows with the lowest :func:`occurrence_hash`.
+
+    Rows without a species key are dropped; a repeated occurrence key (a page that
+    shifted under a live API) counts once, so no two candidates share a hash. Memory is
+    bounded by ``species x cap`` kept rows (a max-heap per species). The result is in
+    hash order: input order is irrelevant."""
+    heaps: dict[Any, list[tuple[int, str, Mapping[str, Any]]]] = {}
+    seen: set[str] = set()
+    for row in rows:
+        sp, gid = row.get("species_key"), str(row.get("gbif_id") or "")
+        if sp is None or not gid or gid in seen:
+            continue
+        seen.add(gid)
+        entry = (-int(occurrence_hash(gid), 16), str(row["key"]), row)
+        heap = heaps.setdefault(sp, [])
+        if len(heap) < cap:
+            heapq.heappush(heap, entry)
+        elif entry[0] > heap[0][0]:  # a lower hash than the worst one kept
+            heapq.heapreplace(heap, entry)
+    kept = [(-neg, key, row) for heap in heaps.values() for neg, key, row in heap]
+    return [row for _, _, row in sorted(kept, key=lambda e: (e[0], e[1]))]
+
+
 class GbifOccurrenceMediaAdapter(RowJoinMixin, BaseAdapter):
     name = "gbif-occurrence-media"
 
@@ -126,14 +162,11 @@ class GbifOccurrenceMediaAdapter(RowJoinMixin, BaseAdapter):
         for year in sorted(self._facet("year", datasetKey=ds)):
             yield {"datasetKey": ds, "year": year}
 
-    def list_items(self) -> Iterator[RemoteItem]:
+    def _occurrences(self) -> Iterator[dict[str, Any]]:
+        """Every non-iNat StillImage occurrence row, in (sorted dataset, API) order."""
         exclude = set(self.params.get("exclude_dataset_keys") or [INAT_DATASET])
-        cap = int(self.params.get("per_species_cap", 100))
         limit = int(self.params.get("page_limit", 300))
-        max_items = self.params.get("max_items")
         datasets = sorted(k for k in self._facet("datasetKey") if k not in exclude)
-        per_species: Counter = Counter()
-        n_out = 0
         for ds in datasets[: self.params.get("max_datasets") or None]:
             counts = self._facet("datasetKey", datasetKey=ds)
             for part in self._partitions(ds, counts.get(ds, 0)):
@@ -142,15 +175,16 @@ class GbifOccurrenceMediaAdapter(RowJoinMixin, BaseAdapter):
                     page = self._get(self._query(limit=limit, offset=offset, **part))
                     for rec in page.get("results") or []:
                         row = occurrence_row(rec)
-                        sp = row and row["species_key"]
-                        if row is None or sp is None or per_species[sp] >= cap:
-                            continue
-                        per_species[sp] += 1
-                        self._rows[row["key"]] = row
-                        yield RemoteItem(key=row["key"], url=row["url"])
-                        n_out += 1
-                        if max_items and n_out >= int(max_items):
-                            return
+                        if row is not None:
+                            yield row
                     if page.get("endOfRecords", True):
                         break
                     offset += limit
+
+    def list_items(self) -> Iterator[RemoteItem]:
+        cap = int(self.params.get("per_species_cap", 100))
+        max_items = self.params.get("max_items")
+        kept = cap_by_hash(self._occurrences(), cap)
+        for row in kept[: int(max_items) if max_items else None]:
+            self._rows[row["key"]] = row
+            yield RemoteItem(key=row["key"], url=row["url"])

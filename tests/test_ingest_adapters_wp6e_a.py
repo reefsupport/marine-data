@@ -96,11 +96,22 @@ def test_inat_adapter_urls_and_per_sample_metadata(tmp_path) -> None:
     assert isinstance(ad, INatOpenDataAdapter)
     assert ad.resolve_version().startswith("inat-2026-09-")
     (item,) = list(ad.enumerate())
-    assert item.url == "https://inaturalist-open-data.s3.amazonaws.com/photos/123/original.jpeg"
+    # D-AE: fetch `large` (1024 px); keep photo_id + the `original` URL for a later hi-res pass.
+    base = "https://inaturalist-open-data.s3.amazonaws.com/photos/123"
+    assert item.url == f"{base}/large.jpeg"
     (d,) = list(ad.decode(_fetched(item.key, _jpeg())))
     assert d.fields["lat"] == -16.5 and d.fields["lon"] == 145.9
     assert d.fields["license"] == "CC-BY-NC" and d.fields["capture_datetime"] == "2021-05-04"
     assert d.labels["taxon_id"] == "47533" and d.labels["observation_uuid"] == "u1"
+    assert d.labels["photo_id"] == "123"
+    assert d.labels["original_url"] == f"{base}/original.jpeg"
+    fetched = Fetched(item, stream=HashingReader(io.BytesIO(_jpeg())))
+    (d_real,) = list(ad.decode(fetched))
+    assert d_real.upstream_url == f"{base}/large.jpeg"
+    # An explicit photo_size still wins (a later hi-res pass).
+    hi = make_adapter("inat-open-data", {"manifest": str(man), "photo_size": "original"})
+    (hi_item,) = list(hi.enumerate())
+    assert hi_item.url == f"{base}/original.jpeg"
 
 
 # ---- TreeOfLife-10M member filter -------------------------------------------------------
