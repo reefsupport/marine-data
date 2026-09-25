@@ -23,6 +23,13 @@ TASKS = ("coral-health-binary", "bleaching-condition")
 NEVER_EVAL = frozenset({"coralscop-masks-rs"})
 C_GRID = (0.001, 0.01, 0.1, 1.0)
 
+# WP-9 D-U2: a confident-learning flag becomes ``flagged_hard`` only in a direction
+# whose audited precision (``docs/label-quality/model-audit.tsv``) clears this floor.
+# Today only toward-HEALTHY clears it (87.1%); toward-BLEACHED/UNHEALTHY (36.5%) does
+# not — excluding those from val/test would make the eval easier than reality. See
+# ``docs/label-quality.md`` §5c and ``run_label_status``.
+HARD_FLAG_MIN_PRECISION = 0.60
+
 
 def load_labels(hf_root: Path, task: str):  # type: ignore[no-untyped-def]
     import pandas as pd
@@ -208,17 +215,67 @@ def classify_conflict(rows: list[tuple[str, str]]) -> str:
     return "conflict"  # pragma: no cover - no such case in the audited population
 
 
-def run_label_status(hf_root: Path, labelquality_dir: Path, out_path: Path) -> dict[str, int]:
-    """``label_status`` per sha256 (WP-9 D-U): ``ok``|``conflict``|``ambiguous``|``flagged_hard``.
+def _cl_direction(suggested: str) -> str:
+    """A confident-learning flag's direction (WP-9 D-U2), keyed off ``suggested`` alone.
+
+    Task-agnostic: ``bleaching-condition`` suggests BLEACHED, ``coral-health-binary``
+    suggests UNHEALTHY — both are the same "toward-unhealthy" direction, the audited
+    36.5%-precision one. Anything suggesting HEALTHY is the 87.1%-precision direction.
+    """
+    return "toward_healthy" if suggested == "HEALTHY" else "toward_bleached_unhealthy"
+
+
+def audited_direction_precision(model_audit_tsv: Path) -> dict[str, float]:
+    """Per-direction flag precision from the blind model audit (WP-9 D-U2).
+
+    Over ``decided`` rows only (``verdict_class`` not null — the model could tell H/U/N
+    from the thumbnail; matches ``docs/label-quality.md`` §5's 147/235 decided count).
+    Reproduces the 87.1% (toward-healthy) / 36.5% (toward-bleached/unhealthy) split
+    reported there.
+    """
+    import pandas as pd
+
+    audit = pd.read_csv(model_audit_tsv, sep="\t")
+    decided = audit[audit.verdict_class.notna()]
+    direction = decided.suggested.map(_cl_direction)
+    out: dict[str, float] = {}
+    for d in ("toward_healthy", "toward_bleached_unhealthy"):
+        sub = decided[direction == d]
+        out[d] = float(sub.flag_correct.mean()) if len(sub) else 0.0
+    return out
+
+
+def run_label_status(
+    hf_root: Path,
+    labelquality_dir: Path,
+    model_audit_tsv: Path,
+    out_path: Path,
+    *,
+    hard_flag_min_precision: float = HARD_FLAG_MIN_PRECISION,
+) -> dict[str, int]:
+    """``label_status`` per sha256 (WP-9 D-U/D-U2): ``ok|conflict|ambiguous|flagged_hard``.
 
     Population: every sha256 labelled on either task. Rules, in precedence order:
     the 14 identical-sha conflicts (:func:`classify_conflict`, over
     ``conflicts-coral-health-binary.tsv`` — the superset of both tasks' conflicts) beat a
-    confident-learning flag (``label_issues.parquet`` → ``flagged_hard``), which beats
-    ``ok``. Non-``ok`` rows are excluded from val/test scoring (kept in train/pretrain);
-    the eval harness applies that filter, this module only labels it.
+    confident-learning flag (``label_issues.parquet``), which beats ``ok``.
+
+    D-U2: a CL flag only becomes ``flagged_hard`` when its direction's audited precision
+    (:func:`audited_direction_precision` over ``model_audit_tsv`) is at least
+    ``hard_flag_min_precision``. Every other CL flag — today, every toward-BLEACHED/
+    UNHEALTHY one — stays whatever it would otherwise be (``ok`` unless it is also a
+    conflict/ambiguous row). Every row gets ``cl_flag``/``cl_flag_direction`` columns:
+    true/direction for any sha256 that is a raw CL flag (regardless of final status),
+    null for the rest. The per-direction precisions are written into the parquet's
+    schema metadata (``label_quality.direction_precision``). Non-``ok`` rows are
+    excluded from val/test scoring (kept in train/pretrain); the eval harness applies
+    that filter, this module only labels it.
     """
+    import json
+
     import pandas as pd
+    import pyarrow as pa
+    import pyarrow.parquet as pq
 
     status: dict[str, str] = {}
     for task in TASKS:
@@ -232,14 +289,33 @@ def run_label_status(hf_root: Path, labelquality_dir: Path, out_path: Path) -> d
         cls = classify_conflict(list(zip(grp.source_id, grp.label, strict=True)))
         status[sha] = cls
 
-    issues = pd.read_parquet(labelquality_dir / "label_issues.parquet", columns=["image_sha256"])
-    for sha in issues.image_sha256.unique():
+    precision = audited_direction_precision(model_audit_tsv)
+    issues = pd.read_parquet(
+        labelquality_dir / "label_issues.parquet", columns=["image_sha256", "suggested"]
+    )
+    direction_of: dict[str, str] = {
+        sha: _cl_direction(suggested)
+        for sha, suggested in zip(issues.image_sha256, issues.suggested, strict=True)
+    }
+    for sha, direction in direction_of.items():
+        if precision[direction] < hard_flag_min_precision:
+            continue
         if _STATUS_RANK["flagged_hard"] > _STATUS_RANK.get(status.get(sha, "ok"), 0):
             status[sha] = "flagged_hard"
 
     table = pd.DataFrame({"sha256": list(status), "label_status": list(status.values())})
+    table["cl_flag"] = pd.array(
+        [True if s in direction_of else None for s in table.sha256], dtype="boolean"
+    )
+    table["cl_flag_direction"] = [direction_of.get(s) for s in table.sha256]
+
     out_path.parent.mkdir(parents=True, exist_ok=True)
-    table.to_parquet(out_path, index=False)
+    arrow_table = pa.Table.from_pandas(table, preserve_index=False)
+    meta = {
+        b"label_quality.direction_precision": json.dumps(precision).encode(),
+        b"label_quality.hard_flag_min_precision": repr(hard_flag_min_precision).encode(),
+    }
+    pq.write_table(arrow_table.replace_schema_metadata(meta), out_path)
     return dict(table.label_status.value_counts())
 
 

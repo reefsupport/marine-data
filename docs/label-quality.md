@@ -145,7 +145,7 @@ flag only if every quality threshold passes **and** the probe margin
   turn it on without re-tuning on a larger audited set; `BleachGate.passes` and
   `TUNED_GATE.enabled` are covered by fixture tests in `tests/test_labelquality.py`.
 
-## 5c. `label_status` (Task 3, WP-9 D-U)
+## 5c. `label_status` (Task 3, WP-9 D-U / D-U2)
 
 `run_label_status` (`pipeline.py`) writes one `label_status` per `sha256` to
 `data/_labelquality/2026-09-25/label_status.parquet`, over every sha256 labelled on either
@@ -155,13 +155,38 @@ task:
 |---|---|---|
 | `conflict` | one of the 14 identical-sha conflicts (§2), categories a and c: a within-source duplicate, or v13i relabelling v1-yolov8s alone | 6 |
 | `ambiguous` | category d: v1-yolov8s against v6i+v13i together on pale soft coral, an expert call | 2 |
-| `flagged_hard` | a confident-learning flag (`label_issues.parquet`) not already `conflict`/`ambiguous` | 1,794 |
-| `ok` | none of the above (category b — v3i against the bleaching family — is `ok`: a concept mismatch, not an error, D-U (1)) | 26,932 |
+| `flagged_hard` | a confident-learning flag (`label_issues.parquet`), direction toward-HEALTHY (precision ≥ `HARD_FLAG_MIN_PRECISION`), not already `conflict`/`ambiguous` | 973 |
+| `ok` | none of the above; also every toward-BLEACHED/UNHEALTHY CL flag (D-U2, below the floor) and category b (v3i against the bleaching family: a concept mismatch, not an error, D-U (1)) | 27,753 |
 
 Precedence is `conflict` > `ambiguous` > `flagged_hard` > `ok` (`classify_conflict`,
 `_STATUS_RANK`). **Non-`ok` rows are excluded from val/test scoring** (kept in
 train/pretrain); this module only labels the rows — the INT/WP-8 merge wires the filter into
 `metadata` and the eval harness, and `hf_*`/`release.py`/`models.py` are not touched here.
+
+**D-U2 (WP-9c): only the reliable flag direction becomes `flagged_hard`.** §5b showed the
+CL probe's two directions have very different audited precision — 87.1% toward HEALTHY,
+36.5% toward BLEACHED/UNHEALTHY (§5). `run_label_status` now reads
+`audited_direction_precision(model_audit_tsv)` and only promotes a CL flag to
+`flagged_hard` when its direction's precision is at least `HARD_FLAG_MIN_PRECISION`
+(`pipeline.py`, `0.60`). Today that is toward-HEALTHY only (975 flags, 973 after
+2 lose to conflict/ambiguous precedence). The other 822 toward-BLEACHED/UNHEALTHY flags
+stay `ok` and carry two new columns, added for every row (null when the row was never a
+CL flag): `cl_flag` (true for any raw CL flag, whatever its final status) and
+`cl_flag_direction` (`toward_healthy` | `toward_bleached_unhealthy`). Both direction
+precisions are written into the parquet's schema metadata
+(`label_quality.direction_precision`, `label_quality.hard_flag_min_precision`) so a
+consumer can audit the threshold without re-reading `model-audit.tsv`.
+
+**Why not exclude the unreliable direction from scoring too.** A naive reading of "hard to
+label" would push every toward-BLEACHED/UNHEALTHY CL flag out of val/test alongside the
+toward-HEALTHY ones. That would be wrong: at 36.5% precision, roughly two-thirds of those
+flags are *not* label errors — they are correctly-labelled images the probe's whiteness/
+blur/colour-cast confound mistook for bleaching (§5, "Mechanism"; the gate that tried to
+separate the two failed its own CV bar, §5b). Excluding mostly-correct labels from the eval
+set would make bleaching detection look easier than the reality the model will face in
+production, where those same pale/blurry/colour-cast frames still occur. Keeping them `ok`
+— with `cl_flag`/`cl_flag_direction` recorded for expert-sheet priority (§6) instead of an
+automatic exclusion — keeps the eval honest while still surfacing the flag for a human call.
 
 `registry/label-origin.yaml` now carries `lineage_id: bleaching-family-v1` on
 `reef-support-bleaching`, `roboflow-coral-bleaching-final-v6i`,

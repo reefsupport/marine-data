@@ -191,6 +191,140 @@ def test_classify_conflict_categories() -> None:
     )
 
 
+def _write_label_status_fixture(tmp_path):  # type: ignore[no-untyped-def]
+    """Minimal hf_root + labelquality_dir + model-audit.tsv for ``run_label_status`` (D-U2).
+
+    Four sha256: ``healthy`` (CL flag toward HEALTHY, precision 1.0 -> flagged_hard),
+    ``bleach`` (CL flag toward BLEACHED, precision 0.0 -> stays ok), ``conflict`` (an
+    identical-sha conflict that is *also* a toward-HEALTHY CL flag -> conflict wins),
+    ``plain`` (no flag, no conflict -> ok, cl_flag null).
+    """
+    import pandas as pd
+
+    hf_root = tmp_path / "hf"
+    (hf_root / "data" / "coral-health-binary").mkdir(parents=True)
+    (hf_root / "data" / "bleaching-condition").mkdir(parents=True)
+    cols = ["image_sha256", "source_id", "sample_key", "label", "native_label", "label_reason"]
+    labels = pd.DataFrame(
+        [
+            ("healthy", "src-a", "k1", "UNHEALTHY", "Unhealthy", None),
+            ("bleach", "src-a", "k2", "HEALTHY", "Healthy", None),
+            ("conflict", "src-a", "k3", "UNHEALTHY", "Unhealthy", None),
+            ("conflict", "src-a", "k3", "HEALTHY", "Healthy", None),
+            ("plain", "src-a", "k4", "HEALTHY", "Healthy", None),
+        ],
+        columns=cols,
+    )
+    labels.to_parquet(hf_root / "data" / "coral-health-binary" / "train-0.parquet", index=False)
+    labels.iloc[:0].to_parquet(
+        hf_root / "data" / "bleaching-condition" / "train-0.parquet", index=False
+    )
+
+    labelquality_dir = tmp_path / "lq"
+    labelquality_dir.mkdir()
+    pd.DataFrame(
+        [("conflict", "src-a", "UNHEALTHY"), ("conflict", "src-a", "HEALTHY")],
+        columns=["image_sha256", "source_id", "label"],
+    ).to_csv(labelquality_dir / "conflicts-coral-health-binary.tsv", sep="\t", index=False)
+    pd.DataFrame(
+        [
+            ("healthy", "HEALTHY"),
+            ("bleach", "BLEACHED"),
+            ("conflict", "HEALTHY"),
+        ],
+        columns=["image_sha256", "suggested"],
+    ).to_parquet(labelquality_dir / "label_issues.parquet", index=False)
+
+    model_audit_tsv = tmp_path / "model-audit.tsv"
+    pd.DataFrame(
+        [
+            ("m1", "HEALTHY", "H", 1),
+            ("m2", "HEALTHY", "H", 1),
+            ("m3", "BLEACHED", "U", 0),
+            ("m4", "BLEACHED", "U", 0),
+            ("m5", "BLEACHED", None, 1),  # undecided (verdict_class null) -> excluded
+        ],
+        columns=["image_sha256", "suggested", "verdict_class", "flag_correct"],
+    ).to_csv(model_audit_tsv, sep="\t", index=False)
+
+    return hf_root, labelquality_dir, model_audit_tsv
+
+
+def test_run_label_status_direction_threshold(tmp_path) -> None:  # type: ignore[no-untyped-def]
+    from marinedata.labelquality.pipeline import run_label_status
+
+    hf_root, labelquality_dir, model_audit_tsv = _write_label_status_fixture(tmp_path)
+    out = tmp_path / "label_status.parquet"
+    counts = run_label_status(hf_root, labelquality_dir, model_audit_tsv, out)
+
+    import pandas as pd
+
+    table = pd.read_parquet(out).set_index("sha256")
+    # toward-healthy precision is 1.0 (>= 0.60 floor) -> the flag becomes flagged_hard
+    assert table.loc["healthy", "label_status"] == "flagged_hard"
+    # toward-bleached/unhealthy precision is 0.0 (< 0.60 floor) -> stays ok
+    assert table.loc["bleach", "label_status"] == "ok"
+    assert counts["flagged_hard"] == 1
+    assert counts["ok"] == 2  # "bleach" (below the floor) + "plain" (never flagged)
+
+
+def test_run_label_status_metadata_carries_precisions(tmp_path) -> None:  # type: ignore[no-untyped-def]
+    import json
+
+    import pyarrow.parquet as pq
+
+    from marinedata.labelquality.pipeline import run_label_status
+
+    hf_root, labelquality_dir, model_audit_tsv = _write_label_status_fixture(tmp_path)
+    out = tmp_path / "label_status.parquet"
+    run_label_status(hf_root, labelquality_dir, model_audit_tsv, out)
+
+    meta = pq.read_schema(out).metadata
+    precision = json.loads(meta[b"label_quality.direction_precision"])
+    assert precision == {"toward_healthy": 1.0, "toward_bleached_unhealthy": 0.0}
+    assert meta[b"label_quality.hard_flag_min_precision"] == b"0.6"
+
+
+def test_run_label_status_toward_bleached_flag_stays_ok_with_cl_flag(
+    tmp_path,  # type: ignore[no-untyped-def]
+) -> None:
+    import pandas as pd
+
+    from marinedata.labelquality.pipeline import run_label_status
+
+    hf_root, labelquality_dir, model_audit_tsv = _write_label_status_fixture(tmp_path)
+    out = tmp_path / "label_status.parquet"
+    run_label_status(hf_root, labelquality_dir, model_audit_tsv, out)
+
+    row = pd.read_parquet(out).set_index("sha256").loc["bleach"]
+    assert row.label_status == "ok"
+    assert row.cl_flag is True
+    assert row.cl_flag_direction == "toward_bleached_unhealthy"
+    # a never-flagged row carries nulls in both columns
+    plain = pd.read_parquet(out).set_index("sha256").loc["plain"]
+    assert pd.isna(plain.cl_flag) and pd.isna(plain.cl_flag_direction)
+
+
+def test_run_label_status_conflict_beats_a_qualifying_cl_flag(
+    tmp_path,  # type: ignore[no-untyped-def]
+) -> None:
+    """D-U2 must not touch precedence: conflict/ambiguous stay unchanged (WP-9 D-U)."""
+    import pandas as pd
+
+    from marinedata.labelquality.pipeline import run_label_status
+
+    hf_root, labelquality_dir, model_audit_tsv = _write_label_status_fixture(tmp_path)
+    out = tmp_path / "label_status.parquet"
+    run_label_status(hf_root, labelquality_dir, model_audit_tsv, out)
+
+    row = pd.read_parquet(out).set_index("sha256").loc["conflict"]
+    # "conflict" is a within-source duplicate (conflicts.tsv) AND a toward-healthy CL
+    # flag (which alone would qualify for flagged_hard) -> conflict wins either way.
+    assert row.label_status == "conflict"
+    assert row.cl_flag is True  # the columns are still populated for a CL flag row
+    assert row.cl_flag_direction == "toward_healthy"
+
+
 def test_grid_search_respects_recall_floor() -> None:
     rng = np.random.default_rng(3)
     n = 40
