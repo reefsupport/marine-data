@@ -16,6 +16,7 @@ member is expanded into its own item, read with one further ranged GET
 
 from __future__ import annotations
 
+import hashlib
 import io
 import logging
 import threading
@@ -24,7 +25,7 @@ import zipfile
 from collections.abc import Iterator
 from pathlib import Path, PurePosixPath
 
-from . import AccessRefused, BaseAdapter, Fetched, RemoteItem, suffix_of
+from . import SPOOLED, STREAMABLE, AccessRefused, BaseAdapter, Fetched, RemoteItem, suffix_of
 from ._http import HashingReader, get_json
 from ._range import RemoteFile, open_remote_zip, read_member
 
@@ -98,7 +99,16 @@ class HttpAdapter(BaseAdapter):
         if not hasattr(self, "_zip_members"):
             self._zip_members: dict[str, tuple[zipfile.ZipFile, RemoteFile, zipfile.ZipInfo]] = {}
             self._zip_lock = threading.Lock()
-        infos = [i for i in zf.infolist() if not i.is_dir() and "__MACOSX" not in i.filename]
+        infos = [
+            i
+            for i in zf.infolist()
+            if not i.is_dir()
+            and "__MACOSX" not in i.filename
+            # same decodable-suffix-or-label filter BaseAdapter.enumerate() applies to
+            # top-level items: a stray README/LICENSE/script inside the zip must not
+            # crash the whole source (D-AH 4).
+            and (suffix_of(i.filename) in STREAMABLE + SPOOLED or self.is_label(i.filename))
+        ]
         log.info(
             "%s: remote zip %d entries (%d range requests, %d B read so far)",
             item.key, len(infos), rf.requests, rf.fetched,
@@ -110,9 +120,17 @@ class HttpAdapter(BaseAdapter):
 
     def fetch(self, item: RemoteItem, tmp_dir: Path) -> Fetched:
         member = getattr(self, "_zip_members", {}).get(item.key)
-        if member is not None:
-            zf, rf, info = member
-            with self._zip_lock:  # one cache window per archive: serialise member reads
-                data = read_member(zf, rf, info)
-            return Fetched(item, stream=HashingReader(io.BytesIO(data)))
-        return super().fetch(item, tmp_dir)
+        if member is None:
+            return super().fetch(item, tmp_dir)
+        zf, rf, info = member
+        with self._zip_lock:  # one cache window per archive: serialise member reads
+            data = read_member(zf, rf, info)
+        if suffix_of(info.filename) in SPOOLED:
+            # this member itself needs on-disk random access (video/rar/nested zip/parquet):
+            # spool just the member, bounded by its own size — the container is still never
+            # spooled whole (D-AH 4).
+            dest = tmp_dir / "fetch" / PurePosixPath(info.filename).name
+            dest.parent.mkdir(parents=True, exist_ok=True)
+            dest.write_bytes(data)
+            return Fetched(item, path=dest, sha256=hashlib.sha256(data).hexdigest(), size=len(data))
+        return Fetched(item, stream=HashingReader(io.BytesIO(data)))
