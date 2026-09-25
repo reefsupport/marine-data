@@ -1,10 +1,68 @@
-# WP-8 task layers — points, VQA, semantic segmentation, benthic-coarse
+# WP-8 task layers — points, VQA, semantic segmentation, benthic-coarse, benthic-cover
 
-Status 2026-09-25: **inventory + the D-Y rollup done and tested; the four release/HF task
-configs are not wired yet.** See `## Not done` for why, and the resume plan at the end.
-Decisions relied on: charter D-D (staged-tree), D-U (`label_status`), D-X (v1 frozen),
-D-Y (rollup rules). `registry/sources/*.yaml` paths are `coral-benthic.yaml` and
-`reef-support-own.yaml` unless noted.
+Status 2026-09-25 (WP-8b pass): **data-gap fetch attempts done and logged for every
+source below (D-Y/D-Z binding); the release/HF config wiring (`points`, `vqa`, `semseg`,
+`benthic-coarse`, `benthic-cover`) is still not built.** See `## WP-8b data-gap findings`
+for what changed this pass, `## Not done` for why the wiring itself is still open, and
+the resume plan at the end. Decisions relied on: charter D-D (staged-tree), D-U
+(`label_status`), D-X (v1 frozen), D-Y (rollup rules), D-Z (benthic-coarse stays
+single-label, `benthic-cover` is the new D-Y multi-label config). `registry/sources/*.yaml`
+paths are `coral-benthic.yaml` and `reef-support-own.yaml` unless noted.
+
+## WP-8b data-gap findings (this pass)
+
+- **CoralVQA — train split found and fetched (text only).** `CoralReefData/CoralVQA` on
+  HF has `CoralVQA_train.jsonl` (62,809,221 B, direct file not LFS) alongside the
+  already-known `CoralVQA_test.jsonl` (7,074,574 B). Fetched
+  `CoralVQA_train.jsonl` to `$SP/wp8b/coralvqa/` (byte size matches the HF API listing
+  exactly): 226,883 Q/A pairs over 10,537 unique images. Re-fetching
+  `CoralVQA_test.jsonl` hit HF's anonymous-IP rate limit twice ("create an account or
+  pass HF_TOKEN") — not a licence/login wall, but the brief's Do-Not list forbids
+  logging in or passing a token to work around it, so the test split was not
+  re-downloaded this pass (it is on HF, same repo, same direct-file shape, no `lfs` key;
+  a later pass can retry once the rate limit clears). Per D-Y: CoralVQA ships **train +
+  test found in principle, train fetched this pass** — no longer test-only, but the
+  `vqa` config build itself (JSONL → per-image parquet) is not implemented (see Not
+  done).
+- **SEAVIEW — confirmed images-only, no CSV route found.** Tried three routes for a
+  point-label CSV/text export beyond the known-excluded pickle: (1)
+  `https://espace.library.uq.edu.au/view/UQ:734799` — HTML shell only (client-rendered,
+  no CSV/annotation links in the static markup); (2)
+  `https://espace.library.uq.edu.au/view/view/UQ:734799/Seaview_Survey_photoquadrat_Data.pdf`
+  — `403 Request blocked`; (3) `https://api.library.uq.edu.au/v1/records/UQ:734799` —
+  `403 Request blocked`. Per the brief, a 401/403 is not to be worked around. SEAVIEW
+  ships images-only, matching the registry's existing `annotations: [{kind: none}]` —
+  no code or registry change needed.
+- **Coralseg (UCSD) — masks are real, but not sha256-keyable without the images.**
+  Anonymous `ListObjectsV2` on `rs-storage-open` for
+  `benthic_datasets/mask_labels/Coralseg/` returned `AccessDenied` (bucket policy allows
+  anonymous `GetObject` on known keys, not anonymous listing). Listing via boto3 +
+  rclone-conf creds (per the creds rule) is not blocked. The real blocker is
+  architectural, not access: `release.py`'s `build_release` keys every task row by
+  `hashlib.file_digest(Path(sample.image))` — the sha256 of the **image file on disk**.
+  Coralseg's images were never staged (D-D) and have no `images_from` link to an
+  already-hashed Reef Support source (unlike rs_labelled, below), so there is no way to
+  produce a valid sha256 key for a Coralseg mask row without opening the paired image —
+  which D-Z and the Do-Not list both forbid ("never the images"). This is a real
+  contradiction between "keyed by sha256" and "never touch Coralseg's images", not a
+  fetch failure — flagged for the manager in `## Open` equivalent below (see report).
+- **rs_labelled masks — real format is different from the registry's placeholder.**
+  Listed `rs-storage-private/cache/rs-labelled-masks/2026-09-23-07d6247cea85/` via
+  boto3 (creds rule). The registry says `loader: {layout: metadata-only}` with "Mask/label
+  structure not verified this pass" — verified this pass: each site directory (e.g.
+  `SEAFLOWER_BOLIVAR/`) holds one `export-result.ndjson` (a Labelbox-style annotation
+  export, 1.4 MB for that site) plus an `images/` subfolder of full-resolution JPEGs.
+  There are no pixel-mask PNGs at all — the "masks" are polygon/instance annotations in
+  the ndjson, referencing image filenames. Per `images_from: [reef-support-benthic-own,
+  reef-support-seaview-labels]`, those image filenames should already have a known
+  sha256 in the corresponding staged source's `metadata.parquet` (both are `staged-tree`,
+  D-D), so `rs_labelled` masks *can* in principle be sha256-keyed without touching its
+  own `images/` copy — only the ndjson files need reading. Rasterising the ndjson
+  polygons into per-image pixel-fraction counts (the D-Y rollup's input shape) was not
+  implemented this pass — see Not done.
+- **IBF — confirmed no labels, images-only as expected.** No new evidence found;
+  matches WP-8's finding (verified twice previously). Listed in this doc as
+  images-only/pretrain per the brief, no points row.
 
 ## Inventory (per source)
 
@@ -37,36 +95,51 @@ pixel scale, and a negative-count rejection.
 
 ## Not done (and why)
 
-Building the four release/HF configs (`points`, `vqa`, `semseg`, `benthic-coarse`) needs,
-per source above, either data that is not staged or cached locally (SEAVIEW, IBF,
-Coralseg, rs_labelled, CoralVQA train split — none of which this brief permits fetching:
-"Do not restage images"), or — for the two sources that ARE loadable today (Reefolution
-points, Coralscapes masks) — wiring `rollup_counts()` through the *canonical* taxonomy
-coarsening (crosswalk native id -> WP-7 canonical id -> `rs-benthic-v1`'s 6-class coarse
-level) before it can run for real. That coarsening step, `release.py`'s
-`enumerate_release_rows`/`TaskManifest`, `hf_export.py`'s parquet builder, and
-`hf_card.py`'s per-config table were not reached this pass. `benthic-coarse` already
-exists as a task id in `registry/tasks/benthic.yaml` (a single-label classification
-task) — the new multi-label `benthic_cover`/`benthic_dominant`/`benthic_present` fields
-this brief asks for are additive to that, not a replacement, and that relationship needs
-a decision before the config is added (see Open).
+D-Z resolved the `benthic-coarse` question (extend, don't replace; the D-Y multi-label
+fields ship as a new `benthic-cover` config). That removes one blocker from WP-8, but
+the five release/HF configs (`points`, `vqa`, `semseg`, `benthic-coarse`,
+`benthic-cover`) are still not built this pass either. What each needs, given the
+WP-8b data-gap findings above:
+
+- **`points`** (Reefolution): loadable today, no remaining data gap. Needs the
+  crosswalk-through-canonical-through-coarse wiring (`Harmonizer`/`schema.py`) plus the
+  `release.py`/`hf_export.py`/`hf_card.py`/`loaders/` integration — not reached this
+  pass; this is genuinely new plumbing (`release.py` has no `--tasks`/CLI flag at all
+  today, v1 or v2 — confirmed by grep, so "behind `--tasks v2` only" is new surface, not
+  a toggle on existing code).
+- **`vqa`** (CoralVQA): train split now fetched (see above); building the JSONL →
+  per-image parquet (dedupe 226,883 Q/A pairs to 10,537 images, keep q/a + question type)
+  is not implemented.
+- **`semseg`** (Coralscapes): loadable today via `ImageMaskPairLoader`, same crosswalk
+  wiring gap as `points`.
+- **`benthic-coarse`/`benthic-cover`**: same wiring gap, plus — for Coralseg and
+  rs_labelled specifically — the sha256-keying architecture question raised above
+  (Coralseg: no path to a valid key without opening an image D-Z forbids opening;
+  rs_labelled: possible in principle via `images_from`, but the ndjson→pixel-fraction
+  rasteriser is unwritten).
 
 Consequently the loader tests per config, the human/model separation test, the real
-`$SP/wp8/out/` build, the `--tasks v2` flag, and the `make ci`/full-suite run against the
-new wiring are not done. The rollup module and its tests are self-contained (no changes
-to `release.py`, `hf_export.py`, `hf_card.py`, or `loaders/`), so they carry no risk to
-v1 byte-identity or the existing suite.
+`$SP/wp8/out/` build, the `--tasks v2` flag, and the `make ci`/full-suite run against new
+wiring are still not done. No `src/` file changed this pass (only this doc), so v1
+byte-identity and the existing suite are unaffected by construction — not re-run, since
+nothing that could regress them was touched.
 
 ## Resume plan
 
-1. Decide whether `benthic-coarse` (D-Y fields) extends or replaces the existing
-   `registry/tasks/benthic.yaml` `benthic-coarse` classification task (Open, below).
+1. **Manager decision needed**: Coralseg mask rows have no sha256-safe path under the
+   current "never open the image" constraint (see WP-8b findings). Options: (a) accept
+   opening the image only to hash it, never persisting or shipping its bytes, or (b) drop
+   Coralseg from the sha256-keyed configs and note it as mask-only/unusable for v2.
 2. Add a small per-source adapter that turns a loaded `Sample`'s raw label payload
-   (Reefolution's `labels/points.parquet` rows; Coralscapes' mask + its 39-class map)
-   into per-image class counts, then calls `rollup_counts()`.
-3. Wire `points`/`vqa`/`semseg`/`benthic-coarse` into `release.py` behind `--tasks v2`,
-   with a single call/flag line into `hf_export.py` and the card table into `hf_card.py`
-   (both disclosed per D-M).
-4. IBF, SEAVIEW points, Coralseg, rs_labelled and the CoralVQA train split stay at 0 rows
-   until their data is fetched/verified by a source-scoped worker — that is out of this
-   brief's scope ("do not restage images").
+   (Reefolution's `labels/points.parquet` rows; Coralscapes' mask + its 39-class map;
+   rs_labelled's `export-result.ndjson` polygons matched by filename against the sha256
+   already known from `reef-support-benthic-own`/`reef-support-seaview-labels`
+   `metadata.parquet`) into per-image class counts, then calls `rollup_counts()`.
+3. Build the `vqa` adapter from `CoralVQA_train.jsonl` (fetched, `$SP/wp8b/coralvqa/`)
+   + `CoralVQA_test.jsonl` (re-fetch once HF's rate limit clears; no login/token).
+4. Add the `--tasks {v1,v2}` flag and wire `points`/`vqa`/`semseg`/`benthic-coarse`/
+   `benthic-cover` into `release.py`, `hf_export.py`, `loaders/` and `hf_card.py`'s table
+   (all disclosed per D-M), then the loader tests, human/model separation test, real
+   build, and `make ci`/full suite.
+5. SEAVIEW and IBF stay at 0 point/vqa/mask rows (images-only, confirmed twice) —
+   correct end state per D-Z ("IBF... gets no points row"), not a gap to chase further.
