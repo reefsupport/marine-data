@@ -1,17 +1,17 @@
 # IMOS AUV (Sirius/Nimbus) benthic survey stills, public bucket s3://imos-data/IMOS/AUV/ (anonymous).
-# Listing NOT finished at report time: >= 10.2M objects after 80 min (scratch job imos_list.py); items/bytes stay null until it completes.
+# WP-6f: the D-AC subset manifest is built by scripts/build_imos_manifest.py from a COMPLETE per-dive
+# cache (1,011 dives in 71 campaigns + the Squidle+ annotated-frame scan); a partial cache never
+# yields a manifest. The manifest (> 10 MB) lives on S3 only; pin manifest_sha256 once uploaded.
 id: imos-auv
-adapter: needs:manifest
+adapter: manifest
+params:
+  manifest: https://hel1.your-objectstorage.com/rs-storage-open/sources/imos-auv/_manifest/imos-auv-dac.parquet
+  field_columns: {lat: lat, lon: lon, depth_m: depth_m, capture_datetime: capture_datetime}
+  label_columns: [campaign, dive, depth_band, region, squidle_annotated, selection, pair_right]
 license: CC-BY-4.0 (IMOS data licence)
 attribution: Integrated Marine Observing System (IMOS) — AUV Facility, University of Sydney ACFR
 citation: IMOS AUV Facility, https://imos.org.au/facility/autonomous-underwater-vehicles
 homepage: https://registry.opendata.aws/imos-data/
-candidate_endpoints:
-- s3://imos-data/IMOS/AUV/<campaign>/<dive>/ (i2jpg / full-res images + track csv)
-- https://squidle.org (CATAMI annotations; API access unverified anonymously)
-why_not_supported: The prefix holds >= 10.2M objects (all image variants + tracks); the target is a stratified pick
-  by campaign x depth band x region that needs the per-dive track CSV (depth, lat/lon) joined to image names ->
-  a manifest, not a whole-prefix bucket listing.
 measured:
   items: null
   bytes: null
@@ -25,7 +25,7 @@ subset:
   - campaign
   - depth_band
   - region
-  cap_per_stratum: 5000
-  rule: every image of every CATAMI-labelled dive (BENTHOZ-2015 / Squidle+ dive list) + the remaining dives capped
-    at 5,000 images per (campaign x depth band [0-30,30-60,60-120,120+ m from track csv] x region); one image variant
-    only (full-res jpg/tif, not thumbnails)
+  rule: 'D-AC: (1) every Squidle+-annotated frame (IMOS platforms, >= 1 labelled point; 218,409 media on
+    2026-09-25), uncapped; (2) the rest thinned along-track to 1 in 10 consecutive track frames; (3) cap per
+    campaign x 20 m depth band x MEOW ecoregion (dive median position, VLIZ MEOW WFS) solved so the total
+    <= 300,000; (4) within a cell, sha256(frame key) order. Left camera (LC16) geotiff only.'

@@ -293,8 +293,8 @@ def make_adapter(name: str, params: Mapping[str, Any]) -> BaseAdapter:
     from .github import GitHubAdapter
     from .hf import HFAdapter
     from .http_index import HttpIndexAdapter
-    from .manifest import ManifestAdapter
     from .inat import INatOpenDataAdapter
+    from .manifest import ManifestAdapter
     from .pangaea import PangaeaAdapter
     from .pawsey import FrdrHttpsAdapter, PawseyPortalAdapter
     from .seafile import SeafileAdapter

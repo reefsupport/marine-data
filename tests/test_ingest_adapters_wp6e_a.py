@@ -249,7 +249,7 @@ def test_fathomnet_dedupes_sha256_and_excludes_gfisher(tmp_path) -> None:
         "totalItems": 4,
     }
     ad = FathomNetAdapter({"version": "v", "full": True, "exclude_sha256": [str(excl)]})
-    ad._get = lambda path: body if "offset=0" in path else {"content": []}  # type: ignore[method-assign]
+    ad._get = lambda path: body if "page=0&" in path else {"content": []}  # type: ignore[method-assign]
     keys = [i.key for i in ad.enumerate()]
     assert keys == ["u1.jpg", "u4.jpg"] and ad.duplicates == 1 and ad.excluded == 1
     (d,) = list(ad.decode(_fetched("u4.jpg", _jpeg())))
