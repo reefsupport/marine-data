@@ -16,6 +16,7 @@ from datetime import UTC, datetime
 from pathlib import Path
 
 from .cli_splitmap import _parse_ratios
+from .decon import DeconError
 from .dedup.groups import DedupGateError
 from .fetch import FetchError, cache_root, fetch_sample
 from .fetchers_remote import _is_pinned_staged_tree
@@ -187,8 +188,9 @@ def _cmd_release_build(args: argparse.Namespace) -> int:
             profile=args.profile,
             near_dup=near_dup,
             dedup_v2_groups=args.dedup_v2,
+            decon=args.decon,
         )
-    except (NearDupError, DedupGateError) as exc:
+    except (NearDupError, DedupGateError, DeconError) as exc:
         print(f"release build: {exc}", file=sys.stderr)
         return 1
 
@@ -230,6 +232,12 @@ def add_release_subparser(sub: argparse._SubParsersAction) -> None:
         metavar="GROUPS_PARQUET",
         help="Run the WP-10 split-leak gate against this groups.parquet ('marinedata dedup "
         "run'); fails the build on leakage. Default OFF (v1 behaviour, byte-identical)",
+    )
+    p_build.add_argument(
+        "--decon",
+        action="store_true",
+        help="Run the WP-12 benchmark decontamination gate ('marinedata decon check') "
+        "against admitted sources; fails the build on any hit. Default OFF (v2 build)",
     )
     p_build.add_argument(
         "--split-map",
