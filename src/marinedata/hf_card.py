@@ -20,11 +20,17 @@ from .hf_export import (
     SPLIT_ORDER,
 )
 
+METADATA = "metadata"
+
 CONFIG_BLURB = {
     IMAGES: "every image once (pixels embedded), keyed by `image_sha256`",
     MASKS: "ground-truth dense masks, one row per (image, source)",
     PSEUDO_MASKS: "CoralSCOP **model output** masks — weak supervision only, never ground truth",
     "general-pretraining": "pretraining membership (train + validation; test excluded)",
+    METADATA: (
+        "no pixels — licence, provenance, position/depth, MEOW ecology and WP-1's quality "
+        "scores, one row per `image_sha256` (WP-2, D-K)"
+    ),
 }
 
 
@@ -74,6 +80,7 @@ def render_card(
     repo_id: str = DEFAULT_REPO_ID,
     unsupervised: tuple[str, ...] = (),
     excluded: dict[str, str] | None = None,
+    metadata_licence_rows: list[str] | None = None,
 ) -> str:
     near = release["near_dup"]
     empty_note = [
@@ -150,6 +157,31 @@ def render_card(
         "",
         *_sources_table(sources),
         "",
+        *(
+            [
+                "## Per-sample metadata",
+                "",
+                "`metadata` carries no pixels: licence/provenance, position/depth, MEOW "
+                "ecology and WP-1's quality scores, one row per `image_sha256`. `license` "
+                "is never null (D-C: record, never a storage filter) — counted here from "
+                "the config's own rows, not just declared per-source:",
+                "",
+                *metadata_licence_rows,
+                "",
+                "Filter by licence in one call:",
+                "",
+                "```python",
+                "from datasets import load_dataset",
+                "from marinedata.metadata_release import filter_by_license",
+                "",
+                f'meta = load_dataset("{repo_id}", "metadata", split="train")',
+                'allowed = filter_by_license(meta.data.table, allow=["CC-BY-4.0", "CC0-1.0"])',
+                "```",
+                "",
+            ]
+            if metadata_licence_rows
+            else []
+        ),
         "## Splits",
         "",
         "Split by `split_group` (site/station/transect for our own imagery, the upstream "
@@ -217,6 +249,44 @@ def unsupervised_configs(out, summary: dict) -> tuple[str, ...]:
         ):
             empty.append(config)
     return tuple(empty)
+
+
+def metadata_config_summary(out) -> dict | None:
+    """A ``summary["configs"]["metadata"]``-shaped entry read back from the shards WP-2's
+    ``metadata_release`` already wrote — so the card's existing config/split rendering
+    (``_yaml_configs``, ``_split_table``) documents it with no per-config special-casing."""
+    import pyarrow.parquet as pq
+
+    paths = sorted((out / "data" / METADATA).glob("*.parquet"))
+    if not paths:
+        return None
+    splits: dict[str, dict] = {}
+    for path in paths:
+        split = path.name.split("-", 1)[0]
+        n = pq.read_metadata(path).num_rows
+        entry = splits.setdefault(split, {"rows": 0, "shards": 0, "embedded_bytes": 0})
+        entry["rows"] += n
+        entry["shards"] += 1
+    from .metadata_release import METADATA_COLUMNS
+
+    return {"columns": [list(c) for c in METADATA_COLUMNS], "splits": splits, "written": []}
+
+
+def metadata_licence_table(out) -> list[str]:
+    """A licence table **computed from the `metadata` config's own rows** (not the
+    registry's declared licence) — counts every ``license`` value actually shipped."""
+    import pyarrow.parquet as pq
+
+    paths = sorted((out / "data" / METADATA).glob("*.parquet"))
+    counts: dict[str, int] = {}
+    for path in paths:
+        for value in pq.read_table(path, columns=["license"]).column(0).to_pylist():
+            counts[value] = counts.get(value, 0) + 1
+    if not counts:
+        return []
+    rows = ["| Licence (as shipped in `metadata`) | Rows |", "|---|---|"]
+    rows += [f"| `{lic}` | {n} |" for lic, n in sorted(counts.items(), key=lambda kv: -kv[1])]
+    return rows
 
 
 def render_licence(sources: list[dict]) -> str:
@@ -288,6 +358,10 @@ def main(argv: list[str] | None = None) -> int:
     empty = unsupervised_configs(args.out, summary)
     exclude = [c for c in args.exclude_configs.split(",") if c]
     excluded = {c: EXCLUDE_REASONS.get(c, "excluded from this release") for c in exclude}
+    metadata_entry = metadata_config_summary(args.out)
+    if metadata_entry is not None:
+        summary["configs"][METADATA] = metadata_entry
+    licence_rows = metadata_licence_table(args.out)
     (args.out / "README.md").write_text(
         render_card(
             summary,
@@ -297,6 +371,7 @@ def main(argv: list[str] | None = None) -> int:
             repo_id=args.repo_id,
             unsupervised=empty,
             excluded=excluded,
+            metadata_licence_rows=licence_rows,
         )
     )
     (args.out / "LICENSE").write_text(render_licence(sources))

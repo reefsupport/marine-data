@@ -136,3 +136,23 @@ def test_every_row_needs_a_licence():
 def test_duplicate_sample_ids_rejected():
     with pytest.raises(ss.SampleSchemaError, match="duplicate"):
         ss.validate_rows([_row(), _row()])
+
+
+def test_wp2_meow_and_location_fields_present():
+    wanted = {"meow_province", "meow_ecoregion", "location_generalized"}
+    assert wanted <= set(ss.FIELD_NAMES)
+    assert _row().location_generalized is False
+
+
+def test_meow_triple_must_be_all_or_nothing():
+    partial = _row(meow_realm="Tropical Atlantic")
+    assert any("meow_realm" in e for e in ss.validate_row(partial))
+    full = _row(meow_realm="Tropical Atlantic", meow_province="P", meow_ecoregion="E")
+    assert not [e for e in ss.validate_row(full) if "meow" in e]
+
+
+def test_location_generalized_requires_a_position():
+    bad = _row(location_generalized=True)
+    assert any("location_generalized" in e for e in ss.validate_row(bad))
+    ok = _row(location_generalized=True, lat=1.0, lon=2.0)
+    assert not [e for e in ss.validate_row(ok) if "location_generalized" in e]
