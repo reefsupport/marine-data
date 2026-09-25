@@ -1,0 +1,11 @@
+# usod10k: NOT loadable by marinedata.cli today (needs:gdrive). Documentation-only spec for WP-6d.
+id: usod10k
+adapter: needs:gdrive
+license: research (non-commercial, per upstream)
+attribution: Hong et al. — USOD10K
+citation: Hong et al. 2023, TIP
+homepage: https://github.com/LinHong-HIT/USOD10K
+candidate_endpoints:
+- https://drive.google.com/file/d/12EYrwt-LEUE9WyMEfgKOxZC1Yyzyjnnk/view
+- https://drive.google.com/file/d/19rdcNsuDE6bRD58bruqCXPDhoopTMME4/view
+why_not_supported: 10,255 images; repo code only, data on Google Drive/Baidu.

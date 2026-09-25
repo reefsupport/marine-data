@@ -11,7 +11,10 @@ enumeration only, no bytes move) and reports one row:
 Sources whose spec names an adapter the framework does not implement (only
 hf, http, zenodo, bucket, github are real) are never invoked — the CLI would
 reject an unknown adapter choice outright — their row is filled straight from
-the spec's own ``adapter``/``notes`` fields, no subprocess call.
+the spec's own ``adapter``/``notes`` fields, no subprocess call. A spec whose
+``adapter`` is documentation-only (``needs:<kind>``, e.g. ``needs:pawsey``,
+``needs:multipart-tar`` — see each spec's ``why_not_supported``) reports
+``needs_adapter:<kind>`` with the ``needs:`` prefix stripped.
 
 D-R4 (2026-09-25 5star-charter): a dry-run that resolves (access ok, no gate)
 but enumerates 0 items is a decoder gap, not an access problem —
@@ -86,6 +89,33 @@ CATALOG_META: dict[str, tuple[int | None, float | None, str]] = {
     "salmon-cage": (2, 5.61, "MP4"),
     "underwater-images-2542305": (2, 33.74, "?"),
     "oceaninstruct": (2, 0.03, "JSON"),
+    # carried over from the w2b slice
+    "fish-vista": (2, 60.48, "PNG+CSV"),
+    "wildfish": (3, 25.83, "JPEG"),
+    "fish-length-stereo": (3, 25.18, "images"),
+    "luderick-seagrass": (3, 1.17, "images+json"),
+    "med-fish": (3, 0.64, "JPEG+labels"),
+    "mouss-seg": (3, 0.09, "YOLO-seg"),
+    "urpc": (2, 1.83, "VOC/YOLO"),
+    "duo": (3, None, "COCO"),
+    "viame-public": (4, None, "mixed"),
+    "ozfish": (5, None, "CSV+JPEG+MP4"),
+    "seamapd21": (4, None, "YOLO"),
+    "marinelife16k": (3, 79.62, "parquet"),
+    "ocean-r1": (4, 38.48, "parquet"),
+    "marine-animals-mm": (2, 3.73, "parquet"),
+    "seathru": (4, 38.44, "RAW+TIFF depth"),
+    "marine-snow": (2, 14.22, "PNG"),
+    "rcaustic": (2, 10.57, "video/imgs"),
+    "sea-undistort": (1, 2.27, "PNG"),
+    "euvp": (4, 0.19, "JPEG pairs"),
+    "lsui": (4, None, "PNG pairs"),
+    "u45": (1, 0.1, "PNG"),
+    "ruie": (2, None, "JPEG"),
+    "usr248": (2, None, "PNG"),
+    "ufo120": (2, None, "PNG pairs"),
+    "hicrd": (3, None, "PNG"),
+    "usod10k": (3, None, "PNG"),
 }
 
 
@@ -176,6 +206,15 @@ def process_one(spec_path: Path, manifest_row: dict[str, str]) -> dict[str, str]
         # Manifest forces a status without invoking the CLI — e.g. a supported
         # adapter whose scope is too broad/unbounded to enumerate live (benthoz15).
         result = {"dry_run": forced_override, "version": "", "items": "", "bytes": ""}
+    elif adapter.startswith("needs:"):
+        # Documentation-only spec (ozfish, seamapd21, ...): never invoke the CLI,
+        # strip the "needs:" marker so the queue reads needs_adapter:<kind>.
+        result = {
+            "dry_run": f"needs_adapter:{adapter.split(':', 1)[1]}",
+            "version": "",
+            "items": "",
+            "bytes": "",
+        }
     else:
         result = {"dry_run": f"needs_adapter:{adapter}", "version": "", "items": "", "bytes": ""}
 
