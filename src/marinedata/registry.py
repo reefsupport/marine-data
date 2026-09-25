@@ -129,7 +129,9 @@ class Registry:
             if task.schema_id not in schemas:
                 raise RegistryError(f"task '{task.id}' targets unknown schema '{task.schema_id}'")
             task.validate_against(schemas[task.schema_id])
-        return cls(sources, licences, profiles, schemas, crosswalks, tasks, _git_commit(base))
+        registry = cls(sources, licences, profiles, schemas, crosswalks, tasks, _git_commit(base))
+        registry.root = base  # lets release find registry/taxonomy/ (WP-7 label gate)
+        return registry
 
     @staticmethod
     def _load_collection(base: Path, key: str, model: type) -> dict[str, object]:

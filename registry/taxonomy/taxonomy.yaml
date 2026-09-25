@@ -1,0 +1,54 @@
+# The unified taxonomy (WP-7). Semver: MAJOR = a node removed or re-parented or an edge
+# retargeted; MINOR = nodes/edges/vocabularies added; PATCH = notes and reasons only.
+# `marinedata taxonomy export` freezes releases/<version>.json;
+# `marinedata taxonomy diff <a> <b>` compares two of them (HEAD = working tree).
+version: 1.2.0
+snapshot: worms-2026-09-25.parquet
+
+# Sources under the 95% mapped floor. Each entry says what is lost and why.
+coverage_exceptions:
+  plc-beijbom2015: >-
+    "All other" (15,225 of ~154k points, 9.8%) is the Pacific Labeled Corals residual
+    bucket for every non-target substrate and organism. It has no canonical meaning, so
+    it is an unmappable edge (the point is unsupervised on the taxon axis), not forced
+    into a class.
+
+# Labelled image/video sources whose label vocabulary WP-7 has not harvested. The
+# W1 vocabularies are all crosswalked; each of these gets one when its labels are
+# ingested. The gate fails any labelled source that is neither crosswalked nor listed.
+# D-Q scoping: `make taxonomy-check` fails on an entry here only once that source is
+# staged (registry access under rs-storage-open `sources/`) or named in a release
+# manifest; until then `marinedata taxonomy check --strict` lists it.
+# Labelled sources whose labels are free text, not a closed class list (D-Q). They pass the
+# gate with `crosswalk: open_vocabulary`; noun-phrase -> taxon linking is WP-13.
+source_crosswalks:
+  coralvqa:
+    crosswalk: open_vocabulary
+    reason: VQA question/answer text, not a class vocabulary; answers need noun-phrase -> taxon linking (WP-13).
+  marineinst20m:
+    crosswalk: open_vocabulary
+    reason: open-vocabulary instance captions, not a closed class list; noun-phrase -> taxon linking is WP-13.
+
+no_crosswalk_yet:
+  coralnet: >-
+    ~2k CoralNet sources, each with its own label set. The PIFSC, PLC and MLC sets are
+    crosswalked (coralnet-noaa-pifsc, plc-beijbom2015, mlc-moorea) and the global label
+    list is in coralnet-labelset; each other CoralNet source needs its own at ingest.
+  fathomnet: >-
+    The full FathomNet concept tree (~2.4k concepts). fathomnet-concepts covers the FGVC23
+    (290) and VME (4) subsets; the rest is resolved at ingest through the same WoRMS path.
+  deolhonoscorais: vocabulary not harvested in WP-7 (not a W1 vocabulary); crosswalk at ingest.
+  seatizen-atlas: multilabel species/habitat set not harvested in WP-7; crosswalk at ingest.
+  ozfish: fish bbox vocabulary not harvested in WP-7; crosswalk at ingest.
+  deepfish: fish/no-fish and counting labels not harvested in WP-7; crosswalk at ingest.
+  seamapd21: species label set not harvested in WP-7; crosswalk at ingest.
+  fishnet-2023: fish species set not harvested in WP-7; crosswalk at ingest.
+  mft25: tracking set (fish ids, not taxa) not harvested in WP-7; crosswalk at ingest.
+  deepsea-mot: deep-sea tracking set not harvested in WP-7; crosswalk at ingest.
+  brackish-dataset: 6-class bbox set not harvested in WP-7; crosswalk at ingest.
+  fish4knowledge: species set not harvested in WP-7; crosswalk at ingest.
+  sea-urchin-detection: urchin bbox set not harvested in WP-7; crosswalk at ingest.
+  reefnet-species-images: species image-label set not harvested in WP-7; crosswalk at ingest.
+  whoi-plankton-small: plankton class list not harvested in WP-7; crosswalk at ingest.
+  underwater-image-enhancement: enhancement pairs; no class labels to cross-walk.
+  satellite-coral-mapping: habitat-map classes (remote sensing), not organism labels; crosswalk at ingest.

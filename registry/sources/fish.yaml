@@ -395,6 +395,7 @@ sources:
         - "The HuggingFace mirror ships IMAGES ONLY — the bounding boxes are in a separate release. Verified 2026-08-17."
     loader:
       layout: flat-images
+      crosswalk_id: mouss-detection
       verified_on: 2026-08-17
       verified_note: "30 live rows fetched from HF; images only, no annotation file — coco-json was a wrong guess, corrected to flat-images"
     tags: [public-domain, baseline]
@@ -441,6 +442,7 @@ sources:
     coverage: { regions: [eastern-pacific, temperate] }
     loader:
       layout: opencv-cascade-dat
+      crosswalk_id: labeled-fishes-in-the-wild
       params:
         images_dir: "_LABELED-FISHES-IN-THE-WILD/Training_and_validation/Positive_fish"
         annotations: "_LABELED-FISHES-IN-THE-WILD/Training_and_validation/Positive_fish/Positive_fish_(ALL)-MARKS_DATA.dat"

@@ -1,0 +1,15 @@
+# source: uiis10k
+# crosswalk: usis-uiis
+# counts: annotations
+# retrieved: 2026-09-25 from https://huggingface.co/datasets/LiamLian0727/UIIS10K
+label	count	description
+fish	21364	
+corals	11729	
+mollusk	2333	
+human	1844	
+plants	1729	
+ruins	816	
+garbage	791	
+robots	502	
+arthropoda	388	
+reptiles	366	

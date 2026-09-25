@@ -69,6 +69,25 @@ class Fidelity(str, Enum):
     unsupervised on that axis rather than being forced into a wrong class."""
 
 
+NON_TAXON_CATEGORIES = frozenset(
+    {
+        "substrate",
+        "debris",
+        "equipment",
+        "human",
+        "water",
+        "habitat",
+        "unknown",
+        "state",
+        "functional-group",
+        "grouping",
+        "background",
+    }
+)
+"""Why a taxon-axis node carries no AphiaID. ``functional-group`` = polyphyletic by
+definition (turf, macroalgae); ``grouping`` = a structural root or residual bucket."""
+
+
 class _Frozen(BaseModel):
     model_config = ConfigDict(frozen=True, extra="forbid")
 
@@ -112,11 +131,31 @@ class LabelNode(_Frozen):
     worms_status: str | None = None
     worms_checked_on: date | None = None
 
+    # ── explicit non-taxa ─────────────────────────────────────────────
+    # A taxon-axis node without an AphiaID must SAY why: substrate, debris, a diver, a
+    # polyphyletic functional group ("macroalgae"), an "unknown". Without the flag a
+    # missing id is indistinguishable from a forgotten one, and the WP-7 CI test
+    # (100% of taxon nodes: AphiaID or non_taxon) could not be written.
+    non_taxon: bool = False
+    non_taxon_reason: str | None = None
+    """``<category>: <free text>``; the category is one of :data:`NON_TAXON_CATEGORIES`."""
+
     @model_validator(mode="after")
     def _worms_fields_need_an_id(self) -> LabelNode:
         frozen = (self.worms_scientificname, self.worms_rank, self.worms_status)
         if any(f is not None for f in frozen) and self.worms_aphia_id is None:
             raise ValueError(f"node {self.id}: carries frozen WoRMS fields but no worms_aphia_id")
+        if self.non_taxon and self.worms_aphia_id is not None:
+            raise ValueError(f"node {self.id}: non_taxon but carries worms_aphia_id")
+        if self.non_taxon != (self.non_taxon_reason is not None):
+            raise ValueError(f"node {self.id}: non_taxon and non_taxon_reason go together")
+        if self.non_taxon_reason is not None:
+            category = self.non_taxon_reason.split(":", 1)[0].strip()
+            if category not in NON_TAXON_CATEGORIES:
+                raise ValueError(
+                    f"node {self.id}: non_taxon_reason category '{category}' not in "
+                    f"{sorted(NON_TAXON_CATEGORIES)}"
+                )
         return self
 
     @property
@@ -264,6 +303,10 @@ class Crosswalk(_Frozen):
     target_schema: str
     description: str = ""
     edges: tuple[CrosswalkEdge, ...] = ()
+    exact_by_construction: str | None = None
+    """Why every edge can honestly claim ``exact``, e.g. the source labels ARE WoRMS
+    scientific names. Independently designed vocabularies almost never align exactly,
+    so an all-exact crosswalk of 20+ edges must state this reason to be admitted."""
 
     def edge(self, source_label: str) -> CrosswalkEdge | None:
         return next((e for e in self.edges if e.source_label == source_label), None)

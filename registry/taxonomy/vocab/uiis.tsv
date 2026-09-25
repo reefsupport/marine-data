@@ -1,0 +1,12 @@
+# source: uiis
+# crosswalk: usis-uiis
+# counts: annotations
+# retrieved: 2026-09-25 from https://huggingface.co/datasets/LiamLian0727/UIIS
+label	count	description
+fish	16749	
+reefs	8492	
+aquatic plants	1255	
+sea-floor	980	
+human divers	596	
+wrecks/ruins	248	
+robots	90	

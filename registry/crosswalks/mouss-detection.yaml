@@ -1,0 +1,15 @@
+# Hand-authored (WP-7b): MOUSS fish imagery declares `annotations: [{kind: bbox,
+# classes: 1, supervises: []}]` — a single detection class, unnamed in the source,
+# and the description ("Grayscale stationary-camera fish detection") confirms that
+# one class is fish. Same reasoning as labeled-fishes-in-the-wild.
+crosswalks:
+  - id: mouss-detection
+    source_schema: dataset-native
+    target_schema: rs-taxa-v1
+    description: Single fish detection class onto Vertebrata.
+    exact_by_construction: "the source declares exactly one class (classes: 1) and its own description names it fish"
+    edges:
+      - source_label: fish
+        targets: { taxon: A146419 }
+        fidelity: coarsened
+        note: "fish is paraphyletic; Vertebrata is the smallest accepted WoRMS clade."

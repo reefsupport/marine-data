@@ -27,6 +27,7 @@ from pathlib import Path
 from .builder import SUPERVISED_DEFAULT_RATIOS, DatasetBuilder, PartialAbstainExclusion, SplitName
 from .checksums import file_digest
 from .gate import evaluate
+from .labelcheck import release_label_gate
 from .neardup import (
     NearDupChainError,
     NearDupConfig,
@@ -448,6 +449,9 @@ def build_release(
     admitted = _admitted_source_ids(registry, roots, profile)
     if not admitted:
         raise ValueError(f"no admitted source under profile {profile!r} has a resolved root")
+    # WP-7: the label gate — 0 silent drops, >= 95% mapped (or a documented exception),
+    # every canonical taxon node anchored. Skipped for in-memory registries (no root).
+    taxonomy_stamp = {} if allow_unmapped else release_label_gate(registry, admitted)
     admitted_roots = {source_id: Path(roots[source_id]) for source_id in admitted}
     never_eval_sources = _never_eval_source_ids(registry, admitted)
 
@@ -523,6 +527,7 @@ def build_release(
 
     release_json = {
         "release": release,
+        **taxonomy_stamp,
         "split_map_sha256": map_sha256,
         "sources": [
             {

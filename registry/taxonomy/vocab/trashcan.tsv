@@ -1,0 +1,27 @@
+# source: trashcan
+# crosswalk: trashcan
+# counts: annotations
+# retrieved: 2026-09-25 from DRUM hdl:11299/214865 dataset.zip dataset/instance_version/instances_*_trashcan.json
+label	count	description
+rov	3317	
+trash_unknown_instance	2756	
+trash_bag	908	
+animal_fish	764	
+trash_container	510	
+plant	507	
+trash_can	459	
+animal_starfish	398	
+animal_eel	343	
+trash_branch	336	
+animal_crab	309	
+animal_shells	249	
+animal_etc	235	
+trash_wreckage	165	
+trash_pipe	156	
+trash_net	127	
+trash_bottle	126	
+trash_tarp	121	
+trash_rope	117	
+trash_snack_wrapper	84	
+trash_clothing	82	
+trash_cup	59	

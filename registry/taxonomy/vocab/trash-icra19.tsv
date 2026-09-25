@@ -1,0 +1,9 @@
+# source: trash-icra19
+# crosswalk: trash-icra19
+# counts: types
+# retrieved: 2026-09-25 from DRUM hdl:11299/214366 (class list per Fulton et al. 2019, ICRA)
+# note: per-class counts need the YOLO txt members; coverage is type-weighted
+label	count	description
+bio		
+plastic		
+rov		

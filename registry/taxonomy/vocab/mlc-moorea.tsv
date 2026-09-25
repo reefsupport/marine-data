@@ -1,0 +1,15 @@
+# source: mlc-moorea
+# crosswalk: mlc-moorea
+# counts: types
+# retrieved: 2026-09-25 from Beijbom et al. 2012 (CVPR) label set; EDI knb-lter-mcr.5006.3 metadata is login-walled (403)
+# note: coverage is type-weighted until the annotation files are staged
+label	count	description
+Acrop		
+CCA		
+Macro		
+Monti		
+Pavon		
+Pocill		
+Porit		
+Sand		
+Turf		
