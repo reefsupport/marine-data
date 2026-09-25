@@ -149,9 +149,22 @@ class MissingLedger:
     def write(self, root: Path) -> Path | None:
         """Write ``MISSING.tsv`` into the staged tree; nothing when no item was skipped,
         so a clean source's tree (and root digest) is byte-identical to before D-AF."""
-        if not self.rows:
+        data = self.render()
+        if data is None:
             return None
         path = root / MISSING_FILE
-        lines = ["\t".join(COLUMNS)] + ["\t".join(r) for r in self.rows]
-        path.write_text("\n".join(lines) + "\n")
+        path.write_bytes(data)
         return path
+
+    def render(self) -> bytes | None:
+        """The ``MISSING.tsv`` bytes (``None`` when nothing was skipped) — shared by disk
+        mode (:meth:`write`) and WP-6h stream mode (PUT from memory)."""
+        if not self.rows:
+            return None
+        lines = ["\t".join(COLUMNS)] + ["\t".join(r) for r in self.rows]
+        return ("\n".join(lines) + "\n").encode()
+
+    def restore(self, rows: list, attempted: int, consecutive: int) -> None:
+        """WP-6h resume: re-apply a stream checkpoint's skipped rows and counters."""
+        self.rows.extend(tuple(r) for r in rows)
+        self.attempted, self.consecutive = int(attempted), int(consecutive)

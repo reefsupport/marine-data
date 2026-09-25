@@ -35,7 +35,7 @@ from .adapters._http import HashingReader
 from .adapters.decode import IMAGE_SUFFIXES
 from .concurrency import HostLimiter, retry_with_backoff
 from .ingest_listing import list_source
-from .ingest_missing import MissingLedger, decode_status, fetch_status
+from .ingest_missing import MISSING_FILE, MissingLedger, decode_status, fetch_status
 from .s3_upload import DEFAULT_PART, DiskGuard, GiB, local_digest, upload_file
 from .staged_writer import DEFAULT_SHARD_BYTES, DEFAULT_THRESHOLD, StagedWriter, WriterConfig
 from .subset_filter import SubsetFilter
@@ -166,6 +166,10 @@ class IngestSpec:
     remote: str = "rs-hel1"
     temp_cap_gb: float = 6.0
     disk_floor_gib: float = 40.0
+    # WP-6h: `stream: true` (or `--stream`) stages from memory straight to S3; its floor
+    # only has to cover spooled archives + the listing cache, not a staged tree.
+    stream: bool = False
+    stream_disk_floor_gib: float = 3.0
     # Documentation-only blocks (SPEC-w3): ignored by the runner, validated by
     # marinedata.ingest_subset.check_spec. `measured` = totals read from upstream
     # metadata; `subset` = the stratified target for sources > 1M items or > 1 TB.
@@ -217,6 +221,24 @@ def _choose_layout(spec: IngestSpec, items: list) -> str:
     if n is None and spec.max_images is not None:
         n = spec.max_images
     return "shards" if n is not None and n > spec.shard_threshold else "objects"
+
+
+def writer_config(spec: IngestSpec, version: str, layout: str, fetch_date: dt.date) -> WriterConfig:
+    """The StagedWriter config for a run — shared by disk and stream (WP-6h) mode."""
+    return WriterConfig(
+        spec.id,
+        version,
+        spec.license,
+        spec.attribution,
+        fetch_date,
+        layout=layout,
+        threshold=spec.shard_threshold,
+        shard_bytes=spec.shard_bytes,
+        defaults=spec.defaults,
+        naive_datetime_is_utc=spec.naive_datetime_is_utc,
+        label_stem_suffix=spec.label_stem_suffix,
+        lineage_root_digest=spec.lineage_root_digest,
+    )
 
 
 class _Uploader:
@@ -361,13 +383,23 @@ def run_ingest(
     max_per_host: int = DEFAULT_MAX_PER_HOST,
     part_jobs: int = DEFAULT_PART_JOBS,
     listing_cache: Path | None = None,
+    stream: bool = False,
+    memory_cap: int | None = None,
+    checkpoint_items: int | None = None,
 ) -> IngestReport:
     jobs = max(1, min(int(jobs), MAX_JOBS))
+    stream = bool(stream or spec.stream)
     if not dry_run:
         # INT-ingest5c: floor BEFORE listing — a paused pass must not re-crawl upstream
         # (GBIF: ~1,200 API requests) only to refuse at the first write.
-        floor = int(spec.disk_floor_gib * GiB)
-        guard = guard or DiskGuard(work, int(spec.temp_cap_gb * GiB), floor)
+        if stream:
+            from .ingest_stream import StreamGuard
+
+            floor = int(spec.stream_disk_floor_gib * GiB)
+            guard = guard or StreamGuard(work, int(spec.temp_cap_gb * GiB), floor)
+        else:
+            floor = int(spec.disk_floor_gib * GiB)
+            guard = guard or DiskGuard(work, int(spec.temp_cap_gb * GiB), floor)
         guard.check()
     adapter = make_adapter(spec.adapter, spec.params)
     version, items = list_source(spec, adapter, listing_cache)
@@ -386,6 +418,25 @@ def run_ingest(
         report.plan["subset"] = "enforced"
     if dry_run:
         return report
+    if stream:
+        from .ingest_stream import run_stream
+
+        return run_stream(
+            spec,
+            work,
+            adapter=adapter,
+            items=items,
+            report=report,
+            subset=subset,
+            client=client,
+            guard=guard,
+            part_size=part_size,
+            fetch_date=fetch_date,
+            jobs=jobs,
+            max_per_host=max_per_host,
+            memory_cap=memory_cap,
+            checkpoint_items=checkpoint_items,
+        )
     guard = guard or DiskGuard(work, int(spec.temp_cap_gb * GiB), int(spec.disk_floor_gib * GiB))
     guard.check()
     if client is None:
@@ -394,23 +445,7 @@ def run_ingest(
         client = client_from_rclone(spec.remote)
     root = work / "stage" / spec.id / version
     tmp = work / "tmp"
-    writer = StagedWriter(
-        root,
-        WriterConfig(
-            spec.id,
-            version,
-            spec.license,
-            spec.attribution,
-            fetch_date or dt.date.today(),
-            layout=layout,
-            threshold=spec.shard_threshold,
-            shard_bytes=spec.shard_bytes,
-            defaults=spec.defaults,
-            naive_datetime_is_utc=spec.naive_datetime_is_utc,
-            label_stem_suffix=spec.label_stem_suffix,
-            lineage_root_digest=spec.lineage_root_digest,
-        ),
-    )
+    writer = StagedWriter(root, writer_config(spec, version, layout, fetch_date or dt.date.today()))
     up = _Uploader(client, spec, key_prefix, root, work, part_size, report, part_jobs=part_jobs)
     flush_at = guard.temp_cap_bytes // 2
     live = 0
@@ -511,34 +546,12 @@ def run_ingest(
     report.missing = len(missing.rows)
     if subset is not None:
         report.plan["subset"] = subset.stats()
-    sample_schema.write_samples(root / "metadata.parquet", writer.rows)
-    ingest_json = {
-        "ingest": "marinedata.ingest_source",
-        "schema_version": sample_schema.SCHEMA_VERSION,
-        "source_id": spec.id,
-        "version": version,
-        "adapter": spec.adapter,
-        "params": spec.params,
-        "layout": layout,
-        "images": report.images,
-        "fetch_date": (fetch_date or dt.date.today()).isoformat(),
-        "upstream": upstream,
-        "license": spec.license,
-        "attribution": spec.attribution,
-        "truncated_by_max_images": bool(upstream and upstream[-1]["truncated"]),
-    }
-    if report.missing:  # D-AF: only then, so a clean source's INGEST.json is unchanged
-        ingest_json["missing_items"] = report.missing
-    (root / "INGEST.json").write_text(json.dumps(ingest_json, indent=2, sort_keys=True) + "\n")
-    (root / "LICENSE").write_text(
-        f"License: {spec.license}\nAttribution: {spec.attribution}\n"
-        + (f"Citation: {spec.citation}\n" if spec.citation else "")
-    )
-    for name in ("metadata.parquet", "INGEST.json", "LICENSE"):
-        writer.register(root / name)
-    missing_tsv = missing.write(root)
-    if missing_tsv is not None:
-        writer.register(missing_tsv)
+    root.mkdir(parents=True, exist_ok=True)
+    for rel, data in final_artifacts(
+        spec, report, writer.rows, upstream, missing, fetch_date or dt.date.today()
+    ):
+        (root / rel).write_bytes(data)
+        writer.register(root / rel)
     flush()
     digests = {rel: sha for rel, (sha, _) in writer.files.items()}
     manifest = "".join(checksums.iter_lines(digests)).encode()
@@ -553,6 +566,52 @@ def run_ingest(
     report.peak_temp_bytes = guard.peak_bytes
     (work / f"registry-stub-{spec.id}.yaml").write_text(_stub(spec, report))
     return report
+
+
+def final_artifacts(
+    spec: IngestSpec,
+    report: IngestReport,
+    rows: list,
+    upstream: list[dict[str, Any]],
+    missing: MissingLedger,
+    fetch_date: dt.date,
+) -> list[tuple[str, bytes]]:
+    """The end-of-run files, in registration order, as bytes — ONE builder for disk and
+    stream (WP-6h) mode, so both write byte-identical ``metadata.parquet`` /
+    ``INGEST.json`` / ``LICENSE`` / ``MISSING.tsv``."""
+    layout, version = report.layout, report.version
+    out = [("metadata.parquet", sample_schema.samples_bytes(rows))]
+    ingest_json = {
+        "ingest": "marinedata.ingest_source",
+        "schema_version": sample_schema.SCHEMA_VERSION,
+        "source_id": spec.id,
+        "version": version,
+        "adapter": spec.adapter,
+        "params": spec.params,
+        "layout": layout,
+        "images": report.images,
+        "fetch_date": fetch_date.isoformat(),
+        "upstream": upstream,
+        "license": spec.license,
+        "attribution": spec.attribution,
+        "truncated_by_max_images": bool(upstream and upstream[-1]["truncated"]),
+    }
+    if report.missing:  # D-AF: only then, so a clean source's INGEST.json is unchanged
+        ingest_json["missing_items"] = report.missing
+    out.append(("INGEST.json", (json.dumps(ingest_json, indent=2, sort_keys=True) + "\n").encode()))
+    out.append(
+        (
+            "LICENSE",
+            (
+                f"License: {spec.license}\nAttribution: {spec.attribution}\n"
+                + (f"Citation: {spec.citation}\n" if spec.citation else "")
+            ).encode(),
+        )
+    )
+    tsv = missing.render()
+    if tsv is not None:
+        out.append((MISSING_FILE, tsv))
+    return out
 
 
 def report_json(report: IngestReport) -> str:
