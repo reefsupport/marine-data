@@ -1,0 +1,116 @@
+audit_id	image_sha256	task	source_id	split	given	suggested	self_confidence	model_verdict	verdict_class	flag_correct	suggestion_correct
+M121	83f9100726adf80aa63581e36d9f20802dddbcc93466933fc43d4cdfd954ed4c	bleaching-condition	roboflow-coral-bleaching-final-v6i	train	HEALTHY	BLEACHED	0.1036	H	HEALTHY	0	0
+M122	13ad7b79b7b7a366d103f65387b73e72dd199ebb9ad275130258a23ad6ee7c6a	bleaching-condition	noaa-pifsc-bleaching	validation	BLEACHED	HEALTHY	0.0106	H	HEALTHY	1	1
+M123	a4489c9fd230642d5f97ad57100f5da292fd6a325f3f5f574801710cc47cfedb	bleaching-condition	noaa-pifsc-bleaching	train	BLEACHED	HEALTHY	0.1206	U	BLEACHED	0	0
+M124	8b5e4742243a49761ca13b185916da5f5ca0f015467634e82ebf0bd007f7e54d	coral-health-binary	noaa-pifsc-bleaching	train	HEALTHY	UNHEALTHY	0.1688	U	UNHEALTHY	1	1
+M125	1678392a97836403bb33c41df025e2d39edf5d392ef754a4abed8ccb02b45eeb	coral-health-binary	roboflow-coral-reef-classification-v3i	train	HEALTHY	UNHEALTHY	0.0917	U	UNHEALTHY	1	1
+M126	68264e656a9b4a131dee499e41f7a08042db1c65c879453fc9d813c2179349f5	bleaching-condition	roboflow-coral-classification-copy-changed-v13i	validation	HEALTHY	BLEACHED	0.0875	H	HEALTHY	0	0
+M127	e1ec91866622821bc266ce876190155b7787c055aa32337137fc436ae1484257	bleaching-condition	roboflow-coral-bleaching-general-v1-yolov8s	train	BLEACHED	HEALTHY	0.1674	U	BLEACHED	0	0
+M128	b9b1f8241f0a7533f71201d8b4265f14f6c5f3377f36a5d15c288d79116d99c5	coral-health-binary	noaa-pifsc-bleaching	validation	UNHEALTHY	HEALTHY	0.1551	?		1	0
+M129	0343ce6ccace4441afb8e3ebd8ceb7c8479f521c1b9ea1d1411d68fe56d44d80	bleaching-condition	roboflow-coral-bleaching-final-v6i	test	HEALTHY	BLEACHED	0.1997	H	HEALTHY	0	0
+M130	a3dd1f5fbd65ebdd461180d52799926c81b542a297d986ee5120cbc785cedfbe	bleaching-condition	roboflow-coral-reef-bleach-detection-v2i	train	BLEACHED	HEALTHY	0.0351	H	HEALTHY	1	1
+M131	2e002c62dd28736d5d73f54965c9f06fc739c2b74e2992b3856ed419e1a70dbf	bleaching-condition	noaa-pifsc-bleaching	train	BLEACHED	HEALTHY	0.1014	?		1	0
+M132	02c64f95e5900a0e362ce2f6b60f2d809b610990276d8d890c0cc14c49fb66b1	bleaching-condition	roboflow-coral-bleaching-final-v6i	train	BLEACHED	HEALTHY	0.0477	H	HEALTHY	1	1
+M133	846368ade1f8ec7b32b96673eb6b56cfa7b0ffefe228a912365ac318fed151b3	bleaching-condition	roboflow-coral-reef-bleach-detection-v2i	train	HEALTHY	BLEACHED	0.2005	H	HEALTHY	0	0
+M134	5407c335b604dfd7a27541ebdd0d16271d343ded203c6ae02c2c025443cb72b2	bleaching-condition	noaa-pifsc-bleaching	train	BLEACHED	HEALTHY	0.0626	H	HEALTHY	1	1
+M135	60c33c4f6971acb4a69099055d0d41c85442e07c7978f42df2603c1c00de9bae	bleaching-condition	noaa-pifsc-bleaching	train	HEALTHY	BLEACHED	0.0534	U	BLEACHED	1	1
+M136	12e9cc9052f78a501020a66c1a063b9bc376c4dad46349623e51618e50f6440e	coral-health-binary	roboflow-coral-reef-bleach-detection-v2i	validation	HEALTHY	UNHEALTHY	0.1106	?		1	0
+M137	707a2749c524956ff0ff3ee92058a8c8e95d6e39df8ba9bc9975736bfec84ec4	bleaching-condition	roboflow-coral-reef-bleach-detection-v2i	train	BLEACHED	HEALTHY	0.0553	H	HEALTHY	1	1
+M138	01e0386e216f603ab58d3aa448e75fe81b35b50de88aef9f69c01009025f3ae7	coral-health-binary	roboflow-coral-reef-bleach-detection-v2i	validation	UNHEALTHY	HEALTHY	0.1425	H	HEALTHY	1	1
+M139	c00fb02f8ad1b5e174ad2f432dd83bcb5b804a08d4579bf2cedd4e8b80411767	bleaching-condition	noaa-pifsc-bleaching	validation	BLEACHED	HEALTHY	0.0724	?		1	0
+M140	e32a0a5f441bac9f532d2d7f065785bcafe7f877b911269c119b072a82f421f5	bleaching-condition	roboflow-coral-reef-bleach-detection-v2i	train	BLEACHED	HEALTHY	0.0602	H	HEALTHY	1	1
+M141	011a72c673e57b78c552f7c4d241473e8a1f9abe4540b70472364c538e58c9f6	bleaching-condition	noaa-pifsc-bleaching	validation	BLEACHED	HEALTHY	0.0269	?		1	0
+M142	8aef4901d78b09bd8e4918f9ec4a35d50e1a4cda4a4284a25c275e60ccf0ca8c	bleaching-condition	noaa-pifsc-bleaching	train	HEALTHY	BLEACHED	0.1808	?		1	0
+M143	769666efe6435c2680918e0c45e66b06b18cfe6946db53632841c217624d445b	coral-health-binary	roboflow-coral-reef-classification-v3i	train	HEALTHY	UNHEALTHY	0.1987	H	HEALTHY	0	0
+M144	3db93bb280bac673425c3d5b9babd3a85962b94e3bebced0bbbff02577fa48c6	coral-health-binary	noaa-pifsc-bleaching	train	UNHEALTHY	HEALTHY	0.1887	?		1	0
+M145	e846662d68eeeccbbd43ea1824e3ca976fd78d6c5e10671a1757a7b17c19b8d9	coral-health-binary	noaa-pifsc-bleaching	train	HEALTHY	UNHEALTHY	0.1626	?		1	0
+M146	c4867d4131629a46c76a7ee51aae75fb71fe36a6ad762f7806fbeae48b38b811	bleaching-condition	noaa-pifsc-bleaching	train	BLEACHED	HEALTHY	0.0959	?		1	0
+M147	d019749993983dcb9c5afc4714f99b1b0f1529bcf98e17cba1c313d2ab3ef5c3	coral-health-binary	roboflow-coral-reef-bleach-detection-v2i	train	UNHEALTHY	HEALTHY	0.1681	N	NOT_CORAL	1	0
+M148	5d72b93b10108fda3655d483f94b9a2c3ed3a51e1f2914159f50d3619ddd5aec	bleaching-condition	noaa-pifsc-bleaching	train	HEALTHY	BLEACHED	0.1503	?		1	0
+M149	ee7e2eb8277a2075d2dd67205c44789b18153078e50f9e8cb9c11e0051ae804f	coral-health-binary	roboflow-coral-bleaching-final-v6i	train	UNHEALTHY	HEALTHY	0.1399	?		1	0
+M150	187748f2a8ffe61e365fdfca748a144dab808b016ed3f6a17131dd2096d4d5cd	bleaching-condition	roboflow-coral-bleaching-final-v6i	train	BLEACHED	HEALTHY	0.0187	?		1	0
+M151	560d969d5be781be7cd1ca7226479a70378c0e5f41c3c9bd4c74460651650914	bleaching-condition	noaa-pifsc-bleaching	train	BLEACHED	HEALTHY	0.0238	?		1	0
+M152	5ab49cf3b2bcf6784fd291ea2ba7eb6dc9c2501905fb3e3cb76f9b11df284334	bleaching-condition	roboflow-coral-reef-bleach-detection-v2i	train	BLEACHED	HEALTHY	0.0549	?		1	0
+M153	00c504e41eca3e51119db0dceabfa6ede98a74e2a1ce4aef03fad25808cd9a8f	coral-health-binary	roboflow-coral-reef-classification-v3i	train	HEALTHY	UNHEALTHY	0.1216	H	HEALTHY	0	0
+M154	628d38e92b86b35a6c14fe22adb47b5aff8bf5becb761d2d5b672e602cd7bd0d	bleaching-condition	noaa-pifsc-bleaching	train	BLEACHED	HEALTHY	0.1712	?		1	0
+M155	871b4be78f269b3f904c55298dca7d8636fcb9bd803e214d6926f31301ab46c9	bleaching-condition	noaa-pifsc-bleaching	test	BLEACHED	HEALTHY	0.0272	?		1	0
+M156	32cd89dc851215f455b4454ca8b974596403c7e60d16e998f43860985bed3cc5	coral-health-binary	roboflow-coral-reef-classification-v3i	train	UNHEALTHY	HEALTHY	0.0758	N	NOT_CORAL	1	0
+M157	bb8bee63b80e08973ff12ef541b0169b71370f55762e8a32d609184f7200c12c	coral-health-binary	roboflow-coral-bleaching-general-v1-yolov8s	validation	HEALTHY	UNHEALTHY	0.1716	?		1	0
+M158	8d6aabe7691936f7de0784d2dd90ce255f12e35092614461595c5bc74be1e26b	bleaching-condition	noaa-pifsc-bleaching	test	HEALTHY	BLEACHED	0.1893	?		1	0
+M159	4049fb163814d46bfd809fde3c088202d35f617c2a110fda403153dc26a4b8c0	coral-health-binary	noaa-pifsc-bleaching	train	UNHEALTHY	HEALTHY	0.1788	?		1	0
+M160	4db0a28db94b368ed42c9a881ba5768e164d27a2a09860c2bdea5a559e6c5866	bleaching-condition	roboflow-coral-bleaching-general-v1-yolov8s	train	HEALTHY	BLEACHED	0.0908	H	HEALTHY	0	0
+M161	1645cab2ff392c11864b831cfccc5fb4e2820584a7027507b525aea2c5e7be18	bleaching-condition	noaa-pifsc-bleaching	test	BLEACHED	HEALTHY	0.0373	?		1	0
+M162	b77e8ee5c43f17eb1c8c4767e1bb6989bd47249fe0f3821280de716b4a461606	coral-health-binary	roboflow-coral-bleaching-final-v6i	train	UNHEALTHY	HEALTHY	0.1844	?		1	0
+M163	917d04a7e6aabe020d1b4bfd61aeeedee4954da77f3f3deac21c9938850dab97	bleaching-condition	noaa-pifsc-bleaching	train	BLEACHED	HEALTHY	0.0423	?		1	0
+M164	0562a27543f8df6e31bcbff79f02a77f7be8fe62c21191ea7fa1bb976aef40e7	coral-health-binary	roboflow-coral-reef-classification-v3i	train	HEALTHY	UNHEALTHY	0.1147	?		1	0
+M165	f1d47c804c8013804e8ecd60ad98d4f2385a0b97900fb878cd1b257562870bfd	coral-health-binary	roboflow-coral-classification-copy-changed-v13i	train	HEALTHY	UNHEALTHY	0.2178	?		1	0
+M166	4b5d2a239527b4f13820ab341ee61671f6a6bebfd5abb8492a406a6612387c08	coral-health-binary	roboflow-coral-bleaching-final-v6i	train	UNHEALTHY	HEALTHY	0.0919	?		1	0
+M167	c7d9288036c32468ba4fc6e80a905f1ed39549e8194c6751bcb6b6234a7fe15a	coral-health-binary	roboflow-coral-reef-classification-v3i	train	HEALTHY	UNHEALTHY	0.1719	U	UNHEALTHY	1	1
+M168	cf7f03e916079c20e475b1c87b810787d306d54f66dac23d2b0eac5c9991bf8b	bleaching-condition	roboflow-coral-reef-bleach-detection-v2i	test	HEALTHY	BLEACHED	0.1803	H	HEALTHY	0	0
+M169	2c5b093382cd6d7b601cfc96c61511c3868a42deebe61f9cb8ce4924c9934387	coral-health-binary	roboflow-coral-reef-classification-v3i	train	HEALTHY	UNHEALTHY	0.2102	H	HEALTHY	0	0
+M170	bc314284f4ddfa09638b105f4914e6488595d961060cc932a6be6c09345471c5	coral-health-binary	roboflow-coral-reef-classification-v3i	train	HEALTHY	UNHEALTHY	0.1102	U	UNHEALTHY	1	1
+M171	e03144d6185dc504cb202c90bb6b794f172fbdee0c4db8555cfd35f20b0610c6	bleaching-condition	roboflow-coral-bleaching-general-v1-yolov8s	train	BLEACHED	HEALTHY	0.1389	?		1	0
+M172	e9fdd7d12d2be5cd19b7e1a41456a2753fab4b0863f3d799d5cfeee7dafe2cb6	coral-health-binary	roboflow-coral-reef-classification-v3i	train	HEALTHY	UNHEALTHY	0.0878	H	HEALTHY	0	0
+M173	d80ac97f51c9c1fd1691603781021ded5bb9da2c815d37e2cb86d780b58ff37f	coral-health-binary	roboflow-coral-reef-classification-v3i	validation	UNHEALTHY	HEALTHY	0.1382	H	HEALTHY	1	1
+M174	2976971798c877aa9d83ee6c22f227d8dfca19850d53acdba8ce0b30f3e5793d	coral-health-binary	noaa-pifsc-bleaching	test	HEALTHY	UNHEALTHY	0.2078	H	HEALTHY	0	0
+M175	49b28e20d971bd269fffe0f826a89299d661fd83495cd6851a4e2915b4b64ef9	coral-health-binary	roboflow-coral-classification-copy-changed-v13i	train	HEALTHY	UNHEALTHY	0.1786	H	HEALTHY	0	0
+M176	8e682092d094dc956f645684b671b40e0f97ef5e12605050ec49eafd04e13629	bleaching-condition	roboflow-coral-reef-bleach-detection-v2i	train	HEALTHY	BLEACHED	0.0766	U	BLEACHED	1	1
+M177	d4cc1dd50e3ff878e2e67e8bab02d96d33f7920546475c1015670a504ad997d4	bleaching-condition	roboflow-coral-bleaching-final-v6i	test	HEALTHY	BLEACHED	0.0473	H	HEALTHY	0	0
+M178	b3655b4f643d7bb5b5088a04c1fdbf2351e9dcb17806536250c89b5289c8371b	bleaching-condition	roboflow-coral-bleaching-final-v6i	train	HEALTHY	BLEACHED	0.0131	U	BLEACHED	1	1
+M179	2cedac8ad02805bed3fdaa80562ce222ea3a78be7f377dc51bf345e49a42180e	coral-health-binary	roboflow-coral-reef-bleach-detection-v2i	validation	HEALTHY	UNHEALTHY	0.1980	?		1	0
+M180	9945e0af2204e9a10bee6b0694b1f2896a3056fb7256a63c03c054b40c9aecdc	bleaching-condition	roboflow-coral-bleaching-general-v1-yolov8s	train	BLEACHED	HEALTHY	0.0879	?		1	0
+M181	ae09d37576230083f40c2640c6678d256be8fa5d3375faba2d7c763e8041bf1a	coral-health-binary	roboflow-coral-reef-classification-v3i	train	HEALTHY	UNHEALTHY	0.2003	H	HEALTHY	0	0
+M182	387166d4ec25c8bc847aa750093803358d2dfb304bf350482da245636ce7033a	coral-health-binary	noaa-pifsc-bleaching	train	HEALTHY	UNHEALTHY	0.1786	?		1	0
+M183	ff17205654797a39de168bde272347bcc11e7ec7a2116519461c9a27fff4bcb5	bleaching-condition	noaa-pifsc-bleaching	test	HEALTHY	BLEACHED	0.1231	U	BLEACHED	1	1
+M184	ad426bffd46f98251b63a3b3cffa601f90fed8d8a40955f6a1e6febff23a96fe	coral-health-binary	roboflow-coral-reef-classification-v3i	validation	UNHEALTHY	HEALTHY	0.0985	H	HEALTHY	1	1
+M185	f965f9fc1be7cf60c6f10c1ebd56a28b9c352a751508553810e96816661c21c7	bleaching-condition	noaa-pifsc-bleaching	train	BLEACHED	HEALTHY	0.1676	?		1	0
+M186	eb6a1bce51488232b83df4674bf7e041feb7197f78b35670affaa325ff71ec33	coral-health-binary	roboflow-coral-reef-classification-v3i	train	UNHEALTHY	HEALTHY	0.0462	H	HEALTHY	1	1
+M187	a21c3b635c972a179eb63ced6893731082e65d6aa0bfd832bbae1041b836969c	bleaching-condition	noaa-pifsc-bleaching	validation	BLEACHED	HEALTHY	0.0026	?		1	0
+M188	b2ece863e376af3660ff1267ff92dd0b768c1ac572a8706b6cd7f4179c677a00	coral-health-binary	roboflow-coral-reef-classification-v3i	train	HEALTHY	UNHEALTHY	0.1806	H	HEALTHY	0	0
+M189	fb577d441eb14025626da6f19b0099da773e33e0b32a4f27e2172825def200bd	bleaching-condition	roboflow-coral-reef-bleach-detection-v2i	test	HEALTHY	BLEACHED	0.1039	H	HEALTHY	0	0
+M190	8921ec7956dd0256e0d283bfe392daa459230ab76cef99af14595952848dc6ab	coral-health-binary	roboflow-coral-reef-classification-v3i	train	HEALTHY	UNHEALTHY	0.1953	U	UNHEALTHY	1	1
+M191	3b70f497bfb9bacaa3c0f3aab9c9ba687415e9d41c856c56bd7a61e653e3bf24	bleaching-condition	roboflow-coral-classification-copy-changed-v13i	train	HEALTHY	BLEACHED	0.1152	H	HEALTHY	0	0
+M192	d9f905958da5f6cf2917f136126176fccf046cce2672ba75be4136ceb219e351	coral-health-binary	roboflow-coral-reef-classification-v3i	train	HEALTHY	UNHEALTHY	0.0056	H	HEALTHY	0	0
+M193	3e090a03f3faae4740f565c2e71a3e05afbed95f911e4346bb2c4150a8acc767	bleaching-condition	noaa-pifsc-bleaching	validation	BLEACHED	HEALTHY	0.0070	?		1	0
+M194	fbbff060f5464e5a70a44ce787dc7f2d14c19aa7ef6909a56eafa3c2b724473c	bleaching-condition	roboflow-coral-bleaching-general-v1-yolov8s	test	HEALTHY	BLEACHED	0.0476	H	HEALTHY	0	0
+M195	f9ece1bfcc3bb2d8ce5946a0f43f894e384aaee437c9aa30d8794009e81d0973	coral-health-binary	roboflow-coral-reef-classification-v3i	train	UNHEALTHY	HEALTHY	0.1654	?		1	0
+M196	35187f4ddfa661add3a4d5d8b24191935274bc53fbd2d91cd1227236ccbf5469	bleaching-condition	noaa-pifsc-bleaching	validation	BLEACHED	HEALTHY	0.0427	?		1	0
+M197	e0a8837c248e0bacacf88b71561e10e1f98b230673ab9c526cc3709212648b9c	coral-health-binary	roboflow-coral-bleaching-general-v1-yolov8s	train	UNHEALTHY	HEALTHY	0.1500	?		1	0
+M198	5e527c771a0e5014a01737214a7df24d31691beb7a8b0cc871967c205fbf6ee3	coral-health-binary	roboflow-coral-bleaching-general-v1-yolov8s	train	HEALTHY	UNHEALTHY	0.1437	N	NOT_CORAL	1	0
+M199	ea1d2e3bd64ec0e64cb81d0f6e9f7ec3b3f74c56245021c232c38bb5f29b5d82	bleaching-condition	noaa-pifsc-bleaching	test	BLEACHED	HEALTHY	0.1611	?		1	0
+M200	2d04b862860cb7daee839a59014d507694fe8c8e07ee96a40aae3e75050cb843	coral-health-binary	roboflow-coral-classification-copy-changed-v13i	train	UNHEALTHY	HEALTHY	0.1388	?		1	0
+M201	1795d14a74097ec746aaa4d02ec816408f732562cad2355d42a70705d5e54d36	coral-health-binary	noaa-pifsc-bleaching	train	UNHEALTHY	HEALTHY	0.1405	U	UNHEALTHY	0	0
+M202	58945eccc9aba8815dfc4c57e9a849d8bdf4c2d386828a236be687dd0c498902	coral-health-binary	roboflow-coral-classification-copy-changed-v13i	train	UNHEALTHY	HEALTHY	0.0913	?		1	0
+M203	64a7d9d76a18c7c7c92a026533f23530435a95c0d6c7590f953a1cc84076a237	bleaching-condition	noaa-pifsc-bleaching	train	HEALTHY	BLEACHED	0.0688	U	BLEACHED	1	1
+M204	1084b0043e88179d97bd2ef76339847eff658acb46367d1f2f6aea2a6129cb4b	bleaching-condition	noaa-pifsc-bleaching	test	BLEACHED	HEALTHY	0.0863	?		1	0
+M205	c4261f31a6a571adc9d2cf204f896ff15a0a04f9be49004681a69c53fd0765b6	coral-health-binary	noaa-pifsc-bleaching	train	UNHEALTHY	HEALTHY	0.1490	H	HEALTHY	1	1
+M206	15156e1682d9a8870607fe4e259c485d9e36fb1bd34d9afc81b1eb7fd381d007	bleaching-condition	noaa-pifsc-bleaching	train	HEALTHY	BLEACHED	0.0543	?		1	0
+M207	33de4a1cecd617af0aefc6272d13c2a5574f4210664ab98b4e6cabad11de35b3	coral-health-binary	roboflow-coral-bleaching-final-v6i	train	HEALTHY	UNHEALTHY	0.1433	N	NOT_CORAL	1	0
+M208	383948f66254327017b1eac485e09eec51c46c886bed0c83bdea85d2a4aca102	bleaching-condition	roboflow-coral-classification-copy-changed-v13i	train	BLEACHED	HEALTHY	0.0259	H	HEALTHY	1	1
+M209	70adb3fb7a1e565197fc46f625d1b8de08251b91f6a1c9b8e9a3e581b787a114	bleaching-condition	roboflow-coral-bleaching-general-v1-yolov8s	train	HEALTHY	BLEACHED	0.0104	U	BLEACHED	1	1
+M210	c60b8582b008e7ade011fc9b557e7091ddf390db2e8770aa9ae7e49b9d6e9d4c	bleaching-condition	noaa-pifsc-bleaching	validation	BLEACHED	HEALTHY	0.0636	?		1	0
+M211	9c02507f03cb091771b75283b3267bd1344341aa0c3ef10ab3269819197a14f3	bleaching-condition	roboflow-coral-reef-bleach-detection-v2i	train	BLEACHED	HEALTHY	0.0927	H	HEALTHY	1	1
+M212	7760b7b7e5a35daecfb2c72cfbbd3d141c6e63a14aeae7b97854b00febffbd04	bleaching-condition	noaa-pifsc-bleaching	validation	BLEACHED	HEALTHY	0.0017	?		1	0
+M213	8b3c011c6a63f2b5bc23c01afc5866929e7210f9ab0361f850320a35f67d0467	coral-health-binary	noaa-pifsc-bleaching	validation	UNHEALTHY	HEALTHY	0.1297	?		1	0
+M214	89a7dd0bdf6c6730ac65a92aa2f0e92452be6fcd97f10d18bcb76e389d3cb42e	bleaching-condition	noaa-pifsc-bleaching	test	HEALTHY	BLEACHED	0.2032	U	BLEACHED	1	1
+M215	f92b273997c46bbcfa882deab635dc75c243d29bd4d876388ff60d5e7fabd44a	bleaching-condition	noaa-pifsc-bleaching	test	HEALTHY	BLEACHED	0.1852	U	BLEACHED	1	1
+M216	3edac18b19503f9bea4abf462df820b569911e888ce2f74c125ba33e3c1f0f95	coral-health-binary	roboflow-coral-classification-copy-changed-v13i	train	UNHEALTHY	HEALTHY	0.1351	?		1	0
+M217	eed5ebc9dc88eeaae3151eac71629adffa5e0572334858f581ad74544824990e	bleaching-condition	roboflow-coral-reef-bleach-detection-v2i	train	HEALTHY	BLEACHED	0.0859	H	HEALTHY	0	0
+M218	c112079968ca2935c7012f6762be34b439cb25d663907db1bb0c13e9c17363fb	coral-health-binary	roboflow-coral-reef-classification-v3i	validation	UNHEALTHY	HEALTHY	0.1211	N	NOT_CORAL	1	0
+M219	44aac6dd76eb6ca05be8cffa3d94945b368f1d1a1e917d413529cbecf5b33e81	coral-health-binary	roboflow-coral-reef-classification-v3i	train	HEALTHY	UNHEALTHY	0.0050	H	HEALTHY	0	0
+M220	455ba15fc57b8875d1b6f6653e110e389faf32387af4c4ccc0c7b46f4f0a89a3	coral-health-binary	roboflow-coral-classification-copy-changed-v13i	train	UNHEALTHY	HEALTHY	0.1846	?		1	0
+M221	8c8e2352ab86238cb542c5df27ce55af29c720dd99f429288edaddaa4d4ecd6c	bleaching-condition	roboflow-coral-bleaching-general-v1-yolov8s	test	HEALTHY	BLEACHED	0.0488	H	HEALTHY	0	0
+M222	3a682c68d8972fdbcb5c36e706807fdb5e04f07086ac6d4396f6c46e18683a98	bleaching-condition	noaa-pifsc-bleaching	train	BLEACHED	HEALTHY	0.1581	?		1	0
+M223	5342e2834826513f821ed6fd8f218e79e726031c5a42671c3171fdd83bcbc09b	bleaching-condition	roboflow-coral-reef-bleach-detection-v2i	train	BLEACHED	HEALTHY	0.1166	H	HEALTHY	1	1
+M224	9c8de9383882e1aad458b32fd610e2916f0b314f4fcd4e7db7e119382b5df94c	bleaching-condition	roboflow-coral-reef-bleach-detection-v2i	train	BLEACHED	HEALTHY	0.0900	H	HEALTHY	1	1
+M225	90e6d31c5a379c421c603d3c516da5a47015a4503ca88f0ddc0038ac8c58ef35	bleaching-condition	noaa-pifsc-bleaching	test	HEALTHY	BLEACHED	0.0274	?		1	0
+M226	79236f213d59c0f5c98366d2fe906c0accc68d36ce32fb91f5ff30ed61382dd2	coral-health-binary	roboflow-coral-reef-classification-v3i	test	HEALTHY	UNHEALTHY	0.0176	H	HEALTHY	0	0
+M227	36c445a82d9dad2930f31d5318121809181a9308d8353532bebfd712d88538ec	coral-health-binary	roboflow-coral-bleaching-final-v6i	train	UNHEALTHY	HEALTHY	0.1413	U	UNHEALTHY	0	0
+M228	d52580e8fe2022aadd74b3903770f5532bc1aad9a51d8bf25537a3eb117633a8	bleaching-condition	noaa-pifsc-bleaching	train	HEALTHY	BLEACHED	0.1208	?		1	0
+M229	7fda33ddf24f7b8c895ba29b11d5f9191de7d0f882f4f3c186451ca3ecc2e025	bleaching-condition	noaa-pifsc-bleaching	train	HEALTHY	BLEACHED	0.1449	?		1	0
+M230	9a1148a91b7c1470dd28bb2c44d81aef68f6c6b1a9e32e11a30c9da505573a65	coral-health-binary	roboflow-coral-reef-classification-v3i	test	HEALTHY	UNHEALTHY	0.0909	U	UNHEALTHY	1	1
+M231	a993a7499b7dd646adfee04661c1ba475bb97c831c3eeb1f041f85240145f2ff	coral-health-binary	noaa-pifsc-bleaching	train	HEALTHY	UNHEALTHY	0.1749	?		1	0
+M232	1e405ae37881ce07fd4909c4f26e82024379033b1ecceab01a9a1c132f1bd047	bleaching-condition	roboflow-coral-classification-copy-changed-v13i	validation	HEALTHY	BLEACHED	0.0802	H	HEALTHY	0	0
+M233	04a3d791a4226b693d2a660aaf4689bac66546379f0867ac99d4abf1c53c966b	bleaching-condition	roboflow-coral-reef-bleach-detection-v2i	train	HEALTHY	BLEACHED	0.0325	H	HEALTHY	0	0
+M234	a2d90d39c861902bc28bc002fdb69cd7a1392160aa85408ed0e74c52ff2e82e7	coral-health-binary	roboflow-coral-reef-classification-v3i	train	HEALTHY	UNHEALTHY	0.1571	H	HEALTHY	0	0
+M235	f2aa35324a38c122ea601427504b3204a89525fd3ffb1b7923049f79dc47fa3f	coral-health-binary	roboflow-coral-reef-classification-v3i	train	UNHEALTHY	HEALTHY	0.1341	H	HEALTHY	1	1
