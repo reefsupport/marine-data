@@ -1,0 +1,17 @@
+# Hand-authored (WP-7b): Labeled Fishes in the Wild's opencv-cascade-dat annotation
+# format carries no native class string at all — every bounding box is implicitly
+# "fish" (registry/sources/fish.yaml loader.verified_note: "No native class string
+# exists in this format — every box is implicitly 'fish'"). One synthetic label,
+# `fish`, stands in for that implicit class so the gate has something to check
+# against; the loader does not currently emit label strings (`supervises: []`).
+crosswalks:
+  - id: labeled-fishes-in-the-wild
+    source_schema: dataset-native
+    target_schema: rs-taxa-v1
+    description: Single implicit fish class (opencv-cascade-dat has no label field) onto Vertebrata.
+    exact_by_construction: "the source has exactly one implicit class and it is fish; Vertebrata is the smallest accepted clade holding all fish (see rs-taxa-v1 FISH_NOTE)"
+    edges:
+      - source_label: fish
+        targets: { taxon: A146419 }
+        fidelity: coarsened
+        note: "fish is paraphyletic; Vertebrata is the smallest accepted WoRMS clade. See fathomnet/ruod edges for the same rule."

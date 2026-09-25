@@ -2,7 +2,7 @@
 # retargeted; MINOR = nodes/edges/vocabularies added; PATCH = notes and reasons only.
 # `marinedata taxonomy export` freezes releases/<version>.json;
 # `marinedata taxonomy diff <a> <b>` compares two of them (HEAD = working tree).
-version: 1.0.0
+version: 1.1.0
 snapshot: worms-2026-09-25.parquet
 
 # Sources under the 95% mapped floor. Each entry says what is lost and why.
@@ -12,6 +12,14 @@ coverage_exceptions:
     bucket for every non-target substrate and organism. It has no canonical meaning, so
     it is an unmappable edge (the point is unsupervised on the taxon axis), not forced
     into a class.
+  reefolution: >-
+    24 of 64 observed CoralNet-native codes (16,431 of 43,500 points, ~37.8%) are not
+    mapped, led by `Xendae` alone (9,190, 21.1%). No CoralNet label-set export (code ->
+    full name) is staged alongside the points, only the abbreviated codes themselves, so
+    every unmapped code is one this repo cannot verify from a second independent source.
+    A plausible reading of `Xendae` as Xeniidae was considered and rejected as an
+    unverified guess (see registry/crosswalks/reefolution.yaml for the full list and
+    reasoning). Needs the source's original label-set export to resolve honestly.
 
 # Labelled image/video sources whose label vocabulary WP-7 has not harvested. The
 # W1 vocabularies are all crosswalked; each of these gets one when its labels are
@@ -34,8 +42,6 @@ no_crosswalk_yet:
   fishnet-2023: fish species set not harvested in WP-7; crosswalk at ingest.
   mft25: tracking set (fish ids, not taxa) not harvested in WP-7; crosswalk at ingest.
   deepsea-mot: deep-sea tracking set not harvested in WP-7; crosswalk at ingest.
-  mouss-detection: fish bbox vocabulary not harvested in WP-7; crosswalk at ingest.
-  labeled-fishes-in-the-wild: single-class fish bbox; maps to Pisces at ingest.
   brackish-dataset: 6-class bbox set not harvested in WP-7; crosswalk at ingest.
   fish4knowledge: species set not harvested in WP-7; crosswalk at ingest.
   sea-urchin-detection: urchin bbox set not harvested in WP-7; crosswalk at ingest.
@@ -43,5 +49,3 @@ no_crosswalk_yet:
   whoi-plankton-small: plankton class list not harvested in WP-7; crosswalk at ingest.
   underwater-image-enhancement: enhancement pairs; no class labels to cross-walk.
   satellite-coral-mapping: habitat-map classes (remote sensing), not organism labels; crosswalk at ingest.
-  reefolution: own survey labels not harvested in WP-7; crosswalk at ingest.
-  coralscop-masks-rs: class-agnostic coral masks; no class to cross-walk.

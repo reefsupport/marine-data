@@ -232,7 +232,13 @@ def gate(
         if scope is not None and sid not in scope:
             continue
         spec = registry.source(sid).loader
-        if sid in covered or (spec and spec.crosswalk_id) or sid in no_crosswalk:
+        if sid in covered or (spec and spec.crosswalk_id):
+            continue
+        if sid in no_crosswalk:
+            fails.append(
+                f"{sid}: no_crosswalk_yet is not a release-gate exemption for 1.0+ "
+                f"({no_crosswalk[sid]})"
+            )
             continue
         fails.append(f"{sid}: labelled source with no crosswalk and no documented exception")
     return fails

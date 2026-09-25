@@ -54,10 +54,29 @@ def test_every_vocab_has_no_silent_drop_and_meets_floor(reg):
         assert a.coverage >= tx.MIN_MAPPED or a.source_id in exceptions, a.line()
 
 
-def test_gate_passes_on_the_registry(reg):
-    assert tx.gate(reg, reg.root) == []
+def test_gate_passes_on_a_release(reg):
+    """The per-release gate (the one that actually blocks a build) is scoped to that
+    release's sources, so it passes even though the full registry (below) does not."""
     stamp = tx.assert_release_gate(reg, reg.root, ["ruod", "noaa-benthic-t1"])
     assert stamp["taxonomy_version"] == tx.load_meta(reg.root)["version"]
+
+
+def test_gate_on_the_full_registry_fails_only_on_no_crosswalk_yet(reg):
+    """WP-7b (2026-09-25): `no_crosswalk_yet` stopped being a gate exemption. 4 of the
+    23 sources it listed got real crosswalks (reefolution, coralscop-masks-rs,
+    labeled-fishes-in-the-wild, mouss-detection); the other 19 are not staged in
+    rs-storage-open (or are access-blocked / have no closed label vocabulary at all —
+    coralvqa, marineinst20m) and cannot be honestly crosswalked without inventing label
+    names. Every remaining failure must be exactly one of those 19, never a silent
+    drop, a dead target or an unmappable-with-no-reason."""
+    meta = tx.load_meta(reg.root)
+    no_crosswalk = set(meta.get("no_crosswalk_yet") or {})
+    fails = tx.gate(reg, reg.root)
+    assert fails, "expected the 19 unresolved no_crosswalk_yet sources to fail"
+    for line in fails:
+        sid = line.split(":", 1)[0]
+        assert sid in no_crosswalk, f"unexpected gate failure outside no_crosswalk_yet: {line}"
+    assert {line.split(":", 1)[0] for line in fails} == no_crosswalk
 
 
 def _copy_root(reg, tmp_path):

@@ -81,6 +81,7 @@ NON_TAXON_CATEGORIES = frozenset(
         "state",
         "functional-group",
         "grouping",
+        "background",
     }
 )
 """Why a taxon-axis node carries no AphiaID. ``functional-group`` = polyphyletic by

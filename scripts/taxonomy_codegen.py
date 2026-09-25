@@ -214,10 +214,10 @@ BENTHIC = {  # lowercased label or CoralNet name -> (taxon, form, fidelity, note
     "ferny": ("@Halophila", "SG_FERN", "coarsened", "fern-like = Halophila spinulosa"),
     "rounded": ("@Halophila", "SG_ROUND", "coarsened", "rounded = Halophila ovalis group"),
     "background": (
-        "ABIOTIC",
+        "SG_BG",
         None,
-        "approximate",
-        "negative class: substrate and/or water, no seagrass",
+        "exact",
+        None,
     ),
     "substrate": ("ABIOTIC", None, "coarsened", None),
     "water": ("WC", None, "exact", None),
@@ -257,6 +257,7 @@ NON_TAXON_BENTHIC = {
     "DRK": "unknown: dark or unreadable",
     "SCL": "equipment: scale reference",
     "UNKNOWN": "unknown: annotator could not identify",
+    "SG_BG": "background: no seagrass present; substrate unspecified",
 }
 
 
@@ -488,6 +489,12 @@ def main(cache: Path, offline: bool) -> None:
         add.append(
             f"      - {{ id: UNKNOWN, name: Unknown / unclassified, axis: taxon, non_taxon: "
             f'true, non_taxon_reason: "{NON_TAXON_BENTHIC["UNKNOWN"]}" }}'
+        )
+    if "id: SG_BG," not in text:
+        add.append(
+            f"      - {{ id: SG_BG, name: Background (no seagrass), axis: taxon, non_taxon: "
+            f'true, non_taxon_reason: "{NON_TAXON_BENTHIC["SG_BG"]}", notes: "DeepSeagrass '
+            'negative class; substrate may or may not be visible in frame" }'
         )
         for fid, fname in [
             ("SG_STRAP", "Strap-like leaves"),

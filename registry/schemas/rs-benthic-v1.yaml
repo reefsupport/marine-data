@@ -169,6 +169,7 @@ schemas:
       - { id: HC_PORITIDAE, name: Poritidae, parent: HC, axis: taxon, worms_aphia_id: 196105, worms_scientificname: Poritidae, worms_rank: Family, worms_status: accepted, worms_checked_on: 2026-09-25 }
       - { id: HC_PSAMMOCORA, name: Psammocora, parent: HC, axis: taxon, worms_aphia_id: 204148, worms_scientificname: Psammocora, worms_rank: Genus, worms_status: accepted, worms_checked_on: 2026-09-25 }
       - { id: UNKNOWN, name: Unknown / unclassified, axis: taxon, non_taxon: true, non_taxon_reason: "unknown: annotator could not identify" }
+      - { id: SG_BG, name: Background (no seagrass), axis: taxon, non_taxon: true, non_taxon_reason: "background: no seagrass present; substrate unspecified", notes: "DeepSeagrass negative class; substrate may or may not be visible in frame" }
       - { id: SG_STRAP, name: Strap-like leaves, axis: form, notes: "Seagrass leaf morphology (DeepSeagrass superclasses)" }
       - { id: SG_FERN, name: Fern-like leaves, axis: form, notes: "Seagrass leaf morphology (DeepSeagrass superclasses)" }
       - { id: SG_ROUND, name: Rounded leaves, axis: form, notes: "Seagrass leaf morphology (DeepSeagrass superclasses)" }

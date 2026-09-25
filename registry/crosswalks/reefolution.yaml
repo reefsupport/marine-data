@@ -1,0 +1,64 @@
+# Hand-authored (WP-7b), from the real staged data: fetched
+# sources/reefolution/2026-09-23-2c84cb0c9cda/labels/points.parquet (43,500 points,
+# schema_id reefolution-coralnet-native, 64 distinct labels) via boto3 2026-09-25. No
+# CoralNet labelset export (full names) is staged alongside the points — only the
+# abbreviated codes — so every edge below is a code this repo can already verify
+# against an existing resolved node (mostly via mlc-moorea/agrra-benthic precedent or
+# nodes WP-7's own codegen already resolved for other Indo-Pacific vocabularies).
+#
+# 24 of the 64 codes are NOT mapped and are the coverage_exceptions entry in
+# taxonomy.yaml: Xendae (9,190, the single largest unmapped code — a plausible
+# Xeniidae reading was considered and rejected as a guess), SP, HS_AR, Rhy, Agl, RA,
+# Didae, biofilm, Lobvar, Frame, Gonio, Dipsa, Pad, Fila, Leptor, Tubmus, Gardineros
+# and others. None of these abbreviations has a second, independent source (a labelset
+# export, a paper, a README) to confirm against, and several are genuinely ambiguous
+# between two plausible genera (Gonio = Goniastrea or Goniopora) or between a taxon and
+# an equipment/state code (HS_AR, RA, Frame). Guessing would risk exactly the "3 of the
+# first 8 AphiaIDs were wrong" failure mode WP-7 already hit once. Needs the source's
+# original CoralNet label-set export (id -> full name) to resolve honestly.
+crosswalks:
+  - id: reefolution
+    source_schema: dataset-native
+    target_schema: rs-benthic-v1
+    description: Reefolution's CoralNet-native genus/functional-group codes onto RS-Benthic v1, taxon (+form) axes.
+    edges:
+      - { source_label: Sand, targets: { taxon: SD }, fidelity: exact }
+      - { source_label: TA, targets: { taxon: TA }, fidelity: exact }
+      - { source_label: Acr, targets: { taxon: HC_ACROPORA }, fidelity: exact }
+      - { source_label: Rubble, targets: { taxon: RB }, fidelity: exact }
+      - { source_label: dead, targets: { taxon: DC }, fidelity: exact }
+      - { source_label: Rock, targets: { taxon: RK }, fidelity: exact }
+      - { source_label: SC, targets: { taxon: SC }, fidelity: exact, note: "source's own generic soft-coral bucket" }
+      - { source_label: Cyano, targets: { taxon: CYANOBACTERIA }, fidelity: exact }
+      - { source_label: Mil, targets: { taxon: CN_HYDROZOA }, fidelity: coarsened, note: "Millepora; no genus node yet, coarsened to class" }
+      - { source_label: Gal, targets: { taxon: HC_GALAXEA }, fidelity: exact }
+      - { source_label: SG, targets: { taxon: SG }, fidelity: exact }
+      - { source_label: Poc, targets: { taxon: HC_POCILLOPORA }, fidelity: exact }
+      - { source_label: Tunicate, targets: { taxon: INV_ASCIDIACEA }, fidelity: exact }
+      - { source_label: PorM, targets: { taxon: HC_PORITES, form: CM }, fidelity: coarsened, note: "Porites, massive growth form" }
+      - { source_label: PorB, targets: { taxon: HC_PORITES, form: CB }, fidelity: coarsened, note: "Porites, branching growth form" }
+      - { source_label: Styl, targets: { taxon: HC_STYLOPHORA }, fidelity: exact }
+      - { source_label: Dic, targets: { taxon: ALG_DICTYOTACEAE }, fidelity: coarsened, note: "Dictyota; family-level node only" }
+      - { source_label: Urchins, targets: { taxon: OTHER_FAUNA }, fidelity: coarsened, note: "no Echinoidea node in rs-benthic-v1 yet" }
+      - { source_label: CCA, targets: { taxon: CCA }, fidelity: exact }
+      - { source_label: Echpo, targets: { taxon: HC_ECHINOPORA }, fidelity: exact }
+      - { source_label: Favit, targets: { taxon: HC_FAVITES }, fidelity: exact }
+      - { source_label: Anemone, targets: { taxon: CNIDARIA }, fidelity: coarsened, note: "no Actiniaria node yet" }
+      - { source_label: Platy, targets: { taxon: HC_PLATYGYRA }, fidelity: exact }
+      - { source_label: Hal, targets: { taxon: SW }, fidelity: coarsened, note: "Halimeda; no genus node yet" }
+      - { source_label: Astreo, targets: { taxon: HC_ASTREOPORA }, fidelity: exact }
+      - { source_label: Aca, targets: { taxon: HC_ACANTHASTREA }, fidelity: exact }
+      - { source_label: Hydno, targets: { taxon: HC_HYDNOPHORA }, fidelity: exact }
+      - { source_label: Unknown, targets: { taxon: UNKNOWN }, fidelity: exact }
+      - { source_label: Coralli, targets: { taxon: CN_CORALLIMORPHARIA }, fidelity: exact }
+      - { source_label: Lobo, targets: { taxon: HC_LOBOPHYLLIA }, fidelity: exact }
+      - { source_label: Echphy, targets: { taxon: HC_ECHINOPHYLLIA }, fidelity: exact }
+      - { source_label: Cos, targets: { taxon: HC_COSCINARAEA }, fidelity: exact }
+      - { source_label: Bivalve, targets: { taxon: CLAM }, fidelity: exact }
+      - { source_label: MA, targets: { taxon: SW }, fidelity: exact }
+      - { source_label: Pachy, targets: { taxon: HC_PACHYSERIS }, fidelity: exact }
+      - { source_label: Bryo, targets: { taxon: INV_BRYOZOA }, fidelity: exact }
+      - { source_label: GA, targets: { taxon: ALGAE }, fidelity: coarsened, note: "generic algae, functional-group only" }
+      - { source_label: Iso, targets: { taxon: HC_ISOPORA }, fidelity: exact }
+      - { source_label: Pav, targets: { taxon: HC_PAVONA }, fidelity: exact }
+      - { source_label: Merulina, targets: { taxon: HC_MERULINA }, fidelity: exact }
