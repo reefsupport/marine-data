@@ -98,6 +98,43 @@ class HashingReader:
             pass
 
 
+class ConcatReader:
+    """Read several URLs back-to-back as one file-like stream.
+
+    WP-6d-B multipart-tar (D-D): ``<name>.tar.gz.aa``/``.ab``/... parts are concatenated
+    in order with no full local copy — each part is opened only when the previous one is
+    exhausted, and closed immediately after. tarfile's own streaming reader (``r|*``)
+    already loops on short reads, so returning less than ``n`` mid-transition is fine;
+    only an empty read means every part is exhausted.
+    """
+
+    def __init__(self, urls: tuple[str, ...]) -> None:
+        self._urls = list(urls)
+        self._current: IO[bytes] | None = None
+
+    def _advance(self) -> bool:
+        if self._current is not None:
+            self._current.close()
+            self._current = None
+        if not self._urls:
+            return False
+        self._current = open_url(self._urls.pop(0))
+        return True
+
+    def read(self, n: int = -1) -> bytes:
+        if self._current is None and not self._advance():
+            return b""
+        data = self._current.read(n)
+        while not data and self._advance():
+            data = self._current.read(n)
+        return data
+
+    def close(self) -> None:
+        if self._current is not None:
+            self._current.close()
+            self._current = None
+
+
 def download(url: str, dest: Path) -> tuple[str, str, int]:
     """Stream ``url`` to ``dest`` (via ``.part`` + rename). Returns (sha256, md5, size)."""
     dest.parent.mkdir(parents=True, exist_ok=True)

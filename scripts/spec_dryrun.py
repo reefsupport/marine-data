@@ -175,6 +175,13 @@ def _run_dry_run(spec_id: str, adapter: str, spec_path: Path) -> dict[str, str]:
     if proc.returncode == 3:
         why = proc.stderr.strip().split("\t")[-1] if proc.stderr else "gated"
         return {"dry_run": f"needs_yohan:{why}", "version": "", "items": "", "bytes": ""}
+    if proc.returncode == 4:
+        # Root cause now fixed in the CLI itself (marinedata.adapters.NoStageableItems):
+        # 0 stageable items is a real non-zero exit with a reason, not a hand-diagnosed
+        # ZERO_ITEM_KIND lookup. `NEEDS-ADAPTER\t<kind>\t<detail>` on stderr.
+        parts = proc.stderr.strip().split("\t")
+        kind = parts[1] if len(parts) > 1 else ZERO_ITEM_KIND.get(spec_id, "unknown-empty")
+        return {"dry_run": f"needs_adapter:{kind}", "version": "", "items": "0", "bytes": ""}
     if proc.returncode != 0:
         return {
             "dry_run": f"dead:exit{proc.returncode}",
