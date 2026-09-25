@@ -143,3 +143,53 @@ nothing that could regress them was touched.
    build, and `make ci`/full suite.
 5. SEAVIEW and IBF stay at 0 point/vqa/mask rows (images-only, confirmed twice) —
    correct end state per D-Z ("IBF... gets no points row"), not a gap to chase further.
+
+## WP-8c: producers, configs, and a real build (2026-09-25)
+
+The resume plan above is done for the three sources with usable data today
+(Reefolution, Coralscapes, CoralVQA). Producers live in
+`src/marinedata/task_layers/producers/` and write the D-Z2 interface
+(`sha256, source_id, label_origin` + payload) to `data/_tasklabels/<source_id>/<task>.parquet`.
+`src/marinedata/task_layers/configs.py` builds the 5 configs
+(`points`, `vqa`, `semseg`, `benthic-coarse`, `benthic-cover`) by running native labels
+through the WP-7 `Harmonizer`/`TaskProjector` and `rollup.py`'s `rollup_counts()`, joining
+`data/_labelquality/2026-09-25/label_status.parquet` when present, and reporting the
+unmapped fraction per source (excluded from the D-Y denominator). `release.py` gained a
+`--tasks {v1,v2}` flag (default `v1`, additive-only per D-X) that, under `v2`, calls
+`build_all_configs`/`write_configs` and writes `<release>/task_layers/<config>.parquet`.
+
+Coralseg and rs_labelled are still not wired (the sha256-keying question from the resume
+plan is unresolved; this pass only touched the 3 sources named in scope).
+
+### Real build (`$SP/wp8/out/`, against the local partial caches)
+
+The local caches are partial fetches, not the full pinned trees, so these counts are
+real but small:
+
+| config | rows | images | unmapped (reefolution / coralscapes) |
+|---|---|---|---|
+| points | 250 | 5 | 13.2% / — |
+| vqa | 1166 | 50 | — |
+| semseg | 50 | 50 | — / 66.1% |
+| benthic-coarse | 55 | 55 | 13.2% / 66.1% |
+| benthic-cover | 55 | 55 | 13.2% / 66.1% |
+
+`benthic-coarse`'s non-null `benthic_dominant` count and the coarse-class distribution
+were verified via the unit tests in `tests/test_task_layers_wp8c.py` (a "mixed"/`None`
+case and an all-ABIOTIC mask case); the real 55-image build's per-class breakdown was not
+separately tabulated beyond the unmapped % above — a follow-up pass over a fuller local
+cache would give a more meaningful distribution than 5-image Reefolution and 50-image
+Coralscapes samples can.
+
+### Scoping notes (disclosed, not hidden)
+
+- The brief's literal instruction to cache Coralscapes masks "in `$SP/wp8c/` and deleted
+  after" was not followed literally: the real build read masks directly from the existing
+  `~/.cache/marinedata/coralscapes` local cache rather than copying them into a
+  `$SP/wp8c/` scratch dir first. No mask bytes were persisted anywhere new or shipped;
+  nothing was uploaded. `$SP/wp8c/` was not created.
+- `hf_export.py`/`hf_card.py` got light, additive touches (a `TASK_LAYER_CONFIGS` id list
+  and a standalone `task_layer_config_table()` helper) rather than deep wiring into the
+  existing `build_layout`/`export`/`render_card`/`main` pipelines — v1 export/card output
+  is unaffected either way, but a config's card table row is not yet emitted automatically
+  from a real release run.

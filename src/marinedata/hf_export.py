@@ -43,6 +43,12 @@ DEFAULT_REPO_ID = "reefsupport/open-marine-imagery"
 DEFAULT_EXCLUDE_CONFIGS = ("coral-genus-caribbean",)
 """D-A: dropped from the v1 Hub configs — the release TSVs themselves are untouched."""
 
+TASK_LAYER_CONFIGS = ("points", "vqa", "semseg", "benthic-coarse", "benthic-cover")
+"""WP-8c (D-Z2), ``--tasks v2`` only: the 5 additional HF config entries for whatever
+``<release>/task_layers/<config_id>.parquet`` :func:`marinedata.release.build_release`
+wrote (v1's :data:`IMAGES`/:data:`MASKS`/:data:`PSEUDO_MASKS` configs are unaffected —
+this is a sibling list, not a replacement, and v1 exports never read it)."""
+
 EXCLUDE_REASONS: dict[str, str] = {
     "coral-genus-caribbean": (
         "0 labels in v1 — every `label` and `mask_class_map` value is null. "
