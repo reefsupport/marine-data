@@ -187,8 +187,8 @@ def embed_items(uniq: dict[str, Item], weights: Path, cache_path: Path, log=prin
 
 
 def load_thumbs(shas: list[str], uniq: dict[str, Item]) -> dict[str, object]:
-    """Grayscale thumbnails for ``shas``, reading each parquet row group once."""
-    from .crop import thumb_gray
+    """``(gray, rgb)`` thumbnail pairs for ``shas``, reading each parquet row group once."""
+    from .crop import thumb_pair
 
     groups: dict[tuple, list[str]] = defaultdict(list)  # type: ignore[type-arg]
     for s in shas:
@@ -197,11 +197,26 @@ def load_thumbs(shas: list[str], uniq: dict[str, Item]) -> dict[str, object]:
     out: dict[str, object] = {}
     for part in groups.values():
         for s, data in zip(part, read_payloads([uniq[s].payload for s in part]), strict=True):
-            out[s] = thumb_gray(data)
+            out[s] = thumb_pair(data)
     return out
 
 
-def _refine_crops(scores, ok, kind, a, b, table, shas, uniq, rules, log):  # type: ignore[no-untyped-def]
+def _box_cos_fn(embedder, emb, a, b):  # type: ignore[no-untyped-def]
+    """A ``box_cos(k, parent_rgb, box, a_is_patch)`` closure for :func:`crop.crop_refine`."""
+    from .embed import prepare
+
+    def fn(k, parent_rgb, box, a_is_patch):  # type: ignore[no-untyped-def]
+        region = parent_rgb.crop(box)
+        if region.width < 8 or region.height < 8:
+            return None
+        vec = embedder.embed_arrays([prepare(region)])[0]
+        other = emb[a[k]] if a_is_patch else emb[b[k]]
+        return float(np.dot(vec, other))
+
+    return fn
+
+
+def _refine_crops(scores, ok, kind, a, b, table, shas, uniq, rules, log, *, emb=None, weights=None):  # type: ignore[no-untyped-def]
     from .crop import crop_candidates, crop_refine
 
     area = table["area"]
@@ -209,6 +224,11 @@ def _refine_crops(scores, ok, kind, a, b, table, shas, uniq, rules, log):  # typ
     need = sorted({shas[i] for i in a[todo].tolist()} | {shas[j] for j in b[todo].tolist()})
     log(f"crop check: {len(todo)} pairs, {len(need)} images")
     thumbs = load_thumbs(need, uniq)
+    box_cos = None
+    if emb is not None and weights is not None and len(todo):
+        from .embed import SSCDEmbedder
+
+        box_cos = _box_cos_fn(SSCDEmbedder(weights), emb, a, b)
     ok, kind, ncc = crop_refine(
         scores,
         ok,
@@ -218,6 +238,7 @@ def _refine_crops(scores, ok, kind, a, b, table, shas, uniq, rules, log):  # typ
         lambda k: thumbs[shas[a[k]]],
         lambda k: thumbs[shas[b[k]]],
         rules,
+        box_cos=box_cos,
     )
     log(f"crop confirmed {int((kind == 'crop').sum())}")
     return ok, kind, ncc
@@ -245,6 +266,7 @@ def run_corpus(
     weights: Path | None,
     cache_path: Path,
     embed_knn: bool = True,
+    dedup_crop: bool = False,
     log=print,  # type: ignore[no-untyped-def]
 ) -> RunResult:
     raw = hash_items(items, workers, log)
@@ -266,7 +288,12 @@ def run_corpus(
     a, b, bits = merge_channels(channels, len(shas))
     scores = score_pairs(table, table, a, b, emb, emb)
     ok, kind = confirm(scores, rules)
-    ok, kind, ncc = _refine_crops(scores, ok, kind, a, b, table, shas, uniq, rules, log)
+    if dedup_crop:
+        ok, kind, ncc = _refine_crops(
+            scores, ok, kind, a, b, table, shas, uniq, rules, log, emb=emb, weights=weights
+        )
+    else:
+        ncc = np.full(len(ok), np.nan, np.float32)
     pairs = {"a": a, "b": b, "channels": bits, "confirmed": ok, "kind": kind, "ncc": ncc, **scores}
     clusters = dup_clusters(shas, ((shas[i], shas[j]) for i, j in zip(a[ok], b[ok], strict=True)))
     records = [
