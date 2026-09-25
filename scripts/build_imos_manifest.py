@@ -11,7 +11,13 @@ Build (only from a COMPLETE cache — a partial manifest is never written), D-AC
   1. every Squidle+-annotated frame, uncapped;
   2. along-track thinning of the rest: keep frame ``seq % thin == 0`` of each dive's track;
   3. cap per campaign x 20 m depth band x MEOW ecoregion, the cap solved so the total <= target;
-  4. within a cell, sha256(frame key) order — never listing order."""
+  4. within a cell, sha256(frame key) order — never listing order.
+D-AC2 (default ``--rule DAC2``) amends the balance: every annotated frame + <= 150k UNannotated
+frames from the same thinning + stratified cap (annotated still count against their cell, so the
+unannotated budget fills the least-annotated cells first), total <= 370k, written as
+``imos-auv-DAC2.parquet``. ``--reselect-from-cache`` re-runs only the selection on a
+COMPLETE cache (no listing; network only for the optional upload) — how a manifest is
+re-selected under a new rule."""
 
 from __future__ import annotations
 
@@ -33,6 +39,11 @@ from pathlib import Path
 BUCKET, ROOT = "imos-data", "IMOS/AUV/"
 URL = f"https://{BUCKET}.s3.ap-southeast-2.amazonaws.com/"
 SKIP = {"AUV_articles", "auv_viewer_data"}
+# Selection rules; the manifest filename carries the rule version (D-AC2).
+RULES: dict[str, dict] = {
+    "DAC": {"target": 300_000, "unannotated_max": None, "name": "imos-auv-dac.parquet"},
+    "DAC2": {"target": 370_000, "unannotated_max": 150_000, "name": "imos-auv-DAC2.parquet"},
+}
 SQUIDLE = "https://squidle.org/api/media"
 # squidle.org answers 403 to the default Python-urllib agent (WP-6f pass 1); curl-like UA is fine
 _UA = {
@@ -168,9 +179,16 @@ def solve_cap(cells: Mapping[tuple, tuple[int, int]], target: int) -> int:
 
 
 def select_frames(
-    rows: Iterable[Mapping], annotated: set[str], target: int, thin: int = 10
+    rows: Iterable[Mapping],
+    annotated: set[str],
+    target: int,
+    thin: int = 10,
+    unannotated_max: int | None = None,
 ) -> tuple[list[dict], dict]:
-    """Rows need key, campaign, dive, seq, depth_band, region. Returns (selected, stats)."""
+    """Rows need key, campaign, dive, seq, depth_band, region. Returns (selected, stats).
+
+    ``unannotated_max`` (D-AC2) bounds the capped, unannotated pool: the cap is solved against
+    ``min(target, annotated + unannotated_max)``; annotated frames are always all kept."""
     ann: dict[tuple, list[dict]] = defaultdict(list)
     cand: dict[tuple, list[dict]] = defaultdict(list)
     seen = 0
@@ -181,14 +199,15 @@ def select_frames(
         elif r["seq"] % thin == 0:
             cand[cell_of(r)].append({**r, "squidle_annotated": False, "selection": "capped"})
     cells = {c: (len(ann.get(c, ())), len(cand.get(c, ()))) for c in set(ann) | set(cand)}
-    cap = solve_cap(cells, target)
+    n_ann = sum(a for a, _ in cells.values())
+    budget = target if unannotated_max is None else min(target, n_ann + unannotated_max)
+    cap = solve_cap(cells, budget)
     out: list[dict] = []
     for c, (a, _t) in cells.items():
         out += ann.get(c, [])
         pool = sorted(cand.get(c, []), key=lambda r: sha_key(r["key"]))
         out += pool[: max(0, cap - a)]
     out.sort(key=lambda r: r["key"])
-    n_ann = sum(a for a, _ in cells.values())
     stats = {
         "frames_seen": seen,
         "annotated": n_ann,
@@ -196,7 +215,10 @@ def select_frames(
         "cells": len(cells),
         "cap": cap,
         "selected": len(out),
+        "unannotated": len(out) - n_ann,
+        "unannotated_max": unannotated_max,
         "target": target,
+        "budget": budget,
         "over_target_by_annotated": max(0, n_ann - target),
     }
     return out, stats
@@ -341,7 +363,15 @@ def list_all(cache: Path, workers: int) -> dict:
     return progress(cache, dives, {"dives_failed_this_pass": failed})
 
 
-def build(cache: Path, out: Path, meow_path: Path, target: int, thin: int) -> dict:
+def build(
+    cache: Path,
+    out: Path,
+    meow_path: Path,
+    target: int,
+    thin: int,
+    unannotated_max: int | None = None,
+    rule: str = "DAC",
+) -> dict:
     import pyarrow as pa
     import pyarrow.parquet as pq
 
@@ -365,7 +395,8 @@ def build(cache: Path, out: Path, meow_path: Path, target: int, thin: int) -> di
         for f in sorted((cache / "squidle").glob("*.parquet"))
         for k in pq.read_table(f)["key"].to_pylist()
     }
-    sel, stats = select_frames(rows, annotated, target, thin)
+    sel, stats = select_frames(rows, annotated, target, thin, unannotated_max)
+    stats["rule"] = rule
     stats["squidle_media"] = len(annotated)
     stats["squidle_unmatched"] = len(annotated - {stem(r["key"]) for r in rows})
     stats["regions"] = len({r["region"] for r in sel})
@@ -405,7 +436,14 @@ def main() -> None:
     ap.add_argument("--cache", type=Path, required=True)
     ap.add_argument("--out", type=Path, required=True)
     ap.add_argument("--meow", type=Path, required=True, help="MEOW ecoregions GeoJSON")
-    ap.add_argument("--target", type=int, default=300_000)
+    ap.add_argument("--rule", choices=sorted(RULES), default="DAC2")
+    ap.add_argument("--target", type=int, help="default: the rule's (DAC2 370k)")
+    ap.add_argument("--unannotated-max", type=int, help="default: the rule's (DAC2 150k)")
+    ap.add_argument(
+        "--reselect-from-cache",
+        action="store_true",
+        help="selection only (== --phase build) from a COMPLETE cache; no re-listing",
+    )
     ap.add_argument("--thin", type=int, default=10)
     ap.add_argument("--workers", type=int, default=8)
     ap.add_argument("--phase", choices=("list", "build", "all"), default="all")
@@ -413,6 +451,13 @@ def main() -> None:
         "--upload-prefix", help="e.g. sources/imos-auv/_manifest (only after a full build)"
     )
     a = ap.parse_args()
+    rule = RULES[a.rule]
+    if a.out.name != rule["name"]:
+        raise SystemExit(f"--out must be named {rule['name']} under rule {a.rule}")
+    target = a.target or rule["target"]
+    umax = rule["unannotated_max"] if a.unannotated_max is None else a.unannotated_max
+    if a.reselect_from_cache:
+        a.phase = "build"
     a.cache.mkdir(parents=True, exist_ok=True)
     if a.phase in ("list", "all"):
         st = list_all(a.cache, a.workers)
@@ -420,7 +465,8 @@ def main() -> None:
         if not st["complete"]:
             raise SystemExit(2)
     if a.phase in ("build", "all"):
-        print(json.dumps(build(a.cache, a.out, a.meow, a.target, a.thin)), flush=True)
+        st = build(a.cache, a.out, a.meow, target, a.thin, umax, a.rule)
+        print(json.dumps(st), flush=True)
         if a.upload_prefix:
             print(json.dumps(upload(a.out, a.upload_prefix)), flush=True)
 

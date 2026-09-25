@@ -7,7 +7,10 @@ adapter: fathomnet
 params:
   full: true
   page_size: 1000
-  # exclude_sha256: [<seamapd21/noaa-gfisher metadata.parquet>]  set when GFISHER is staged
+  # GFISHER decon (WP-6f-b): declared sha256 of the 221,165 FathomNet images served from NOAA's
+  # nmfs_odp_hq GCS bucket (= GFISHER frames), from the full 465,257-item index of 2026-09-25.
+  exclude_sha256: [https://hel1.your-objectstorage.com/rs-storage-open/sources/fathomnet/_manifest/gfisher-exclude-sha256.txt]
+  exclude_sha256_pin: f30341b679bba1e25ec807c2fc7bbcc8347b7ef6bfbce2daca2c0f1aaf1343e1
 notes: dedupe against GFISHER frames (noaa-gfisher, seamapd21) by sha256 before staging; no subset needed (481k items / 453 GB, both under the D-AB threshold)
 license: 'per box: CC-BY-NC-4.0 / CC0-1.0 / CC-BY-4.0 (annotationLicense); image rights per contributor'
 attribution: FathomNet / MBARI and contributors

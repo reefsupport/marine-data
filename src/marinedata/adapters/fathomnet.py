@@ -47,6 +47,7 @@ class FathomNetAdapter(BaseAdapter):
     def __init__(self, params: dict) -> None:
         super().__init__(params)
         self._meta: dict[str, dict[str, Any]] = {}
+        self.upstream_mismatch = 0  # D-AG: kept, counted for the datasheet
         self._last_request = 0.0
         self.duplicates = 0
         self.excluded = 0
@@ -163,7 +164,7 @@ class FathomNetAdapter(BaseAdapter):
                 yield RemoteItem(
                     key=f"{entry['uuid']}.jpg",
                     url=str(entry["url"]),
-                    sha256=entry.get("sha256"),
+                    sha256=sha or None,
                 )
                 yielded += 1
                 if yielded >= cap:
@@ -175,14 +176,26 @@ class FathomNetAdapter(BaseAdapter):
     def decode(self, fetched: Fetched) -> Iterator[Decoded]:
         uuid = fetched.item.key.rsplit(".", 1)[0]
         meta = self._meta.get(uuid, {"fields": {}, "labels": {}, "raw": {}})
+        declared = str(meta["raw"].get("sha256") or "").lower() or None
         for decoded in super().decode(fetched):
+            # D-AG: FathomNet's declared sha256 differs from the served bytes for ~13% of
+            # images; keep them, record the declared hash and whether it matched.
+            dag: dict[str, Any] = {}
+            if declared:
+                match = declared == hashlib.sha256(decoded.data).hexdigest()
+                self.upstream_mismatch += not match
+                dag = {"upstream_sha256": declared, "upstream_sha256_match": match}
             yield Decoded(
                 decoded.upstream_id,
                 decoded.data,
                 decoded.suffix,
                 decoded.upstream_url,
                 decoded.split_hint,
-                {**decoded.fields, **{k: v for k, v in meta["fields"].items() if v is not None}},
-                {**decoded.labels, **meta["labels"]},
+                {
+                    **decoded.fields,
+                    **{k: v for k, v in meta["fields"].items() if v is not None},
+                    **dag,
+                },
+                {**decoded.labels, **meta["labels"], **{k: str(v).lower() for k, v in dag.items()}},
                 {**decoded.label_files, f"{uuid}.json": json.dumps(meta["raw"]).encode()},
             )

@@ -458,7 +458,13 @@ def run_ingest(
                     live -= fetched.size
             writer.finish_item(fetched.sha256)
             upstream.append(
-                {"key": item.key, "url": item.url, "sha256": fetched.sha256, "truncated": truncated}
+                {
+                    "key": item.key,
+                    "url": item.url,
+                    "sha256": fetched.sha256,
+                    "upstream_sha256_match": fetched.upstream_match,
+                    "truncated": truncated,
+                }
             )
             if truncated:
                 break

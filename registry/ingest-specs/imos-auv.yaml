@@ -2,10 +2,11 @@
 # WP-6f: the D-AC subset manifest is built by scripts/build_imos_manifest.py from a COMPLETE per-dive
 # cache (1,011 dives in 71 campaigns + the Squidle+ annotated-frame scan); a partial cache never
 # yields a manifest. The manifest (> 10 MB) lives on S3 only; pin manifest_sha256 once uploaded.
+# D-AC2: all annotated + <= 150k unannotated, <= 370k; re-select via build_imos_manifest.py --reselect-from-cache.
 id: imos-auv
 adapter: manifest
 params:
-  manifest: https://hel1.your-objectstorage.com/rs-storage-open/sources/imos-auv/_manifest/imos-auv-dac.parquet
+  manifest: https://hel1.your-objectstorage.com/rs-storage-open/sources/imos-auv/_manifest/imos-auv-DAC2.parquet
   field_columns: {lat: lat, lon: lon, depth_m: depth_m, capture_datetime: capture_datetime}
   label_columns: [campaign, dive, depth_band, region, squidle_annotated, selection, pair_right]
 license: CC-BY-4.0 (IMOS data licence)
