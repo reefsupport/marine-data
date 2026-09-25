@@ -1,0 +1,24 @@
+# WP-6g (2026-09-25) new source: needs_adapter:pangaea-series-enum — WP-6g gap 1,6: PS101 Arctic (Langseth Ridge) OFOS: Arctic deep seabed stills
+id: pangaea-ps101-ofos-arctic
+adapter: needs:pangaea-series-enum
+params:
+  doi: 10.1594/PANGAEA.871550
+license: CC-BY (per child)
+attribution: AWI (Piepenburg / Purser et al.), PANGAEA
+citation: doi:10.1594/PANGAEA.871550
+homepage: https://doi.pangaea.de/10.1594/PANGAEA.871550
+notes: 'needs_adapter:pangaea-series-enum — WP-6g gap 1,6: PS101 Arctic (Langseth Ridge) OFOS: Arctic deep seabed
+  stills'
+disk_floor_gib: 36.0
+measured:
+  method: series page lists ~16 child datasets; one sampled child (862096) = 293 IMAGE rows, so ~4,800 images by
+    extrapolation (estimate)
+  date: '2026-09-25'
+  per_item_license: CC-BY (per child)
+  by_depth_band_m: {}
+  label_type: none (imagery; per-image depth/lat/lon in child tables)
+  wp6g_gaps:
+  - 1
+  - 6
+  estimate_items: 4800
+  child_datasets: 16

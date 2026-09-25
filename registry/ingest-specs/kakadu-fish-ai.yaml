@@ -1,0 +1,24 @@
+# WP-6g (2026-09-25) new source: needs_adapter:zip-deflate64 — the 5.9 GB training zip uses compression method 9 (Deflate64), which Python zipfile cannot inflate (range smoke failed o
+id: kakadu-fish-ai
+adapter: zenodo
+params:
+  zenodo_record: 7250921
+license: cc-by-4.0
+attribution: Jansen, Walden, Walker (2022), Zenodo
+citation: doi:10.5281/zenodo.7250921 — A deep learning dataset for underwater object detection of tropical freshwater
+  fish species in northern Austra
+homepage: https://zenodo.org/records/7250921
+notes: 'needs_adapter:zip-deflate64 — the 5.9 GB training zip uses compression method 9 (Deflate64), which Python
+  zipfile cannot inflate (range smoke failed on member 1); WP-6g gap 6: tropical freshwater fish, Kakadu (Australia):
+  the freshwater-adjacent gap'
+disk_floor_gib: 40.0
+measured:
+  items: 43715
+  bytes: 5984647647
+  method: 'remote zip CD: 43,715 jpg + 1 json; Zenodo API bytes'
+  date: '2026-09-25'
+  per_item_license: cc-by-4.0
+  by_depth_band_m: {}
+  label_type: object detection (json)
+  wp6g_gaps:
+  - 6
