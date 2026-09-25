@@ -1,0 +1,11 @@
+id: pangaea-ofos-msm77
+adapter: pangaea
+params:
+  doi: 10.1594/PANGAEA.989732
+license: cc-by-4.0
+attribution: PANGAEA contributors
+citation: doi:10.1594/PANGAEA.989732 (one of ~50 linked profiles)
+homepage: https://doi.org/10.1594/PANGAEA.989732
+notes: needs_adapter:pangaea — same PANGAEA-dataset adapter need as pangaea-ccz-gsr;
+  this DOI is one of ~50 sibling OFOS profile datasets under the MSM77 cruise series
+  that a real ingest would need to enumerate

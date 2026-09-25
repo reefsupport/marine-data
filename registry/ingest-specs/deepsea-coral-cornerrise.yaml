@@ -1,0 +1,8 @@
+id: deepsea-coral-cornerrise
+adapter: zenodo
+params:
+  zenodo_record: 18171047
+license: cc-by-4.0
+attribution: Zenodo contributors
+citation: Zenodo doi:10.5281/zenodo.18171047
+homepage: https://zenodo.org/records/18171047

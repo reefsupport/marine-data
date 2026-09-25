@@ -1,0 +1,9 @@
+id: fathomnet-coverage
+adapter: hf
+params:
+  repo: FathomNet/full-coverage-test-sets
+  revision: da92727f89f9
+license: unknown
+attribution: FathomNet / MBARI
+citation: FathomNet 2024
+homepage: https://huggingface.co/datasets/FathomNet/full-coverage-test-sets

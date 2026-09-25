@@ -1,0 +1,9 @@
+id: seatizen-atlas
+adapter: zenodo
+params:
+  zenodo_record: 12819157
+license: cc-by-4.0
+attribution: Contini et al.
+citation: Contini et al., Sci Data 2025, doi:10.5281/zenodo.12819157
+homepage: https://zenodo.org/records/12819157
+max_images: 20000

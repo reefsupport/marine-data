@@ -1,0 +1,8 @@
+id: port-royal
+adapter: zenodo
+params:
+  zenodo_record: 10271767
+license: cc-by-4.0
+attribution: Zenodo contributors / National Geographic
+citation: Zenodo doi:10.5281/zenodo.10271767
+homepage: https://zenodo.org/records/10271767

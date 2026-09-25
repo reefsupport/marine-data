@@ -1,0 +1,8 @@
+id: seagrassfinder
+adapter: zenodo
+params:
+  zenodo_record: 13904604
+license: cc-by-nc-nd-4.0
+attribution: Zenodo contributors
+citation: Zenodo doi:10.5281/zenodo.13904604
+homepage: https://zenodo.org/records/13904604

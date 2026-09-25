@@ -1,0 +1,11 @@
+id: whoi-plankton
+adapter: hf
+params:
+  repo: nf-whoi/whoi-plankton
+  revision: ba1e637e4cb8
+license: unknown
+attribution: Sosik et al. (WHOI)
+citation: Sosik et al., WHOI-Plankton
+homepage: https://huggingface.co/datasets/nf-whoi/whoi-plankton
+expected_images: 956867
+max_images: 20000

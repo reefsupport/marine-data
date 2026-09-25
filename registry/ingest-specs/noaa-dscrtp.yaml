@@ -1,0 +1,13 @@
+id: noaa-dscrtp
+adapter: erddap-csv-imagelist
+params:
+  endpoint: https://www.ncei.noaa.gov/erddap/tabledap/deep_sea_corals.csv
+  image_url_column: ImageURL
+license: public-domain-us-gov
+attribution: NOAA DSCRTP
+citation: NOAA Deep Sea Coral Research & Technology Program
+homepage: https://www.ncei.noaa.gov/erddap/tabledap/deep_sea_corals.html
+notes: 'needs_adapter:erddap-csv-imagelist — the ERDDAP tabledap CSV lists one row
+  per specimen record with an ImageURL column (no bulk archive); needs an adapter
+  that streams the CSV, dedupes/filters to rows with a non-empty ImageURL, then fetches
+  each URL individually. Endpoint: https://www.ncei.noaa.gov/erddap/tabledap/deep_sea_corals.csv?ImageURL,CatalogNumber,ScientificName,ObservationYear&ImageURL!=""'

@@ -1,0 +1,9 @@
+id: subpipe
+adapter: zenodo
+params:
+  zenodo_record: 12666132
+license: cc-by-4.0
+attribution: Alvarez-Tunon et al.
+citation: Alvarez-Tunon et al. 2024
+homepage: https://zenodo.org/records/12666132
+max_images: 20000
