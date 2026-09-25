@@ -26,6 +26,7 @@ from pathlib import Path
 
 import yaml
 
+from . import coralnet_labels
 from .registry import Registry
 from .schema import Axis, Fidelity
 
@@ -152,9 +153,20 @@ def read_vocab(path: str | Path) -> tuple[dict[str, str], dict[str, int | None]]
     return head, counts
 
 
-def audit_vocab(registry: Registry, path: str | Path) -> VocabAudit:
+def crosswalk_for(registry: Registry, registry_root: str | Path, crosswalk_id: str):
+    """The crosswalk a vocab TSV names. ``coralnet-label-id`` is a resolver: curated edges
+    plus a functional-group fallback for any public CoralNet label id (D-S2)."""
+    if crosswalk_id == coralnet_labels.CROSSWALK_ID:
+        return coralnet_labels.resolver(registry, registry_root)
+    return registry.crosswalk(crosswalk_id)
+
+
+def audit_vocab(
+    registry: Registry, path: str | Path, registry_root: str | Path | None = None
+) -> VocabAudit:
     head, counts = read_vocab(path)
-    crosswalk = registry.crosswalk(head["crosswalk"])
+    root = registry_root if registry_root is not None else Path(path).resolve().parents[2]
+    crosswalk = crosswalk_for(registry, root, head["crosswalk"])
     target = registry.label_schema(crosswalk.target_schema)
     ids = {n.id for n in target.nodes}
     mapped, unmappable, silent, dead = [], {}, [], []
@@ -181,7 +193,7 @@ def audit_vocab(registry: Registry, path: str | Path) -> VocabAudit:
 
 def audit_all(registry: Registry, registry_root: str | Path) -> list[VocabAudit]:
     vocab = taxonomy_dir(registry_root) / "vocab"
-    return [audit_vocab(registry, p) for p in sorted(vocab.glob("*.tsv"))]
+    return [audit_vocab(registry, p, registry_root) for p in sorted(vocab.glob("*.tsv"))]
 
 
 # ── gate ─────────────────────────────────────────────────────────────────────────
@@ -252,7 +264,17 @@ def _gate_items(
     covered = {a.source_id for a in audits}
     for sid in labelled_sources(registry):
         spec = registry.source(sid).loader
-        if sid in covered or (spec and spec.crosswalk_id):
+        if sid in covered:
+            continue
+        if spec and spec.crosswalk_id:
+            # D-S1: a crosswalk with no observed vocabulary is unmeasured, not a pass.
+            items.append(
+                (
+                    sid,
+                    f"{sid}: crosswalk {spec.crosswalk_id!r} but no vocab TSV "
+                    "(coverage unmeasured; add registry/taxonomy/vocab/<source>.tsv)",
+                )
+            )
             continue
         kind = (declared.get(sid) or {}).get("crosswalk")
         if kind == OPEN_VOCABULARY and (declared[sid].get("reason") or "").strip():

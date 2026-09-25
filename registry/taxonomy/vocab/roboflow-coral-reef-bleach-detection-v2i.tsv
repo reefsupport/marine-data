@@ -1,0 +1,8 @@
+# source: roboflow-coral-reef-bleach-detection-v2i
+# crosswalk: roboflow-bleaching-condition-hb
+# counts: annotations
+# retrieved: 2026-09-25 from rs-storage-open sources/roboflow-coral-reef-bleach-detection-v2i/v2i-image-labels/labels/image_labels.parquet (anonymous GET)
+# note: one annotation = one image_labels.parquet row (whole-image label)
+label	count	description
+Bleached	5754	
+Healthy	5426	

@@ -1,0 +1,8 @@
+# source: roboflow-coral-bleaching-final-v6i
+# crosswalk: roboflow-bleaching-condition-hb
+# counts: annotations
+# retrieved: 2026-09-25 from rs-storage-open sources/roboflow-coral-bleaching-final-v6i/v6i-image-labels-r2/labels/image_labels.parquet (anonymous GET)
+# note: one annotation = one image_labels.parquet row (whole-image label)
+label	count	description
+Bleached	1996	
+Healthy	1653	

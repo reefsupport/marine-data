@@ -8,6 +8,7 @@ import urllib.request
 
 import pytest
 
+from marinedata import coralnet_labels as cn
 from marinedata import taxonomy as tx
 from marinedata.registry import Registry
 from marinedata.schema import LabelNode
@@ -75,10 +76,13 @@ def test_gate_on_the_full_registry_fails_only_on_no_crosswalk_yet(reg):
     assert len(no_crosswalk) == 17
     fails = tx.gate(reg, reg.root)
     assert fails, "expected the 17 unresolved no_crosswalk_yet sources to fail"
+    staged = set(tx.staged_sources(reg))
     for line in fails:
         sid = line.split(":", 1)[0]
-        assert sid in no_crosswalk, f"unexpected gate failure outside no_crosswalk_yet: {line}"
-    assert {line.split(":", 1)[0] for line in fails} == no_crosswalk
+        # WP-7d (D-S1): a not-staged source with a crosswalk but no vocab TSV also shows here
+        unmeasured = "but no vocab TSV" in line and sid not in staged
+        assert sid in no_crosswalk or unmeasured, f"unexpected gate failure: {line}"
+    assert no_crosswalk <= {line.split(":", 1)[0] for line in fails}
 
 
 def _copy_root(reg, tmp_path):
@@ -127,7 +131,9 @@ def test_scoped_gate_passes_the_registry_and_lists_the_rest(reg):
     fails, listed = tx.scoped_gate(reg, reg.root)
     assert fails == []
     no_crosswalk = set(tx.load_meta(reg.root)["no_crosswalk_yet"])
-    assert {line.split(":", 1)[0] for line in listed} == no_crosswalk
+    unmeasured = {line.split(":", 1)[0] for line in listed if "but no vocab TSV" in line}
+    assert {line.split(":", 1)[0] for line in listed} == no_crosswalk | unmeasured
+    assert not unmeasured & set(tx.staged_sources(reg))
     assert {"reefolution", "coralscop-masks-rs"} <= set(tx.staged_sources(reg))
     assert "ozfish" not in tx.staged_sources(reg)
 
@@ -214,3 +220,104 @@ def test_non_taxon_validator_rejects(kwargs):
 def test_non_taxon_validator_accepts():
     node = LabelNode(id="SD", name="sand", non_taxon=True, non_taxon_reason="substrate: sand")
     assert node.non_taxon and not node.is_taxon
+
+
+# ── WP-7d: missing-vocab gate (D-S1) and the CoralNet label-id resolver (D-S2) ──────
+
+
+def test_every_staged_labelled_source_has_a_measured_vocab(reg):
+    """D-S1: an unmeasured staged source is not a pass. WP-7d measured the last 9."""
+    vocab = {a.source_id for a in tx.audit_all(reg, reg.root)}
+    declared = tx.load_meta(reg.root).get("source_crosswalks") or {}
+    for sid in set(tx.labelled_sources(reg)) & set(tx.staged_sources(reg)):
+        assert sid in vocab or sid in declared, f"{sid} is staged with no vocab TSV"
+
+
+def test_scoped_gate_fails_a_staged_source_with_no_vocab(reg, tmp_path):
+    root = _copy_root(reg, tmp_path)
+    (root / "taxonomy" / "vocab" / "coralscop-masks-rs.tsv").unlink()
+    fails, _listed = tx.scoped_gate(reg, root)
+    assert fails == [
+        "coralscop-masks-rs: crosswalk 'coralscop-masks-rs' but no vocab TSV "
+        "(coverage unmeasured; add registry/taxonomy/vocab/<source>.tsv)"
+    ]
+
+
+def test_coralnet_label_id_rederives_reefolution(reg):
+    """D-S2: Reefolution's codes -> CoralNet ids (committed in its vocab description column,
+    from labelset.csv) -> the coralnet-label-id resolver gives 100% and WP-7c's targets."""
+    _head, counts = tx.read_vocab(reg.root / "taxonomy" / "vocab" / "reefolution.tsv")
+    ids = {}
+    for line in (reg.root / "taxonomy" / "vocab" / "reefolution.tsv").read_text().splitlines():
+        parts = line.split("\t")
+        if len(parts) == 3 and parts[2].startswith("CoralNet "):
+            ids[parts[0]] = parts[2].split()[1]
+    assert set(ids) == set(counts) and len(ids) == 64
+    resolver = tx.crosswalk_for(reg, reg.root, cn.CROSSWALK_ID)
+    wp7c = reg.crosswalk("reefolution")
+    for code, lid in ids.items():
+        edge = resolver.edge(lid)
+        assert edge is not None and edge.targets == wp7c.edge(code).targets, code
+    hit = sum(counts[c] for c, lid in ids.items() if resolver.edge(lid).targets)
+    assert hit == sum(counts.values()) == 43500
+
+
+def test_coralnet_resolver_falls_back_to_the_functional_group(reg):
+    resolver = cn.resolver(reg, reg.root)
+    assert len(resolver.table) > 12000
+    row = resolver.table[8384]  # "0 - no bleaching", Hard coral, used by none of our sources
+    assert row["functional_group"] == "Hard coral" and resolver.curated.edge("8384") is None
+    edge = resolver.edge("8384")
+    assert edge.targets == {"taxon": "HC"} and edge.note.startswith("auto: CoralNet 8384")
+    assert resolver.edge("999999999") is None
+
+
+def test_coralnet_page_parsers():
+    row = cn.parse_list(
+        '<tr data-label-id="7"><td class="name"><a href="/label/7/">Acro &amp; co</a></td>'
+        '<td>Hard coral</td><td><div class="meter" title="91%"></div></td>'
+        '<td class="status-cell"><img src="/x/label-icon-duplicate__1.png" '
+        'title="Duplicate of Acropora" /></td><td>Acr</td></tr>'
+    )
+    assert row == [
+        {"label_id": 7, "name": "Acro & co", "functional_group": "Hard coral", "popularity": 91,
+         "verified": False, "duplicate": True, "duplicate_of": "Acropora",
+         "calcification_rates": False, "short_code": "Acr"}
+    ]  # fmt: skip
+    page = (
+        '<div class="line">Name: XENIIDAE</div><div class="line">Verified:\n  No\n</div>'
+        "Used in 104 sources\n and for 95920 annotations"
+        "<dt>Description:</dt>\n<dd><p>Family Xeniidae</p></dd>"
+    )
+    d = cn.parse_detail(page)
+    assert (d["name"], d["verified"], d["used_in_sources"], d["description"]) == (
+        "XENIIDAE", False, 104, "Family Xeniidae")  # fmt: skip
+
+
+def test_binary_not_bleached_labels_share_one_rule(reg):
+    """WP-7d (manager decision 2): a binary bleached / not-bleached split assessed no other
+    condition, so its "healthy" class only asserts "not bleached". NOAA PIFSC's CORAL,
+    Roboflow's Healthy and Reef Support's non_bleached map by one rule: HEALTHY, never exact."""
+    from marinedata.schema import Axis, Fidelity
+
+    pairs = [
+        ("noaa-pifsc-bleaching-condition", "CORAL"),
+        ("roboflow-bleaching-condition-hb", "Healthy"),
+        ("roboflow-bleaching-condition-hu", "Healthy"),
+        ("reef-support-bleaching-condition", "non_bleached"),
+    ]
+    edges = {pair: reg.crosswalk(pair[0]).edge(pair[1]) for pair in pairs}
+    assert all(e is not None for e in edges.values()), edges
+    kinds = {(tuple(sorted(e.targets.items())), e.fidelity) for e in edges.values()}
+    assert kinds == {(((Axis.CONDITION, "HEALTHY"),), Fidelity.COARSENED)}, edges
+
+
+def test_coralscop_coral_targets_the_coarsest_node_holding_hard_and_soft_coral(reg):
+    """WP-7d (manager decision 1, vocabulary 2.0.0): CoralSCOP masks are class-agnostic
+    coral, so the edge must not assert Scleractinia (HC); it targets the lowest common
+    ancestor of HC and SC."""
+    from marinedata.schema import Axis
+
+    nodes = {n.id: n for n in reg.label_schema("rs-benthic-v1").nodes}
+    target = reg.crosswalk("coralscop-masks-rs").edge("coral").targets[Axis.TAXON]
+    assert target == nodes["HC"].parent == nodes["SC"].parent == "CNIDARIA"

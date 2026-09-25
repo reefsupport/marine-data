@@ -56,3 +56,26 @@ ruod	echinus -> A123082	exact	ok	RUOD 'echinus' is its sea-urchin class (not the
 trash-icra19	plastic -> NT_DEBRIS	coarsened	ok	material kept only in the source label; debris is the strict parent
 trashcan	trash_wood -> NT_DEBRIS	coarsened	ok	processed-wood litter (natural wood is trash_branch, approximate); debris is the strict parent
 usis-uiis	reefs -> NT_REEF	exact	ok	reef structure class = NT_REEF
+# WP-7d +20, 2026-09-25 (vocabulary 2.0.0): every new or changed non-generated edge in WP-7d (Non-Corals, the 2 CoralNet group edges,
+# the 6 NOAA id overrides) + 7 curated coralnet-label-id edges chosen by risk (non-exact, compound target, or high weight) + the 4
+# pre-existing edges the WP-7d vocab measurement put weight on for the first time (NOAA CORAL, CoralSCOP coral, Labelbox Hard/Soft Coral).
+roboflow-bleaching-condition-hb	Non-Corals -> UNKNOWN	approximate	ok	v13i presence tag: 379/384 images also carry Healthy/Bleached, so it is not an image class; UNKNOWN asserts no taxon and nothing on condition
+coralnet-labelset	Hard Substrate -> HS	coarsened	ok	current CoralNet group; HS (hard substrate, cover unspecified) is the node for exactly that roll-up; members seen here (1340 CCA on hard substrate, 7011 COTS predation) are all finer
+coralnet-labelset	Soft Substrate -> ABIOTIC	approximate	ok	group is mostly sand/silt/mud but curators file some biota in it (reefolution Rhy), so the ABIOTIC roll-up can be wrong: approximate, never coarsened
+coralnet-label-id	1262 (CRED-Branching hard coral) -> HC + form CB	coarsened	ok	overrides NOAA BR "NO RULE"; HC + CB is exactly what the label says; coarsened under-claims but is safe
+coralnet-label-id	1266 (CRED-Columnar hard coral) -> HC	coarsened	ok	rs-benthic-v1 has no columnar form node (CB/CE/CF/CM/CS/CMR/CD/CT/CMD), so only the taxon is kept; nothing invented
+coralnet-label-id	1318 (CRED-Giant clam) -> CLAM	coarsened	ok	Tridacninae are Bivalvia; CLAM (Bivalvia, alias tridacna) is a strict ancestor
+coralnet-label-id	1321 (CRED-Unclassified sessile invertebrate) -> BIOTIC	coarsened	ok	may be a cnidarian (hydroid, anemone) or OTHER_FAUNA; their lowest common ancestor is BIOTIC, so nothing finer is true
+coralnet-label-id	3507 (CRED-Wire and black coral) -> CNIDARIA	coarsened	ok	Antipatharia (Hexacorallia); no Anthozoa or antipatharian node exists, CNIDARIA is the coarsest true node
+coralnet-label-id	7011 (ESD-COTS predation) -> DC	coarsened	ok	a COTS feeding scar is recently dead coral; DC keeps the state and loses only the cause
+coralnet-label-id	1284 (CRED-Heliopora spp) -> SC_HELIOPORA	exact	ok	Heliopora (blue coral) is an octocoral; SC_HELIOPORA carries AphiaID 206210 Heliopora; the label is genus-level
+coralnet-label-id	1340 (CRED-CCA growing on hard substrate) -> CCA	exact	ok	CCA is the taxon; "on hard substrate" is the CRED substrate qualifier, not a different organism; 91,773 NOAA points
+coralnet-label-id	1352 (CRED-Wand) -> TWS	exact	uncertain	target right, fidelity arguable: TWS is a compound bucket (tape/wand/shadow), so wand is strictly finer (coarsened). All 5 TWS edges are exact by one codegen rule (taxonomy_codegen.py:147-150); change the rule, not one edge
+coralnet-label-id	456 (Hydroid) -> CN_HYDROZOA	coarsened	ok	hydroids are colonial hydrozoan polyps; Hydrozoa is the strict parent (MIL is its own node and is not asserted)
+coralnet-label-id	1329 (CRED-Dictyopteris/Dictyota spp) -> ALG_DICTYOTACEAE	coarsened	ok	both genera are Dictyotaceae; the family is the lowest node containing both
+coralnet-label-id	1295 (CRED-Montipora spp_foliose) -> HC_MONTIPORA + form CF	exact	ok	genus and growth form both have nodes; nothing lost
+coralnet-label-id	84 (Sand) -> SD	exact	ok	sand = SD; 9,709 Reefolution points
+noaa-pifsc-bleaching-condition	CORAL -> HEALTHY	coarsened	fixed	was exact. Binary CORAL/CORAL_BL split assessed no other condition, so the class asserts only "not bleached"; same rule as Roboflow Healthy and RS non_bleached (manager decision 2; test_binary_not_bleached_labels_share_one_rule)
+coralscop-masks-rs	coral -> CNIDARIA	coarsened	fixed	was HC. Class-agnostic masks over hard and soft coral; no Anthozoa node, so the lowest node holding HC and SC is CNIDARIA (manager decision 1; MAJOR, 2.0.0)
+reef-support-labelbox	Hard Coral -> HC	coarsened	uncertain	target right. By the Fidelity definition (exact = same meaning) this is exact; the header even says "four of five labels are EXACT". Coarsened only because growth form was not recorded, which is another axis. Kept: not in the WP-7d decisions
+reef-support-labelbox	Soft Coral -> SC	coarsened	uncertain	same as Hard Coral: SC (Octocorallia) is what the Caribbean field label means; exact vs coarsened hinges on the unrecorded form axis. Kept, question open
