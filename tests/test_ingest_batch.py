@@ -35,7 +35,7 @@ def _blob() -> bytes:
 
 
 @pytest.fixture
-def env(tmp_path):
+def env(tmp_path, ample_disk):
     srv = LocalServer()
     blob = _blob()
     srv.add("/a/data.tar", blob)

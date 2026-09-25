@@ -14,6 +14,7 @@ import re
 import shutil
 import time
 import urllib.error
+import urllib.parse
 import urllib.request
 from collections.abc import Iterator
 from pathlib import Path
@@ -21,6 +22,7 @@ from typing import IO
 
 from ..checksums import DOWNLOAD_USER_AGENT
 from ..concurrency import RetriesExhausted
+from ._throttle import THROTTLE_TRIES, ThrottleExhausted, is_hf_host, retry_after_s, throttle_for
 
 CHUNK = 1 << 20
 _RETRY_STATUS = frozenset({429, 500, 502, 503, 504})
@@ -44,21 +46,40 @@ def open_url(
     hdrs = {"User-Agent": DOWNLOAD_USER_AGENT, **(headers or {})}
     if any(k.lower() in {"authorization", "cookie"} for k in hdrs):
         raise ValueError("adapters are anonymous-only (D-E): no Authorization/Cookie headers")
+    # INT-ingest5c: a non-HF host's 429 is paced per item (see ``_throttle``); an HF
+    # host's 429 keeps the D-AA path (retried like a 5xx, then the source aborts).
+    host = urllib.parse.urlsplit(url).hostname or ""
+    throttle = None if is_hf_host(host) else throttle_for(host)
     last: Exception | None = None
-    for attempt in range(retries):
+    attempt = throttled = 0
+    while attempt < retries:
+        if throttle is not None:
+            throttle.wait_turn()
         try:
-            return urllib.request.urlopen(
-                urllib.request.Request(url, headers=hdrs), timeout=timeout
-            )
+            req = urllib.request.Request(url, headers=hdrs)
+            resp = urllib.request.urlopen(req, timeout=timeout)
         except urllib.error.HTTPError as exc:
             if exc.code in (401, 403):
                 raise AccessRefused(url, f"HTTP {exc.code}: login/terms/gate required") from exc
             if exc.code not in _RETRY_STATUS:
                 raise
             last = exc
+            if exc.code == 429 and throttle is not None:
+                throttled += 1
+                throttle.on_429(retry_after_s(exc.headers), throttled)  # may raise HostThrottled
+                if throttled >= THROTTLE_TRIES:
+                    raise ThrottleExhausted(
+                        f"GET {url} failed after {throttled} throttled attempts: {exc}"
+                    ) from exc
+                continue  # the host-wide wait happens in wait_turn()
         except (urllib.error.URLError, ConnectionError, TimeoutError) as exc:
             last = exc
+        else:
+            if throttle is not None:
+                throttle.on_success()
+            return resp
         time.sleep(min(2**attempt, 30) + random.uniform(0, 1))  # WP-6b: jitter (D-G)
+        attempt += 1
     raise RetriesExhausted(f"GET {url} failed after {retries} attempts: {last}") from last
 
 

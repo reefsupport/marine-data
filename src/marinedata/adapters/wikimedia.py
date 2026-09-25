@@ -20,6 +20,7 @@ import hashlib
 import html
 import json
 import re
+import threading
 import time
 import urllib.parse
 from collections import deque
@@ -52,12 +53,14 @@ def _num(value: Any) -> float | None:
 
 class CommonsAdapter(BaseAdapter):
     name = "commons-api"
+    listing_cacheable = True  # INT-ingest5c: labels travel as per-item listing state
 
     def __init__(self, params: dict) -> None:
         super().__init__(params)
         self._meta: dict[str, dict[str, Any]] = {}
         self._files: list[RemoteItem] | None = None
         self._last = 0.0
+        self._pace_lock = threading.Lock()
         self.categories: list[str] = []
 
     @property
@@ -65,12 +68,23 @@ class CommonsAdapter(BaseAdapter):
         return str(self.params.get("api", "https://commons.wikimedia.org/w/api.php"))
 
     def _pace(self) -> None:
-        wait = float(self.params.get("min_interval_s", _MIN_INTERVAL_S)) - (
-            time.monotonic() - self._last
-        )
-        if wait > 0:
-            time.sleep(wait)
-        self._last = time.monotonic()
+        """Reserve the next request slot under a lock, then sleep outside it: the
+        runner's fetch threads share one adapter, so without the lock they read the
+        same ``_last`` and burst together (INT-ingest5c)."""
+        interval = float(self.params.get("min_interval_s", _MIN_INTERVAL_S))
+        with self._pace_lock:
+            now = time.monotonic()
+            slot = max(now, self._last + interval)
+            self._last = slot
+        if slot > now:
+            time.sleep(slot - now)
+
+    def listing_state(self, item: RemoteItem) -> dict[str, Any] | None:
+        return self._meta.get(item.key)
+
+    def restore_listing(self, items: list[RemoteItem], states: list[Any]) -> None:
+        self._meta = {i.key: s for i, s in zip(items, states, strict=True) if s is not None}
+        self._files = list(items)
 
     def _get(self, query: dict[str, str]) -> dict[str, Any]:
         self._pace()

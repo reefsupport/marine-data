@@ -54,7 +54,7 @@ def test_client_from_env_builds_a_working_client(monkeypatch):
         assert client.list_buckets()["Buckets"][0]["Name"] == "bkt"
 
 
-def test_credentials_never_appear_in_batch_output(monkeypatch, tmp_path, capsys):
+def test_credentials_never_appear_in_batch_output(monkeypatch, tmp_path, capsys, ample_disk):
     """Run a real batch with env-var creds; grep every byte the job would emit to stdout
     for the literal secret. This is the WP-6c guarantee, not just an absence-of-a-log-call."""
     monkeypatch.delenv("S3_ENDPOINT", raising=False)  # see test above: real network otherwise

@@ -38,6 +38,13 @@ def read_manifest(path: Path) -> list[dict[str, Any]]:
 class RowJoinMixin:
     """Join per-key manifest rows onto decoded samples (fields + labels)."""
 
+    def listing_state(self, item: Any) -> Any:
+        row = self._rows.get(item.key)
+        return None if row is None else dict(row)
+
+    def restore_listing(self, items: list[Any], states: list[Any]) -> None:
+        self._rows = {i.key: s for i, s in zip(items, states, strict=True) if s is not None}
+
     params: dict[str, Any]
     _rows: dict[str, Mapping[str, Any]]
 

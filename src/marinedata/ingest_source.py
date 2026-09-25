@@ -34,6 +34,7 @@ from .adapters import SPOOLED, make_adapter, suffix_of
 from .adapters._http import HashingReader
 from .adapters.decode import IMAGE_SUFFIXES
 from .concurrency import HostLimiter, retry_with_backoff
+from .ingest_listing import list_source
 from .ingest_missing import MissingLedger, decode_status, fetch_status
 from .s3_upload import DEFAULT_PART, DiskGuard, GiB, local_digest, upload_file
 from .staged_writer import DEFAULT_SHARD_BYTES, DEFAULT_THRESHOLD, StagedWriter, WriterConfig
@@ -359,13 +360,17 @@ def run_ingest(
     jobs: int = DEFAULT_JOBS,
     max_per_host: int = DEFAULT_MAX_PER_HOST,
     part_jobs: int = DEFAULT_PART_JOBS,
+    listing_cache: Path | None = None,
 ) -> IngestReport:
     jobs = max(1, min(int(jobs), MAX_JOBS))
+    if not dry_run:
+        # INT-ingest5c: floor BEFORE listing — a paused pass must not re-crawl upstream
+        # (GBIF: ~1,200 API requests) only to refuse at the first write.
+        floor = int(spec.disk_floor_gib * GiB)
+        guard = guard or DiskGuard(work, int(spec.temp_cap_gb * GiB), floor)
+        guard.check()
     adapter = make_adapter(spec.adapter, spec.params)
-    version = spec.version or adapter.resolve_version()
-    if spec.version:
-        adapter.resolve_version()  # still pin + gate-check upstream
-    items = list(adapter.enumerate())
+    version, items = list_source(spec, adapter, listing_cache)
     layout = _choose_layout(spec, items)
     key_prefix = f"{spec.prefix}/{spec.id}/{version}"
     report = IngestReport(spec.id, version, key_prefix, layout, dry_run=dry_run)

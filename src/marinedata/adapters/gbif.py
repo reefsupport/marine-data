@@ -125,6 +125,7 @@ def cap_by_hash(rows: Iterable[Mapping[str, Any]], cap: int) -> list[Mapping[str
 
 class GbifOccurrenceMediaAdapter(RowJoinMixin, BaseAdapter):
     name = "gbif-occurrence-media"
+    listing_cacheable = True  # INT-ingest5c: rows travel as per-item listing state
 
     def __init__(self, params: Mapping[str, Any]) -> None:
         super().__init__(params)

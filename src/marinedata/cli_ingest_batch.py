@@ -76,14 +76,24 @@ def run_one(spec_path: Path, work_root: Path, client: Any) -> dict[str, Any]:
     is caught, reported as ``status: error``, and re-raised by the caller's own check of
     that dict — this function's return value is always what gets JSON-serialised."""
     from .adapters import AccessRefused, make_adapter
+    from .ingest_listing import LISTING_DIR, list_source
     from .ingest_source import IngestSpec, run_ingest
+    from .s3_upload import DiskGuard, GiB
 
     t0 = time.monotonic()
     spec = IngestSpec.load(spec_path)
     elapsed = lambda: round(time.monotonic() - t0, 1)  # noqa: E731
     try:
+        work = work_root / spec.id
+        # INT-ingest5c: below the floor, refuse before any network call (no upstream
+        # listing, no S3 HEAD) — the wrapper sleeps and retries on DiskFloorError.
+        DiskGuard(work, int(spec.temp_cap_gb * GiB), int(spec.disk_floor_gib * GiB)).check()
         adapter = make_adapter(spec.adapter, spec.params)
-        version = spec.version or adapter.resolve_version()
+        listings = work_root / LISTING_DIR
+        if getattr(adapter, "listing_cacheable", False):
+            version, _ = list_source(spec, adapter, listings)  # cached for run_ingest
+        else:
+            version = spec.version or adapter.resolve_version()
         if _marker_present(client, spec, version):
             return {
                 "source_id": spec.id,
@@ -91,9 +101,8 @@ def run_one(spec_path: Path, work_root: Path, client: Any) -> dict[str, Any]:
                 "status": "skip-done",
                 "elapsed_s": elapsed(),
             }
-        work = work_root / spec.id
         work.mkdir(parents=True, exist_ok=True)
-        report = run_ingest(spec, work, client=client)
+        report = run_ingest(spec, work, client=client, listing_cache=listings)
         return {
             "source_id": report.source_id,
             "version": report.version,

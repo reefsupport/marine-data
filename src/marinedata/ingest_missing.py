@@ -28,6 +28,7 @@ from collections.abc import Callable
 from pathlib import Path
 
 from .adapters import AccessRefused, DigestMismatch
+from .adapters._throttle import HostThrottled, ThrottleExhausted
 from .concurrency import RetriesExhausted
 from .s3_upload import DiskFloorError, TempCapError
 
@@ -45,7 +46,15 @@ class TooManyMissing(RuntimeError):
 
 def _never_skip(exc: BaseException) -> bool:
     return not isinstance(exc, Exception) or isinstance(
-        exc, (AccessRefused, DigestMismatch, DiskFloorError, TempCapError, TooManyMissing)
+        exc,
+        (
+            AccessRefused,
+            DigestMismatch,
+            DiskFloorError,
+            TempCapError,
+            TooManyMissing,
+            HostThrottled,
+        ),
     )
 
 
@@ -60,6 +69,8 @@ def fetch_status(exc: BaseException) -> str | None:
     code = _http_code(exc)
     if code is not None:
         return f"http-{code}" if code in DEAD_HTTP else None
+    if isinstance(exc, ThrottleExhausted):  # INT-ingest5c: non-HF host, paced 6 tries
+        return "throttled-429"
     if isinstance(exc, RetriesExhausted):
         cause = _http_code(exc.__cause__)
         if cause in DEAD_HTTP:
