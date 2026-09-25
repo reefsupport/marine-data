@@ -1,0 +1,23 @@
+# WP-6l-B (2026-09-25) new source: candidate — WP-6l-B sonar+debris: side-scan mine detection across 5 survey years
+id: sss-mine-detection
+adapter: figshare
+params:
+  article: 24574879
+license: CC BY 4.0
+attribution: Santos, MOURA (2024), figshare
+citation: doi:10.6084/m9.figshare.24574879.v2 — <i>Side-scan sonar imaging for Mine detection</i>
+homepage: https://doi.org/10.6084/m9.figshare.24574879.v2
+notes: 'candidate — WP-6l-B sonar+debris: side-scan mine detection across 5 survey years'
+disk_floor_gib: 36.0
+measured:
+  items: 1170
+  bytes: 613408909
+  bytes_basis: figshare API file sizes (sum)
+  method: 'remote zip CD over 6 zips: 1,170 jpg + 1,172 txt'
+  date: '2026-09-25'
+  per_item_license: CC BY 4.0
+  by_depth_band_m: {}
+  label_type: side-scan sonar mine-like object YOLO boxes
+  habitat_region: Andaman/Thai coastal surveys 2010-2021 (per record)
+  dedup_chain: new; no registry/ingest-spec/WP-6g/S57 match on title, DOI or record id
+  wp6l_gap: sonar+debris

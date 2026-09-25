@@ -1,0 +1,28 @@
+# WP-6l-B (2026-09-25) new source: candidate — WP-6l-B vqa+video: event-centric underwater video QA: temporal/causal reasoning labels
+id: marineevt
+adapter: hf
+params:
+  repo: AnTo2209/MarineEVT
+  revision: 37488d3c7690429443f464bc8196614d2d404f85
+  remote_zip: true
+  label_patterns:
+  - '*.json'
+license: unstated
+attribution: AnTo2209 (HF)
+citation: HF dataset AnTo2209/MarineEVT
+homepage: https://huggingface.co/datasets/AnTo2209/MarineEVT
+notes: 'candidate — WP-6l-B vqa+video: event-centric underwater video QA: temporal/causal reasoning labels'
+disk_floor_gib: 36.0
+measured:
+  bytes: 48601566648
+  bytes_basis: HF usedStorage (all revisions' LFS objects)
+  method: 'HF tree + remote zip CD over 40 zips: 169,409 jpg video frames (videos shipped as frame folders) + 60
+    QA json'
+  date: '2026-09-25'
+  per_item_license: unstated
+  by_depth_band_m: {}
+  label_type: 20,000 event-centric QA pairs (json) over frame-sequence videos
+  habitat_region: mixed underwater video sources
+  dedup_chain: new; no registry/ingest-spec/WP-6g/S57 match on title, DOI or record id
+  wp6l_gap: vqa+video
+  items: 169409
