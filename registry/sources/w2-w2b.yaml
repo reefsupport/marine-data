@@ -1,0 +1,982 @@
+# W2b new sources (Fish, VLM/captions, Enhancement/restoration) — S57 catalog sweep, 2026-09-25.
+# All entries are access: pending-ingest (see registry/ingest-specs/<id>.yaml); `access.notes` on
+# each carries the exact endpoint/adapter gap for anything the framework can't reach yet.
+# ozfish and seamapd21 already exist in registry/sources/fish.yaml (not new) and are NOT duplicated
+# here; this file only documents the open-Pawsey/open-multipart-tar findings that entry's access
+# block should eventually reconcile — the integrator's call, not edited here.
+
+sources:
+- id: fish-vista
+  name: Fish-Vista
+  version: unversioned
+  description: Large fish-imagery collection for species classification, trait segmentation and identification
+    from the Imageomics Institute.
+  licence: PER-SOURCE-VARIES
+  legal_basis: unknown
+  redistribution: unknown
+  provenance: public
+  verification:
+    verified_on: '2026-09-25'
+    verified_by: huggingface.co/datasets/imageomics/fish-vista — HF card states a CC-BY/CC-BY-NC mix per
+      image
+    method: dataset-card
+  access:
+    method: huggingface
+    uri: https://huggingface.co/datasets/imageomics/fish-vista
+    size_bytes: 11868010411
+    params:
+      hf_id: imageomics/fish-vista
+  loader:
+    layout: metadata-only
+  modalities:
+  - image
+  capabilities:
+  - fish-classification
+  - general-pretraining
+  items: 75811
+  items_note: measured via dry-run 2026-09-25 (revision main); parquet is the HF-reported usedStorage
+    upper bound of 60.48 GB, includes repo history — the pinned revision's actual declared bytes are 11.87
+    GB.
+  coverage:
+    regions:
+    - global
+  domain_shift:
+    caveats:
+    - Per-image licence mix (CC-BY/CC-BY-NC) — resolve per sample before shipping.
+  citation: Mehrab et al. 2025, CVPR
+  homepage: https://huggingface.co/datasets/imageomics/fish-vista
+  tags:
+  - fish
+  - vlm
+  - trait
+  notes: 'access: pending-ingest — see registry/ingest-specs/fish-vista.yaml (S57/w2b sweep, 2026-09-25).'
+- id: wildfish
+  name: WildFish (HF mirror)
+  version: unversioned
+  description: ~103k wild fish images across many species, from the WildFish/WildFish++ line (HF mirror
+    of the official Baidu-hosted release).
+  licence: RESEARCH-ONLY-NO-REDIST
+  legal_basis: licence
+  redistribution: unknown
+  provenance: public
+  verification:
+    verified_on: '2026-09-25'
+    verified_by: huggingface.co/datasets/Arex-Vision/WildFish — HF card states research-only use
+    method: dataset-card
+  access:
+    method: huggingface
+    uri: https://huggingface.co/datasets/Arex-Vision/WildFish
+    size_bytes: 14517292127
+    params:
+      hf_id: Arex-Vision/WildFish
+  loader:
+    layout: metadata-only
+  modalities:
+  - image
+  capabilities:
+  - fish-classification
+  items: 103000
+  items_note: official release ~103k+; HF mirror measured 14.52 GB / 26 files 2026-09-25.
+  coverage:
+    regions:
+    - global
+  domain_shift:
+    caveats:
+    - Overlaps DUO/RUOD/URPC-adjacent fish-detection corpora — group-aware dedup before release.
+  citation: Zhuang et al. 2018 ACMMM / 2020 TMM
+  homepage: https://github.com/PeiqinZhuang/WildFish
+  tags:
+  - fish
+  - classification
+  notes: 'access: pending-ingest — see registry/ingest-specs/wildfish.yaml (S57/w2b sweep, 2026-09-25).'
+- id: fish-length-stereo
+  name: Stereo fish-length dataset (Zenodo 19408363)
+  version: unversioned
+  description: Stereo-camera fish imagery with length measurements.
+  licence: CC-BY-4.0
+  legal_basis: licence
+  redistribution: ok
+  provenance: public
+  verification:
+    verified_on: '2026-09-25'
+    verified_by: Zenodo API record 19408363 — metadata.license cc-by-4.0, access_right open
+    method: dataset-card
+  access:
+    method: zenodo
+    uri: https://zenodo.org/records/19408363
+    size_bytes: 25180242944
+    params:
+      zenodo_record: 19408363
+  loader:
+    layout: metadata-only
+  modalities:
+  - image
+  capabilities:
+  - fish-biomass
+  - fish-detection
+  coverage:
+    regions:
+    - unknown
+  domain_shift:
+    caveats:
+    - Dataset also has parts 4 and 6 on Zenodo not yet enumerated — confirm before a full run.
+  citation: Zenodo 19408363
+  homepage: https://zenodo.org/records/19408363
+  tags:
+  - fish
+  - stereo
+  - biomass
+  notes: 'access: pending-ingest — see registry/ingest-specs/fish-length-stereo.yaml (S57/w2b sweep, 2026-09-25).'
+- id: salmon-cage
+  name: Salmon cage video/GoPro dataset (Zenodo 4931418)
+  version: unversioned
+  description: GoPro/diver video from salmon aquaculture cages — welfare and biomass monitoring.
+  licence: CC0-1.0
+  legal_basis: licence
+  redistribution: ok
+  provenance: public
+  verification:
+    verified_on: '2026-09-25'
+    verified_by: Zenodo API record 4931418 — metadata.license cc-zero, access_right open
+    method: dataset-card
+  access:
+    method: zenodo
+    uri: https://zenodo.org/records/4931418
+    size_bytes: 5610000000
+    params:
+      zenodo_record: 4931418
+  loader:
+    layout: metadata-only
+  modalities:
+  - video
+  capabilities:
+  - fish-tracking
+  items: 30
+  items_note: 30 MP4/KVA files. The current ingest framework has no video decoder — needs_adapter:video
+    (see registry/ingest-specs/salmon-cage.yaml).
+  coverage:
+    regions:
+    - temperate
+  citation: Zenodo 4931418
+  homepage: https://zenodo.org/records/4931418
+  tags:
+  - fish
+  - aquaculture
+  - video
+  notes: 'access: pending-ingest — see registry/ingest-specs/salmon-cage.yaml (S57/w2b sweep, 2026-09-25).'
+- id: luderick-seagrass
+  name: Luderick/seagrass fish detection (Zenodo 7659203)
+  version: unversioned
+  description: Underwater video-derived fish-detection imagery over seagrass habitat.
+  licence: CC-BY-4.0
+  legal_basis: licence
+  redistribution: ok
+  provenance: public
+  verification:
+    verified_on: '2026-09-25'
+    verified_by: Zenodo API record 7659203 — metadata.license cc-by-4.0, access_right open
+    method: dataset-card
+  access:
+    method: zenodo
+    uri: https://zenodo.org/records/7659203
+    size_bytes: 1170972899
+    params:
+      zenodo_record: 7659203
+  loader:
+    layout: metadata-only
+  modalities:
+  - image
+  capabilities:
+  - fish-detection
+  - seagrass-mapping
+  coverage:
+    regions:
+    - gbr-australia
+  citation: Ditria et al. 2021
+  homepage: https://zenodo.org/records/7659203
+  tags:
+  - fish
+  - seagrass
+  notes: 'access: pending-ingest — see registry/ingest-specs/luderick-seagrass.yaml (S57/w2b sweep, 2026-09-25).'
+- id: med-fish
+  name: DEEPECOMAR Mediterranean fish YOLO dataset (Zenodo 7534425)
+  version: unversioned
+  description: YOLO-format Mediterranean reef-fish detection imagery.
+  licence: CC-BY-4.0
+  legal_basis: licence
+  redistribution: ok
+  provenance: public
+  verification:
+    verified_on: '2026-09-25'
+    verified_by: Zenodo API record 7534425 — metadata.license cc-by-4.0, access_right open
+    method: dataset-card
+  access:
+    method: zenodo
+    uri: https://zenodo.org/records/7534425
+    size_bytes: 638492593
+    params:
+      zenodo_record: 7534425
+  loader:
+    layout: metadata-only
+  modalities:
+  - image
+  capabilities:
+  - fish-detection
+  coverage:
+    regions:
+    - mediterranean
+  citation: Zenodo 7534425
+  homepage: https://zenodo.org/records/7534425
+  tags:
+  - fish
+  - mediterranean
+  notes: 'access: pending-ingest — see registry/ingest-specs/med-fish.yaml (S57/w2b sweep, 2026-09-25).'
+- id: mouss-seg
+  name: MOUSS fish segmentation (grayscale)
+  version: unversioned
+  description: Grayscale stationary-camera fish SEGMENTATION masks from NOAA PIFSC MOUSS surveys — a different
+    HF repo/modality from the existing mouss-detection (bbox) entry in fish.yaml.
+  licence: NO-LICENCE-STATED
+  legal_basis: unknown
+  redistribution: unknown
+  provenance: public
+  verification:
+    verified_on: '2026-09-25'
+    verified_by: huggingface.co/datasets/akridge/MOUSS_fish_segment_dataset_grayscale — no licence field
+      on the HF card
+    method: absent
+  access:
+    method: huggingface
+    uri: https://huggingface.co/datasets/akridge/MOUSS_fish_segment_dataset_grayscale
+    size_bytes: 30380649
+    params:
+      hf_id: akridge/MOUSS_fish_segment_dataset_grayscale
+  loader:
+    layout: metadata-only
+  modalities:
+  - image
+  capabilities:
+  - fish-detection
+  items: 1846
+  coverage:
+    regions:
+    - central-pacific
+  domain_shift:
+    caveats:
+    - Same NOAA PIFSC MOUSS collection as the existing mouss-detection entry (bbox) — group-aware dedup
+      before release.
+  citation: NOAA PIFSC MOUSS
+  homepage: https://huggingface.co/datasets/akridge/MOUSS_fish_segment_dataset_grayscale
+  tags:
+  - fish
+  - segmentation
+  notes: 'access: pending-ingest — see registry/ingest-specs/mouss-seg.yaml (S57/w2b sweep, 2026-09-25).'
+- id: urpc
+  name: URPC underwater robot competition dataset (HF mirror)
+  version: unversioned
+  description: Underwater Robot Professional Contest detection dataset (VOC/YOLO), HF mirror.
+  licence: Apache-2.0
+  legal_basis: licence
+  redistribution: ok
+  provenance: public
+  verification:
+    verified_on: '2026-09-25'
+    verified_by: huggingface.co/datasets/fuhao7i/URPC — HF card states apache-2.0
+    method: dataset-card
+  access:
+    method: huggingface
+    uri: https://huggingface.co/datasets/fuhao7i/URPC
+    size_bytes: 1827915303
+    params:
+      hf_id: fuhao7i/URPC
+  loader:
+    layout: metadata-only
+  modalities:
+  - image
+  capabilities:
+  - fish-detection
+  - invertebrate-detection
+  items: 6575
+  coverage:
+    regions:
+    - unknown
+  citation: URPC competition dataset
+  homepage: https://huggingface.co/datasets/fuhao7i/URPC
+  tags:
+  - fish
+  - detection
+  - urpc
+  notes: 'access: pending-ingest — see registry/ingest-specs/urpc.yaml (S57/w2b sweep, 2026-09-25).'
+- id: marinelife16k
+  name: MarineLife-16K
+  version: unversioned
+  description: ~16k-image marine-life multimodal captioning collection.
+  licence: CC-BY-4.0
+  legal_basis: licence
+  redistribution: ok
+  provenance: public
+  verification:
+    verified_on: '2026-09-25'
+    verified_by: huggingface.co/datasets/MarineLife-16K/MarineLife-16K — HF card states cc-by-4.0
+    method: dataset-card
+  access:
+    method: huggingface
+    uri: https://huggingface.co/datasets/MarineLife-16K/MarineLife-16K
+    size_bytes: 458129645
+    params:
+      hf_id: MarineLife-16K/MarineLife-16K
+  loader:
+    layout: metadata-only
+  modalities:
+  - image
+  capabilities:
+  - vqa-captioning
+  - general-pretraining
+  items: 4000
+  items_note: HF usedStorage claims <=79.62 GB but the pinned revision's actual parquet content measured
+    458 MB / 4,000 rows on 2026-09-25 (viewer previously showed only 500 rows) — inspect before relying
+    on this as a large corpus; usedStorage likely counts deleted/superseded revisions.
+  coverage:
+    regions:
+    - global
+  citation: MarineLife-16K
+  homepage: https://huggingface.co/datasets/MarineLife-16K/MarineLife-16K
+  tags:
+  - vlm
+  - captioning
+  notes: 'access: pending-ingest — see registry/ingest-specs/marinelife16k.yaml (S57/w2b sweep, 2026-09-25).'
+- id: ocean-r1
+  name: Ocean-R1 collected visual data
+  version: unversioned
+  description: 135,595-row ocean/marine visual-reasoning collection for VLM training.
+  licence: Apache-2.0
+  legal_basis: licence
+  redistribution: ok
+  provenance: public
+  verification:
+    verified_on: '2026-09-25'
+    verified_by: huggingface.co/datasets/minglingfeng/Ocean_R1_collected_visual_data — HF card states
+      apache-2.0
+    method: dataset-card
+  access:
+    method: huggingface
+    uri: https://huggingface.co/datasets/minglingfeng/Ocean_R1_collected_visual_data
+    size_bytes: 20606311334
+    params:
+      hf_id: minglingfeng/Ocean_R1_collected_visual_data
+  loader:
+    layout: metadata-only
+  modalities:
+  - image
+  capabilities:
+  - vqa-captioning
+  - general-pretraining
+  items: 135595
+  coverage:
+    regions:
+    - global
+  citation: Ocean-R1 2025
+  homepage: https://huggingface.co/datasets/minglingfeng/Ocean_R1_collected_visual_data
+  tags:
+  - vlm
+  - captioning
+  notes: 'access: pending-ingest — see registry/ingest-specs/ocean-r1.yaml (S57/w2b sweep, 2026-09-25).'
+- id: marine-animals-mm
+  name: Marine animals multimodal dataset
+  version: unversioned
+  description: ~24.9k-row marine-animal multimodal (image+text) dataset.
+  licence: CC-BY-4.0
+  legal_basis: licence
+  redistribution: ok
+  provenance: public
+  verification:
+    verified_on: '2026-09-25'
+    verified_by: huggingface.co/datasets/Hariprasath5128/marine-animals-multimodal-dataset — HF card states
+      cc-by-4.0
+    method: dataset-card
+  access:
+    method: huggingface
+    uri: https://huggingface.co/datasets/Hariprasath5128/marine-animals-multimodal-dataset
+    size_bytes: 2534775497
+    params:
+      hf_id: Hariprasath5128/marine-animals-multimodal-dataset
+  loader:
+    layout: metadata-only
+  modalities:
+  - image
+  capabilities:
+  - vqa-captioning
+  - megafauna-id
+  items: 24911
+  coverage:
+    regions:
+    - global
+  citation: '-'
+  homepage: https://huggingface.co/datasets/Hariprasath5128/marine-animals-multimodal-dataset
+  tags:
+  - vlm
+  - captioning
+  notes: 'access: pending-ingest — see registry/ingest-specs/marine-animals-mm.yaml (S57/w2b sweep, 2026-09-25).'
+- id: oceaninstruct
+  name: OceanInstruct v0.1 (OceanGPT)
+  version: unversioned
+  description: 10k-row instruction/caption JSON dataset for ocean-domain VLM instruction tuning (text
+    referencing imagery, not embedded image files).
+  licence: MIT
+  legal_basis: licence
+  redistribution: ok
+  provenance: public
+  verification:
+    verified_on: '2026-09-25'
+    verified_by: huggingface.co/datasets/zjunlp/OceanInstruct-v0.1 — HF card states mit
+    method: dataset-card
+  access:
+    method: huggingface
+    uri: https://huggingface.co/datasets/zjunlp/OceanInstruct-v0.1
+    size_bytes: 0
+    params:
+      hf_id: zjunlp/OceanInstruct-v0.1
+  loader:
+    layout: metadata-only
+  modalities:
+  - tabular
+  capabilities:
+  - vqa-captioning
+  items: 10000
+  items_note: Pure JSON instruction/caption pairs — the ingest framework only stages image/tar/zip/parquet
+    content, so a dry-run resolves 0 stageable files (needs_adapter:json-captions).
+  coverage:
+    regions:
+    - global
+  citation: Bi et al. 2024, ACL (OceanGPT)
+  homepage: https://huggingface.co/datasets/zjunlp/OceanInstruct-v0.1
+  tags:
+  - vlm
+  - instruction-tuning
+  notes: 'access: pending-ingest — see registry/ingest-specs/oceaninstruct.yaml (S57/w2b sweep, 2026-09-25).'
+- id: seathru
+  name: Sea-thru dataset (HF mirror)
+  version: unversioned
+  description: RAW underwater imagery with registered depth maps for physics-based colour restoration
+    (Sea-thru).
+  licence: CC-BY-NC-SA-4.0
+  legal_basis: licence
+  redistribution: ok
+  provenance: public
+  verification:
+    verified_on: '2026-09-25'
+    verified_by: huggingface.co/datasets/bhowmikabhimanyu/seathru-dataset — HF card states cc-by-nc-sa-4.0
+    method: dataset-card
+  access:
+    method: huggingface
+    uri: https://huggingface.co/datasets/bhowmikabhimanyu/seathru-dataset
+    size_bytes: 38439305674
+    params:
+      hf_id: bhowmikabhimanyu/seathru-dataset
+  loader:
+    layout: metadata-only
+  modalities:
+  - image
+  capabilities:
+  - image-enhancement
+  - depth-estimation
+  items: 2421
+  coverage:
+    regions:
+    - red-sea
+    - temperate
+  citation: Akkaynak & Treibitz 2019, CVPR
+  homepage: https://huggingface.co/datasets/bhowmikabhimanyu/seathru-dataset
+  tags:
+  - enhancement
+  - depth
+  notes: 'access: pending-ingest — see registry/ingest-specs/seathru.yaml (S57/w2b sweep, 2026-09-25).'
+- id: euvp
+  name: EUVP paired/unpaired underwater enhancement (HF mirror, partial)
+  version: unversioned
+  description: Paired/unpaired underwater image-enhancement dataset behind FUnIE-GAN (HF mirror is a partial
+    5,550-row subset of the ~30k official release).
+  licence: RESEARCH-ONLY-NO-REDIST
+  legal_basis: licence
+  redistribution: unknown
+  provenance: public
+  verification:
+    verified_on: '2026-09-25'
+    verified_by: irvlab.cs.umn.edu/resources/euvp-dataset — site states research use
+    method: secondary
+  access:
+    method: huggingface
+    uri: https://huggingface.co/datasets/Ken1053/EUVP
+    size_bytes: 189288867
+    params:
+      hf_id: Ken1053/EUVP
+    notes: HF mirror is PARTIAL (5,550 rows vs ~30k paired+unpaired). The IRVLab origin returns 403 to
+      scripts; the full set needs a browser fetch (needs_yohan).
+  loader:
+    layout: metadata-only
+  modalities:
+  - image
+  capabilities:
+  - image-enhancement
+  items: 1
+  items_note: dry-run measured 1 stageable file / 189 MB on the HF mirror on 2026-09-25 — far below the
+    ~20k+10k paired/unpaired official count; confirm the mirror's actual content before relying on it.
+  coverage:
+    regions:
+    - unknown
+  citation: Islam et al. 2020, RA-L (FUnIE-GAN)
+  homepage: https://irvlab.cs.umn.edu/resources/euvp-dataset
+  tags:
+  - enhancement
+  - euvp
+  notes: 'access: pending-ingest — see registry/ingest-specs/euvp.yaml (S57/w2b sweep, 2026-09-25).'
+- id: underwater-images-2542305
+  name: Underwater image collection (Zenodo 2542305)
+  version: unversioned
+  description: Underwater imagery archive; contents are RAR-packed and unconfirmed beyond the record's
+    own title — inspect before relying on it.
+  licence: CC-BY-4.0
+  legal_basis: licence
+  redistribution: ok
+  provenance: public
+  verification:
+    verified_on: '2026-09-25'
+    verified_by: Zenodo API record 2542305 — metadata.license cc-by-4.0, access_right open
+    method: dataset-card
+  access:
+    method: zenodo
+    uri: https://zenodo.org/records/2542305
+    size_bytes: 33740000000
+    params:
+      zenodo_record: 2542305
+  loader:
+    layout: metadata-only
+  modalities:
+  - image
+  capabilities:
+  - image-enhancement
+  items_note: Payload is .rar archives; the ingest framework has no extractor (needs_adapter:rar, see
+    registry/ingest-specs/underwater-images-2542305.yaml). Record description is only the title — contents
+    unconfirmed.
+  coverage:
+    regions:
+    - unknown
+  citation: Zenodo 2542305
+  homepage: https://zenodo.org/records/2542305
+  tags:
+  - enhancement
+  notes: 'access: pending-ingest — see registry/ingest-specs/underwater-images-2542305.yaml (S57/w2b sweep,
+    2026-09-25).'
+- id: marine-snow
+  name: Synthetic marine-snow overlay dataset (Zenodo 6424752)
+  version: unversioned
+  description: Synthetic marine-snow particle overlays for underwater image restoration/denoising research.
+  licence: CC-BY-4.0
+  legal_basis: licence
+  redistribution: ok
+  provenance: public
+  verification:
+    verified_on: '2026-09-25'
+    verified_by: Zenodo API record 6424752 — metadata.license cc-by-4.0, access_right open
+    method: dataset-card
+  access:
+    method: zenodo
+    uri: https://zenodo.org/records/6424752
+    size_bytes: 14213316419
+    params:
+      zenodo_record: 6424752
+  loader:
+    layout: metadata-only
+  modalities:
+  - image
+  capabilities:
+  - image-enhancement
+  items: 2
+  coverage:
+    regions:
+    - unknown
+  citation: Cardaillac & Ludvigsen 2022
+  homepage: https://zenodo.org/records/6424752
+  tags:
+  - enhancement
+  - marine-snow
+  - synthetic
+  notes: 'access: pending-ingest — see registry/ingest-specs/marine-snow.yaml (S57/w2b sweep, 2026-09-25).'
+- id: rcaustic
+  name: R-CAUSTIC v2.0 (Zenodo 10728861)
+  version: unversioned
+  description: Underwater caustics/lighting restoration video and image dataset.
+  licence: CC-BY-4.0
+  legal_basis: licence
+  redistribution: ok
+  provenance: public
+  verification:
+    verified_on: '2026-09-25'
+    verified_by: Zenodo API record 10728861 — metadata.license cc-by-4.0, access_right open
+    method: dataset-card
+  access:
+    method: zenodo
+    uri: https://zenodo.org/records/10728861
+    size_bytes: 10566641604
+    params:
+      zenodo_record: 10728861
+  loader:
+    layout: metadata-only
+  modalities:
+  - image
+  - video
+  capabilities:
+  - image-enhancement
+  items: 1
+  coverage:
+    regions:
+    - unknown
+  citation: Zenodo 10728861
+  homepage: https://zenodo.org/records/10728861
+  tags:
+  - enhancement
+  - caustics
+  notes: 'access: pending-ingest — see registry/ingest-specs/rcaustic.yaml (S57/w2b sweep, 2026-09-25).'
+- id: sea-undistort
+  name: Sea-Undistort (Zenodo 15639838)
+  version: unversioned
+  description: Underwater image undistortion/restoration dataset.
+  licence: CC-BY-NC-SA-4.0
+  legal_basis: licence
+  redistribution: ok
+  provenance: public
+  verification:
+    verified_on: '2026-09-25'
+    verified_by: Zenodo API record 15639838 — metadata.license cc-by-nc-sa-4.0, access_right open
+    method: dataset-card
+  access:
+    method: zenodo
+    uri: https://zenodo.org/records/15639838
+    size_bytes: 2267334496
+    params:
+      zenodo_record: 15639838
+  loader:
+    layout: metadata-only
+  modalities:
+  - image
+  capabilities:
+  - image-enhancement
+  items: 1
+  coverage:
+    regions:
+    - unknown
+  citation: Zenodo 15639838
+  homepage: https://zenodo.org/records/15639838
+  tags:
+  - enhancement
+  notes: 'access: pending-ingest — see registry/ingest-specs/sea-undistort.yaml (S57/w2b sweep, 2026-09-25).'
+- id: lsui
+  name: LSUI (U-shape Transformer underwater enhancement)
+  version: unversioned
+  description: 4,279 paired underwater images with enhanced ground truth.
+  licence: RESEARCH-ONLY-NO-REDIST
+  legal_basis: licence
+  redistribution: unknown
+  provenance: public
+  verification:
+    verified_on: '2026-09-25'
+    verified_by: github.com/LintaoPeng/U-shape_Transformer_for_Underwater_Image_Enhancement — README states
+      research use
+    method: secondary
+  access:
+    method: http
+    uri: https://github.com/LintaoPeng/U-shape_Transformer_for_Underwater_Image_Enhancement
+    notes: Data is a Google Drive zip (2 files), no anonymous HTTP path; needs_adapter:gdrive, see registry/ingest-specs/lsui.yaml.
+  loader:
+    layout: metadata-only
+  modalities:
+  - image
+  capabilities:
+  - image-enhancement
+  items: 4279
+  coverage:
+    regions:
+    - unknown
+  citation: Peng et al. 2023, TIP
+  homepage: https://github.com/LintaoPeng/U-shape_Transformer_for_Underwater_Image_Enhancement
+  tags:
+  - enhancement
+  - paired
+  notes: 'access: pending-ingest — see registry/ingest-specs/lsui.yaml (S57/w2b sweep, 2026-09-25).'
+- id: u45
+  name: U45 underwater enhancement test set
+  version: unversioned
+  description: 45-image tiny underwater-enhancement evaluation set.
+  licence: NO-LICENCE-STATED
+  legal_basis: unknown
+  redistribution: unknown
+  provenance: public
+  verification:
+    verified_on: '2026-09-25'
+    verified_by: github.com/IPNUISTlegal/underwater-test-dataset-U45- — no LICENSE file in the repo
+    method: absent
+  access:
+    method: http
+    uri: https://github.com/IPNUISTlegal/underwater-test-dataset-U45-
+    size_bytes: 51651008
+    params:
+      repo: IPNUISTlegal/underwater-test-dataset-U45-
+      ref: master
+  loader:
+    layout: metadata-only
+  modalities:
+  - image
+  capabilities:
+  - image-enhancement
+  items: 450
+  items_note: dry-run (github adapter, ref=master) measured 450 files / 51.65 MB on 2026-09-25 — more
+    than the ~45-image estimate in the catalog; likely multiple variants in-repo.
+  coverage:
+    regions:
+    - unknown
+  citation: Li et al. 2019
+  homepage: https://github.com/IPNUISTlegal/underwater-test-dataset-U45-
+  tags:
+  - enhancement
+  - eval
+  notes: 'access: pending-ingest — see registry/ingest-specs/u45.yaml (S57/w2b sweep, 2026-09-25).'
+- id: ruie
+  name: RUIE real-world underwater image enhancement benchmark
+  version: unversioned
+  description: ~4k-image real-world underwater enhancement benchmark.
+  licence: RESEARCH-ONLY-NO-REDIST
+  legal_basis: licence
+  redistribution: unknown
+  provenance: public
+  verification:
+    verified_on: '2026-09-25'
+    verified_by: github.com/dlut-dimt/Realworld-Underwater-Image-Enhancement-RUIE-Benchmark — README states
+      research use
+    method: secondary
+  access:
+    method: http
+    uri: https://github.com/dlut-dimt/Realworld-Underwater-Image-Enhancement-RUIE-Benchmark
+    notes: README points to a Baidu netdisk share with no URL captured by the catalog sweep; needs_adapter:baidu,
+      see registry/ingest-specs/ruie.yaml.
+  loader:
+    layout: metadata-only
+  modalities:
+  - image
+  capabilities:
+  - image-enhancement
+  items: 4000
+  coverage:
+    regions:
+    - unknown
+  citation: Liu et al. 2020, TCSVT
+  homepage: https://github.com/dlut-dimt/Realworld-Underwater-Image-Enhancement-RUIE-Benchmark
+  tags:
+  - enhancement
+  - benchmark
+  notes: 'access: pending-ingest — see registry/ingest-specs/ruie.yaml (S57/w2b sweep, 2026-09-25).'
+- id: usr248
+  name: USR-248 underwater super-resolution dataset
+  version: unversioned
+  description: 1,060 high-resolution underwater images for super-resolution research.
+  licence: RESEARCH-ONLY-NO-REDIST
+  legal_basis: licence
+  redistribution: unknown
+  provenance: public
+  verification:
+    verified_on: '2026-09-25'
+    verified_by: irvlab.cs.umn.edu/resources/usr-248-dataset — site states research use
+    method: secondary
+  access:
+    method: http
+    uri: https://irvlab.cs.umn.edu/resources/usr-248-dataset
+    notes: Site 403s scripted requests (Cloudflare); payload is a Google Drive folder whose id is not
+      exposed without rendering the page. needs_adapter:gdrive.
+  loader:
+    layout: metadata-only
+  modalities:
+  - image
+  capabilities:
+  - super-resolution
+  items: 1060
+  coverage:
+    regions:
+    - unknown
+  citation: Islam et al. 2020, ICRA
+  homepage: https://irvlab.cs.umn.edu/resources/usr-248-dataset
+  tags:
+  - enhancement
+  - super-resolution
+  notes: 'access: pending-ingest — see registry/ingest-specs/usr248.yaml (S57/w2b sweep, 2026-09-25).'
+- id: ufo120
+  name: UFO-120 underwater enhancement+super-resolution dataset
+  version: unversioned
+  description: 1,620 paired underwater images for joint enhancement and super-resolution.
+  licence: RESEARCH-ONLY-NO-REDIST
+  legal_basis: licence
+  redistribution: unknown
+  provenance: public
+  verification:
+    verified_on: '2026-09-25'
+    verified_by: irvlab.cs.umn.edu/resources/ufo-120-dataset — site states research use
+    method: secondary
+  access:
+    method: http
+    uri: https://irvlab.cs.umn.edu/resources/ufo-120-dataset
+    notes: Same IRVLab Cloudflare 403 as usr248; payload on Google Drive. needs_adapter:gdrive.
+  loader:
+    layout: metadata-only
+  modalities:
+  - image
+  capabilities:
+  - image-enhancement
+  - super-resolution
+  items: 1620
+  coverage:
+    regions:
+    - unknown
+  citation: Islam et al. 2020, RSS
+  homepage: https://irvlab.cs.umn.edu/resources/ufo-120-dataset
+  tags:
+  - enhancement
+  - super-resolution
+  - paired
+  notes: 'access: pending-ingest — see registry/ingest-specs/ufo120.yaml (S57/w2b sweep, 2026-09-25).'
+- id: hicrd
+  name: HICRD / CWR underwater colour restoration dataset
+  version: unversioned
+  description: ~9.7k images (6,003 low-quality + 3,673 high-quality references) for underwater colour
+    restoration.
+  licence: RESEARCH-ONLY-NO-REDIST
+  legal_basis: licence
+  redistribution: unknown
+  provenance: public
+  verification:
+    verified_on: '2026-09-25'
+    verified_by: github.com/JunlinHan/CWR — repo LICENSE (MIT) covers code only; README grants data for
+      research use
+    method: secondary
+  access:
+    method: http
+    uri: https://github.com/JunlinHan/CWR
+    notes: Data is a Google Drive zip (2 files), no anonymous HTTP path; needs_adapter:gdrive.
+  loader:
+    layout: metadata-only
+  modalities:
+  - image
+  capabilities:
+  - image-enhancement
+  items: 9676
+  coverage:
+    regions:
+    - unknown
+  citation: Han et al. 2021 (CWR)
+  homepage: https://github.com/JunlinHan/CWR
+  tags:
+  - enhancement
+  - restoration
+  notes: 'access: pending-ingest — see registry/ingest-specs/hicrd.yaml (S57/w2b sweep, 2026-09-25).'
+- id: usod10k
+  name: USOD10K underwater salient-object detection dataset
+  version: unversioned
+  description: 10,255-image underwater salient-object detection dataset.
+  licence: RESEARCH-ONLY-NO-REDIST
+  legal_basis: licence
+  redistribution: unknown
+  provenance: public
+  verification:
+    verified_on: '2026-09-25'
+    verified_by: github.com/LinHong-HIT/USOD10K — README states research use
+    method: secondary
+  access:
+    method: http
+    uri: https://github.com/LinHong-HIT/USOD10K
+    notes: Data is a Google Drive/Baidu zip (2 Drive files), no anonymous HTTP path; needs_adapter:gdrive.
+  loader:
+    layout: metadata-only
+  modalities:
+  - image
+  capabilities:
+  - image-enhancement
+  - invertebrate-detection
+  items: 10255
+  coverage:
+    regions:
+    - unknown
+  citation: Hong et al. 2023, TIP
+  homepage: https://github.com/LinHong-HIT/USOD10K
+  tags:
+  - enhancement
+  - salient-object
+  notes: 'access: pending-ingest — see registry/ingest-specs/usod10k.yaml (S57/w2b sweep, 2026-09-25).'
+- id: viame-public
+  name: VIAME public data collection (Kitware)
+  version: unversioned
+  description: Multi-survey mixed marine imagery collection served over the Kitware Girder REST API.
+  licence: US-GOV-PD
+  legal_basis: licence
+  redistribution: ok
+  provenance: public
+  verification:
+    verified_on: '2026-09-25'
+    verified_by: data.kitware.com/#collection/58b747ec8d777f0aef5d0f6a — mostly NOAA-sourced surveys,
+      public domain
+    method: secondary
+  access:
+    method: request
+    uri: https://data.kitware.com/#collection/58b747ec8d777f0aef5d0f6a
+    notes: 'INT-ingest (2026-09-25): downgraded from method:api -- Kitware Girder REST API
+      (collection 58b747ec8d777f0aef5d0f6a) has a real endpoint but no dispatch client
+      exists in _API_CLIENTS (fetch.py), and one is out of this brief''s scope. needs_adapter:girder,
+      see registry/ingest-specs/viame-public.yaml.'
+  loader:
+    layout: metadata-only
+  modalities:
+  - image
+  - video
+  capabilities:
+  - fish-detection
+  - invertebrate-detection
+  - megafauna-id
+  coverage:
+    regions:
+    - unknown
+  citation: Kitware VIAME public data
+  homepage: https://data.kitware.com/#collection/58b747ec8d777f0aef5d0f6a
+  tags:
+  - fish
+  - mixed-survey
+  notes: 'access: pending-ingest — see registry/ingest-specs/viame-public.yaml (S57/w2b sweep, 2026-09-25).'
+- id: duo
+  name: DUO (Detecting Underwater Objects)
+  version: unversioned
+  description: 7,782-image COCO-format underwater object detection dataset (sea cucumber, sea urchin,
+    scallop, starfish).
+  licence: RESEARCH-ONLY-NO-REDIST
+  legal_basis: licence
+  redistribution: unknown
+  provenance: public
+  verification:
+    verified_on: '2026-09-25'
+    verified_by: github.com/chongweiliu/DUO — README states research/academic use
+    method: secondary
+  access:
+    method: http
+    uri: https://github.com/chongweiliu/DUO
+    notes: COCO images+annotations are a single Google Drive zip (+ Baidu mirror), no anonymous HTTP path.
+      needs_adapter:gdrive.
+  loader:
+    layout: metadata-only
+  modalities:
+  - image
+  capabilities:
+  - invertebrate-detection
+  items: 7782
+  coverage:
+    regions:
+    - unknown
+  citation: Liu et al. 2021, ICMEW
+  homepage: https://github.com/chongweiliu/DUO
+  tags:
+  - detection
+  - invertebrate
+  notes: 'access: pending-ingest — see registry/ingest-specs/duo.yaml (S57/w2b sweep, 2026-09-25).'

@@ -1,0 +1,17 @@
+# Ocean Networks Canada Oceans 3.0 / SeaTube cabled-observatory video + stills (Barkley Canyon, Folger Passage, to 2,700 m).
+id: onc
+adapter: needs:onc-token
+license: CC-BY-4.0 (with account)
+attribution: Ocean Networks Canada (University of Victoria)
+citation: data.oceannetworks.ca
+homepage: https://data.oceannetworks.ca/
+why_not_supported: The OpenAPI base resolves (HTTP 200) but every data endpoint returns
+  errorCode 128 'Either token or appToken must be specified' — confirmed live, anonymous
+  calls are rejected even for public stations. Registration is free but is account
+  creation, which D-E forbids.
+measured:
+  method: GET data.oceannetworks.ca/api/locations -> JSON error requiring token (anonymous
+    call rejected)
+  date: '2026-09-25'
+  per_item_license: CC-BY-4.0
+  by_depth_band_m: {}

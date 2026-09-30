@@ -1,0 +1,20 @@
+# MCR LTER Moorea Labelled Corals point-annotation set (knb-lter-mcr.5006.3), EDI/DataONE PASTA.
+id: mlc-moorea
+adapter: needs:pasta-api
+license: CC-BY-4.0 (MCR LTER policy)
+attribution: Moorea Coral Reef LTER
+citation: doi:10.6073/pasta/88dde0e68ab5232a470389f4bedd1892
+homepage: https://portal.edirepository.org/nis/mapbrowse?scope=knb-lter-mcr&identifier=5006
+why_not_supported: EDI portal resolves; PASTA package resolution to individual data-entity
+  URLs needs a small DataONE/PASTA client, not currently one of the 5 supported adapter
+  kinds (hf/http/zenodo/bucket/github).
+measured:
+  items: 2055
+  bytes: 5368709120
+  method: 'catalog measurement (S57, EDI package inspected): 2,055 images, ~400k points,
+    ~5 GB est'
+  date: '2026-09-25'
+  per_item_license: CC-BY-4.0
+  by_depth_band_m:
+    10-10: 2055
+  label_type: point annotations (~400k points)

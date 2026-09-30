@@ -1,0 +1,7 @@
+id: atlantis
+adapter: http
+params: {}
+license: NOASSERTION
+attribution: ATLANTIS (Zhang et al., CVPR 2024)
+citation: Zhang+ CVPR2024
+homepage: https://www.kaggle.com/datasets/zkawfanx/atlantis

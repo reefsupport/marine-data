@@ -1,0 +1,18 @@
+# PLC (Beijbom et al. 2015) Heron Reef benthic point-annotation set — CoralNet-lineage, high labels-per-GB value.
+id: plc-beijbom2015
+adapter: zenodo
+license: cc0-1.0
+attribution: Beijbom et al. 2015
+citation: zenodo.org/records/5000003
+homepage: https://zenodo.org/records/5000003
+params:
+  zenodo_record: 5000003
+measured:
+  items: 5090
+  bytes: 9083798118
+  method: Zenodo API record (S57 catalog measurement, verified)
+  date: '2026-09-25'
+  per_item_license: cc0-1.0
+  by_depth_band_m:
+    3-20: 5090
+  label_type: point annotations (CoralNet taxonomy)

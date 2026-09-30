@@ -1,0 +1,23 @@
+# WP-6l-B (2026-09-25) new source: needs_adapter:split-zip — WP-6l-B depth-3d: large synthetic underwater stereo-matching set
+id: uwstereo-syn
+adapter: hf
+params:
+  repo: daviddev96/UWStereo_2
+  revision: 62dd4c52418cf75a84073e2767494debaaf30e22
+license: mit
+attribution: daviddev96 (HF)
+citation: HF dataset daviddev96/UWStereo_2
+homepage: https://huggingface.co/datasets/daviddev96/UWStereo_2
+notes: 'needs_adapter:split-zip — WP-6l-B depth-3d: large synthetic underwater stereo-matching set'
+disk_floor_gib: 38.0
+measured:
+  bytes: 71242564134
+  bytes_basis: HF usedStorage (all revisions' LFS objects)
+  method: 'HF listing: 26 split-zip volumes (*.zip.001..) per scene; members not counted'
+  date: '2026-09-25'
+  per_item_license: mit
+  by_depth_band_m: {}
+  label_type: synthetic underwater stereo pairs with dense disparity/depth (UWStereo, Lv et al. 2025)
+  habitat_region: synthetic reef/coral/industrial scenes
+  dedup_chain: HF mirror is the only anonymous route (upstream Baidu Cloud)
+  wp6l_gap: depth-3d

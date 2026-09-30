@@ -1,0 +1,7 @@
+id: noaa-ncrmp-structural-complexity
+adapter: http
+params: {}
+license: NOASSERTION
+attribution: NOAA NCRMP structural complexity
+citation: '-'
+homepage: https://www.fisheries.noaa.gov/inport/item/67851

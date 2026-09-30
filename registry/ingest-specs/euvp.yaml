@@ -1,0 +1,13 @@
+# euvp: Islam et al. 2020, RA-L (FUnIE-GAN)
+# HF mirror Ken1053/EUVP is PARTIAL (5,550 rows vs ~30k paired+unpaired); the IRVLab origin returns 403 to scripts. Stage the HF partial now; full set is needs_yohan (IRVLab bot-block) until someone fetches it via browser.
+id: euvp
+adapter: hf
+license: research (non-commercial, per upstream)
+attribution: Islam et al. — EUVP / FUnIE-GAN (HF mirror, partial)
+citation: Islam et al. 2020, RA-L (FUnIE-GAN)
+homepage: https://irvlab.cs.umn.edu/resources/euvp-dataset
+params:
+  repo: Ken1053/EUVP
+  revision: main
+
+disk_floor_gib: 36.0

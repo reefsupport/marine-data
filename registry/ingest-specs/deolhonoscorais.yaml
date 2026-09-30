@@ -1,0 +1,10 @@
+id: deolhonoscorais
+adapter: zenodo
+params:
+  zenodo_record: 7338208
+license: CC-BY-4.0
+attribution: De Olhos nos Corais (Zenodo 7338208)
+citation: Zenodo 7338208
+homepage: https://zenodo.org/records/7338208
+
+disk_floor_gib: 36.0

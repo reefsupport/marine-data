@@ -1,0 +1,15 @@
+id: ozfish
+adapter: pawsey-portal
+params:
+  container_url: https://storage.pawsey.org.au/public/m/FDFML/frames
+  version: ozfish-frames-2019
+license: CC-BY-3.0-AU (README)
+attribution: AIMS, UWA and Curtin University — OzFish
+citation: AIMS OzFish, doi:10.25845/5e28f062c5097
+homepage: https://github.com/open-AIMS/ozfish
+notes: 'D-R (5): fish.yaml access.method flipped to pawsey-portal per the manager. WP-6d-A built
+  the pawsey-portal adapter (Swift ?format=json listing); a 2026-09-25 live check found
+  storage.pawsey.org.au now serves a JS-app shell for the plain listing path (portal
+  migrated since the w0/w2 catalog sweep) — the adapter enumerates 0 items until Pawsey
+  exposes a real listing route again, or a human resolves one. crops/ and labelled/ are
+  separate container prefixes, not yet split into their own specs.'

@@ -9,6 +9,7 @@ authors = [{ name = "Reef Support B.V." }]
 keywords = ["marine", "coral-reef", "benthic", "dataset", "licence", "croissant"]
 dependencies = [
     "pyarrow>=15",  # release label gate reads the pinned WoRMS snapshot (WP-7)
+    "inflate64>=1.0.4",
     "pydantic>=2.6",
     "pyyaml>=6.0",
 ]
@@ -18,7 +19,11 @@ pandas = ["pandas>=2.0"]
 torch = ["torch>=2.2", "numpy>=1.24", "pillow>=10.0"]
 tf = ["tensorflow>=2.15"]
 hf = ["datasets>=2.18"]
-ingest = ["pyarrow>=15", "pillow==12.3.0"]
+ingest = ["pyarrow>=15", "pillow==12.3.0", "boto3>=1.34"]
+# WP-6d-B payload decoders: video/rosbag frame extraction, rar/multipart-tar archives,
+# caption/VQA JSON. ffmpeg and bsdtar are shelled out to (system binaries, not pip
+# deps); imageio-ffmpeg is only imported as a fallback when `ffmpeg` isn't on PATH.
+decoders = ["pillow==12.3.0", "rosbags>=0.10", "imageio-ffmpeg>=0.5"]
 quality = [
     "numpy==2.4.6; python_version >= '3.11'",
     "numpy>=1.24; python_version < '3.11'",

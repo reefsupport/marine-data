@@ -1,0 +1,12 @@
+# marine-animals-mm: -
+id: marine-animals-mm
+adapter: hf
+license: CC-BY-4.0 (HF card)
+attribution: Hariprasath5128 — marine-animals-multimodal-dataset
+citation: '-'
+homepage: https://huggingface.co/datasets/Hariprasath5128/marine-animals-multimodal-dataset
+params:
+  repo: Hariprasath5128/marine-animals-multimodal-dataset
+  revision: main
+
+disk_floor_gib: 36.0

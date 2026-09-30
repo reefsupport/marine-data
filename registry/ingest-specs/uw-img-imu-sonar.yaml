@@ -1,0 +1,10 @@
+id: uw-img-imu-sonar
+adapter: hf
+params:
+  repo: jclboeng/underwater-img-imu-sonar-datasets
+  revision: 96385ed27da0
+license: apache-2.0
+attribution: jclboeng (HF)
+citation: jclboeng/underwater-img-imu-sonar-datasets (HF)
+homepage: https://huggingface.co/datasets/jclboeng/underwater-img-imu-sonar-datasets
+max_images: 20000

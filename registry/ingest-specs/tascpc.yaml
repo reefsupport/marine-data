@@ -1,0 +1,15 @@
+id: tascpc
+adapter: http
+params:
+  urls:
+  - http://marine.acfr.usyd.edu.au/datasets/data/TasCPC/TasCPC_CODE.tar.gz
+  - http://marine.acfr.usyd.edu.au/datasets/data/TasCPC/TasCPC_LC.tar.gz
+  - http://marine.acfr.usyd.edu.au/datasets/data/TasCPC/TasCPC_RM.tar.gz
+  version: observed-2026-09-25
+license: unknown
+attribution: University of Sydney ACFR
+citation: Bewley et al. 2012
+homepage: http://marine.acfr.usyd.edu.au/datasets/
+version: observed-2026-09-25
+
+disk_floor_gib: 36.0

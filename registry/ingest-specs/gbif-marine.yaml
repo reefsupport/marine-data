@@ -1,0 +1,46 @@
+# GBIF occurrences with StillImage media in wholly-marine clades, EXCLUDING iNaturalist (inat-marine covers it) and specimens/fossils.
+id: gbif-marine
+adapter: gbif-occurrence-media
+license: 'per record: CC0-1.0 / CC-BY-4.0 / CC-BY-NC-4.0 (GBIF licence facet)'
+attribution: GBIF.org and the publishing institutions
+citation: GBIF.org occurrence search, 2026-09-25
+homepage: https://registry.opendata.aws/gbif/
+params:
+  snapshot: api-20260925
+  taxon_keys: [206, 352, 176, 50, 356, 207, 136, 346, 121, 120, 733, 9413, 110, 7073593, 980, 354, 205, 105, 137, 229]
+  basis_of_record: [HUMAN_OBSERVATION, MACHINE_OBSERVATION]
+  exclude_dataset_keys: ['50c9509d-22c7-4a22-a47d-8c48425ef4a7']  # iNaturalist (inat-marine covers it)
+  per_species_cap: 100
+  page_limit: 300
+notes: 'WP-6e-B: anonymous api.gbif.org/v1/occurrence/search, datasetKey facet then paged per dataset (year facets
+  past the 100k offset window). The AWS snapshot (s3://gbif-open-data-eu-central-1/occurrence/) carries mediatype
+  only, no media URLs, so it cannot list images. Bulk downloads need an account: not used. First StillImage per
+  occurrence; lat/lon/depth -> schema fields; licence/rightsHolder/creator/species/eventDate -> per-sample labels.'
+measured:
+  items: 346842
+  bytes: null
+  method: 'GBIF occurrence/search facets: mediaType=StillImage, basisOfRecord in {HUMAN,MACHINE}_OBSERVATION, 16
+    exact-matched marine clade keys, minus iNat datasetKey'
+  date: '2026-09-25'
+  bytes_basis: 'not in metadata: media are per-publisher URLs with no size field'
+  unit: occurrences (>= 1 image each)
+  context:
+    marine_clades_all_basis: 2714201
+    of_which_inat: 1727710
+    licence_all_basis:
+      CC_BY_NC_4_0: 1654628
+      CC0_1_0: 625350
+      CC_BY_4_0: 434223
+    in_situ_incl_inat: 2074552
+  caveat: 'fish excluded: GBIF backbone gave no exact match for Actinopterygii/Actinopteri; Ctenophora no match;
+    Sirenia matched HIGHERRANK Mammalia and was dropped'
+  label_type: cls (species, GBIF backbone)
+subset:
+  target_items: 346842
+  stratify:
+  - datasetKey
+  - class
+  cap_per_stratum: 100
+  rule: non-iNat in-situ occurrences, first image per occurrence, at most 100 per speciesKey (adapter per_species_cap,
+    enforced in enumeration); dedupe by media URL against inat-marine and obis at release
+disk_floor_gib: 34.0  # INT-ingest5b: runner floor like runner 4 (D-AE)

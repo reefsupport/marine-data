@@ -1,0 +1,24 @@
+# WP-6l-B (2026-09-25) new source: candidate — WP-6l-B salient: reef marine-animal instance masks
+id: rmas-hf
+adapter: hf
+params:
+  repo: nobg/RMAS
+  revision: 7eed10d36cd0333659b498d57dc41796a1d3a96e
+license: unstated
+attribution: nobg (HF)
+citation: HF dataset nobg/RMAS
+homepage: https://huggingface.co/datasets/nobg/RMAS
+notes: 'candidate — WP-6l-B salient: reef marine-animal instance masks'
+disk_floor_gib: 36.0
+measured:
+  items: 3014
+  bytes: 602267896
+  bytes_basis: HF usedStorage (all revisions' LFS objects)
+  method: 'datasets-server /size: 3,014 parquet rows'
+  date: '2026-09-25'
+  per_item_license: unstated
+  by_depth_band_m: {}
+  label_type: marine-animal segmentation masks (RMAS)
+  habitat_region: coral reef
+  dedup_chain: HF re-pack of RMAS (Li et al. 2023, upstream GitHub/Google Drive); first open anonymous route
+  wp6l_gap: salient

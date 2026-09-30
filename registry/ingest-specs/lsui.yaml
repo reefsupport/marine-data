@@ -1,0 +1,12 @@
+id: lsui
+adapter: gdrive-public
+params:
+  files:
+  - {id: 10gD4s12uJxCHcuFdX9Khkv37zzBwNFbL, name: lsui_input.zip}
+  - {id: 19a_kDJTT5S96kzwQntEMhSxAPYw4xY2P, name: lsui_gt.zip}
+license: research (non-commercial, per upstream)
+attribution: Peng et al. — LSUI (U-shape Transformer)
+citation: Peng et al. 2023, TIP
+homepage: https://github.com/LintaoPeng/U-shape_Transformer_for_Underwater_Image_Enhancement
+notes: WP-6d-A gdrive-public adapter; 4,279 paired images; Baidu mirror not used (D-E).
+disk_floor_gib: 34.0

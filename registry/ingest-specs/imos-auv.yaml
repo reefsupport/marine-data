@@ -1,0 +1,30 @@
+# IMOS AUV (Sirius/Nimbus) benthic survey stills, public bucket s3://imos-data/IMOS/AUV/ (anonymous).
+# WP-6f: the D-AC subset manifest is built by scripts/build_imos_manifest.py from a COMPLETE per-dive
+# cache (1,011 dives in 71 campaigns + the Squidle+ annotated-frame scan); a partial cache never
+# yields a manifest. The manifest (> 10 MB) lives on S3 only; pin manifest_sha256 once uploaded.
+# D-AC2: all annotated + <= 150k unannotated, <= 370k; re-select via build_imos_manifest.py --reselect-from-cache.
+id: imos-auv
+adapter: manifest
+params:
+  manifest: https://hel1.your-objectstorage.com/rs-storage-open/sources/imos-auv/_manifest/imos-auv-DAC2.parquet
+  manifest_sha256: 151b8aabf4a5e44ba4a6852aec588d585dd7eef4cb7a503698bfa7775cb54397
+  field_columns: {lat: lat, lon: lon, depth_m: depth_m, capture_datetime: capture_datetime}
+  label_columns: [campaign, dive, depth_band, region, squidle_annotated, selection, pair_right]
+license: CC-BY-4.0 (IMOS data licence)
+attribution: Integrated Marine Observing System (IMOS) — AUV Facility, University of Sydney ACFR
+citation: IMOS AUV Facility, https://imos.org.au/facility/autonomous-underwater-vehicles
+homepage: https://registry.opendata.aws/imos-data/
+measured:
+  items: null
+  bytes: null
+  method: anonymous ListObjectsV2 over IMOS/AUV/ — incomplete (>= 10,200,000 objects at 4,823 s)
+  date: '2026-09-25'
+  bytes_basis: listing incomplete; resume and read imos_agg.json (rows by campaign/dive/ext with n + bytes)
+  label_type: none on images; CATAMI points for a labelled subset (BENTHOZ-2015 / Squidle+)
+subset:
+  target_items: 343222
+  stratify:
+  - campaign
+  - depth_band
+  - region
+  rule: 'D-AC2: all 193,319 annotated frames + 149,903 unannotated (≤ 150k), total ≤ 370k. (4) within a cell, sha256(frame key) order. Left camera (LC16) geotiff only.'

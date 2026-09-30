@@ -1,0 +1,25 @@
+# WP-6g (2026-09-25) new source: candidate — WP-6g gap 1,2: Ocean Networks Canada fixed observatory camera, Aug 2022-Aug 2023: a year-long time series with fauna labels
+id: onc-camdsb103-fauna
+adapter: zenodo
+params:
+  zenodo_record: 22134596
+  stream_tar_members: true  # WP-6n: one item per image, no on-disk container (D-AH 4)
+license: cc-by-4.0
+attribution: Bigham, Carter (2026), Zenodo
+citation: doi:10.5281/zenodo.22134596 — CAMDSB103 August 2022 to August 2023 Fauna Annotations
+homepage: https://zenodo.org/records/22134596
+notes: 'candidate — WP-6g gap 1,2: Ocean Networks Canada fixed observatory camera, Aug 2022-Aug 2023: a year-long
+  time series with fauna labels'
+temp_cap_gb: 10.0
+disk_floor_gib: 42.0
+measured:
+  bytes: 8554850816
+  method: 'tar peek: images/*.jpg, ~160 kB each in the first 20 MB (count unmeasured, ~50k by bytes); Zenodo API
+    bytes'
+  date: '2026-09-25'
+  per_item_license: cc-by-4.0
+  by_depth_band_m: {}
+  label_type: fauna annotations (yaml) on a year of fixed-camera stills
+  wp6g_gaps:
+  - 1
+  - 2

@@ -1,0 +1,12 @@
+# SPEC-w3 discovery: plankton interaction videos.
+id: plankton-interaction-videos
+adapter: hf
+license: apache-2.0
+attribution: bcdemattei
+citation: bcdemattei/plankton_interaction_videos (HF)
+homepage: https://huggingface.co/datasets/bcdemattei/plankton_interaction_videos
+params:
+  repo: bcdemattei/plankton_interaction_videos
+  revision: f7d40238215e2fa2fa9e5100ccbc882a499e55ba
+
+disk_floor_gib: 34.0

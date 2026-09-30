@@ -1,0 +1,10 @@
+id: deepreefmap
+adapter: zenodo
+params:
+  zenodo_record: 10624794
+license: CC-BY-4.0
+attribution: DeepReefMap (Sauder et al. 2024)
+citation: Sauder+ 2024
+homepage: https://zenodo.org/records/10624794
+
+disk_floor_gib: 36.0

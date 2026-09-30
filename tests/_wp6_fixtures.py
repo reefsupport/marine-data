@@ -28,6 +28,14 @@ class LocalServer:
                 status, ctype, body, extra = server.routes.get(
                     self.path, (404, "text/plain", b"nope", {})
                 )
+                rng = self.headers.get("Range")
+                if status == 200 and rng:  # WP-6k: serve a slice so RemoteFile/open_remote_zip work
+                    total = len(body)
+                    a, _, b = rng.removeprefix("bytes=").partition("-")
+                    lo = total - int(b) if a == "" else int(a)
+                    hi = total - 1 if a == "" or b == "" else int(b)
+                    body, status = body[lo : hi + 1], 206
+                    extra = {**extra, "Content-Range": f"bytes {lo}-{hi}/{total}"}
                 self.send_response(status)
                 self.send_header("Content-Type", ctype)
                 self.send_header("Content-Length", str(len(body)))
@@ -67,6 +75,16 @@ def png(seed: int, size: int = 32) -> bytes:
     im = Image.frombytes("RGB", (size, size), rnd.randbytes(size * size * 3))
     buf = io.BytesIO()
     im.save(buf, format="PNG")
+    return buf.getvalue()
+
+
+def tar_gz_bytes(members: dict[str, bytes]) -> bytes:
+    buf = io.BytesIO()
+    with tarfile.open(fileobj=buf, mode="w:gz") as tar:
+        for name, data in members.items():
+            info = tarfile.TarInfo(name)
+            info.size = len(data)
+            tar.addfile(info, io.BytesIO(data))
     return buf.getvalue()
 
 

@@ -1,0 +1,13 @@
+id: ruod
+adapter: hf
+params:
+  repo: Mortallll/RUOD
+  revision: c22094e45b7f78075339ed18663c778c3c7dc539
+  include: ["coco/*"]
+  label_patterns: ["coco/annotations/*.json"]
+license: NOASSERTION
+attribution: "RUOD authors (Fu et al.); HF mirror Mortallll/RUOD — no LICENSE file, README, or cardData found on the mirror (checked 2026-09-25); NEEDS-YOHAN to confirm terms from the original paper/repo before any redistribution decision"
+citation: "Fu, C. et al. 2023, Rethinking General Underwater Object Detection: Datasets, Challenges, and Solutions, Engineering Applications of Artificial Intelligence 123:106002 (RUOD dataset)"
+homepage: https://huggingface.co/datasets/Mortallll/RUOD
+
+disk_floor_gib: 34.0

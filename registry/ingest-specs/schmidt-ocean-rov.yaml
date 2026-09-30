@@ -1,0 +1,15 @@
+# Schmidt Ocean Institute ROV SuBastian deep-sea imagery (falkor research vessel dives).
+id: schmidt-ocean-rov
+adapter: needs:unresolved-host
+license: CC-BY-NC (per SOI media policy, stated)
+attribution: Schmidt Ocean Institute
+citation: schmidtocean.org
+homepage: https://schmidtocean.org/
+why_not_supported: The SOI data portal returned no response (curl 000) per the S57
+  catalog; an AWS Open Data Registry keyword search for 'schmidt ocean' surfaced no
+  matching dataset listing. No anonymous bulk endpoint found within budget.
+measured:
+  method: 'AWS ODR search for schmidt+ocean: no matching listing; SOI portal unreachable
+    (curl 000, consistent with S57)'
+  date: '2026-09-25'
+  per_item_license: CC-BY-NC

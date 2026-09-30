@@ -1,0 +1,23 @@
+# WP-6g (2026-09-25) new source: candidate — WP-6g gap 2,6: river/fish-pass salmonid video clips: freshwater-adjacent video, not reef
+id: salmon-trout-video
+adapter: zenodo
+params:
+  zenodo_record: 17249918
+license: cc-by-4.0
+attribution: Marine and Freshwater Research Institute (2025), Zenodo
+citation: doi:10.5281/zenodo.17249918 — Video Data - Fish Species Classification
+homepage: https://zenodo.org/records/17249918
+notes: 'candidate — WP-6g gap 2,6: river/fish-pass salmonid video clips: freshwater-adjacent video, not reef'
+disk_floor_gib: 38.0
+measured:
+  items: 2233
+  bytes: 12450816467
+  method: 'remote zip CD: Salmon_videos.zip = 2,233 mp4 (trout + validation zips not counted); Zenodo API bytes'
+  date: '2026-09-25'
+  per_item_license: cc-by-4.0
+  by_depth_band_m: {}
+  label_type: species class per clip + counting validation set
+  wp6g_gaps:
+  - 2
+  - 6
+  unit: videos (salmon only)

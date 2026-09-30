@@ -1,0 +1,11 @@
+id: uieb
+adapter: hf
+params:
+  repo: Hikari0608/UIEB
+  revision: 4f34d1c3eb04ee046f98469cc073a20b57b140e1
+license: NOASSERTION
+attribution: UIEB (Li et al., TIP 2019), via HF mirror Hikari0608/UIEB
+citation: Li+ TIP2019
+homepage: https://huggingface.co/datasets/Hikari0608/UIEB
+
+disk_floor_gib: 36.0

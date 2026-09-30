@@ -1,0 +1,70 @@
+# iNaturalist Open Data (AWS ODR): research-grade observations of marine taxa. Marine = 34 wholly-marine clades, or a mixed-clade
+# species that WoRMS AphiaRecordsByMatchNames marks isMarine (40,387 names queried; 729 unmatched are excluded).
+id: inat-marine
+adapter: inat-open-data
+params:
+  # D-AE durable copy (S3 key sources/inat-marine/_manifest/inat-marine-manifest.parquet, 147,704,319 B);
+  # fetched once into the marinedata cache and refused if its sha256 differs from the pin.
+  manifest: https://rs-storage-open.hel1.your-objectstorage.com/sources/inat-marine/_manifest/inat-marine-manifest.parquet
+  manifest_sha256: 178e7455bbab9dad0ed2de59517d5c45044553bb5decb84c269032525ae7fc77
+  metadata_date: '2026-09'
+  # D-AE: `large` (1024 px long edge), not `original`; photo_id + original_url stay in labels.
+  photo_size: large
+notes: 'D-AB manifest (scripts/inat_manifest.py; research-grade, marine taxa per registry/ingest-specs/data/inat-marine-taxa-2026-09-25.csv.gz, 1 photo/obs, <=100/taxon by sha256(observation_uuid)); lat/lon/observed_on/licence per sample; manifest lives in scratch until phase 2 uploads it'
+license: 'per photo (photos.csv `license`): CC0 / CC-BY / CC-BY-NC / -SA / -ND variants'
+attribution: iNaturalist contributors (per photo observer)
+citation: iNaturalist Open Data, AWS Open Data Registry, metadata 2026-09
+homepage: https://registry.opendata.aws/inaturalist-open-data/
+measured:
+  items: 9594509
+  bytes: 2387622827902
+  method: full pass over observations.csv.gz (275,907,588 rows) + photos.csv.gz (488,562,900 rows) + taxa.csv.gz;
+    quality_grade=research; WoRMS REST for mixed clades
+  date: '2026-09-25'
+  bytes_basis: photo count x mean Content-Length of 20 HEAD large.* samples (248,853 B); CSV has pixel dims only
+    (25,677 Gpx at original size)
+  unit: photos (large, <= 1024 px)
+  research_grade_observations_with_photo: 6064101
+  n_taxa: 34872
+  per_item_license: photos.license
+  by_license:
+    CC-BY: 1121207
+    CC-BY-NC-ND: 323322
+    CC-BY-NC: 7561775
+    CC-BY-NC-SA: 257075
+    CC-BY-SA: 107420
+    CC0: 209252
+    CC-BY-ND: 14458
+  by_class_top:
+    Actinopterygii: 2805297
+    Gastropoda: 1926288
+    Malacostraca: 1153340
+    Bivalvia: 659306
+    Mammalia: 539704
+    Anthozoa: 405656
+    Asteroidea: 295338
+    Chondrichthyes: 247958
+    Phaeophyceae: 230234
+    Echinoidea: 146275
+    Cephalopoda: 114398
+    Scyphozoa: 109322
+    Polyplacophora: 101592
+    Reptilia: 100515
+  n_classes: 51
+  excluded:
+    worms_not_marine_photos: 3780733
+    worms_unmatched_photos: 233316
+  label_type: cls (species, iNat taxonomy; research grade = community-agreed)
+subset:
+  target_items: 1130256
+  stratify:
+  - taxon_id
+  - class
+  cap_per_stratum: 100
+  rule: photo position 0 of each research-grade observation, at most 100 per species taxon (34,872 taxa); licence
+    kept per photo, never filtered (D-C); cap 200 -> 1,708,445, cap 500 -> 2,734,961
+  # D-AE: `large` variant. INT-ingest5 smoke (50 fetched large.*, 2026-09-25) mean 432,055 B -> 1,130,014 x 432,055
+  # = ~488 GB (0.49 TB); the 20-HEAD mean above (248,853 B) gives ~281 GB as a low bound. `original` was ~1.43 TB.
+  target_bytes_estimate: 488228198770
+  target_bytes_basis: 1,130,014 fetchable photos x 432,055 B mean of 50 smoke-fetched large.* (INT-ingest5)
+disk_floor_gib: 34.0  # INT-ingest5b: runner floor like runner 4 (D-AE)

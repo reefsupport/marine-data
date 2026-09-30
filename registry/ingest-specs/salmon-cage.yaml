@@ -1,0 +1,10 @@
+# salmon-cage: Zenodo 4931418
+id: salmon-cage
+adapter: zenodo
+license: CC0-1.0 (Zenodo API)
+attribution: Zenodo record 4931418 authors
+citation: Zenodo 4931418
+homepage: https://zenodo.org/records/4931418
+params:
+  zenodo_record: 4931418
+disk_floor_gib: 34.0

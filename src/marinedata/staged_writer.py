@@ -63,6 +63,24 @@ class _HashingFile(io.RawIOBase):
         super().close()
 
 
+class DiskSink:
+    """Default sink: files land under ``root`` (disk mode). WP-6h's stream mode swaps in
+    a sink that PUTs each file from memory instead — same bytes, same keys."""
+
+    def __init__(self, root: Path) -> None:
+        self.root = root
+
+    def write(self, rel: str, data: bytes) -> None:
+        path = self.root / rel
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_bytes(data)
+
+    def open_stream(self, rel: str) -> Any:
+        path = self.root / rel
+        path.parent.mkdir(parents=True, exist_ok=True)
+        return _HashingFile(path)
+
+
 def _coerce_datetime(value: Any, naive_is_utc: bool) -> dt.datetime | None:
     if value is None or value == "":
         return None
@@ -108,10 +126,11 @@ class WriterConfig:
 
 
 class StagedWriter:
-    def __init__(self, root: Path, cfg: WriterConfig) -> None:
+    def __init__(self, root: Path, cfg: WriterConfig, sink: Any = None) -> None:
         if cfg.layout not in {"objects", "shards"}:
             raise ValueError(f"layout must be objects|shards, not {cfg.layout!r}")
         self.root, self.cfg = root, cfg
+        self.sink = sink if sink is not None else DiskSink(root)
         self.rows: list[SampleRow] = []
         self.files: dict[str, tuple[str, int]] = {}
         self._closed: list[str] = []
@@ -123,7 +142,7 @@ class StagedWriter:
         self._item_start = 0
         self._shard_no = 0
         self._tar: tarfile.TarFile | None = None
-        self._tar_fh: _HashingFile | None = None
+        self._tar_fh: Any = None
         self._tar_rel = ""
 
     # -- stems ---------------------------------------------------------------------
@@ -146,9 +165,7 @@ class StagedWriter:
 
     # -- file bookkeeping ----------------------------------------------------------
     def _write_file(self, rel: str, data: bytes) -> str:
-        path = self.root / rel
-        path.parent.mkdir(parents=True, exist_ok=True)
-        path.write_bytes(data)
+        self.sink.write(rel, data)
         sha = hashlib.sha256(data).hexdigest()
         self.files[rel] = (sha, len(data))
         self._closed.append(rel)
@@ -162,9 +179,7 @@ class StagedWriter:
     # -- shards --------------------------------------------------------------------
     def _open_shard(self) -> None:
         self._tar_rel = f"images/shard-{self._shard_no:05d}.tar"
-        path = self.root / self._tar_rel
-        path.parent.mkdir(parents=True, exist_ok=True)
-        self._tar_fh = _HashingFile(path)
+        self._tar_fh = self.sink.open_stream(self._tar_rel)
         self._tar = tarfile.open(  # noqa: SIM115 — closed in _close_shard
             fileobj=self._tar_fh, mode="w", format=tarfile.USTAR_FORMAT
         )
@@ -311,17 +326,59 @@ class StagedWriter:
                 self.rows[i] = replace(r, label_refs=tuple(sorted({*r.label_refs, *rels})))
         kw = {"compression": "zstd", "write_statistics": False}
         if self._index:
-            path = self.root / "images/index.parquet"
-            pq.write_table(pa.Table.from_pylist(self._index), path, **kw)
-            self.register(path)
+            buf = io.BytesIO()
+            pq.write_table(pa.Table.from_pylist(self._index), buf, **kw)
+            self.add_bytes("images/index.parquet", buf.getvalue())
         if self._inline:
-            path = self.root / "labels/image_labels.parquet"
-            path.parent.mkdir(parents=True, exist_ok=True)
+            buf = io.BytesIO()
             cols = list(zip(*self._inline, strict=True))
-            pq.write_table(
-                pa.table({"stem": cols[0], "key": cols[1], "value": cols[2]}), path, **kw
-            )
-            self.register(path)
+            pq.write_table(pa.table({"stem": cols[0], "key": cols[1], "value": cols[2]}), buf, **kw)
+            self.add_bytes("labels/image_labels.parquet", buf.getvalue())
+
+    def add_bytes(self, rel: str, data: bytes) -> None:
+        """A whole staged file known in memory (index/metadata/INGEST.json/...)."""
+        self._write_file(rel, data)
+
+    # -- WP-6h stream-mode resume: checkpoint deltas and restore -----------------
+    @property
+    def shard_open(self) -> bool:
+        return self._tar is not None
+
+    @property
+    def shard_no(self) -> int:
+        return self._shard_no
+
+    def mark(self) -> tuple[int, int, int, int]:
+        return (len(self.rows), len(self.files), len(self._inline), len(self._index))
+
+    def delta(self, mark: tuple[int, int, int, int]) -> dict[str, Any]:
+        """Everything staged since ``mark`` (call at an item boundary, no shard open)."""
+        rows_n, files_n, inline_n, index_n = mark
+        return {
+            "rows": self.rows[rows_n:],
+            "files": {k: list(v) for k, v in list(self.files.items())[files_n:]},
+            "inline": [list(t) for t in self._inline[inline_n:]],
+            "index": self._index[index_n:],
+            "pending_labels": {k: list(v) for k, v in self._pending_labels.items()},
+            "shard_no": self._shard_no,
+        }
+
+    def restore(self, rows: list[SampleRow], state: Mapping[str, Any]) -> None:
+        """Re-apply one checkpoint delta (the inverse of :meth:`delta`)."""
+        for row in rows:
+            self._basename.setdefault(
+                PurePosixPath(str(row.upstream_id).rsplit("#", 1)[-1]).stem, []
+            ).append(len(self.rows))
+            self._stems.add(row.stem)
+            self.rows.append(row)
+        self._item_start = len(self.rows)
+        self.files.update({k: (str(v[0]), int(v[1])) for k, v in state["files"].items()})
+        self._inline.extend(tuple(t) for t in state["inline"])
+        # JSON checkpoints sort keys; index.parquet column order follows the first dict
+        order = ("shard", "member", "stem", "sha256", "size", "offset")
+        self._index.extend({k: e[k] for k in order} for e in state["index"])
+        self._pending_labels = {k: list(v) for k, v in state["pending_labels"].items()}
+        self._shard_no = int(state["shard_no"])
 
     def register(self, path: Path) -> None:
         rel = path.relative_to(self.root).as_posix()

@@ -1,0 +1,21 @@
+# DISCOL Peru Basin Disturbance-and-Colonization abyssal-plain seafloor images (RV SONNE SO242/2), PANGAEA.
+id: discol-peru-basin-ofos
+adapter: pangaea-series
+params:
+  doi: 10.1594/PANGAEA.890634
+license: CC-BY-3.0 (verified via page meta tag, unrestricted)
+attribution: Purser, Marcon, Boetius — AWI
+citation: doi:10.1594/PANGAEA.890634
+homepage: https://doi.pangaea.de/10.1594/PANGAEA.890634
+measured:
+  method: 'WP-6j: PANGAEA search incollection:890634 (count == totalCount) + every child''s tab export, distinct image keys;
+    bytes not declared by PANGAEA'
+  date: '2026-09-25'
+  per_item_license: CC-BY-3.0
+  by_depth_band_m: {}
+  label_type: none (imagery)
+  items: 17923
+  bytes_basis: 'not measured: PANGAEA child tab exports list image names/URLs but no file sizes (WP-6j listing only, no fetch)'
+  child_datasets: 20
+notes: 'candidate — WP-6j pangaea-series: parent PANGAEA.890634 -> 20 child datasets -> 17,923 images (listed 2026-09-25,
+  no fetch)'

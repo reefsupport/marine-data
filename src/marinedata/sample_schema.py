@@ -342,6 +342,17 @@ def write_samples(path: Path, rows: Sequence[SampleRow]) -> None:
     pq.write_table(to_table(rows), path, compression="zstd", write_statistics=False)
 
 
+def samples_bytes(rows: Sequence[SampleRow]) -> bytes:
+    """``metadata.parquet`` as bytes — the exact bytes :func:`write_samples` writes."""
+    import io
+
+    import pyarrow.parquet as pq
+
+    buf = io.BytesIO()
+    pq.write_table(to_table(rows), buf, compression="zstd", write_statistics=False)
+    return buf.getvalue()
+
+
 def validate_table(table) -> None:
     """Check a read-back table: exact column names/types, then every row.
 

@@ -1,0 +1,12 @@
+# SPEC-w3 discovery: IFCB NE-shelf plankton classifier set 2022.
+id: nes-plankton-2022
+adapter: hf
+license: cc-by-4.0
+attribution: sosiklab
+citation: sosiklab/NES-plankton-classifier-2022-dataset (HF)
+homepage: https://huggingface.co/datasets/sosiklab/NES-plankton-classifier-2022-dataset
+params:
+  repo: sosiklab/NES-plankton-classifier-2022-dataset
+  revision: 18fb2e57fd7783038372d6a64f52933c9e521f33
+
+disk_floor_gib: 34.0

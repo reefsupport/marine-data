@@ -1,0 +1,22 @@
+# CoralNet public sources: images and label ids are anonymous, point annotations are NOT (tested on public source 5213 '0-10', 2026-09-25).
+id: coralnet-public
+adapter: needs:coralnet-browse
+license: per source (set by each source owner)
+attribution: CoralNet (UCSD) and each source owner
+citation: Beijbom et al. / CoralNet
+homepage: https://coralnet.ucsd.edu/source/about/
+candidate_endpoints:
+- https://coralnet.ucsd.edu/source/<id>/browse/images/ (anonymous 200)
+- https://coralnet.ucsd.edu/image/<id>/view/ (presigned S3 URL, expiring)
+- https://coralnet.ucsd.edu/source/<id>/labelset/ + /label/<id>/ (anonymous; D-S2 crosswalk)
+why_not_supported: 'Images: HTML browse pages -> view pages -> presigned S3 URLs (need an HTML adapter, <= 2 req/s).
+  Point annotations: the anonymous view page shows only status (''Confirmed'', ''Simple random, 13 points''), no
+  row/col/label; /export/annotations/ is a POST form (GET 404) — an account is needed (needs-Yohan).'
+measured:
+  items: null
+  bytes: null
+  method: source/about lists 2,025 public source links; source 5213 browse + view + labelset fetched anonymously
+  date: '2026-09-25'
+  bytes_basis: 'unmeasured: per-source HTML paging needed'
+  public_sources: 2025
+  label_type: points (login needed) ; label ids anonymous

@@ -1,0 +1,92 @@
+# WP-6c: run `marinedata ingest-batch` next to the bucket. Yohan applies this — see
+# ../README.md for the exact build/push/apply/watch/resume/stop commands.
+#
+# Namespace/priorityClass/imagePullSecrets style follow the existing rs-backend-jobs
+# convention (infra/gitops/apps/base/rs-jobs/rs-backend-jobs/job-migrate-db.yaml, read-only
+# reference — this manifest is NOT part of that gitops tree and is not ArgoCD-managed).
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: marinedata-ingest-batch
+  labels:
+    app.kubernetes.io/name: marinedata-ingest-batch
+    app.kubernetes.io/part-of: reefsupport
+  annotations:
+    # Bump this (or delete+recreate the Job — Jobs are immutable) for every real re-run
+    # that isn't just a resume of the same attempt.
+    marinedata.reef.support/run: "1"
+spec:
+  backoffLimit: 3
+  ttlSecondsAfterFinished: 604800 # 7 days — long enough for Yohan to read the final log
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: marinedata-ingest-batch
+        app.kubernetes.io/part-of: reefsupport
+    spec:
+      restartPolicy: Never
+      priorityClassName: rs-jobs-low
+      imagePullSecrets:
+        - name: gitlab-registry
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 10001
+        runAsGroup: 10001
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+        - name: ingest-batch
+          image: marinedata-ingest:REPLACE_ME # kustomize `images:` overrides this — see README
+          imagePullPolicy: IfNotPresent
+          args:
+            - /specs
+            - --work
+            - /work
+            - --jobs
+            - "1"
+          env:
+            - name: S3_ENDPOINT
+              value: hel1.your-objectstorage.com
+            - name: PYTHONUNBUFFERED
+              value: "1"
+            - name: AWS_ACCESS_KEY_ID
+              valueFrom:
+                secretKeyRef:
+                  # Secret NOT created by this manifest — Yohan creates it once (README).
+                  # Key names match the [rs-hel1] section of ~/.config/rclone/rclone.conf.
+                  name: marinedata-ingest-s3-creds
+                  key: access_key_id
+            - name: AWS_SECRET_ACCESS_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: marinedata-ingest-s3-creds
+                  key: secret_access_key
+          resources:
+            requests:
+              cpu: "4"
+              memory: 8Gi
+              ephemeral-storage: 2Gi
+            limits:
+              cpu: "4"
+              memory: 8Gi
+              ephemeral-storage: 12Gi
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop: ["ALL"]
+          volumeMounts:
+            - name: specs
+              mountPath: /specs
+              readOnly: true
+            - name: work
+              mountPath: /work
+      volumes:
+        - name: specs
+          configMap:
+            name: marinedata-ingest-specs # kustomize configMapGenerator rewrites this ref
+        - name: work
+          emptyDir:
+            # D-L temp cap is 6 GB per worker (--jobs 1 here); size for that plus the
+            # checkpoint/ledger JSON and one in-flight multipart buffer. Raise both this
+            # and the CPU/memory requests above together if you raise --jobs.
+            sizeLimit: 10Gi

@@ -1,0 +1,11 @@
+# oceaninstruct: Bi et al. 2024, ACL (OceanGPT)
+id: oceaninstruct
+adapter: hf
+license: MIT (HF card)
+attribution: ZJUNLP — OceanInstruct (OceanGPT)
+citation: Bi et al. 2024, ACL (OceanGPT)
+homepage: https://huggingface.co/datasets/zjunlp/OceanInstruct-v0.1
+params:
+  repo: zjunlp/OceanInstruct-v0.1
+  revision: main
+disk_floor_gib: 34.0

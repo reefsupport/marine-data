@@ -1,0 +1,11 @@
+id: reefnet-species
+adapter: hf
+params:
+  repo: TsinghuaCorals/reefnet_species_images
+  revision: 924117ab279f2e09083b3a28b50969cc496722ff
+license: NOASSERTION
+attribution: TsinghuaCorals reefnet_species_images (HF)
+citation: '-'
+homepage: https://huggingface.co/datasets/TsinghuaCorals/reefnet_species_images
+
+disk_floor_gib: 36.0

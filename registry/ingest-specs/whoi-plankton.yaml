@@ -1,0 +1,25 @@
+id: whoi-plankton
+adapter: hf
+params:
+  repo: nf-whoi/whoi-plankton
+  revision: ba1e637e4cb88323ff5a3adb1db24190c2fb8323
+license: NOASSERTION
+attribution: WHOI-Plankton (Sosik et al.), via HF nf-whoi/whoi-plankton
+citation: Sosik+ WHOI-Plankton
+homepage: https://huggingface.co/datasets/nf-whoi/whoi-plankton
+expected_images: 956867
+max_images: 20000
+
+disk_floor_gib: 36.0
+measured:
+  items: 956867
+  bytes: 27333159816
+  method: HF API dataset_info splits sum (train 669,806 + val 95,686 + test 191,375)
+    + usedStorage
+  date: '2026-09-25'
+  per_item_license: unknown
+  label_type: cls (~100 taxa)
+subset:
+  target_items: 206000
+  stratify: [label]
+  rule: 'D-AB: <= 2,000 images per label (~103 labels, so 206,000 is an upper bound; the mix/detritus classes dominate the 956,867). Runner ignores this block until a subset filter exists; queue row held at needs_adapter:subset-filter.'

@@ -1,0 +1,23 @@
+# WP-6l-B (2026-09-25) new source: candidate — WP-6l-B sonar: side-scan sonar object detection incl. a validation extension
+id: swdd-sss-wall
+adapter: zenodo
+params:
+  zenodo_record: 13692547
+license: cc-by-4.0
+attribution: Aubard, Antal, Madureira (2024), Zenodo
+citation: 'doi:10.5281/zenodo.13692547 — SWDD: Sonar Wall Detection Dataset'
+homepage: https://zenodo.org/records/13692547
+notes: 'candidate — WP-6l-B sonar: side-scan sonar object detection incl. a validation extension'
+disk_floor_gib: 36.0
+measured:
+  items: 10631
+  bytes: 5285868388
+  bytes_basis: Zenodo API file sizes (sum)
+  method: 'remote zip CD: 6,395 jpg + 4,236 png, 6,245 txt'
+  date: '2026-09-25'
+  per_item_license: cc-by-4.0
+  by_depth_band_m: {}
+  label_type: side-scan sonar boxes (walls/structures), YOLO txt + json
+  habitat_region: harbour/coastal side-scan surveys
+  dedup_chain: new; no registry/ingest-spec/WP-6g/S57 match on title, DOI or record id
+  wp6l_gap: sonar

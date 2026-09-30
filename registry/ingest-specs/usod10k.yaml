@@ -1,0 +1,12 @@
+id: usod10k
+adapter: gdrive-public
+params:
+  files:
+  - {id: 12EYrwt-LEUE9WyMEfgKOxZC1Yyzyjnnk, name: usod10k_part1.zip}
+  - {id: 19rdcNsuDE6bRD58bruqCXPDhoopTMME4, name: usod10k_part2.zip}
+license: research (non-commercial, per upstream)
+attribution: Hong et al. — USOD10K
+citation: Hong et al. 2023, TIP
+homepage: https://github.com/LinHong-HIT/USOD10K
+notes: WP-6d-A gdrive-public adapter; 10,255 images; Baidu mirror not used (D-E).
+disk_floor_gib: 34.0

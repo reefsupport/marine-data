@@ -1,0 +1,12 @@
+# SPEC-w3 discovery: SeaTurtleID2022 re-identification.
+id: seaturtleid2022
+adapter: hf
+license: '?'
+attribution: EnmmmmOvO
+citation: EnmmmmOvO/SeaTurtleID2022 (HF)
+homepage: https://huggingface.co/datasets/EnmmmmOvO/SeaTurtleID2022
+params:
+  repo: EnmmmmOvO/SeaTurtleID2022
+  revision: 91cd6c1126c734bc36e493cdf5869390aa51fa48
+
+disk_floor_gib: 34.0

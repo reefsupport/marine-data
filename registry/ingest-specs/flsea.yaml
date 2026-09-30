@@ -1,0 +1,7 @@
+id: flsea
+adapter: http
+params: {}
+license: CC-BY-NC-SA-4.0
+attribution: FLSea (Randall et al. 2023)
+citation: Randall+ 2023
+homepage: https://www.kaggle.com/datasets/viseaonlab/flsea-vi

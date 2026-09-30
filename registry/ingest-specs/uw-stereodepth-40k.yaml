@@ -1,0 +1,25 @@
+# WP-6l-B (2026-09-25) new source: candidate — WP-6l-B depth-3d: underwater stereo depth pairs
+id: uw-stereodepth-40k
+adapter: hf
+params:
+  repo: AIGeeksGroup/UW-StereoDepth-40K
+  revision: 6aa807c87f850c124a7d53165b6def4ed493cb20
+license: unstated
+attribution: AIGeeksGroup (HF)
+citation: HF dataset AIGeeksGroup/UW-StereoDepth-40K
+homepage: https://huggingface.co/datasets/AIGeeksGroup/UW-StereoDepth-40K
+notes: 'candidate — WP-6l-B depth-3d: underwater stereo depth pairs'
+temp_cap_gb: 31.0
+disk_floor_gib: 62.0
+measured:
+  items: 40000
+  bytes: 59836176929
+  bytes_basis: HF usedStorage (all revisions' LFS objects)
+  method: item count from dataset name/card; archive is a 2-part split tar.gz
+  date: '2026-09-25'
+  per_item_license: unstated
+  by_depth_band_m: {}
+  label_type: stereo pairs + depth maps (40k samples per repo name)
+  habitat_region: synthetic/rendered underwater scenes
+  dedup_chain: UW-StereoDepth-80K (388.6 GB, same group) is the superset; spec the 40K until a subset rule exists
+  wp6l_gap: depth-3d

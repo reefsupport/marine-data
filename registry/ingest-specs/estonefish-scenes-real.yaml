@@ -1,0 +1,24 @@
+# WP-6l-B (2026-09-25) new source: needs_adapter:hdf5-events — WP-6l-B depth-3d: underwater event-camera modality with flow labels
+id: estonefish-scenes-real
+adapter: zenodo
+params:
+  zenodo_record: 18473013
+license: cc-by-4.0
+attribution: Mansour, Realpe, Rajani (2026), Zenodo
+citation: 'doi:10.5281/zenodo.18473013 — eStonefish-Scenes: A Sim-to-Real Validated and Robot-Centric Event-based
+  Optical Flow Dataset for Underwater V'
+homepage: https://zenodo.org/records/18473013
+notes: 'needs_adapter:hdf5-events — WP-6l-B depth-3d: underwater event-camera modality with flow labels'
+disk_floor_gib: 36.0
+measured:
+  bytes: 17680904702
+  bytes_basis: Zenodo API file sizes (sum)
+  method: 'remote zip CD: 24 hdf5 + 8 json; frames live inside hdf5'
+  date: '2026-09-25'
+  per_item_license: cc-by-4.0
+  by_depth_band_m: {}
+  label_type: event-camera streams with optical-flow ground truth (real sim-to-real validation; synthetic set is
+    zenodo 18471242)
+  habitat_region: controlled underwater tank
+  dedup_chain: new; no registry/ingest-spec/WP-6g/S57 match on title, DOI or record id
+  wp6l_gap: depth-3d

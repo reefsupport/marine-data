@@ -1,0 +1,16 @@
+# CoralVOS: coral video object segmentation benchmark.
+id: coralvos
+adapter: needs:gdrive-login
+license: unknown (not stated in repo)
+attribution: Zheng et al. / hkust-vgd
+citation: github.com/hkust-vgd/coralVOS
+homepage: https://github.com/hkust-vgd/coralVOS
+why_not_supported: GitHub repo resolves (code only, 7.4 MB) but the video/mask data
+  itself is hosted off-repo (typical for VOS releases, commonly Google Drive/Baidu);
+  no anonymous bulk data link was confirmed within budget.
+measured:
+  items: null
+  bytes: null
+  method: GitHub repo size 7.4 MB (code only); data host not confirmed
+  date: '2026-09-25'
+  bytes_basis: 'unmeasured: data host not confirmed'

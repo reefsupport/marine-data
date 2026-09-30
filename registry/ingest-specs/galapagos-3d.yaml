@@ -1,0 +1,10 @@
+id: galapagos-3d
+adapter: zenodo
+params:
+  zenodo_record: 14914807
+license: cc-by-4.0
+attribution: Zenodo contributors
+citation: Zenodo doi:10.5281/zenodo.14914807
+homepage: https://zenodo.org/records/14914807
+
+disk_floor_gib: 36.0

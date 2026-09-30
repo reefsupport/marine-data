@@ -1,0 +1,15 @@
+id: fishnet-2023
+adapter: http
+params: {}
+license: NOASSERTION
+attribution: FishNet (Khan et al., ICCV 2023)
+citation: Khan+ ICCV2023
+homepage: https://fishnet-2023.github.io/
+measured:
+  items: 94532
+  method: catalog measurement (S57)
+  date: '2026-09-25'
+  per_item_license: unknown
+  label_type: bbox+cls+traits, 17,357 species
+  bytes: null
+  bytes_basis: 'unmeasured: access-gated'

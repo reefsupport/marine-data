@@ -1,0 +1,15 @@
+# EcoTaxa public-project plankton image export (Villefranche-sur-Mer marine station platform).
+id: ecotaxa-public-export
+adapter: needs:ecotaxa-api
+license: per-project (stated per EcoTaxa project metadata)
+attribution: EcoTaxa / Sorbonne Universite, CNRS
+citation: ecotaxa.obs-vlfr.fr
+homepage: https://ecotaxa.obs-vlfr.fr/
+why_not_supported: Main site resolves (redirects, HTTP 301, reachable); the dedicated
+  API host (api.ecotaxa.obs-vlfr.fr) does not resolve (DNS failure) from here. EcoTaxa's
+  public export needs a per-project ID enumeration plus its own auth-optional REST
+  client.
+measured:
+  method: main site reachable (301); api.ecotaxa.obs-vlfr.fr DNS failure
+  date: '2026-09-25'
+  per_item_license: per-project

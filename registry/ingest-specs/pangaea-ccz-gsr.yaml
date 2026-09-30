@@ -1,0 +1,19 @@
+id: pangaea-ccz-gsr
+adapter: pangaea
+params:
+  doi: 10.1594/PANGAEA.987009
+license: cc-by-4.0
+attribution: PANGAEA contributors
+citation: doi:10.1594/PANGAEA.987009
+homepage: https://doi.org/10.1594/PANGAEA.987009
+notes: needs_adapter:pangaea — PANGAEA serves data via its own OAI/REST API (https://doi.pangaea.de/10.1594/PANGAEA.987009
+  resolves to a dataset page listing linked image files/collections, not a flat archive);
+  needs a PANGAEA-dataset adapter that follows child datasets
+disk_floor_gib: 34.0
+measured:
+  method: page fetch confirms 200 + unrestricted CC-BY-4.0 license (meta tag conditionsOfAccess);
+    per-child image counts not enumerated (13+ child DOIs, budget)
+  date: '2026-09-25'
+  per_item_license: CC-BY-4.0
+  by_depth_band_m: {}
+  label_type: none (imagery only) + separate PANGAEA.935215 point annotations

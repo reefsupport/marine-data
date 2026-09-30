@@ -1,0 +1,30 @@
+# MUOT-3M: 3,030 MP4 tracking videos + per-frame box txt. WP-6e-B: D-AB frame sampler (1 per 10 frames, <= 1 fps).
+id: muot3m
+adapter: hf
+license: CC-BY-NC-ND-4.0 (HF card)
+attribution: MUOT-3M authors
+citation: MUOT-3M (2025), HF AhsanBB
+homepage: https://huggingface.co/datasets/AhsanBB/MUOT_3M-A_3_Million_Frame_Underwater_Object_Tracking_Dataset
+params:
+  repo: AhsanBB/MUOT_3M-A_3_Million_Frame_Underwater_Object_Tracking_Dataset
+  revision: 4294cb6a253741f3bb1b9ad729de9ae965e77248
+  include: ['*.mp4', '*.txt']
+  label_patterns: ['*.txt']
+  frame_step: 10
+  max_fps: 1.0
+measured:
+  items: 3074016
+  bytes: 256605899220
+  method: 'datasets-server /size rows (frames) + HF tree: 3,030 mp4 (train 2,121 / test 909) + 6,048 txt'
+  date: '2026-09-25'
+  bytes_basis: hf-tree
+  unit: frames
+  label_type: track (single-object boxes per frame)
+subset:
+  target_items: 303000
+  stratify:
+  - split
+  - sequence
+  rule: 1 frame per 10 frames capped at 1 frame/s (adapters/video_frames.py); video_id + frame_idx labels, split_group_id
+    = video_id (D-AB); the per-sequence box txt is staged under labels/ (frame_idx joins a box row)
+disk_floor_gib: 34.0  # INT-ingest5b: runner floor like runner 4 (D-AE)

@@ -1,0 +1,13 @@
+id: marineeval
+adapter: hf
+params:
+  repo: WongYukKwan/MarineEval
+  revision: cb94f5a61594cd7ccb7dcd00613269e909c2f9f8
+  include: ["*.jpg", "*.jpeg", "*.png", "metadata.jsonl"]
+  label_patterns: ["metadata.jsonl"]
+license: CC-BY-4.0
+attribution: "Yukwong Wong et al. (HKUST VGD) — MarineEval benchmark; HF mirror WongYukKwan/MarineEval. role: eval_only — held-out VLM evaluation set, never training."
+citation: "Wong et al. 2025, MarineEval: A Large-scale Benchmark for Marine Understanding in Vision-Language Models, arXiv:2512.21126"
+homepage: https://huggingface.co/datasets/WongYukKwan/MarineEval
+
+disk_floor_gib: 34.0

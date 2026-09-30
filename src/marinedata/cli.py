@@ -15,6 +15,7 @@ from .cli_bench import add_bench_subparser  # WP-11 P1: registry/benchmarks.yaml
 from .cli_decon import add_decon_subparser  # WP-12 P2: benchmark decontamination gate
 from .cli_dedup import add_dedup_subparser
 from .cli_ingest import _cmd_ingest, add_ingest_subparser  # noqa: F401 — re-exported
+from .cli_ingest_batch import add_ingest_batch_subparser
 from .cli_ingest_source import add_ingest_source_subparser
 from .cli_labelquality import add_labelquality_subparser
 from .cli_privacy import add_privacy_subparser
@@ -359,6 +360,7 @@ def build_parser() -> argparse.ArgumentParser:
 
     add_ingest_subparser(sub)
     add_ingest_source_subparser(sub)
+    add_ingest_batch_subparser(sub)
     add_splitmap_subparser(sub)
     add_release_subparser(sub)
     add_privacy_subparser(sub)

@@ -1,0 +1,12 @@
+# wildfish: Zhuang et al. 2018 ACMMM / 2020 TMM
+id: wildfish
+adapter: hf
+license: research-only (non-commercial, per upstream)
+attribution: Zhuang et al. — WildFish (HF mirror of the official release)
+citation: Zhuang et al. 2018 ACMMM / 2020 TMM
+homepage: https://github.com/PeiqinZhuang/WildFish
+params:
+  repo: Arex-Vision/WildFish
+  revision: main
+
+disk_floor_gib: 36.0

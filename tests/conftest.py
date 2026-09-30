@@ -213,3 +213,16 @@ def json_manifest_audio_root(tmp_path: Path) -> Path:
         encoding="utf-8",
     )
     return root
+
+
+@pytest.fixture
+def ample_disk(monkeypatch):
+    """INT-ingest5c: make ``DiskGuard``'s free-space probe report 1 PiB, so tests that
+    exercise the runner (default 40 GiB floor) do not depend on this machine's free disk."""
+    from marinedata.s3_upload import DiskGuard
+
+    def _free(self):
+        self.temp_root.mkdir(parents=True, exist_ok=True)
+        return 1 << 50
+
+    monkeypatch.setattr(DiskGuard, "free_bytes", _free)

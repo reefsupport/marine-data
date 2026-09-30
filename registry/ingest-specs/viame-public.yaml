@@ -1,0 +1,10 @@
+id: viame-public
+adapter: girder
+params:
+  collection: 58b747ec8d777f0aef5d0f6a
+  api: https://data.kitware.com/api/v1
+license: per-dataset (mostly NOAA public domain)
+attribution: Kitware / VIAME community data collection
+citation: Kitware VIAME public data
+homepage: https://data.kitware.com/#collection/58b747ec8d777f0aef5d0f6a
+disk_floor_gib: 34.0

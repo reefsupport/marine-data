@@ -1,0 +1,24 @@
+# WP-6l-B (2026-09-25) new source: candidate — WP-6l-B sonar+video: acoustic-camera fish species ID across 2 camera types and 2 sites
+id: aris-didson-fish-td
+adapter: zenodo
+params:
+  zenodo_record: 5046708
+license: cc-by-4.0
+attribution: Fernandez Garcia, Martignac (2021), Zenodo
+citation: doi:10.5281/zenodo.5046708 — Acoustic video cameras multi-species multi-cameras Training Dataset (TD)
+  for Deep Learning applications
+homepage: https://zenodo.org/records/5046708
+notes: 'candidate — WP-6l-B sonar+video: acoustic-camera fish species ID across 2 camera types and 2 sites'
+disk_floor_gib: 36.0
+measured:
+  items: 19226
+  bytes: 4021870631
+  bytes_basis: Zenodo API file sizes (sum)
+  method: 'remote zip CD: 19,226 tiff + 19,226 txt'
+  date: '2026-09-25'
+  per_item_license: cc-by-4.0
+  by_depth_band_m: {}
+  label_type: fish species boxes on ARIS and DIDSON acoustic-camera frames (VOC-like txt), with empty frames
+  habitat_region: temperate rivers/estuaries, France
+  dedup_chain: new; no registry/ingest-spec/WP-6g/S57 match on title, DOI or record id
+  wp6l_gap: sonar+video

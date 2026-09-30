@@ -200,6 +200,12 @@ sources:
       method: request
       uri: https://arxiv.org/abs/2510.16822
       notes: "Code and data stated as released 'upon acceptance' — confirm availability."
+    notes: >
+      D-R1 (2026-09-25 charter): superseded_by reefnet-hf. This stub has no resolvable
+      download_urls (arXiv/GitHub only, "upon acceptance"); the same dataset (arXiv
+      2510.16822) is live and ingestible via the reefnet-hf Source. Kept as an alias
+      only — access.method stays "request" so it is never picked up by an ingest
+      drain; never ingest this entry directly, never delete it.
     modalities: [image]
     capabilities: [coral-taxonomy, benthic-classification, general-pretraining]
     items: 181223
@@ -1653,3 +1659,52 @@ sources:
       gated (legal_basis: unknown).
     loader: { layout: metadata-only }
     tags: [needs-permission, tar-only]
+
+  - id: rf100-coral-lwptl
+    name: RF100 Coral Growth-Form (LWPTL)
+    version: "rev-83f0a33679b0"
+    description: >
+      Coral growth-form object detection benchmark from Roboflow 100 (RF100),
+      "coral-lwptl": 16 growth-form classes with bounding boxes. Ingested by WP-6 as
+      the smoke test for the generic source-adapter ingest framework; HF mirror
+      LibreYOLO/coral-lwptl.
+    licence: CC-BY-4.0
+    legal_basis: licence
+    redistribution: ok
+    provenance: public
+    verification:
+      verified_on: 2026-09-25
+      verified_by: >
+        README.dataset.txt in the staged archive states the licence as CC BY 4.0;
+        attribution to Nikita Manolis via Roboflow Universe.
+      method: licence-file
+    checksums:
+      version: "rev-83f0a33679b0"
+      root_digest: 9744a7fa4eb30acfa1d5ef0c625ec1b06790d1a780f04b8cc88706b86b5ea19e
+      files: 1193
+      size_bytes: 48555758
+    access:
+      method: s3
+      uri: s3://rs-storage-open/sources/rf100-coral-lwptl/rev-83f0a33679b0/
+      size_bytes: 48555758
+      params:
+        upstream: hf
+        hf_repo: LibreYOLO/coral-lwptl
+        hf_revision: 83f0a33679b0c845a8370cc2541d745157820fe1
+    modalities: [image]
+    capabilities: [coral-taxonomy, benthic-classification]
+    annotations:
+      - kind: bbox
+        count: 594
+        classes: 16
+        supervises: []
+        notes: >
+          Raw upstream YOLO label ids kept as-is (labels/*.txt + data.yaml); no
+          crosswalk to a canonical taxonomy yet (WP-7 owns crosswalks).
+    coverage:
+      regions: [unknown]
+    items: 594
+    citation: "Ciaglia et al. 2022, Roboflow 100: A Rich, Multi-Domain Object Detection Benchmark, arXiv:2211.13523"
+    homepage: https://universe.roboflow.com/roboflow-100/coral-lwptl
+    loader: { layout: yolo-txt }
+    tags: [wp6-smoke]

@@ -1,0 +1,113 @@
+{
+ "images": 161025,
+ "instances": 680200,
+ "images_with_captions": 0,
+ "by_dataset": {
+  "Public_Datasets/Aquarium": 638,
+  "Public_Datasets/DeepFish": 4505,
+  "Public_Datasets/Flow": 2000,
+  "Public_Datasets/IOCFish5K": 5637,
+  "Public_Datasets/MarineFouling": 267,
+  "Public_Datasets/OZFish": 8211,
+  "Public_Datasets/TACO": 1500,
+  "Public_Datasets/TrashCAN": 7083,
+  "Public_Datasets/Trash_ICRA2019": 7667,
+  "Public_Datasets/UDD": 2226,
+  "Public_Datasets/UIIS": 4628,
+  "Public_Datasets/URPC": 6625,
+  "Public_Datasets/Underwater_Garbage": 5130,
+  "Public_Datasets/animal_image_dataset": 954,
+  "Public_Websites/Corals-of-the-world": 7636,
+  "Public_Websites/EOL": 22789,
+  "Public_Websites/FishDB": 9905,
+  "Public_Websites/Fishes-of-Australia": 19269,
+  "Public_Websites/HKReefFish": 729,
+  "Public_Websites/ImageNet_sub": 3987,
+  "Public_Websites/Oceanic_life": 5029,
+  "Public_Websites/Reef-life-survey": 7075,
+  "Public_Websites/Reeflex": 15088,
+  "Public_Websites/Sea_animal": 3080,
+  "Public_Websites/Wildfish++": 9367
+ },
+ "our_metadata": {
+  "deepfish": "HTTPError: HTTP Error 403: Forbidden",
+  "uiis": "HTTPError: HTTP Error 403: Forbidden",
+  "uiis10k": "HTTPError: HTTP Error 403: Forbidden",
+  "urpc": "HTTPError: HTTP Error 403: Forbidden",
+  "wildfish": "HTTPError: HTTP Error 403: Forbidden"
+ },
+ "match": {
+  "deepfish": {
+   "marineinst": "DeepFish",
+   "overlay_images": 4505,
+   "ours": 0,
+   "status": "not staged"
+  },
+  "ozfish": {
+   "marineinst": "OZFish",
+   "overlay_images": 8211,
+   "ours": 0,
+   "status": "not staged"
+  },
+  "uiis": {
+   "marineinst": "UIIS",
+   "overlay_images": 4628,
+   "ours": 0,
+   "status": "not staged"
+  },
+  "uiis10k": {
+   "marineinst": "UIIS",
+   "overlay_images": 4628,
+   "ours": 0,
+   "status": "not staged"
+  },
+  "urpc": {
+   "marineinst": "URPC",
+   "overlay_images": 6625,
+   "ours": 0,
+   "status": "not staged"
+  },
+  "wildfish": {
+   "marineinst": "Wildfish++",
+   "overlay_images": 9367,
+   "ours": 0,
+   "status": "not staged"
+  },
+  "fathomnet": {
+   "marineinst": "FathomNet",
+   "overlay_images": 0,
+   "ours": 0,
+   "status": "not staged"
+  },
+  "treeoflife-10m": {
+   "marineinst": "EOL",
+   "overlay_images": 22789,
+   "ours": 0,
+   "status": "not staged"
+  }
+ },
+ "website_url_lists": {
+  "Public_Websites/Corals-of-the-world/urls.txt": {
+   "lines": 8219,
+   "head": "http://www.coralsoftheworld.org/media/images/0192_BW02_04.jpg"
+  },
+  "Public_Websites/EOL/eol_urls.txt": {
+   "lines": 22789,
+   "head": "https://content.eol.org/data/media/c4/ba/48/15.FB-pic-6600-19774.jpg"
+  },
+  "Public_Websites/FishDB/fishdb.txt": {
+   "lines": 10076,
+   "head": "http://www.fishdb.co.uk/img/Fish4.jpg"
+  },
+  "Public_Websites/Reeflex/Reeflex.txt": {
+   "lines": 15174,
+   "head": "https://www.meerwasser-lexikon.de/imgHaupt/29915_hUeFB3Mckh.jpg"
+  }
+ },
+ "overlay_parquet": {
+  "path": "registry/overlays/marineinst20m.parquet (gitignored: 204 MB; stage to sources/marineinst20m/<v>/labels/)",
+  "sha256": "08977dbbf1184d253c75e1ae728295578abbfe8f73a8bbd0aca832d55ea1344a",
+  "bytes": 204308912
+ },
+ "web_manifest_rows": 56257
+}

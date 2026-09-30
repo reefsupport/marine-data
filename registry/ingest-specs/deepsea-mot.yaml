@@ -1,0 +1,20 @@
+id: deepsea-mot
+adapter: hf
+params:
+  repo: MBARI-org/DeepSea-MOT
+  revision: 61ecbda8acb2749f3771d7192c51341267da2f37
+license: CC-BY-SA-4.0
+attribution: MBARI DeepSea-MOT
+citation: MBARI 2025
+homepage: https://huggingface.co/datasets/MBARI-org/DeepSea-MOT
+
+disk_floor_gib: 36.0
+measured:
+  items: 19616
+  bytes: 20019333378
+  method: HF API siblings count + usedStorage
+  date: '2026-09-25'
+  per_item_license: cc-by-sa-4.0
+  by_depth_band_m:
+    200-4000: 19616
+  label_type: MOT bbox tracks (57,376 objects, 188 tracks over 2,400+ frames)

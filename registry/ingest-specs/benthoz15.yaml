@@ -1,0 +1,10 @@
+id: benthoz15
+adapter: bucket
+params:
+  endpoint: s3-ap-southeast-2.amazonaws.com
+  bucket: imos-data
+  prefix: IMOS/AUV/
+license: cc-by-4.0
+attribution: IMOS / Bewley et al.
+citation: Bewley et al., Sci Data 2015, doi:10.1038/sdata.2015.57
+homepage: https://www.nature.com/articles/sdata201557

@@ -1,0 +1,10 @@
+# SPEC-w3 discovery: underwater stereo + visual-inertial sequences.
+id: afrl-stereo-vi
+adapter: hf
+license: mit
+attribution: afrl-uw
+citation: afrl-uw/stereo-vi-underwater-dataset (HF)
+homepage: https://huggingface.co/datasets/afrl-uw/stereo-vi-underwater-dataset
+params:
+  repo: afrl-uw/stereo-vi-underwater-dataset
+  revision: bdb079e7fef85b1f956f3469bd4cc1c521f25772

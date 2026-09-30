@@ -1,0 +1,15 @@
+# AQUA20: underwater species classification benchmark (20 classes) mirrored on HF.
+id: aqua20
+adapter: hf
+license: unknown (not stated on HF card)
+attribution: taufiktrf (HF mirror; upstream AQUA20 paper authors unconfirmed)
+citation: taufiktrf/AQUA20 (HF)
+homepage: https://huggingface.co/datasets/taufiktrf/AQUA20
+params:
+  repo: taufiktrf/AQUA20
+measured:
+  bytes: 199773745
+  method: HF API usedStorage; item count not queried (budget)
+  date: '2026-09-25'
+  per_item_license: unknown
+disk_floor_gib: 34.0

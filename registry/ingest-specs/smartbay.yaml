@@ -1,0 +1,10 @@
+id: smartbay
+adapter: zenodo
+params:
+  zenodo_record: 17018426
+license: cc-by-4.0
+attribution: Zenodo contributors / Minka image citations
+citation: Zenodo doi:10.5281/zenodo.17018426
+homepage: https://zenodo.org/records/17018426
+
+disk_floor_gib: 36.0

@@ -29,16 +29,19 @@ sources:
         Same practical permissions either way (attribution only).
       method: licence-file
     access:
-      method: request
-      uri: https://github.com/open-AIMS/ozfish
+      method: http
+      uri: https://storage.pawsey.org.au/public/m/FDFML/
       notes: >
-        Checked 2026-08-28: the repo's README points at two AIMS-operated data
-        portals (storage.pawsey.org.au, data.pawsey.org.au), both single-page apps
-        that return only a JS shell on a plain GET — no data without executing the
-        page's JS, which this project deliberately does not do. A GitHub issue
-        (open-AIMS/ozfish#1) confirms other users hit the same wall. No Kaggle/HF/
-        Zenodo mirror with matching annotations was found. Needs a human to
-        download via browser and re-host, or an AIMS-provided static mirror.
+        D-R5 (2026-09-25 charter): the Pawsey URLs are live — corrected from
+        "request" (stale per the 2026-09-25 catalog sweep, see the ozfish ingest
+        spec's why_not_supported). storage.pawsey.org.au/public/m/FDFML/{frames,
+        crops,labelled} are open, anonymous-GET, HTTP-206-verified prefixes (a
+        Pawsey/Nectar Swift object-storage container, not a plain S3 API — the
+        bucket adapter's path-style listing 404s and a plain HTML GET returns the
+        portal's JS-shell front end, not a file list). marinedata has no adapter
+        for the Swift container-listing convention yet (registry/ingest-specs/
+        ozfish.yaml: needs:pawsey, WP-6d) — per-file URLs need a portal-specific
+        listing (Swift `?format=json`) once built.
     modalities: [image]
     capabilities: [fish-detection, fish-classification, fish-biomass]
     items: 80000

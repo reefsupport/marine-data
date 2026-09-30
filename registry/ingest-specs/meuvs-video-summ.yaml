@@ -1,0 +1,23 @@
+# WP-6l-B (2026-09-25) new source: candidate — WP-6l-B video: multi-environment underwater video with summarization labels
+id: meuvs-video-summ
+adapter: zenodo
+params:
+  zenodo_record: 20746075
+license: cc-by-4.0
+attribution: A, Midhun Dhass, Nishanth (2026), Zenodo
+citation: doi:10.5281/zenodo.20746075 — Multi-Environment Underwater Video Summarization Dataset (MEUVS)
+homepage: https://zenodo.org/records/20746075
+notes: 'candidate — WP-6l-B video: multi-environment underwater video with summarization labels'
+disk_floor_gib: 36.0
+measured:
+  items: 39974
+  bytes: 7008269367
+  bytes_basis: Zenodo API file sizes (sum)
+  method: 'remote zip CD: 69 mp4, 39,974 jpg, 3 csv'
+  date: '2026-09-25'
+  per_item_license: cc-by-4.0
+  by_depth_band_m: {}
+  label_type: 69 HD underwater videos + 39,974 extracted frames + keyframe/importance csv
+  habitat_region: multiple underwater environments (reef, open water, wreck; per paper)
+  dedup_chain: new; no registry/ingest-spec/WP-6g/S57 match on title, DOI or record id
+  wp6l_gap: video

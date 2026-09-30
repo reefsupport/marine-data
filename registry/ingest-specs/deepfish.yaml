@@ -1,0 +1,20 @@
+id: deepfish
+adapter: http
+params:
+  version: '2020'
+  urls:
+  - url: http://data.qld.edu.au/public/Q5842/2020-AlzayatSaleh-00e364223a600e83bd9c3f5bcd91045-DeepFish/DeepFish.tar
+    key: DeepFish.tar
+license: CC-BY-4.0
+attribution: DeepFish (Saleh et al., Sci Rep 2020)
+citation: Saleh+ Sci Rep 2020
+homepage: https://alzayats.github.io/DeepFish/
+
+disk_floor_gib: 36.0
+measured:
+  items: 40000
+  bytes: 8160437862
+  method: 'catalog measurement (S57, open-direct verified): ~40k images, 7.6 GB'
+  date: '2026-09-25'
+  per_item_license: CC-BY-4.0
+  label_type: cls/count/sem, 2 classes
