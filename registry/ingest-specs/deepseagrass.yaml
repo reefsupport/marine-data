@@ -1,0 +1,13 @@
+# DeepSeagrass: underwater seagrass superclass images, Moreton Bay QLD (Raine et al. 2020, CSIRO)
+id: deepseagrass
+adapter: needs:csiro-dap-form
+license: cc-by-nc-nd-4.0
+attribution: Raine, Marchant, Moghadam, Maire, Kettle, Kusy (CSIRO)
+citation: Raine et al. 2020, DeepSeagrass v1, CSIRO Data Collection, doi:10.25919/spmy-5151
+homepage: https://data.csiro.au/collection/csiro:47653
+why_not_supported: CSIRO Data Access Portal (DAP) requires clicking through a CC-BY-NC-ND
+  licence acceptance before the file bundle is exposed; no anonymous direct-download
+  endpoint exists.
+params:
+  landing: https://data.csiro.au/collection/csiro:47653
+  doi: 10.25919/spmy-5151
