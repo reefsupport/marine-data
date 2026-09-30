@@ -138,10 +138,22 @@ def test_scoped_gate_passes_the_registry_and_lists_the_rest(reg):
     assert "ozfish" not in tx.staged_sources(reg)
 
 
+def _ozfish_uri_line() -> str:
+    """Read ozfish's real `uri:` line straight from the registry, so this test
+    doesn't drift out of sync with a literal that no longer matches the file."""
+    text = (Registry.load().root / "sources" / "fish.yaml").read_text()
+    start = text.index("  - id: ozfish")
+    end = text.index("\n  - id: ", start + 1)
+    for line in text[start:end].splitlines(keepends=True):
+        if line.strip().startswith("uri:"):
+            return line
+    raise AssertionError("ozfish uri not found in registry/sources/fish.yaml")
+
+
 def test_scoped_gate_fails_a_staged_source_missing_a_crosswalk(tmp_path):
     staged, root = _copy_registry(
         tmp_path,
-        "      uri: https://github.com/open-AIMS/ozfish\n",
+        _ozfish_uri_line(),
         "      uri: s3://rs-storage-open/sources/ozfish/2026-09-25-test\n",
     )
     assert "ozfish" in tx.staged_sources(staged)
