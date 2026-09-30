@@ -24,7 +24,14 @@ from marinedata.bench_manifest import (
 from marinedata.benchmarks import BenchmarkEntry, Obtain, UpstreamSplit
 
 
-def _entry(benchmark_id: str = "fakebench", eval_split: str = "test") -> BenchmarkEntry:
+def _entry(
+    benchmark_id: str = "fakebench",
+    eval_split: str = "test",
+    heldout_val: str | None = None,
+) -> BenchmarkEntry:
+    counts = {eval_split: 2}
+    if heldout_val is not None:
+        counts[heldout_val] = 2
     return BenchmarkEntry(
         id=benchmark_id,
         name="Fake Bench",
@@ -34,7 +41,8 @@ def _entry(benchmark_id: str = "fakebench", eval_split: str = "test") -> Benchma
         upstream_split=UpstreamSplit(
             rule="test only",
             eval_split=eval_split,
-            counts={eval_split: 2},
+            heldout_val=heldout_val,
+            counts=counts,
             definition_url="https://example.org",
         ),
         split_verified=True,
@@ -88,6 +96,22 @@ def test_iter_bucket_images_stream_parts_filters_eval_split():
     images = list(iter_bucket_images(client, "rs-storage-open", entry))
     assert [i.stem for i in images] == ["a"]
     assert images[0].data == RED
+
+
+def test_iter_bucket_images_multi_split_includes_heldout_val():
+    """usis10k-style entries pin ``eval_split: test`` + ``heldout_val: val`` —
+    both must be pulled into the manifest, ``train`` must not (BENCH-evalsplit)."""
+    part = _stream_part_bytes(
+        [
+            {"stem": "a", "upstream_split": "test", "image": RED},
+            {"stem": "b", "upstream_split": "val", "image": BLUE},
+            {"stem": "c", "upstream_split": "train", "image": RED},
+        ]
+    )
+    client = FakeS3Client({"sources/fakebench/_stream/rev-1/part-0.parquet": part})
+    entry = _entry(eval_split="test", heldout_val="val")
+    images = list(iter_bucket_images(client, "rs-storage-open", entry))
+    assert sorted(i.stem for i in images) == ["a", "b"]
 
 
 def test_iter_bucket_images_hf_style_bytes_struct_column():

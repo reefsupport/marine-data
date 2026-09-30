@@ -44,6 +44,16 @@ class UpstreamSplit(_Frozen):
     counts: dict[str, int | None] = Field(default_factory=dict)
     definition_url: str = Field(min_length=1)
 
+    @property
+    def eval_splits(self) -> frozenset[str]:
+        """Every upstream split that counts toward eval coverage: ``eval_split``
+        plus, when the benchmark carries a separate held-out validation split,
+        ``heldout_val`` (design doc §5, coverage gate). The single source of
+        truth for "which splits are eval" — both the manifest builder
+        (:mod:`marinedata.bench_manifest`) and the coverage test must read
+        this, never re-derive the set themselves."""
+        return frozenset({self.eval_split, self.heldout_val} - {None})
+
 
 class Obtain(_Frozen):
     status: ObtainStatus

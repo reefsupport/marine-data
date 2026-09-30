@@ -40,7 +40,7 @@ from typing import Any, Literal
 import pyarrow as pa
 import pyarrow.parquet as pq
 
-from .benchmarks import BenchmarkEntry
+from .benchmarks import BenchmarkEntry, UpstreamSplit
 from .dedup.features import FeatureError, features_from_bytes
 
 SourceKind = Literal["bucket", "upstream", "auto"]
@@ -155,16 +155,18 @@ def iter_bucket_images(client: Any, bucket: str, entry: BenchmarkEntry) -> Itera
         for k in _list_all(client, bucket, f"sources/{entry.id}/_stream/")
         if k.endswith(".parquet")
     ]
-    eval_split = entry.upstream_split.eval_split
+    split = entry.upstream_split
     if parts:
-        yield from _iter_stream_parts(client, bucket, parts, eval_split)
+        yield from _iter_stream_parts(client, bucket, parts, split)
         return
-    yield from _iter_staged_bucket(client, bucket, entry.id, eval_split)
+    yield from _iter_staged_bucket(client, bucket, entry.id, split)
 
 
 def _iter_stream_parts(
-    client: Any, bucket: str, parts: list[str], eval_split: str
+    client: Any, bucket: str, parts: list[str], split: UpstreamSplit
 ) -> Iterator[RawImage]:
+    eval_split = split.eval_split
+    eval_splits = split.eval_splits
     for key in parts:
         table = pq.read_table(pa.BufferReader(_get_object_bytes(client, bucket, key)))
         names = table.schema.names
@@ -183,8 +185,8 @@ def _iter_stream_parts(
         )
         rev_prefix = _rev_prefix(key) if external else None
         for row in table.to_pylist():
-            split = (row.get(split_col) if split_col else None) or eval_split
-            if eval_split != "all" and split != eval_split:
+            row_split = (row.get(split_col) if split_col else None) or eval_split
+            if "all" not in eval_splits and row_split not in eval_splits:
                 continue
             raw = row[img_col]
             if external:
@@ -193,27 +195,29 @@ def _iter_stream_parts(
                 data = raw[sub] if sub else raw
             upath = row.get(path_col) or row.get("stem") or ""
             stem = row.get("stem") or Path(str(upath)).stem
-            yield RawImage(str(upath), stem, split, data)
+            yield RawImage(str(upath), stem, row_split, data)
 
 
 def _iter_staged_bucket(
-    client: Any, bucket: str, benchmark_id: str, eval_split: str
+    client: Any, bucket: str, benchmark_id: str, split: UpstreamSplit
 ) -> Iterator[RawImage]:
+    eval_split = split.eval_split
+    eval_splits = split.eval_splits
     meta_key = f"sources/{benchmark_id}/metadata.parquet"
     meta_bytes = _get_object_bytes(client, bucket, meta_key)
     meta = pq.read_table(pa.BufferReader(meta_bytes)).to_pylist()
     root = f"sources/{benchmark_id}/images/"
     by_stem = {Path(k).stem: k for k in _list_all(client, bucket, root)}
     for row in meta:
-        split = row.get("upstream_split") or eval_split
-        if eval_split != "all" and split != eval_split:
+        row_split = row.get("upstream_split") or eval_split
+        if "all" not in eval_splits and row_split not in eval_splits:
             continue
         stem = row["stem"]
         key = by_stem.get(stem)
         if key is None:
             continue
         data = _get_object_bytes(client, bucket, key)
-        yield RawImage(key[len(f"sources/{benchmark_id}/") :], stem, split, data)
+        yield RawImage(key[len(f"sources/{benchmark_id}/") :], stem, row_split, data)
 
 
 # ------------------------------------------------------------------------- upstream
@@ -246,11 +250,12 @@ def iter_upstream_images(
         spec = IngestSpec.load(_spec_path(entry, specs_dir))
         adapter = make_adapter(spec.adapter, spec.params)
     eval_split = entry.upstream_split.eval_split
+    eval_splits = entry.upstream_split.eval_splits
     total_bytes = 0
     for _item, _fetched, decoded in adapter.samples(tmp_dir):
         total_bytes += len(decoded.data)
         split = decoded.split_hint or eval_split
-        if eval_split == "all" or split == eval_split:
+        if "all" in eval_splits or split in eval_splits:
             stem = Path(decoded.upstream_id).stem
             yield RawImage(decoded.upstream_id, stem, split, decoded.data)
         if max_bytes is not None and total_bytes >= max_bytes:

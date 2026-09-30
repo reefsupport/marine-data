@@ -183,8 +183,7 @@ def test_manifest_coverage_at_least_five_or_documented(registry: BenchmarkRegist
         eval_n = sum(
             n
             for split, n in entry.upstream_split.counts.items()
-            if split in {entry.upstream_split.eval_split, entry.upstream_split.heldout_val}
-            and n is not None
+            if split in entry.upstream_split.eval_splits and n is not None
         )
         if eval_n == 0:
             continue  # counts not published for this entry; row-count alone can't be checked
