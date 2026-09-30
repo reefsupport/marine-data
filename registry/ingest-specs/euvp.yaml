@@ -1,13 +1,21 @@
-# euvp: Islam et al. 2020, RA-L (FUnIE-GAN)
-# HF mirror Ken1053/EUVP is PARTIAL (5,550 rows vs ~30k paired+unpaired); the IRVLab origin returns 403 to scripts. Stage the HF partial now; full set is needs_yohan (IRVLab bot-block) until someone fetches it via browser.
+# euvp: Islam et al. 2020, RA-L (FUnIE-GAN) — original IRVLab distribution.
+# HF mirror Ken1053/EUVP only carries the edit-pairs train parquet (5,550 rows); the
+# eval split test_samples (515 images) is absent there, so it always yields 0 rows.
+# IRVLab origin returns 403 to scripted requests (bot-blocked); the full set (incl.
+# test_samples) is distributed via a Google Drive folder linked from the resource
+# page and needs a browser-confirmed fetch, not a direct HTTP GET.
 id: euvp
-adapter: hf
+adapter: needs:gdrive
 license: research (non-commercial, per upstream)
-attribution: Islam et al. — EUVP / FUnIE-GAN (HF mirror, partial)
+attribution: Islam et al. — EUVP / FUnIE-GAN (IRVLab original)
 citation: Islam et al. 2020, RA-L (FUnIE-GAN)
 homepage: https://irvlab.cs.umn.edu/resources/euvp-dataset
+why_not_supported: irvlab.cs.umn.edu 403s plain curl (bot-blocked); dataset is a
+  Google Drive folder requiring a browser-confirmed large-file download, not a
+  direct HTTP GET. HF mirror (Ken1053/EUVP) is a partial train-only copy and lacks
+  the test_samples eval split (515 images) needed for benchmark scoring.
 params:
-  repo: Ken1053/EUVP
-  revision: main
-
+  landing: https://irvlab.cs.umn.edu/resources/euvp-dataset
+  eval_split: test_samples
+  eval_split_items: 515
 disk_floor_gib: 36.0

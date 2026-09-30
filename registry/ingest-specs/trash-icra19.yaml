@@ -1,0 +1,12 @@
+# Trash-ICRA19: bounding-box labeled dataset of underwater trash (Fulton et al., ICRA 2019)
+id: trash-icra19
+adapter: needs:drum
+license: cc-by-4.0
+attribution: Fulton, Hong, Islam, Sattar (Univ. of Minnesota DRUM)
+citation: Fulton et al. 2019, ICRA (Trash-ICRA19)
+homepage: https://conservancy.umn.edu/handle/11299/214366
+why_not_supported: DRUM (Univ. of Minnesota's DSpace repository) 403s plain curl
+  (bot-blocked); needs the DRUM/DSpace REST API (same family as vdd-c/trashcan)
+  rather than scraping the HTML landing page.
+params:
+  landing: https://conservancy.umn.edu/handle/11299/214366
