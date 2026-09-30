@@ -78,7 +78,9 @@ def _cmd_manifest(args: argparse.Namespace) -> int:
             table, n_before = build_manifest(entry, images, out_path)
         else:
             with tempfile.TemporaryDirectory(prefix="marinedata-bench-") as tmp:
-                images = iter_upstream_images(entry, args.specs_dir, Path(tmp))
+                images = iter_upstream_images(
+                    entry, args.specs_dir, Path(tmp), max_bytes=args.max_bytes
+                )
                 table, n_before = build_manifest(entry, images, out_path)
     except ManifestBuildError as exc:
         print(f"{entry.id}: FAIL — {exc}", file=sys.stderr)
@@ -121,4 +123,9 @@ def add_bench_subparser(sub: argparse._SubParsersAction) -> None:
     q.add_argument("--bucket", default="rs-storage-open")
     q.add_argument("--remote", default="rs-hel1", help="rclone remote name for bucket credentials")
     q.add_argument("--specs-dir", type=Path, default=_default_specs_dir())
+    q.add_argument(
+        "--max-bytes", type=int, default=None,
+        help="Upstream source only: stop once fetched sample bytes reach this cap "
+        "(resumable — rerun to continue past it)",
+    )
     q.set_defaults(func=_cmd_manifest)

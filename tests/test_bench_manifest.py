@@ -165,6 +165,24 @@ def test_iter_upstream_images_eval_split_all_keeps_everything(tmp_path: Path):
     assert len(images) == 2
 
 
+def test_iter_upstream_images_max_bytes_stops_stream(tmp_path: Path):
+    # RED/BLUE fixtures are small PNGs; three of them exceed a 2x-one-image cap.
+    adapter = FakeAdapter(
+        [
+            FakeDecoded("1.png", RED, "all"),
+            FakeDecoded("2.png", BLUE, "all"),
+            FakeDecoded("3.png", RED, "all"),
+        ]
+    )
+    entry = _entry(eval_split="all")
+    images = list(
+        iter_upstream_images(
+            entry, tmp_path, tmp_path, adapter=adapter, max_bytes=len(RED) - 1
+        )
+    )
+    assert [i.stem for i in images] == ["1"]
+
+
 def test_spec_resolves(tmp_path: Path):
     (tmp_path / "u45.yaml").write_text("id: u45\n")
     assert spec_resolves(_entry("u45"), tmp_path) is True

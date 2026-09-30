@@ -224,11 +224,21 @@ def _spec_path(entry: BenchmarkEntry, specs_dir: Path) -> Path:
 
 
 def iter_upstream_images(
-    entry: BenchmarkEntry, specs_dir: Path, tmp_dir: Path, adapter: Any | None = None
+    entry: BenchmarkEntry,
+    specs_dir: Path,
+    tmp_dir: Path,
+    adapter: Any | None = None,
+    max_bytes: int | None = None,
 ) -> Iterator[RawImage]:
     """``adapter`` is injectable for tests; production always loads the same spec
     ``ingest-batch`` would (:meth:`marinedata.ingest_source.IngestSpec.load` +
-    :func:`marinedata.adapters.make_adapter`)."""
+    :func:`marinedata.adapters.make_adapter`).
+
+    ``max_bytes``, when set, stops the stream once the cumulative size of
+    fetched sample bytes (eval-split or not — the adapter has already
+    downloaded them) reaches the cap. The run is resumable: a later call
+    with the same ``tmp_dir``-backed manifest picks up from the stems
+    already recorded in the existing parquet."""
     if adapter is None:
         from .adapters import make_adapter
         from .ingest_source import IngestSpec
@@ -236,12 +246,15 @@ def iter_upstream_images(
         spec = IngestSpec.load(_spec_path(entry, specs_dir))
         adapter = make_adapter(spec.adapter, spec.params)
     eval_split = entry.upstream_split.eval_split
+    total_bytes = 0
     for _item, _fetched, decoded in adapter.samples(tmp_dir):
+        total_bytes += len(decoded.data)
         split = decoded.split_hint or eval_split
-        if eval_split != "all" and split != eval_split:
-            continue
-        stem = Path(decoded.upstream_id).stem
-        yield RawImage(decoded.upstream_id, stem, split, decoded.data)
+        if eval_split == "all" or split == eval_split:
+            stem = Path(decoded.upstream_id).stem
+            yield RawImage(decoded.upstream_id, stem, split, decoded.data)
+        if max_bytes is not None and total_bytes >= max_bytes:
+            break
 
 
 def spec_resolves(entry: BenchmarkEntry, specs_dir: Path) -> bool:
