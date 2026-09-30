@@ -1696,15 +1696,15 @@ sources:
     annotations:
       - kind: bbox
         count: 594
-        classes: 16
+        classes: 14  # rf100-coral-lwptl2 (2026-09-30): the pinned rev's data.yaml lists 14, not 16.
         supervises: []
         notes: >
-          Raw upstream YOLO label ids kept as-is (labels/*.txt + data.yaml); no
-          crosswalk to a canonical taxonomy yet (WP-7 owns crosswalks).
+          Raw upstream YOLO label ids (labels/*.txt + data.yaml) crosswalked onto
+          rs-benthic-v1 by rf100-coral-lwptl (WP-7).
     coverage:
       regions: [unknown]
     items: 594
     citation: "Ciaglia et al. 2022, Roboflow 100: A Rich, Multi-Domain Object Detection Benchmark, arXiv:2211.13523"
     homepage: https://universe.roboflow.com/roboflow-100/coral-lwptl
-    loader: { layout: yolo-txt }
+    loader: { layout: yolo-txt, schema_id: rf100-coral-lwptl-native, crosswalk_id: rf100-coral-lwptl }
     tags: [wp6-smoke]

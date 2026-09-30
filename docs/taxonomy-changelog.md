@@ -1,5 +1,15 @@
 # Taxonomy changelog
 
+## 2.2.0 — 2026-09-30
+
+MINOR: new crosswalk + vocab, no nodes/edges retargeted.
+
+- **`rf100-coral-lwptl` crosswalk** (14 growth-form classes onto rs-benthic-v1's form/taxon
+  axes) closes the source's `no_crosswalk_yet` gap; `vocab/rf100-coral-lwptl.tsv` (6,483
+  bbox annotations, 594 label files) measures 100% mapped.
+- **Fixed `registry/sources/coral-benthic.yaml` `classes: 16` → `14`**: the pinned rev's
+  `data.yaml` (byte-identical from bucket and HF mirror) lists 14 classes; 16 was stale.
+
 ## 2.0.0 — 2026-09-25 (WP-7d)
 
 MAJOR: one edge retargeted (`coralscop-masks-rs` `coral`: HC -> CNIDARIA). v2 is unreleased,

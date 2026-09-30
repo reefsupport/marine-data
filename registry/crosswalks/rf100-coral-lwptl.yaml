@@ -1,0 +1,49 @@
+# RF100 Coral Growth-Form (LWPTL) → RS-Benthic v1.
+#
+# The pinned rev's `data.yaml` (rev-83f0a33679b0, confirmed byte-identical from both the
+# bucket and the HF mirror) lists 14 classes, not the 16 recorded in
+# `registry/sources/coral-benthic.yaml` — that field is fixed alongside this crosswalk.
+#
+# Source is morphology-first (growth form), like CATAMI, so most classes land on the FORM
+# axis. Four of the fourteen also carry a family-level taxon call (`Massive-<Family>`);
+# only Poritidae has a family node in rs-benthic-v1 (`HC_PORITIDAE`) — Faviidae,
+# Merulinidae and Mussidae coarsen to HC (Scleractinia). `Solitary` names a growth habit
+# (single free-living polyp, e.g. Fungiidae) that has no enumerated FORM node in
+# rs-benthic-v1; it maps taxon-only and the form gap is left unmapped rather than forced
+# onto the nearest node.
+
+crosswalks:
+  - id: rf100-coral-lwptl
+    source_schema: rf100-coral-lwptl-native
+    target_schema: rs-benthic-v1
+    description: >
+      RF100 "coral-lwptl" (Roboflow Universe) 14 growth-form bbox classes onto
+      RS-Benthic's form (and, for four family-labelled classes, taxon) axes.
+    edges:
+      - { source_label: "Digitate",   targets: { form: CD } }
+      - { source_label: "Encrusting", targets: { form: CE } }
+      - { source_label: "Foliose",    targets: { form: CF } }
+      - { source_label: "Tabular",    targets: { form: CT } }
+
+      - { source_label: "Arborescent",   targets: { form: CB }, fidelity: coarsened,
+          note: "Bushy/branching subtype with no dedicated node; coarsens to the parent branching form CB." }
+      - { source_label: "Caespitose-a",  targets: { form: CB }, fidelity: coarsened,
+          note: "Bushy/branching subtype with no dedicated node; coarsens to the parent branching form CB." }
+      - { source_label: "Caespitose-b",  targets: { form: CB }, fidelity: coarsened,
+          note: "Bushy/branching subtype with no dedicated node; coarsens to the parent branching form CB." }
+      - { source_label: "Corymbose",     targets: { form: CB }, fidelity: coarsened,
+          note: "Bushy/branching subtype with no dedicated node; coarsens to the parent branching form CB." }
+
+      - { source_label: "Columnar", targets: { form: CM }, fidelity: approximate,
+          note: "No COLUMNAR node in rs-benthic-v1; columnar growth is nearer to massive than to any other form, but the match is a judgement call, not an exact one." }
+
+      - { source_label: "Massive-Poritidae", targets: { form: CM, taxon: HC_PORITIDAE } }
+      - { source_label: "Massive-Faviidae", targets: { form: CM, taxon: HC }, fidelity: coarsened,
+          note: "Faviidae has a taxon node only in rs-taxa-v1 (A196099), which lacks a form axis; rs-benthic-v1 has no family node for it, so taxon coarsens to HC." }
+      - { source_label: "Massive-Merulinidae", targets: { form: CM, taxon: HC }, fidelity: coarsened,
+          note: "Merulinidae has a taxon node only in rs-taxa-v1 (A1579843), which lacks a form axis; rs-benthic-v1 has no family node for it, so taxon coarsens to HC." }
+      - { source_label: "Massive-Mussidae", targets: { form: CM, taxon: HC }, fidelity: coarsened,
+          note: "Mussidae is absent from both schemas entirely (likely WoRMS-synonymized); taxon coarsens to HC." }
+
+      - { source_label: "Solitary", targets: { taxon: HC }, fidelity: coarsened,
+          note: "Solitary-polyp morphology (e.g. Fungiidae) isn't an enumerated FORM node; form is left unmapped rather than forced onto the nearest one." }

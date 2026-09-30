@@ -1,0 +1,20 @@
+# source: rf100-coral-lwptl
+# crosswalk: rf100-coral-lwptl
+# counts: annotations
+# retrieved: 2026-09-30 from rs-storage-open sources/rf100-coral-lwptl/rev-83f0a33679b0/labels/*.txt (594 YOLO label files, anonymous GET, class id from column 0)
+# note: one annotation = one YOLO bbox row
+label	count	description
+Massive-Poritidae	1016
+Massive-Faviidae	702
+Arborescent	687
+Tabular	718
+Foliose	562
+Solitary	462
+Digitate	392
+Encrusting	379
+Corymbose	381
+Caespitose-a	367
+Massive-Mussidae	319
+Caespitose-b	305
+Massive-Merulinidae	192
+Columnar	1
