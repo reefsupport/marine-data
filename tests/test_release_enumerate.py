@@ -38,6 +38,7 @@ from marinedata.models import (
     LoaderSpec,
     Profile,
     Source,
+    SplitGroupRule,
     Verification,
 )
 from marinedata.registry import Registry
@@ -46,7 +47,14 @@ from marinedata.splitmap import load_split_map
 from marinedata.tables import StagedImage, write_metadata_table
 
 
-def _source(source_id: str, layout: str, *, tags: tuple[str, ...] = ()) -> Source:
+def _source(
+    source_id: str,
+    layout: str,
+    *,
+    tags: tuple[str, ...] = (),
+    split_group: SplitGroupRule | None = None,
+) -> Source:
+    kwargs = {} if split_group is None else {"split_group": split_group}
     return Source(
         id=source_id,
         name=source_id,
@@ -65,6 +73,7 @@ def _source(source_id: str, layout: str, *, tags: tuple[str, ...] = ()) -> Sourc
         loader=LoaderSpec(layout=layout, params={}),
         annotations=(),
         tags=tags,
+        **kwargs,
     )
 
 
@@ -164,6 +173,27 @@ def test_needs_attribution_source_skipped_and_reported(tmp_path: Path) -> None:
 
     assert {source_id for _, _, source_id in rows} == {"staged-src"}
     assert "needs-attribution" in skipped["gated-src"]
+
+
+def test_missing_split_group_resolved_by_registry_rule_at_build_time(tmp_path: Path) -> None:
+    """D-V2: a ``metadata.parquet`` cached before the ``split_group`` column was
+    backfilled at ingest (e.g. coralscapes, mermaid-aws before WP-2) has ``None`` for
+    some rows. The release enumerator must not raise — it applies the registry's own
+    per-source :class:`~marinedata.models.SplitGroupRule` at build time instead, the
+    same rule ``ingest.py`` would have applied had staging run after the rule existed.
+    Never rewrites the cached ``metadata.parquet`` — the row stays ``None`` on disk."""
+    rule = SplitGroupRule(pattern=r"(?i)(site[0-9]+)", match_field="stem", template="stale/{group}")
+    root = _stage_staged_tree(tmp_path / "staged", "site7-a", None, b"AAAA")
+    registry = _registry({"stale-src": _source("stale-src", "staged-tree", split_group=rule)})
+
+    rows = list(enumerate_release_rows(registry, {"stale-src": root}, "research"))
+
+    assert rows == [(rows[0][0], "stale/site7", "stale-src")]
+    # the cache itself is never touched (D-V2: a changed mtime must not happen)
+    import pyarrow.parquet as pq
+
+    on_disk = pq.read_table(root / "metadata.parquet").to_pylist()
+    assert on_disk[0]["split_group"] is None
 
 
 def test_missing_image_still_raises(tmp_path: Path) -> None:

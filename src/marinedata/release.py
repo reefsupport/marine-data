@@ -231,14 +231,20 @@ def enumerate_release_rows(
             )
         partition_indexes: dict[str, dict[str, list[Path]]] = {}
         for record in pq.read_table(metadata_path).to_pylist():
+            partition, stem = staged_partition(record), record["stem"]
             group = record.get("split_group")
             if not group:
-                raise ValueError(
-                    f"{source_id}: metadata.parquet row for stem={record['stem']!r} has no "
-                    "split_group — the registry's per-source split_group rule must run "
-                    "before staging"
+                # D-V2: an older staged tree cached before the split_group column was
+                # backfilled at ingest time (e.g. coralscapes, mermaid-aws). Apply the
+                # registry's per-source rule here, at release build time, rather than
+                # raising — the cache itself is never rewritten (it may be a verified
+                # digest pin), so this is the one place a v2 build can still recover
+                # the group deterministically from stem/upstream_path/partition.
+                group = source.split_group_for(
+                    stem=stem,
+                    upstream_path=str(record.get("upstream_path") or ""),
+                    partition=partition,
                 )
-            partition, stem = staged_partition(record), record["stem"]
             index = partition_indexes.get(partition)
             if index is None:
                 index = _partition_stem_index(root / "images" / partition)
