@@ -174,6 +174,56 @@ def test_gdrive_public_quota_wall_refuses(server, tmp_path):
         list(adapter.samples(tmp_path))
 
 
+def test_gdrive_usercontent_confirm_form_parsed():
+    """Drive's current >100MB interstitial: a GET <form> to usercontent.google.com
+    with hidden id/export/confirm/uuid inputs (not the old bare confirm= anchor)."""
+    from marinedata.adapters.gdrive import GDriveAdapter
+
+    adapter = GDriveAdapter({"file_id": "big2", "name": "c.zip", "endpoint": "https://drive.google.com"})
+    html = (
+        '<html><body><form id="download-form" '
+        'action="https://drive.usercontent.google.com/download" method="get">'
+        '<input type="hidden" name="id" value="big2">'
+        '<input type="hidden" name="export" value="download">'
+        '<input type="hidden" name="confirm" value="t">'
+        '<input type="hidden" name="uuid" value="u-1">'
+        "</form></body></html>"
+    )
+    assert adapter._extract_confirm_url(html) == (
+        "https://drive.usercontent.google.com/download?id=big2&export=download&confirm=t&uuid=u-1"
+    )
+
+
+def test_gdrive_legacy_confirm_href_still_works():
+    from marinedata.adapters.gdrive import GDriveAdapter
+
+    adapter = GDriveAdapter(
+        {"file_id": "big3", "name": "d.zip", "endpoint": "https://drive.google.com"}
+    )
+    html = (
+        '<html><body><a id="uc-download-link" '
+        'href="/uc?export=download&amp;id=big3&amp;confirm=t9x">Download anyway</a>'
+        "</body></html>"
+    )
+    assert (
+        adapter._extract_confirm_url(html)
+        == "https://drive.google.com/uc?export=download&id=big3&confirm=t9x"
+    )
+
+
+def test_gdrive_confirm_page_without_form_needs_yohan(server, tmp_path):
+    server.add(
+        "/uc?export=download&id=big4",
+        b"<html><body>Sorry, no preview is available for this file.</body></html>",
+        ctype="text/html",
+    )
+    adapter = make_adapter(
+        "gdrive-public", {"file_id": "big4", "name": "e.png", "endpoint": server.base}
+    )
+    with pytest.raises(AccessRefused, match="had no resolvable download link"):
+        list(adapter.samples(tmp_path))
+
+
 def test_seafile_share_dir_listing_and_dl(server, tmp_path):
     body = png(8)
     server.add(
