@@ -5,6 +5,7 @@ from __future__ import annotations
 import argparse
 import json
 import sys
+import tempfile
 from pathlib import Path
 
 from .benchmarks import BenchmarkRegistry, BenchmarksError, benchmarks_sha256
@@ -47,6 +48,47 @@ def _cmd_manifests(args: argparse.Namespace) -> int:
     return 0
 
 
+def _default_specs_dir() -> Path:
+    return Path(__file__).resolve().parents[2] / "registry" / "ingest-specs"
+
+
+def _cmd_manifest(args: argparse.Namespace) -> int:
+    from .bench_manifest import (
+        ManifestBuildError,
+        build_manifest,
+        iter_bucket_images,
+        iter_upstream_images,
+        resolve_source,
+        write_manifest,
+    )
+    from .s3_client import client_from_rclone
+
+    reg = BenchmarkRegistry.load(args.path)
+    try:
+        entry = reg.by_id(args.benchmark_id)
+    except KeyError:
+        print(f"unknown benchmark id: {args.benchmark_id}", file=sys.stderr)
+        return 1
+    out_path = reg.manifest_path(entry.id)
+    client = client_from_rclone(args.remote) if args.source != "upstream" else None
+    source = resolve_source(args.source, entry, client, args.bucket) if client else "upstream"
+    try:
+        if source == "bucket":
+            images = iter_bucket_images(client, args.bucket, entry)
+            table, n_before = build_manifest(entry, images, out_path)
+        else:
+            with tempfile.TemporaryDirectory(prefix="marinedata-bench-") as tmp:
+                images = iter_upstream_images(entry, args.specs_dir, Path(tmp))
+                table, n_before = build_manifest(entry, images, out_path)
+    except ManifestBuildError as exc:
+        print(f"{entry.id}: FAIL — {exc}", file=sys.stderr)
+        return 1
+    write_manifest(table, out_path)
+    new = table.num_rows - n_before
+    print(f"{entry.id}: source={source} rows={table.num_rows} new={new} -> {out_path}")
+    return 0
+
+
 def add_bench_subparser(sub: argparse._SubParsersAction) -> None:
     p = sub.add_parser("bench", help="Benchmark registry: validate, hash, manifest coverage")
     bsub = p.add_subparsers(dest="bench_command", required=True)
@@ -67,3 +109,16 @@ def add_bench_subparser(sub: argparse._SubParsersAction) -> None:
     path_arg(q)
     q.add_argument("-o", "--output", help="Write JSON here instead of stdout")
     q.set_defaults(func=_cmd_manifests)
+
+    q = bsub.add_parser("manifest", help="Build one benchmark's eval-image manifest parquet")
+    path_arg(q)
+    q.add_argument("benchmark_id")
+    q.add_argument(
+        "--source", choices=("bucket", "upstream", "auto"), default="auto",
+        help="bucket: rs-storage-open parquet; upstream: ingest adapter stream; "
+        "auto: pick by CHECKSUMS.sha256 (default)",
+    )
+    q.add_argument("--bucket", default="rs-storage-open")
+    q.add_argument("--remote", default="rs-hel1", help="rclone remote name for bucket credentials")
+    q.add_argument("--specs-dir", type=Path, default=_default_specs_dir())
+    q.set_defaults(func=_cmd_manifest)
