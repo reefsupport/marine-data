@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import hashlib
 import io
+import re
 from pathlib import Path
 
 import pyarrow as pa
@@ -304,3 +305,65 @@ def test_resolve_source_auto_picks_upstream_when_no_checksums():
 
 def test_resolve_source_explicit_bypasses_bucket_check():
     assert resolve_source("upstream", _entry(), None, "rs-storage-open") == "upstream"
+
+
+# --------------------------------------------------------------------- BENCH-checkpoint
+
+
+def test_build_manifest_checkpoints_at_row_threshold(tmp_path: Path):
+    entry = _entry()
+    ckpt = tmp_path / "fakebench.parquet"
+    mid_run: dict[str, object] = {}
+
+    def images():
+        yield RawImage("a.png", "a", "test", RED)
+        yield RawImage("b.png", "b", "test", BLUE)
+        # a checkpoint must already exist once the tiny 2-row threshold is crossed,
+        # well before the generator (and build_manifest) finishes
+        mid_run["exists"] = ckpt.is_file()
+        if ckpt.is_file():
+            mid_run["rows"] = len(pq.read_table(ckpt).to_pylist())
+        yield RawImage("c.png", "c", "test", RED)
+
+    build_manifest(
+        entry, images(), ckpt, checkpoint_every_rows=2, checkpoint_every_s=10_000
+    )
+    assert mid_run["exists"] is True
+    assert mid_run["rows"] == 2
+
+
+def test_build_manifest_checkpoints_on_interrupt_and_resumes(tmp_path: Path):
+    entry = _entry()
+    ckpt = tmp_path / "fakebench.parquet"
+
+    def images_then_interrupt():
+        yield RawImage("a.png", "a", "test", RED)
+        raise KeyboardInterrupt()
+
+    with pytest.raises(KeyboardInterrupt):
+        build_manifest(entry, images_then_interrupt(), ckpt, checkpoint_every_rows=1)
+
+    assert ckpt.is_file()
+    assert [r["stem"] for r in pq.read_table(ckpt).to_pylist()] == ["a"]
+
+    # simulated rerun: resumes from the checkpoint, re-offers "a" (skipped) plus "b"
+    table2, n_before = build_manifest(
+        entry,
+        iter([RawImage("a.png", "a", "test", RED), RawImage("b.png", "b", "test", BLUE)]),
+        ckpt,
+    )
+    assert n_before == 1
+    assert sorted(r["stem"] for r in table2.to_pylist()) == ["a", "b"]
+
+
+def test_build_manifest_progress_line_format(capsys: pytest.CaptureFixture[str]):
+    entry = _entry()
+    images = iter([RawImage("a.png", "a", "test", RED)])
+    build_manifest(
+        entry, images, Path("/nonexistent/does-not-exist.parquet"),
+        progress_every=1, progress_every_s=10_000,
+    )
+    err = capsys.readouterr().err
+    assert re.search(
+        r"^fakebench rows=1 bytes=[\d.]+MB rate=[\d.]+img/min skipped=0$", err, re.MULTILINE
+    )

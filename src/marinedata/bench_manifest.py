@@ -28,11 +28,25 @@ Two ways to get eval-split image bytes:
 Resumable: an existing manifest's ``stem``s are kept and only new ones are
 hashed and appended; the whole table (old + new) is rewritten, since this is
 a decontamination-gate input, never a live-appended log.
+
+BENCH-checkpoint: a long ``upstream`` build (e.g. fathomnet-vme fetching every
+image by its own ``source_url``, one MBARI request each) used to run silent
+and write the manifest only at the very end — a caller-side wall-clock alarm
+killing it lost every row. :func:`build_manifest` now prints progress and
+checkpoints the parquet mid-run (atomically), and :func:`iter_upstream_images`
+bounds each upstream fetch so one hung request can no longer stall the whole
+stream indefinitely.
 """
 
 from __future__ import annotations
 
+import os
+import signal
+import sys
+import time
 from collections.abc import Iterator
+from concurrent.futures import ThreadPoolExecutor
+from concurrent.futures import TimeoutError as FutureTimeoutError
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Literal
@@ -64,6 +78,18 @@ MANIFEST_COLUMNS = (
 EMBEDDING_MODEL = "sscd_disc_mixup"  # the model d376e95's hand-built manifests name
 CHECKSUM_SUFFIX = "CHECKSUMS.sha256"
 
+# BENCH-checkpoint defaults (design doc addendum, 2026-10-01).
+PROGRESS_EVERY_IMAGES = 100
+PROGRESS_EVERY_S = 60.0
+CHECKPOINT_EVERY_ROWS = 500
+CHECKPOINT_EVERY_S = 300.0
+REQUEST_TIMEOUT_S = 60.0
+REQUEST_MAX_RETRIES = 3
+
+_TERMINATING_SIGNALS = tuple(
+    sig for sig in (getattr(signal, "SIGALRM", None), getattr(signal, "SIGTERM", None)) if sig
+)
+
 
 class ManifestBuildError(RuntimeError):
     """No streamable eval-split image source found for a benchmark (a hole in
@@ -78,6 +104,10 @@ class RawImage:
     stem: str
     upstream_split: str
     data: bytes
+
+
+def _log_stderr(msg: str) -> None:
+    print(msg, file=sys.stderr, flush=True)
 
 
 def build_row(benchmark_id: str, img: RawImage) -> dict[str, Any]:
@@ -233,6 +263,9 @@ def iter_upstream_images(
     tmp_dir: Path,
     adapter: Any | None = None,
     max_bytes: int | None = None,
+    request_timeout_s: float = REQUEST_TIMEOUT_S,
+    max_retries: int = REQUEST_MAX_RETRIES,
+    log: Any = _log_stderr,
 ) -> Iterator[RawImage]:
     """``adapter`` is injectable for tests; production always loads the same spec
     ``ingest-batch`` would (:meth:`marinedata.ingest_source.IngestSpec.load` +
@@ -242,7 +275,16 @@ def iter_upstream_images(
     fetched sample bytes (eval-split or not — the adapter has already
     downloaded them) reaches the cap. The run is resumable: a later call
     with the same ``tmp_dir``-backed manifest picks up from the stems
-    already recorded in the existing parquet."""
+    already recorded in the existing parquet.
+
+    BENCH-checkpoint: some adapters (e.g. the caption/COCO decoder resolving
+    each record's own ``source_url``) make one network request per image with
+    no bound of their own. Each ``next()`` step is run on a single worker
+    thread and bounded to ``request_timeout_s``; a stall counts as a retry
+    and, past ``max_retries`` consecutive stalls, that fetch slot is logged
+    and skipped (never silently) so one hung request can't stall the whole
+    stream forever — the caller's wall-clock alarm is still the hard bound.
+    """
     if adapter is None:
         from .adapters import make_adapter
         from .ingest_source import IngestSpec
@@ -252,30 +294,49 @@ def iter_upstream_images(
     eval_split = entry.upstream_split.eval_split
     eval_splits = entry.upstream_split.eval_splits
     total_bytes = 0
-    for _item, _fetched, decoded in adapter.samples(tmp_dir):
-        total_bytes += len(decoded.data)
-        # WP-BENCH-fix3 B: label-only / unresolved Decoded records (annotation JSON
-        # paired by ``label_files``, or a caption-json ref that never resolved) always
-        # carry ``data == b""``. They are never eval images; treating them as one was
-        # exactly why fathomnet-vme/uiis manifests were all `cannot decode image
-        # e3b0c44...` (sha256 of empty bytes) — the hash of nothing, not real corruption.
-        if not decoded.data:
-            continue
-        split = decoded.split_hint or eval_split
-        if "all" in eval_splits or split in eval_splits:
-            stem = _stem(decoded.upstream_id)
-            yield RawImage(decoded.upstream_id, stem, split, decoded.data)
-        if max_bytes is not None and total_bytes >= max_bytes:
-            break
+    it = iter(adapter.samples(tmp_dir))
+    stalls = 0
+    with ThreadPoolExecutor(max_workers=1) as pool:
+        while True:
+            future = pool.submit(next, it)
+            try:
+                _item, _fetched, decoded = future.result(timeout=request_timeout_s)
+            except StopIteration:
+                return
+            except FutureTimeoutError:
+                stalls += 1
+                log(
+                    f"{entry.id}: fetch stalled past {request_timeout_s:.0f}s "
+                    f"(attempt {stalls}/{max_retries})"
+                )
+                if stalls >= max_retries:
+                    log(f"{entry.id}: skip — giving up after {max_retries} stalled fetches")
+                    stalls = 0
+                continue
+            stalls = 0
+            total_bytes += len(decoded.data)
+            # WP-BENCH-fix3 B: label-only / unresolved Decoded records (annotation JSON
+            # paired by ``label_files``, or a caption-json ref that never resolved) always
+            # carry ``data == b""``. They are never eval images; treating them as one was
+            # exactly why fathomnet-vme/uiis manifests were all `cannot decode image
+            # e3b0c44...` (sha256 of empty bytes) — the hash of nothing, not real corruption.
+            if not decoded.data:
+                continue
+            split = decoded.split_hint or eval_split
+            if "all" in eval_splits or split in eval_splits:
+                stem = _stem(decoded.upstream_id)
+                yield RawImage(decoded.upstream_id, stem, split, decoded.data)
+            if max_bytes is not None and total_bytes >= max_bytes:
+                break
 
 
 def _stem(upstream_id: str) -> str:
     """``Path(upstream_id).stem`` alone collapses every synthetic ``key#i`` id (e.g. one
-    caption-json record per image, ``coco_test.json#0``, ``#1``, ...) onto the SAME stem
-    (``coco_test``) since ``Path.stem`` only strips the outer ``.json#i`` suffix — a
-    silent dedup-by-stem collision in :func:`build_manifest` that would keep just one row
-    per source file. Strip the real extension off the base path only; keep the ``#frag``
-    discriminator verbatim so each record stays a distinct stem."""
+    caption-json record per image) onto the SAME stem (``coco_test``) since
+    ``Path.stem`` only strips the outer ``.json#i`` suffix — a silent dedup-by-stem
+    collision in :func:`build_manifest` that would keep just one row per source file.
+    Strip the real extension off the base path only; keep the ``#frag`` discriminator
+    verbatim so each record stays a distinct stem."""
     base, sep, frag = upstream_id.partition("#")
     return Path(base).stem + sep + frag
 
@@ -296,33 +357,113 @@ def resolve_source(
     return "bucket" if bucket_has_checksums(client, bucket, entry.id) else "upstream"
 
 
+def _atomic_write_manifest(table: pa.Table, out_path: Path) -> None:
+    """Same bytes as :func:`write_manifest`, but crash-safe: write to a sibling
+    tmp file and ``os.replace`` it over the target, so a checkpoint mid-write can
+    never leave a half-written (or truncated) parquet behind."""
+    out_path.parent.mkdir(parents=True, exist_ok=True)
+    tmp = out_path.with_name(f"{out_path.name}.tmp-{os.getpid()}")
+    pq.write_table(table, tmp)
+    os.replace(tmp, out_path)
+
+
 def build_manifest(
-    entry: BenchmarkEntry, images: Iterator[RawImage], existing: Path, log: Any = print
+    entry: BenchmarkEntry,
+    images: Iterator[RawImage],
+    existing: Path,
+    log: Any = print,
+    *,
+    out_path: Path | None = None,
+    checkpoint_every_rows: int = CHECKPOINT_EVERY_ROWS,
+    checkpoint_every_s: float = CHECKPOINT_EVERY_S,
+    progress_every: int = PROGRESS_EVERY_IMAGES,
+    progress_every_s: float = PROGRESS_EVERY_S,
 ) -> tuple[pa.Table, int]:
-    """Returns ``(table, n_rows_before)`` — old rows kept verbatim, new ones hashed."""
+    """Returns ``(table, n_rows_before)`` — old rows kept verbatim, new ones hashed.
+
+    BENCH-checkpoint: prints one progress line to stderr every
+    ``progress_every`` images or ``progress_every_s`` seconds, and atomically
+    checkpoints the in-progress manifest (to ``out_path``, default ``existing``
+    — the same stem-keyed file a rerun resumes from) every
+    ``checkpoint_every_rows`` new rows or ``checkpoint_every_s`` seconds, and
+    once more on ``KeyboardInterrupt``/``SIGALRM``/``SIGTERM`` before
+    re-raising/exiting. The final write (by the caller, via
+    :func:`write_manifest`) is unchanged.
+    """
+    ckpt_path = out_path or existing
     rows: list[dict[str, Any]] = []
     if existing.is_file():
         rows = pq.read_table(existing).to_pylist()
     seen = {r["stem"] for r in rows}
     n_before = len(rows)
-    for img in images:
-        if img.stem in seen:
-            continue
-        if not img.data:
-            # WP-BENCH-fix3 B: an empty-bytes RawImage is never per-item corruption (that
-            # is FeatureError, below) — it means an upstream code path handed the decoder
-            # a zero-length payload. Silently `log`-and-skip let every row in a benchmark
-            # fail the same way and masked it as an ordinary "0 rows" result; raise loud.
-            raise ManifestBuildError(
-                f"{entry.id}: {img.stem} ({img.upstream_path}): zero-length image bytes "
-                "from upstream — decoder/adapter bug, not a per-item skip"
-            )
-        try:
-            rows.append(build_row(entry.id, img))
-        except FeatureError as exc:
-            log(f"{entry.id}: skip {img.stem}: {exc}")
-            continue
-        seen.add(img.stem)
+
+    def _checkpoint_now() -> None:
+        if rows:
+            _atomic_write_manifest(pa.Table.from_pylist(rows, schema=None), ckpt_path)
+
+    def _signal_checkpoint(signum: int, _frame: Any) -> None:
+        _checkpoint_now()
+        log(f"{entry.id}: checkpoint on signal {signum}, {len(rows)} rows -> {ckpt_path}")
+        raise SystemExit(f"{entry.id}: interrupted by signal {signum}")
+
+    previous_handlers = {
+        sig: signal.signal(sig, _signal_checkpoint) for sig in _TERMINATING_SIGNALS
+    }
+    start = time.monotonic()
+    last_progress_t = start
+    last_checkpoint_t = start
+    rows_since_checkpoint = 0
+    processed = 0
+    skipped = 0
+    bytes_total = 0
+    try:
+        for img in images:
+            processed += 1
+            bytes_total += len(img.data)
+            if img.stem in seen:
+                continue
+            if not img.data:
+                # WP-BENCH-fix3 B: an empty-bytes RawImage is never per-item corruption
+                # (that is FeatureError, below) — it means an upstream code path handed
+                # the decoder a zero-length payload. Silently `log`-and-skip let every
+                # row in a benchmark fail the same way and masked it as an ordinary "0
+                # rows" result; raise loud.
+                raise ManifestBuildError(
+                    f"{entry.id}: {img.stem} ({img.upstream_path}): zero-length image bytes "
+                    "from upstream — decoder/adapter bug, not a per-item skip"
+                )
+            try:
+                rows.append(build_row(entry.id, img))
+            except FeatureError as exc:
+                log(f"{entry.id}: skip {img.stem}: {exc}")
+                skipped += 1
+                continue
+            seen.add(img.stem)
+            rows_since_checkpoint += 1
+
+            now = time.monotonic()
+            if processed % progress_every == 0 or (now - last_progress_t) >= progress_every_s:
+                elapsed_min = max((now - start) / 60.0, 1e-9)
+                _log_stderr(
+                    f"{entry.id} rows={len(rows)} bytes={bytes_total / 1e6:.1f}MB "
+                    f"rate={processed / elapsed_min:.1f}img/min skipped={skipped}"
+                )
+                last_progress_t = now
+
+            due_rows = rows_since_checkpoint >= checkpoint_every_rows
+            due_time = (now - last_checkpoint_t) >= checkpoint_every_s
+            if due_rows or due_time:
+                _checkpoint_now()
+                rows_since_checkpoint = 0
+                last_checkpoint_t = now
+    except KeyboardInterrupt:
+        _checkpoint_now()
+        log(f"{entry.id}: checkpoint on KeyboardInterrupt, {len(rows)} rows -> {ckpt_path}")
+        raise
+    finally:
+        for sig, handler in previous_handlers.items():
+            signal.signal(sig, handler)
+
     if not rows:
         raise ManifestBuildError(f"{entry.id}: no eval-split images found (0 rows)")
     return pa.Table.from_pylist(rows, schema=None), n_before
