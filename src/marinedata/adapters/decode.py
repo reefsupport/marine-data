@@ -336,7 +336,16 @@ def _caption_json(fetched: Fetched, params: Mapping[str, Any]) -> Iterator[Decod
         records: list[Any] = [json.loads(line) for line in text.splitlines() if line.strip()]
     else:
         obj = json.loads(text) if text.strip() else []
-        records = obj if isinstance(obj, list) else obj.get("data") or obj.get("records") or [obj]
+        # WP-BENCH-fix3 B: a COCO-detection file (``{images, annotations, categories}``,
+        # e.g. FathomNet's coco_*.json) has no ``data``/``records`` key, so it used to
+        # fall through to ``[obj]`` — the WHOLE dict treated as one caption record with
+        # no ``image_field``, silently producing one always-unresolved (empty-bytes)
+        # Decoded per file. ``images`` is COCO's own per-sample list; try it too.
+        records = (
+            obj
+            if isinstance(obj, list)
+            else obj.get("data") or obj.get("records") or obj.get("images") or [obj]
+        )
 
     image_index: Mapping[str, str] = params.get("image_index") or {}
     image_field = params.get("caption_image_field", "image")
@@ -362,11 +371,13 @@ def _caption_json(fetched: Fetched, params: Mapping[str, Any]) -> Iterator[Decod
             except Exception:
                 resolved = False
         labels["unresolved"] = "false" if resolved else "true"
+        split_val = rec.get("split")
         yield Decoded(
             upstream_id=f"{fetched.item.key}#{i}",
             data=data,
             suffix=_sniff(data) if resolved else ".bin",
             upstream_url=fetched.item.url,
+            split_hint=normalise_split(str(split_val)) if isinstance(split_val, str) else None,
             labels=labels,
             label_files={} if resolved else {f"unresolved-{i}.json": json.dumps(rec).encode()},
         )
@@ -388,16 +399,25 @@ def _class_names(pf) -> dict[str, list[str]]:
     }
 
 
+def _image_columns(names: list[str], params: Mapping[str, Any]) -> list[str]:
+    """``image_column`` may name one column or a list (BENCH-fix3 A: a paired-image
+    benchmark like ``euvp`` — ``input_image``/``edited_image`` — must hash both; both
+    are benchmark eval images, so decontamination has to see either one as contact)."""
+    configured = params.get("image_column")
+    if configured:
+        return [configured] if isinstance(configured, str) else list(configured)
+    auto = next((n for n in names if n in {"image", "img", "jpg", "png"}), None)
+    return [auto] if auto else []
+
+
 def _parquet(fetched: Fetched, params: Mapping[str, Any]) -> Iterator[Decoded]:
     import pyarrow.parquet as pq
 
     assert fetched.path is not None
     pf = pq.ParquetFile(fetched.path)
     names = [f.name for f in pf.schema_arrow]
-    image_col = params.get("image_column") or next(
-        (n for n in names if n in {"image", "img", "jpg", "png"}), None
-    )
-    if image_col is None:
+    image_cols = _image_columns(names, params)
+    if not image_cols:
         raise ValueError(f"{fetched.item.key}: no image column in {names}; set image_column")
     columns: Mapping[str, str] = params.get("columns") or {}
     label_cols = list(params.get("label_columns") or [])
@@ -406,16 +426,6 @@ def _parquet(fetched: Fetched, params: Mapping[str, Any]) -> Iterator[Decoded]:
     index = 0
     for batch in pf.iter_batches(batch_size=64):
         for row in batch.to_pylist():
-            cell = row[image_col]
-            data, inner = (
-                (cell.get("bytes"), cell.get("path")) if isinstance(cell, dict) else (cell, None)
-            )
-            if not data:
-                index += 1
-                continue
-            suffix = (
-                suffix_of(inner) if inner and suffix_of(inner) in IMAGE_SUFFIXES else _sniff(data)
-            )
             labels = {}
             for c in label_cols:
                 v = row.get(c)
@@ -426,14 +436,30 @@ def _parquet(fetched: Fetched, params: Mapping[str, Any]) -> Iterator[Decoded]:
                     if c in classes and isinstance(v, int) and 0 <= v < len(classes[c])
                     else str(v)
                 )
-            yield Decoded(
-                upstream_id=f"{fetched.item.key}#{index}",
-                data=data,
-                suffix=suffix,
-                split_hint=split,
-                labels=labels,
-                fields={f: row.get(c) for f, c in columns.items() if row.get(c) is not None},
-            )
+            fields = {f: row.get(c) for f, c in columns.items() if row.get(c) is not None}
+            for col in image_cols:
+                cell = row[col]
+                data, inner = (
+                    (cell.get("bytes"), cell.get("path"))
+                    if isinstance(cell, dict)
+                    else (cell, None)
+                )
+                if not data:
+                    continue
+                suffix = (
+                    suffix_of(inner)
+                    if inner and suffix_of(inner) in IMAGE_SUFFIXES
+                    else _sniff(data)
+                )
+                tag = f"_{col}" if len(image_cols) > 1 else ""
+                yield Decoded(
+                    upstream_id=f"{fetched.item.key}#{index}{tag}",
+                    data=data,
+                    suffix=suffix,
+                    split_hint=split,
+                    labels=labels,
+                    fields=fields,
+                )
             index += 1
 
 

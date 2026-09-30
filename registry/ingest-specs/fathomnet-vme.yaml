@@ -7,6 +7,11 @@ citation: FathomNet/2024-vme-benchmark (HF)
 homepage: https://huggingface.co/datasets/FathomNet/2024-vme-benchmark
 params:
   repo: FathomNet/2024-vme-benchmark
+  # BENCH-fix3 B: this repo ships only coco_{train,val,test}.json — standard COCO
+  # detection format (images/annotations/categories), no embedded/staged image bytes.
+  # Each images[] entry names its own MBARI database image via source_url and its own
+  # split; caption_image_field points the generic caption/VQA JSON decoder at it.
+  caption_image_field: source_url
 measured:
   bytes: 64000000
   method: HF usedStorage (<=0.06 GB)

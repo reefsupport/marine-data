@@ -9,5 +9,10 @@ homepage: https://irvlab.cs.umn.edu/resources/euvp-dataset
 params:
   repo: Ken1053/EUVP
   revision: main
+  # BENCH-fix3 A: parquet has no plain image/img/jpg/png column, only a paired-edit
+  # schema (input_image, edit_prompt, edited_image); hash BOTH sides — both are
+  # benchmark eval images, so decon must treat either as contact — never code
+  # special-casing the two column names.
+  image_column: [input_image, edited_image]
 
 disk_floor_gib: 36.0

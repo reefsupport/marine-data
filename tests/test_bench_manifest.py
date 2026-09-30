@@ -250,6 +250,48 @@ def test_build_manifest_no_rows_raises():
         build_manifest(entry, iter([]), Path("/nonexistent/does-not-exist.parquet"))
 
 
+def test_build_manifest_raises_loud_on_empty_bytes_not_a_silent_skip():
+    """BENCH-fix3 B guardrail: zero-length image bytes is a decoder/adapter bug (the
+    empty-bytes sha256 ``e3b0c442...``), never an ordinary per-item skip — it must
+    raise immediately rather than let `build_manifest` log-and-continue through every
+    row and surface only as a misleading "0 rows found"."""
+    entry = _entry()
+    images = iter([RawImage("a.png", "a", "test", b"")])
+    with pytest.raises(ManifestBuildError, match="zero-length image bytes"):
+        build_manifest(entry, images, Path("/nonexistent/does-not-exist.parquet"))
+
+
+def test_iter_upstream_images_skips_label_only_empty_data(tmp_path: Path):
+    """A label-only Decoded (annotation JSON paired by label_files, or an unresolved
+    caption-json ref) always carries ``data == b""`` and must never be treated as an
+    eval image — this is the fathomnet-vme/uiis root cause."""
+    adapter = FakeAdapter(
+        [
+            FakeDecoded("annotations/train.json", b"", "train"),
+            FakeDecoded("train/b.png", BLUE, "train"),
+        ]
+    )
+    entry = _entry(eval_split="train")
+    images = list(iter_upstream_images(entry, tmp_path, tmp_path, adapter=adapter))
+    assert [i.stem for i in images] == ["b"]
+
+
+def test_iter_upstream_images_stem_unique_across_hash_fragment(tmp_path: Path):
+    """Two synthetic ``key#i`` ids sharing the same base file (e.g. one caption-json
+    record per image) must not collapse to the same stem via naive ``Path(...).stem``
+    truncation — that silently drops every record but the first in build_manifest's
+    dedup-by-stem."""
+    adapter = FakeAdapter(
+        [
+            FakeDecoded("coco_test.json#0", RED, "test"),
+            FakeDecoded("coco_test.json#1", BLUE, "test"),
+        ]
+    )
+    entry = _entry(eval_split="test")
+    images = list(iter_upstream_images(entry, tmp_path, tmp_path, adapter=adapter))
+    assert len({i.stem for i in images}) == 2
+
+
 def test_resolve_source_auto_picks_bucket_when_checksums_present():
     client = FakeS3Client({"sources/fakebench/_stream/rev-1/CHECKSUMS.sha256": b""})
     assert resolve_source("auto", _entry(), client, "rs-storage-open") == "bucket"

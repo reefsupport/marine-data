@@ -254,12 +254,30 @@ def iter_upstream_images(
     total_bytes = 0
     for _item, _fetched, decoded in adapter.samples(tmp_dir):
         total_bytes += len(decoded.data)
+        # WP-BENCH-fix3 B: label-only / unresolved Decoded records (annotation JSON
+        # paired by ``label_files``, or a caption-json ref that never resolved) always
+        # carry ``data == b""``. They are never eval images; treating them as one was
+        # exactly why fathomnet-vme/uiis manifests were all `cannot decode image
+        # e3b0c44...` (sha256 of empty bytes) — the hash of nothing, not real corruption.
+        if not decoded.data:
+            continue
         split = decoded.split_hint or eval_split
         if "all" in eval_splits or split in eval_splits:
-            stem = Path(decoded.upstream_id).stem
+            stem = _stem(decoded.upstream_id)
             yield RawImage(decoded.upstream_id, stem, split, decoded.data)
         if max_bytes is not None and total_bytes >= max_bytes:
             break
+
+
+def _stem(upstream_id: str) -> str:
+    """``Path(upstream_id).stem`` alone collapses every synthetic ``key#i`` id (e.g. one
+    caption-json record per image, ``coco_test.json#0``, ``#1``, ...) onto the SAME stem
+    (``coco_test``) since ``Path.stem`` only strips the outer ``.json#i`` suffix — a
+    silent dedup-by-stem collision in :func:`build_manifest` that would keep just one row
+    per source file. Strip the real extension off the base path only; keep the ``#frag``
+    discriminator verbatim so each record stays a distinct stem."""
+    base, sep, frag = upstream_id.partition("#")
+    return Path(base).stem + sep + frag
 
 
 def spec_resolves(entry: BenchmarkEntry, specs_dir: Path) -> bool:
@@ -290,6 +308,15 @@ def build_manifest(
     for img in images:
         if img.stem in seen:
             continue
+        if not img.data:
+            # WP-BENCH-fix3 B: an empty-bytes RawImage is never per-item corruption (that
+            # is FeatureError, below) — it means an upstream code path handed the decoder
+            # a zero-length payload. Silently `log`-and-skip let every row in a benchmark
+            # fail the same way and masked it as an ordinary "0 rows" result; raise loud.
+            raise ManifestBuildError(
+                f"{entry.id}: {img.stem} ({img.upstream_path}): zero-length image bytes "
+                "from upstream — decoder/adapter bug, not a per-item skip"
+            )
         try:
             rows.append(build_row(entry.id, img))
         except FeatureError as exc:

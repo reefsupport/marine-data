@@ -266,3 +266,39 @@ def test_caption_json_resolves_index_and_url_counts_unresolved(server, tmp_path)
     assert all(d.data == img for d in resolved)
     assert len(unresolved) == 1
     assert unresolved[0].labels["caption"] == "no image anywhere"
+
+
+def test_caption_json_coco_images_list_and_own_split(server, tmp_path):
+    """BENCH-fix3 B: a COCO-detection file (``images``/``annotations``/``categories``,
+    no ``data``/``records`` key — e.g. fathomnet-vme's ``coco_*.json``) used to fall
+    back to ``[whole_dict]``: one always-unresolved, empty-bytes record per file. The
+    fix tries ``images`` as the record list and reads each record's own ``split``."""
+    img = png(4)
+    server.add("/pics/a.jpg", img)
+    coco = {
+        "images": [
+            {
+                "id": 1,
+                "file_name": "a.jpg",
+                "source_url": f"{server.base}/pics/a.jpg",
+                "split": "test",
+            }
+        ],
+        "annotations": [{"image_id": 1, "category_id": 0}],
+        "categories": [{"id": 0, "name": "coral"}],
+    }
+    server.add("/coco_test.json", json.dumps(coco).encode(), ctype="application/json")
+    adapter = make_adapter(
+        "http",
+        {
+            "urls": [{"url": f"{server.base}/coco_test.json"}],
+            "version": "v1",
+            "caption_image_field": "source_url",
+        },
+    )
+    out = _run(adapter, tmp_path)
+    assert len(out) == 1
+    _, d = out[0]
+    assert d.data == img
+    assert d.labels["unresolved"] == "false"
+    assert d.split_hint == "test"

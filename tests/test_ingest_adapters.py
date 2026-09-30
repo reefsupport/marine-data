@@ -84,6 +84,40 @@ def test_hf_adapter_parquet_paginated_classlabels_no_auth(server, tmp_path, monk
     assert not list((tmp_path / "fetch").glob("*")), "spooled parquet must be deleted"
 
 
+def test_hf_adapter_parquet_image_column_list_hashes_both_sides(server, tmp_path):
+    """BENCH-fix3 A: euvp's parquet has no plain image/img/jpg/png column, only a
+    paired-edit schema (``input_image``, ``edit_prompt``, ``edited_image``) — a list
+    ``image_column`` must hash BOTH sides as separate eval images, not special-cased
+    in code."""
+    import pyarrow as pa
+    import pyarrow.parquet as pq
+
+    a, b = png(1), png(2)
+    table = pa.table({"input_image": [a], "edit_prompt": ["brighten"], "edited_image": [b]})
+    buf = Path(tmp_path) / "shard.parquet"
+    pq.write_table(table, buf)
+    shard = buf.read_bytes()
+    repo = "reef/euvp-fixture"
+    server.add(f"/api/datasets/{repo}/revision/main", {"sha": SHA, "gated": False})
+    server.add(
+        f"/api/datasets/{repo}/tree/{SHA}?recursive=true",
+        [{"type": "file", "path": "data/train-00000.parquet", "size": len(shard)}],
+    )
+    server.add(f"/datasets/{repo}/resolve/{SHA}/data/train-00000.parquet", shard)
+    adapter = make_adapter(
+        "hf",
+        {
+            "repo": repo,
+            "endpoint": server.base,
+            "image_column": ["input_image", "edited_image"],
+        },
+    )
+    out = _run(adapter, tmp_path)
+    assert len(out) == 2
+    assert {d.data for _, d in out} == {a, b}
+    assert len({d.upstream_id for _, d in out}) == 2
+
+
 def test_hf_adapter_refuses_gated(server, tmp_path):
     server.add("/api/datasets/o/gated/revision/main", {"sha": SHA, "gated": "manual"})
     with pytest.raises(AccessRefused) as exc:
