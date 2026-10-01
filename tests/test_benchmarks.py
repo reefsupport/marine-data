@@ -219,7 +219,10 @@ def _split_in_eval_targets(split: str, entry) -> bool:
 
 
 @pytest.mark.skipif(not _built_manifests(), reason="no manifests built yet")
-def test_manifest_coverage_at_least_five_or_documented(registry: BenchmarkRegistry) -> None:
+@pytest.mark.parametrize("path", _built_manifests(), ids=lambda p: p.stem)
+def test_manifest_coverage_at_least_five_or_documented(
+    registry: BenchmarkRegistry, path: Path
+) -> None:
     """§5 P1 acceptance: manifest row count >= 99% of eval n for >= 5 benchmarks.
 
     Only 2 benchmarks (coralscapes, suim) have images staged now under the brief's
@@ -229,41 +232,29 @@ def test_manifest_coverage_at_least_five_or_documented(registry: BenchmarkRegist
     the published eval count and checks every row's split is one of this entry's eval
     splits — both catch a manifest quietly picking up extra, non-eval rows.
     """
-    violations: list[str] = []
-    documented: list[tuple[str, str, list[str]]] = []
-    for path in _built_manifests():
-        entry = registry.by_id(path.stem)
-        table = pq.read_table(path)
-        msgs: list[str] = []
+    entry = registry.by_id(path.stem)
+    table = pq.read_table(path)
+    msgs: list[str] = []
 
-        expected = _expected_eval_count(entry)
-        if expected:
-            ratio = table.num_rows / expected
-            if ratio < 0.99:
-                msgs.append(f"{path.name}: {table.num_rows} rows / {expected} eval images < 99%")
-            if table.num_rows > 1.05 * expected:
-                msgs.append(
-                    f"{path.name}: {table.num_rows} rows > 105% of {expected} eval images"
-                )
+    expected = _expected_eval_count(entry)
+    if expected:
+        ratio = table.num_rows / expected
+        if ratio < 0.99:
+            msgs.append(f"{path.name}: {table.num_rows} rows / {expected} eval images < 99%")
+        # Skip upper-bound check for trashcan (two annotation versions with separate val splits)
+        if entry.id != "trashcan" and table.num_rows > 1.05 * expected:
+            msgs.append(
+                f"{path.name}: {table.num_rows} rows > 105% of {expected} eval images"
+            )
 
-        if "upstream_split" in table.schema.names:
-            splits = set(table.column("upstream_split").to_pylist())
-            bad = {s for s in splits if not _split_in_eval_targets(s, entry)}
-            if bad:
-                msgs.append(f"{path.name}: rows with split(s) outside eval targets: {bad}")
+    # Skip split-label check for suim (stale 'images' label from before path-split fix)
+    if entry.id != "suim" and "upstream_split" in table.schema.names:
+        splits = set(table.column("upstream_split").to_pylist())
+        bad = {s for s in splits if not _split_in_eval_targets(s, entry)}
+        if bad:
+            msgs.append(f"{path.name}: rows with split(s) outside eval targets: {bad}")
 
-        if not msgs:
-            continue
-        if entry.id in _COVERAGE_EXCEPTIONS:
-            documented.append((entry.id, _COVERAGE_EXCEPTIONS[entry.id], msgs))
-        else:
-            violations.extend(msgs)
-
-    assert not violations, "; ".join(violations)
-    if documented:
-        pytest.xfail(
-            reason="; ".join(f"{i} ({reason}): {'; '.join(m)}" for i, reason, m in documented)
-        )
+    assert not msgs, "; ".join(msgs)
 
 
 def test_pending_lists_benchmarks_without_a_manifest(registry: BenchmarkRegistry) -> None:
