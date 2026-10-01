@@ -69,7 +69,7 @@ benchmarks:
      split_verified: true, verified_by: "README file tree; counts from the paper (zip not opened)", obtain: {status: w1, via: "hf://datasets/LiamLian0727/USIS10K"},
      policy: route-to-our-test, policy_reason: "instance layer", chain: [c7]}
   - {id: uiis, name: UIIS (WaterMask), task: inst-seg, catalog_id: uiis, registry_id: null,
-     upstream_split: {rule: "HF train/validation; WaterMask reports on validation", eval_split: validation, heldout_val: null, counts: {train: 3937, validation: 691}, definition_url: "https://huggingface.co/datasets/LiamLian0727/UIIS"},
+     upstream_split: {rule: "HF dirs train/ val/ + annotations/{train,val}.json; WaterMask reports on val", eval_split: val, heldout_val: null, counts: {train: 3937, val: 691}, definition_url: "https://huggingface.co/datasets/LiamLian0727/UIIS"},
      split_verified: true, verified_by: "datasets-server /size 3937/691", obtain: {status: w1, via: "hf://datasets/LiamLian0727/UIIS"},
      policy: route-to-our-test, policy_reason: "UIIS is a subset of UIIS10K; both eval sets pinned", chain: [c7]}
   - {id: uiis10k, name: UIIS10K, task: inst-seg, catalog_id: uiis10k, registry_id: null,
