@@ -223,6 +223,44 @@ def test_iter_upstream_images_max_bytes_stops_stream(tmp_path: Path):
     assert [i.stem for i in images] == ["1"]
 
 
+def test_iter_upstream_images_zip_fixture_excludes_unreferenced_original_data(
+    tmp_path: Path,
+):
+    """BENCH-trashsplit: a tiny fixture zip reproduces ``ebd814a``'s defect. TrashCan's
+    ``original_data/*`` has no train/val dir component, so ``decode._group`` correctly
+    leaves ``split_hint=None`` — but ``iter_upstream_images`` used to default that to
+    ``eval_split`` and let it straight through, which is how 7212 non-eval images ended
+    up in ``trashcan.parquet`` all stamped ``upstream_split == "val"``. Only the real
+    ``val`` row may survive."""
+    import zipfile
+
+    from marinedata.adapters import Fetched, RemoteItem
+    from marinedata.adapters.decode import _group
+
+    zpath = tmp_path / "trashcan.zip"
+    with zipfile.ZipFile(zpath, "w") as zf:
+        zf.writestr("instance_version/train/a.jpg", RED)
+        zf.writestr("instance_version/val/b.jpg", BLUE)
+        zf.writestr("original_data/c.jpg", RED)
+
+    fetched = Fetched(item=RemoteItem(key="trashcan.zip", url="file://trashcan.zip"))
+    with zipfile.ZipFile(zpath) as zf:
+        members = [(name, (lambda n=name: zf.read(n))) for name in zf.namelist()]
+        decoded = list(_group(members, fetched, {}))
+
+    hints = {d.upstream_id.rsplit("#", 1)[-1]: d.split_hint for d in decoded}
+    assert hints["instance_version/train/a.jpg"] == "train"
+    assert hints["instance_version/val/b.jpg"] == "val"
+    assert hints["original_data/c.jpg"] is None
+
+    adapter = FakeAdapter(decoded)
+    entry = _entry(eval_split="val")
+    images = list(iter_upstream_images(entry, tmp_path, tmp_path, adapter=adapter))
+    assert [i.upstream_path.rsplit("#", 1)[-1] for i in images] == [
+        "instance_version/val/b.jpg"
+    ]
+
+
 def test_spec_resolves(tmp_path: Path):
     (tmp_path / "u45.yaml").write_text("id: u45\n")
     assert spec_resolves(_entry("u45"), tmp_path) is True

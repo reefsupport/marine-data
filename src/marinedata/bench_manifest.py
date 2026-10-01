@@ -325,7 +325,16 @@ def iter_upstream_images(
             # e3b0c44...` (sha256 of empty bytes) — the hash of nothing, not real corruption.
             if not decoded.data:
                 continue
-            split = decoded.split_hint or eval_split
+            # BENCH-trashsplit: an image with no split evidence at all (no annotation-file
+            # split, no train/val/test path segment — e.g. TrashCan's loose
+            # ``original_data/*``) must never be guessed into the eval split. Only
+            # ``eval_split: all`` entries (eval-only datasets with no split structure to
+            # read, e.g. u45) still label such images with ``eval_split`` as a fallback.
+            split = decoded.split_hint
+            if split is None:
+                if "all" not in eval_splits:
+                    continue
+                split = eval_split
             if "all" in eval_splits or split in eval_splits:
                 stem = _stem(decoded.upstream_id)
                 yield RawImage(decoded.upstream_id, stem, split, decoded.data)
