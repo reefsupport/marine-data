@@ -302,3 +302,37 @@ def test_caption_json_coco_images_list_and_own_split(server, tmp_path):
     assert d.data == img
     assert d.labels["unresolved"] == "false"
     assert d.split_hint == "test"
+
+
+def test_caption_json_eval_splits_skips_before_fetch(server, tmp_path):
+    """BENCH-vmfix: when ``eval_splits`` is set, a record outside it is skipped
+    BEFORE the image fetch (no network request for its image), not fetched-then-
+    discarded. ``coco_train.json``'s image is never requested; val + test yield."""
+
+    def coco(image_path: str) -> dict:
+        return {"images": [{"id": 1, "file_name": image_path, "source_url": image_path}]}
+
+    server.add("/pics/train.jpg", png(1))
+    server.add("/pics/val.jpg", png(2))
+    server.add("/pics/test.jpg", png(3))
+    server.add("/coco_train.json", coco(f"{server.base}/pics/train.jpg"))
+    server.add("/coco_val.json", coco(f"{server.base}/pics/val.jpg"))
+    server.add("/coco_test.json", coco(f"{server.base}/pics/test.jpg"))
+    adapter = make_adapter(
+        "http",
+        {
+            "urls": [
+                {"url": f"{server.base}/coco_train.json"},
+                {"url": f"{server.base}/coco_val.json"},
+                {"url": f"{server.base}/coco_test.json"},
+            ],
+            "version": "v1",
+            "caption_image_field": "source_url",
+            "eval_splits": ["test", "val"],
+        },
+    )
+    out = _run(adapter, tmp_path)
+    splits = {d.split_hint for _, d in out}
+    assert splits == {"val", "test"}
+    # 3 json GETs + 2 image GETs (val, test) — train's image is never requested.
+    assert len(server.seen_headers) == 5

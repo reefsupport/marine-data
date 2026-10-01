@@ -290,7 +290,10 @@ def iter_upstream_images(
         from .ingest_source import IngestSpec
 
         spec = IngestSpec.load(_spec_path(entry, specs_dir))
-        adapter = make_adapter(spec.adapter, spec.params)
+        adapter = make_adapter(
+            spec.adapter,
+            {**spec.params, "eval_splits": sorted(entry.upstream_split.eval_splits)},
+        )
     eval_split = entry.upstream_split.eval_split
     eval_splits = entry.upstream_split.eval_splits
     total_bytes = 0
@@ -420,6 +423,16 @@ def build_manifest(
         for img in images:
             processed += 1
             bytes_total += len(img.data)
+
+            now = time.monotonic()
+            if processed % progress_every == 0 or (now - last_progress_t) >= progress_every_s:
+                elapsed_min = max((now - start) / 60.0, 1e-9)
+                _log_stderr(
+                    f"{entry.id} rows={len(rows)} bytes={bytes_total / 1e6:.1f}MB "
+                    f"rate={processed / elapsed_min:.1f}img/min skipped={skipped}"
+                )
+                last_progress_t = now
+
             if img.stem in seen:
                 continue
             if not img.data:
@@ -440,15 +453,6 @@ def build_manifest(
                 continue
             seen.add(img.stem)
             rows_since_checkpoint += 1
-
-            now = time.monotonic()
-            if processed % progress_every == 0 or (now - last_progress_t) >= progress_every_s:
-                elapsed_min = max((now - start) / 60.0, 1e-9)
-                _log_stderr(
-                    f"{entry.id} rows={len(rows)} bytes={bytes_total / 1e6:.1f}MB "
-                    f"rate={processed / elapsed_min:.1f}img/min skipped={skipped}"
-                )
-                last_progress_t = now
 
             due_rows = rows_since_checkpoint >= checkpoint_every_rows
             due_time = (now - last_checkpoint_t) >= checkpoint_every_s

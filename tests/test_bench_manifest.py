@@ -379,6 +379,31 @@ def test_build_manifest_progress_line_format(capsys: pytest.CaptureFixture[str])
         progress_every=1, progress_every_s=10_000,
     )
     err = capsys.readouterr().err
+    # BENCH-vmfix: the progress block now fires right after bytes_total is updated,
+    # before this image's own row is appended — so rows= reflects the count BEFORE
+    # the current image (0 here, the only image in the stream).
     assert re.search(
-        r"^fakebench rows=1 bytes=[\d.]+MB rate=[\d.]+img/min skipped=0$", err, re.MULTILINE
+        r"^fakebench rows=0 bytes=[\d.]+MB rate=[\d.]+img/min skipped=0$", err, re.MULTILINE
     )
+
+
+def test_build_manifest_progress_fires_on_already_seen_rows(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+):
+    """BENCH-vmfix: a resumed run where every image is already ``seen`` must still
+    print progress lines — the progress block must fire on count/interval whether or
+    not a row was added, not only when a new row is appended."""
+    entry = _entry()
+    existing = tmp_path / "fakebench.parquet"
+    table1, _ = build_manifest(entry, iter([RawImage("a.png", "a", "test", RED)]), existing)
+    write_manifest(table1, existing)
+    capsys.readouterr()  # discard the first run's progress output
+    build_manifest(
+        entry,
+        iter([RawImage("a.png", "a", "test", RED)]),
+        existing,
+        progress_every=1,
+        progress_every_s=10_000,
+    )
+    err = capsys.readouterr().err
+    assert re.search(r"^fakebench rows=1 bytes=[\d.]+MB rate=[\d.]+img/min skipped=0$", err, re.MULTILINE)
