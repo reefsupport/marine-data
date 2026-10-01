@@ -1,12 +1,13 @@
 # TrashCan 1.0: instance-segmentation labeled dataset of underwater trash observations
 id: trashcan
-adapter: needs:drum
+adapter: http
 license: cc-by-4.0
 attribution: Hong, Fulton, Sattar (Univ. of Minnesota DRUM)
 citation: Hong et al. 2020, TrashCan 1.0
 homepage: https://conservancy.umn.edu/handle/11299/214865
-why_not_supported: DRUM (Univ. of Minnesota's DSpace repository) 403s plain curl
-  (bot-blocked); needs the DRUM/DSpace REST API (same family as vdd-c/trash-icra19)
-  rather than scraping the HTML landing page.
 params:
-  landing: https://conservancy.umn.edu/handle/11299/214865
+  version: "1.0"
+  label_patterns: ["instances_*.json"]
+  urls:
+    - {url: "https://conservancy.umn.edu/server/api/core/bitstreams/fffa78cc-3abf-42b9-b019-bc15a953a8e9/content",
+       key: dataset.zip, size: 553029970, md5: ef12cb7ec2fe1ae2f909c2345127bfe0}

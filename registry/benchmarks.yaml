@@ -49,8 +49,8 @@ benchmarks:
      split_verified: false, verified_by: "GitHub repo holds Images/ only; split CSVs are on Drive — re-checked 2026-09-25 (site + GitHub tree API), no repo or arXiv listing enumerates train.csv/test.csv contents", obtain: {status: registry-only, via: "project page Drive links"},
      policy: route-to-our-test, policy_reason: "fish cls/det layer", chain: []}
   - {id: fathomnet-fgvc23, name: FathomNet FGVC 2023, task: det, catalog_id: fathomnet-fgvc23, registry_id: null,
-     upstream_split: {rule: "train = images 0-800 m; eval = images 0-1300 m (Monterey Bay, MBARI)", eval_split: eval, heldout_val: null, counts: {train: 5950, eval: 10744}, definition_url: "https://github.com/fathomnet/fgvc-comp-2023"},
-     split_verified: true, verified_by: "README depth rule (L5, L30); counts from the Kaggle page, not seen", obtain: {status: w1, via: "COCO JSON + FathomNet image URLs"},
+     upstream_split: {rule: "train = images 0-800 m; eval = images 0-1300 m (Monterey Bay, MBARI)", eval_split: test, heldout_val: null, counts: {train: 5950, test: 10744}, definition_url: "https://github.com/fathomnet/fgvc-comp-2023"},
+     split_verified: true, verified_by: "README depth rule (L5, L30); counts from the Kaggle page, not seen", obtain: {status: needs-yohan, via: "Kaggle fathomnet-out-of-sample-detection COCO JSON (login + competition rules)"},
      policy: route-to-our-test, policy_reason: "eval images >= 800 m go to ood-depth-deep first", chain: [c3]}
   - {id: fathomnet-vme, name: FathomNet VME 2024, task: det, catalog_id: fathomnet-vme, registry_id: null,
      upstream_split: {rule: "coco_train/coco_val/coco_test.json", eval_split: test, heldout_val: val, counts: {train: 23636, val: 5846, test: 685}, definition_url: "https://huggingface.co/datasets/FathomNet/2024-vme-benchmark"},
