@@ -85,7 +85,7 @@ benchmarks:
      split_verified: false, verified_by: "DRUM item + README seen (dataset.zip, two versions); split files inside the zip not seen", obtain: {status: w1, via: "DRUM bitstream dataset.zip"},
      policy: route-to-our-test, policy_reason: "J-EDI frames shared with trash-icra19", chain: [c5]}
   - {id: trash-icra19, name: Trash-ICRA19, task: det, catalog_id: trash-icra19, registry_id: null,
-     upstream_split: {rule: "train/val/test dirs (paper)", eval_split: test, heldout_val: val, counts: {total: 5700}, definition_url: "https://conservancy.umn.edu/handle/11299/214366"},
+     upstream_split: {rule: "train/val/test dirs (paper)", eval_split: test, heldout_val: val, counts: {train: 5720, val: 820, test: 1144}, definition_url: "https://conservancy.umn.edu/handle/11299/214366"},
      split_verified: false, verified_by: "not fetched", obtain: {status: w1, via: "DRUM bitstreams"},
      policy: route-to-our-test, policy_reason: "J-EDI chain with trashcan", chain: [c5]}
   - {id: deepseagrass, name: DeepSeagrass, task: cls, catalog_id: deepseagrass, registry_id: null,
