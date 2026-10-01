@@ -183,6 +183,21 @@ def test_iter_upstream_images_filters_eval_split(tmp_path: Path):
     assert [i.stem for i in images] == ["a"]
 
 
+def test_iter_upstream_images_multi_split_includes_heldout_val(tmp_path: Path):
+    """fathomnet-vme-style entries pin ``eval_split: test`` + ``heldout_val: val`` —
+    decontamination must cover both held-out sets, not just ``eval_split`` (BENCH-evalsplits)."""
+    adapter = FakeAdapter(
+        [
+            FakeDecoded("test/a.png", RED, "test"),
+            FakeDecoded("val/b.png", BLUE, "val"),
+            FakeDecoded("train/c.png", RED, "train"),
+        ]
+    )
+    entry = _entry(eval_split="test", heldout_val="val")
+    images = list(iter_upstream_images(entry, tmp_path, tmp_path, adapter=adapter))
+    assert sorted(i.stem for i in images) == ["a", "b"]
+
+
 def test_iter_upstream_images_eval_split_all_keeps_everything(tmp_path: Path):
     adapter = FakeAdapter([FakeDecoded("1.png", RED, None), FakeDecoded("2.png", BLUE, None)])
     entry = _entry(eval_split="all")

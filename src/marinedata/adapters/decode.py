@@ -372,12 +372,23 @@ def _caption_json(fetched: Fetched, params: Mapping[str, Any]) -> Iterator[Decod
                 resolved = False
         labels["unresolved"] = "false" if resolved else "true"
         split_val = rec.get("split")
+        split_hint = normalise_split(str(split_val)) if isinstance(split_val, str) else None
+        if split_hint is None:
+            # BENCH-evalsplits: a COCO-style upload often names the split in the FILE
+            # (``coco_val.json``), not the per-record dict — the split token trails the
+            # last ``_``/``-``, so the generic ``split_from_path`` (which only checks the
+            # leading token) misses it. Try the per-record field first (authoritative
+            # when present), then the file's own stem.
+            stem = Path(fetched.item.key).stem
+            split_hint = normalise_split(stem.rsplit("_", 1)[-1]) or normalise_split(
+                stem.rsplit("-", 1)[-1]
+            )
         yield Decoded(
             upstream_id=f"{fetched.item.key}#{i}",
             data=data,
             suffix=_sniff(data) if resolved else ".bin",
             upstream_url=fetched.item.url,
-            split_hint=normalise_split(str(split_val)) if isinstance(split_val, str) else None,
+            split_hint=split_hint,
             labels=labels,
             label_files={} if resolved else {f"unresolved-{i}.json": json.dumps(rec).encode()},
         )
