@@ -174,6 +174,63 @@ def test_remote_file_is_seekable_like_a_file(srv) -> None:
     assert rf.read(3000) == body[5000:8000]
 
 
+class _FakeTimeoutResp:
+    """Minimal ``open_fn`` return value: a 206 Range response with a resolvable url."""
+
+    def __init__(self, data: bytes, total: int, direct: str) -> None:
+        self._data = data
+        self.status = 206
+        self.headers = {"Content-Range": f"bytes 0-{len(data) - 1}/{total}"}
+        self._direct = direct
+
+    def geturl(self) -> str:
+        return self._direct
+
+    def read(self) -> bytes:
+        return self._data
+
+    def __enter__(self) -> "_FakeTimeoutResp":
+        return self
+
+    def __exit__(self, *exc: object) -> None:
+        pass
+
+
+def test_remote_file_recovers_when_a_cached_direct_redirect_goes_dead() -> None:
+    """BENCH-httpstall: a CDN front-door (Azure Front Door, DRUM's trashcan bitstream)
+    can leave a cached signed redirect (``_direct``) dead -- it never answers at all, no
+    401/403, so ``open_url`` just exhausts its own retries and raises
+    ``RetriesExhausted``. Before this fix that exception was not ``_TRANSPORT``
+    (``OSError``/``HTTPException``), so it skipped ``load()``'s own retry loop entirely
+    and killed the whole member fetch -- and every member after it, since the dead
+    ``_direct`` was never cleared and kept being reused. ``_get`` must now treat a dead
+    cached redirect exactly like an ``AccessRefused`` one: drop it and resolve a fresh
+    url from the origin. The per-call timeout (``RemoteFile.timeout``, 30s not the
+    adapter-wide 120s default) must also reach every ``open_fn`` call, so a dead
+    connection fails fast instead of absorbing minutes per attempt.
+    """
+    origin = "https://origin.example/a.zip"
+    direct = "https://cdn.example/signed-abc"
+    data = b"x" * 10
+    calls: list[tuple[str, float | None]] = []
+
+    def flaky_open(url: str, *, headers: dict[str, str] | None = None, timeout: float | None = None):
+        calls.append((url, timeout))
+        if url == direct:
+            raise RetriesExhausted(f"GET {url}: no progress after 4 resumes")
+        assert url == origin
+        return _FakeTimeoutResp(data, len(data), direct)
+
+    rf = RemoteFile(origin, len(data), open_fn=flaky_open)
+    assert rf.read(len(data)) == data  # resolves + caches ``_direct``
+    assert rf._direct == direct
+
+    rf._pos, rf._buf = 0, b""  # force a second range fetch, reusing the dead redirect
+    assert rf.read(len(data)) == data  # recovers via the origin url, no hang/crash
+    assert [u for u, _ in calls] == [origin, direct, origin]
+    assert all(t == rf.timeout for _, t in calls)
+
+
 def test_hf_remote_zip_stages_only_manifest_members(srv, tmp_path: Path) -> None:
     repo = "Coral/VQA"
     members = {f"Images/{n}.jpg": os.urandom(20_000) for n in ("a", "b", "c", "d")}

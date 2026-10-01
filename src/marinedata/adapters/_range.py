@@ -148,9 +148,17 @@ class RemoteFile:
 
     def __init__(
         self, url: str, size: int, *, block: int = CHUNK, tries: int = 4,
-        open_fn: OpenFn | None = None,
+        timeout: float = 30.0, open_fn: OpenFn | None = None,
     ) -> None:  # fmt: skip
         self.url, self.size, self.block, self.tries = url, size, block, tries
+        # BENCH-httpstall: a member range GET is small (one zip entry); the adapter-wide
+        # 120s default (``open_url``) left a single dead connection to retry 4x at 120s
+        # each (~8 min) before ``RetriesExhausted`` ever surfaced, which both starved the
+        # caller's own 60s stall watchdog of a chance to recover and outlasted it. 30s is
+        # ample for a range read measured in seconds (D-AH 4) and fails fast enough for
+        # :meth:`load`'s own retry loop (and a stale ``_direct`` redirect, see `_get`) to
+        # actually run within a caller's bounded wall-clock budget.
+        self.timeout = timeout
         self._open: OpenFn = open_fn or open_url
         self._direct: str | None = None
         self._pos = 0
@@ -206,12 +214,17 @@ class RemoteFile:
     def _get(self, start: int, end: int) -> bytes:
         hdrs = {"Range": f"bytes={start}-{end - 1}"}
         try:
-            resp = self._open(self._direct or self.url, headers=hdrs)
-        except AccessRefused:
+            resp = self._open(self._direct or self.url, headers=hdrs, timeout=self.timeout)
+        except (AccessRefused, RetriesExhausted):
             if self._direct is None:
-                raise  # the original url refuses: a real gate (D-E), never retried here
-            self._direct = None  # an expired signed redirect: resolve it again
-            resp = self._open(self.url, headers=hdrs)
+                raise  # the original url refuses/dies: a real gate (D-E), never retried here
+            # BENCH-httpstall: a cached signed redirect (CDN front-door) can go dead and
+            # simply stop answering -- no 401/403, ``open_url`` just exhausts its own
+            # retries and raises ``RetriesExhausted``. Treat that exactly like an expired
+            # redirect: drop it and resolve a fresh one from the original url, same as the
+            # ``AccessRefused`` case below.
+            self._direct = None
+            resp = self._open(self.url, headers=hdrs, timeout=self.timeout)
         with resp:
             if _range_start(resp) != start:
                 raise RetriesExhausted(f"GET {self.url}: server ignored Range {hdrs['Range']}")

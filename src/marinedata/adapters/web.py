@@ -99,9 +99,15 @@ class HttpAdapter(BaseAdapter):
         # ``_group``) and must keep seeing ONE item per tar; only a spec that wants each
         # image as its own item (e.g. onc-camdsb103-fauna, no shard pairing) sets this.
         stream_tar = bool(self.params.get("stream_tar_members"))
+        # BENCH-httpstall2: a host that stalls the small per-member Range GETs (DRUM) can
+        # still serve the single full-container GET fine (measured 30 MB/s) -- opt out of
+        # range-member expansion and let the zip flow through ``BaseAdapter`` as an
+        # ordinary SPOOLED item (``.zip`` is already in SPOOLED: fetch() spools it whole,
+        # no adapter change needed there). Default stays the member-range path (D-AH 4).
+        expand_zip = self.params.get("expand_zip_members", True)
         for item in super().enumerate(limit=limit):
             suffix = suffix_of(item.key)
-            if suffix == ".zip" and not self.is_label(item.key):
+            if suffix == ".zip" and expand_zip and not self.is_label(item.key):
                 yield from self._expand_zip(item)
             elif (
                 stream_tar

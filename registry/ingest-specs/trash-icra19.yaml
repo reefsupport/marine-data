@@ -8,6 +8,8 @@ homepage: https://conservancy.umn.edu/handle/11299/214366
 params:
   version: "2019"
   label_patterns: ["*.txt", "*.xml"]
+  # BENCH-httpstall2: same DRUM host, same per-member Range stall -- spool whole (0.98 GB).
+  expand_zip_members: false
   urls:
     - {url: "https://conservancy.umn.edu/server/api/core/bitstreams/0239b06a-512e-49c3-80aa-ba33371e11de/content",
        key: trash_ICRA19.zip, size: 1027746495, md5: 7c070de2d654497941776f32a1c2c687}
