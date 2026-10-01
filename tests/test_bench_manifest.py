@@ -155,6 +155,62 @@ def test_bucket_has_no_stream_prefix_raises_no_embedded_bytes():
         list(iter_bucket_images(client, "rs-storage-open", _entry()))
 
 
+def test_iter_stream_parts_excludes_rows_with_no_split_evidence():
+    """BENCH-trashsplit (bucket-path variant): a stream-part row with no split
+    column value at all must be excluded, not defaulted into ``eval_split``."""
+    part = _stream_part_bytes(
+        [
+            {"stem": "a", "upstream_split": "test", "image": RED},
+            {"stem": "b", "upstream_split": None, "image": BLUE},
+        ]
+    )
+    client = FakeS3Client({"sources/fakebench/_stream/rev-1/part-0.parquet": part})
+    images = list(iter_bucket_images(client, "rs-storage-open", _entry(eval_split="test")))
+    assert [i.stem for i in images] == ["a"]
+
+
+def test_iter_stream_parts_eval_split_all_keeps_rows_with_no_split_evidence():
+    """``eval_split: all`` entries (marineeval, u45) have no split structure to read
+    at all, so a row with no split evidence must still be kept, labeled ``all``."""
+    part = _stream_part_bytes([{"stem": "a", "image": RED}])
+    client = FakeS3Client({"sources/fakebench/_stream/rev-1/part-0.parquet": part})
+    images = list(iter_bucket_images(client, "rs-storage-open", _entry(eval_split="all")))
+    assert [i.stem for i in images] == ["a"]
+    assert images[0].upstream_split == "all"
+
+
+def test_iter_staged_bucket_excludes_rows_with_no_split_evidence():
+    """Same rule for the staged-bucket (metadata.parquet + images/) layout."""
+    meta = _stream_part_bytes(
+        [
+            {"stem": "a", "upstream_split": "test"},
+            {"stem": "b", "upstream_split": None},
+        ]
+    )
+    client = FakeS3Client(
+        {
+            "sources/fakebench/metadata.parquet": meta,
+            "sources/fakebench/images/a.jpg": RED,
+            "sources/fakebench/images/b.jpg": BLUE,
+        }
+    )
+    images = list(iter_bucket_images(client, "rs-storage-open", _entry(eval_split="test")))
+    assert [i.stem for i in images] == ["a"]
+
+
+def test_iter_staged_bucket_eval_split_all_keeps_rows_with_no_split_evidence():
+    meta = _stream_part_bytes([{"stem": "a"}])
+    client = FakeS3Client(
+        {
+            "sources/fakebench/metadata.parquet": meta,
+            "sources/fakebench/images/a.jpg": RED,
+        }
+    )
+    images = list(iter_bucket_images(client, "rs-storage-open", _entry(eval_split="all")))
+    assert [i.stem for i in images] == ["a"]
+    assert images[0].upstream_split == "all"
+
+
 class FakeDecoded:
     def __init__(self, upstream_id: str, data: bytes, split_hint: str | None) -> None:
         self.upstream_id = upstream_id

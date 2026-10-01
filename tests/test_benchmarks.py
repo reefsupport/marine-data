@@ -19,6 +19,7 @@ from marinedata.benchmarks import (
     BenchmarksError,
     benchmarks_sha256,
 )
+from marinedata.sample_schema import normalise_split
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
 REGISTRY_PATH = REPO_ROOT / "registry" / "benchmarks.yaml"
@@ -168,6 +169,55 @@ def test_manifest_schema() -> None:
         assert set(ids) == {path.stem}, f"{path.name}: benchmark_id must equal the file stem"
 
 
+# BENCH-bucketsplit: manifests whose committed parquet is known-good but trips one of
+# the assertions below for a documented, non-bug reason. Do NOT rebuild/edit the
+# parquet to silence these — add the id + a reason string here instead.
+_COVERAGE_EXCEPTIONS: dict[str, str] = {
+    "trashcan": (
+        "two annotation versions (instance + material) both carry a val split, so "
+        "rows are 2351 vs the paper's single val count of 1147 — expected, not a bug"
+    ),
+    "suim": (
+        "rows carry a stale 'images' upstream_split label (built before the "
+        "bucket-path split-evidence fix, BENCH-bucketsplit) instead of 'test'/'TEST'; "
+        "row count (110) matches the published test count exactly"
+    ),
+}
+
+
+def _expected_eval_count(entry) -> int | None:
+    """Sum of published ``counts`` entries that correspond to this benchmark's eval
+    splits (``eval_split`` + ``heldout_val``), matched by exact string or, failing
+    that, by :func:`normalise_split` so ``val``/``validation``/``test``/``eval``
+    variants line up. ``None`` when no matching integer-valued count exists."""
+    raw_targets = entry.upstream_split.eval_splits  # {eval_split, heldout_val} - {None}
+    norm_targets = {t for t in (normalise_split(s) for s in raw_targets) if t is not None}
+    total = 0
+    found = False
+    for key, n in entry.upstream_split.counts.items():
+        if n is None or not isinstance(n, int):
+            continue
+        norm_key = normalise_split(key)
+        if key in raw_targets or (norm_key is not None and norm_key in norm_targets):
+            total += n
+            found = True
+    return total if found else None
+
+
+def _split_in_eval_targets(split: str, entry) -> bool:
+    """Whether a manifest row's ``upstream_split`` value is one of this entry's eval
+    splits — exact string match, or via :func:`normalise_split` for alias variants.
+    ``eval_split: all`` entries (marineeval, u45 — every row is eval) permit anything."""
+    raw_targets = entry.upstream_split.eval_splits
+    if "all" in raw_targets or split in raw_targets:
+        return True
+    norm_split = normalise_split(split)
+    if norm_split is None:
+        return False
+    norm_targets = {t for t in (normalise_split(s) for s in raw_targets) if t is not None}
+    return norm_split in norm_targets
+
+
 @pytest.mark.skipif(not _built_manifests(), reason="no manifests built yet")
 def test_manifest_coverage_at_least_five_or_documented(registry: BenchmarkRegistry) -> None:
     """§5 P1 acceptance: manifest row count >= 99% of eval n for >= 5 benchmarks.
@@ -175,20 +225,44 @@ def test_manifest_coverage_at_least_five_or_documented(registry: BenchmarkRegist
     Only 2 benchmarks (coralscapes, suim) have images staged now under the brief's
     staged-only constraint (see the P1 report's Open section) — this test pins the
     coverage ratio for whichever manifests exist rather than asserting a count of 5,
-    so it stays meaningful as more benchmarks land.
+    so it stays meaningful as more benchmarks land. It also caps coverage at 105% of
+    the published eval count and checks every row's split is one of this entry's eval
+    splits — both catch a manifest quietly picking up extra, non-eval rows.
     """
+    violations: list[str] = []
+    documented: list[tuple[str, str, list[str]]] = []
     for path in _built_manifests():
         entry = registry.by_id(path.stem)
         table = pq.read_table(path)
-        eval_n = sum(
-            n
-            for split, n in entry.upstream_split.counts.items()
-            if split in entry.upstream_split.eval_splits and n is not None
-        )
-        if eval_n == 0:
-            continue  # counts not published for this entry; row-count alone can't be checked
-        assert table.num_rows / eval_n >= 0.99, (
-            f"{path.name}: {table.num_rows} rows / {eval_n} eval images < 99%"
+        msgs: list[str] = []
+
+        expected = _expected_eval_count(entry)
+        if expected:
+            ratio = table.num_rows / expected
+            if ratio < 0.99:
+                msgs.append(f"{path.name}: {table.num_rows} rows / {expected} eval images < 99%")
+            if table.num_rows > 1.05 * expected:
+                msgs.append(
+                    f"{path.name}: {table.num_rows} rows > 105% of {expected} eval images"
+                )
+
+        if "upstream_split" in table.schema.names:
+            splits = set(table.column("upstream_split").to_pylist())
+            bad = {s for s in splits if not _split_in_eval_targets(s, entry)}
+            if bad:
+                msgs.append(f"{path.name}: rows with split(s) outside eval targets: {bad}")
+
+        if not msgs:
+            continue
+        if entry.id in _COVERAGE_EXCEPTIONS:
+            documented.append((entry.id, _COVERAGE_EXCEPTIONS[entry.id], msgs))
+        else:
+            violations.extend(msgs)
+
+    assert not violations, "; ".join(violations)
+    if documented:
+        pytest.xfail(
+            reason="; ".join(f"{i} ({reason}): {'; '.join(m)}" for i, reason, m in documented)
         )
 
 

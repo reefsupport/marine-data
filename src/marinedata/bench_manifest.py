@@ -215,7 +215,14 @@ def _iter_stream_parts(
         )
         rev_prefix = _rev_prefix(key) if external else None
         for row in table.to_pylist():
-            row_split = (row.get(split_col) if split_col else None) or eval_split
+            # BENCH-trashsplit: a row with no split evidence at all must never be
+            # guessed into the eval split. Only ``eval_split: all`` entries (every
+            # row is eval, e.g. marineeval, u45) still fall back to ``eval_split``.
+            row_split = row.get(split_col) if split_col else None
+            if row_split is None:
+                if "all" not in eval_splits:
+                    continue
+                row_split = eval_split
             if "all" not in eval_splits and row_split not in eval_splits:
                 continue
             raw = row[img_col]
@@ -239,7 +246,13 @@ def _iter_staged_bucket(
     root = f"sources/{benchmark_id}/images/"
     by_stem = {Path(k).stem: k for k in _list_all(client, bucket, root)}
     for row in meta:
-        row_split = row.get("upstream_split") or eval_split
+        # BENCH-trashsplit: same rule as the stream-parts branch above — no split
+        # evidence means exclude, unless this entry's eval_split is ``all``.
+        row_split = row.get("upstream_split")
+        if row_split is None:
+            if "all" not in eval_splits:
+                continue
+            row_split = eval_split
         if "all" not in eval_splits and row_split not in eval_splits:
             continue
         stem = row["stem"]
