@@ -1,31 +1,45 @@
 # FathomNet FGVC-comp-2023 competition split: fine-grained classification over 290 taxa, Monterey Bay ROV imagery.
+# Official competition source: Kaggle (FGVC10 workshop) / github.com/fathomnet/fgvc-comp-2023 (kept below as
+# citation/homepage/attribution of record). Images+annotations fetched from the HF mirror justinsiow/fathomnet
+# (gated=false, no login) because the official source only publishes per-image FathomNet URL references, not
+# bundled files — the HF mirror bundles the same training split as images.zip + metadata.jsonl (verified by
+# matching example ids against the official README, see history below).
 id: fathomnet-fgvc23
-adapter: needs:coco-remote-fetch
+adapter: hf
 license: CC-BY-4.0
 attribution: FathomNet / MBARI, FGVC10 workshop
-citation: fathomnet/fgvc-comp-2023 (GitHub)
+citation: fathomnet/fgvc-comp-2023 (GitHub); official Kaggle FGVC10 competition
 homepage: https://github.com/fathomnet/fgvc-comp-2023
-why_not_supported: >-
-  COCO-format JSON on GitHub; each image is a FathomNet URL reference,
-  not a bundled file. Needs a COCO-loader that resolves image URLs and verifies against
-  FathomNet's own manifest (dedupe against fathomnet.yaml). MIRRORS2 2026-10-02 —
-  verdict=match. Candidate justinsiow/fathomnet (HF, gated=false, no login) bundles
-  the actual FGVC23 training images+annotations: metadata.jsonl (5,950 images, COCO
-  objects with category_id 1-289 of the 290-category scheme) plus images.zip
-  (9.9 GB); example ids (e.g. 4a7f2199-772d-486d-b8e2-b651246316b5,
-  3bddedf6-4ff8-4e81-876a-564d2b03b364) match the official fgvc-comp-2023 README's
-  worked examples exactly — confirmed same training split, not generic FathomNet.
-  This avoids the per-image FathomNet URL-resolution blocker entirely, but no
-  adapter in this codebase yet reads a bundled zip + COCO jsonl pair (separate
-  workstream); not wired into the batch ingest in this pass.
-  mirror_of = justinsiow/fathomnet (HF, sha 4636bed20b3bafe8e0b6a066d0cd9e99e1fa7b7a)
+params:
+  repo: justinsiow/fathomnet
+  revision: 4636bed20b3bafe8e0b6a066d0cd9e99e1fa7b7a
+  include: ['images.zip', 'metadata.jsonl']
+  label_patterns: ['metadata.jsonl']  # whole-file label sidecar (COCO images/annotations/categories)
+  remote_zip: true  # WP-6i: images.zip (9.9 GB) read by HTTP Range, never spooled whole
+  zip_manifest: ['metadata.jsonl']  # only the 5,950 members metadata.jsonl's file_name field lists
+  zip_manifest_field: file_name
+notes: >-
+  ADAPTERS 2026-10-02: wired onto the existing hf remote_zip + zip_manifest path (same
+  mechanism as coralvqa.yaml), no new adapter framework. metadata.jsonl's COCO objects
+  (category_id 1-289, bbox) are staged as one label_patterns sidecar, not joined
+  per-image — the existing COCO-label path used elsewhere for bundled-zip + COCO-json
+  pairs. History: COCO-format JSON on GitHub originally named each image as a FathomNet
+  URL reference, not a bundled file (per-image URL-resolution blocker, dedupe against
+  fathomnet.yaml). MIRRORS2 2026-10-02 verdict=match: justinsiow/fathomnet (HF,
+  gated=false, no login) bundles the actual FGVC23 training images+annotations:
+  metadata.jsonl (5,950 images) plus images.zip (9.9 GB); example ids (e.g.
+  4a7f2199-772d-486d-b8e2-b651246316b5, 3bddedf6-4ff8-4e81-876a-564d2b03b364) match the
+  official fgvc-comp-2023 README's worked examples exactly — confirmed same training
+  split, not generic FathomNet. mirror_of = justinsiow/fathomnet (HF, sha
+  4636bed20b3bafe8e0b6a066d0cd9e99e1fa7b7a)
+disk_floor_gib: 34.0
 measured:
-  items: 10700
-  bytes: 17179869184
-  method: 'catalog estimate (S57): 10.7k images x ~1.5 MB mean FathomNet JPEG size'
-  date: '2026-09-25'
+  items: 5950
+  bytes: 9925017261
+  method: 'HF tree @4636bed: images.zip 9,925,017,261 B, 5,950 members named by metadata.jsonl'
+  date: '2026-10-02'
   per_item_license: CC-BY-4.0
   by_depth_band_m:
-    0-1300: 10700
+    0-1300: 5950
   n_concepts: 290
   label_type: bbox + multilabel

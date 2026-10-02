@@ -320,6 +320,7 @@ class BaseAdapter:
 
 def make_adapter(name: str, params: Mapping[str, Any]) -> BaseAdapter:
     from .bucket import BucketAdapter
+    from .csiro_dap import CsiroDapAdapter
     from .fathomnet import FathomNetAdapter
     from .figshare import FigshareAdapter
     from .gbif import GbifOccurrenceMediaAdapter
@@ -343,6 +344,7 @@ def make_adapter(name: str, params: Mapping[str, Any]) -> BaseAdapter:
         "http": HttpAdapter,
         "zenodo": HttpAdapter,
         "bucket": BucketAdapter,
+        "csiro_dap": CsiroDapAdapter,
         "github": GitHubAdapter,
         "fathomnet": FathomNetAdapter,
         "figshare": FigshareAdapter,
