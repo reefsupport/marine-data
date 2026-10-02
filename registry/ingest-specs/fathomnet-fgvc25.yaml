@@ -1,0 +1,34 @@
+# FathomNet FGVC-comp-2025 competition split (FGVC12 workshop): fine-grained detection over 79 taxa, deep-sea ROV
+# imagery. Labels (COCO-style dataset_train.json / dataset_test.json) ship on Kaggle; each image record carries its
+# own coco_url pointing at database.fathomnet.org, so no bundled image archive exists — same shape as the original
+# fgvc-comp-2023 release before the HF mirror was found. Wired onto the existing ``manifest`` adapter (WP-6e-B,
+# same mechanism as marineinst20m-web.yaml): a parquet built from the two JSON files carries key/url/labels per
+# image, the adapter fetches each coco_url itself. No new adapter code.
+id: fathomnet-fgvc25
+adapter: manifest
+license: CC-BY-4.0
+attribution: FathomNet / MBARI, FGVC12 workshop
+citation: FathomNet 2025 competition (Kaggle); FGVC12 workshop, CVPR 2025
+homepage: https://www.kaggle.com/competitions/fathomnet-2025
+params:
+  manifest: registry/manifests/fathomnet-fgvc25.parquet
+  version: '2025'
+  label_columns: [split, category_names, annotations_json, n_annotations, width, height]
+notes: >-
+  Built from dataset_train.json (8,981 images, 23,699 annotations) + dataset_test.json (325 images,
+  788 annotations), 79 shared categories. Test annotations carry bbox but category_id=null (held-out
+  competition labels) -- category_names/annotations_json reflect that (empty list / null category per
+  box). key = file_name (UUID-based, globally unique across both splits, verified no collisions); url =
+  each image's own coco_url (public, anonymous GET, no login). manifest built by
+  ~/.claude-state/sessions/2026-09-30-open-dataset/fgvc25/build_manifest.py from the Kaggle zip's
+  dataset_{train,test}.json (sha256 in ~/Downloads/marine-manual/_inventory.tsv).
+disk_floor_gib: 34.0
+measured:
+  items: 9306
+  bytes: null
+  method: 'COCO JSON image/annotation counts (Kaggle zip, 1,087,013 B); image bytes not yet fetched'
+  bytes_basis: label JSON only; image bytes are fetched per-item from database.fathomnet.org at ingest time
+  date: '2026-10-02'
+  per_item_license: CC-BY-4.0
+  n_concepts: 79
+  label_type: bbox + multilabel (test labels held out)
