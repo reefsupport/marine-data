@@ -5,9 +5,20 @@ license: CC-BY-4.0
 attribution: FathomNet / MBARI, FGVC10 workshop
 citation: fathomnet/fgvc-comp-2023 (GitHub)
 homepage: https://github.com/fathomnet/fgvc-comp-2023
-why_not_supported: COCO-format JSON on GitHub; each image is a FathomNet URL reference,
+why_not_supported: >-
+  COCO-format JSON on GitHub; each image is a FathomNet URL reference,
   not a bundled file. Needs a COCO-loader that resolves image URLs and verifies against
-  FathomNet's own manifest (dedupe against fathomnet.yaml).
+  FathomNet's own manifest (dedupe against fathomnet.yaml). MIRRORS2 2026-10-02 —
+  verdict=match. Candidate justinsiow/fathomnet (HF, gated=false, no login) bundles
+  the actual FGVC23 training images+annotations: metadata.jsonl (5,950 images, COCO
+  objects with category_id 1-289 of the 290-category scheme) plus images.zip
+  (9.9 GB); example ids (e.g. 4a7f2199-772d-486d-b8e2-b651246316b5,
+  3bddedf6-4ff8-4e81-876a-564d2b03b364) match the official fgvc-comp-2023 README's
+  worked examples exactly — confirmed same training split, not generic FathomNet.
+  This avoids the per-image FathomNet URL-resolution blocker entirely, but no
+  adapter in this codebase yet reads a bundled zip + COCO jsonl pair (separate
+  workstream); not wired into the batch ingest in this pass.
+  mirror_of = justinsiow/fathomnet (HF, sha 4636bed20b3bafe8e0b6a066d0cd9e99e1fa7b7a)
 measured:
   items: 10700
   bytes: 17179869184

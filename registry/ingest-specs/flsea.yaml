@@ -1,7 +1,18 @@
+# MIRRORS2 2026-10-02: verdict=match. adapter was `http` with empty params (a
+# stub — never functional). HF mirror bhowmikabhimanyu/flsea-vi (gated=false,
+# no login, license cc-by-nc-sa-4.0 matches upstream) carries image+depth pairs
+# across train (17,961) + validation (4,490) = 22,451 examples, 67.6 GB —
+# matches the FLSea-VI homepage exactly (not the separate FLSea-Stereo set).
+# mirror_of: bhowmikabhimanyu/flsea-vi (HF, revision ae526f0a1251f727fbd55651290952f317e823de)
 id: flsea
-adapter: http
-params: {}
+adapter: hf
+params:
+  repo: bhowmikabhimanyu/flsea-vi
+  revision: ae526f0a1251f727fbd55651290952f317e823de
 license: CC-BY-NC-SA-4.0
 attribution: FLSea (Randall et al. 2023)
 citation: Randall+ 2023
 homepage: https://www.kaggle.com/datasets/viseaonlab/flsea-vi
+notes: 'mirror_of: bhowmikabhimanyu/flsea-vi (HF, no-login, verdict=match — 22451
+  image+depth pairs, train 17961 + validation 4490, 67.6 GB; qz-wei/flsea (HF)
+  checked and is an empty repo, not used).'

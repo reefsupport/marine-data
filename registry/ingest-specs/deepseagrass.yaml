@@ -5,9 +5,24 @@ license: cc-by-nc-nd-4.0
 attribution: Raine, Marchant, Moghadam, Maire, Kettle, Kusy (CSIRO)
 citation: Raine et al. 2020, DeepSeagrass v1, CSIRO Data Collection, doi:10.25919/spmy-5151
 homepage: https://data.csiro.au/collection/csiro:47653
-why_not_supported: CSIRO Data Access Portal (DAP) requires clicking through a CC-BY-NC-ND
-  licence acceptance before the file bundle is exposed; no anonymous direct-download
-  endpoint exists.
+why_not_supported: >-
+  MIRRORS2 2026-10-02 correction — verdict=match, anonymous access
+  CONFIRMED, no licence click-through exists. The CSIRO DAP v2 REST API
+  (https://data.csiro.au/dap/ws/v2/collections/47653/data) returns a full,
+  unauthenticated JSON file listing with no pagination needed: 72,004 files (incl.
+  one listing of the dataset's own 5ClassInstructions.txt), licence
+  "Creative Commons Attribution-Noncommercial-No Derivatives 4.0 International
+  Licence", access "available to the public". Each entry's presignedLink
+  (S3 GET, SigV4) downloads anonymously with no form, login or terms acceptance —
+  verified via GET on 5ClassInstructions.txt (200, 728 bytes) and via HEAD on the
+  non-presigned link href (302 redirect to a fresh presigned URL, no auth
+  challenge). A HEAD directly on a presigned URL 403s, but that is AWS SigV4
+  binding the signature to its signed method (GET), not an access gate. No
+  ingest-specs adapter in this codebase yet consumes a CSIRO DAP v2 listing
+  (closest existing adapters are bucket/manifest/http-index, none of which
+  match this API's shape); building one is a separate workstream, so this spec is
+  still not auto-ingestable and stays out of this pass's batch run.
+  mirror_of = https://data.csiro.au/dap/ws/v2/collections/47653/data (CSIRO DAP v2, no login)
 params:
   landing: https://data.csiro.au/collection/csiro:47653
   doi: 10.25919/spmy-5151

@@ -9,4 +9,13 @@ attribution: Hong et al. — USOD10K
 citation: Hong et al. 2023, TIP
 homepage: https://github.com/LinHong-HIT/USOD10K
 notes: WP-6d-A gdrive-public adapter; 10,255 images; Baidu mirror not used (D-E).
+  MIRRORS2 2026-10-02 OPEN CONCERN (verdict=unverified, not fixed this pass) — no
+  HF/GitHub no-login mirror found, but checking the two configured file ids
+  against the official LinHong-HIT/USOD10K README found file id
+  19rdcNsuDE6bRD58bruqCXPDhoopTMME4 (usod10k_part2.zip here) labelled "NJUD" in
+  that README — an unrelated RGB-D salient-object-detection benchmark, not
+  USOD10K. The README's own USOD10K dataset link is
+  drive.google.com/file/d/1PH0PwKchXnkWwtAwbhNSW4utMCp5zer8, which matches
+  neither configured file id. Left unchanged pending confirmation (swapping an
+  unverified id in could make this worse); flagged for Yohan/next worker.
 disk_floor_gib: 34.0

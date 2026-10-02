@@ -1,3 +1,8 @@
+# MIRRORS2 2026-10-02: verdict=wrong. Candidate bhowmikabhimanyu/seathru-dataset (HF,
+# license cc-by-nc-sa-4.0) is the ORIGINAL "Sea-thru" dataset (Akkaynak & Treibitz,
+# CVPR 2019, ~1100 images across scenes D1-D5, converted from Kaggle
+# colorlabeilat/seathru-dataset) — a different paper and a different dataset from
+# "Sea-thru-NeRF" (Levy et al., CVPR 2023) that this spec describes. Not used.
 id: seathru-nerf
 adapter: gdrive-public
 params:

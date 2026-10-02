@@ -7,5 +7,8 @@ license: research (non-commercial, per upstream)
 attribution: Liu et al. — DUO (Detecting Underwater Objects)
 citation: Liu et al. 2021, ICMEW
 homepage: https://github.com/chongweiliu/DUO
-notes: WP-6d-A gdrive-public adapter; Baidu mirror not used (D-E).
+notes: WP-6d-A gdrive-public adapter; Baidu mirror not used (D-E). MIRRORS2
+  2026-10-02 verdict=match — verified file id 1w-bWevH7jFs7A1bIBlAOvXOxe2OFSHHs
+  against the official chongweiliu/DUO README's own Google Drive link (exact id
+  match); no HF/GitHub no-login mirror exists beyond this and BaiduYun. No change.
 disk_floor_gib: 34.0

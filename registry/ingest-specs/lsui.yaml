@@ -1,3 +1,7 @@
+# MIRRORS2 2026-10-02: verdict=wrong. Candidate Gusanagy/LSUI-TURBID-UIEB (HF) is an
+# EMPTY repo (only .gitattributes, usedStorage=0) — not a real mirror of LSUI, UIEB
+# or any turbid set. No change: the gdrive-public source below remains the only
+# working source.
 id: lsui
 adapter: gdrive-public
 params:
