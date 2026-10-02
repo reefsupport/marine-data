@@ -21,4 +21,5 @@ notes: 'mirror_of: Ken1053/EUVP (HF, no-login, verdict=partial — train parquet
 params:
   repo: Ken1053/EUVP
   revision: e3c6d08a8b07ed806e61977ffbcefd9d5ba60933
+  image_column: input_image
 disk_floor_gib: 36.0
