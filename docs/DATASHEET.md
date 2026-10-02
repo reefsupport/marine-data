@@ -1,4 +1,4 @@
-# Datasheet: Reef Support Open Marine Imagery (v1)
+# Datasheet: ReefSupport Marine Data (v1)
 
 Follows the seven sections of Gebru et al., *Datasheets for Datasets* (CACM 2021). Every
 number below cites the file it was measured from — the release manifest
@@ -148,7 +148,7 @@ constrains zero rows; it constrains future ones.
 **Licence per source.** Per charter D-C, licence status is recorded, never a storage or
 publication blocker. Per charter D-B, Reef Support's own imagery (`benthic-own`,
 `rs-*`) is licensed CC-BY-4.0 by delegation, "set 2026-09-25 by delegation; confirm
-before publish" — that confirmation has not yet happened.
+before publish" — confirmed 2026-10-02 (Yohan).
 
 | Source (registry id) | Images | Licence | Note |
 |---|---|---|---|
@@ -159,8 +159,8 @@ before publish" — that confirmation has not yet happened.
 | `roboflow-coral-classification-copy-changed-v13i` | 2,785 | CC-BY-4.0 | Roboflow Universe community export; sidecar-verified. |
 | `roboflow-coral-bleaching-final-v6i` | 2,550 | CC-BY-4.0 | Roboflow Universe community export. |
 | `roboflow-coral-bleaching-general-v1-yolov8s` | 2,543 | CC-BY-4.0 | Roboflow Universe community export. |
-| `reef-support-benthic-own` | 1,250 | CC-BY-4.0 | Reef Support's own survey (D-B delegation; unconfirmed). |
-| `reef-support-bleaching` | 658 | CC-BY-4.0 | Reef Support's own survey (D-B delegation; unconfirmed). |
+| `reef-support-benthic-own` | 1,250 | CC-BY-4.0 | Reef Support's own survey (D-B delegation; confirmed 2026-10-02). |
+| `reef-support-bleaching` | 658 | CC-BY-4.0 | Reef Support's own survey (D-B delegation; confirmed 2026-10-02). |
 
 Source: image counts and licence column, `_hf/v1/README.md` sources table (current
 build); the two Reef Support entries are recorded `PROPRIETARY-OWN` in

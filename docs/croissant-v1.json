@@ -47,7 +47,7 @@
     "transform": "cr:transform"
   },
   "@type": "sc:Dataset",
-  "name": "Reef Support open marine imagery v1",
+  "name": "ReefSupport Marine Data v1",
   "description": "Licence-aware, multi-source coral-reef imagery corpus with condition, bleaching and segmentation labels. See docs/DATASHEET.md for the full datasheet.",
   "conformsTo": "http://mlcommons.org/croissant/1.0",
   "citeAs": "See CITATION.cff at the repository root.",
@@ -68,7 +68,7 @@
   "rai:dataReleaseMaintenancePlan": "See CHANGELOG.md for the per-release changelog and docs/DATASHEET.md #Maintenance for the erratum process.",
   "rai:machineAnnotationTools": "CoralSCOP (instance segmentation, weak supervision only)",
   "rai:personalSensitiveInformation": "A subset of in-water photographs may show a diver's face or body; see docs/DATASHEET.md #Ethics and docs/ETHICS_FACE_AUDIT.md for the measured count and method. No sample in v1 carries per-sample GPS coordinates (D8); the sensitive-species location-rounding policy in the datasheet applies to future releases once location fields ship.",
-  "url": "https://huggingface.co/datasets/reefsupport/open-marine-imagery",
+  "url": "https://huggingface.co/datasets/reefsupport/marine-data",
   "version": "1.0.0",
   "distribution": [
     {
@@ -76,7 +76,7 @@
       "@id": "benthic-coarse/test-00000-of-00001.parquet",
       "name": "benthic-coarse-test-00000-of-00001.parquet",
       "description": "Parquet shard of the `benthic-coarse` config, hashed at build time.",
-      "contentUrl": "https://huggingface.co/datasets/reefsupport/open-marine-imagery/resolve/main/data/benthic-coarse/test-00000-of-00001.parquet",
+      "contentUrl": "https://huggingface.co/datasets/reefsupport/marine-data/resolve/main/data/benthic-coarse/test-00000-of-00001.parquet",
       "encodingFormat": "application/x-parquet",
       "sha256": "f3905c7b84fc5438ef0c22915cf61fd66a9091242c0600a1e0477523286f3d13"
     },
@@ -85,7 +85,7 @@
       "@id": "benthic-coarse/train-00000-of-00001.parquet",
       "name": "benthic-coarse-train-00000-of-00001.parquet",
       "description": "Parquet shard of the `benthic-coarse` config, hashed at build time.",
-      "contentUrl": "https://huggingface.co/datasets/reefsupport/open-marine-imagery/resolve/main/data/benthic-coarse/train-00000-of-00001.parquet",
+      "contentUrl": "https://huggingface.co/datasets/reefsupport/marine-data/resolve/main/data/benthic-coarse/train-00000-of-00001.parquet",
       "encodingFormat": "application/x-parquet",
       "sha256": "a3e2c67bb6058310922b9dfc6b90a47db52f0e49463e153a6f8b1cb9f356c8ac"
     },
@@ -94,7 +94,7 @@
       "@id": "benthic-coarse/validation-00000-of-00001.parquet",
       "name": "benthic-coarse-validation-00000-of-00001.parquet",
       "description": "Parquet shard of the `benthic-coarse` config, hashed at build time.",
-      "contentUrl": "https://huggingface.co/datasets/reefsupport/open-marine-imagery/resolve/main/data/benthic-coarse/validation-00000-of-00001.parquet",
+      "contentUrl": "https://huggingface.co/datasets/reefsupport/marine-data/resolve/main/data/benthic-coarse/validation-00000-of-00001.parquet",
       "encodingFormat": "application/x-parquet",
       "sha256": "bc017725fd3bb964ed54a50f42f0d2cab470218a65bdce3646ed4f9eab13dd48"
     },
@@ -111,7 +111,7 @@
       "@id": "benthic-l2/test-00000-of-00001.parquet",
       "name": "benthic-l2-test-00000-of-00001.parquet",
       "description": "Parquet shard of the `benthic-l2` config, hashed at build time.",
-      "contentUrl": "https://huggingface.co/datasets/reefsupport/open-marine-imagery/resolve/main/data/benthic-l2/test-00000-of-00001.parquet",
+      "contentUrl": "https://huggingface.co/datasets/reefsupport/marine-data/resolve/main/data/benthic-l2/test-00000-of-00001.parquet",
       "encodingFormat": "application/x-parquet",
       "sha256": "f3905c7b84fc5438ef0c22915cf61fd66a9091242c0600a1e0477523286f3d13"
     },
@@ -120,7 +120,7 @@
       "@id": "benthic-l2/train-00000-of-00001.parquet",
       "name": "benthic-l2-train-00000-of-00001.parquet",
       "description": "Parquet shard of the `benthic-l2` config, hashed at build time.",
-      "contentUrl": "https://huggingface.co/datasets/reefsupport/open-marine-imagery/resolve/main/data/benthic-l2/train-00000-of-00001.parquet",
+      "contentUrl": "https://huggingface.co/datasets/reefsupport/marine-data/resolve/main/data/benthic-l2/train-00000-of-00001.parquet",
       "encodingFormat": "application/x-parquet",
       "sha256": "a3e2c67bb6058310922b9dfc6b90a47db52f0e49463e153a6f8b1cb9f356c8ac"
     },
@@ -129,7 +129,7 @@
       "@id": "benthic-l2/validation-00000-of-00001.parquet",
       "name": "benthic-l2-validation-00000-of-00001.parquet",
       "description": "Parquet shard of the `benthic-l2` config, hashed at build time.",
-      "contentUrl": "https://huggingface.co/datasets/reefsupport/open-marine-imagery/resolve/main/data/benthic-l2/validation-00000-of-00001.parquet",
+      "contentUrl": "https://huggingface.co/datasets/reefsupport/marine-data/resolve/main/data/benthic-l2/validation-00000-of-00001.parquet",
       "encodingFormat": "application/x-parquet",
       "sha256": "bc017725fd3bb964ed54a50f42f0d2cab470218a65bdce3646ed4f9eab13dd48"
     },
@@ -146,7 +146,7 @@
       "@id": "bleaching-condition/test-00000-of-00001.parquet",
       "name": "bleaching-condition-test-00000-of-00001.parquet",
       "description": "Parquet shard of the `bleaching-condition` config, hashed at build time.",
-      "contentUrl": "https://huggingface.co/datasets/reefsupport/open-marine-imagery/resolve/main/data/bleaching-condition/test-00000-of-00001.parquet",
+      "contentUrl": "https://huggingface.co/datasets/reefsupport/marine-data/resolve/main/data/bleaching-condition/test-00000-of-00001.parquet",
       "encodingFormat": "application/x-parquet",
       "sha256": "62900301d7233343a63f4ef0667deb0db5c4fcfba760d4b946c0e2a63abc43ef"
     },
@@ -155,7 +155,7 @@
       "@id": "bleaching-condition/train-00000-of-00001.parquet",
       "name": "bleaching-condition-train-00000-of-00001.parquet",
       "description": "Parquet shard of the `bleaching-condition` config, hashed at build time.",
-      "contentUrl": "https://huggingface.co/datasets/reefsupport/open-marine-imagery/resolve/main/data/bleaching-condition/train-00000-of-00001.parquet",
+      "contentUrl": "https://huggingface.co/datasets/reefsupport/marine-data/resolve/main/data/bleaching-condition/train-00000-of-00001.parquet",
       "encodingFormat": "application/x-parquet",
       "sha256": "b4deca96aa4abcac723a479eaf4104ce06772dbc762070be643b2f4db30919b5"
     },
@@ -164,7 +164,7 @@
       "@id": "bleaching-condition/validation-00000-of-00001.parquet",
       "name": "bleaching-condition-validation-00000-of-00001.parquet",
       "description": "Parquet shard of the `bleaching-condition` config, hashed at build time.",
-      "contentUrl": "https://huggingface.co/datasets/reefsupport/open-marine-imagery/resolve/main/data/bleaching-condition/validation-00000-of-00001.parquet",
+      "contentUrl": "https://huggingface.co/datasets/reefsupport/marine-data/resolve/main/data/bleaching-condition/validation-00000-of-00001.parquet",
       "encodingFormat": "application/x-parquet",
       "sha256": "06b9b9ac5fb81519af0758dc72010b8c9232d4f162c64fac25f0eed725e0c236"
     },
@@ -181,7 +181,7 @@
       "@id": "coral-health-binary/test-00000-of-00001.parquet",
       "name": "coral-health-binary-test-00000-of-00001.parquet",
       "description": "Parquet shard of the `coral-health-binary` config, hashed at build time.",
-      "contentUrl": "https://huggingface.co/datasets/reefsupport/open-marine-imagery/resolve/main/data/coral-health-binary/test-00000-of-00001.parquet",
+      "contentUrl": "https://huggingface.co/datasets/reefsupport/marine-data/resolve/main/data/coral-health-binary/test-00000-of-00001.parquet",
       "encodingFormat": "application/x-parquet",
       "sha256": "2762e02ea4d8d3624591a86d06b6dacda0231a1e8ff31eb4620d6c4250218703"
     },
@@ -190,7 +190,7 @@
       "@id": "coral-health-binary/train-00000-of-00001.parquet",
       "name": "coral-health-binary-train-00000-of-00001.parquet",
       "description": "Parquet shard of the `coral-health-binary` config, hashed at build time.",
-      "contentUrl": "https://huggingface.co/datasets/reefsupport/open-marine-imagery/resolve/main/data/coral-health-binary/train-00000-of-00001.parquet",
+      "contentUrl": "https://huggingface.co/datasets/reefsupport/marine-data/resolve/main/data/coral-health-binary/train-00000-of-00001.parquet",
       "encodingFormat": "application/x-parquet",
       "sha256": "26a58153526a76ed72246030c2f002d0c082147fdd560c1c71b6c64cac265f3f"
     },
@@ -199,7 +199,7 @@
       "@id": "coral-health-binary/validation-00000-of-00001.parquet",
       "name": "coral-health-binary-validation-00000-of-00001.parquet",
       "description": "Parquet shard of the `coral-health-binary` config, hashed at build time.",
-      "contentUrl": "https://huggingface.co/datasets/reefsupport/open-marine-imagery/resolve/main/data/coral-health-binary/validation-00000-of-00001.parquet",
+      "contentUrl": "https://huggingface.co/datasets/reefsupport/marine-data/resolve/main/data/coral-health-binary/validation-00000-of-00001.parquet",
       "encodingFormat": "application/x-parquet",
       "sha256": "8738080af4a583bc13d0fdc083f5cb0b178d8743ad92ac376523819b35c18fce"
     },
@@ -216,7 +216,7 @@
       "@id": "coralscop-pseudo-masks/train-00000-of-00001.parquet",
       "name": "coralscop-pseudo-masks-train-00000-of-00001.parquet",
       "description": "Parquet shard of the `coralscop-pseudo-masks` config, hashed at build time.",
-      "contentUrl": "https://huggingface.co/datasets/reefsupport/open-marine-imagery/resolve/main/data/coralscop-pseudo-masks/train-00000-of-00001.parquet",
+      "contentUrl": "https://huggingface.co/datasets/reefsupport/marine-data/resolve/main/data/coralscop-pseudo-masks/train-00000-of-00001.parquet",
       "encodingFormat": "application/x-parquet",
       "sha256": "87f34cefee14a5166f176cb66b891bff208945c7bb69bc77d5810629e8dc0c96"
     },
@@ -233,7 +233,7 @@
       "@id": "general-pretraining/train-00000-of-00001.parquet",
       "name": "general-pretraining-train-00000-of-00001.parquet",
       "description": "Parquet shard of the `general-pretraining` config, hashed at build time.",
-      "contentUrl": "https://huggingface.co/datasets/reefsupport/open-marine-imagery/resolve/main/data/general-pretraining/train-00000-of-00001.parquet",
+      "contentUrl": "https://huggingface.co/datasets/reefsupport/marine-data/resolve/main/data/general-pretraining/train-00000-of-00001.parquet",
       "encodingFormat": "application/x-parquet",
       "sha256": "41b08bbbf7b8403f64c975992750445d4ee4845fad6abbf179f8d95a8326ed00"
     },
@@ -242,7 +242,7 @@
       "@id": "general-pretraining/validation-00000-of-00001.parquet",
       "name": "general-pretraining-validation-00000-of-00001.parquet",
       "description": "Parquet shard of the `general-pretraining` config, hashed at build time.",
-      "contentUrl": "https://huggingface.co/datasets/reefsupport/open-marine-imagery/resolve/main/data/general-pretraining/validation-00000-of-00001.parquet",
+      "contentUrl": "https://huggingface.co/datasets/reefsupport/marine-data/resolve/main/data/general-pretraining/validation-00000-of-00001.parquet",
       "encodingFormat": "application/x-parquet",
       "sha256": "dd8bf7d953a826ad445b6a4476c356a0d9dce3902172c71777bf135f53e58d5f"
     },
@@ -259,7 +259,7 @@
       "@id": "images/test-00000-of-00002.parquet",
       "name": "images-test-00000-of-00002.parquet",
       "description": "Parquet shard of the `images` config, hashed at build time.",
-      "contentUrl": "https://huggingface.co/datasets/reefsupport/open-marine-imagery/resolve/main/data/images/test-00000-of-00002.parquet",
+      "contentUrl": "https://huggingface.co/datasets/reefsupport/marine-data/resolve/main/data/images/test-00000-of-00002.parquet",
       "encodingFormat": "application/x-parquet",
       "sha256": "15acf36a91d45147654dab778942102db066fcbc50df559334b972c8b3fa59e0"
     },
@@ -268,7 +268,7 @@
       "@id": "images/test-00001-of-00002.parquet",
       "name": "images-test-00001-of-00002.parquet",
       "description": "Parquet shard of the `images` config, hashed at build time.",
-      "contentUrl": "https://huggingface.co/datasets/reefsupport/open-marine-imagery/resolve/main/data/images/test-00001-of-00002.parquet",
+      "contentUrl": "https://huggingface.co/datasets/reefsupport/marine-data/resolve/main/data/images/test-00001-of-00002.parquet",
       "encodingFormat": "application/x-parquet",
       "sha256": "3f3109262a5e16ce41ae3b708b5e30aab69b8c2add8406d3881263f606b3f630"
     },
@@ -277,7 +277,7 @@
       "@id": "images/train-00000-of-00024.parquet",
       "name": "images-train-00000-of-00024.parquet",
       "description": "Parquet shard of the `images` config, hashed at build time.",
-      "contentUrl": "https://huggingface.co/datasets/reefsupport/open-marine-imagery/resolve/main/data/images/train-00000-of-00024.parquet",
+      "contentUrl": "https://huggingface.co/datasets/reefsupport/marine-data/resolve/main/data/images/train-00000-of-00024.parquet",
       "encodingFormat": "application/x-parquet",
       "sha256": "e2905d1adf1c7e30b375b06a23e574a3f781b4dc94980c65180efe9aac8114f7"
     },
@@ -286,7 +286,7 @@
       "@id": "images/train-00001-of-00024.parquet",
       "name": "images-train-00001-of-00024.parquet",
       "description": "Parquet shard of the `images` config, hashed at build time.",
-      "contentUrl": "https://huggingface.co/datasets/reefsupport/open-marine-imagery/resolve/main/data/images/train-00001-of-00024.parquet",
+      "contentUrl": "https://huggingface.co/datasets/reefsupport/marine-data/resolve/main/data/images/train-00001-of-00024.parquet",
       "encodingFormat": "application/x-parquet",
       "sha256": "adb05cef73aedab46ffae2478e9c4ac285bc28afe7c37e58c305afa4a1d0052e"
     },
@@ -295,7 +295,7 @@
       "@id": "images/train-00002-of-00024.parquet",
       "name": "images-train-00002-of-00024.parquet",
       "description": "Parquet shard of the `images` config, hashed at build time.",
-      "contentUrl": "https://huggingface.co/datasets/reefsupport/open-marine-imagery/resolve/main/data/images/train-00002-of-00024.parquet",
+      "contentUrl": "https://huggingface.co/datasets/reefsupport/marine-data/resolve/main/data/images/train-00002-of-00024.parquet",
       "encodingFormat": "application/x-parquet",
       "sha256": "e7103742c05b0b1ced36cc8bd9e1ed2adeef0d6d35360c4b4889ef384b437ccc"
     },
@@ -304,7 +304,7 @@
       "@id": "images/train-00003-of-00024.parquet",
       "name": "images-train-00003-of-00024.parquet",
       "description": "Parquet shard of the `images` config, hashed at build time.",
-      "contentUrl": "https://huggingface.co/datasets/reefsupport/open-marine-imagery/resolve/main/data/images/train-00003-of-00024.parquet",
+      "contentUrl": "https://huggingface.co/datasets/reefsupport/marine-data/resolve/main/data/images/train-00003-of-00024.parquet",
       "encodingFormat": "application/x-parquet",
       "sha256": "d2a4a4e83248ebc31e5647e576812eb5164edc9e7a92daa791a73896cb7b699a"
     },
@@ -313,7 +313,7 @@
       "@id": "images/train-00004-of-00024.parquet",
       "name": "images-train-00004-of-00024.parquet",
       "description": "Parquet shard of the `images` config, hashed at build time.",
-      "contentUrl": "https://huggingface.co/datasets/reefsupport/open-marine-imagery/resolve/main/data/images/train-00004-of-00024.parquet",
+      "contentUrl": "https://huggingface.co/datasets/reefsupport/marine-data/resolve/main/data/images/train-00004-of-00024.parquet",
       "encodingFormat": "application/x-parquet",
       "sha256": "4cd2983d5cf10530375966dbb5d62629bf2cf538296564602a08e8449f76732a"
     },
@@ -322,7 +322,7 @@
       "@id": "images/train-00005-of-00024.parquet",
       "name": "images-train-00005-of-00024.parquet",
       "description": "Parquet shard of the `images` config, hashed at build time.",
-      "contentUrl": "https://huggingface.co/datasets/reefsupport/open-marine-imagery/resolve/main/data/images/train-00005-of-00024.parquet",
+      "contentUrl": "https://huggingface.co/datasets/reefsupport/marine-data/resolve/main/data/images/train-00005-of-00024.parquet",
       "encodingFormat": "application/x-parquet",
       "sha256": "a60e2ad975531df3246b3238e982765b2bbca689be2852f3a0aeaf652dfa5748"
     },
@@ -331,7 +331,7 @@
       "@id": "images/train-00006-of-00024.parquet",
       "name": "images-train-00006-of-00024.parquet",
       "description": "Parquet shard of the `images` config, hashed at build time.",
-      "contentUrl": "https://huggingface.co/datasets/reefsupport/open-marine-imagery/resolve/main/data/images/train-00006-of-00024.parquet",
+      "contentUrl": "https://huggingface.co/datasets/reefsupport/marine-data/resolve/main/data/images/train-00006-of-00024.parquet",
       "encodingFormat": "application/x-parquet",
       "sha256": "46f928af2458800d7e34c3db224317abf3e7cff2e18cc8ed6adf8e51e83fa83e"
     },
@@ -340,7 +340,7 @@
       "@id": "images/train-00007-of-00024.parquet",
       "name": "images-train-00007-of-00024.parquet",
       "description": "Parquet shard of the `images` config, hashed at build time.",
-      "contentUrl": "https://huggingface.co/datasets/reefsupport/open-marine-imagery/resolve/main/data/images/train-00007-of-00024.parquet",
+      "contentUrl": "https://huggingface.co/datasets/reefsupport/marine-data/resolve/main/data/images/train-00007-of-00024.parquet",
       "encodingFormat": "application/x-parquet",
       "sha256": "c1fdc13aa3de0ae96fa6f1871e068ce064c891ffb14bbf5fcd08bf6eb734d9d0"
     },
@@ -349,7 +349,7 @@
       "@id": "images/train-00008-of-00024.parquet",
       "name": "images-train-00008-of-00024.parquet",
       "description": "Parquet shard of the `images` config, hashed at build time.",
-      "contentUrl": "https://huggingface.co/datasets/reefsupport/open-marine-imagery/resolve/main/data/images/train-00008-of-00024.parquet",
+      "contentUrl": "https://huggingface.co/datasets/reefsupport/marine-data/resolve/main/data/images/train-00008-of-00024.parquet",
       "encodingFormat": "application/x-parquet",
       "sha256": "a3a8a29cdf43c1207678b7a49e6d1c30f45aa34e899b493b0b521b5ad93f1752"
     },
@@ -358,7 +358,7 @@
       "@id": "images/train-00009-of-00024.parquet",
       "name": "images-train-00009-of-00024.parquet",
       "description": "Parquet shard of the `images` config, hashed at build time.",
-      "contentUrl": "https://huggingface.co/datasets/reefsupport/open-marine-imagery/resolve/main/data/images/train-00009-of-00024.parquet",
+      "contentUrl": "https://huggingface.co/datasets/reefsupport/marine-data/resolve/main/data/images/train-00009-of-00024.parquet",
       "encodingFormat": "application/x-parquet",
       "sha256": "0bdd29f026f908a23236347e1f8e3eb7bf8f5a6e22ee28387c6ff4ed250e954e"
     },
@@ -367,7 +367,7 @@
       "@id": "images/train-00010-of-00024.parquet",
       "name": "images-train-00010-of-00024.parquet",
       "description": "Parquet shard of the `images` config, hashed at build time.",
-      "contentUrl": "https://huggingface.co/datasets/reefsupport/open-marine-imagery/resolve/main/data/images/train-00010-of-00024.parquet",
+      "contentUrl": "https://huggingface.co/datasets/reefsupport/marine-data/resolve/main/data/images/train-00010-of-00024.parquet",
       "encodingFormat": "application/x-parquet",
       "sha256": "6e492c561986ff9c8a3ceeaf727ace0a80bf8a99eb2c42d6fa1bdc7de1c77faa"
     },
@@ -376,7 +376,7 @@
       "@id": "images/train-00011-of-00024.parquet",
       "name": "images-train-00011-of-00024.parquet",
       "description": "Parquet shard of the `images` config, hashed at build time.",
-      "contentUrl": "https://huggingface.co/datasets/reefsupport/open-marine-imagery/resolve/main/data/images/train-00011-of-00024.parquet",
+      "contentUrl": "https://huggingface.co/datasets/reefsupport/marine-data/resolve/main/data/images/train-00011-of-00024.parquet",
       "encodingFormat": "application/x-parquet",
       "sha256": "02ddba191005b64f5682af73e27af2f79ee47f19d4c9bf5a427aba74205fcf6b"
     },
@@ -385,7 +385,7 @@
       "@id": "images/train-00012-of-00024.parquet",
       "name": "images-train-00012-of-00024.parquet",
       "description": "Parquet shard of the `images` config, hashed at build time.",
-      "contentUrl": "https://huggingface.co/datasets/reefsupport/open-marine-imagery/resolve/main/data/images/train-00012-of-00024.parquet",
+      "contentUrl": "https://huggingface.co/datasets/reefsupport/marine-data/resolve/main/data/images/train-00012-of-00024.parquet",
       "encodingFormat": "application/x-parquet",
       "sha256": "7efc6c5ae8e684a09743fcaad714967cbe6a4a096c9a70060bfcc56ffb916ceb"
     },
@@ -394,7 +394,7 @@
       "@id": "images/train-00013-of-00024.parquet",
       "name": "images-train-00013-of-00024.parquet",
       "description": "Parquet shard of the `images` config, hashed at build time.",
-      "contentUrl": "https://huggingface.co/datasets/reefsupport/open-marine-imagery/resolve/main/data/images/train-00013-of-00024.parquet",
+      "contentUrl": "https://huggingface.co/datasets/reefsupport/marine-data/resolve/main/data/images/train-00013-of-00024.parquet",
       "encodingFormat": "application/x-parquet",
       "sha256": "f461bdac561a10f9d47c378b5ce8bbd1a6c4a1caa6272f916d1911f2c809b735"
     },
@@ -403,7 +403,7 @@
       "@id": "images/train-00014-of-00024.parquet",
       "name": "images-train-00014-of-00024.parquet",
       "description": "Parquet shard of the `images` config, hashed at build time.",
-      "contentUrl": "https://huggingface.co/datasets/reefsupport/open-marine-imagery/resolve/main/data/images/train-00014-of-00024.parquet",
+      "contentUrl": "https://huggingface.co/datasets/reefsupport/marine-data/resolve/main/data/images/train-00014-of-00024.parquet",
       "encodingFormat": "application/x-parquet",
       "sha256": "6679e071cded5752a3a1b08aa614fc94794b6eb8d50505b0ecc5b53c95bde24e"
     },
@@ -412,7 +412,7 @@
       "@id": "images/train-00015-of-00024.parquet",
       "name": "images-train-00015-of-00024.parquet",
       "description": "Parquet shard of the `images` config, hashed at build time.",
-      "contentUrl": "https://huggingface.co/datasets/reefsupport/open-marine-imagery/resolve/main/data/images/train-00015-of-00024.parquet",
+      "contentUrl": "https://huggingface.co/datasets/reefsupport/marine-data/resolve/main/data/images/train-00015-of-00024.parquet",
       "encodingFormat": "application/x-parquet",
       "sha256": "f6298972bb95255f13aedfd9781015935efb7f0646b030bb9fdc8c7f592d8259"
     },
@@ -421,7 +421,7 @@
       "@id": "images/train-00016-of-00024.parquet",
       "name": "images-train-00016-of-00024.parquet",
       "description": "Parquet shard of the `images` config, hashed at build time.",
-      "contentUrl": "https://huggingface.co/datasets/reefsupport/open-marine-imagery/resolve/main/data/images/train-00016-of-00024.parquet",
+      "contentUrl": "https://huggingface.co/datasets/reefsupport/marine-data/resolve/main/data/images/train-00016-of-00024.parquet",
       "encodingFormat": "application/x-parquet",
       "sha256": "c8effd09553a6e547a632ff8cad2a55d4379aa731f9a5c59c697b59a82a86c22"
     },
@@ -430,7 +430,7 @@
       "@id": "images/train-00017-of-00024.parquet",
       "name": "images-train-00017-of-00024.parquet",
       "description": "Parquet shard of the `images` config, hashed at build time.",
-      "contentUrl": "https://huggingface.co/datasets/reefsupport/open-marine-imagery/resolve/main/data/images/train-00017-of-00024.parquet",
+      "contentUrl": "https://huggingface.co/datasets/reefsupport/marine-data/resolve/main/data/images/train-00017-of-00024.parquet",
       "encodingFormat": "application/x-parquet",
       "sha256": "71bc5aee02b0293c1d47302663e0b420bd7ca8f7b9174d3ec19add43ba706c71"
     },
@@ -439,7 +439,7 @@
       "@id": "images/train-00018-of-00024.parquet",
       "name": "images-train-00018-of-00024.parquet",
       "description": "Parquet shard of the `images` config, hashed at build time.",
-      "contentUrl": "https://huggingface.co/datasets/reefsupport/open-marine-imagery/resolve/main/data/images/train-00018-of-00024.parquet",
+      "contentUrl": "https://huggingface.co/datasets/reefsupport/marine-data/resolve/main/data/images/train-00018-of-00024.parquet",
       "encodingFormat": "application/x-parquet",
       "sha256": "8ca5fa3c84bc5dab25c1bc5b2fc68bff9d86bc2d956ca2520a736d331f40e113"
     },
@@ -448,7 +448,7 @@
       "@id": "images/train-00019-of-00024.parquet",
       "name": "images-train-00019-of-00024.parquet",
       "description": "Parquet shard of the `images` config, hashed at build time.",
-      "contentUrl": "https://huggingface.co/datasets/reefsupport/open-marine-imagery/resolve/main/data/images/train-00019-of-00024.parquet",
+      "contentUrl": "https://huggingface.co/datasets/reefsupport/marine-data/resolve/main/data/images/train-00019-of-00024.parquet",
       "encodingFormat": "application/x-parquet",
       "sha256": "56559c2fcc3aa1967112a0ed8c8d46ef16e27c5fe047f919e2d09c19afd8d33a"
     },
@@ -457,7 +457,7 @@
       "@id": "images/train-00020-of-00024.parquet",
       "name": "images-train-00020-of-00024.parquet",
       "description": "Parquet shard of the `images` config, hashed at build time.",
-      "contentUrl": "https://huggingface.co/datasets/reefsupport/open-marine-imagery/resolve/main/data/images/train-00020-of-00024.parquet",
+      "contentUrl": "https://huggingface.co/datasets/reefsupport/marine-data/resolve/main/data/images/train-00020-of-00024.parquet",
       "encodingFormat": "application/x-parquet",
       "sha256": "2175a99efae36d8f8258c0865c8c8fc2ef0a79e8d32f92af8bff529f29840b26"
     },
@@ -466,7 +466,7 @@
       "@id": "images/train-00021-of-00024.parquet",
       "name": "images-train-00021-of-00024.parquet",
       "description": "Parquet shard of the `images` config, hashed at build time.",
-      "contentUrl": "https://huggingface.co/datasets/reefsupport/open-marine-imagery/resolve/main/data/images/train-00021-of-00024.parquet",
+      "contentUrl": "https://huggingface.co/datasets/reefsupport/marine-data/resolve/main/data/images/train-00021-of-00024.parquet",
       "encodingFormat": "application/x-parquet",
       "sha256": "c53296af5c2cd3683e4548d93e8f5dccf6ce0ae3f763a1196ea53b78fecba70a"
     },
@@ -475,7 +475,7 @@
       "@id": "images/train-00022-of-00024.parquet",
       "name": "images-train-00022-of-00024.parquet",
       "description": "Parquet shard of the `images` config, hashed at build time.",
-      "contentUrl": "https://huggingface.co/datasets/reefsupport/open-marine-imagery/resolve/main/data/images/train-00022-of-00024.parquet",
+      "contentUrl": "https://huggingface.co/datasets/reefsupport/marine-data/resolve/main/data/images/train-00022-of-00024.parquet",
       "encodingFormat": "application/x-parquet",
       "sha256": "51e5e0979694d8f7a3afced654ccc05db274471a6536e63049504938b8e3a8da"
     },
@@ -484,7 +484,7 @@
       "@id": "images/train-00023-of-00024.parquet",
       "name": "images-train-00023-of-00024.parquet",
       "description": "Parquet shard of the `images` config, hashed at build time.",
-      "contentUrl": "https://huggingface.co/datasets/reefsupport/open-marine-imagery/resolve/main/data/images/train-00023-of-00024.parquet",
+      "contentUrl": "https://huggingface.co/datasets/reefsupport/marine-data/resolve/main/data/images/train-00023-of-00024.parquet",
       "encodingFormat": "application/x-parquet",
       "sha256": "358500ef652513be5473e9615c08a96da8f55a415bfdfe2b801b13a8a89d9ab5"
     },
@@ -493,7 +493,7 @@
       "@id": "images/validation-00000-of-00002.parquet",
       "name": "images-validation-00000-of-00002.parquet",
       "description": "Parquet shard of the `images` config, hashed at build time.",
-      "contentUrl": "https://huggingface.co/datasets/reefsupport/open-marine-imagery/resolve/main/data/images/validation-00000-of-00002.parquet",
+      "contentUrl": "https://huggingface.co/datasets/reefsupport/marine-data/resolve/main/data/images/validation-00000-of-00002.parquet",
       "encodingFormat": "application/x-parquet",
       "sha256": "4f97f85db74114d118a1e218176dcbf09cc1fafcaf41f9e14e2974fee6e25674"
     },
@@ -502,7 +502,7 @@
       "@id": "images/validation-00001-of-00002.parquet",
       "name": "images-validation-00001-of-00002.parquet",
       "description": "Parquet shard of the `images` config, hashed at build time.",
-      "contentUrl": "https://huggingface.co/datasets/reefsupport/open-marine-imagery/resolve/main/data/images/validation-00001-of-00002.parquet",
+      "contentUrl": "https://huggingface.co/datasets/reefsupport/marine-data/resolve/main/data/images/validation-00001-of-00002.parquet",
       "encodingFormat": "application/x-parquet",
       "sha256": "0dff89a7ad2efae749d0475a41d1f348a734ab58b914b77dda4a4c98cfd9cfe3"
     },
@@ -519,7 +519,7 @@
       "@id": "masks/test-00000-of-00001.parquet",
       "name": "masks-test-00000-of-00001.parquet",
       "description": "Parquet shard of the `masks` config, hashed at build time.",
-      "contentUrl": "https://huggingface.co/datasets/reefsupport/open-marine-imagery/resolve/main/data/masks/test-00000-of-00001.parquet",
+      "contentUrl": "https://huggingface.co/datasets/reefsupport/marine-data/resolve/main/data/masks/test-00000-of-00001.parquet",
       "encodingFormat": "application/x-parquet",
       "sha256": "9302f71d20709208bb73052171101546e3e1cf20284dffe3d314bd082cc1f97a"
     },
@@ -528,7 +528,7 @@
       "@id": "masks/train-00000-of-00001.parquet",
       "name": "masks-train-00000-of-00001.parquet",
       "description": "Parquet shard of the `masks` config, hashed at build time.",
-      "contentUrl": "https://huggingface.co/datasets/reefsupport/open-marine-imagery/resolve/main/data/masks/train-00000-of-00001.parquet",
+      "contentUrl": "https://huggingface.co/datasets/reefsupport/marine-data/resolve/main/data/masks/train-00000-of-00001.parquet",
       "encodingFormat": "application/x-parquet",
       "sha256": "64575a3c2a95aeaec7509db84bb25fb9d1ac9282bdcb8ae069f4870ce821d9e5"
     },
@@ -537,7 +537,7 @@
       "@id": "masks/validation-00000-of-00001.parquet",
       "name": "masks-validation-00000-of-00001.parquet",
       "description": "Parquet shard of the `masks` config, hashed at build time.",
-      "contentUrl": "https://huggingface.co/datasets/reefsupport/open-marine-imagery/resolve/main/data/masks/validation-00000-of-00001.parquet",
+      "contentUrl": "https://huggingface.co/datasets/reefsupport/marine-data/resolve/main/data/masks/validation-00000-of-00001.parquet",
       "encodingFormat": "application/x-parquet",
       "sha256": "8f975e777f5d7a9dc113f60ec71d7fddbb714daffacd9fb29ff48027aac3bf5c"
     },

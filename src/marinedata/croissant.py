@@ -193,7 +193,7 @@ def main(argv: list[str] | None = None) -> None:
     parser.add_argument("--build-dir", type=Path, required=True)
     parser.add_argument("--repo-id", type=str, required=True)
     parser.add_argument("--out", type=Path, required=True)
-    parser.add_argument("--name", type=str, default="Reef Support open marine imagery v1")
+    parser.add_argument("--name", type=str, default="ReefSupport Marine Data v1")
     parser.add_argument(
         "--description",
         type=str,

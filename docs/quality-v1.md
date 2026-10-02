@@ -5,7 +5,7 @@ against every decoded image in the v1 `images` HF Parquet config
 (`~/dev/reefsupport/data/_hf/v1/data/images/*.parquet`). Output:
 `~/dev/reefsupport/data/_quality/v1/quality.parquet` (keyed on `image_sha256`),
 uploaded to `rs-storage-open` at
-`releases/open-marine-imagery/v1/quality/quality.parquet`.
+`releases/marine-data/v1/quality/quality.parquet`.
 
 - **Rows**: 69,600 (100% of the corpus; 0 decode failures)
 - **Runtime**: 17 minutes wall clock, 8 worker processes, on this machine

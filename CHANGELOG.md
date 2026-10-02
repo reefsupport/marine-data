@@ -1,6 +1,6 @@
 # Changelog
 
-Release entries for the published dataset (`reefsupport/open-marine-imagery`), not for
+Release entries for the published dataset (`reefsupport/marine-data`), not for
 the `marinedata` tool itself — code changes are tracked in git history. Format loosely
 follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 

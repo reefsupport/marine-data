@@ -212,8 +212,8 @@ def test_drop_excluded_omits_only_the_named_task(tmp_path):
     assert drop_excluded(rows, []) == rows
 
 
-def test_default_repo_id_is_open_marine_imagery():
-    assert DEFAULT_REPO_ID == "reefsupport/open-marine-imagery"
+def test_default_repo_id_is_marine_data():
+    assert DEFAULT_REPO_ID == "reefsupport/marine-data"
 
 
 def test_card_lists_excluded_configs_with_their_reason():
@@ -299,7 +299,7 @@ def test_upload_is_dry_run_unless_both_flags(tmp_path, capsys):
     )  # visibility must be explicit
 
 
-def test_upload_defaults_to_the_open_marine_imagery_repo(tmp_path, capsys):
+def test_upload_defaults_to_the_marine_data_repo(tmp_path, capsys):
     (tmp_path / "README.md").write_text("card")
     assert upload_main([str(tmp_path)]) == 0
     assert f"repo {DEFAULT_REPO_ID}" in capsys.readouterr().out

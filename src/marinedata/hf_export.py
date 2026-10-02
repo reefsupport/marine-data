@@ -38,7 +38,7 @@ IMAGES, MASKS, PSEUDO_MASKS = "images", "masks", "coralscop-pseudo-masks"
 PSEUDO_TAG = "pseudo-label"
 REPO_EXTRA_FILES = ("README.md", "LICENSE", ".gitattributes")
 
-DEFAULT_REPO_ID = "reefsupport/open-marine-imagery"
+DEFAULT_REPO_ID = "reefsupport/marine-data"
 """D-A (2026-09-25, delegated): the public Hub repo id for this dataset."""
 
 DEFAULT_EXCLUDE_CONFIGS = ("coral-genus-caribbean",)

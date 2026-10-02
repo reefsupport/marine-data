@@ -32,7 +32,7 @@ from . import BaseAdapter, Decoded, Fetched, RemoteItem
 from ._http import HashingReader, open_url
 
 USER_AGENT = (
-    "ReefSupportMarineData/1.0 (https://reef.support; open marine imagery dataset build) "
+    "ReefSupportMarineData/1.0 (https://reef.support; marine-data dataset build) "
     "marinedata-ingest/commons-api"
 )
 _MIN_INTERVAL_S = 0.5  # <= 2 req/s

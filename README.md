@@ -368,11 +368,11 @@ see [`docs/croissant-v1.json`](docs/croissant-v1.json) for the v1 build.
 For the v1 imagery release itself, cite:
 
 ```bibtex
-@misc{reefsupport_open_marine_imagery_v1,
-  title        = {Reef Support Open Marine Imagery (v1)},
+@misc{reefsupport_marine_data_v1,
+  title        = {ReefSupport Marine Data (v1)},
   author       = {{Reef Support B.V.}},
   year         = {2026},
-  howpublished = {\url{https://huggingface.co/datasets/reefsupport/open-marine-imagery}},
+  howpublished = {\url{https://huggingface.co/datasets/reefsupport/marine-data}},
   note         = {v1, released 2026-09-24. Licence is mixed per source --- see the
                   dataset card and docs/DATASHEET.md before use.}
 }
