@@ -1,0 +1,19 @@
+# Roboflow Aquarium: object detection across 7 classes (fish, jellyfish, penguin, puffin,
+# shark, starfish, stingray) from two US aquariums.
+id: roboflow-aquarium
+adapter: local_dir
+params:
+  path: ~/Downloads/marine-manual/roboflow-aquarium/data
+  label_patterns: ['*/labels/*.txt']
+  version: zip-5d30fed3dd5a
+license: CC-BY-4.0
+attribution: Roboflow — Aquarium Combined dataset (Henry Doorly Zoo + National Aquarium Baltimore)
+citation: Roboflow 2020, Aquarium Combined (public.roboflow.ai/object-detection/aquarium)
+homepage: https://public.roboflow.ai/object-detection/aquarium
+notes: >-
+  LOCAL-ingest 2026-10-02: new id (archive (3).zip). `aquarium_pretrain/{train,valid,test}/
+  {images,labels}` (YOLO-format bbox labels, carried as plain label files, paired by
+  basename), `data.yaml` (class list) and `README.dataset.txt`/`README.roboflow.txt`
+  left as plain metadata (no decoder, auto-excluded). Licence confirmed by reading the
+  zip's own README.dataset.txt ("License: CC BY 4.0").
+disk_floor_gib: 1.0

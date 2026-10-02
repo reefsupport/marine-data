@@ -1,21 +1,23 @@
+# USOD10k: large underwater salient-object-detection set (RGB/GT/depth/boundary, TR/TE/VAL splits).
 id: usod10k
-adapter: gdrive-public
+adapter: local_dir
 params:
-  files:
-  - {id: 12EYrwt-LEUE9WyMEfgKOxZC1Yyzyjnnk, name: usod10k_part1.zip}
-  - {id: 19rdcNsuDE6bRD58bruqCXPDhoopTMME4, name: usod10k_part2.zip}
-license: research (non-commercial, per upstream)
+  path: ~/Downloads/marine-manual/usod10k/data
+  exclude: ['*.zip']  # nested TE/TR/VAL {RGB,GT,depth,Boundary}.zip kept but already extracted beside themselves
+  version: zip-f82114057c27
+license: unknown (see homepage)
 attribution: Hong et al. — USOD10K
-citation: Hong et al. 2023, TIP
+citation: Hong, Pan, Sun, Gao 2023, IEEE TIP
 homepage: https://github.com/LinHong-HIT/USOD10K
-notes: WP-6d-A gdrive-public adapter; 10,255 images; Baidu mirror not used (D-E).
-  MIRRORS2 2026-10-02 OPEN CONCERN (verdict=unverified, not fixed this pass) — no
-  HF/GitHub no-login mirror found, but checking the two configured file ids
-  against the official LinHong-HIT/USOD10K README found file id
-  19rdcNsuDE6bRD58bruqCXPDhoopTMME4 (usod10k_part2.zip here) labelled "NJUD" in
-  that README — an unrelated RGB-D salient-object-detection benchmark, not
-  USOD10K. The README's own USOD10K dataset link is
-  drive.google.com/file/d/1PH0PwKchXnkWwtAwbhNSW4utMCp5zer8, which matches
-  neither configured file id. Left unchanged pending confirmation (swapping an
-  unverified id in could make this worse); flagged for Yohan/next worker.
-disk_floor_gib: 34.0
+notes: >-
+  LOCAL-ingest 2026-10-02: new id. USOD10k.zip's own central directory is Zip64 and
+  BSD/Info-ZIP's `unzip` reported "start of central directory not found / zipfile
+  corrupt" on it (and on the nested TR/RGB.zip, 2.5 GB) — verified NOT corrupt via
+  Python's `zipfile` module (zip64-aware), which read all 15 entries cleanly; extracted
+  with `zipfile.ZipFile.extractall` instead of the CLI. Nested per-split/per-modality
+  zips (`TE|TR|VAL/{RGB,GT,depth,Boundary}.zip`) were then extracted beside themselves
+  with `unzip -q -n` (those are all <4 GB and unzipped fine) and kept per source
+  instructions; excluded here via `*.zip` so the already-extracted images aren't
+  double-ingested through the zip-container decode path too. No distribution licence
+  stated in-repo; left `unknown (see homepage)`.
+disk_floor_gib: 1.0

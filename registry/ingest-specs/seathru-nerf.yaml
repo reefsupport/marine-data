@@ -1,18 +1,18 @@
-# MIRRORS2 2026-10-02: verdict=wrong. Candidate bhowmikabhimanyu/seathru-dataset (HF,
-# license cc-by-nc-sa-4.0) is the ORIGINAL "Sea-thru" dataset (Akkaynak & Treibitz,
-# CVPR 2019, ~1100 images across scenes D1-D5, converted from Kaggle
-# colorlabeilat/seathru-dataset) — a different paper and a different dataset from
-# "Sea-thru-NeRF" (Levy et al., CVPR 2023) that this spec describes. Not used.
 id: seathru-nerf
-adapter: gdrive-public
+adapter: local_dir
 params:
-  landing: https://sea-thru-nerf.github.io/
-  file_id: 1RzojBFvBWjUUhuJb95xJPSNP3nJwZWaT
-  name: seathru-nerf-data.zip
-license: unknown
-attribution: Levy et al.
-citation: Levy et al., CVPR 2023
+  path: ~/Downloads/marine-manual/seathru-nerf/data
+  label_patterns: ['*.txt', '*transforms*.json', '*poses*.npy']
+  version: zip-ff97f52d5472
+license: unknown (see homepage)
+attribution: Levy et al. — SeaThru-NeRF
+citation: Levy, Peleg, Pearl, Rosenbaum, Akkaynak, Korman, Treibitz 2023, CVPR
 homepage: https://sea-thru-nerf.github.io/
-notes: needs_adapter:gdrive — project page links a Google Drive file id (1RzojBFvBWjUUhuJb95xJPSNP3nJwZWaT);
-  needs a Drive-aware fetcher (large-file confirm-token handshake)
-disk_floor_gib: 34.0
+notes: >-
+  LOCAL-ingest 2026-10-02: new id, not the same dataset as the existing `seathru`
+  spec (that one is the Akkaynak/Treibitz 2019 Sea-thru HF mirror). SeathruNeRF_dataset.zip
+  is the NeRF scene-reconstruction set (4 underwater scenes: Curasao, IUI3-RedSea,
+  JapaneseGradens-RedSea, Panama), downloaded by hand; no distribution licence stated
+  in the zip's own README.txt — left `unknown (see homepage)` pending a read of the
+  project page/paper terms.
+disk_floor_gib: 1.0

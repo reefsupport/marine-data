@@ -1,16 +1,20 @@
 # MIRRORS2 2026-10-02: verdict=wrong. Candidate Gusanagy/LSUI-TURBID-UIEB (HF) is an
 # EMPTY repo (only .gitattributes, usedStorage=0) — not a real mirror of LSUI, UIEB
-# or any turbid set. No change: the gdrive-public source below remains the only
-# working source.
+# or any turbid set.
+# LOCAL-ingest 2026-10-02: Yohan downloaded LSUI.zip by hand (the gdrive-public files
+# above were never fetched by this repo's own adapter run). Switched to local_dir
+# over the unzipped copy. Provenance kept: gdrive-public files 10gD4s12uJxCHcuFdX9Khkv37zzBwNFbL
+# (lsui_input.zip) + 19a_kDJTT5S96kzwQntEMhSxAPYw4xY2P (lsui_gt.zip).
 id: lsui
-adapter: gdrive-public
+adapter: local_dir
 params:
-  files:
-  - {id: 10gD4s12uJxCHcuFdX9Khkv37zzBwNFbL, name: lsui_input.zip}
-  - {id: 19a_kDJTT5S96kzwQntEMhSxAPYw4xY2P, name: lsui_gt.zip}
+  path: ~/Downloads/marine-manual/lsui/data
+  version: zip-e15c4a2203f4
 license: research (non-commercial, per upstream)
 attribution: Peng et al. — LSUI (U-shape Transformer)
 citation: Peng et al. 2023, TIP
 homepage: https://github.com/LintaoPeng/U-shape_Transformer_for_Underwater_Image_Enhancement
-notes: WP-6d-A gdrive-public adapter; 4,279 paired images; Baidu mirror not used (D-E).
+notes: >-
+  WP-6d-A gdrive-public adapter; 4,279 paired images; Baidu mirror not used (D-E).
+  LOCAL-ingest -- LSUI/{GT,input} paired enhancement images, no README inside the zip.
 disk_floor_gib: 34.0

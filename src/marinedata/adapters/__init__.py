@@ -330,6 +330,7 @@ def make_adapter(name: str, params: Mapping[str, Any]) -> BaseAdapter:
     from .hf import HFAdapter
     from .http_index import HttpIndexAdapter
     from .inat import INatOpenDataAdapter
+    from .local_dir import LocalDirAdapter
     from .manifest import ManifestAdapter
     from .pangaea import PangaeaAdapter
     from .pangaea_series import PangaeaSeriesAdapter
@@ -357,6 +358,7 @@ def make_adapter(name: str, params: Mapping[str, Any]) -> BaseAdapter:
         "pawsey-portal": PawseyPortalAdapter,
         "frdr-https": FrdrHttpsAdapter,
         "inat-open-data": INatOpenDataAdapter,
+        "local_dir": LocalDirAdapter,
         "hf-member-filter": HFMemberFilterAdapter,
         "commons-api": CommonsAdapter,
         "manifest": ManifestAdapter,  # WP-6e-B

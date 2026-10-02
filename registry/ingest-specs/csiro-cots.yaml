@@ -1,0 +1,21 @@
+# csiro-cots: Kaggle "TensorFlow — Help Protect the Great Barrier Reef" COTS detection competition.
+id: csiro-cots
+adapter: local_dir
+params:
+  path: ~/Downloads/marine-manual/csiro-cots/data
+  exclude: ['greatbarrierreef/*', '*.so', '*.npy']
+  label_patterns: ['*.csv']
+  version: zip-eb9e280ea1ca
+license: unknown (see homepage); Kaggle competition rules govern reuse
+attribution: CSIRO / Google — "Help Protect the Great Barrier Reef" Kaggle competition
+citation: CSIRO, Google, Kaggle 2022, TensorFlow Great Barrier Reef competition
+homepage: https://www.kaggle.com/competitions/tensorflow-great-barrier-reef
+notes: >-
+  LOCAL-ingest 2026-10-02: new id (tensorflow-great-barrier-reef.zip, 15.2 GB,
+  largest manual download — ingested last). Crown-of-thorns starfish (COTS) video-frame
+  detection set: `train_images/video_{0,1,2}/<frame>.jpg` + `train.csv`/`test.csv`
+  (bounding-box annotations, carried as label files) + the competition's own Python
+  evaluation package (`greatbarrierreef/*.so`) and `example_test.npy`, excluded (code,
+  not data). Kaggle's dataset page states no standalone data licence beyond the
+  competition rules; left `unknown (see homepage)`.
+disk_floor_gib: 15.5

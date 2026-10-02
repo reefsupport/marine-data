@@ -614,3 +614,44 @@ sources:
       layout: yolo-txt
       schema_id: dataset-native
     tags: [urchin, herbivory]
+
+  - id: large-scale-fish
+    name: "A Large Scale Fish Dataset (Ulucan et al.) — market/out-of-water"
+    # habitat inferred (WP-2b): OUT OF WATER (market/countertop fish photos), never in situ
+    habitat: [artificial]
+    version: "unversioned"
+    description: >
+      Market/countertop photos of whole fish and shrimp laid out for sale (9 species:
+      Sea Bass, Red Mullet, Gilt Head Bream, Red Sea Bream, Shrimp, Black Sea Sprat,
+      Horse Mackerel, Striped Red Mullet, Trout), not underwater or in-situ imagery.
+      LOCAL-ingest 2026-10-02 (archive (1).zip, Yohan manual download): tagged
+      `out-of-water` so the release builder can exclude it from underwater/in-situ
+      outputs; kept as a general-pretraining fish-classification source otherwise.
+    licence: NO-LICENCE-STATED
+    legal_basis: unknown
+    redistribution: unknown
+    provenance: public
+    verification:
+      verified_on: 2026-10-02
+      verified_by: >
+        Local extraction of the manually-downloaded Kaggle zip: 18,429 jpg/png files
+        under `Fish_Dataset/Fish_Dataset/<class>/{<class>,<class> GT}` and
+        `NA_Fish_Dataset/<class>/*.png` (9 species directories each). No licence
+        sidecar found in the archive; Kaggle's licence field not re-checked this pass.
+      method: absent
+    access:
+      method: http
+      uri: https://www.kaggle.com/datasets/crowww/a-large-scale-fish-dataset
+      gated: true
+      notes: Kaggle login required for the upstream download; ingested from Yohan's
+        manual local copy via the `local_dir` adapter (see registry/ingest-specs/large-scale-fish.yaml).
+    modalities: [image]
+    capabilities: [fish-classification]
+    items: 18429
+    annotations:
+      - kind: none
+        supervises: []
+        notes: "9 species class folders; no taxonomy crosswalk done this pass (see tags: out-of-water)."
+    coverage: { regions: [unknown] }
+    loader: { layout: metadata-only }
+    tags: [out-of-water, market, general-pretraining]

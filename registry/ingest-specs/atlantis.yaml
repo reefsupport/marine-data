@@ -1,7 +1,19 @@
 id: atlantis
-adapter: http
-params: {}
-license: NOASSERTION
+adapter: local_dir
+params:
+  path: ~/Downloads/marine-manual/atlantis/data
+  version: zip-6fc81e3c43a5
+license: MIT
 attribution: ATLANTIS (Zhang et al., CVPR 2024)
 citation: Zhang+ CVPR2024
 homepage: https://www.kaggle.com/datasets/zkawfanx/atlantis
+notes: >-
+  LOCAL-ingest 2026-10-02: previous `adapter: http` had no working params (`{}`) —
+  sole distribution is Kaggle (login-gated, D-E), per registry/sources/geometry-3d.yaml
+  `atlantis-synthetic-depth` (licence MIT, verified 2026-08-17 by reading the repo's
+  own LICENSE file at github.com/zkawfanx/Atlantis). Yohan downloaded `archive (6).zip`
+  by hand; switched to local_dir over the unzipped copy (`Atlantis/{depth,underwater}`,
+  3,200 depth maps + multiple water-type variants per depth map — see geometry-3d.yaml
+  for the one-to-many pairing note). `license: NOASSERTION` on the old http spec
+  replaced with the verified MIT from the source registry entry.
+disk_floor_gib: 2.0

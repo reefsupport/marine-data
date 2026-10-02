@@ -1,0 +1,19 @@
+# NOAA Deep Sea Coral Research & Technology Program (DSCRTP) national database export —
+# tabular occurrence records, no imagery.
+id: noaa-dsc-csv
+adapter: local_dir
+params:
+  path: ~/Downloads/marine-manual/noaa-dsc-csv/data
+  label_patterns: ['*.csv']
+  version: zip-5257227aef7d
+license: public-domain (US federal government work)
+attribution: NOAA Deep Sea Coral Research & Technology Program (DSCRTP)
+citation: NOAA DSCRTP National Database for Deep-Sea Corals and Sponges
+homepage: https://deepseacoraldata.noaa.gov/
+notes: >-
+  LOCAL-ingest 2026-10-02: new id (archive (5).zip). Tabular-only — one
+  `deep_sea_corals.csv` (CatalogNumber, ScientificName, lat/lon, DepthInMeters, …),
+  carried whole as a label file (no imagery). NOAA data products are US federal
+  government works, public domain by default; not independently re-verified against
+  this specific export's own terms page this pass.
+disk_floor_gib: 1.0
