@@ -16,6 +16,7 @@ reason; nothing is guessed (no fuzzy ``AphiaRecordsByMatchNames`` match is ever 
 Usage: ``uv run python scripts/taxonomy_fauna_codegen.py <cache_dir> <crosswalk-id> [--dry]``
 """
 
+# ruff: noqa: E501
 from __future__ import annotations
 
 import json
@@ -28,8 +29,8 @@ import pyarrow.parquet as pq
 import yaml
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
-from marinedata.taxonomy import load_meta, read_vocab, read_vocab_rows, taxonomy_dir  # noqa: E402
-from marinedata.worms_snapshot import WormsClient, build_rows, write_parquet  # noqa: E402
+from marinedata.taxonomy import load_meta, read_vocab, read_vocab_rows, taxonomy_dir
+from marinedata.worms_snapshot import WormsClient, build_rows, write_parquet
 
 REPO = Path(__file__).resolve().parents[1]
 ROOT = REPO / "registry"
@@ -56,7 +57,9 @@ HAND: dict[str, dict[str, tuple[str | None, str, str]]] = {
     },
 }  # fmt: skip
 
-_SP = re.compile(r"^(?P<head>[A-Z][A-Za-z-]+(?: [a-z-]+)??)(?: (?:cf\.|aff\.))? ?(?:sp\.|spp\.|gen\.)(?: ?[A-Za-z0-9]+)?(?: \(.*\))?$")  # noqa: E501
+_SP = re.compile(
+    r"^(?P<head>[A-Z][A-Za-z-]+(?: [a-z-]+)??)(?: (?:cf\.|aff\.))? ?(?:sp\.|spp\.|gen\.)(?: ?[A-Za-z0-9]+)?(?: \(.*\))?$"
+)
 _CF = re.compile(r"^(?P<head>[A-Z][A-Za-z-]+) (?:cf\.|aff\.) [a-z-]+(?: .*)?$")
 _COMPLEX = re.compile(r"^(?P<head>[A-Z][a-z]+) [a-z-]+ [Cc]omplex$")
 
@@ -102,9 +105,15 @@ def verify_common(rows: list[dict[str, str]], client: WormsClient) -> dict[str, 
                 raise SystemExit(f"{r['concept']}: {r['match_type']} row without an aphia_id")
             continue
         rec = recs.get(int(r["aphia_id"]))
-        ok = rec and rec["status"] == "accepted" and rec["scientificname"].lower() == r["scientific_name"].lower()
+        ok = (
+            rec
+            and rec["status"] == "accepted"
+            and rec["scientificname"].lower() == r["scientific_name"].lower()
+        )
         if not ok:
-            raise SystemExit(f"{r['concept']}: WoRMS does not confirm {r['scientific_name']} = {r['aphia_id']}")
+            raise SystemExit(
+                f"{r['concept']}: WoRMS does not confirm {r['scientific_name']} = {r['aphia_id']}"
+            )
         out[r["scientific_name"]] = int(r["aphia_id"])
     return out
 
@@ -147,7 +156,9 @@ def choose(name: str, records: list[dict]) -> tuple[int | None, str]:
     return None, "unaccepted exact without a single valid_AphiaID"
 
 
-def resolve(names: set[str], snap: Snapshot, client: WormsClient) -> dict[str, tuple[int | None, str]]:
+def resolve(
+    names: set[str], snap: Snapshot, client: WormsClient
+) -> dict[str, tuple[int | None, str]]:
     out: dict[str, tuple[int | None, str]] = {}
     miss: list[str] = []
     for n in sorted(names):
@@ -186,13 +197,19 @@ def main(cache: Path, xw: str, dry: bool) -> None:
         for r in common:
             if r["concept"] not in labels:
                 raise SystemExit(f"{r['concept']}: not a fathomnet label")
-            hand[r["concept"]] = (r["scientific_name"] or None, _FIDELITY[r["match_type"]], r["note"] or None)
+            hand[r["concept"]] = (
+                r["scientific_name"] or None,
+                _FIDELITY[r["match_type"]],
+                r["note"] or None,
+            )
         # the table is authoritative for its labels: their generated edges are rebuilt from it
         old = {k: v for k, v in old.items() if k not in {r["concept"] for r in common}}
     todo = sorted(set(labels) - set(old))
     # pass 1: exact names (hand table first); pass 2: the reductions of what pass 1 missed
     first = {n for n in todo if n not in hand}
-    got = resolve(first | {h[0] for h in hand.values() if h[0] and h[0] not in verified}, snap, client)
+    got = resolve(
+        first | {h[0] for h in hand.values() if h[0] and h[0] not in verified}, snap, client
+    )
     got.update({n: (a, "common-name table, WoRMS-confirmed id") for n, a in verified.items()})
     red = {n: reductions(n) for n in first if got[n][0] is None}
     got.update(resolve({r[0] for r in red.values() if r}, snap, client))
@@ -208,7 +225,9 @@ def main(cache: Path, xw: str, dry: bool) -> None:
         elif red.get(n) and got[red[n][0]][0] is not None:
             plan[n] = (got[red[n][0]][0], "coarsened", f"{red[n][1]} ({red[n][0]})")
         else:
-            why = got[n][1] + (f"; reduced name {red[n][0]!r}: {got[red[n][0]][1]}" if red.get(n) else "")
+            why = got[n][1] + (
+                f"; reduced name {red[n][0]!r}: {got[red[n][0]][1]}" if red.get(n) else ""
+            )
             plan[n] = (None, "unmappable", f"no WoRMS-backed taxon for this label: {why}")
 
     # snapshot rows for the chosen AphiaIDs (existing rows are never rewritten)
@@ -258,7 +277,9 @@ def main(cache: Path, xw: str, dry: bool) -> None:
     present = existing_ids | keep
     new_nodes = []
     for a in sorted(keep, key=lambda x: (len(lineage(x)), x)):
-        parent = next((f"A{lid}" for _r, _n, lid in reversed(lineage(a)[:-1]) if lid in present), None)
+        parent = next(
+            (f"A{lid}" for _r, _n, lid in reversed(lineage(a)[:-1]) if lid in present), None
+        )
         r = snap.by_id[a]
         new_nodes.append({
             "id": f"A{a}", "name": r["accepted_name"], **({"parent": parent} if parent else {}),
@@ -285,16 +306,23 @@ def main(cache: Path, xw: str, dry: bool) -> None:
         [*nodes, *new_nodes],
         key=lambda n: (n.get("worms_aphia_id") is None, len(lineage(n["worms_aphia_id"])) if n.get("worms_aphia_id") else 0, n.get("worms_aphia_id") or 0),
     )  # fmt: skip
-    fid_count = {k: sum(e["fidelity"] == k for e in edges) for k in ("exact", "coarsened", "approximate", "unmappable")}
-    print(f"labels {len(labels)} old edges {len(old)} new {len(todo)}; new snapshot rows {len(added)}; new nodes {len(new_nodes)}")  # noqa: E501
+    fid_count = {
+        k: sum(e["fidelity"] == k for e in edges)
+        for k in ("exact", "coarsened", "approximate", "unmappable")
+    }
+    print(
+        f"labels {len(labels)} old edges {len(old)} new {len(todo)}; new snapshot rows {len(added)}; new nodes {len(new_nodes)}"
+    )
     print(f"edges now {len(edges)} {fid_count}; problems {problems}")
-    print("worms cache files:", len(list(cache.glob('*.json'))))
+    print("worms cache files:", len(list(cache.glob("*.json"))))
     if dry:
         return
     write_parquet(merged, snap.path)
     hdr = "# GENERATED by scripts/taxonomy_codegen.py - do not edit by hand; rerun the codegen.\n"
     tx["schemas"][0]["nodes"] = nodes_out
-    tx_path.write_text(hdr + yaml.safe_dump(tx, sort_keys=False, width=200, default_flow_style=None))
+    tx_path.write_text(
+        hdr + yaml.safe_dump(tx, sort_keys=False, width=200, default_flow_style=None)
+    )
     cw = doc["crosswalks"][0] if doc else {
         "id": xw, "source_schema": "dataset-native", "target_schema": "rs-taxa-v1",
     }  # fmt: skip
@@ -306,7 +334,10 @@ def main(cache: Path, xw: str, dry: bool) -> None:
         "edges": edges,
     }
     cw = {k: cw[k] for k in ("id", "source_schema", "target_schema", "description", "edges")}
-    xw_path.write_text(hdr + yaml.safe_dump({"crosswalks": [cw]}, sort_keys=False, width=200, default_flow_style=None))
+    xw_path.write_text(
+        hdr
+        + yaml.safe_dump({"crosswalks": [cw]}, sort_keys=False, width=200, default_flow_style=None)
+    )
 
 
 if __name__ == "__main__":

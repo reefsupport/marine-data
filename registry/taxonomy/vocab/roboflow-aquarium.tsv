@@ -1,6 +1,6 @@
 # source: roboflow-aquarium
 # crosswalk: roboflow-aquarium
-# counts: annotations (boxes)
+# counts: annotations
 # retrieved: 2026-10-05 from the staged YOLO labels (all images)
 label	count	description
 fish	2669	

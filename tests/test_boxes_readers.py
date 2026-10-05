@@ -176,7 +176,7 @@ def test_fathomnet_rows_validate_with_per_row_licence_and_no_pii(reg):
         for i, b in enumerate(image.boxes)
     ]  # fmt: skip
     validate_rows("boxes", rows)
-    assert [r["match_type"] for r in rows] == ["unmapped", "unmapped"]  # no crosswalk before U8
+    assert [r["match_type"] for r in rows] == ["exact", "exact"]  # fathomnet-concepts (U8a)
     assert [r["label_native"] for r in rows] == ["Aegina", "Bathochordaeus"]
     # the image is NC-ND, so both rows are restricted-nd whatever the box licence says
     assert bt.licence_split(rows) == {bt.ND: 2}
@@ -250,7 +250,7 @@ def test_staged_yolo_source_writes_reads_back_and_feeds_the_config(reg, tmp_path
     cfg = build_boxes_config(reg, tmp_path)
     assert cfg.config_id == "boxes" and len(cfg.rows) == 2 and "boxes" in CONFIG_IDS
     assert {r["licence_class"] for r in cfg.rows} == {"open"}
-    assert cfg.unmapped_by_source == {"roboflow-aquarium": 1.0}
+    assert cfg.unmapped_by_source == {"roboflow-aquarium": 0.0}  # mapped since U8a
     assert set(BOX_CONFIG_SOURCES) == set(bt.BOX_SOURCES)
 
 
@@ -454,7 +454,9 @@ def test_fgvc23_columnar_rows_are_joined_on_the_file_name_uuid(reg):
     classes = {json.loads(r["attrs"])["licence_join"]: json.loads(r["attrs"])["licence_class"]
                for r in res.rows}  # fmt: skip
     assert classes == {"matched": "open", "unmatched": "restricted-nd"}
-    assert {r["label_native"] for r in res.rows} == {"3"}  # id only: no name guessed
+    # the id key now resolves through the fgvc23 crosswalk (U8a): id 3 -> its vocab name, mapped
+    assert {r["label_native"] for r in res.rows} == {"Actiniidae"}
+    assert {r["match_type"] for r in res.rows} == {"exact"}
 
 
 # ---- WP-U6b: ruod (COCO docs), brackishmot (MOT), obsea-fish (flat YOLO, pending) -----------------  # noqa: E501

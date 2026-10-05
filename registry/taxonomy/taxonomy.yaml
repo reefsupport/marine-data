@@ -39,9 +39,6 @@ no_crosswalk_yet:
     ~2k CoralNet sources, each with its own label set. The PIFSC, PLC and MLC sets are
     crosswalked (coralnet-noaa-pifsc, plc-beijbom2015, mlc-moorea) and the global label
     list is in coralnet-labelset; each other CoralNet source needs its own at ingest.
-  fathomnet: >-
-    The full FathomNet concept tree (~2.4k concepts). fathomnet-concepts covers the FGVC23
-    (290) and VME (4) subsets; the rest is resolved at ingest through the same WoRMS path.
   deolhonoscorais: vocabulary not harvested in WP-7 (not a W1 vocabulary); crosswalk at ingest.
   seatizen-atlas: multilabel species/habitat set not harvested in WP-7; crosswalk at ingest.
   ozfish: fish bbox vocabulary not harvested in WP-7; crosswalk at ingest.

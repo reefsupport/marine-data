@@ -1,6 +1,6 @@
 # source: fathomnet
 # crosswalk: fathomnet-concepts
-# counts: annotations (boxes)
+# counts: annotations
 # retrieved: 2026-10-05 from every staged per-image label JSON (boundingBoxes[].concept); description = images
 label	count	description
 2G Robotics structured light laser	1	images=1

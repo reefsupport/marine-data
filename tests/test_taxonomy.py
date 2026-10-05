@@ -73,7 +73,7 @@ def test_gate_on_the_full_registry_fails_only_on_no_crosswalk_yet(reg):
     target or an unmappable-with-no-reason. (The unscoped gate; CI runs scoped_gate.)"""
     meta = tx.load_meta(reg.root)
     no_crosswalk = set(meta.get("no_crosswalk_yet") or {})
-    assert len(no_crosswalk) == 17
+    assert len(no_crosswalk) == 16  # 17 until WP-U8a gave fathomnet its full-vocabulary crosswalk
     fails = tx.gate(reg, reg.root)
     assert fails, "expected the 17 unresolved no_crosswalk_yet sources to fail"
     staged = set(tx.staged_sources(reg))

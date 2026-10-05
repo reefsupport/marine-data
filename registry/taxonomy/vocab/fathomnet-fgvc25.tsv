@@ -1,6 +1,6 @@
 # source: fathomnet-fgvc25
 # crosswalk: fathomnet-concepts
-# counts: annotations (boxes)
+# counts: annotations
 # retrieved: 2026-10-05 from the staged metadata annotations_json (all images)
 label	count	description
 Abyssocucumis abyssorum	300	
