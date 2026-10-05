@@ -1,0 +1,23 @@
+# Hand-authored (WP-U5, 2026-10-05) for taxonomy 2.4.0. The Kaggle set "Healthy and Bleached
+# Corals Image Classification" (vencerlanz09) is an imagefolder: the two class directories
+# `bleached_corals/` and `healthy_corals/` are the only labels (staged as labels/image_labels.parquet,
+# key `label`, value = the directory name; registry/ingest-specs/kaggle-healthy-bleached-corals.yaml).
+# Names are the source's own and match registry/taxonomy/vocab/kaggle-healthy-bleached-corals.tsv
+# byte-for-byte. Same rule as NOAA's CORAL / Roboflow's Healthy / Reef Support's non_bleached
+# (tests/test_taxonomy.py::test_binary_not_bleached_labels_share_one_rule): a binary bleached /
+# not-bleached split assessed no other condition, so the healthy class is HEALTHY coarsened.
+# The upstream licence is unverifiable (NO-LICENCE-STATED): the rows are internal-only (LIC-A).
+crosswalks:
+  - id: kaggle-healthy-bleached-corals
+    source_schema: dataset-native
+    target_schema: rs-benthic-v1
+    description: Kaggle imagefolder class names (bleached_corals / healthy_corals) onto RS-Benthic's condition axis.
+    edges:
+      - source_label: "bleached_corals"
+        targets: { condition: BLEACHED }
+        fidelity: exact
+        note: "the class directory is named for the BLEACHED leaf outright."
+      - source_label: "healthy_corals"
+        targets: { condition: HEALTHY }
+        fidelity: coarsened
+        note: "binary healthy vs bleached split: PALE and the other conditions were never assessed, so the class only asserts 'not bleached' (same rule as Roboflow 'Healthy', WP-7d)."

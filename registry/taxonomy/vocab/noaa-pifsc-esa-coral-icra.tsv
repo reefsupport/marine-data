@@ -1,0 +1,7 @@
+# source: noaa-pifsc-esa-coral-icra
+# crosswalk: noaa-pifsc-esa-coral-icra
+# counts: annotations
+# retrieved: 2026-10-05 from huggingface.co/datasets/NMFS-OSI/NOAA-PIFSC-ESD-ESA-CORAL-ICRA-Dataset @ b5e722f7c11e dataset/labels/*/*.txt (470 label files: 408 with boxes, 62 empty, 0 missing; anonymous GET, class id 0 = ICRA per dataset/data.yaml)
+# note: one annotation = one image carrying the class (image-level presence); 2422 boxes in total
+label	count	description
+ICRA	408	Isopora crateriformis

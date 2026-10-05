@@ -1,0 +1,16 @@
+# Hand-authored (WP-U5, 2026-10-05) for taxonomy 2.4.0. NMFS-OSI/NOAA-PIFSC-ESD-ESA-CORAL-ICRA-Dataset
+# (HF, revision b5e722f7c11e) is a one-class YOLO detection set: dataset/data.yaml `nc: 1,
+# names: ['ICRA']`, and the card: "annotated benthic coral reef imagery of Isopora crateriformis
+# (ICRA)", public domain (NOAA Open Data). The name is the source's own and matches
+# registry/taxonomy/vocab/noaa-pifsc-esa-coral-icra.tsv. rs-benthic-v1 stops at genus for this
+# group (HC_ISOPORA), so the species is a coarsened edge; the species name stays in label_native.
+crosswalks:
+  - id: noaa-pifsc-esa-coral-icra
+    source_schema: dataset-native
+    target_schema: rs-benthic-v1
+    description: The ICRA (Isopora crateriformis) detection class onto RS-Benthic's taxon axis.
+    edges:
+      - source_label: "ICRA"
+        targets: { taxon: HC_ISOPORA }
+        fidelity: coarsened
+        note: "Isopora crateriformis is a species of Isopora (Acroporidae); the node is the genus."

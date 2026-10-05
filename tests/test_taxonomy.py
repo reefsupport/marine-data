@@ -193,7 +193,7 @@ def test_reefolution_meets_the_floor_without_an_exception(reg):
     assert "reefolution" not in (tx.load_meta(reg.root).get("coverage_exceptions") or {})
 
 
-FROZEN_TAXONOMY_VERSION = "2.3.0"
+FROZEN_TAXONOMY_VERSION = "2.4.0"
 """Charter D-AD: the v2 release ships taxonomy 2.1.0. Bumping it is a deliberate act —
 freeze a new ``registry/taxonomy/releases/<v>.json`` and update this pin together."""
 
@@ -323,6 +323,7 @@ def test_binary_not_bleached_labels_share_one_rule(reg):
         ("roboflow-bleaching-condition-hb", "Healthy"),
         ("roboflow-bleaching-condition-hu", "Healthy"),
         ("reef-support-bleaching-condition", "non_bleached"),
+        ("kaggle-healthy-bleached-corals", "healthy_corals"),
     ]
     edges = {pair: reg.crosswalk(pair[0]).edge(pair[1]) for pair in pairs}
     assert all(e is not None for e in edges.values()), edges

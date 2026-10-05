@@ -1,5 +1,13 @@
 # Taxonomy changelog
 
+## 2.4.0 — 2026-10-05
+
+MINOR: two new crosswalks + vocabs, no nodes added and no existing edge retargeted.
+
+- **WP-U5:** `kaggle-healthy-bleached-corals` (bleached_corals -> BLEACHED exact, healthy_corals ->
+  HEALTHY coarsened, the shared not-bleached rule) and `noaa-pifsc-esa-coral-icra` (ICRA ->
+  HC_ISOPORA coarsened), with `vocab/*.tsv` (923 image labels, 470 label files).
+
 ## 2.3.0 — 2026-10-05
 
 MINOR: new crosswalk + vocab, no nodes added and no existing edge retargeted.

@@ -1,0 +1,8 @@
+# source: kaggle-healthy-bleached-corals
+# crosswalk: kaggle-healthy-bleached-corals
+# counts: annotations
+# retrieved: 2026-10-05 from rs-storage-open sources/kaggle-healthy-bleached-corals/zip-5e15452254a9/labels/image_labels.parquet (boto3 GET)
+# note: one annotation = one image_labels.parquet row (whole-image label; value = the class directory name)
+label	count	description
+bleached_corals	485	
+healthy_corals	438	
