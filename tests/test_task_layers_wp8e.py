@@ -401,7 +401,7 @@ def test_hf_export_cli_passes_release_task_layers_to_build_layout(tmp_path, monk
     pq.write_table(pa.table({}), release / "task_layers" / "vqa.parquet")  # column-less
     seen: dict = {}
 
-    def fake_build_layout(rows, pseudo, task_layers=None):
+    def fake_build_layout(rows, pseudo, task_layers=None, flavour=None):
         seen["task_layers"] = task_layers
         return {}
 

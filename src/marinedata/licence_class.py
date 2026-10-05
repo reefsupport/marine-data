@@ -107,8 +107,11 @@ def _registry_root(root: str | Path | None) -> Path:
 
 
 def _scan(base: Path) -> dict[str, dict[str, Any]]:
-    """``{id: {"access_class", "licence_per_row"}}``: registry sources, then ingest specs."""
+    """``{id: {"access_class", "licence_per_row", "release_excluded"}}``: registry sources, then
+    ingest specs. ``release_excluded`` is true when any entry carries the ``release-excluded``
+    tag or ``measured.release_excluded`` (U11/U15 triage): such a source ships in no flavour."""
     out: dict[str, dict[str, Any]] = {}
+    excluded: set[str] = set()
     paths = [
         *sorted((base / "sources").glob("*.yaml")),
         *sorted((base / "ingest-specs").glob("*.yaml")),
@@ -117,12 +120,20 @@ def _scan(base: Path) -> dict[str, dict[str, Any]]:
         data = yaml.safe_load(path.read_text()) or {}
         entries = data.get("sources", []) if path.parent.name == "sources" else [data]
         for e in entries if isinstance(entries, list) else []:
-            if isinstance(e, dict) and isinstance(e.get("id"), str) and e["id"] not in out:
+            if not (isinstance(e, dict) and isinstance(e.get("id"), str)):
+                continue
+            measured = e.get("measured")
+            if "release-excluded" in (e.get("tags") or ()) or (
+                isinstance(measured, dict) and measured.get("release_excluded") is True
+            ):
+                excluded.add(e["id"])
+            if e["id"] not in out:
                 out[e["id"]] = {
                     "access_class": coerce_class(e.get("access_class")),
                     "licence_per_row": bool(e.get("licence_per_row", False)),
+                    "release_excluded": False,
                 }
-    return out
+    return {k: {**v, "release_excluded": k in excluded} for k, v in out.items()}
 
 
 @functools.lru_cache(maxsize=4)
@@ -138,6 +149,12 @@ def source_class(source_id: str, default: str = UNKNOWN, root: str | Path | None
     """The registry's class for ``source_id``; ``default`` when the id is not in the registry."""
     entry = _cached(str(_registry_root(root))).get(source_id)
     return entry["access_class"] if entry else coerce_class(default)
+
+
+def release_excluded(source_id: str, root: str | Path | None = None) -> bool:
+    """True when the registry marks ``source_id`` never released in any flavour."""
+    entry = _cached(str(_registry_root(root))).get(source_id)
+    return bool(entry and entry["release_excluded"])
 
 
 def per_row_source(source_id: str, root: str | Path | None = None) -> bool:
@@ -179,8 +196,14 @@ def flavour_filter(
     rows: Iterable[T], flavour: str, classes: Mapping[str, str] | None = None
 ) -> list[T]:
     """The rows ``flavour`` may ship: ``open`` -> class open only; ``nc`` -> class
-    restricted-nc only. Nothing nd, internal-only or unknown ever passes."""
+    restricted-nc only. Nothing nd, internal-only or unknown ever passes, and rows of a
+    release-excluded source (registry flag) are dropped in every flavour."""
     if flavour not in FLAVOURS:
         raise ValueError(f"unknown flavour {flavour!r}; expected one of {sorted(FLAVOURS)}")
     want = FLAVOURS[flavour]
-    return [r for r in rows if row_class(r, classes) == want]
+    return [r for r in rows if row_class(r, classes) == want and not _row_excluded(r)]
+
+
+def _row_excluded(row: object) -> bool:
+    sid = _field(row, "source_id")
+    return isinstance(sid, str) and release_excluded(sid)

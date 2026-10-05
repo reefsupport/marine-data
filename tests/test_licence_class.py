@@ -198,3 +198,18 @@ def test_every_registry_and_ingest_spec_id_has_a_valid_class():
     for s in registry.sources:
         if s.id in spec_ids:
             assert classes[s.id] == s.access_class.value
+
+
+@pytest.mark.parametrize("source", ["floating-marine-debris", "noaa-dsc-csv", "large-scale-fish"])
+@pytest.mark.parametrize("flavour", ["open", "nc"])
+def test_release_excluded_sources_ship_in_no_flavour(source, flavour):
+    assert lc.release_excluded(source, root=REGISTRY)
+    row = {"source_id": source, "licence_class": OPEN if flavour == "open" else NC}
+    assert flavour_filter([row], flavour) == []
+
+
+def test_release_exclusion_flag_does_not_touch_other_sources():
+    assert not lc.release_excluded("mermaid-aws", root=REGISTRY)
+    assert not lc.release_excluded("not-a-source", root=REGISTRY)
+    row = {"source_id": "zz-open", "licence_class": OPEN}
+    assert flavour_filter([row], "open") == [row]
