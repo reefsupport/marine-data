@@ -1,0 +1,12 @@
+# source: roboflow-aquarium
+# crosswalk: roboflow-aquarium
+# counts: annotations (boxes)
+# retrieved: 2026-10-05 from the staged YOLO labels (all images)
+label	count	description
+fish	2669	
+jellyfish	694	
+penguin	516	
+puffin	284	
+shark	352	
+starfish	116	
+stingray	184	

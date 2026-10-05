@@ -29,12 +29,13 @@ the strictest of the box and image licences, and the source's class when no row 
 from __future__ import annotations
 
 import ast
+import csv
 import json
 import re
 from collections import Counter
 from collections.abc import Callable, Iterable, Mapping
 from concurrent.futures import ThreadPoolExecutor
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from pathlib import Path, PurePosixPath
 
 from ..annotation_schema import (
@@ -45,7 +46,7 @@ from ..annotation_schema import (
     validate_row,
     write_annotations,
 )
-from ..registry import Registry
+from ..registry import Registry, _default_root
 from .boxes_licence_join import FathomnetLicenceJoin, JoinedLicence, image_uuid
 from .image_labels_table import Resolved, _splits, _stride, axes_resolver_for
 from .masks_table import INTERNAL_ONLY, drop_internal_only, is_internal_only
@@ -108,10 +109,14 @@ class BoxSource:
     names_rel: str | None = None  # data.yaml of the YOLO sets
     stream_parts: int = 0  # fathomnet: number of _stream part files
     licence_join: bool = False  # image licence = the matching FathomNet image's (FGVC sets)
+    id_key: str | None = None  # registry-relative CSV (category_id,name): ids-only sets get names
 
     @property
     def tree(self) -> str:
         return f"{self.source_id}/{self.version}"
+
+
+FGVC23_KEY = "taxonomy/vocab/fathomnet-fgvc23-category-key.csv"  # category_id -> concept (U8a)
 
 
 # Source classes: fathomnet = lic-A.tsv (restricted-nd, per-contributor); rf100-coral-lwptl and
@@ -123,16 +128,19 @@ BOX_SOURCES: dict[str, BoxSource] = {
     s.source_id: s
     for s in (
         BoxSource("fathomnet", "fathomnet-f4f9b794691e", "fathomnet", "human", None, ND,
-                  label_set="fathomnet-concepts", stream_parts=188),
+                  crosswalk_id="fathomnet-concepts", label_set="fathomnet-concepts",
+                  stream_parts=188),
         BoxSource("fathomnet-fgvc23", "rev-4636bed20b3b", "coco-columnar", "human", "CC-BY-4.0",
-                  ND, label_set="fgvc23-category-id", licence_join=True),
+                  ND, crosswalk_id="fathomnet-concepts", label_set="fathomnet-concepts",
+                  licence_join=True, id_key=FGVC23_KEY),
         BoxSource("fathomnet-fgvc25", "2025", "coco-fragments", "human", "CC-BY-4.0", ND,
-                  label_set="fgvc25-categories", licence_join=True),
+                  crosswalk_id="fathomnet-concepts", label_set="fathomnet-concepts",
+                  licence_join=True),
         BoxSource("rf100-coral-lwptl", "rev-83f0a33679b0", "yolo", "human_crowd", "CC-BY-4.0",
                   OPEN, crosswalk_id="rf100-coral-lwptl", label_set="rf100-coral-lwptl",
                   names_rel="labels/files/data.yaml"),
         BoxSource("roboflow-aquarium", "zip-5d30fed3dd5a", "yolo", "human_crowd", "CC-BY-4.0",
-                  OPEN, label_set="aquarium-combined",
+                  OPEN, crosswalk_id="roboflow-aquarium", label_set="aquarium-combined",
                   names_rel="docs/aquarium_pretrain/data.yaml"),
         BoxSource("ruod", "rev-c22094e45b7f", "coco-docs", "human", "NOASSERTION",
                   INTERNAL_ONLY, crosswalk_id="ruod", label_set="ruod-categories"),
@@ -143,6 +151,13 @@ BOX_SOURCES: dict[str, BoxSource] = {
                   names_rel="labels/files/23sp_4120img_34945annots_2688res_data.yaml"),
     )
 }  # fmt: skip
+
+
+def load_id_names(rel: str) -> dict[str, str]:
+    """``{category_id: concept name}`` from a registry-relative key CSV (``#`` header lines)."""
+    path = Path(_default_root()) / rel
+    rows = [x for x in path.read_text().splitlines() if x and not x.startswith("#")]
+    return {r["category_id"]: r["name"] for r in csv.DictReader(rows)}
 
 
 def resolver_for_source(registry: Registry, spec: BoxSource) -> Callable[[str], Resolved]:
@@ -232,6 +247,7 @@ class _Emit:
     def __init__(self, spec: BoxSource, registry: Registry) -> None:
         self.spec, self.registry = spec, registry
         self.resolve = resolver_for_source(registry, spec)
+        self.id_names = load_id_names(spec.id_key) if spec.id_key else {}
         self.rows: list[dict] = []
         self.pending: list[dict] = []
         self.counts = BoxCounts()
@@ -250,7 +266,7 @@ class _Emit:
         image_licence=None,
         image_key=None,
     ) -> None:
-        boxes = list(boxes)
+        boxes = [self._named(b) for b in boxes]
         self.counts = self.counts + counts
         if not boxes:
             self.empty += 1
@@ -266,6 +282,12 @@ class _Emit:
                 row["image_key"] = image_key
             target.append(row)
         self.images += sha is not None
+
+    def _named(self, box: RawBox) -> RawBox:
+        """An ids-only box (FGVC 2023) gets its concept name from the source's category key; the id
+        stays in ``label_native_id``. An id the key lacks stays ids-only (and unmapped)."""
+        name = self.id_names.get(box.native_id or "") if box.native is None else None
+        return replace(box, native=name) if name else box
 
     def reject(self, what: str, exc: Exception) -> None:
         self.bad.append(f"{what}: {exc}"[:160])
