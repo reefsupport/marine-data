@@ -2,56 +2,133 @@
 # Read by scripts/taxonomy_fauna_codegen.py (crosswalk fathomnet-concepts); a row replaces the label's generated edge.
 # match_type: exact | broader | unmapped.  aphia_id is the WoRMS AphiaID (accepted, rank as named); the codegen re-checks it against WoRMS.
 # Rows are in box_count order, top down, to box-weighted coverage >= 0.95 and a little beyond (every label with >= 100 boxes).
-concept	box_count	scientific_name	aphia_id	match_type	note
-sea fan	17260	Octocorallia	1341	broader	gorgonians; Gorgonacea and Alcyonacea are unaccepted in WoRMS (valid = Octocorallia) and the accepted gorgonian orders Malacalcyonacea/Scleralcyonacea split them, so the smallest accepted clade holding all sea fans is Octocorallia
-marine organism	11159	Biota	1	broader	generic non-specific label; maps to the taxonomy root
-bony fish	7543	Actinopterygii	10194	broader	bony fish = Osteichthyes (152352, accepted); Osteichthyes is not a node and inserting it would re-parent Actinopterygii (MAJOR), so the ray-finned class stands for it; coelacanths and lungfish are not expected in the corpus
-brittle star	3939	Ophiuroidea	123084	exact	
-feather star	3447	Comatulida	123093	exact	feather stars are the order Comatulida (stalked sea lilies are the other crinoids)
-urchin	3068	Echinoidea	123082	exact	sea urchins and relatives
-shrimp	1541	Decapoda	1130	broader	shrimp is paraphyletic (Caridea, Dendrobranchiata, Stenopodidea); the smallest accepted clade holding all of them is Decapoda
-sea star	1435	Asteroidea	123080	exact	
-stony coral	1404	Scleractinia	1363	exact	
-black coral	1007	Antipatharia	22549	exact	
-crab	1001	Brachyura	106673	exact	true crabs; hermit crabs, squat lobsters and king crabs are Anomura and have their own labels
-squat lobster	921	Anomura	106671	broader	squat lobsters span Galatheoidea and Chirostyloidea (and Galatheoidea also holds porcelain crabs); the smallest accepted clade holding both is Anomura
-actiniarian	889	Actiniaria	1360	exact	
-physonect siphonophore	806	Physonectae	135335	exact	
-anemone+	724	Hexacorallia	1340	broader	'+' marks anemones with their relatives; Hexacorallia holds anemones, zoanthids, corallimorphs and tube anemones, so it is a strict ancestor if the relatives are hexacorals
-soft coral	718	Octocorallia	1341	broader	soft corals are octocorals; Alcyonacea is unaccepted in WoRMS (valid = Octocorallia)
-hydroid	569	Hydrozoa	1337	broader	hydroids are the hydrozoan polyp stage
-bivalve	468	Bivalvia	105	exact	
-Nano plankton	446			unmapped	non-taxon: size class, not a taxon
-sea cucumber	411	Holothuroidea	123083	exact	
-Funiculina-Balticina complex	392	Pennatuloidea	1609360	broader	two sea-pen genera, Funiculina (Funiculinidae) and Balticina (Balticinidae); both lie under Pennatuloidea in WoRMS
-zoanthid	379	Zoantharia	607338	exact	WoRMS accepted order Zoantharia (the class-rank record 1364 is unaccepted)
-calycophoran siphonophore	367	Calycophorae	135333	exact	
-equipment	319			unmapped	non-taxon: equipment
-benthic annelid	291	Annelida	882	broader	any bottom-dwelling annelid; Annelida is the phylum
-medusae	290	Medusozoa	1740301	broader	jellyfish stage of medusozoans (Hydrozoa, Scyphozoa, Cubozoa, Staurozoa)
-Suction Sampler	285			unmapped	non-taxon: equipment
-squid	272	Decapodiformes	325342	broader	squids sit in Decapodiformes (Teuthida is a nomen dubium); the superorder also holds cuttlefish and bobtail squids
-manipulator	250			unmapped	non-taxon: equipment (ROV arm)
-Detritus	235			unmapped	non-taxon: detritus
-larvacean	230	Appendicularia	146421	exact	the class Appendicularia (the genus of the same name is 103357)
-pyrosome	220	Pyrosomatida	137213	exact	
-LRJ complex	216			unmapped	ambiguous: unresolved acronym for a complex of large jellies
-corallimorph	194	Corallimorpharia	1362	exact	
-Pyrosoma detritus	193			unmapped	non-taxon: detritus
-lobed ctenophore	192	Lobata	1258	exact	WoRMS accepted order Lobata (the genus-rank record 603346 is a nomen dubium)
-Push Corer	184			unmapped	non-taxon: equipment
-crustacean	176	Crustacea	1066	exact	
-sea squirt	173	Ascidiacea	1839	exact	
-salp	163	Salpida	137214	exact	
-sea snail	140	Gastropoda	101	broader	marine gastropods; the class also holds sea slugs
-sea pen	129	Pennatuloidea	1609360	exact	WoRMS: the order Pennatulacea is superseded by the superfamily Pennatuloidea
-sea turtle	126	Chelonioidea	987094	exact	Cheloniidae and Dermochelyidae
-Pennate	125	Bacillariophyta	148898	broader	pennate diatoms are a subset of the diatoms (no accepted clade of exactly the pennates)
-cydippid ctenophore	124	Cydippida	1251	exact	
-coral skeleton	116			unmapped	non-taxon: dead coral skeleton (substrate)
-detrital aggregate	113			unmapped	non-taxon: detritus
-ray or skate	113	Batoidea	368409	exact	rays, skates and relatives
-siphonophore	105	Siphonophorae	1371	exact	
-shark	104	Selachii	368408	exact	sharks are the infraclass Selachii (same mapping as roboflow-aquarium)
-Ciliate	103	Ciliophora	11	exact	
-other	100			unmapped	non-taxon: residual bucket, no taxonomic content
+concept	box_count	scientific_name	aphia_id	match_type	note	target
+sea fan	17260	Octocorallia	1341	broader	gorgonians; Gorgonacea and Alcyonacea are unaccepted in WoRMS (valid = Octocorallia) and the accepted gorgonian orders Malacalcyonacea/Scleralcyonacea split them, so the smallest accepted clade holding all sea fans is Octocorallia	
+marine organism	11159	Biota	1	broader	generic non-specific label; maps to the taxonomy root	
+bony fish	7543	Actinopterygii	10194	related	Osteichthyes not a node; underwater bony fish ~ ray-finned	
+brittle star	3939	Ophiuroidea	123084	exact		
+feather star	3447	Comatulida	123093	exact	feather stars are the order Comatulida (stalked sea lilies are the other crinoids)	
+urchin	3068	Echinoidea	123082	exact	sea urchins and relatives	
+shrimp	1541	Decapoda	1130	broader	shrimp is paraphyletic (Caridea, Dendrobranchiata, Stenopodidea); the smallest accepted clade holding all of them is Decapoda	
+sea star	1435	Asteroidea	123080	exact		
+stony coral	1404	Scleractinia	1363	exact		
+black coral	1007	Antipatharia	22549	exact		
+crab	1001	Brachyura	106673	exact	true crabs; hermit crabs, squat lobsters and king crabs are Anomura and have their own labels	
+squat lobster	921	Anomura	106671	broader	squat lobsters span Galatheoidea and Chirostyloidea (and Galatheoidea also holds porcelain crabs); the smallest accepted clade holding both is Anomura	
+actiniarian	889	Actiniaria	1360	exact		
+physonect siphonophore	806	Physonectae	135335	exact		
+anemone+	724	Hexacorallia	1340	broader	'+' marks anemones with their relatives; Hexacorallia holds anemones, zoanthids, corallimorphs and tube anemones, so it is a strict ancestor if the relatives are hexacorals	
+soft coral	718	Octocorallia	1341	broader	soft corals are octocorals; Alcyonacea is unaccepted in WoRMS (valid = Octocorallia)	
+hydroid	569	Hydrozoa	1337	broader	hydroids are the hydrozoan polyp stage	
+bivalve	468	Bivalvia	105	exact		
+Nano plankton	446			unmapped	non-taxon: size class, not a taxon	
+sea cucumber	411	Holothuroidea	123083	exact		
+Funiculina-Balticina complex	392	Pennatuloidea	1609360	broader	two sea-pen genera, Funiculina (Funiculinidae) and Balticina (Balticinidae); both lie under Pennatuloidea in WoRMS	
+zoanthid	379	Zoantharia	607338	exact	WoRMS accepted order Zoantharia (the class-rank record 1364 is unaccepted)	
+calycophoran siphonophore	367	Calycophorae	135333	exact		
+equipment	319			exact	non-taxon axis: generic gear label	NT_EQUIPMENT
+benthic annelid	291	Annelida	882	broader	any bottom-dwelling annelid; Annelida is the phylum	
+medusae	290	Medusozoa	1740301	broader	jellyfish stage of medusozoans (Hydrozoa, Scyphozoa, Cubozoa, Staurozoa)	
+Suction Sampler	285			exact	non-taxon axis: ROV sampling instrument	NT_EQUIPMENT
+squid	272	Decapodiformes	325342	broader	squids sit in Decapodiformes (Teuthida is a nomen dubium); the superorder also holds cuttlefish and bobtail squids	
+manipulator	250			exact	non-taxon axis: ROV arm	NT_EQUIPMENT
+Detritus	235			unmapped	non-taxon: detritus	
+larvacean	230	Appendicularia	146421	exact	the class Appendicularia (the genus of the same name is 103357)	
+pyrosome	220	Pyrosomatida	137213	exact		
+LRJ complex	216			unmapped	ambiguous: unresolved acronym for a complex of large jellies	
+corallimorph	194	Corallimorpharia	1362	exact		
+Pyrosoma detritus	193			unmapped	non-taxon: detritus	
+lobed ctenophore	192	Lobata	1258	exact	WoRMS accepted order Lobata (the genus-rank record 603346 is a nomen dubium)	
+Push Corer	184			exact	non-taxon axis: ROV sampling instrument	NT_EQUIPMENT
+crustacean	176	Crustacea	1066	exact		
+sea squirt	173	Ascidiacea	1839	exact		
+salp	163	Salpida	137214	exact		
+sea snail	140	Gastropoda	101	broader	marine gastropods; the class also holds sea slugs	
+sea pen	129	Pennatuloidea	1609360	exact	WoRMS: the order Pennatulacea is superseded by the superfamily Pennatuloidea	
+sea turtle	126	Chelonioidea	987094	exact	Cheloniidae and Dermochelyidae	
+Pennate	125	Bacillariophyta	148898	broader	pennate diatoms are a subset of the diatoms (no accepted clade of exactly the pennates)	
+cydippid ctenophore	124	Cydippida	1251	exact		
+coral skeleton	116			unmapped	non-taxon: dead coral skeleton (substrate)	
+detrital aggregate	113			unmapped	non-taxon: detritus	
+ray or skate	113	Batoidea	368409	exact	rays, skates and relatives	
+siphonophore	105	Siphonophorae	1371	exact		
+shark	104	Selachii	368408	exact	sharks are the infraclass Selachii (same mapping as roboflow-aquarium)	
+Ciliate	103	Ciliophora	11	exact		
+other	100			unmapped	non-taxon: residual bucket, no taxonomic content	
+# WP-U8b: long tail (every unmapped label with >= 10 boxes; a few cheaper ones alongside) and the non-taxon axis (target = NT_* node).
+Diatom	92	Bacillariophyta	148898	exact	diatoms are the WoRMS phylum Bacillariophyta (classes Bacillariophyceae, Coscinodiscophyceae, Mediophyceae)	
+midwater annelid	89	Annelida	882	broader	any midwater annelid (polychaetes, tomopterids); Annelida is the phylum	
+echinoderm	87	Echinodermata	1806	exact		
+tube anemone	85	Ceriantharia	1361	exact	tube anemones are Ceriantharia (WoRMS lists the order)	
+sea slug	75	Heterobranchia	14712	broader	sea slug is polyphyletic (nudibranchs, sea hares, sacoglossans, pleurobranchs); the smallest accepted clade holding them is Heterobranchia	
+Euphausia 2	73	Euphausia	110673	broader	morphospecies 'Euphausia 2' -> genus	
+isopod	70	Isopoda	1131	exact		
+Peniagone vitrea- sp. 1 complex	68	Peniagone	123515	broader	species complex of the sea cucumber genus Peniagone -> genus	
+Mixed diatom chain	66	Bacillariophyta	148898	broader	a chain of mixed diatoms; Bacillariophyta is the diatom phylum	
+ctenophore	65	Ctenophora	1248	exact	comb jellies = the phylum Ctenophora (AphiaID confirmed; the name alone is a homonym of two diatom genera)	
+chaetognath	64	Chaetognatha	2081	exact	arrow worms	
+hermit crab	57	Paguroidea	106687	exact	hermit crabs are the superfamily Paguroidea; king crabs and squat lobsters have their own labels	
+lobster	57	Reptantia	122312	broader	lobsters span Astacidea, Achelata and Polychelida; the smallest accepted clade holding all of them is the suborder Reptantia (it also holds crabs)	
+barnacle	55	Cirripedia	1082	exact		
+narella sp.	54	Narella	125319	broader	morphospecies of the gorgonian genus Narella -> genus	
+sea spider	53	Pycnogonida	1302	exact		
+Synallactidae gen. et sp. indet.	52	Synallactidae	123185	broader	undetermined genus and species of the family	
+doliolid	49	Doliolida	137212	exact		
+jawless fish	38	Vertebrata	146419	broader	hagfishes + lampreys; Agnatha is unaccepted, the name Cyclostomata resolves to a bryozoan order in WoRMS and no accepted clade holds only jawless fish, so Vertebrata stands for them	
+amphipod	36	Amphipoda	1135	exact		
+Centric	28	Bacillariophyta	148898	broader	centric diatoms (Coscinodiscophyceae + Mediophyceae); Bacillariophyta is the smallest accepted clade holding both	
+Hydromedusae	27	Hydrozoa	1337	broader	the medusa stage of hydrozoans	
+tunicate	27	Tunicata	146420	exact		
+vertebrate	24	Vertebrata	146419	exact		
+acorn worm	22	Enteropneusta	1820	exact	acorn worms are the class Enteropneusta	
+Medusae	21	Medusozoa	1740301	broader	jellyfish stage of medusozoans (Hydrozoa, Scyphozoa, Cubozoa, Staurozoa)	
+salp chain	21	Salpida	137214	exact	a salp chain is the aggregate (blastozooid) generation of Salpida	
+Acanthascus (Rhabdocalyptus) sp.	20	Acanthascus	171966	broader	morphospecies of Acanthascus (subgenus Rhabdocalyptus) -> genus	
+Farrea nr. occa erecta	17	Farrea	132107	broader	'nr.' (near) identification -> genus	
+Farrea nr. occa	1	Farrea	132107	broader	'nr.' (near) identification -> genus	
+cuttlefish	17	Sepiida	11713	exact		
+mollusc	17	Mollusca	51	exact		
+arthropod	16	Arthropoda	1065	exact		
+Brachiopods	15	Brachiopoda	1803	exact		
+Terebratulina complex	11	Terebratulina	104040	broader	species complex of the brachiopod genus Terebratulina -> genus	
+benthic siphonophore	10	Siphonophorae	1371	broader	benthic siphonophores are a subset of the order	
+Munida sp	1	Munida	106835	broader	morphospecies of the squat lobster genus Munida -> genus	
+gastropod	7	Gastropoda	101	exact		
+diatom	1	Bacillariophyta	148898	exact	diatoms are the WoRMS phylum Bacillariophyta	
+Detritus Sampler	31			exact	non-taxon axis: sampling instrument	NT_EQUIPMENT
+mini container array	21			exact	non-taxon axis: experiment gear	NT_EQUIPMENT
+lights	19			exact	non-taxon axis: ROV lights	NT_EQUIPMENT
+CO2 Corral	17			exact	non-taxon axis: experiment apparatus	NT_EQUIPMENT
+Benthic Respiration System	12			exact	non-taxon axis: benthic instrument	NT_EQUIPMENT
+trap	10			exact	non-taxon axis: sampling gear	NT_EQUIPMENT
+Emergence Trap	2			exact	non-taxon axis: sampling gear	NT_EQUIPMENT
+DeepPIV 1.0	8			exact	non-taxon axis: imaging instrument	NT_EQUIPMENT
+DeepPIV 2.0	4			exact	non-taxon axis: imaging instrument	NT_EQUIPMENT
+DeepPIV 3.0	7			exact	non-taxon axis: imaging instrument	NT_EQUIPMENT
+Acoustic Doppler Current Profiler	2			exact	non-taxon axis: instrument	NT_EQUIPMENT
+2G Robotics structured light laser	1			exact	non-taxon axis: instrument	NT_EQUIPMENT
+CO2 Delivery System	1			exact	non-taxon axis: experiment apparatus	NT_EQUIPMENT
+Dye Injector	1			exact	non-taxon axis: experiment apparatus	NT_EQUIPMENT
+Eye-in-the-Sea	1			exact	non-taxon axis: camera instrument	NT_EQUIPMENT
+Free Ocean CO2 Experiment	1			exact	non-taxon axis: experiment apparatus	NT_EQUIPMENT
+Ink Dispenser	1			exact	non-taxon axis: experiment apparatus	NT_EQUIPMENT
+Lagrangian sediment trap	1			exact	non-taxon axis: instrument	NT_EQUIPMENT
+Laser Raman	1			exact	non-taxon axis: instrument	NT_EQUIPMENT
+Midwater Respirometry System	1			exact	non-taxon axis: instrument	NT_EQUIPMENT
+Sonardyne beacon	1			exact	non-taxon axis: instrument	NT_EQUIPMENT
+portable video camera	1			exact	non-taxon axis: instrument	NT_EQUIPMENT
+collection device	5			exact	non-taxon axis: sampling gear	NT_EQUIPMENT
+coral transplant container	7			exact	non-taxon axis: experiment gear	NT_EQUIPMENT
+backscatter mooring	1			exact	non-taxon axis: instrument	NT_EQUIPMENT
+site marker	5			exact	non-taxon axis: survey marker	NT_EQUIPMENT
+trash	21			exact	non-taxon axis: litter	NT_DEBRIS
+plastic	3			exact	non-taxon axis: litter	NT_DEBRIS
+plastic bag	3			exact	non-taxon axis: litter	NT_DEBRIS
+bottle	2			exact	non-taxon axis: litter	NT_DEBRIS
+tire	2			exact	non-taxon axis: litter	NT_DEBRIS
+cardboard	3			exact	non-taxon axis: litter	NT_DEBRIS
+anthropogenic	1			exact	non-taxon axis: anthropogenic material	NT_DEBRIS
+shoe	1			exact	non-taxon axis: litter	NT_DEBRIS
+manufactured wood	1			exact	non-taxon axis: man-made litter	NT_DEBRIS
+Unknown full image	61			exact	non-taxon axis: annotator could not identify	NT_UNKNOWN
+inconclusive	96			exact	non-taxon axis: annotator could not conclude an identification	NT_UNKNOWN

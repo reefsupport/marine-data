@@ -46,6 +46,14 @@ FISH_NOTE = (
 # label -> (WoRMS name | None = unmappable, fidelity, note). Hand decisions, applied before the rules.
 HAND: dict[str, dict[str, tuple[str | None, str, str]]] = {
     "fathomnet-concepts": {},
+    # BrackishMOT gt.txt class ids (paper arXiv:2302.10645): 1 fish, 2 crab, 3 shrimp, 4 starfish, 5 small fish
+    "brackishmot-class-id": {
+        "1": ("Vertebrata", "coarsened", FISH_NOTE),
+        "2": ("Brachyura", "exact", "crab = true crabs (Brachyura)"),
+        "3": ("Decapoda", "coarsened", "shrimp is paraphyletic (Caridea, Dendrobranchiata, Stenopodidea); the smallest accepted clade holding all of them is Decapoda"),
+        "4": ("Asteroidea", "exact", "starfish = sea stars"),
+        "5": ("Vertebrata", "coarsened", "small fish (a school-forming size class of fish): " + FISH_NOTE),
+    },
     "roboflow-aquarium": {
         "fish": ("Vertebrata", "coarsened", FISH_NOTE),
         "jellyfish": ("Medusozoa", "coarsened", "jellyfish are medusozoans; ctenophores would be missed"),
@@ -81,7 +89,12 @@ def reductions(label: str) -> tuple[str, str] | None:
 
 COMMON_TSV = "fathomnet-common-names.tsv"
 COMMON_XW = "fathomnet-concepts"
-_FIDELITY = {"exact": "exact", "broader": "coarsened", "unmapped": "unmappable"}
+_FIDELITY = {
+    "exact": "exact",
+    "broader": "coarsened",
+    "related": "approximate",
+    "unmapped": "unmappable",
+}
 
 
 def read_common(path: Path) -> list[dict[str, str]]:
@@ -100,6 +113,10 @@ def verify_common(rows: list[dict[str, str]], client: WormsClient) -> dict[str, 
     for r in rows:
         if r["match_type"] not in _FIDELITY:
             raise SystemExit(f"{r['concept']}: unknown match_type {r['match_type']!r}")
+        if r.get("target"):  # non-taxon axis: an NT_* node, no WoRMS id involved (checked in main)
+            if r["match_type"] != "exact" or r["aphia_id"] or r["scientific_name"]:
+                raise SystemExit(f"{r['concept']}: a target row is exact with no name or aphia_id")
+            continue
         if not r["aphia_id"]:
             if r["match_type"] != "unmapped":
                 raise SystemExit(f"{r['concept']}: {r['match_type']} row without an aphia_id")
@@ -190,6 +207,7 @@ def main(cache: Path, xw: str, dry: bool) -> None:
     old = {e["source_label"]: e for e in (doc["crosswalks"][0]["edges"] if doc else [])}
     hand = dict(HAND.get(xw, {}))
     verified: dict[str, int] = {}
+    nt: dict[str, tuple[str, str | None]] = {}  # label -> (NT_* node, note), the non-taxon axis
     common_path = taxonomy_dir(ROOT) / "vocab" / COMMON_TSV
     if xw == COMMON_XW and common_path.exists():
         common = read_common(common_path)
@@ -197,6 +215,9 @@ def main(cache: Path, xw: str, dry: bool) -> None:
         for r in common:
             if r["concept"] not in labels:
                 raise SystemExit(f"{r['concept']}: not a fathomnet label")
+            if r.get("target"):
+                nt[r["concept"]] = (r["target"], r["note"] or None)
+                continue
             hand[r["concept"]] = (
                 r["scientific_name"] or None,
                 _FIDELITY[r["match_type"]],
@@ -206,7 +227,7 @@ def main(cache: Path, xw: str, dry: bool) -> None:
         old = {k: v for k, v in old.items() if k not in {r["concept"] for r in common}}
     todo = sorted(set(labels) - set(old))
     # pass 1: exact names (hand table first); pass 2: the reductions of what pass 1 missed
-    first = {n for n in todo if n not in hand}
+    first = {n for n in todo if n not in hand and n not in nt}
     got = resolve(
         first | {h[0] for h in hand.values() if h[0] and h[0] not in verified}, snap, client
     )
@@ -216,7 +237,9 @@ def main(cache: Path, xw: str, dry: bool) -> None:
 
     plan: dict[str, tuple[int | None, str, str | None]] = {}  # label -> (aphia, fidelity, note)
     for n in todo:
-        if n in hand:
+        if n in nt:
+            plan[n] = (None, "exact", nt[n][1])
+        elif n in hand:
             tgt, fid, note = hand[n]
             aph, why = got[tgt] if tgt else (None, "hand: no taxon")
             plan[n] = (aph, fid, note) if aph else (None, "unmappable", note or f"{tgt}: {why}")
@@ -259,6 +282,9 @@ def main(cache: Path, xw: str, dry: bool) -> None:
     tx = yaml.safe_load(tx_path.read_text())
     nodes = tx["schemas"][0]["nodes"]
     have = {n["id"] for n in nodes}
+    bad_nt = {t for t, _n in nt.values()} - {n["id"] for n in nodes if n.get("non_taxon")}
+    if bad_nt:
+        raise SystemExit(f"not non-taxon nodes in rs-taxa-v1: {sorted(bad_nt)}")
     existing_ids = {int(n["worms_aphia_id"]) for n in nodes if n.get("worms_aphia_id")}
     # an ancestor whose insertion would re-parent an existing node is not added (MINOR stays MINOR)
     under = {lid for a in existing_ids for _r, _n, lid in lineage(a) if lid != a}
@@ -291,6 +317,8 @@ def main(cache: Path, xw: str, dry: bool) -> None:
     for n in todo:
         a, fid, note = plan[n]
         e: dict = {"source_label": n}
+        if n in nt:
+            e["targets"] = {"taxon": nt[n][0]}
         if a:
             e["targets"] = {"taxon": f"A{acc(a)}"}
         e["fidelity"] = fid

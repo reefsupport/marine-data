@@ -27,6 +27,7 @@ COVERAGE_FLOOR = 0.95
 _FIDELITY = {
     "exact": Fidelity.EXACT,
     "broader": Fidelity.COARSENED,
+    "related": Fidelity.APPROXIMATE,
     "unmapped": Fidelity.UNMAPPABLE,
 }
 
@@ -97,16 +98,22 @@ def test_unmappable_edges_carry_a_reason(crosswalk):
 
 def test_common_name_table_is_in_box_count_order_and_covers_95_percent(common, counts):
     boxes = [int(r["box_count"]) for r in common]
-    assert boxes == sorted(boxes, reverse=True)
+    assert boxes[:52] == sorted(
+        boxes[:52], reverse=True
+    )  # the U8a2 block: every label >= 100 boxes
+    assert min(boxes[:52]) >= 100
     assert all(counts[r["concept"]] == int(r["box_count"]) for r in common)
-    # filled top down: every unmappable label above the last row's count is in the table
-    assert min(boxes) >= 100
+    assert sorted(boxes[52:], reverse=True)[:1] and max(boxes[52:]) < 100  # the U8b block
 
 
 def test_every_common_name_row_is_the_crosswalk_edge(common, by_label, nodes):
     for r in common:
         edge = by_label[r["concept"]]
         assert edge.fidelity is _FIDELITY[r["match_type"]], r["concept"]
+        if r.get("target"):  # non-taxon axis (U8b): an NT_* node, no WoRMS id
+            assert edge.targets == {"taxon": r["target"]}, r["concept"]
+            assert nodes[r["target"]].non_taxon and not r["aphia_id"], r["concept"]
+            continue
         if r["match_type"] == "unmapped":
             assert not edge.targets, r["concept"]
             continue
@@ -123,14 +130,49 @@ def test_every_common_name_row_is_the_crosswalk_edge(common, by_label, nodes):
         ("sea star", "Asteroidea", Fidelity.EXACT),
         ("stony coral", "Scleractinia", Fidelity.EXACT),
         ("sea fan", "Octocorallia", Fidelity.COARSENED),
-        ("bony fish", "Actinopterygii", Fidelity.COARSENED),
+        ("bony fish", "Actinopterygii", Fidelity.APPROXIMATE),
         ("marine organism", "Biota", Fidelity.COARSENED),
+        # U8b long tail (every unmapped label with >= 10 boxes, WoRMS-confirmed ids)
+        ("echinoderm", "Echinodermata", Fidelity.EXACT),
+        ("ctenophore", "Ctenophora", Fidelity.EXACT),
+        ("chaetognath", "Chaetognatha", Fidelity.EXACT),
+        ("hermit crab", "Paguroidea", Fidelity.EXACT),
+        ("sea spider", "Pycnogonida", Fidelity.EXACT),
+        ("isopod", "Isopoda", Fidelity.EXACT),
+        ("sea slug", "Heterobranchia", Fidelity.COARSENED),
+        ("Diatom", "Bacillariophyta", Fidelity.EXACT),
     ],
 )
 def test_common_names_land_on_the_taxon_they_denote(by_label, nodes, label, name, fidelity):
     edge = by_label[label]
     assert nodes[edge.targets["taxon"]].worms_scientificname == name
     assert edge.fidelity is fidelity
+
+
+def test_bony_fish_is_related_not_broader_and_osteichthyes_is_not_a_node(by_label, nodes):
+    edge = by_label["bony fish"]
+    assert edge.fidelity is Fidelity.APPROXIMATE  # match_type "related"
+    assert "Osteichthyes not a node" in edge.note
+    assert not [n for n in nodes.values() if n.worms_scientificname == "Osteichthyes"]  # MAJOR
+
+
+@pytest.mark.parametrize(
+    ("label", "node"),
+    [
+        ("equipment", "NT_EQUIPMENT"),
+        ("Suction Sampler", "NT_EQUIPMENT"),
+        ("manipulator", "NT_EQUIPMENT"),
+        ("DeepPIV 1.0", "NT_EQUIPMENT"),
+        ("trash", "NT_DEBRIS"),
+        ("plastic bag", "NT_DEBRIS"),
+        ("inconclusive", "NT_UNKNOWN"),
+        ("Unknown full image", "NT_UNKNOWN"),
+    ],
+)
+def test_non_taxon_labels_map_exactly_to_the_nt_nodes(by_label, nodes, label, node):
+    edge = by_label[label]
+    assert edge.targets == {"taxon": node} and edge.fidelity is Fidelity.EXACT
+    assert nodes[node].non_taxon
 
 
 def test_generic_labels_map_to_the_root_only_because_it_exists(by_label, nodes):
@@ -140,8 +182,7 @@ def test_generic_labels_map_to_the_root_only_because_it_exists(by_label, nodes):
 
 def test_non_taxa_and_ambiguous_names_stay_unmapped(common, by_label):
     for label in (
-        "equipment",
-        "Suction Sampler",
+        "__unlabelled",
         "Detritus",
         "Nano plankton",
         "LRJ complex",
@@ -164,7 +205,8 @@ def test_fgvc23_ids_resolve_to_concept_names_with_an_edge(by_label):
 
 
 @pytest.mark.parametrize(
-    "source_id", ["fathomnet", "fathomnet-fgvc23", "fathomnet-fgvc25", "roboflow-aquarium"]
+    "source_id",
+    ["fathomnet", "fathomnet-fgvc23", "fathomnet-fgvc25", "roboflow-aquarium", "brackishmot"],
 )
 def test_box_sources_point_at_a_crosswalk(source_id, registry):
     spec = bt.BOX_SOURCES[source_id]
@@ -179,3 +221,42 @@ def test_aquarium_crosswalk_maps_its_seven_classes(registry, nodes):
     assert all(e.targets for e in edges.values())
     assert edges["fish"].fidelity is Fidelity.COARSENED
     assert nodes[edges["starfish"].targets["taxon"]].worms_scientificname == "Asteroidea"
+
+
+def test_brackishmot_class_ids_follow_the_paper_class_list(registry, nodes):
+    """gt.txt class 1-6 = fish, crab, shrimp, starfish, small fish, jellyfish (arXiv:2302.10645)."""
+    xw = registry.crosswalk("brackishmot-class-id")
+    edges = {e.source_label: e for e in xw.edges}
+    assert set(edges) == {"1", "2", "3", "4", "5"} and all(e.targets for e in edges.values())
+    named = {k: nodes[e.targets["taxon"]].worms_scientificname for k, e in edges.items()}
+    assert named == {
+        "1": "Vertebrata", "2": "Brachyura", "3": "Decapoda", "4": "Asteroidea", "5": "Vertebrata",
+    }  # fmt: skip
+    assert edges["2"].fidelity is Fidelity.EXACT and edges["1"].fidelity is Fidelity.COARSENED
+
+
+#: Labels with >= 10 boxes that stay unmapped after U8b, each on purpose: natural detritus and
+#: structures (no node), ambiguous (homonym, polyphyletic or acronym), absent from WoRMS, or
+#: gear that could equally be litter. A new entry here is a decision, not drift.
+REMAINING_UNMAPPED_10_PLUS = frozenset({
+    "Nano plankton", "Detritus", "LRJ complex", "Pyrosoma detritus", "coral skeleton",
+    "detrital aggregate", "other", "none", "fecal cast", "Bathochordaeus sinker", "eggcase",
+    "Appendicularia", "worm+", "coiled fecal cast", "Krill molt", "Porifera detritus",
+    "Boreomysis californica", "Polychaeta tube", "jelly", "shell fragment", "sea butterfly",
+    "Phyllospadix-Zostera detritus", "Teuthoidea", "cable", "Ctenophora", "Sebastomus complex",
+    "detritus", "can", "object", "sinker", "polypropylene line", "talus", "amphipod tube mat",
+    "Grimalditeuthis bonplandi", "pillow lava",
+})  # fmt: skip
+
+
+def test_long_tail_leaves_only_the_documented_labels_unmapped(by_label, counts):
+    left = {
+        k
+        for k, c in counts.items()
+        if (c or 0) >= 10 and by_label[k].fidelity is Fidelity.UNMAPPABLE
+    }
+    assert left == REMAINING_UNMAPPED_10_PLUS
+    mapped = sum(
+        c or 0 for k, c in counts.items() if by_label[k].fidelity is not Fidelity.UNMAPPABLE
+    )
+    assert mapped / sum(c or 0 for c in counts.values()) >= 0.98  # 98.35% measured (was 96.37%)

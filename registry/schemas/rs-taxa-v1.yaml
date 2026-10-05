@@ -51,6 +51,7 @@ schemas:
   - {id: A14165, name: Clitellata, parent: A882, axis: taxon, worms_aphia_id: 14165, worms_scientificname: Clitellata, worms_rank: Class, worms_status: accepted, worms_checked_on: *id001}
   - {id: A22612, name: Hexactinellida, parent: A558, axis: taxon, worms_aphia_id: 22612, worms_scientificname: Hexactinellida, worms_rank: Class, worms_status: accepted, worms_checked_on: *id001}
   - {id: A104018, name: Rhynchonelliformea, parent: A1803, axis: taxon, worms_aphia_id: 104018, worms_scientificname: Rhynchonelliformea, worms_rank: Subphylum, worms_status: accepted, worms_checked_on: *id002}
+  - {id: A122309, name: Hoplonemertea, parent: A152391, axis: taxon, worms_aphia_id: 122309, worms_scientificname: Hoplonemertea, worms_rank: Class, worms_status: accepted, worms_checked_on: &id004 2026-10-05}
   - {id: A146419, name: Vertebrata, parent: A1821, axis: taxon, worms_aphia_id: 146419, worms_scientificname: Vertebrata, worms_rank: Subphylum, worms_status: accepted, worms_checked_on: *id001, notes: 'Target
       of paraphyletic ''fish'' labels (coarsened). fish is paraphyletic and WoRMS Pisces is unaccepted, so fish land on the smallest accepted clade holding all of them; includes: [Actinopterygii, Elasmobranchii,
       Holocephali, Myxini, Petromyzonti]'}
@@ -79,11 +80,13 @@ schemas:
   - {id: A2041, name: Hirudinea, parent: A14165, axis: taxon, worms_aphia_id: 2041, worms_scientificname: Hirudinea, worms_rank: Subclass, worms_status: accepted, worms_checked_on: *id001}
   - {id: A5950, name: Aphragmophora, parent: A5949, axis: taxon, worms_aphia_id: 5950, worms_scientificname: Aphragmophora, worms_rank: Order, worms_status: accepted, worms_checked_on: *id002}
   - {id: A5951, name: Phragmophora, parent: A5949, axis: taxon, worms_aphia_id: 5951, worms_scientificname: Phragmophora, worms_rank: Order, worms_status: accepted, worms_checked_on: *id002}
+  - {id: A14712, name: Heterobranchia, parent: A101, axis: taxon, worms_aphia_id: 14712, worms_scientificname: Heterobranchia, worms_rank: Subclass, worms_status: accepted, worms_checked_on: *id004}
   - {id: A22585, name: Platyctenida, parent: A1249, axis: taxon, worms_aphia_id: 22585, worms_scientificname: Platyctenida, worms_rank: Order, worms_status: accepted, worms_checked_on: *id002}
   - {id: A22626, name: Thaliacea, parent: A146420, axis: taxon, worms_aphia_id: 22626, worms_scientificname: Thaliacea, worms_rank: Class, worms_status: accepted, worms_checked_on: *id002}
   - {id: A104020, name: Rhynchonellata, parent: A104018, axis: taxon, worms_aphia_id: 104020, worms_scientificname: Rhynchonellata, worms_rank: Class, worms_status: accepted, worms_checked_on: *id002}
   - {id: A110722, name: Cheilostomatida, parent: A1795, axis: taxon, worms_aphia_id: 110722, worms_scientificname: Cheilostomatida, worms_rank: Order, worms_status: accepted, worms_checked_on: *id002}
   - {id: A110723, name: Ctenostomatida, parent: A1795, axis: taxon, worms_aphia_id: 110723, worms_scientificname: Ctenostomatida, worms_rank: Order, worms_status: accepted, worms_checked_on: *id001}
+  - {id: A122304, name: Polystilifera, parent: A122309, axis: taxon, worms_aphia_id: 122304, worms_scientificname: Polystilifera, worms_rank: Order, worms_status: accepted, worms_checked_on: *id004}
   - {id: A123080, name: Asteroidea, parent: A148743, axis: taxon, worms_aphia_id: 123080, worms_scientificname: Asteroidea, worms_rank: Class, worms_status: accepted, worms_checked_on: *id001}
   - {id: A123081, name: Crinoidea, parent: A147423, axis: taxon, worms_aphia_id: 123081, worms_scientificname: Crinoidea, worms_rank: Class, worms_status: accepted, worms_checked_on: *id001}
   - {id: A123082, name: Echinoidea, parent: A148744, axis: taxon, worms_aphia_id: 123082, worms_scientificname: Echinoidea, worms_rank: Class, worms_status: accepted, worms_checked_on: *id001}
@@ -134,6 +137,7 @@ schemas:
   - {id: A106325, name: Bolinopsidae, parent: A1258, axis: taxon, worms_aphia_id: 106325, worms_scientificname: Bolinopsidae, worms_rank: Family, worms_status: accepted, worms_checked_on: *id002}
   - {id: A106327, name: Eurhamphaeidae, parent: A1258, axis: taxon, worms_aphia_id: 106327, worms_scientificname: Eurhamphaeidae, worms_rank: Family, worms_status: accepted, worms_checked_on: *id002}
   - {id: A110342, name: Echiuroidea, parent: A1269, axis: taxon, worms_aphia_id: 110342, worms_scientificname: Echiuroidea, worms_rank: Order, worms_status: accepted, worms_checked_on: *id002}
+  - {id: A122312, name: Reptantia, parent: A122304, axis: taxon, worms_aphia_id: 122312, worms_scientificname: Reptantia, worms_rank: Suborder, worms_status: accepted, worms_checked_on: *id004}
   - {id: A131599, name: Poecilosclerida, parent: A607950, axis: taxon, worms_aphia_id: 131599, worms_scientificname: Poecilosclerida, worms_rank: Order, worms_status: accepted, worms_checked_on: *id002}
   - {id: A137212, name: Doliolida, parent: A22626, axis: taxon, worms_aphia_id: 137212, worms_scientificname: Doliolida, worms_rank: Order, worms_status: accepted, worms_checked_on: *id002}
   - {id: A137213, name: Pyrosomatida, parent: A22626, axis: taxon, worms_aphia_id: 137213, worms_scientificname: Pyrosomatida, worms_rank: Order, worms_status: accepted, worms_checked_on: *id002}
@@ -314,7 +318,7 @@ schemas:
   - {id: A1606, name: Campanulariidae, parent: A13552, axis: taxon, worms_aphia_id: 1606, worms_scientificname: Campanulariidae, worms_rank: Family, worms_status: accepted, worms_checked_on: *id002}
   - {id: A1610, name: Laodiceidae, parent: A13552, axis: taxon, worms_aphia_id: 1610, worms_scientificname: Laodiceidae, worms_rank: Family, worms_status: accepted, worms_checked_on: *id002}
   - {id: A1747, name: Ovulidae, parent: A382213, axis: taxon, worms_aphia_id: 1747, worms_scientificname: Ovulidae, worms_rank: Family, worms_status: accepted, worms_checked_on: *id002}
-  - {id: A1836, name: Aves, parent: A1838, axis: taxon, worms_aphia_id: 1836, worms_scientificname: Aves, worms_rank: Class, worms_status: accepted, worms_checked_on: &id004 2026-10-05}
+  - {id: A1836, name: Aves, parent: A1838, axis: taxon, worms_aphia_id: 1836, worms_scientificname: Aves, worms_rank: Class, worms_status: accepted, worms_checked_on: &id005 2026-10-05}
   - {id: A2689, name: Testudines, parent: A1838, axis: taxon, worms_aphia_id: 2689, worms_scientificname: Testudines, worms_rank: Order, worms_status: accepted, worms_checked_on: *id001}
   - {id: A10197, name: Myxiniformes, parent: A10189, axis: taxon, worms_aphia_id: 10197, worms_scientificname: Myxiniformes, worms_rank: Order, worms_status: accepted, worms_checked_on: *id001}
   - {id: A10217, name: Chimaeriformes, parent: A10196, axis: taxon, worms_aphia_id: 10217, worms_scientificname: Chimaeriformes, worms_rank: Order, worms_status: accepted, worms_checked_on: *id002}
@@ -594,7 +598,7 @@ schemas:
   - {id: A1603, name: Tubulariidae, parent: A13551, axis: taxon, worms_aphia_id: 1603, worms_scientificname: Tubulariidae, worms_rank: Family, worms_status: accepted, worms_checked_on: *id002}
   - {id: A1762, name: Nudibranchia, parent: A101, axis: taxon, worms_aphia_id: 1762, worms_scientificname: Nudibranchia, worms_rank: Order, worms_status: accepted, worms_checked_on: *id001}
   - {id: A1778, name: Limidae, parent: A1777, axis: taxon, worms_aphia_id: 1778, worms_scientificname: Limidae, worms_rank: Family, worms_status: accepted, worms_checked_on: *id002}
-  - {id: A2682, name: Charadriiformes, parent: A1836, axis: taxon, worms_aphia_id: 2682, worms_scientificname: Charadriiformes, worms_rank: Order, worms_status: accepted, worms_checked_on: *id004}
+  - {id: A2682, name: Charadriiformes, parent: A1836, axis: taxon, worms_aphia_id: 2682, worms_scientificname: Charadriiformes, worms_rank: Order, worms_status: accepted, worms_checked_on: *id005}
   - {id: A2686, name: Procellariiformes, parent: A1836, axis: taxon, worms_aphia_id: 2686, worms_scientificname: Procellariiformes, worms_rank: Order, worms_status: accepted, worms_checked_on: *id002}
   - {id: A2687, name: Carnivora, parent: A1837, axis: taxon, worms_aphia_id: 2687, worms_scientificname: Carnivora, worms_rank: Order, worms_status: accepted, worms_checked_on: *id002}
   - {id: A11740, name: Enoploteuthidae, parent: A11730, axis: taxon, worms_aphia_id: 11740, worms_scientificname: Enoploteuthidae, worms_rank: Family, worms_status: accepted, worms_checked_on: *id002}
@@ -630,6 +634,7 @@ schemas:
   - {id: A103358, name: Fritillaria, parent: A103354, axis: taxon, worms_aphia_id: 103358, worms_scientificname: Fritillaria, worms_rank: Genus, worms_status: accepted, worms_checked_on: *id002}
   - {id: A103362, name: Bathochordaeus, parent: A342463, axis: taxon, worms_aphia_id: 103362, worms_scientificname: Bathochordaeus, worms_rank: Genus, worms_status: accepted, worms_checked_on: *id002}
   - {id: A103732, name: Ciona intestinalis, parent: A103488, axis: taxon, worms_aphia_id: 103732, worms_scientificname: Ciona intestinalis, worms_rank: Species, worms_status: accepted, worms_checked_on: *id002}
+  - {id: A104028, name: Cancellothyrididae, parent: A104023, axis: taxon, worms_aphia_id: 104028, worms_scientificname: Cancellothyrididae, worms_rank: Family, worms_status: accepted, worms_checked_on: *id004}
   - {id: A105696, name: Chimaeridae, parent: A10217, axis: taxon, worms_aphia_id: 105696, worms_scientificname: Chimaeridae, worms_rank: Family, worms_status: accepted, worms_checked_on: *id002}
   - {id: A105697, name: Rhinochimaeridae, parent: A10217, axis: taxon, worms_aphia_id: 105697, worms_scientificname: Rhinochimaeridae, worms_rank: Family, worms_status: accepted, worms_checked_on: *id002}
   - {id: A109392, name: Gymnodiniales, parent: A19542, axis: taxon, worms_aphia_id: 109392, worms_scientificname: Gymnodiniales, worms_rank: Order, worms_status: accepted, worms_checked_on: *id002}
@@ -802,7 +807,7 @@ schemas:
   - {id: A173016, name: Camptoplites, parent: A110731, axis: taxon, worms_aphia_id: 173016, worms_scientificname: Camptoplites, worms_rank: Genus, worms_status: accepted, worms_checked_on: *id002}
   - {id: A173752, name: Anchinothria, parent: A965, axis: taxon, worms_aphia_id: 173752, worms_scientificname: Anchinothria, worms_rank: Genus, worms_status: accepted, worms_checked_on: *id002}
   - {id: A174738, name: Benthocodon, parent: A16842, axis: taxon, worms_aphia_id: 174738, worms_scientificname: Benthocodon, worms_rank: Genus, worms_status: accepted, worms_checked_on: *id002}
-  - {id: A196033, name: Sphenisciformes, parent: A1836, axis: taxon, worms_aphia_id: 196033, worms_scientificname: Sphenisciformes, worms_rank: Order, worms_status: accepted, worms_checked_on: *id004}
+  - {id: A196033, name: Sphenisciformes, parent: A1836, axis: taxon, worms_aphia_id: 196033, worms_scientificname: Sphenisciformes, worms_rank: Order, worms_status: accepted, worms_checked_on: *id005}
   - {id: A196172, name: Charitometridae, parent: A123093, axis: taxon, worms_aphia_id: 196172, worms_scientificname: Charitometridae, worms_rank: Family, worms_status: accepted, worms_checked_on: *id002}
   - {id: A196198, name: Lessoniaceae, parent: A845, axis: taxon, worms_aphia_id: 196198, worms_scientificname: Lessoniaceae, worms_rank: Family, worms_status: accepted, worms_checked_on: *id002}
   - {id: A196235, name: Milleporidae, parent: A13551, axis: taxon, worms_aphia_id: 196235, worms_scientificname: Milleporidae, worms_rank: Family, worms_status: accepted, worms_checked_on: *id001}
@@ -890,7 +895,7 @@ schemas:
   - {id: A341402, name: Magnapinnidae, parent: A11730, axis: taxon, worms_aphia_id: 341402, worms_scientificname: Magnapinnidae, worms_rank: Family, worms_status: accepted, worms_checked_on: *id002}
   - {id: A345446, name: Heteropolypus, parent: A125280, axis: taxon, worms_aphia_id: 345446, worms_scientificname: Heteropolypus, worms_rank: Genus, worms_status: accepted, worms_checked_on: *id001}
   - {id: A367359, name: Phaeosphaerida, parent: A590699, axis: taxon, worms_aphia_id: 367359, worms_scientificname: Phaeosphaerida, worms_rank: Order, worms_status: accepted, worms_checked_on: *id002}
-  - {id: A368408, name: Selachii, parent: A10193, axis: taxon, worms_aphia_id: 368408, worms_scientificname: Selachii, worms_rank: Infraclass, worms_status: accepted, worms_checked_on: *id004}
+  - {id: A368408, name: Selachii, parent: A10193, axis: taxon, worms_aphia_id: 368408, worms_scientificname: Selachii, worms_rank: Infraclass, worms_status: accepted, worms_checked_on: *id005}
   - {id: A368409, name: Batoidea, parent: A10193, axis: taxon, worms_aphia_id: 368409, worms_scientificname: Batoidea, worms_rank: Infraclass, worms_status: accepted, worms_checked_on: *id003}
   - {id: A368715, name: Halimedaceae, parent: A808, axis: taxon, worms_aphia_id: 368715, worms_scientificname: Halimedaceae, worms_rank: Family, worms_status: accepted, worms_checked_on: *id001}
   - {id: A370511, name: Cetartiodactyla, parent: A1837, axis: taxon, worms_aphia_id: 370511, worms_scientificname: Cetartiodactyla, worms_rank: Order, worms_status: accepted, worms_checked_on: *id002}
@@ -1156,7 +1161,7 @@ schemas:
   - {id: A135396, name: Forskalia, parent: A135347, axis: taxon, worms_aphia_id: 135396, worms_scientificname: Forskalia, worms_rank: Genus, worms_status: accepted, worms_checked_on: *id002}
   - {id: A135397, name: Physophora, parent: A135348, axis: taxon, worms_aphia_id: 135397, worms_scientificname: Physophora, worms_rank: Genus, worms_status: accepted, worms_checked_on: *id002}
   - {id: A135398, name: Bargmannia, parent: A135349, axis: taxon, worms_aphia_id: 135398, worms_scientificname: Bargmannia, worms_rank: Genus, worms_status: accepted, worms_checked_on: *id002}
-  - {id: A136987, name: Alcidae, parent: A2682, axis: taxon, worms_aphia_id: 136987, worms_scientificname: Alcidae, worms_rank: Family, worms_status: accepted, worms_checked_on: *id004}
+  - {id: A136987, name: Alcidae, parent: A2682, axis: taxon, worms_aphia_id: 136987, worms_scientificname: Alcidae, worms_rank: Family, worms_status: accepted, worms_checked_on: *id005}
   - {id: A137250, name: Pyrosoma atlanticum, parent: A137224, axis: taxon, worms_aphia_id: 137250, worms_scientificname: Pyrosoma atlanticum, worms_rank: Species, worms_status: accepted, worms_checked_on: *id002}
   - {id: A137272, name: Salpa fusiformis, parent: A137233, axis: taxon, worms_aphia_id: 137272, worms_scientificname: Salpa fusiformis, worms_rank: Species, worms_status: accepted, worms_checked_on: *id002}
   - {id: A137273, name: Salpa maxima, parent: A137233, axis: taxon, worms_aphia_id: 137273, worms_scientificname: Salpa maxima, worms_rank: Species, worms_status: accepted, worms_checked_on: *id002}
@@ -1211,7 +1216,7 @@ schemas:
   - {id: A174046, name: Peniagone vitrea, parent: A123515, axis: taxon, worms_aphia_id: 174046, worms_scientificname: Peniagone vitrea, worms_rank: Species, worms_status: accepted, worms_checked_on: *id002}
   - {id: A180861, name: Shinkailepas, parent: A180860, axis: taxon, worms_aphia_id: 180861, worms_scientificname: Shinkailepas, worms_rank: Genus, worms_status: accepted, worms_checked_on: *id002}
   - {id: A183341, name: Peniagone papillata, parent: A123515, axis: taxon, worms_aphia_id: 183341, worms_scientificname: Peniagone papillata, worms_rank: Species, worms_status: accepted, worms_checked_on: *id002}
-  - {id: A196034, name: Spheniscidae, parent: A196033, axis: taxon, worms_aphia_id: 196034, worms_scientificname: Spheniscidae, worms_rank: Family, worms_status: accepted, worms_checked_on: *id004}
+  - {id: A196034, name: Spheniscidae, parent: A196033, axis: taxon, worms_aphia_id: 196034, worms_scientificname: Spheniscidae, worms_rank: Family, worms_status: accepted, worms_checked_on: *id005}
   - {id: A196069, name: Myliobatiformes, parent: A10193, axis: taxon, worms_aphia_id: 196069, worms_scientificname: Myliobatiformes, worms_rank: Order, worms_status: accepted, worms_checked_on: *id001}
   - {id: A196202, name: Acanthasteridae, parent: A123090, axis: taxon, worms_aphia_id: 196202, worms_scientificname: Acanthasteridae, worms_rank: Family, worms_status: accepted, worms_checked_on: *id001}
   - {id: A196223, name: Euryalidae, parent: A242196, axis: taxon, worms_aphia_id: 196223, worms_scientificname: Euryalidae, worms_rank: Family, worms_status: accepted, worms_checked_on: *id002}
@@ -1353,6 +1358,7 @@ schemas:
   - {id: A23089, name: Peraclidae, parent: A325345, axis: taxon, worms_aphia_id: 23089, worms_scientificname: Peraclidae, worms_rank: Family, worms_status: accepted, worms_checked_on: *id002}
   - {id: A23140, name: Vesicomyidae, parent: A217, axis: taxon, worms_aphia_id: 23140, worms_scientificname: Vesicomyidae, worms_rank: Family, worms_status: accepted, worms_checked_on: *id002}
   - {id: A100969, name: Iosactis vagabunda, parent: A100764, axis: taxon, worms_aphia_id: 100969, worms_scientificname: Iosactis vagabunda, worms_rank: Species, worms_status: accepted, worms_checked_on: *id002}
+  - {id: A104040, name: Terebratulina, parent: A104028, axis: taxon, worms_aphia_id: 104040, worms_scientificname: Terebratulina, worms_rank: Genus, worms_status: accepted, worms_checked_on: *id004}
   - {id: A105710, name: Myliobatidae, parent: A196069, axis: taxon, worms_aphia_id: 105710, worms_scientificname: Myliobatidae, worms_rank: Family, worms_status: accepted, worms_checked_on: *id001}
   - {id: A105711, name: Rajidae, parent: A10216, axis: taxon, worms_aphia_id: 105711, worms_scientificname: Rajidae, worms_rank: Family, worms_status: accepted, worms_checked_on: *id002}
   - {id: A105718, name: Torpedinidae, parent: A10215, axis: taxon, worms_aphia_id: 105718, worms_scientificname: Torpedinidae, worms_rank: Family, worms_status: accepted, worms_checked_on: *id002}
@@ -1481,7 +1487,7 @@ schemas:
   - {id: A135506, name: Bargmannia elongata, parent: A135398, axis: taxon, worms_aphia_id: 135506, worms_scientificname: Bargmannia elongata, worms_rank: Species, worms_status: accepted, worms_checked_on: *id002}
   - {id: A135507, name: Bargmannia lata, parent: A135398, axis: taxon, worms_aphia_id: 135507, worms_scientificname: Bargmannia lata, worms_rank: Species, worms_status: accepted, worms_checked_on: *id002}
   - {id: A136999, name: Cheloniidae, parent: A2689, axis: taxon, worms_aphia_id: 136999, worms_scientificname: Cheloniidae, worms_rank: Family, worms_status: accepted, worms_checked_on: *id002}
-  - {id: A137039, name: Fratercula, parent: A136987, axis: taxon, worms_aphia_id: 137039, worms_scientificname: Fratercula, worms_rank: Genus, worms_status: accepted, worms_checked_on: *id004}
+  - {id: A137039, name: Fratercula, parent: A136987, axis: taxon, worms_aphia_id: 137039, worms_scientificname: Fratercula, worms_rank: Genus, worms_status: accepted, worms_checked_on: *id005}
   - {id: A137643, name: Haliphron, parent: A11786, axis: taxon, worms_aphia_id: 137643, worms_scientificname: Haliphron, worms_rank: Genus, worms_status: accepted, worms_checked_on: *id002}
   - {id: A137779, name: Chiton, parent: A64, axis: taxon, worms_aphia_id: 137779, worms_scientificname: Chiton, worms_rank: Genus, worms_status: accepted, worms_checked_on: *id002}
   - {id: A137848, name: Galiteuthis, parent: A11774, axis: taxon, worms_aphia_id: 137848, worms_scientificname: Galiteuthis, worms_rank: Genus, worms_status: accepted, worms_checked_on: *id002}
