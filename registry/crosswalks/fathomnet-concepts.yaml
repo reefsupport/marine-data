@@ -1334,7 +1334,10 @@ crosswalks:
     targets: {taxon: A123158}
     fidelity: exact
   - {source_label: Cidaroidea, fidelity: unmappable, note: 'no WoRMS-backed taxon for this label: ambiguous: 2 accepted homonyms'}
-  - {source_label: Ciliate, fidelity: unmappable, note: 'no WoRMS-backed taxon for this label: no exact WoRMS record'}
+  - source_label: Ciliate
+    targets: {taxon: A11}
+    fidelity: exact
+    note: 'WoRMS: Ciliate -> accepted Ciliophora (11)'
   - source_label: Ciona intestinalis
     targets: {taxon: A103732}
     fidelity: exact
@@ -1739,7 +1742,7 @@ crosswalks:
   - source_label: Desmophyllum dianthus
     targets: {taxon: A135159}
     fidelity: exact
-  - {source_label: Detritus, fidelity: unmappable, note: 'no WoRMS-backed taxon for this label: no exact WoRMS record'}
+  - {source_label: Detritus, fidelity: unmappable, note: 'non-taxon: detritus'}
   - {source_label: Detritus Sampler, fidelity: unmappable, note: 'no WoRMS-backed taxon for this label: no exact WoRMS record'}
   - source_label: Dexaminidae
     targets: {taxon: A101378}
@@ -2134,7 +2137,10 @@ crosswalks:
     targets: {taxon: A128490}
     fidelity: coarsened
     note: morphospecies -> named taxon (Funiculina)
-  - {source_label: Funiculina-Balticina complex, fidelity: unmappable, note: 'no WoRMS-backed taxon for this label: no exact WoRMS record'}
+  - source_label: Funiculina-Balticina complex
+    targets: {taxon: A1609360}
+    fidelity: coarsened
+    note: two sea-pen genera, Funiculina (Funiculinidae) and Balticina (Balticinidae); both lie under Pennatuloidea in WoRMS
   - source_label: Funiculina-Halipteris complex
     targets: {taxon: A1609360}
     fidelity: coarsened
@@ -2854,7 +2860,7 @@ crosswalks:
   - source_label: Kuronezumia
     targets: {taxon: A205768}
     fidelity: exact
-  - {source_label: LRJ complex, fidelity: unmappable, note: 'no WoRMS-backed taxon for this label: no exact WoRMS record'}
+  - {source_label: LRJ complex, fidelity: unmappable, note: 'ambiguous: unresolved acronym for a complex of large jellies'}
   - source_label: Labridae
     targets: {taxon: A125541}
     fidelity: exact
@@ -3431,7 +3437,7 @@ crosswalks:
   - source_label: Myzostomida
     targets: {taxon: A233983}
     fidelity: exact
-  - {source_label: Nano plankton, fidelity: unmappable, note: 'no WoRMS-backed taxon for this label: no exact WoRMS record'}
+  - {source_label: Nano plankton, fidelity: unmappable, note: 'non-taxon: size class, not a taxon'}
   - source_label: Nanomia
     targets: {taxon: A135392}
     fidelity: exact
@@ -3981,7 +3987,10 @@ crosswalks:
     targets: {taxon: A174046}
     fidelity: exact
   - {source_label: Peniagone vitrea- sp. 1 complex, fidelity: unmappable, note: 'no WoRMS-backed taxon for this label: no exact WoRMS record'}
-  - {source_label: Pennate, fidelity: unmappable, note: 'no WoRMS-backed taxon for this label: no exact WoRMS record'}
+  - source_label: Pennate
+    targets: {taxon: A148898}
+    fidelity: coarsened
+    note: pennate diatoms are a subset of the diatoms (no accepted clade of exactly the pennates)
   - source_label: Pennatula
     targets: {taxon: A128495}
     fidelity: exact
@@ -4456,7 +4465,7 @@ crosswalks:
   - source_label: Ptychogena lactea
     targets: {taxon: A117728}
     fidelity: exact
-  - {source_label: Push Corer, fidelity: unmappable, note: 'no WoRMS-backed taxon for this label: no exact WoRMS record'}
+  - {source_label: Push Corer, fidelity: unmappable, note: 'non-taxon: equipment'}
   - source_label: Pycnocraspedum
     targets: {taxon: A204022}
     fidelity: exact
@@ -4475,7 +4484,7 @@ crosswalks:
   - source_label: Pyrosoma atlanticum
     targets: {taxon: A137250}
     fidelity: exact
-  - {source_label: Pyrosoma detritus, fidelity: unmappable, note: 'no WoRMS-backed taxon for this label: no exact WoRMS record'}
+  - {source_label: Pyrosoma detritus, fidelity: unmappable, note: 'non-taxon: detritus'}
   - source_label: Pythonaster
     targets: {taxon: A123330}
     fidelity: exact
@@ -5078,7 +5087,7 @@ crosswalks:
     targets: {taxon: A132063}
     fidelity: coarsened
     note: morphospecies -> named taxon (Stylocordyla)
-  - {source_label: Suction Sampler, fidelity: unmappable, note: 'no WoRMS-backed taxon for this label: no exact WoRMS record'}
+  - {source_label: Suction Sampler, fidelity: unmappable, note: 'non-taxon: equipment'}
   - source_label: Sufflamen bursa
     targets: {taxon: A219894}
     fidelity: exact
@@ -5528,10 +5537,16 @@ crosswalks:
     fidelity: exact
   - {source_label: __unlabelled, fidelity: unmappable, note: 'no WoRMS-backed taxon for this label: no exact WoRMS record'}
   - {source_label: acorn worm, fidelity: unmappable, note: 'no WoRMS-backed taxon for this label: no exact WoRMS record'}
-  - {source_label: actiniarian, fidelity: unmappable, note: 'no WoRMS-backed taxon for this label: no exact WoRMS record'}
+  - source_label: actiniarian
+    targets: {taxon: A1360}
+    fidelity: exact
+    note: 'WoRMS: actiniarian -> accepted Actiniaria (1360)'
   - {source_label: amphipod, fidelity: unmappable, note: 'no WoRMS-backed taxon for this label: no exact WoRMS record'}
   - {source_label: amphipod tube mat, fidelity: unmappable, note: 'no WoRMS-backed taxon for this label: no exact WoRMS record'}
-  - {source_label: anemone+, fidelity: unmappable, note: 'no WoRMS-backed taxon for this label: no exact WoRMS record'}
+  - source_label: anemone+
+    targets: {taxon: A1340}
+    fidelity: coarsened
+    note: '''+'' marks anemones with their relatives; Hexacorallia holds anemones, zoanthids, corallimorphs and tube anemones, so it is a strict ancestor if the relatives are hexacorals'
   - {source_label: anthropogenic, fidelity: unmappable, note: 'no WoRMS-backed taxon for this label: no exact WoRMS record'}
   - {source_label: arthropod, fidelity: unmappable, note: 'no WoRMS-backed taxon for this label: no exact WoRMS record'}
   - {source_label: asteroid feeding depression, fidelity: unmappable, note: 'no WoRMS-backed taxon for this label: no exact WoRMS record'}
@@ -5539,21 +5554,40 @@ crosswalks:
   - {source_label: bacterial mat, fidelity: unmappable, note: 'no WoRMS-backed taxon for this label: no exact WoRMS record'}
   - {source_label: barnacle, fidelity: unmappable, note: 'no WoRMS-backed taxon for this label: no exact WoRMS record'}
   - {source_label: baths, fidelity: unmappable, note: 'no WoRMS-backed taxon for this label: no exact WoRMS record'}
-  - {source_label: benthic annelid, fidelity: unmappable, note: 'no WoRMS-backed taxon for this label: no exact WoRMS record'}
+  - source_label: benthic annelid
+    targets: {taxon: A882}
+    fidelity: coarsened
+    note: any bottom-dwelling annelid; Annelida is the phylum
   - {source_label: benthic siphonophore, fidelity: unmappable, note: 'no WoRMS-backed taxon for this label: no exact WoRMS record'}
   - {source_label: beroid ctenophore, fidelity: unmappable, note: 'no WoRMS-backed taxon for this label: no exact WoRMS record'}
-  - {source_label: bivalve, fidelity: unmappable, note: 'no WoRMS-backed taxon for this label: no exact WoRMS record'}
-  - {source_label: black coral, fidelity: unmappable, note: 'no WoRMS-backed taxon for this label: no exact WoRMS record'}
+  - source_label: bivalve
+    targets: {taxon: A105}
+    fidelity: exact
+    note: 'WoRMS: bivalve -> accepted Bivalvia (105)'
+  - source_label: black coral
+    targets: {taxon: A22549}
+    fidelity: exact
+    note: 'WoRMS: black coral -> accepted Antipatharia (22549)'
   - {source_label: bone, fidelity: unmappable, note: 'no WoRMS-backed taxon for this label: no exact WoRMS record'}
-  - {source_label: bony fish, fidelity: unmappable, note: 'no WoRMS-backed taxon for this label: no exact WoRMS record'}
+  - source_label: bony fish
+    targets: {taxon: A10194}
+    fidelity: coarsened
+    note: bony fish = Osteichthyes (152352, accepted); Osteichthyes is not a node and inserting it would re-parent Actinopterygii (MAJOR), so the ray-finned class stands for it; coelacanths and lungfish
+      are not expected in the corpus
   - {source_label: bottle, fidelity: unmappable, note: 'no WoRMS-backed taxon for this label: no exact WoRMS record'}
-  - {source_label: brittle star, fidelity: unmappable, note: 'no WoRMS-backed taxon for this label: no exact WoRMS record'}
+  - source_label: brittle star
+    targets: {taxon: A123084}
+    fidelity: exact
+    note: 'WoRMS: brittle star -> accepted Ophiuroidea (123084)'
   - {source_label: bubbles, fidelity: unmappable, note: 'no WoRMS-backed taxon for this label: no exact WoRMS record'}
   - {source_label: burrow, fidelity: unmappable, note: 'no WoRMS-backed taxon for this label: no exact WoRMS record'}
   - {source_label: cable, fidelity: unmappable, note: 'no WoRMS-backed taxon for this label: no exact WoRMS record'}
   - {source_label: cable spool, fidelity: unmappable, note: 'no WoRMS-backed taxon for this label: no exact WoRMS record'}
   - {source_label: cage, fidelity: unmappable, note: 'no WoRMS-backed taxon for this label: no exact WoRMS record'}
-  - {source_label: calycophoran siphonophore, fidelity: unmappable, note: 'no WoRMS-backed taxon for this label: no exact WoRMS record'}
+  - source_label: calycophoran siphonophore
+    targets: {taxon: A135333}
+    fidelity: exact
+    note: 'WoRMS: calycophoran siphonophore -> accepted Calycophorae (135333)'
   - {source_label: can, fidelity: unmappable, note: 'no WoRMS-backed taxon for this label: no exact WoRMS record'}
   - {source_label: carapace, fidelity: unmappable, note: 'no WoRMS-backed taxon for this label: no exact WoRMS record'}
   - {source_label: cardboard, fidelity: unmappable, note: 'no WoRMS-backed taxon for this label: no exact WoRMS record'}
@@ -5572,19 +5606,31 @@ crosswalks:
     targets: {taxon: A1267}
     fidelity: coarsened
     note: coral is polyphyletic (Anthozoa + hydrozoan fire corals and stylasterids); smallest accepted clade
-  - {source_label: coral skeleton, fidelity: unmappable, note: 'no WoRMS-backed taxon for this label: no exact WoRMS record'}
+  - {source_label: coral skeleton, fidelity: unmappable, note: 'non-taxon: dead coral skeleton (substrate)'}
   - {source_label: coral transplant container, fidelity: unmappable, note: 'no WoRMS-backed taxon for this label: no exact WoRMS record'}
-  - {source_label: corallimorph, fidelity: unmappable, note: 'no WoRMS-backed taxon for this label: no exact WoRMS record'}
-  - {source_label: crab, fidelity: unmappable, note: 'no WoRMS-backed taxon for this label: no exact WoRMS record'}
+  - source_label: corallimorph
+    targets: {taxon: A1362}
+    fidelity: exact
+    note: 'WoRMS: corallimorph -> accepted Corallimorpharia (1362)'
+  - source_label: crab
+    targets: {taxon: A106673}
+    fidelity: exact
+    note: true crabs; hermit crabs, squat lobsters and king crabs are Anomura and have their own labels
   - source_label: crinoid
     targets: {taxon: A123081}
     fidelity: exact
-  - {source_label: crustacean, fidelity: unmappable, note: 'no WoRMS-backed taxon for this label: no exact WoRMS record'}
+  - source_label: crustacean
+    targets: {taxon: A1066}
+    fidelity: exact
+    note: 'WoRMS: crustacean -> accepted Crustacea (1066)'
   - {source_label: ctenophore, fidelity: unmappable, note: 'no WoRMS-backed taxon for this label: no exact WoRMS record'}
   - {source_label: cup coral skeleton, fidelity: unmappable, note: 'no WoRMS-backed taxon for this label: no exact WoRMS record'}
   - {source_label: cuttlefish, fidelity: unmappable, note: 'no WoRMS-backed taxon for this label: no exact WoRMS record'}
-  - {source_label: cydippid ctenophore, fidelity: unmappable, note: 'no WoRMS-backed taxon for this label: no exact WoRMS record'}
-  - {source_label: detrital aggregate, fidelity: unmappable, note: 'no WoRMS-backed taxon for this label: no exact WoRMS record'}
+  - source_label: cydippid ctenophore
+    targets: {taxon: A1251}
+    fidelity: exact
+    note: 'WoRMS: cydippid ctenophore -> accepted Cydippida (1251)'
+  - {source_label: detrital aggregate, fidelity: unmappable, note: 'non-taxon: detritus'}
   - {source_label: detritus, fidelity: unmappable, note: 'no WoRMS-backed taxon for this label: no exact WoRMS record'}
   - {source_label: diatom, fidelity: unmappable, note: 'no WoRMS-backed taxon for this label: no exact WoRMS record'}
   - {source_label: doliolid, fidelity: unmappable, note: 'no WoRMS-backed taxon for this label: no exact WoRMS record'}
@@ -5594,8 +5640,11 @@ crosswalks:
   - {source_label: eggs, fidelity: unmappable, note: 'no WoRMS-backed taxon for this label: no exact WoRMS record'}
   - {source_label: elevator, fidelity: unmappable, note: 'no WoRMS-backed taxon for this label: no exact WoRMS record'}
   - {source_label: enclosure, fidelity: unmappable, note: 'no WoRMS-backed taxon for this label: no exact WoRMS record'}
-  - {source_label: equipment, fidelity: unmappable, note: 'no WoRMS-backed taxon for this label: no exact WoRMS record'}
-  - {source_label: feather star, fidelity: unmappable, note: 'no WoRMS-backed taxon for this label: no exact WoRMS record'}
+  - {source_label: equipment, fidelity: unmappable, note: 'non-taxon: equipment'}
+  - source_label: feather star
+    targets: {taxon: A123093}
+    fidelity: exact
+    note: feather stars are the order Comatulida (stalked sea lilies are the other crinoids)
   - {source_label: fecal cast, fidelity: unmappable, note: 'no WoRMS-backed taxon for this label: no exact WoRMS record'}
   - {source_label: fecal material, fidelity: unmappable, note: 'no WoRMS-backed taxon for this label: no exact WoRMS record'}
   - source_label: fish
@@ -5606,7 +5655,10 @@ crosswalks:
   - {source_label: hairpin enteropneust fecal cast, fidelity: unmappable, note: 'no WoRMS-backed taxon for this label: no exact WoRMS record'}
   - {source_label: hermit crab, fidelity: unmappable, note: 'no WoRMS-backed taxon for this label: no exact WoRMS record'}
   - {source_label: human, fidelity: unmappable, note: 'no WoRMS-backed taxon for this label: no exact WoRMS record'}
-  - {source_label: hydroid, fidelity: unmappable, note: 'no WoRMS-backed taxon for this label: no exact WoRMS record'}
+  - source_label: hydroid
+    targets: {taxon: A1337}
+    fidelity: coarsened
+    note: hydroids are the hydrozoan polyp stage
   - {source_label: inconclusive, fidelity: unmappable, note: 'no WoRMS-backed taxon for this label: no exact WoRMS record'}
   - {source_label: ink, fidelity: unmappable, note: 'no WoRMS-backed taxon for this label: no exact WoRMS record'}
   - {source_label: inner filter, fidelity: unmappable, note: 'no WoRMS-backed taxon for this label: no exact WoRMS record'}
@@ -5615,21 +5667,33 @@ crosswalks:
   - {source_label: jawless fish, fidelity: unmappable, note: 'no WoRMS-backed taxon for this label: no exact WoRMS record'}
   - {source_label: jelly, fidelity: unmappable, note: 'no WoRMS-backed taxon for this label: no exact WoRMS record'}
   - {source_label: kelp, fidelity: unmappable, note: 'no WoRMS-backed taxon for this label: no exact WoRMS record'}
-  - {source_label: larvacean, fidelity: unmappable, note: 'no WoRMS-backed taxon for this label: no exact WoRMS record'}
+  - source_label: larvacean
+    targets: {taxon: A146421}
+    fidelity: exact
+    note: the class Appendicularia (the genus of the same name is 103357)
   - {source_label: larvacean house, fidelity: unmappable, note: 'no WoRMS-backed taxon for this label: no exact WoRMS record'}
   - {source_label: ledge, fidelity: unmappable, note: 'no WoRMS-backed taxon for this label: no exact WoRMS record'}
   - {source_label: lights, fidelity: unmappable, note: 'no WoRMS-backed taxon for this label: no exact WoRMS record'}
   - {source_label: line, fidelity: unmappable, note: 'no WoRMS-backed taxon for this label: no exact WoRMS record'}
-  - {source_label: lobed ctenophore, fidelity: unmappable, note: 'no WoRMS-backed taxon for this label: no exact WoRMS record'}
+  - source_label: lobed ctenophore
+    targets: {taxon: A1258}
+    fidelity: exact
+    note: WoRMS accepted order Lobata (the genus-rank record 603346 is a nomen dubium)
   - {source_label: lobster, fidelity: unmappable, note: 'no WoRMS-backed taxon for this label: no exact WoRMS record'}
-  - {source_label: manipulator, fidelity: unmappable, note: 'no WoRMS-backed taxon for this label: no exact WoRMS record'}
+  - {source_label: manipulator, fidelity: unmappable, note: 'non-taxon: equipment (ROV arm)'}
   - {source_label: manufactured wood, fidelity: unmappable, note: 'no WoRMS-backed taxon for this label: no exact WoRMS record'}
-  - {source_label: marine organism, fidelity: unmappable, note: 'no WoRMS-backed taxon for this label: no exact WoRMS record'}
+  - source_label: marine organism
+    targets: {taxon: A1}
+    fidelity: coarsened
+    note: generic non-specific label; maps to the taxonomy root
   - source_label: medusa
     targets: {taxon: A494035}
     fidelity: exact
     note: 'WoRMS: medusa -> accepted Medusa (494035)'
-  - {source_label: medusae, fidelity: unmappable, note: 'no WoRMS-backed taxon for this label: no exact WoRMS record'}
+  - source_label: medusae
+    targets: {taxon: A1740301}
+    fidelity: coarsened
+    note: jellyfish stage of medusozoans (Hydrozoa, Scyphozoa, Cubozoa, Staurozoa)
   - {source_label: metal, fidelity: unmappable, note: 'no WoRMS-backed taxon for this label: no exact WoRMS record'}
   - {source_label: midwater annelid, fidelity: unmappable, note: 'no WoRMS-backed taxon for this label: no exact WoRMS record'}
   - {source_label: mini container array, fidelity: unmappable, note: 'no WoRMS-backed taxon for this label: no exact WoRMS record'}
@@ -5643,54 +5707,109 @@ crosswalks:
     targets: {taxon: A138268}
     fidelity: exact
     note: 'WoRMS: octopus -> accepted Octopus (138268)'
-  - {source_label: other, fidelity: unmappable, note: 'no WoRMS-backed taxon for this label: no exact WoRMS record'}
+  - {source_label: other, fidelity: unmappable, note: 'non-taxon: residual bucket, no taxonomic content'}
   - {source_label: outer filter, fidelity: unmappable, note: 'no WoRMS-backed taxon for this label: no exact WoRMS record'}
   - {source_label: penellid copepod, fidelity: unmappable, note: 'no WoRMS-backed taxon for this label: no exact WoRMS record'}
-  - {source_label: physonect siphonophore, fidelity: unmappable, note: 'no WoRMS-backed taxon for this label: no exact WoRMS record'}
+  - source_label: physonect siphonophore
+    targets: {taxon: A135335}
+    fidelity: exact
+    note: 'WoRMS: physonect siphonophore -> accepted Physonectae (135335)'
   - {source_label: pillow lava, fidelity: unmappable, note: 'no WoRMS-backed taxon for this label: no exact WoRMS record'}
   - {source_label: plastic, fidelity: unmappable, note: 'no WoRMS-backed taxon for this label: no exact WoRMS record'}
   - {source_label: plastic bag, fidelity: unmappable, note: 'no WoRMS-backed taxon for this label: no exact WoRMS record'}
   - {source_label: polypropylene line, fidelity: unmappable, note: 'no WoRMS-backed taxon for this label: no exact WoRMS record'}
   - {source_label: portable video camera, fidelity: unmappable, note: 'no WoRMS-backed taxon for this label: no exact WoRMS record'}
   - {source_label: psamm, fidelity: unmappable, note: 'no WoRMS-backed taxon for this label: no exact WoRMS record'}
-  - {source_label: pyrosome, fidelity: unmappable, note: 'no WoRMS-backed taxon for this label: no exact WoRMS record'}
+  - source_label: pyrosome
+    targets: {taxon: A137213}
+    fidelity: exact
+    note: 'WoRMS: pyrosome -> accepted Pyrosomatida (137213)'
   - {source_label: quiver, fidelity: unmappable, note: 'no WoRMS-backed taxon for this label: no exact WoRMS record'}
-  - {source_label: ray or skate, fidelity: unmappable, note: 'no WoRMS-backed taxon for this label: no exact WoRMS record'}
+  - source_label: ray or skate
+    targets: {taxon: A368409}
+    fidelity: exact
+    note: rays, skates and relatives
   - {source_label: rock, fidelity: unmappable, note: 'no WoRMS-backed taxon for this label: no exact WoRMS record'}
   - {source_label: rope, fidelity: unmappable, note: 'no WoRMS-backed taxon for this label: no exact WoRMS record'}
-  - {source_label: salp, fidelity: unmappable, note: 'no WoRMS-backed taxon for this label: no exact WoRMS record'}
+  - source_label: salp
+    targets: {taxon: A137214}
+    fidelity: exact
+    note: 'WoRMS: salp -> accepted Salpida (137214)'
   - {source_label: salp carcass, fidelity: unmappable, note: 'no WoRMS-backed taxon for this label: no exact WoRMS record'}
   - {source_label: salp chain, fidelity: unmappable, note: 'no WoRMS-backed taxon for this label: no exact WoRMS record'}
   - {source_label: salp detritus, fidelity: unmappable, note: 'no WoRMS-backed taxon for this label: no exact WoRMS record'}
   - {source_label: sand, fidelity: unmappable, note: 'no WoRMS-backed taxon for this label: no exact WoRMS record'}
   - {source_label: sea butterfly, fidelity: unmappable, note: 'no WoRMS-backed taxon for this label: no exact WoRMS record'}
-  - {source_label: sea cucumber, fidelity: unmappable, note: 'no WoRMS-backed taxon for this label: no exact WoRMS record'}
-  - {source_label: sea fan, fidelity: unmappable, note: 'no WoRMS-backed taxon for this label: no exact WoRMS record'}
-  - {source_label: sea pen, fidelity: unmappable, note: 'no WoRMS-backed taxon for this label: no exact WoRMS record'}
+  - source_label: sea cucumber
+    targets: {taxon: A123083}
+    fidelity: exact
+    note: 'WoRMS: sea cucumber -> accepted Holothuroidea (123083)'
+  - source_label: sea fan
+    targets: {taxon: A1341}
+    fidelity: coarsened
+    note: gorgonians; Gorgonacea and Alcyonacea are unaccepted in WoRMS (valid = Octocorallia) and the accepted gorgonian orders Malacalcyonacea/Scleralcyonacea split them, so the smallest accepted clade
+      holding all sea fans is Octocorallia
+  - source_label: sea pen
+    targets: {taxon: A1609360}
+    fidelity: exact
+    note: 'WoRMS: the order Pennatulacea is superseded by the superfamily Pennatuloidea'
   - {source_label: sea slug, fidelity: unmappable, note: 'no WoRMS-backed taxon for this label: no exact WoRMS record'}
-  - {source_label: sea snail, fidelity: unmappable, note: 'no WoRMS-backed taxon for this label: no exact WoRMS record'}
+  - source_label: sea snail
+    targets: {taxon: A101}
+    fidelity: coarsened
+    note: marine gastropods; the class also holds sea slugs
   - {source_label: sea spider, fidelity: unmappable, note: 'no WoRMS-backed taxon for this label: no exact WoRMS record'}
-  - {source_label: sea squirt, fidelity: unmappable, note: 'no WoRMS-backed taxon for this label: no exact WoRMS record'}
-  - {source_label: sea star, fidelity: unmappable, note: 'no WoRMS-backed taxon for this label: no exact WoRMS record'}
-  - {source_label: sea turtle, fidelity: unmappable, note: 'no WoRMS-backed taxon for this label: no exact WoRMS record'}
-  - {source_label: shark, fidelity: unmappable, note: 'no WoRMS-backed taxon for this label: no exact WoRMS record'}
+  - source_label: sea squirt
+    targets: {taxon: A1839}
+    fidelity: exact
+    note: 'WoRMS: sea squirt -> accepted Ascidiacea (1839)'
+  - source_label: sea star
+    targets: {taxon: A123080}
+    fidelity: exact
+    note: 'WoRMS: sea star -> accepted Asteroidea (123080)'
+  - source_label: sea turtle
+    targets: {taxon: A987094}
+    fidelity: exact
+    note: Cheloniidae and Dermochelyidae
+  - source_label: shark
+    targets: {taxon: A368408}
+    fidelity: exact
+    note: sharks are the infraclass Selachii (same mapping as roboflow-aquarium)
   - {source_label: shell, fidelity: unmappable, note: 'no WoRMS-backed taxon for this label: no exact WoRMS record'}
   - {source_label: shell fragment, fidelity: unmappable, note: 'no WoRMS-backed taxon for this label: no exact WoRMS record'}
   - {source_label: ship container, fidelity: unmappable, note: 'no WoRMS-backed taxon for this label: no exact WoRMS record'}
   - {source_label: shoe, fidelity: unmappable, note: 'no WoRMS-backed taxon for this label: no exact WoRMS record'}
-  - {source_label: shrimp, fidelity: unmappable, note: 'no WoRMS-backed taxon for this label: no exact WoRMS record'}
+  - source_label: shrimp
+    targets: {taxon: A1130}
+    fidelity: coarsened
+    note: shrimp is paraphyletic (Caridea, Dendrobranchiata, Stenopodidea); the smallest accepted clade holding all of them is Decapoda
   - {source_label: sinker, fidelity: unmappable, note: 'no WoRMS-backed taxon for this label: no exact WoRMS record'}
   - {source_label: siphon, fidelity: unmappable, note: 'no WoRMS-backed taxon for this label: no exact WoRMS record'}
-  - {source_label: siphonophore, fidelity: unmappable, note: 'no WoRMS-backed taxon for this label: no exact WoRMS record'}
+  - source_label: siphonophore
+    targets: {taxon: A1371}
+    fidelity: exact
+    note: 'WoRMS: siphonophore -> accepted Siphonophorae (1371)'
   - {source_label: site marker, fidelity: unmappable, note: 'no WoRMS-backed taxon for this label: no exact WoRMS record'}
-  - {source_label: soft coral, fidelity: unmappable, note: 'no WoRMS-backed taxon for this label: no exact WoRMS record'}
+  - source_label: soft coral
+    targets: {taxon: A1341}
+    fidelity: coarsened
+    note: soft corals are octocorals; Alcyonacea is unaccepted in WoRMS (valid = Octocorallia)
   - {source_label: spicule, fidelity: unmappable, note: 'no WoRMS-backed taxon for this label: no exact WoRMS record'}
   - source_label: sponge
     targets: {taxon: A558}
     fidelity: exact
-  - {source_label: squat lobster, fidelity: unmappable, note: 'no WoRMS-backed taxon for this label: no exact WoRMS record'}
-  - {source_label: squid, fidelity: unmappable, note: 'no WoRMS-backed taxon for this label: no exact WoRMS record'}
-  - {source_label: stony coral, fidelity: unmappable, note: 'no WoRMS-backed taxon for this label: no exact WoRMS record'}
+  - source_label: squat lobster
+    targets: {taxon: A106671}
+    fidelity: coarsened
+    note: squat lobsters span Galatheoidea and Chirostyloidea (and Galatheoidea also holds porcelain crabs); the smallest accepted clade holding both is Anomura
+  - source_label: squid
+    targets: {taxon: A325342}
+    fidelity: coarsened
+    note: squids sit in Decapodiformes (Teuthida is a nomen dubium); the superorder also holds cuttlefish and bobtail squids
+  - source_label: stony coral
+    targets: {taxon: A1363}
+    fidelity: exact
+    note: 'WoRMS: stony coral -> accepted Scleractinia (1363)'
   - {source_label: talus, fidelity: unmappable, note: 'no WoRMS-backed taxon for this label: no exact WoRMS record'}
   - {source_label: test, fidelity: unmappable, note: 'no WoRMS-backed taxon for this label: no exact WoRMS record'}
   - {source_label: tire, fidelity: unmappable, note: 'no WoRMS-backed taxon for this label: no exact WoRMS record'}
@@ -5698,7 +5817,10 @@ crosswalks:
   - {source_label: trash, fidelity: unmappable, note: 'no WoRMS-backed taxon for this label: no exact WoRMS record'}
   - {source_label: tube anemone, fidelity: unmappable, note: 'no WoRMS-backed taxon for this label: no exact WoRMS record'}
   - {source_label: tunicate, fidelity: unmappable, note: 'no WoRMS-backed taxon for this label: no exact WoRMS record'}
-  - {source_label: urchin, fidelity: unmappable, note: 'no WoRMS-backed taxon for this label: no exact WoRMS record'}
+  - source_label: urchin
+    targets: {taxon: A123082}
+    fidelity: exact
+    note: sea urchins and relatives
   - {source_label: vampire squid, fidelity: unmappable, note: 'no WoRMS-backed taxon for this label: no exact WoRMS record'}
   - {source_label: vertebrate, fidelity: unmappable, note: 'no WoRMS-backed taxon for this label: no exact WoRMS record'}
   - {source_label: whale carcass, fidelity: unmappable, note: 'no WoRMS-backed taxon for this label: no exact WoRMS record'}
@@ -5708,4 +5830,7 @@ crosswalks:
     targets: {taxon: A558}
     fidelity: coarsened
     note: common name only -> phylum
-  - {source_label: zoanthid, fidelity: unmappable, note: 'no WoRMS-backed taxon for this label: no exact WoRMS record'}
+  - source_label: zoanthid
+    targets: {taxon: A607338}
+    fidelity: exact
+    note: WoRMS accepted order Zoantharia (the class-rank record 1364 is unaccepted)

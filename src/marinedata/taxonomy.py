@@ -247,7 +247,12 @@ def audit_vocab(
 
 def audit_all(registry: Registry, registry_root: str | Path) -> list[VocabAudit]:
     vocab = taxonomy_dir(registry_root) / "vocab"
-    return [audit_vocab(registry, p, registry_root) for p in sorted(vocab.glob("*.tsv"))]
+    # a TSV without a ``# crosswalk:`` header is a side table (e.g. fathomnet-common-names.tsv)
+    return [
+        audit_vocab(registry, p, registry_root)
+        for p in sorted(vocab.glob("*.tsv"))
+        if "crosswalk" in read_vocab_rows(p)[0]
+    ]
 
 
 # ── gate ─────────────────────────────────────────────────────────────────────────

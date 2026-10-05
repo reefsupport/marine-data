@@ -28,7 +28,7 @@ import pyarrow.parquet as pq
 import yaml
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
-from marinedata.taxonomy import load_meta, read_vocab, taxonomy_dir  # noqa: E402
+from marinedata.taxonomy import load_meta, read_vocab, read_vocab_rows, taxonomy_dir  # noqa: E402
 from marinedata.worms_snapshot import WormsClient, build_rows, write_parquet  # noqa: E402
 
 REPO = Path(__file__).resolve().parents[1]
@@ -74,6 +74,39 @@ def reductions(label: str) -> tuple[str, str] | None:
             if head != label:
                 return head, why
     return None
+
+
+COMMON_TSV = "fathomnet-common-names.tsv"
+COMMON_XW = "fathomnet-concepts"
+_FIDELITY = {"exact": "exact", "broader": "coarsened", "unmapped": "unmappable"}
+
+
+def read_common(path: Path) -> list[dict[str, str]]:
+    """Rows of the hand-confirmed common-name table (``concept`` .. ``note``); ``#`` lines skipped."""
+    lines = [ln for ln in path.read_text().splitlines() if ln and not ln.startswith("#")]
+    cols = lines[0].split("\t")
+    return [dict(zip(cols, ln.split("\t"), strict=False)) for ln in lines[1:]]
+
+
+def verify_common(rows: list[dict[str, str]], client: WormsClient) -> dict[str, int]:
+    """``scientific_name -> AphiaID`` once WoRMS confirms every row's id: the record carries that
+    name and is accepted. Nothing is looked up by name here, so homonyms cannot pick the wrong one."""
+    ids = {int(r["aphia_id"]) for r in rows if r["aphia_id"]}
+    recs = client.records_by_ids(ids)
+    out: dict[str, int] = {}
+    for r in rows:
+        if r["match_type"] not in _FIDELITY:
+            raise SystemExit(f"{r['concept']}: unknown match_type {r['match_type']!r}")
+        if not r["aphia_id"]:
+            if r["match_type"] != "unmapped":
+                raise SystemExit(f"{r['concept']}: {r['match_type']} row without an aphia_id")
+            continue
+        rec = recs.get(int(r["aphia_id"]))
+        ok = rec and rec["status"] == "accepted" and rec["scientificname"].lower() == r["scientific_name"].lower()
+        if not ok:
+            raise SystemExit(f"{r['concept']}: WoRMS does not confirm {r['scientific_name']} = {r['aphia_id']}")
+        out[r["scientific_name"]] = int(r["aphia_id"])
+    return out
 
 
 class Snapshot:
@@ -135,19 +168,32 @@ def main(cache: Path, xw: str, dry: bool) -> None:
     labels: dict[str, int] = {}
     srcs = []
     for p in sorted((taxonomy_dir(ROOT) / "vocab").glob("*.tsv")):
-        head, counts = read_vocab(p)
+        head, _rows = read_vocab_rows(p)
         if head.get("crosswalk") == xw:
+            _head, counts = read_vocab(p)
             srcs.append(p.stem)
             for lab, c in counts.items():
                 labels[lab] = labels.get(lab, 0) + (c or 0)
     xw_path = ROOT / f"crosswalks/{xw}.yaml"
     doc = yaml.safe_load(xw_path.read_text()) if xw_path.exists() else None
     old = {e["source_label"]: e for e in (doc["crosswalks"][0]["edges"] if doc else [])}
-    hand = HAND.get(xw, {})
+    hand = dict(HAND.get(xw, {}))
+    verified: dict[str, int] = {}
+    common_path = taxonomy_dir(ROOT) / "vocab" / COMMON_TSV
+    if xw == COMMON_XW and common_path.exists():
+        common = read_common(common_path)
+        verified = verify_common(common, client)
+        for r in common:
+            if r["concept"] not in labels:
+                raise SystemExit(f"{r['concept']}: not a fathomnet label")
+            hand[r["concept"]] = (r["scientific_name"] or None, _FIDELITY[r["match_type"]], r["note"] or None)
+        # the table is authoritative for its labels: their generated edges are rebuilt from it
+        old = {k: v for k, v in old.items() if k not in {r["concept"] for r in common}}
     todo = sorted(set(labels) - set(old))
     # pass 1: exact names (hand table first); pass 2: the reductions of what pass 1 missed
     first = {n for n in todo if n not in hand}
-    got = resolve(first | {h[0] for h in hand.values() if h[0]}, snap, client)
+    got = resolve(first | {h[0] for h in hand.values() if h[0] and h[0] not in verified}, snap, client)
+    got.update({n: (a, "common-name table, WoRMS-confirmed id") for n, a in verified.items()})
     red = {n: reductions(n) for n in first if got[n][0] is None}
     got.update(resolve({r[0] for r in red.values() if r}, snap, client))
 
@@ -220,7 +266,7 @@ def main(cache: Path, xw: str, dry: bool) -> None:
             "worms_rank": r["rank"], "worms_status": "accepted", "worms_checked_on": TODAY,
         })  # fmt: skip
     # edges
-    edges = list(doc["crosswalks"][0]["edges"]) if doc else []
+    edges = [e for e in (doc["crosswalks"][0]["edges"] if doc else []) if e["source_label"] in old]
     for n in todo:
         a, fid, note = plan[n]
         e: dict = {"source_label": n}
