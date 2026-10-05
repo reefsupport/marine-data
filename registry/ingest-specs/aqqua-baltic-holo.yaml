@@ -21,3 +21,5 @@ measured:
   wp6g_gaps:
   - 7
   - 6
+# WP-U14c: title 'In situ marine plankton holographic image dataset' (digital in-line holography)
+default_instrument: holographic-imager

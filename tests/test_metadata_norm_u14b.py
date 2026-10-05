@@ -158,7 +158,7 @@ def test_real_registry_carries_the_known_constants():
         for s in ("brackishmot", "aris-didson-fish-td", "coralscop-masks-rs", "csiro-cots")
     }
     assert got["brackishmot"] == {"platform": "lander", "habitat": "brackish_water"}
-    assert got["aris-didson-fish-td"] == {"habitat": "river"}
+    assert got["aris-didson-fish-td"] == {"habitat": "river", "instrument": "imaging-sonar"}
     assert got["coralscop-masks-rs"] == {"habitat": "coral_reef"} == got["csiro-cots"]
 
 

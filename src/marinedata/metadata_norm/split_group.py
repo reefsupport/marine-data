@@ -7,8 +7,11 @@ Order (first hit wins; provenance names the rule):
 3. ``row:site``: a site / deployment / dive id on the row;
 4. ``upstream_split+folder``: the upstream split plus the image's own upstream folder (skipped
    when that folder is only the split directory: one group per split is no grouping);
-5. ``image_sha256``;
-6. ``registry-fallback``: ``<source_id>/<partition>``.
+5. ``spatiotemporal`` (WP-U14c): a row with lat/lon and a capture date is grouped as
+   ``<source_id>:<lat>,<lon>:<date>`` (lat/lon rounded to 0.01 deg, UTC date): frames of one
+   dive / station / location-day share a group (fathomnet: a dive is a location-day);
+6. ``image_sha256``;
+7. ``registry-fallback``: ``<source_id>/<partition>``.
 """
 
 from __future__ import annotations
@@ -30,6 +33,27 @@ def _first(row: Mapping[str, Any], keys: tuple[str, ...]) -> tuple[str, str] | N
         if _text(row.get(k)):
             return k, _text(row[k])
     return None
+
+
+def _cell(x: Any) -> str | None:
+    """``x`` rounded to 0.01 deg as text; ``None`` when it is not a finite number."""
+    try:
+        f = float(x)
+    except (TypeError, ValueError):
+        return None
+    if f != f or f in (float("inf"), float("-inf")):
+        return None
+    out = f"{f:.2f}"
+    return "0.00" if out == "-0.00" else out
+
+
+def spatiotemporal_group(source_id: str, values: Mapping[str, Any]) -> str | None:
+    """``<source_id>:<lat,lon at 0.01 deg>:<UTC date>`` when lat, lon and a capture time are set."""
+    when = values.get("capture_datetime")
+    lat, lon = _cell(values.get("lat")), _cell(values.get("lon"))
+    if when is None or lat is None or lon is None or not hasattr(when, "date"):
+        return None
+    return f"{source_id}:{lat},{lon}:{when.date().isoformat()}"
 
 
 def derive_split_group(
@@ -54,6 +78,9 @@ def derive_split_group(
     folder = PurePosixPath(path).parent.name if path else ""
     if split and folder and folder.lower() != split.lower():
         return f"{source_id}/{split}/{folder}", "upstream_split+folder"
+    spatiotemporal = spatiotemporal_group(source_id, values)
+    if spatiotemporal:
+        return spatiotemporal, "spatiotemporal:0.01deg+utc_date"
     sha = _text(values.get("image_sha256"))
     if sha:
         return f"{source_id}/sha:{sha}", "image_sha256"

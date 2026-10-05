@@ -23,3 +23,5 @@ measured:
   habitat_region: synthetic (LIAS_OCEAN / blue-water scenes)
   dedup_chain: new; no registry/ingest-spec/WP-6g/S57 match on title, DOI or record id
   wp6l_gap: sonar
+# WP-U14c: no default_instrument. Rows mix simulated sonar sweeps, degraded optical frames and USD
+# texture assets (LIAS_OCEAN); nothing staged says side-scan, and a source-level value would mislabel them.

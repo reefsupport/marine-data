@@ -1,9 +1,9 @@
-"""Source-level constants and the registry date fallback (WP-U14b).
+"""Source-level constants and the registry date fallback (WP-U14b, U14c).
 
-``default_platform`` / ``default_habitat`` are optional registry fields (ingest spec or source
-entry), filled only where the evidence table marks the value known; they are validated against
-the controlled vocabularies (``PLATFORMS``, :data:`HABITATS`) and used as a fallback with
-provenance ``registry_default``.
+``default_platform`` / ``default_habitat`` / ``default_instrument`` are optional registry fields
+(ingest spec or source entry), filled only where the evidence table marks the value known; they
+are validated against the controlled vocabularies (``PLATFORMS``, :data:`HABITATS`,
+:data:`INSTRUMENTS`) and used as a fallback with provenance ``registry_default``.
 """
 
 from __future__ import annotations
@@ -17,6 +17,10 @@ from .base import parse_date
 
 HABITATS = frozenset({h.value for h in Habitat} | {"brackish_water", "river"})
 """``Habitat`` plus two settings the enum lacks (WP-2b enum untouched): brackish water, river."""
+
+INSTRUMENTS = frozenset({"imaging-sonar", "side-scan-sonar", "holographic-imager", "ifcb"})
+"""Controlled vocabulary for the ``camera`` column (the imaging instrument), filled only from a
+registry ``default_instrument`` that names evidence (WP-U14c); never inferred per row."""
 
 
 def registry_entry(source_id: str, root: str | Path | None = None) -> dict[str, Any]:
@@ -39,10 +43,14 @@ def registry_entry(source_id: str, root: str | Path | None = None) -> dict[str, 
 
 
 def validated_defaults(entry: dict[str, Any]) -> dict[str, str]:
-    """``{"platform": ..., "habitat": ...}`` of the entry's non-empty defaults; ``ValueError``
-    for a value outside the controlled vocabulary."""
+    """``{"platform": ..., "habitat": ..., "instrument": ...}`` of the entry's non-empty defaults;
+    ``ValueError`` for a value outside the controlled vocabulary."""
     out: dict[str, str] = {}
-    for name, vocab in (("platform", PLATFORMS), ("habitat", HABITATS)):
+    for name, vocab in (
+        ("platform", PLATFORMS),
+        ("habitat", HABITATS),
+        ("instrument", INSTRUMENTS),
+    ):
         value = str(entry.get(f"default_{name}") or "").strip()
         if value:
             if value not in vocab:

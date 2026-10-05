@@ -154,6 +154,9 @@ class IngestSpec:
     access_class: str = "unknown"
     default_platform: str = ""  # WP-U14b source-level constants (metadata_norm.defaults)
     default_habitat: str = ""
+    default_instrument: str = (
+        ""  # WP-U14c: controlled vocabulary, metadata_norm.defaults.INSTRUMENTS
+    )
     licence_per_row: bool = False  # every item carries its own licence string
     citation: str = ""
     homepage: str = ""

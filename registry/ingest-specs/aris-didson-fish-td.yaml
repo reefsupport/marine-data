@@ -25,3 +25,5 @@ measured:
   wp6l_gap: sonar+video
 # WP-U14b: source-level constants (evidence: u14-sample/upstream-fields.tsv, marked known)
 default_habitat: river
+# WP-U14c: the title and label_type name ARIS and DIDSON acoustic cameras (imaging sonar)
+default_instrument: imaging-sonar

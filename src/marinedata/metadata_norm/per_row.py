@@ -14,6 +14,7 @@ from typing import Any
 from .base import NormContext, Staged, staged_rows, to_table
 from .default import _blank, checksum_index, normalise_row
 from .geo import fathomnet_fields, inat_fields, mermaid_fields
+from .next5 import pingmapper_fields
 
 _INAT_PHOTO = "https://www.inaturalist.org/photos/"
 _PLK_SPLIT = re.compile(r"^data_(?P<split>[a-z]+)-(?P<shard>\d+-of-\d+)_parquet_(?P<row>\d+)$")
@@ -145,3 +146,10 @@ def mermaid_aws(source_id: str, version: str, staged: Staged, ctx: NormContext):
         image_id = str(row.get("upstream_id") or row.get("stem") or "")
         extras.append({"_licences": (), **mermaid_fields(image_id, ctx.events)})
     return _finish(source_id, version, rows, ctx, extras, "mermaid-sample-event")
+
+
+def pingmapper_sss_seg(source_id: str, version: str, staged: Staged, ctx: NormContext):
+    """Default fields plus the survey date read from the PINGMapper recording name."""
+    rows = staged_rows(staged)
+    extras = [{"_licences": (), **pingmapper_fields(row.get("upstream_id"))} for row in rows]
+    return _finish(source_id, version, rows, ctx, extras, "pingmapper-recording-name")

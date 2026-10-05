@@ -44,6 +44,7 @@ class NormContext:
     fetch_date_origin: str = ""
     default_platform: str = ""
     default_habitat: str = ""
+    default_instrument: str = ""
     split_rule: Any = None
     """The source's registry ``SplitGroupRule`` (``None`` = fallback grouping only)."""
     events: Mapping[str, Any] = field(default_factory=dict)

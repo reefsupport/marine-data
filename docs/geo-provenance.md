@@ -34,3 +34,23 @@ place, only if ≤ 500 km across) > `none`. Location-sensitive 0.1° rounding ap
   not attempt to re-derive them (e.g. from EXIF-adjacent metadata, dive-log correlation, etc.) even if a
   future upstream release adds a country field — respect the redaction; a country-level centroid would
   still fail D-W's 500 km rule regardless.
+
+## iNaturalist: coordinates are generalised on purpose (WP-U14b/U14c decision)
+The inat-marine manifest stages `latitude`, `longitude` and `observed_on` but no geoprivacy flag, so
+we cannot tell an obscured observation from an exact one. Every iNat position is therefore kept at
+0.1 deg (`gps_precision_m = 22000`, `location_generalized = true`) and the time is date only
+(`observed_on` becomes 00:00Z; provenance says "date only"). Coordinates are not nulled.
+
+## Next-5 sources (WP-U14c, inspected 2026-10-05 in `metadata.parquet` heads; extractor code in
+`metadata_norm/next5.py`)
+| Source | Per-row geo / depth / time staged | Result |
+|---|---|---|
+| pingmapper-sss-seg | recording name `<site>_<YYYYMMDD>_<unit>_Rec<n>_wcp_ss_<side>_<chunk>` in `upstream_id` | `capture_datetime` = that date (date only). No position: the site is a river/lake name |
+| marineevt | none: video frames; `upstream_id` has the video id, QA json is not joined | none staged (`sources/marineevt/rev-37488d3c7690/metadata.parquet`) |
+| sonarsweep | none: simulated sonar, degraded optical frames and USD textures | none staged (`sources/sonarsweep/rev-350b20a9acaf/metadata.parquet`) |
+| nes-plankton-2022 | none: `upstream_id` is `data/train-NNNNN.parquet#row`; no IFCB sample id | none staged (`sources/nes-plankton-2022/rev-18fb2e57fd77/metadata.parquet`) |
+| aqqua-baltic-holo | month and station only (`Finland_April2024_St15`); the per-station csv is not staged | none staged (`sources/aqqua-baltic-holo/record-18405776/`: no csv in the tree) |
+
+Instrument (`camera` column) comes from registry `default_instrument`, provenance `registry_default`:
+aris-didson-fish-td = imaging-sonar, pingmapper-sss-seg = side-scan-sonar, aqqua-baltic-holo =
+holographic-imager, nes-plankton-2022 = ifcb. sonarsweep has none (mixed simulated modalities).

@@ -4,12 +4,20 @@ from __future__ import annotations
 
 from .base import EXTRA_COLUMNS, OUTPUT_COLUMNS, Normaliser, NormContext, Staged, to_table
 from .default import default_normalise
-from .per_row import fathomnet, inat_marine, mermaid_aws, planktonzilla, qut_fish
+from .per_row import (
+    fathomnet,
+    inat_marine,
+    mermaid_aws,
+    pingmapper_sss_seg,
+    planktonzilla,
+    qut_fish,
+)
 
 NORMALISERS: dict[str, Normaliser] = {
     "fathomnet": fathomnet,
     "inat-marine": inat_marine,
     "mermaid-aws": mermaid_aws,
+    "pingmapper-sss-seg": pingmapper_sss_seg,
     "planktonzilla": planktonzilla,
     "qut-fish": qut_fish,
 }

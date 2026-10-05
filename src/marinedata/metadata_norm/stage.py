@@ -170,6 +170,7 @@ def load_inputs(
         fetch_date_origin=fetched_from,
         default_platform=defaults.get("platform", ""),
         default_habitat=defaults.get("habitat", ""),
+        default_instrument=defaults.get("instrument", ""),
         split_rule=split_rule(source_id, registry_root),
         events=json.loads(Path(events_path).read_text()) if events_path else {},
         meow=_meow(meow_path),

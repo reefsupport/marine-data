@@ -97,12 +97,13 @@ def normalise_row(
         "image_bytes", "image_member", "width", "height", "upstream_id", "upstream_url",
         "upstream_digest", "lineage_root_digest", "split_hint", "split_group", "upstream_split",
         "upstream_path", "capture_datetime", "lat", "lon", "gps_precision_m", "depth_m",
-        "depth_source", "camera", "meow_realm", "meow_province", "meow_ecoregion",
+        "depth_source", "meow_realm", "meow_province", "meow_ecoregion",
         "depth_zone", "label_refs",
     ):  # fmt: skip
         r.take(name)
     r.take("platform", (ctx.default_platform, "registry_default"))
     r.take("habitat", (ctx.default_habitat, "registry_default"))
+    r.take("camera", (ctx.default_instrument, "registry_default"))
     r.take("upstream_id", (r.values.get("upstream_path"), "upstream_path"))
     r.values["location_generalized"] = bool(
         r.over.get("location_generalized", staged.get("location_generalized"))
