@@ -31,12 +31,15 @@ from ..tables import _require_pyarrow
 from .boxes_table import BOX_SOURCES
 from .masks_table import MASK_SOURCES
 from .rollup import MIXED, UNKNOWN, rollup_counts
+from .vqa_table import VQA_SOURCES
 
 BENTHIC_COARSE_TASK = "benthic-coarse"
 BLEACHING_TASK = "bleaching-condition"
 HEALTH_TASK = "coral-health-binary"
 
-CONFIG_IDS = ("points", "vqa", "semseg", "benthic-coarse", "benthic-cover", "bleaching", "boxes")
+CONFIG_IDS = (
+    "points", "vqa", "semseg", "benthic-coarse", "benthic-cover", "bleaching", "boxes", "captions",
+)  # fmt: skip
 
 # WP-8e-resume (manager decision 3): the staged point/mask sources each config reads.
 POINT_SOURCES = ("reefolution", "mermaid-aws")
@@ -47,6 +50,10 @@ SEMSEG_SOURCES = tuple(MASK_SOURCES)
 ROLLUP_MASK_SOURCES = ("coralscapes", "reef-support-benthic-own")
 # WP-U6a: registry-driven like masks: every source with a unified ``boxes`` producer.
 BOX_CONFIG_SOURCES = tuple(BOX_SOURCES)
+# WP-U10: registry-driven too: every source with a unified ``vqa`` producer; coralvqa keeps its
+# D-Z2 ``_tasklabels`` payload as the fallback while no unified file has been written.
+VQA_CONFIG_SOURCES = tuple(VQA_SOURCES)
+LEGACY_VQA_SOURCES = ("coralvqa",)
 # WP-8e-resume (manager decision 2): bleaching is a headline reef task with its own config.
 BLEACHING_SOURCES = (
     "noaa-pifsc-bleaching",
@@ -191,6 +198,26 @@ def _annotation_boxes(base_dir: Path, source_id: str) -> list[dict]:
     root = base_dir / "_annotations" / "boxes" / source_id
     files = sorted(p for p in root.glob("*.parquet") if not p.name.endswith(".pending.parquet"))
     return [r for r in _read_parquet(files[-1]) if r.get("image_sha256")] if files else []
+
+
+def _annotation_free(base_dir: Path, table: str, source_id: str) -> list[dict]:
+    """The unified ``captions`` / ``vqa`` rows of ``source_id`` (newest non-pending parquet); rows
+    that are pending (no ``image_sha256``) never reach a config."""
+    root = base_dir / "_annotations" / table / source_id
+    files = sorted(p for p in root.glob("*.parquet") if not p.name.endswith(".pending.parquet"))
+    return [r for r in _read_parquet(files[-1]) if r.get("image_sha256")] if files else []
+
+
+def _free_config_rows(records: list[dict], label_status: Mapping[str, str]) -> list[dict]:
+    return [
+        {
+            **r,
+            "sha256": r["image_sha256"],
+            "licence_class": _attrs(r).get("licence_class"),
+            "label_status": label_status.get(r["image_sha256"], r["label_status"]),
+        }
+        for r in records
+    ]
 
 
 def _bleaching_records(base_dir: Path, source_id: str) -> list[dict]:
@@ -350,15 +377,36 @@ def build_points_config(registry: Registry, base_dir: str | Path) -> ConfigResul
 
 
 def build_vqa_config(base_dir: str | Path) -> ConfigResult:
-    """``vqa``: CoralVQA (today: train split) Q/A rows, unchanged — no crosswalk applies
-    to free-text VQA (D-Y note: "treat as a language/UX asset, not a measurement one")."""
+    """``vqa``: every unified ``vqa`` row (``_annotations/vqa/<source>``: question, answer,
+    ``qa_type``, ``annotator_type``, ``licence_class`` lifted from ``attrs``), registry-driven over
+    :data:`VQA_CONFIG_SOURCES`. A legacy source with no unified file still reads its D-Z2
+    ``_tasklabels`` rows unchanged. No crosswalk applies to free-text VQA (D-Y note: "treat as a
+    language/UX asset, not a measurement one")."""
     base_dir = Path(base_dir)
     label_status = _load_label_status(base_dir)
     rows: list[dict] = []
-    for source_id in ("coralvqa",):
-        for record in _read_tasklabels(base_dir, source_id, "vqa"):
-            rows.append({**record, "label_status": label_status.get(record["sha256"], "ok")})
+    for source_id in VQA_CONFIG_SOURCES:
+        if records := _annotation_free(base_dir, "vqa", source_id):
+            rows.extend(_free_config_rows(records, label_status))
+        elif source_id in LEGACY_VQA_SOURCES:
+            for record in _read_tasklabels(base_dir, source_id, "vqa"):
+                rows.append({**record, "label_status": label_status.get(record["sha256"], "ok")})
     return ConfigResult("vqa", tuple(rows), {})
+
+
+def build_captions_config(base_dir: str | Path) -> ConfigResult:
+    """``captions``: every unified ``captions`` row of every source that has a
+    ``_annotations/captions/<source>`` directory (text, ``lang``, ``caption_type``,
+    ``annotator_type`` / ``annotator_detail``, ``licence_class`` lifted from ``attrs``)."""
+    base_dir = Path(base_dir)
+    label_status = _load_label_status(base_dir)
+    root = base_dir / "_annotations" / "captions"
+    rows: list[dict] = []
+    for source_dir in sorted(p for p in root.iterdir() if p.is_dir()) if root.is_dir() else []:
+        rows.extend(
+            _free_config_rows(_annotation_free(base_dir, "captions", source_dir.name), label_status)
+        )
+    return ConfigResult("captions", tuple(rows), {})
 
 
 def build_semseg_config(registry: Registry, base_dir: str | Path) -> ConfigResult:
@@ -635,6 +683,7 @@ def build_all_configs(registry: Registry, base_dir: str | Path) -> dict[str, Con
         "benthic-cover": build_benthic_cover_config(registry, base_dir),
         "bleaching": build_bleaching_config(registry, base_dir),
         "boxes": build_boxes_config(registry, base_dir),
+        "captions": build_captions_config(base_dir),
     }
 
 

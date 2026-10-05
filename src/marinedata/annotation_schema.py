@@ -29,7 +29,8 @@ Null semantics (a null always means one specific thing):
 * Normalised coordinates are float32 in [0, 1]. Validators accept values up to
   :data:`COORD_TOLERANCE` outside that range; :func:`to_table` clips them onto it.
 * The taxon-free tables (``captions``, ``vqa``, ``depth``, ``pairs``) carry the keys, the
-  provenance columns and their own payload, and no label or taxon column at all.
+  provenance columns and their own payload, and no label or taxon column at all. ``captions`` and
+  ``vqa`` also carry the nullable JSON ``attrs`` (licence class, multiple-choice ``options``).
 * ``tracks.image_sha256`` is null when no frame image was staged (``video_id`` + ``frame_idx``
   then locate the frame).
 """
@@ -224,8 +225,12 @@ def _taxon_table(name: str, extra: tuple[Col, ...], *, image_required: bool = Tr
     return TableSpec(name, cols, has_taxon=True)
 
 
-def _free_table(name: str, extra: tuple[Col, ...]) -> TableSpec:
-    return TableSpec(name, _keys() + _PROVENANCE + extra, has_taxon=False)
+def _free_table(name: str, extra: tuple[Col, ...], *, attrs: bool = False) -> TableSpec:
+    """A taxon-free table. ``attrs`` (JSON, nullable) is opt-in: ``captions`` and ``vqa`` carry the
+    per-row ``licence_class`` and, for multiple choice, the ``options`` there (WP-U10)."""
+    return TableSpec(
+        name, _keys() + _PROVENANCE + extra + (_ATTRS if attrs else ()), has_taxon=False
+    )
 
 
 TABLES: dict[str, TableSpec] = {
@@ -268,6 +273,7 @@ TABLES: dict[str, TableSpec] = {
         _free_table(
             "captions",
             (_c("text", req=True), _c("lang", req=True), _c("caption_type", req=True)),
+            attrs=True,
         ),
         _free_table(
             "vqa",
@@ -277,6 +283,7 @@ TABLES: dict[str, TableSpec] = {
                 _c("qa_type", req=True),
                 _c("lang", req=True),
             ),
+            attrs=True,
         ),
         _free_table(
             "depth",
