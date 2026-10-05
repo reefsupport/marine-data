@@ -227,12 +227,14 @@ def test_brackishmot_class_ids_follow_the_paper_class_list(registry, nodes):
     """gt.txt class 1-6 = fish, crab, shrimp, starfish, small fish, jellyfish (arXiv:2302.10645)."""
     xw = registry.crosswalk("brackishmot-class-id")
     edges = {e.source_label: e for e in xw.edges}
-    assert set(edges) == {"1", "2", "3", "4", "5"} and all(e.targets for e in edges.values())
+    assert set(edges) == {"1", "2", "3", "4", "5", "6"} and all(e.targets for e in edges.values())
     named = {k: nodes[e.targets["taxon"]].worms_scientificname for k, e in edges.items()}
     assert named == {
         "1": "Vertebrata", "2": "Brachyura", "3": "Decapoda", "4": "Asteroidea", "5": "Vertebrata",
+        "6": "Medusozoa",
     }  # fmt: skip
     assert edges["2"].fidelity is Fidelity.EXACT and edges["1"].fidelity is Fidelity.COARSENED
+    assert edges["6"].fidelity is Fidelity.COARSENED  # jellyfish: Medusozoa, as in roboflow-aquarium
 
 
 #: Labels with >= 10 boxes that stay unmapped after U8b, each on purpose: natural detritus and

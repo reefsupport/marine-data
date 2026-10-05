@@ -1,5 +1,16 @@
 # Taxonomy changelog
 
+## 2.7.0 — 2026-10-05
+
+MINOR: 2 nodes and 2 edges added, nothing removed, re-parented or retargeted
+(`marinedata taxonomy diff 2.6.0 HEAD`: nodes removed 0 / changed 0; edges removed 0 / changed 0).
+
+- **WP-U9 step 0:** `brackishmot-class-id` gains class 6 = jellyfish -> Medusozoa (`coarsened`, as in `roboflow-aquarium`).
+  Class 6 is documented by the BrackishMOT paper (arXiv:2302.10645) and occurs in the staged gt.txt files (the WP-U8a smoke
+  had missed it); `vocab/brackishmot.tsv` and its header note are corrected.
+- **WP-U13:** new `seaturtleid2022` crosswalk + `vocab/seaturtleid2022.tsv`: the dataset-level species `Caretta caretta`
+  (WoRMS 137205, accepted; loggerhead sea turtles per arXiv:2311.05524) -> `A137205` (`exact`), with the genus node `A137066`.
+
 ## 2.6.0 — 2026-10-05
 
 MINOR: 6 nodes and 5 edges added, nothing removed or re-parented, no existing target changed

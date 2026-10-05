@@ -46,13 +46,14 @@ FISH_NOTE = (
 # label -> (WoRMS name | None = unmappable, fidelity, note). Hand decisions, applied before the rules.
 HAND: dict[str, dict[str, tuple[str | None, str, str]]] = {
     "fathomnet-concepts": {},
-    # BrackishMOT gt.txt class ids (paper arXiv:2302.10645): 1 fish, 2 crab, 3 shrimp, 4 starfish, 5 small fish
+    # BrackishMOT gt.txt class ids (paper arXiv:2302.10645): 1 fish, 2 crab, 3 shrimp, 4 starfish, 5 small fish, 6 jellyfish
     "brackishmot-class-id": {
         "1": ("Vertebrata", "coarsened", FISH_NOTE),
         "2": ("Brachyura", "exact", "crab = true crabs (Brachyura)"),
         "3": ("Decapoda", "coarsened", "shrimp is paraphyletic (Caridea, Dendrobranchiata, Stenopodidea); the smallest accepted clade holding all of them is Decapoda"),
         "4": ("Asteroidea", "exact", "starfish = sea stars"),
         "5": ("Vertebrata", "coarsened", "small fish (a school-forming size class of fish): " + FISH_NOTE),
+        "6": ("Medusozoa", "coarsened", "jellyfish are medusozoans; ctenophores would be missed"),
     },
     "roboflow-aquarium": {
         "fish": ("Vertebrata", "coarsened", FISH_NOTE),

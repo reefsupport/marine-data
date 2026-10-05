@@ -1771,6 +1771,7 @@ schemas:
   - {id: A135436, name: Lensia multicristata, parent: A135365, axis: taxon, worms_aphia_id: 135436, worms_scientificname: Lensia multicristata, worms_rank: Species, worms_status: accepted, worms_checked_on: *id002}
   - {id: A135457, name: Desmophyes annectens, parent: A135371, axis: taxon, worms_aphia_id: 135457, worms_scientificname: Desmophyes annectens, worms_rank: Species, worms_status: accepted, worms_checked_on: *id002}
   - {id: A135466, name: Praya dubia, parent: A135376, axis: taxon, worms_aphia_id: 135466, worms_scientificname: Praya dubia, worms_rank: Species, worms_status: accepted, worms_checked_on: *id002}
+  - {id: A137066, name: Caretta, parent: A136999, axis: taxon, worms_aphia_id: 137066, worms_scientificname: Caretta, worms_rank: Genus, worms_status: accepted, worms_checked_on: &id006 2026-10-05}
   - {id: A137067, name: Chelonia, parent: A136999, axis: taxon, worms_aphia_id: 137067, worms_scientificname: Chelonia, worms_rank: Genus, worms_status: accepted, worms_checked_on: *id002}
   - {id: A137068, name: Eretmochelys, parent: A136999, axis: taxon, worms_aphia_id: 137068, worms_scientificname: Eretmochelys, worms_rank: Genus, worms_status: accepted, worms_checked_on: *id002}
   - {id: A137695, name: Japetella, parent: A153101, axis: taxon, worms_aphia_id: 137695, worms_scientificname: Japetella, worms_rank: Genus, worms_status: accepted, worms_checked_on: *id002}
@@ -1988,6 +1989,7 @@ schemas:
   - {id: A127232, name: Dactylopterus volitans, parent: A126164, axis: taxon, worms_aphia_id: 127232, worms_scientificname: Dactylopterus volitans, worms_rank: Species, worms_status: accepted, worms_checked_on: *id001}
   - {id: A127288, name: Cyclothone pallida, parent: A126187, axis: taxon, worms_aphia_id: 127288, worms_scientificname: Cyclothone pallida, worms_rank: Species, worms_status: accepted, worms_checked_on: *id002}
   - {id: A136980, name: Delphinidae, parent: A370511, axis: taxon, worms_aphia_id: 136980, worms_scientificname: Delphinidae, worms_rank: Family, worms_status: accepted, worms_checked_on: *id002}
+  - {id: A137205, name: Caretta caretta, parent: A137066, axis: taxon, worms_aphia_id: 137205, worms_scientificname: Caretta caretta, worms_rank: Species, worms_status: accepted, worms_checked_on: *id006}
   - {id: A137206, name: Chelonia mydas, parent: A137067, axis: taxon, worms_aphia_id: 137206, worms_scientificname: Chelonia mydas, worms_rank: Species, worms_status: accepted, worms_checked_on: *id002}
   - {id: A137207, name: Eretmochelys imbricata, parent: A137068, axis: taxon, worms_aphia_id: 137207, worms_scientificname: Eretmochelys imbricata, worms_rank: Species, worms_status: accepted, worms_checked_on: *id002}
   - {id: A137873, name: Corolla, parent: A23019, axis: taxon, worms_aphia_id: 137873, worms_scientificname: Corolla, worms_rank: Genus, worms_status: accepted, worms_checked_on: *id002}

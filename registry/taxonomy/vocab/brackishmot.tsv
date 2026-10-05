@@ -2,10 +2,11 @@
 # crosswalk: brackishmot-class-id
 # counts: types
 # retrieved: 2026-10-05 from the BrackishMOT paper (Pedersen et al., arXiv:2302.10645, https://arxiv.org/abs/2302.10645), gt.txt format: class in the range 1-6 where (1) fish, (2) crab, (3) shrimp, (4) starfish, (5) small fish, (6) jellyfish
-# note: the staged sequences only carry class ids 1-5 (WP-U8a smoke); id 6 (jellyfish) is documented upstream but not observed, so it has no row
+# note: class id 6 (jellyfish) is documented by the paper and occurs in the staged gt.txt files (8 rows in the WP-U9 smoke; the WP-U8a smoke missed it), so it has a row
 label	count	description
 1		fish
 2		crab
 3		shrimp
 4		starfish
 5		small fish
+6		jellyfish

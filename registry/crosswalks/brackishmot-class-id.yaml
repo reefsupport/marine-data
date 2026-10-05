@@ -26,3 +26,7 @@ crosswalks:
     fidelity: coarsened
     note: 'small fish (a school-forming size class of fish): fish is paraphyletic and WoRMS Pisces is unaccepted, so fish land on the smallest accepted clade holding all of them; includes: [Actinopterygii,
       Elasmobranchii, Holocephali, Myxini, Petromyzonti]'
+  - source_label: '6'
+    targets: {taxon: A1740301}
+    fidelity: coarsened
+    note: jellyfish are medusozoans; ctenophores would be missed
