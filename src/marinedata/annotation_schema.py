@@ -29,8 +29,16 @@ Null semantics (a null always means one specific thing):
 * Normalised coordinates are float32 in [0, 1]. Validators accept values up to
   :data:`COORD_TOLERANCE` outside that range; :func:`to_table` clips them onto it.
 * The taxon-free tables (``captions``, ``vqa``, ``depth``, ``pairs``) carry the keys, the
-  provenance columns and their own payload, and no label or taxon column at all. ``captions`` and
-  ``vqa`` also carry the nullable JSON ``attrs`` (licence class, multiple-choice ``options``).
+  provenance columns and their own payload, and no label or taxon column at all.
+* **Every task table carries a nullable JSON ``attrs``** (WP-U10 decision a, completed for ``depth``
+  and ``pairs`` in WP-U11), taxon-free tables included: the release flavour filter needs a per-row
+  ``licence_class`` there (``captions`` / ``vqa`` add multiple-choice ``options``; ``depth`` adds
+  ``depth_kind`` and ``non_image``; ``pairs`` adds ``pair_kind``).
+* CoralVQA question/answer pairs are ``annotator_type = pseudo`` (a template filled from expert
+  labels), never ``human`` (WP-U10 decision b).
+* ``pairs.pair_role`` is the role of the *reference* image relative to ``image_sha256``
+  (``enhanced``, ``degraded``, ``stereo_right``, ``sonar``); ``depth.units`` / ``gt_type`` are the
+  enums below.
 * ``tracks.image_sha256`` is null when no frame image was staged (``video_id`` + ``frame_idx``
   then locate the frame).
 """
@@ -293,8 +301,13 @@ TABLES: dict[str, TableSpec] = {
                 _c("gt_type", req=True),
                 _c("valid_mask_ref"),
             ),
+            attrs=True,
         ),
-        _free_table("pairs", (_c("pair_role", req=True), _c("ref_image_sha256", req=True))),
+        _free_table(
+            "pairs",
+            (_c("pair_role", req=True), _c("ref_image_sha256", req=True)),
+            attrs=True,
+        ),
         _taxon_table(
             "identities",
             (

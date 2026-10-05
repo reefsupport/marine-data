@@ -25,8 +25,8 @@ COLUMN_COUNTS = {
     "tracks": 36,
     "captions": 15,
     "vqa": 16,
-    "depth": 15,
-    "pairs": 13,
+    "depth": 16,
+    "pairs": 14,
     "identities": 35,
 }
 TAXON_FREE = {"captions", "vqa", "depth", "pairs"}

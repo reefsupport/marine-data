@@ -160,6 +160,8 @@ def test_build_all_configs_and_rollup(tmp_path, registry):
         "bleaching",
         "boxes",
         "captions",
+        "depth",
+        "pairs",
     }
 
     points = results["points"]

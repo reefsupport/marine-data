@@ -29,6 +29,7 @@ from ..registry import Registry
 from ..schema import Axis
 from ..tables import _require_pyarrow
 from .boxes_table import BOX_SOURCES
+from .depth_table import DEPTH_PAIR_SOURCES
 from .masks_table import MASK_SOURCES
 from .rollup import MIXED, UNKNOWN, rollup_counts
 from .vqa_table import VQA_SOURCES
@@ -39,6 +40,7 @@ HEALTH_TASK = "coral-health-binary"
 
 CONFIG_IDS = (
     "points", "vqa", "semseg", "benthic-coarse", "benthic-cover", "bleaching", "boxes", "captions",
+    "depth", "pairs",
 )  # fmt: skip
 
 # WP-8e-resume (manager decision 3): the staged point/mask sources each config reads.
@@ -54,6 +56,9 @@ BOX_CONFIG_SOURCES = tuple(BOX_SOURCES)
 # D-Z2 ``_tasklabels`` payload as the fallback while no unified file has been written.
 VQA_CONFIG_SOURCES = tuple(VQA_SOURCES)
 LEGACY_VQA_SOURCES = ("coralvqa",)
+# WP-U11: registry-driven: every source bound to a depth / pairs producer feeds its config.
+DEPTH_CONFIG_SOURCES = tuple(s for s, v in DEPTH_PAIR_SOURCES.items() if "depth" in v.tables)
+PAIRS_CONFIG_SOURCES = tuple(s for s, v in DEPTH_PAIR_SOURCES.items() if "pairs" in v.tables)
 # WP-8e-resume (manager decision 2): bleaching is a headline reef task with its own config.
 BLEACHING_SOURCES = (
     "noaa-pifsc-bleaching",
@@ -409,6 +414,29 @@ def build_captions_config(base_dir: str | Path) -> ConfigResult:
     return ConfigResult("captions", tuple(rows), {})
 
 
+def _build_free_table_config(config_id: str, base_dir: str | Path, sources: tuple[str, ...]):
+    base_dir = Path(base_dir)
+    label_status = _load_label_status(base_dir)
+    rows: list[dict] = []
+    for source_id in sources:
+        records = _annotation_free(base_dir, config_id, source_id)
+        rows.extend(_free_config_rows(records, label_status))
+    return ConfigResult(config_id, tuple(rows), {})
+
+
+def build_depth_config(base_dir: str | Path) -> ConfigResult:
+    """``depth``: every unified ``depth`` row (``depth_ref``, ``units``, ``gt_type``,
+    ``licence_class`` lifted from ``attrs``) of :data:`DEPTH_CONFIG_SOURCES`; pending rows (no
+    ``image_sha256``) never reach the config. No crosswalk: depth carries no label."""
+    return _build_free_table_config("depth", base_dir, DEPTH_CONFIG_SOURCES)
+
+
+def build_pairs_config(base_dir: str | Path) -> ConfigResult:
+    """``pairs``: every unified ``pairs`` row (``pair_role``, ``ref_image_sha256``,
+    ``licence_class`` lifted from ``attrs``) of :data:`PAIRS_CONFIG_SOURCES`."""
+    return _build_free_table_config("pairs", base_dir, PAIRS_CONFIG_SOURCES)
+
+
 def build_semseg_config(registry: Registry, base_dir: str | Path) -> ConfigResult:
     """``semseg``: Coralscapes (today) per-image mask rows, native + canonical pixel
     counts (unmapped pixels — e.g. Coralscapes has no soft-coral class — kept out of the
@@ -684,6 +712,8 @@ def build_all_configs(registry: Registry, base_dir: str | Path) -> dict[str, Con
         "bleaching": build_bleaching_config(registry, base_dir),
         "boxes": build_boxes_config(registry, base_dir),
         "captions": build_captions_config(base_dir),
+        "depth": build_depth_config(base_dir),
+        "pairs": build_pairs_config(base_dir),
     }
 
 
