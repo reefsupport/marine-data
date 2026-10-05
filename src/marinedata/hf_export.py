@@ -415,7 +415,8 @@ def main(argv: list[str] | None = None) -> int:
     args = parser.parse_args(argv)
 
     registry = Registry.load()
-    release = json.loads((args.release_dir / "RELEASE.json").read_text())
+    release_json = args.release_dir / "RELEASE.json"
+    release = json.loads(release_json.read_text()) if release_json.is_file() else {}
     flavour = args.flavour or release.get("flavour")
     if args.flavour and release.get("flavour") != args.flavour:
         raise HFExportError(
