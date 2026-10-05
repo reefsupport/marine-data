@@ -13,7 +13,8 @@ counts) or, failing that, the crosswalk's own edges. Status:
   ``coverage_exceptions``.
 * ``fail``  — mapped < 0.90, or < 0.95 on a gated source, or a silent drop / dead target /
   ``unmapped`` edge without a note (the crosswalk contract), or an unknown release id.
-* ``n/a``   — no class labels, an open vocabulary, or labels not declared.
+* ``n/a``   — no class labels, an open vocabulary, labels not declared, or ``label-free``
+  (a registry source whose annotations are all depth/geometry, with no staged label rows).
 * ``missing-crosswalk`` — class labels (staged or declared) and no crosswalk to measure.
 
 ``narrower`` counts as mapped but abstains in projection. Gated = named in
@@ -36,6 +37,7 @@ import yaml
 from .licence_class import collapse_aliases, staged_id
 from .registry import Registry, _default_root
 from .taxonomy import (
+    LABELLED_KINDS,
     MIN_MAPPED,
     OPEN_BUCKET,
     OPEN_VOCABULARY,
@@ -215,6 +217,20 @@ def _class_bearing(
     return False, "no label information"
 
 
+def _label_free(registry: Registry, sid: str, staged: int) -> bool:
+    """WP-R9: a registry source that declares annotations, none of them class-bearing (depth
+    maps, poses, ...), with no staged label rows: it contributes no label rows to any task, so
+    it needs no crosswalk. Staged label rows (``staged`` > 0) or a class-bearing annotation make
+    it judged like any other source."""
+    if staged:
+        return False
+    try:
+        kinds = {a.kind.value for a in registry.source(sid).annotations}
+    except Exception:  # not a registry source: judged on what the cache/spec say
+        return False
+    return bool(kinds) and not kinds & LABELLED_KINDS
+
+
 def evaluate(
     registry: Registry,
     registry_root: str | Path,
@@ -344,6 +360,12 @@ def _row_for(
     if audit is None:
         if not bearing:
             return LabelRow(**base, status=NA, reasons=(why_not,))
+        if _label_free(registry, sid, staged):
+            return LabelRow(
+                **base,
+                status=NA,
+                reasons=("label-free: depth/geometry-only annotations, no label rows to map",),
+            )
         return LabelRow(
             **base,
             status=MISSING,

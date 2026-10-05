@@ -111,6 +111,23 @@ def test_specs_only_id_with_class_labels_and_no_crosswalk_is_missing(reg, tmp_pa
     assert row.blocks and row.origin == "spec"
 
 
+def test_label_free_source_needs_no_crosswalk_but_labelled_one_still_fails(reg):
+    """WP-R9: atlantis-synthetic-depth (depth maps, no class labels) is skipped with the reason
+    ``label-free``; the same source with staged label rows, or a labelled source with no
+    crosswalk, still blocks."""
+    sid = "atlantis-synthetic-depth"
+    cache = {"atlantis": {"id": "atlantis", "label_kinds": "none", "label_kinds_declared": "masks"}}
+    kw = {"audit_cache": cache, "release": [sid], "only": [sid]}
+    (row,) = lc.evaluate(reg, reg.root, **kw)
+    assert row.status == lc.NA and not row.blocks and row.gated
+    assert any(r.startswith("label-free") for r in row.reasons)
+    (row,) = lc.evaluate(reg, reg.root, bucket_labels={"atlantis": 5}, **kw)
+    assert row.status == lc.MISSING and row.blocks
+    assert not lc._label_free(reg, "zz-not-in-registry", 0)
+    labelled = next(s.id for s in reg.sources if s.id in set(lc.labelled_sources(reg)))
+    assert not lc._label_free(reg, labelled, 0)
+
+
 def test_declared_unknown_labels_are_listed_not_failed(reg, tmp_path):
     cache = {"zz-x": {"id": "zz-x", "label_kinds": "none", "label_kinds_declared": "unknown"}}
     (row,) = lc.evaluate(
