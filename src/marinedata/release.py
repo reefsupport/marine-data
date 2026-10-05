@@ -209,9 +209,10 @@ def _guard_degenerate_grouping(
 
 
 WALK_LAYOUTS = ("flat-images", "image-mask-pairs")
-"""Loader layouts whose primary images the split map enumerates (WP-R2e): from the staged
-``metadata.parquet`` when the tree has one, else by walking the image directory. A pair's
-mask/depth file is never its own row, so a pair always shares its primary image's group."""
+"""Layouts whose image sub-directory defaults to ``images`` (pairs) or the root when the tree has
+no staged ``metadata.parquet``. Since WP-R2f every layout is enumerated
+(:func:`source_release_entries`). A pair's mask/depth file is never its own row, so a pair always
+shares its primary image's group."""
 
 
 def source_attribution(source: Source) -> str | None:
@@ -229,20 +230,16 @@ def source_attribution(source: Source) -> str | None:
 def release_skip_reason(source: Source) -> str | None:
     """Why the split-map enumerator leaves ``source`` out, or ``None`` when it is enumerated.
 
-    Skipped: a registry ``release_skip_reason``; a ``needs-attribution`` source that still has
-    no attribution after the metadata_norm default (registry citation + upstream URL); a loader
-    layout that is neither ``staged-tree`` nor one of :data:`WALK_LAYOUTS`. :func:`build_release`
-    asks the same question, so it never roots a source the map cannot cover (WP-R2d/R2e)."""
+    The split map assigns IMAGES, so it never depends on the label layout (WP-R2f): every
+    ``loader.layout`` is enumerated, from the staged ``metadata.parquet`` or by walking the image
+    directory. Skipped only for an explicit reason: a registry ``release_skip_reason``, or a
+    ``needs-attribution`` source that still has no attribution after the metadata_norm default
+    (registry citation + upstream URL). :func:`build_release` asks the same question, so it never
+    roots a source the map cannot cover (WP-R2d/R2e)."""
     if source.release_skip_reason:
         return f"registry: {source.release_skip_reason}"
     if "needs-attribution" in source.tags and source_attribution(source) is None:
         return "needs-attribution: no attribution (registry citation, upstream URL) to take"
-    layout = source.loader.layout if source.loader is not None else None
-    if layout != "staged-tree" and layout not in WALK_LAYOUTS:
-        return (
-            f"{layout if layout is not None else 'no loader'}: not in release "
-            "until labels format decided"
-        )
     return None
 
 
@@ -302,7 +299,7 @@ def _staged_entries(
 
 
 def _walk_entries(source: Source, root: Path, digest: Callable[[Path], str]) -> list[ReleaseEntry]:
-    """Primary images of an unstaged flat-images / image-mask-pairs tree, grouped with the
+    """Primary images of an unstaged tree of any layout, grouped with the
     same chain as a staged row (registry pattern, else the metadata_norm chain: the upstream
     path is the only per-row evidence, so it usually ends at the image sha256)."""
     params = source.loader.params if source.loader is not None else {}
@@ -327,9 +324,9 @@ def source_release_entries(
     map generator and the build's group hook share, so they cannot disagree."""
     root = Path(root)
     layout = source.loader.layout if source.loader is not None else None
-    if layout in WALK_LAYOUTS and not _staged_meta(root / "metadata.parquet"):
-        return _walk_entries(source, root, digest)
-    return _staged_entries(source, root, digest)
+    if layout == "staged-tree" or _staged_meta(root / "metadata.parquet"):
+        return _staged_entries(source, root, digest)
+    return _walk_entries(source, root, digest)
 
 
 def enumerate_release_rows(
@@ -619,14 +616,26 @@ def _memoized(digest: Callable[[Path], str]) -> Callable[[Path], str]:
     return cached
 
 
-def _with_release_group(sample, groups: dict[str, dict[str, str]]):  # type: ignore[no-untyped-def]
+def _with_release_group(  # type: ignore[no-untyped-def]
+    sample, groups: dict[str, dict[str, str]], roots: dict[str, Path]
+):
     """``sample`` with ``meta["split_group"]`` set from the enumeration the split map was
-    generated from (a flat-images / image-mask-pairs loader never sets one). A pair is one
-    sample: its mask/depth file rides along with the primary image's group."""
-    by_key = groups.get(sample.source_id)
-    if by_key is None or sample.meta.get("split_group"):
+    generated from (a loader that is not ``staged-tree`` never sets one). A pair is one
+    sample: its mask/depth file rides along with the primary image's group. The lookup is by
+    image path relative to the source root, because ``Sample.key`` is layout-specific (a COCO
+    ``file_name`` or a CSV image name is relative to ``images_dir``, not to the root); the key
+    stays the fallback."""
+    by_path = groups.get(sample.source_id)
+    if by_path is None or sample.meta.get("split_group"):
         return sample
-    group = by_key.get(sample.key)
+    group = None
+    if sample.image is not None and sample.source_id in roots:
+        try:
+            group = by_path.get(str(Path(sample.image).relative_to(roots[sample.source_id])))
+        except ValueError:
+            group = None
+    if group is None:
+        group = by_path.get(sample.key)
     return sample if group is None else replace(sample, meta={**sample.meta, "split_group": group})
 
 
@@ -788,7 +797,7 @@ def build_release(
     walk_groups = {
         sid: {e.key: e.group for e in source_release_entries(registry.source(sid), root, digest)}
         for sid, root in admitted_roots.items()
-        if _loader_layout(registry.source(sid)) in WALK_LAYOUTS
+        if _loader_layout(registry.source(sid)) != "staged-tree"
     }
 
     release_root = Path(out_dir) / "releases" / release / (flavour or "")
@@ -829,7 +838,9 @@ def build_release(
             continue
 
         partial_abstain_excluded.extend(dataset.partial_abstain_excluded)
-        dataset.samples = [_with_release_group(sample, walk_groups) for sample in dataset.samples]
+        dataset.samples = [
+            _with_release_group(sample, walk_groups, admitted_roots) for sample in dataset.samples
+        ]
         dataset.split(by="group", split_map=split_map_path, frozen=True, tolerance=None)
 
         rows: list[tuple[str, str]] = []

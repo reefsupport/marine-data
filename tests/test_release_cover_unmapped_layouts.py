@@ -1,9 +1,11 @@
-"""WP-R2e: no releasable source is silently skipped.
+"""WP-R2e/R2f: no releasable source is silently skipped, and the map never depends on a layout.
 
 flat-images and image-mask-pairs sources are split-mapped (a pair shares its primary image's
-group) and ship in the flavour build; a source the map still cannot cover with rows > 0 fails
-the build unless it is named in ``allow_skip`` or carries a registry ``release_skip_reason``;
-``marinedata release split-map`` runs end to end.
+group) and ship in the flavour build; so do image-folder and coco-json sources (WP-R2f: the map
+assigns IMAGES, so no loader layout is a skip reason). A source the map still skips with rows > 0
+(a registry ``release_skip_reason`` or an uncited ``needs-attribution``) fails the build unless it
+is named in ``allow_skip`` or carries the registry reason; ``marinedata release split-map`` runs
+end to end.
 """
 
 from __future__ import annotations
@@ -133,13 +135,80 @@ def test_flat_and_pair_sources_are_split_mapped_and_ship_with_pairs_whole(tmp_pa
     assert {groups[e.group] for e in (*pairs, *flat)} >= {"train"}
 
 
-def test_unmapped_source_with_rows_fails_unless_allowed(tmp_path: Path) -> None:
-    registry, roots = _fixture(tmp_path)
-    nc = _src("src-coco", "restricted-nc", layout="coco-json")
-    registry = _registry([*registry.sources, nc])
-    roots["src-coco"] = _flat(tmp_path / "coco", "c")  # rows > 0, a layout the map cannot cover
+def _image_folder(root: Path, prefix: str) -> Path:
+    for i in range(N):
+        path = root / ("coral" if i % 2 else "sand") / f"{prefix}{i}.png"
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_bytes(_png(f"{prefix}-folder-{i}"))
+    return root
+
+
+def _coco(root: Path, prefix: str) -> Path:
+    """``annotations.json`` + ``images/<n>.png``; ``file_name`` is relative to ``images``, so
+    ``Sample.key`` (``file_name``) is NOT the path relative to the root."""
+    images = []
+    for i in range(N):
+        path = root / "images" / f"{prefix}{i}.png"
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_bytes(_png(f"{prefix}-coco-{i}"))
+        images.append({"id": i, "file_name": path.name, "width": 32, "height": 32})
+    doc = {"images": images, "annotations": [], "categories": [{"id": 1, "name": "fish"}]}
+    (root / "annotations.json").write_text(json.dumps(doc))
+    return root
+
+
+def test_image_folder_and_coco_json_sources_are_split_mapped_and_ship(tmp_path: Path) -> None:
+    """The split map is layout-agnostic: an image-folder and a coco-json source are enumerated
+    from their image tree, appear in the map, and ship in the flavour build with the group the
+    map was generated from (the loader's own key is not the root-relative path)."""
+    registry = _registry(
+        [
+            _src("src-open", "open"),
+            _src("src-folder", "restricted-nc", layout="image-folder"),
+            _src("src-coco", "restricted-nc", layout="coco-json"),
+        ]
+    )
+    roots = {
+        "src-open": _stage(tmp_path / "open", _staged_rows("o")),
+        "src-folder": _image_folder(tmp_path / "folder", "d"),
+        "src-coco": _coco(tmp_path / "coco", "c"),
+    }
     split_map = tmp_path / "SPLIT_MAP.json"
-    assert list(_gen(registry, roots, split_map)) == ["src-coco"]
+    assert _gen(registry, roots, split_map) == {}  # nothing skipped on layout
+    groups = load_split_map(split_map).assignments  # type: ignore[union-attr]
+    entries = {
+        sid: source_release_entries(registry.source(sid), roots[sid])
+        for sid in ("src-folder", "src-coco")
+    }
+    assert all(len(e) == N for e in entries.values())
+    assert all(x.group in groups for e in entries.values() for x in e)
+
+    out = tmp_path / "rel"
+    result = build_release(
+        registry,
+        release="r1",
+        split_map=split_map,
+        roots=roots,
+        out_dir=out,
+        profile="ship-noncommercial",
+        flavour="nc",
+        allow_unmapped=True,
+    )
+    assert set(result.sources) == {"src-folder", "src-coco"}  # the nc delta
+    manifest = _manifest(out, "nc")
+    pretrain = {"train": "train", "val": "probe"}
+    for entry in (*entries["src-folder"], *entries["src-coco"]):
+        assert manifest.get(entry.sha256) == pretrain.get(groups[entry.group])
+    assert {manifest.get(x.sha256) for e in entries.values() for x in e} >= {"train"}
+
+
+def test_skipped_source_with_rows_fails_unless_allowed(tmp_path: Path) -> None:
+    registry, roots = _fixture(tmp_path)
+    nc = _src("src-skip", "restricted-nc").model_copy(update={"tags": ("needs-attribution",)})
+    registry = _registry([*registry.sources, nc])
+    roots["src-skip"] = _stage(tmp_path / "skip", _staged_rows("s"))  # rows > 0, uncited
+    split_map = tmp_path / "SPLIT_MAP.json"
+    assert list(_gen(registry, roots, split_map)) == ["src-skip"]
     kwargs = dict(
         release="r1",
         split_map=split_map,
@@ -149,20 +218,20 @@ def test_unmapped_source_with_rows_fails_unless_allowed(tmp_path: Path) -> None:
         flavour="nc",
         allow_unmapped=True,
     )
-    with pytest.raises(ReleaseSkipError, match="src-coco"):
+    with pytest.raises(ReleaseSkipError, match="src-skip"):
         build_release(registry, **kwargs)  # type: ignore[arg-type]
-    build_release(registry, allow_skip=["src-coco"], **kwargs)  # type: ignore[arg-type]
+    build_release(registry, allow_skip=["src-skip"], **kwargs)  # type: ignore[arg-type]
     release = json.loads((tmp_path / "rel/releases/r1/nc/RELEASE.json").read_text())
     assert release["skipped_sources"] == [
         {
-            "id": "src-coco",
-            "reason": release_skip_reason(registry.source("src-coco")),
+            "id": "src-skip",
+            "reason": release_skip_reason(registry.source("src-skip")),
             "allowed_by": "allow-skip",
         }
     ]
     # a registry release_skip_reason also allows it, and the reason is kept
-    why = registry.source("src-coco").model_copy(update={"release_skip_reason": "labels TBD"})
-    registry = _registry([*[s for s in registry.sources if s.id != "src-coco"], why])
+    why = registry.source("src-skip").model_copy(update={"release_skip_reason": "labels TBD"})
+    registry = _registry([*[s for s in registry.sources if s.id != "src-skip"], why])
     build_release(registry, **kwargs)  # type: ignore[arg-type]
     release = json.loads((tmp_path / "rel/releases/r1/nc/RELEASE.json").read_text())
     assert release["skipped_sources"][0]["allowed_by"] == "registry"
@@ -174,12 +243,9 @@ def test_needs_attribution_takes_registry_citation_else_stays_skipped() -> None:
     assert "needs-attribution" in (release_skip_reason(tagged) or "")
     cited = tagged.model_copy(update={"citation": "Doe 2020", "homepage": "https://x.org"})
     assert release_skip_reason(cited) is None
-    assert (
-        release_skip_reason(
-            cited.model_copy(update={"loader": LoaderSpec(layout="coco-json", params={})})
-        )
-        is not None
-    )
+    for layout in ("coco-json", "image-folder", "yolo-txt", "metadata-only"):  # never a skip
+        loader = LoaderSpec(layout=layout, params={})
+        assert release_skip_reason(cited.model_copy(update={"loader": loader})) is None
 
 
 def test_release_split_map_cli_writes_once_and_never_overwrites(

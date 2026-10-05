@@ -135,8 +135,8 @@ def _stage_metadata_only(root: Path, stem: str, group: str) -> Path:
 
 
 def test_metadata_only_source_skipped_and_reported(tmp_path: Path) -> None:
-    """A ``metadata-only`` root never crashes the enumerator, contributes no rows, and
-    is reported in ``skipped`` — never silently dropped."""
+    """A ``metadata-only`` root with a bespoke index and no image files never crashes the
+    enumerator and contributes no rows; the layout is never a skip reason (WP-R2f)."""
     staged_root = _stage_staged_tree(tmp_path / "staged", "a", "g/a", b"AAAA")
     meta_root = _stage_metadata_only(tmp_path / "meta", "v3i-a", "g/v3i")
     registry = _registry(
@@ -148,8 +148,7 @@ def test_metadata_only_source_skipped_and_reported(tmp_path: Path) -> None:
     rows = list(enumerate_release_rows(registry, roots, "research", skipped=skipped))
 
     assert {source_id for _, _, source_id in rows} == {"staged-src"}
-    assert "v3i" in skipped
-    assert "not in release" in skipped["v3i"]
+    assert skipped == {}
 
 
 def test_needs_attribution_source_skipped_and_reported(tmp_path: Path) -> None:
@@ -299,4 +298,4 @@ def test_generate_split_map_excludes_metadata_only_rows(tmp_path: Path) -> None:
     assert split_map is not None
     assert "shared/v3i" not in split_map.assignments
     assert "shared/a" in split_map.assignments
-    assert skipped == {"v3i": "metadata-only: not in release until labels format decided"}
+    assert skipped == {}

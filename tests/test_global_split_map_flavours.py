@@ -73,7 +73,9 @@ def test_one_map_two_flavours_same_split_and_nc_build_does_not_raise(tmp_path: P
         [
             _src("src-open", "open"),
             _src("src-nc", "restricted-nc"),
-            _src("src-vqa", "restricted-nc", layout="metadata-only"),
+            _src("src-vqa", "restricted-nc", layout="metadata-only").model_copy(
+                update={"release_skip_reason": "context-layer"}
+            ),
         ]
     )
     shared = b"the-same-image-in-an-open-and-an-nc-source"
@@ -96,7 +98,7 @@ def test_one_map_two_flavours_same_split_and_nc_build_does_not_raise(tmp_path: P
         min_groups=3,
         skipped=skipped,
     )
-    assert "src-vqa" in skipped  # the map never enumerated it
+    assert "src-vqa" in skipped  # a registry reason: the map never enumerates it
 
     out = tmp_path / "rel"
     results = {
@@ -113,7 +115,7 @@ def test_one_map_two_flavours_same_split_and_nc_build_does_not_raise(tmp_path: P
         for flavour, profile in (("open", "ship-open"), ("nc", "ship-noncommercial"))
     }
     assert results["open"].sources == ("src-open",)
-    assert results["nc"].sources == ("src-nc",)  # metadata-only src-vqa dropped, no raise
+    assert results["nc"].sources == ("src-nc",)  # src-vqa (registry reason) dropped, no raise
     release_nc = json.loads((out / "releases" / "r1" / "nc" / "RELEASE.json").read_text())
     assert [s["id"] for s in release_nc["skipped_sources"]] == ["src-vqa"]
     sha = hashlib.sha256(shared).hexdigest()
