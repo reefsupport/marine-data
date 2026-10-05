@@ -20,6 +20,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+import logging
 from collections.abc import Callable, Iterable, Iterator
 from dataclasses import dataclass, field
 from pathlib import Path
@@ -30,6 +31,8 @@ from .flavours import check_profile, flavour_source_ids, release_record, sample_
 from .gate import evaluate
 from .labelcheck import release_label_gate
 from .licence_class import release_excluded, require_flavour
+from .metadata_norm.split_group import derive_split_group
+from .models import Source
 from .neardup import (
     NearDupChainError,
     NearDupConfig,
@@ -43,6 +46,13 @@ from .splitmap import MergeInfo, Row, load_split_map, resolve_splits, rows_to_co
 from .strata import DEFAULT_MIN_GROUPS, TEST, TRAIN
 from .tables import _require_pyarrow
 from .upstream_split import honoured_test_groups
+
+logger = logging.getLogger(__name__)
+
+GUARD_MIN_ROWS = 100
+"""A source with at least this many rows ..."""
+GUARD_MIN_GROUPS = 10
+"""... and fewer final split groups than this falls back to one group per image (WP-R2d)."""
 
 DEFAULT_SCHEMA_ID = "rs-benthic-v1"
 
@@ -158,6 +168,43 @@ def _partition_stem_index(partition_dir: Path) -> dict[str, list[Path]]:
     return index
 
 
+def _release_group(source: Source, record: dict, *, stem: str, partition: str, sha256: str) -> str:
+    """One row's split group at release time (never written back to the staged tree).
+
+    The staged ``split_group`` column wins. Else a source with a registry pattern uses it.
+    A source with NO pattern never gets the single-group ``<source>/<partition>`` default
+    (WP-R2d): it takes the ``metadata_norm`` chain (spatio-temporal, row ids, upstream split
+    + folder, sha256), computed here so a pinned tree with a null column needs no re-stage.
+    """
+    group = record.get("split_group")
+    if group:
+        return group
+    upstream_path = str(record.get("upstream_path") or "")
+    if source.split_group.pattern is not None:
+        return source.split_group_for(stem=stem, upstream_path=upstream_path, partition=partition)
+    values = {**record, "stem": stem, "upstream_path": upstream_path, "image_sha256": sha256}
+    return derive_split_group(source.id, record, values, None)[0]
+
+
+def _guard_degenerate_grouping(
+    source_id: str, entries: list[tuple[str, str, str | None, Path]]
+) -> list[tuple[str, str, str | None, Path]]:
+    """A source with >= ``GUARD_MIN_ROWS`` rows but < ``GUARD_MIN_GROUPS`` final groups cannot
+    be split sanely (a lottery over 1-2 groups gives 0% or 100% test): warn and group per
+    image (``<source>/sha:<sha256>``) instead."""
+    n_groups = len({group for _, group, _, _ in entries})
+    if len(entries) < GUARD_MIN_ROWS or n_groups >= GUARD_MIN_GROUPS:
+        return entries
+    logger.warning(
+        "%s: %d rows fall into only %d split group(s) (< %d); grouping per image (sha256) instead",
+        source_id,
+        len(entries),
+        n_groups,
+        GUARD_MIN_GROUPS,
+    )
+    return [(sha, f"{source_id}/sha:{sha}", split, path) for sha, _, split, path in entries]
+
+
 def enumerate_release_rows(
     registry: Registry,
     roots: dict[str, str | Path],
@@ -243,21 +290,9 @@ def enumerate_release_rows(
                 "own loader layout"
             )
         partition_indexes: dict[str, dict[str, list[Path]]] = {}
+        entries: list[tuple[str, str, str | None, Path]] = []
         for record in pq.read_table(metadata_path).to_pylist():
             partition, stem = staged_partition(record), record["stem"]
-            group = record.get("split_group")
-            if not group:
-                # D-V2: an older staged tree cached before the split_group column was
-                # backfilled at ingest time (e.g. coralscapes, mermaid-aws). Apply the
-                # registry's per-source rule here, at release build time, rather than
-                # raising — the cache itself is never rewritten (it may be a verified
-                # digest pin), so this is the one place a v2 build can still recover
-                # the group deterministically from stem/upstream_path/partition.
-                group = source.split_group_for(
-                    stem=stem,
-                    upstream_path=str(record.get("upstream_path") or ""),
-                    partition=partition,
-                )
             index = partition_indexes.get(partition)
             if index is None:
                 index = _partition_stem_index(root / "images" / partition)
@@ -268,16 +303,19 @@ def enumerate_release_rows(
                     f"{source_id}: metadata.parquet references image {stem!r} (partition "
                     f"{partition!r}) not found under {root / 'images' / partition}"
                 )
-            upstream_split = record.get("upstream_split")
+            sha256 = digest(matches[0])
+            group = _release_group(source, record, stem=stem, partition=partition, sha256=sha256)
+            entries.append((sha256, group, record.get("upstream_split") or None, matches[0]))
+        entries = _guard_degenerate_grouping(source_id, entries)
+        for sha256, group, upstream_split, path in entries:
             if upstream_split:
                 if upstream_splits is not None:
                     upstream_splits.setdefault(group, set()).add(upstream_split)
                 if upstream_splits_by_source is not None:
                     by_group = upstream_splits_by_source.setdefault(source_id, {})
                     by_group.setdefault(group, set()).add(upstream_split)
-            sha256 = digest(matches[0])
             if paths is not None:
-                paths.setdefault(sha256, matches[0])
+                paths.setdefault(sha256, path)
             yield sha256, group, source_id
 
 
