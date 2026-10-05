@@ -427,7 +427,8 @@ def test_uwbench_lists_only_images_and_labels_and_stops_at_limit():
     from marinedata.task_layers.producers import uwbench_vqa
 
     late = uwbench_vqa.staged(spec, limit=10, fetch=fetch, lister=lister, budget_s=-1)
-    assert late.pending == [] and late.skipped["read time budget reached"] == 600
+    # the scan window is limit * SCAN spread labels, not all 600: the budget skips what is left of it
+    assert late.pending == [] and late.skipped["read time budget reached"] == 10 * uwbench_vqa.SCAN
 
 
 def test_uwbench_flaky_label_fetch_is_skipped_not_fatal():
