@@ -176,6 +176,38 @@ def _annotation_masks(base_dir: Path, source_id: str) -> list[dict]:
     return [r for r in _read_parquet(files[-1]) if r.get("image_sha256")] if files else []
 
 
+def _annotation_image_labels(base_dir: Path, source_id: str) -> list[dict]:
+    """The unified ``image_labels`` rows of ``source_id`` (newest ``_annotations/image_labels/<source>/<version>.parquet``)."""  # noqa: E501
+    root = base_dir / "_annotations" / "image_labels" / source_id
+    files = sorted(root.glob("*.parquet")) if root.is_dir() else []
+    return [r for r in _read_parquet(files[-1]) if r.get("image_sha256")] if files else []
+
+
+def _bleaching_records(base_dir: Path, source_id: str) -> list[dict]:
+    """Bleaching rows of one source in the legacy shape (``sha256``, ``label_origin``,
+    ``native_label``, ``evidence``, ``pixel_count``, ``confidence``) plus the unified columns
+    (``image_sha256, ann_id, condition_node_id, match_type, annotator_type, licence_class``).
+    The unified ``image_labels`` table wins (WP-U5); else ``_tasklabels/<source>/bleaching.parquet``."""  # noqa: E501
+    unified = _annotation_image_labels(base_dir, source_id)
+    if not unified:
+        return _read_tasklabels(base_dir, source_id, "bleaching")
+    out = []
+    for r in unified:
+        extra = _attrs(r)
+        out.append(
+            {
+                "sha256": r["image_sha256"], "label_origin": r.get("annotator_type"),
+                "native_label": r["label_native"], "evidence": extra.get("evidence", "image"),
+                "pixel_count": extra.get("pixel_count"), "confidence": r.get("confidence"),
+                "image_sha256": r["image_sha256"], "ann_id": r.get("ann_id"),
+                "condition_node_id": r.get("condition_node_id"), "unified": True,
+                "match_type": r.get("match_type"), "annotator_type": r.get("annotator_type"),
+                "licence_class": extra.get("licence_class"),
+            }
+        )  # fmt: skip
+    return out
+
+
 def _attrs(row: Mapping) -> dict:
     return json.loads(row["attrs"]) if row.get("attrs") else {}
 
@@ -500,8 +532,12 @@ def build_bleaching_config(registry: Registry, base_dir: str | Path) -> ConfigRe
     rows: list[dict] = []
     for source_id in BLEACHING_SOURCES:
         tally = unmapped.setdefault(source_id, _SourceUnmapped())
-        for record in _read_tasklabels(base_dir, source_id, "bleaching"):
-            node = _canonical(registry, source_id, record["native_label"], Axis.CONDITION)
+        for record in _bleaching_records(base_dir, source_id):
+            node = (
+                record.get("condition_node_id")
+                if record.get("unified")
+                else _canonical(registry, source_id, record["native_label"], Axis.CONDITION)
+            )
             if node is None:
                 tally.unmapped += 1
             else:
@@ -509,10 +545,16 @@ def build_bleaching_config(registry: Registry, base_dir: str | Path) -> ConfigRe
             rows.append(
                 {
                     "sha256": record["sha256"],
+                    "image_sha256": record["sha256"],
                     "source_id": source_id,
+                    "ann_id": record.get("ann_id"),
                     "label_origin": record["label_origin"],
+                    "annotator_type": record.get("annotator_type"),
+                    "licence_class": record.get("licence_class"),
                     "native_label": record["native_label"],
+                    "label_native": record["native_label"],
                     "canonical_condition": node,
+                    "match_type": record.get("match_type"),
                     "bleaching_condition": fine.project(node).target_class if node else None,
                     "coral_health": binary.project(node).target_class if node else None,
                     "evidence": record.get("evidence"),
