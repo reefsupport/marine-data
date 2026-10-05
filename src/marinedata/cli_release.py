@@ -153,8 +153,8 @@ def _near_dup_input(
     args: argparse.Namespace, *, required: bool
 ) -> tuple[dict[str, str] | None, dict[str, object]]:
     """``(sha -> dedup group, map header)`` from ``--near-dup <groups.parquet>``; ``--no-near-dup``
-    records the explicit opt-out. With neither, ``required`` raises (``release split-map``);
-    otherwise (``release build --generate-split-map``) it only warns and the header is unchanged."""
+    records the explicit opt-out. With neither, ``required`` raises (``release split-map`` and
+    ``release build --generate-split-map`` alike); ``required=False`` only warns."""
     groups = getattr(args, "near_dup", None)
     if groups is not None:
         from .dedup.groups import load_groups
@@ -331,7 +331,9 @@ def _cmd_release_build(args: argparse.Namespace) -> int:
         return 1
 
     if not split_map_exists:
-        rc = _generate_global_split_map(registry, args, local, split_map_path, near_dup)
+        rc = _generate_global_split_map(
+            registry, args, local, split_map_path, near_dup, required_near_dup=True
+        )
         if rc:
             return rc
 
@@ -562,7 +564,9 @@ def add_release_subparser(sub: argparse._SubParsersAction) -> None:
         help="With --manifest-only: admit only the sources a published RELEASE.json "
         "lists (e.g. to rebuild v1's task files under the current code)",
     )
-    _add_near_dup_args(p_build, required_note="only used with --generate-split-map")
+    _add_near_dup_args(
+        p_build, required_note="required with --generate-split-map unless --no-near-dup"
+    )
     p_build.set_defaults(func=_cmd_release_build)
 
     p_map = release_sub.add_parser(

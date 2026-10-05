@@ -87,14 +87,12 @@ def _shas(root: Path) -> set[str]:
 
 def test_both_flavours_are_disjoint_and_ship_no_nd_internal_unknown(built) -> None:
     run, roots, rel = built
-    assert run("--flavour", "open", "--generate-split-map") == 0
+    assert run("--flavour", "open", "--generate-split-map", "--no-near-dup") == 0
     assert run("--flavour", "nc") == 0
-    tsv = (
-        lambda f: {
-            ln.split("\t")[0]
-            for ln in (rel / f / "tasks" / "pretrain-set.tsv").read_text().splitlines()[1:]
-        }
-    )
+    tsv = lambda f: {
+        ln.split("\t")[0]
+        for ln in (rel / f / "tasks" / "pretrain-set.tsv").read_text().splitlines()[1:]
+    }
     open_shas, nc_shas = tsv("open"), tsv("nc")
     assert open_shas and nc_shas and not (open_shas & nc_shas)
     assert open_shas <= _shas(roots["open1"]) and nc_shas <= _shas(
@@ -112,13 +110,16 @@ def test_both_flavours_are_disjoint_and_ship_no_nd_internal_unknown(built) -> No
 
 def test_cli_refuses_missing_flavour(built, capsys) -> None:
     run, _, rel = built
-    assert run("--generate-split-map") == 1
+    assert run("--generate-split-map", "--no-near-dup") == 1
     assert "--flavour" in capsys.readouterr().err and not rel.exists()
 
 
 def test_cli_refuses_research_profile_with_a_flavour(built, capsys) -> None:
     run, _, _ = built
-    assert run("--flavour", "open", "--profile", "research", "--generate-split-map") == 1
+    assert (
+        run("--flavour", "open", "--profile", "research", "--generate-split-map", "--no-near-dup")
+        == 1
+    )
     assert "must be built under" in capsys.readouterr().err
 
 
@@ -173,5 +174,5 @@ def test_local_only_never_fetches_and_builds_from_local_trees(built, monkeypatch
 
     monkeypatch.setattr(cr, "_resolve_roots", _no_fetch)
     run, _roots, rel = built
-    assert run("--flavour", "open", "--generate-split-map", "--local-only") == 0
+    assert run("--flavour", "open", "--generate-split-map", "--no-near-dup", "--local-only") == 0
     assert (rel / "open" / "RELEASE.json").is_file()

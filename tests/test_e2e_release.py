@@ -214,7 +214,7 @@ GOLDEN_RELEASE = {
     "releases/wp4-e2e/open/RELEASE.json": (
         "b18b4eb8623dc7273c659cf708e607af3233d5f5cf0c53bb92d4b55d60d6aeea"
     ),
-    "SPLIT_MAP.json": "2205149509c88f900c212d5be41c3cb53b2823f0ad6b617acd736772c4777300",
+    "SPLIT_MAP.json": "383a640ac3afec6cf8c961388261d1a4fe0306e3fd90b6c26e928e6a513a4a48",
     "releases/wp4-e2e/open/tasks/pretrain-set.tsv": (
         "6ea2774662feb0d80e5737b24d66d9159f0c208969c1cdac1cdbe7568212dc53"
     ),
@@ -263,6 +263,7 @@ def test_e2e_ingest_release_hf_export_is_reproducible(
             "--profile",
             "ship-open",
             "--generate-split-map",
+            "--no-near-dup",
             "--seed",
             "0",
             *[f"--local={sid}={root}" for sid, root in roots.items()],

@@ -81,7 +81,7 @@ def _manifest(rel: Path, flavour: str) -> set[str]:
 
 def test_per_row_licences_land_in_the_right_flavour(per_row_build) -> None:
     run, shas, rel = per_row_build
-    assert run("--flavour", "open", "--generate-split-map") == 0
+    assert run("--flavour", "open", "--generate-split-map", "--no-near-dup") == 0
     assert run("--flavour", "nc") == 0
     open_shas, nc_shas = _manifest(rel, "open"), _manifest(rel, "nc")
     assert open_shas == {shas[s] for s in OPEN_STEMS}

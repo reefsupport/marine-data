@@ -87,7 +87,7 @@ def fathomnet_build(monkeypatch, tmp_path):
 
 def test_fathomnet_cc_by_label_json_reaches_the_open_flavour(fathomnet_build) -> None:
     run, shas, rel = fathomnet_build
-    assert run("--flavour", "open", "--generate-split-map") == 0
+    assert run("--flavour", "open", "--generate-split-map", "--no-near-dup") == 0
     assert run("--flavour", "nc") == 0
     assert _manifest(rel, "open") == {shas["u-by"]}
     assert _manifest(rel, "nc") == {shas["u-nc"]}
@@ -104,7 +104,7 @@ def test_export_contains_the_metadata_table_with_a_licence_class_per_row(
     from marinedata.metadata_release import add_metadata_config
 
     run, shas, rel = fathomnet_build
-    assert run("--flavour", "open", "--generate-split-map") == 0
+    assert run("--flavour", "open", "--generate-split-map", "--no-near-dup") == 0
     registry, root = Registry.load(), tmp_path / "src" / "fathomnet"
     profile = json.loads((rel / "open" / "RELEASE.json").read_text())["profile"]
     rows = collect_rows(registry, {"fathomnet": root}, rel / "open", profile)

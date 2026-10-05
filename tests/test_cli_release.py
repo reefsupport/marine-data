@@ -173,20 +173,31 @@ def test_missing_split_map_with_flag_generates_it(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     split_map = tmp_path / "SPLIT_MAP.json"
-    code = _run(monkeypatch, tmp_path, split_map, ["--generate-split-map"])
+    code = _run(monkeypatch, tmp_path, split_map, ["--generate-split-map", "--no-near-dup"])
     assert code == 0
     assert split_map.exists()
+
+
+def test_generate_split_map_without_near_dup_input_fails_like_split_map(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
+    split_map = tmp_path / "SPLIT_MAP.json"
+    code = _run(monkeypatch, tmp_path, split_map, ["--generate-split-map"])
+    assert code == 1
+    assert not split_map.exists()
+    err = capsys.readouterr().err
+    assert "--near-dup" in err and "--no-near-dup" in err
 
 
 def test_generate_flag_with_existing_path_refuses_and_leaves_bytes_unchanged(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
 ) -> None:
     split_map = tmp_path / "SPLIT_MAP.json"
-    code = _run(monkeypatch, tmp_path, split_map, ["--generate-split-map"])
+    code = _run(monkeypatch, tmp_path, split_map, ["--generate-split-map", "--no-near-dup"])
     assert code == 0
     before = split_map.read_bytes()
 
-    code = _run(monkeypatch, tmp_path, split_map, ["--generate-split-map"])
+    code = _run(monkeypatch, tmp_path, split_map, ["--generate-split-map", "--no-near-dup"])
     assert code != 0
     assert split_map.read_bytes() == before
     err = capsys.readouterr().err
@@ -197,7 +208,7 @@ def test_existing_split_map_without_flag_is_unchanged_behaviour(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     split_map = tmp_path / "SPLIT_MAP.json"
-    code = _run(monkeypatch, tmp_path, split_map, ["--generate-split-map"])
+    code = _run(monkeypatch, tmp_path, split_map, ["--generate-split-map", "--no-near-dup"])
     assert code == 0
     before = split_map.read_bytes()
 
@@ -214,7 +225,7 @@ def test_pillow_mismatch_against_a_frozen_map_fails_closed(
     frozen map built under a different Pillow than the running one must fail the
     build closed, naming both versions, rather than silently trust stale dHashes."""
     split_map = tmp_path / "SPLIT_MAP.json"
-    code = _run(monkeypatch, tmp_path, split_map, ["--generate-split-map"])
+    code = _run(monkeypatch, tmp_path, split_map, ["--generate-split-map", "--no-near-dup"])
     assert code == 0
     before = split_map.read_bytes()
 
@@ -260,6 +271,7 @@ def test_fetch_failure_for_admitted_source_fails_the_build(
             "--profile",
             "ship-open",
             "--generate-split-map",
+            "--no-near-dup",
         ]
     )
     assert code != 0
