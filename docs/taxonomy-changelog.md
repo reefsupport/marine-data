@@ -1,5 +1,14 @@
 # Taxonomy changelog
 
+## 2.8.0 — 2026-10-05
+
+MINOR: 0 nodes and 23 edges added, nothing removed, re-parented or retargeted
+(`marinedata taxonomy diff 2.7.0 HEAD`: nodes added 0 / removed 0 / changed 0; edges removed 0 / changed 0).
+
+- **WP-U6c:** three new crosswalks for the sonar box readers, each with its `vocab/<source>.tsv`, all pointing at existing nodes
+  (no new nodes): `sss-mine-detection` (2 edges, both classes -> `NT_UNKNOWN`), `swdd-sss-wall` (1 edge -> `NT_WRECK`, an existing node) and
+  `synthetic-seabed-debris` (20 edges: 19 debris classes -> `NT_DEBRIS`, generic `Fauna` -> `A2` Animalia).
+
 ## 2.7.0 — 2026-10-05
 
 MINOR: 2 nodes and 2 edges added, nothing removed, re-parented or retargeted
