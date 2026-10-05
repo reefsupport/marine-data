@@ -46,7 +46,7 @@ import signal
 import sys
 import time
 from collections import deque
-from collections.abc import Callable, Iterable, Iterator
+from collections.abc import Callable, Collection, Iterable, Iterator
 from concurrent.futures import ThreadPoolExecutor
 from concurrent.futures import TimeoutError as FutureTimeoutError
 from dataclasses import dataclass
@@ -251,7 +251,11 @@ def resolve_eval_split(row_split: Any, upstream_path: str, split: UpstreamSplit)
 
 
 def iter_bucket_images(
-    client: Any, bucket: str, entry: BenchmarkEntry, layout: str = "auto"
+    client: Any,
+    bucket: str,
+    entry: BenchmarkEntry,
+    layout: str = "auto",
+    skip_stems: Collection[str] = frozenset(),
 ) -> Iterator[RawImage]:
     parts = (
         []
@@ -266,7 +270,7 @@ def iter_bucket_images(
     if parts:
         yield from _iter_stream_parts(client, bucket, parts, split)
         return
-    yield from _iter_staged_bucket(client, bucket, entry.id, split)
+    yield from _iter_staged_bucket(client, bucket, entry.id, split, skip_stems)
 
 
 def _iter_stream_parts(
@@ -316,8 +320,13 @@ def _staged_root(keys: list[str], benchmark_id: str) -> str:
 
 
 def _iter_staged_bucket(
-    client: Any, bucket: str, benchmark_id: str, split: UpstreamSplit
+    client: Any,
+    bucket: str,
+    benchmark_id: str,
+    split: UpstreamSplit,
+    skip_stems: Collection[str] = frozenset(),
 ) -> Iterator[RawImage]:
+    """``skip_stems``: stems a resumed build already holds, never re-fetched."""
     keys = _list_all(client, bucket, f"sources/{benchmark_id}/")
     root = _staged_root(keys, benchmark_id)
     meta = pq.read_table(
@@ -332,6 +341,8 @@ def _iter_staged_bucket(
         if row_split is None:
             continue
         stem = row["stem"]
+        if stem in skip_stems:
+            continue
         image_path = row.get("image_path")
         key = root + str(image_path) if image_path and root + str(image_path) in present else None
         key = key or by_stem.get(stem)

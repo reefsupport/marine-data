@@ -61,6 +61,8 @@ def _default_specs_dir() -> Path:
 
 
 def _cmd_manifest(args: argparse.Namespace) -> int:
+    import pyarrow.parquet as pq
+
     from .bench_manifest import (
         ManifestBuildError,
         build_manifest,
@@ -82,7 +84,14 @@ def _cmd_manifest(args: argparse.Namespace) -> int:
     source = resolve_source(args.source, entry, client, args.bucket) if client else "upstream"
     try:
         if source == "bucket":
-            images = iter_bucket_images(client, args.bucket, entry, layout=args.layout)
+            done = (
+                frozenset(pq.read_table(out_path, columns=["stem"]).column("stem").to_pylist())
+                if out_path.is_file()
+                else frozenset()
+            )  # a resumed build never re-fetches the images it already hashed
+            images = iter_bucket_images(
+                client, args.bucket, entry, layout=args.layout, skip_stems=done
+            )
             table, n_before = build_manifest(entry, images, out_path)
         else:
             with tempfile.TemporaryDirectory(prefix="marinedata-bench-") as tmp:
