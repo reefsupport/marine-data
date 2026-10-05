@@ -196,9 +196,18 @@ def _staged_lookup(stage_root: Path, source: Source) -> dict[tuple[str, str], di
             path = cached
         else:
             return {}
-    table = pq.read_table(path, columns=["stem", "partition", "upstream_path"])
+    wanted = ["stem", "partition", "upstream_path", "license"]
+    present = set(pq.read_schema(path).names)
+    table = pq.read_table(path, columns=[c for c in wanted if c in present])
+    own: dict[str, str] = {}
+    if getattr(source, "licence_per_row", False):
+        from .metadata_norm.local import staged_row_licences
+
+        own = staged_row_licences(source.id, path.parent)
     out = {}
     for row in table.to_pylist():
+        if own.get(row["stem"]) and not row.get("license"):
+            row = {**row, "license": own[row["stem"]]}
         out[(row["partition"], row["stem"])] = row
     return out
 
