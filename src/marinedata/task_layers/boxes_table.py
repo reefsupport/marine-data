@@ -1,4 +1,4 @@
-"""COCO / YOLO / FathomNet boxes into the unified ``boxes`` table (WP-U6a).
+"""COCO / YOLO / FathomNet / MOT boxes into the unified ``boxes`` table (WP-U6a, WP-U6b).
 
 One row per box in :mod:`marinedata.annotation_schema`'s ``boxes`` table (normalised ``xyxy`` float32
 in [0, 1] plus the pixel columns). The format readers live in ``sources/boxes_*.py`` and know no
@@ -9,7 +9,14 @@ source; this module binds five staged sources (:data:`BOX_SOURCES`) to them:
 * ``fathomnet-fgvc23``: COCO ``objects`` columns in ``labels/files/metadata.jsonl`` (category ids
   only: the id -> name table is not staged, so the native label is the id);
 * ``fathomnet-fgvc25``: COCO ``annotations_json`` cells in ``labels/image_labels.parquet``;
-* ``rf100-coral-lwptl``, ``roboflow-aquarium``: YOLO ``.txt`` + ``data.yaml``.
+* ``rf100-coral-lwptl``, ``roboflow-aquarium``: YOLO ``.txt`` + ``data.yaml``;
+* ``ruod``: two COCO documents (``labels/files/coco_annotations_instances_<split>.json``);
+* ``brackishmot``: MOT ``gt.txt`` per sequence (CSV, :data:`MOT_GT`) + ``seqinfo.ini`` sizes;
+* ``obsea-fish``: flat YOLO ``.txt`` (``labels/files``) with no ``metadata.parquet`` / CHECKSUMS in
+  the staged tree: every box is *pending* (``image_key`` = the upstream image stem, no sha).
+
+The two FGVC sets get a per-image licence: the FathomNet ``imageLicense`` of the image with the same
+uuid (:mod:`boxes_licence_join`); an unmatched image is ``restricted-nd``, never ``open``.
 
 A source without a crosswalk (everything but rf100-coral-lwptl today; U8 adds the fauna ones)
 records ``match_type = unmapped`` with the native label kept.
@@ -28,7 +35,7 @@ from collections import Counter
 from collections.abc import Callable, Iterable, Mapping
 from concurrent.futures import ThreadPoolExecutor
 from dataclasses import dataclass
-from pathlib import Path
+from pathlib import Path, PurePosixPath
 
 from ..annotation_schema import (
     annotation_path,
@@ -39,12 +46,14 @@ from ..annotation_schema import (
     write_annotations,
 )
 from ..registry import Registry
+from .boxes_licence_join import FathomnetLicenceJoin, JoinedLicence, image_uuid
 from .image_labels_table import Resolved, _splits, _stride, axes_resolver_for
 from .masks_table import INTERNAL_ONLY, drop_internal_only, is_internal_only
 from .points_table import _taxon_rank
 from .s3_keyed import StagedTree, fetch_small
-from .sources.boxes_coco import coco_annotation_boxes, coco_columnar_boxes
+from .sources.boxes_coco import coco_annotation_boxes, coco_columnar_boxes, read_coco
 from .sources.boxes_common import UNLABELLED, BoxCounts, BoxFormatError, RawBox, pixel_columns
+from .sources.boxes_csv import MOT_GT, parse_seqinfo, read_csv_boxes
 from .sources.boxes_fathomnet import read_fathomnet_json
 from .sources.boxes_yolo import read_yolo, yolo_names
 
@@ -90,7 +99,7 @@ def licence_class_of(*licences: str | None, default: str) -> str:
 class BoxSource:
     source_id: str
     version: str
-    reader: str  # fathomnet | coco-columnar | coco-fragments | yolo
+    reader: str  # fathomnet | coco-columnar | coco-fragments | yolo | coco-docs | mot | yolo-flat
     annotator: str
     ann_license: str | None  # the source's licence (fallback for ann_license)
     licence_class: str  # the source's class (fallback for attrs.licence_class)
@@ -98,29 +107,40 @@ class BoxSource:
     label_set: str = "dataset-native"
     names_rel: str | None = None  # data.yaml of the YOLO sets
     stream_parts: int = 0  # fathomnet: number of _stream part files
+    licence_join: bool = False  # image licence = the matching FathomNet image's (FGVC sets)
 
     @property
     def tree(self) -> str:
         return f"{self.source_id}/{self.version}"
 
 
-# Source classes: fathomnet = lic-A.tsv (restricted-nd, per-contributor); the other four state
-# CC-BY-4.0 in their LICENSE and are in neither lic TSV, so the registry tier (T1) = open.
+# Source classes: fathomnet = lic-A.tsv (restricted-nd, per-contributor); rf100-coral-lwptl and
+# roboflow-aquarium state CC-BY-4.0 in their LICENSE and are in neither lic TSV, so the registry tier  # noqa: E501
+# (T1) = open; obsea-fish is T1 CC-BY-4.0 (open); the FGVC sets' LICENSE covers the annotations
+# only, so their class is the per-image FathomNet one and restricted-nd where there is none;
+# ruod (NOASSERTION, lic-A internal-only) and brackishmot (licence unknown) are internal-only.
 BOX_SOURCES: dict[str, BoxSource] = {
     s.source_id: s
     for s in (
         BoxSource("fathomnet", "fathomnet-f4f9b794691e", "fathomnet", "human", None, ND,
                   label_set="fathomnet-concepts", stream_parts=188),
         BoxSource("fathomnet-fgvc23", "rev-4636bed20b3b", "coco-columnar", "human", "CC-BY-4.0",
-                  OPEN, label_set="fgvc23-category-id"),
-        BoxSource("fathomnet-fgvc25", "2025", "coco-fragments", "human", "CC-BY-4.0", OPEN,
-                  label_set="fgvc25-categories"),
+                  ND, label_set="fgvc23-category-id", licence_join=True),
+        BoxSource("fathomnet-fgvc25", "2025", "coco-fragments", "human", "CC-BY-4.0", ND,
+                  label_set="fgvc25-categories", licence_join=True),
         BoxSource("rf100-coral-lwptl", "rev-83f0a33679b0", "yolo", "human_crowd", "CC-BY-4.0",
                   OPEN, crosswalk_id="rf100-coral-lwptl", label_set="rf100-coral-lwptl",
                   names_rel="labels/files/data.yaml"),
         BoxSource("roboflow-aquarium", "zip-5d30fed3dd5a", "yolo", "human_crowd", "CC-BY-4.0",
                   OPEN, label_set="aquarium-combined",
                   names_rel="docs/aquarium_pretrain/data.yaml"),
+        BoxSource("ruod", "rev-c22094e45b7f", "coco-docs", "human", "NOASSERTION",
+                  INTERNAL_ONLY, crosswalk_id="ruod", label_set="ruod-categories"),
+        BoxSource("brackishmot", "zip-e717dc1438aa", "mot", "human", "NOASSERTION",
+                  INTERNAL_ONLY, label_set="brackishmot-class-id"),
+        BoxSource("obsea-fish", "v1", "yolo-flat", "human", "CC-BY-4.0", OPEN,
+                  crosswalk_id="obsea-fish", label_set="obsea-fish-species",
+                  names_rel="labels/files/23sp_4120img_34945annots_2688res_data.yaml"),
     )
 }  # fmt: skip
 
@@ -150,7 +170,9 @@ def box_row(
     native = box.native or box.native_id or UNLABELLED
     got = resolve(native)
     typ, detail = annotator_from_origin(spec.annotator)
-    row_licence = normalise_licence(box.licence) or normalise_licence(image_licence)
+    own = normalise_licence(box.licence)
+    # a joined set's LICENSE is the annotations' licence: the image's goes to attrs.image_licence only  # noqa: E501
+    row_licence = own or (None if spec.licence_join else normalise_licence(image_licence))
     attrs = {**dict(extra_attrs or {}), **dict(box.attrs)}
     if box.native is None:
         attrs["no_category" if box.native_id is None else "name_unavailable"] = True
@@ -316,7 +338,11 @@ def _fathomnet(spec, registry, fetch, limit, workers=16) -> BoxResult:
     return out.result()
 
 
-def _fgvc23(spec, registry, tree, limit) -> BoxResult:
+def _joined_attrs(j: JoinedLicence) -> tuple[dict[str, str], str | None]:
+    return {"licence_join": j.status}, j.licence
+
+
+def _fgvc23(spec, registry, tree, limit, join) -> BoxResult:
     out = _Emit(spec, registry)
     meta = tree.table("metadata.parquet")
     stem_of = {m["upstream_id"].rsplit("/", 1)[-1]: m for m in meta}
@@ -324,7 +350,9 @@ def _fgvc23(spec, registry, tree, limit) -> BoxResult:
     lines = [
         json.loads(x) for x in tree.get("labels/files/metadata.jsonl").decode().splitlines() if x
     ]
-    for rec in _stride(sorted(lines, key=lambda r: r["file_name"]), limit):
+    recs = _stride(sorted(lines, key=lambda r: r["file_name"]), limit)
+    joined = join.lookup(image_uuid(r["file_name"]) for r in recs)
+    for rec in recs:
         m = stem_of.get(rec["file_name"])
         sha = None if m is None else tree.shas.get(("default", m["stem"]))
         if sha is None:
@@ -338,17 +366,21 @@ def _fgvc23(spec, registry, tree, limit) -> BoxResult:
         except BoxFormatError as exc:
             out.reject(rec["file_name"], exc)
             continue
-        out.image(sha, boxes, counts, split=splits.get(("default", m["stem"])))
+        attrs, lic = _joined_attrs(joined[image_uuid(rec["file_name"])])
+        out.image(sha, boxes, counts, split=splits.get(("default", m["stem"])), attrs=attrs,
+                  image_licence=lic)  # fmt: skip
     return out.result()
 
 
-def _fgvc25(spec, registry, tree, limit) -> BoxResult:
+def _fgvc25(spec, registry, tree, limit, join) -> BoxResult:
     out = _Emit(spec, registry)
     by_stem: dict[str, dict[str, str]] = {}
     for r in tree.table("labels/image_labels.parquet"):
         by_stem.setdefault(r["stem"], {})[r["key"]] = r["value"]
     meta = {m["stem"]: m for m in tree.table("metadata.parquet")}
-    for stem in _stride(sorted(by_stem), limit):
+    stems = _stride(sorted(by_stem), limit)
+    joined = join.lookup(image_uuid(s) for s in stems)
+    for stem in stems:
         sha, cells = tree.shas.get(("default", stem)), by_stem[stem]
         if sha is None or "annotations_json" not in cells:
             out.counts = out.counts + BoxCounts(orphan=1)
@@ -363,7 +395,8 @@ def _fgvc25(spec, registry, tree, limit) -> BoxResult:
         except (BoxFormatError, ValueError) as exc:
             out.reject(stem, exc)
             continue
-        out.image(sha, boxes, counts, split=cells.get("split"))
+        attrs, lic = _joined_attrs(joined[image_uuid(stem)])
+        out.image(sha, boxes, counts, split=cells.get("split"), attrs=attrs, image_licence=lic)
     return out.result()
 
 
@@ -394,6 +427,132 @@ def _yolo(spec, registry, tree, limit, workers=16) -> BoxResult:
     return out.result()
 
 
+def _coco_docs(spec, registry, tree, limit) -> BoxResult:
+    """``ruod``: one COCO document per split; ``coco_<split>_<file stem>`` is the staged stem."""
+    out = _Emit(spec, registry)
+    docs = {
+        sp: json.loads(tree.get(f"labels/files/coco_annotations_instances_{sp}.json"))
+        for sp in ("train", "val")
+    }
+
+    def stem(split: str, img: Mapping) -> str:
+        return f"coco_{split}_{PurePosixPath(img['file_name']).stem}"
+
+    pairs = sorted(((sp, im) for sp, d in docs.items() for im in d["images"]),
+                   key=lambda p: stem(*p))  # fmt: skip
+    for sp, doc in docs.items():
+        ids = {im["id"] for s, im in _stride(pairs, limit) if s == sp}
+        part = {  # only the chosen images, so the counts are theirs
+            **doc,
+            "images": [im for im in doc["images"] if im["id"] in ids],
+            "annotations": [a for a in doc["annotations"] if a.get("image_id") in ids],
+        }
+        images, counts = read_coco(part)
+        out.counts = out.counts + counts
+        for img in images:
+            sha = tree.shas.get(("default", stem(sp, {"file_name": img.file_name})))
+            if sha is None:
+                out.counts = out.counts + BoxCounts(orphan=1)
+                continue
+            out.image(sha, img.boxes, BoxCounts(), split=sp)
+    return out.result()
+
+
+def _mot(spec, registry, tree, limit, workers=16) -> BoxResult:
+    """``brackishmot``: ``<seq>_gt_gt.txt`` (MOT CSV) + ``<seq>_seqinfo.ini``; frame ``n`` is the
+    image ``<seq>_img1_<n:06d>``."""
+    out = _Emit(spec, registry)
+    meta = {m["stem"]: m for m in tree.table("metadata.parquet")
+            if ("default", m["stem"]) in tree.shas}  # fmt: skip
+    stems = _stride(sorted(meta), limit)
+    seqs: dict[str, list[tuple[str, int]]] = {}
+    for stem in stems:
+        seq, _, frame = stem.rpartition("_img1_")
+        if not seq or not frame.isdigit():
+            out.counts = out.counts + BoxCounts(orphan=1)
+            continue
+        seqs.setdefault(seq, []).append((stem, int(frame)))
+
+    def read(seq: str) -> tuple[dict | None, tuple[int | None, int | None]]:
+        raw = tree.get_or_skip(f"labels/files/{seq}_gt_gt.txt")
+        info = tree.get_or_skip(f"labels/files/{seq}_seqinfo.ini")
+        size = parse_seqinfo(info.decode()) if info else (None, None)
+        first = meta[seqs[seq][0][0]]
+        size = (size[0] or _meta_int(first.get("width")), size[1] or _meta_int(first.get("height")))
+        if raw is None:
+            return None, size
+        return {int(k): v for k, v in read_csv_boxes(raw.decode(), MOT_GT, img_w=size[0],
+                                                     img_h=size[1]).items()}, size  # fmt: skip
+
+    with ThreadPoolExecutor(max_workers=workers) as pool:
+        for seq, (frames, _size) in zip(seqs, pool.map(read, seqs), strict=True):
+            for stem, frame in seqs[seq]:
+                if frames is None:
+                    out.counts = out.counts + BoxCounts(orphan=1)
+                    continue
+                boxes, counts = frames.get(frame, ((), BoxCounts()))
+                m = meta[stem]
+                out.image(tree.shas[("default", stem)], boxes, counts,
+                          split=m.get("upstream_split") or m.get("split_hint"))  # fmt: skip
+    return out.result()
+
+
+_OBSEA_LABEL = re.compile(
+    r"^(?P<head>.+)_(?P<split>train|valid|val|test)_labels_(?P<name>.+)\.txt$"
+)
+
+
+def bucket_lister(bucket: str = "rs-storage-open") -> Callable[[str], list[str]]:
+    """Flat, paginated ``list_objects_v2`` of a prefix (credentials by configparser, never echoed)."""  # noqa: E501
+    import configparser
+    import os
+
+    import boto3
+
+    cfg = configparser.ConfigParser()
+    cfg.read(os.path.expanduser("~/.config/rclone/rclone.conf"))
+    sec = cfg["rs-hel1"]
+    endpoint = sec["endpoint"]
+    client = boto3.client(
+        "s3",
+        aws_access_key_id=sec["access_key_id"],
+        aws_secret_access_key=sec["secret_access_key"],
+        endpoint_url=endpoint if endpoint.startswith("http") else f"https://{endpoint}",
+    )
+
+    def list_keys(prefix: str) -> list[str]:
+        pages = client.get_paginator("list_objects_v2").paginate(Bucket=bucket, Prefix=prefix)
+        return [o["Key"] for page in pages for o in page.get("Contents", [])]
+
+    return list_keys
+
+
+def _yolo_flat(spec, registry, limit, fetch, lister, workers=16) -> BoxResult:
+    """``obsea-fish``: YOLO ``.txt`` files in ``labels/files`` and no metadata / CHECKSUMS in the
+    staged tree, so no image sha: every box is pending, keyed by the upstream image stem
+    (``<head>_<split>_images_<name>``)."""
+    base = f"sources/{spec.tree}/"
+    names = yolo_names(fetch(base + spec.names_rel).decode())
+    keys = sorted(k for k in lister(base + "labels/files/") if k.endswith(".txt"))
+    out = _Emit(spec, registry)
+    keys = _stride(keys, limit)
+    with ThreadPoolExecutor(max_workers=workers) as pool:
+        for key, data in zip(keys, pool.map(lambda k: fetch(k).decode(), keys), strict=True):
+            stem = key.rsplit("/", 1)[-1]
+            m = _OBSEA_LABEL.match(stem)
+            if m is None:
+                out.reject(stem, BoxFormatError("not a <head>_<split>_labels_<name>.txt name"))
+                continue
+            try:
+                boxes, counts = read_yolo(data, names=names)
+            except BoxFormatError as exc:
+                out.reject(stem, exc)
+                continue
+            image_key = f"{m['head']}_{m['split']}_images_{m['name']}"
+            out.image(None, boxes, counts, split=m["split"], image_key=image_key)
+    return out.result()
+
+
 def staged_boxes(
     spec: BoxSource,
     registry: Registry,
@@ -401,13 +560,35 @@ def staged_boxes(
     limit: int | None = None,
     tree: StagedTree | None = None,
     fetch: Callable[[str], bytes] = fetch_small,
+    join: FathomnetLicenceJoin | None = None,
+    lister: Callable[[str], list[str]] | None = None,
 ) -> BoxResult:
-    """Read one source's staged labels, at most ``limit`` images (evenly spaced, deterministic)."""
+    """Read one source's staged labels, at most ``limit`` images (evenly spaced, deterministic).
+
+    ``join`` (FGVC sets) defaults to one over the staged ``fathomnet`` source; ``lister`` (obsea-fish,
+    which has no manifest) defaults to :func:`bucket_lister`."""  # noqa: E501
     if spec.reader == "fathomnet":
         return _fathomnet(spec, registry, fetch, limit)
+    if spec.reader == "yolo-flat":
+        return _yolo_flat(spec, registry, limit, fetch, lister or bucket_lister())
     tree = tree or StagedTree(spec.tree, fetch)
-    return {"coco-columnar": _fgvc23, "coco-fragments": _fgvc25, "yolo": _yolo}[spec.reader](
+    if spec.licence_join:
+        join = join or fathomnet_join(fetch)
+        return {"coco-columnar": _fgvc23, "coco-fragments": _fgvc25}[spec.reader](
+            spec, registry, tree, limit, join
+        )
+    return {"coco-docs": _coco_docs, "mot": _mot, "yolo": _yolo}[spec.reader](
         spec, registry, tree, limit
+    )
+
+
+def fathomnet_join(fetch: Callable[[str], bytes] = fetch_small) -> FathomnetLicenceJoin:
+    """The FGVC licence join over the staged ``fathomnet`` source (index of the staged uuids
+    from the ingest stream parts, then the per-image JSON of each uuid asked for)."""
+    fn = BOX_SOURCES["fathomnet"]
+    return FathomnetLicenceJoin(
+        lambda: fathomnet_stream_index(fn, fetch)[0],
+        lambda uuid: fetch(f"sources/{fn.tree}/labels/files/{uuid}.json"),
     )
 
 
@@ -455,7 +636,7 @@ def licence_split(rows: Iterable[Mapping[str, object]]) -> dict[str, int]:
 
 
 __all__ = [
-    "BOX_SOURCES", "INTERNAL_ONLY", "BoxResult", "BoxSource", "box_row", "drop_internal_only",
-    "is_internal_only", "licence_class_of", "licence_split", "normalise_licence", "staged_boxes",
+    "BOX_SOURCES", "INTERNAL_ONLY", "BoxResult", "BoxSource", "box_row", "bucket_lister",
+    "drop_internal_only", "fathomnet_join", "is_internal_only", "licence_class_of", "licence_split", "normalise_licence", "staged_boxes",  # noqa: E501
     "write_boxes", "write_pending_boxes",
 ]  # fmt: skip
