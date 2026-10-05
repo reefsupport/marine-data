@@ -62,6 +62,7 @@ METADATA_COLUMNS: tuple[tuple[str, str], ...] = (
     ("licence_class", "string"),
     ("attribution", "string"),
     ("split_group", "string"),
+    ("split", "string"),
     ("upstream_id", "string"),
     ("upstream_url", "string"),
     ("fetch_date", "string"),
@@ -351,6 +352,7 @@ def build_rows(
                 ),
                 "attribution": attribution_for(source),
                 "split_group": staged_row.get("split_group"),
+                "split": ref.split,  # the frozen map's split (Hub name), so check 8 can read it
                 "upstream_id": staged_row.get("upstream_path"),
                 "upstream_url": None,
                 "fetch_date": source.verification.verified_on.isoformat(),

@@ -154,7 +154,7 @@ def _near_dup_input(
 ) -> tuple[dict[str, str] | None, dict[str, object]]:
     """``(sha -> dedup group, map header)`` from ``--near-dup <groups.parquet>``; ``--no-near-dup``
     records the explicit opt-out. With neither, ``required`` raises (``release split-map``);
-    otherwise (``release build --generate-split-map``) the header records that none was used."""
+    otherwise (``release build --generate-split-map``) it only warns and the header is unchanged."""
     groups = getattr(args, "near_dup", None)
     if groups is not None:
         from .dedup.groups import load_groups
@@ -179,7 +179,7 @@ def _near_dup_input(
         "may straddle splits (use `release split-map --near-dup` for a release)",
         file=sys.stderr,
     )
-    return None, {"dedup_groups": "not provided"}
+    return None, {}
 
 
 def _generate_global_split_map(

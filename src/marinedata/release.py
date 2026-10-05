@@ -680,6 +680,26 @@ def _with_release_group(  # type: ignore[no-untyped-def]
     return sample if group is None else replace(sample, meta={**sample.meta, "split_group": group})
 
 
+class SplitGroupError(ValueError):
+    """A sample reached the group split without a ``split_group`` (fail closed, WP-R6)."""
+
+
+def require_split_groups(samples: Iterable, task_id: str) -> None:  # type: ignore[type-arg]
+    """Raise :class:`SplitGroupError` naming every source with a sample that carries no
+    ``meta["split_group"]`` after :func:`_with_release_group`, instead of a bare error from the
+    split. Shared by :func:`build_release` and ``hf_export`` so both fail on the same input."""
+    missing: dict[str, int] = {}
+    for sample in samples:
+        if not sample.meta.get("split_group"):
+            missing[sample.source_id] = missing.get(sample.source_id, 0) + 1
+    if missing:
+        listing = ", ".join(f"{sid} ({n} sample(s))" for sid, n in sorted(missing.items()))
+        raise SplitGroupError(
+            f"task {task_id!r}: no split_group for source(s) {listing}; the split map cannot place "
+            "them (its loader sets none and the release enumeration has no entry for them)"
+        )
+
+
 def _has_rows(root: Path) -> bool:
     """True when the staged tree holds at least one row (``metadata.parquet``) or, without one,
     at least one image file."""
@@ -868,6 +888,7 @@ def build_release(
     near_dup_excluded_set = frozenset(near_dup_excluded)
     near_dup_rows = 0
     partial_abstain_excluded: list[PartialAbstainExclusion] = []
+    task_source_exclusions: list[dict[str, str]] = []
 
     for task in sorted(registry.tasks, key=lambda t: t.id):
         builder = DatasetBuilder(
@@ -877,6 +898,7 @@ def build_release(
             schema_id=task.schema_id or DEFAULT_SCHEMA_ID,
             task_id=task.id,
             allow_unmapped=allow_unmapped,
+            exclude_unmapped=True,
         )
         try:
             dataset = builder.build()
@@ -887,9 +909,14 @@ def build_release(
             continue
 
         partial_abstain_excluded.extend(dataset.partial_abstain_excluded)
+        task_source_exclusions.extend(
+            {"task": task.id, "source": sid, "reason": reason}
+            for sid, reason in builder.unmapped_excluded
+        )
         dataset.samples = [
             _with_release_group(sample, walk_groups, admitted_roots) for sample in dataset.samples
         ]
+        require_split_groups(dataset.samples, task.id)
         dataset.split(by="group", split_map=split_map_path, frozen=True, tolerance=None)
 
         rows: list[tuple[str, str]] = []
@@ -950,6 +977,8 @@ def build_release(
             for exclusion in partial_abstain_excluded
         ],
     }
+    if task_source_exclusions:  # only when a source was left out of a task (golden bytes stay)
+        release_json["task_source_exclusions"] = task_source_exclusions
     if not_in_map:
         release_json["skipped_sources"] = [
             {"id": sid, "reason": reason, "allowed_by": allowed_by}

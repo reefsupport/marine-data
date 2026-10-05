@@ -18,7 +18,10 @@ from marinedata.models import Licence
 from marinedata.registry import Registry
 from marinedata.tables import StagedImage, write_metadata_table
 
-BOX_LICENCES = {"u-by": "CC-BY-4.0", "u-nc": "CC-BY-NC-4.0", "u-nd": "CC-BY-ND-4.0", "u-none": None}
+# 4 one-image groups (fn/g0..g3, in this order): every group of a source with >= 3 groups gets a
+# split (WP-R6), and the seed-0 map puts g0 in `test`, which a pretrain manifest drops -- so g0 is
+# the image no flavour ships (u-nd)
+BOX_LICENCES = {"u-nd": "CC-BY-ND-4.0", "u-by": "CC-BY-4.0", "u-nc": "CC-BY-NC-4.0", "u-none": None}
 
 
 def _stage_fathomnet(root: Path) -> dict[str, str]:

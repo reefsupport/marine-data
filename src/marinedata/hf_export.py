@@ -30,7 +30,16 @@ from .flavours import row_licence_class, sample_ships
 from .hf_parquet import ConfigSpec, ExportRow, files_per_folder, plan_config, write_shard
 from .licence_class import drop_release_excluded, flavour_filter, require_flavour
 from .registry import Registry
-from .release import DEFAULT_SCHEMA_ID, _admitted_source_ids, _never_eval_source_ids
+from .release import (
+    DEFAULT_SCHEMA_ID,
+    SplitGroupError,
+    _admitted_source_ids,
+    _loader_layout,
+    _never_eval_source_ids,
+    _with_release_group,
+    require_split_groups,
+    source_release_entries,
+)
 from .strata import TRAIN
 from .task_layers import hf_wiring as _tl
 
@@ -192,6 +201,13 @@ def collect_rows(
     never_eval = _never_eval_source_ids(registry, admitted)
     pseudo = {sid for sid in admitted if PSEUDO_TAG in registry.source(sid).tags}
     digests: dict[Path, str] = {}
+    walk_groups = {  # the same group lookup build_release applies to non-staged-tree layouts
+        sid: {
+            e.key: e.group for e in source_release_entries(registry.source(sid), root, file_digest)
+        }
+        for sid, root in admitted.items()
+        if _loader_layout(registry.source(sid)) != "staged-tree"
+    }
     out: dict[str, list[SampleRow]] = {}
     for task_id in release["tasks"]:
         task = registry.task(task_id)
@@ -201,7 +217,13 @@ def collect_rows(
             roots=admitted,
             schema_id=task.schema_id or DEFAULT_SCHEMA_ID,
             task_id=task_id,
+            exclude_unmapped=True,  # the release left these sources out of the task (RELEASE.json)
         ).build()
+        dataset.samples = [_with_release_group(s, walk_groups, admitted) for s in dataset.samples]
+        try:
+            require_split_groups(dataset.samples, task_id)
+        except SplitGroupError as exc:
+            raise HFExportError(str(exc)) from exc
         dataset.split(by="group", split_map=split_map, frozen=True, tolerance=None)
         projector = dataset.projector
         rows: list[SampleRow] = []
