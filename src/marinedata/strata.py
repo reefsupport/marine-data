@@ -19,6 +19,9 @@ it belongs to, each deficit normalised by that stratum's size. Consequences:
   sources, ``rs-colombia/<site>`` across benthic-own and the bleaching set) is still
   placed once — the leakage invariant is untouched — and lands where the strata it
   belongs to are jointly furthest below target.
+* A stratum with at least ``min_groups`` groups never ends with an empty split: a split left
+  without a group takes one from ``train`` (WP-R6), never an upstream-test group (those are
+  pinned).
 * A stratum with fewer than ``min_groups`` groups cannot hold a group out per split. It
   takes no part in the deficit sum, and a group that belongs *only* to such strata goes
   to ``train``: a held-out split made of one group would measure that group, not the
@@ -101,7 +104,74 @@ def assign_splits_stratified(
         assignment[key] = split
         for name, count in membership[key].items():
             filled[name][split] += count
-    return assignment
+    return _ensure_every_split(
+        assignment, pinned, membership, targets, ratios, small=small, seed=seed
+    )
+
+
+def _ensure_every_split(
+    assignment: Mapping[str, SplitName],
+    pinned: Mapping[str, SplitName],
+    membership: Mapping[str, Mapping[str, int]],
+    targets: Mapping[str, Mapping[SplitName, float]],
+    ratios: Mapping[SplitName, float],
+    *,
+    small: set[str],
+    seed: int,
+) -> dict[str, SplitName]:
+    """No empty val/test per source (WP-R6): a balanced stratum (>= ``min_groups`` groups) that
+    ends up with no group in some split takes one from a split that keeps at least one.
+
+    Only groups this call assigned may move; a ``pinned`` group (an upstream-test group forced to
+    ``test``, a never-eval group forced to ``train``, a group persisted in an earlier map) never
+    does, so ``val`` is taken from ``train`` and never from the upstream test. A donor must not
+    empty a split of another balanced stratum it belongs to. ``train`` donates first, then the
+    split holding the most groups; the group closest to the missing split's target size moves.
+    """
+    result = dict(assignment)
+    current = {**pinned, **result}
+
+    def groups_in(name: str, split: SplitName) -> list[str]:
+        return [k for k in membership if name in membership[k] and current.get(k) == split]
+
+    for name in sorted(_strata_of(membership)):
+        if name in small:
+            continue
+        for split in sorted(ratios):
+            if groups_in(name, split):
+                continue
+            donors = sorted(
+                (s for s in ratios if s != split and len(groups_in(name, s)) >= 2),
+                key=lambda s: (s != TRAIN, -len(groups_in(name, s)), s),
+            )
+            for donor in donors:
+                movable = [
+                    k
+                    for k in groups_in(name, donor)
+                    if k in result
+                    and all(
+                        len(groups_in(other, donor)) >= 2
+                        for other in membership[k]
+                        if other not in small
+                    )
+                ]
+                if not movable:
+                    continue
+                pick = min(
+                    movable,
+                    key=lambda k: (
+                        abs(membership[k][name] - targets[name][split]),
+                        hashlib.sha256(f"{seed}:{k}".encode()).hexdigest(),
+                    ),
+                )
+                result[pick] = split
+                current[pick] = split
+                break
+    return result
+
+
+def _strata_of(membership: Mapping[str, Mapping[str, int]]) -> set[str]:
+    return {name for per in membership.values() for name in per}
 
 
 def achieved_by_stratum(
