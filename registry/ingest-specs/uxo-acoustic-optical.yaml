@@ -1,5 +1,6 @@
 # WP-6l-B (2026-09-25) new source: needs_adapter:7z — WP-6l-B sonar+depth-3d+debris: acoustic + optical UXO perception set: seabed munitions
 id: uxo-acoustic-optical
+access_class: unknown
 adapter: zenodo
 params:
   zenodo_record: 13778485

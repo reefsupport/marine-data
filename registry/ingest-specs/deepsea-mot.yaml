@@ -1,4 +1,5 @@
 id: deepsea-mot
+access_class: open
 adapter: hf
 params:
   repo: MBARI-org/DeepSea-MOT

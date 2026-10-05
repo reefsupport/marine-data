@@ -1,4 +1,5 @@
 id: smartbay
+access_class: open
 adapter: zenodo
 params:
   zenodo_record: 17018426

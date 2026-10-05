@@ -1,5 +1,6 @@
 # ufo120: NOT loadable by marinedata.cli today (needs:gdrive). Documentation-only spec for WP-6d.
 id: ufo120
+access_class: internal-only
 adapter: needs:gdrive
 license: research (non-commercial, per upstream)
 attribution: Islam et al. — UFO-120

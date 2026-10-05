@@ -1,6 +1,8 @@
 # TreeOfLife-10M (Imageomics): 63 tar.gz shards; only ~5% marine, so stream every shard and keep matching members (member-filter).
 # bioscan (insects) contributes 0 marine rows; inat21 rows duplicate iNat photos -> dedupe against inat-marine.
 id: treeoflife-10m
+access_class: restricted-nc
+licence_per_row: true
 adapter: hf-member-filter
 params:
   repo: imageomics/TreeOfLife-10M

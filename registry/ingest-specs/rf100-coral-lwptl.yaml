@@ -1,4 +1,5 @@
 id: rf100-coral-lwptl
+access_class: open
 adapter: hf
 params:
   repo: LibreYOLO/coral-lwptl

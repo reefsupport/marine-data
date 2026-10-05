@@ -1,6 +1,7 @@
 # MarineInst20M upstream-only images that are open + anonymous (WP-6e-B): the four Public_Websites folders that ship
 # a plain URL list in the GitHub release. Their masks join via registry/overlays/marineinst20m.parquet on basename.
 id: marineinst20m-web
+access_class: internal-only
 adapter: manifest
 license: per upstream website (Corals of the World, EOL, FishDB, Meerwasser-Lexikon/Reeflex); recorded per sample, never a filter (D-C)
 attribution: MarineInst20M (Zheng et al., ECCV 2024) URL lists; images by the named websites

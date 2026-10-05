@@ -1,5 +1,6 @@
 # WP-6l-B (2026-09-25) new source: candidate — WP-6l-B sonar: UATD: the reference open FLS detection benchmark
 id: uatd
+access_class: open
 adapter: figshare
 params:
   article: 21331143

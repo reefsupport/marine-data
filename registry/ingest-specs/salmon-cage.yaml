@@ -1,5 +1,6 @@
 # salmon-cage: Zenodo 4931418
 id: salmon-cage
+access_class: open
 adapter: zenodo
 license: CC0-1.0 (Zenodo API)
 attribution: Zenodo record 4931418 authors

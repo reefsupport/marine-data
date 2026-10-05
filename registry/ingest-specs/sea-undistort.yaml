@@ -1,5 +1,6 @@
 # sea-undistort: Zenodo 15639838
 id: sea-undistort
+access_class: restricted-nc
 adapter: zenodo
 license: CC-BY-NC-SA-4.0 (Zenodo API)
 attribution: Sea-Undistort authors

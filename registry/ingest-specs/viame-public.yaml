@@ -1,4 +1,5 @@
 id: viame-public
+access_class: open
 adapter: girder
 params:
   collection: 58b747ec8d777f0aef5d0f6a

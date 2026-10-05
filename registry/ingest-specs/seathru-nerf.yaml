@@ -1,4 +1,5 @@
 id: seathru-nerf
+access_class: internal-only
 adapter: local_dir
 params:
   path: ~/Downloads/marine-manual/seathru-nerf/data

@@ -1,5 +1,6 @@
 # TrashCan 1.0: instance-segmentation labeled dataset of underwater trash observations
 id: trashcan
+access_class: open
 adapter: http
 license: cc-by-4.0
 attribution: Hong, Fulton, Sattar (Univ. of Minnesota DRUM)

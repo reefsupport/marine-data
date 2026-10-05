@@ -1,4 +1,5 @@
 id: uieb
+access_class: internal-only
 adapter: hf
 params:
   repo: Hikari0608/UIEB

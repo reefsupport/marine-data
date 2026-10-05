@@ -5,6 +5,7 @@
 # 2026-09-25 (D-R6 already flagged this); retry the live dry-run once it's reachable —
 # this is a network issue, not a decoder gap.
 id: seamapd21
+access_class: internal-only
 adapter: http
 license: public domain (US federal government work)
 attribution: NOAA SEFSC — SEAMAPD21

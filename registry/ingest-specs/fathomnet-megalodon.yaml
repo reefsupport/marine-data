@@ -1,4 +1,6 @@
 id: fathomnet-megalodon
+access_class: restricted-nd
+licence_per_row: true
 adapter: hf
 params:
   repo: FathomNet/2024-megalodon-benchmark

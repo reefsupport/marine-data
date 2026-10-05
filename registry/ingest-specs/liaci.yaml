@@ -1,4 +1,5 @@
 id: liaci
+access_class: unknown
 adapter: js-rendered-site
 params:
   landing: https://liaci.sintef.cloud/

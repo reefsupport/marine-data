@@ -1,6 +1,7 @@
 # marinelife16k: MarineLife-16K
 # full <=79.62 GB (HF usedStorage) but viewer shows only 500 rows — size/row-count mismatch, inspect before a full run; capped here for a small first pass
 id: marinelife16k
+access_class: open
 adapter: hf
 license: CC-BY-4.0 (HF card)
 attribution: MarineLife-16K contributors

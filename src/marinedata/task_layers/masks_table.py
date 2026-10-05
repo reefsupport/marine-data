@@ -36,6 +36,7 @@ from ..annotation_schema import (
     validate_row,
     write_annotations,
 )
+from ..licence_class import source_class
 from ..registry import Registry
 from .points_table import resolver_for
 from .producers.coralscapes_semseg import _ID_TO_LABEL as _CORALSCAPES_IDS
@@ -83,7 +84,7 @@ MASK_SOURCES: dict[str, MaskSource] = {
             0,
             "human",
             "Apache-2.0",
-            "permissive",
+            "open",
             label_set="coralscapes-39",
         ),
         # D-AI3 / coralseg.py: red channel 0 Other, 1 Hard Coral, 2 Soft Coral.
@@ -120,7 +121,7 @@ MASK_SOURCES: dict[str, MaskSource] = {
             0,
             "human_expert",
             "CC-BY-4.0",
-            "permissive",
+            "open",
             label_set="reef-support-labelbox",
         ),
         # per the suim-8class crosswalk header: 4R+2G+B of the authors' RGB table.
@@ -132,7 +133,7 @@ MASK_SOURCES: dict[str, MaskSource] = {
             None,
             "human",
             "MIT",
-            "permissive",
+            "open",
         ),
     )
 }
@@ -223,7 +224,7 @@ def semantic_row(
     attrs = {
         "mask_encoding": spec.encoding,
         "class_resolution": resolution,
-        "licence_class": spec.licence_class,
+        "licence_class": source_class(spec.source_id, spec.licence_class),
         "mapped_pixels": mapped_px,
         "labelled_pixels": sum(native.values()),
     }
@@ -377,7 +378,7 @@ def pending_rows(
                 "label_set": "reef-support-labelbox", "match_type": "unmapped",
                 "annotator_type": typ, "annotator_detail": detail, "ann_license": ann_license,
                 "label_status": "ok", "mask_kind": "instance", "mask_ref": key,
-                "attrs": json.dumps({"licence_class": "permissive", "todo": "label from export-result.ndjson"}),  # noqa: E501
+                "attrs": json.dumps({"licence_class": "open", "todo": "label from export-result.ndjson"}),  # noqa: E501
                 "image_key": image_key, "image_sha256_todo": TODO_TEXT,
             }
         )  # fmt: skip

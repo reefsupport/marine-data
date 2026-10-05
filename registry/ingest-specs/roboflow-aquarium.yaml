@@ -1,6 +1,7 @@
 # Roboflow Aquarium: object detection across 7 classes (fish, jellyfish, penguin, puffin,
 # shark, starfish, stingray) from two US aquariums.
 id: roboflow-aquarium
+access_class: open
 adapter: local_dir
 params:
   path: ~/Downloads/marine-manual/roboflow-aquarium/data

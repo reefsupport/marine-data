@@ -1,5 +1,6 @@
 # USOD (SVAM-Net underwater saliency object detection) test benchmark.
 id: usod
+access_class: unknown
 adapter: local_dir
 params:
   path: ~/Downloads/marine-manual/usod/data

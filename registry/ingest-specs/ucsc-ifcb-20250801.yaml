@@ -1,5 +1,6 @@
 # WP-6g (2026-09-25) new source: candidate — WP-6g gap 7: Santa Cruz Wharf IFCB (temperate California); not a planktonzilla constituent
 id: ucsc-ifcb-20250801
+access_class: internal-only
 adapter: hf
 params:
   repo: patcdaniel/Phytoplankton-UCSC-IFCB-20250801

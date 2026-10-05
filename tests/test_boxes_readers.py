@@ -504,7 +504,7 @@ def test_brackishmot_frames_map_to_image_stems_with_seqinfo_size(reg):
     assert res.counts.ignored == 1 and res.counts.clipped == 1
     assert {r["label_native"] for r in res.rows} == {"2", "5"}  # class ids, names not staged
     assert {r["upstream_split"] for r in res.rows} == {"test"}
-    assert {json.loads(r["attrs"])["licence_class"] for r in res.rows} == {"internal-only"}
+    assert {json.loads(r["attrs"])["licence_class"] for r in res.rows} == {"unknown"}
 
 
 def test_obsea_flat_yolo_boxes_are_pending_keyed_by_the_upstream_image_stem(reg):

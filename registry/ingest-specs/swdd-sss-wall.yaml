@@ -1,5 +1,6 @@
 # WP-6l-B (2026-09-25) new source: candidate — WP-6l-B sonar: side-scan sonar object detection incl. a validation extension
 id: swdd-sss-wall
+access_class: open
 adapter: zenodo
 params:
   zenodo_record: 13692547

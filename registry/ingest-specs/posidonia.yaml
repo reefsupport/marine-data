@@ -1,4 +1,5 @@
 id: posidonia
+access_class: open
 adapter: zenodo
 params:
   zenodo_record: 4526867

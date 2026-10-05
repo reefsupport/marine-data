@@ -13,6 +13,7 @@ from datetime import date
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 from .enums import (
+    AccessClass,
     AccessMethod,
     AnnotationKind,
     Capability,
@@ -322,6 +323,13 @@ class Source(_Frozen):
     """Recorded position on redistributing a verbatim copy. Never a storage filter —
     see :class:`~marinedata.enums.Redistribution`."""
     provenance: Provenance
+
+    access_class: AccessClass = AccessClass.UNKNOWN
+    """WP-L1a: what this source may be released as (open / restricted-nc / restricted-nd /
+    internal-only / unknown). Orthogonal to ``licence.tier``; the flavour filter reads this."""
+    licence_per_row: bool = False
+    """Every item carries its own licence string (FathomNet, iNat, ...): the row class wins
+    over ``access_class``, which is then only the strictest-member bound."""
 
     access: Access
     modalities: tuple[Modality, ...]

@@ -18,6 +18,7 @@ wires the two together, and joins ``label_status`` (D-U) when present.
 
 from __future__ import annotations
 
+import dataclasses
 import json
 from collections.abc import Mapping
 from dataclasses import dataclass
@@ -25,6 +26,7 @@ from functools import cache, lru_cache
 from pathlib import Path
 
 from ..annotation_schema import annotator_from_origin
+from ..licence_class import flavour_filter
 from ..registry import Registry
 from ..schema import Axis
 from ..tables import _require_pyarrow
@@ -734,9 +736,23 @@ def assert_no_mixed_origin_in_eval(
         raise ValueError(f"human and model rows mixed in eval split(s): {mixed}")
 
 
-def build_all_configs(registry: Registry, base_dir: str | Path) -> dict[str, ConfigResult]:
-    """Every config the sources available today can build (D-Z2 producers wired)."""
-    base_dir = Path(base_dir)
+def apply_flavour(result: ConfigResult, flavour: str | None) -> ConfigResult:
+    """``result`` restricted to the rows ``flavour`` may ship (``None`` = untouched)."""
+    if flavour is None:
+        return result
+    return dataclasses.replace(result, rows=tuple(flavour_filter(result.rows, flavour)))
+
+
+def build_all_configs(
+    registry: Registry, base_dir: str | Path, flavour: str | None = None
+) -> dict[str, ConfigResult]:
+    """Every config the sources available today can build (D-Z2 producers wired).
+    ``flavour`` (``open`` | ``nc``) keeps only the rows that flavour ships (WP-L1a)."""
+    built = _build_all_configs(registry, Path(base_dir))
+    return {k: apply_flavour(v, flavour) for k, v in built.items()}
+
+
+def _build_all_configs(registry: Registry, base_dir: Path) -> dict[str, ConfigResult]:
     return {
         "points": build_points_config(registry, base_dir),
         "vqa": build_vqa_config(base_dir),

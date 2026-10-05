@@ -1,6 +1,7 @@
 # BrackishMOT: multi-object tracking benchmark in brackish water (fish/crab/shrimp), plus a
 # synthetic twin (brackishMOTSynth) and a background-video pool used for synthetic compositing.
 id: brackishmot
+access_class: unknown
 adapter: local_dir
 params:
   path: ~/Downloads/marine-manual/brackishmot/data

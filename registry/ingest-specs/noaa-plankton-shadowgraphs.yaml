@@ -1,5 +1,6 @@
 # SPEC-w3 discovery: NOAA plankton shadowgraph images (NOAA NODD public GCS bucket, anonymous).
 id: noaa-plankton-shadowgraphs
+access_class: open
 adapter: bucket
 license: public domain (US government work) — NODD
 attribution: NOAA Fisheries / NODD

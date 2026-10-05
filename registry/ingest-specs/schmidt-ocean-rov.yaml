@@ -1,5 +1,6 @@
 # Schmidt Ocean Institute ROV SuBastian deep-sea imagery (falkor research vessel dives).
 id: schmidt-ocean-rov
+access_class: restricted-nc
 adapter: needs:unresolved-host
 license: CC-BY-NC (per SOI media policy, stated)
 attribution: Schmidt Ocean Institute

@@ -1,5 +1,6 @@
 # WP-6g (2026-09-25) new source: deflate64 via inflate64 (WP-6j) — the 5.9 GB training zip uses compression method 9 (Deflate64), which Python zipfile cannot inflate (range smoke failed o
 id: kakadu-fish-ai
+access_class: open
 adapter: zenodo
 params:
   zenodo_record: 7250921

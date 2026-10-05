@@ -1,5 +1,6 @@
 # WP-6l-B (2026-09-25) new source: candidate — WP-6l-B diver-robot: underwater embodied-agent (AUV) perception/decision benchmark
 id: oceangym
+access_class: open
 adapter: hf
 params:
   repo: zjunlp/OceanGym

@@ -5,6 +5,7 @@
 # matches the FLSea-VI homepage exactly (not the separate FLSea-Stereo set).
 # mirror_of: bhowmikabhimanyu/flsea-vi (HF, revision ae526f0a1251f727fbd55651290952f317e823de)
 id: flsea
+access_class: restricted-nc
 adapter: hf
 params:
   repo: bhowmikabhimanyu/flsea-vi

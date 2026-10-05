@@ -1,6 +1,7 @@
 # NOAA Deep Sea Coral Research & Technology Program (DSCRTP) national database export —
 # tabular occurrence records, no imagery.
 id: noaa-dsc-csv
+access_class: open
 adapter: local_dir
 params:
   path: ~/Downloads/marine-manual/noaa-dsc-csv/data

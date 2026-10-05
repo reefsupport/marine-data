@@ -1,4 +1,5 @@
 id: heron-reef-benthic
+access_class: open
 adapter: http
 params: {}
 license: CC-BY-4.0

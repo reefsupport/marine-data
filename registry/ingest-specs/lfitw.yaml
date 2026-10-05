@@ -1,4 +1,5 @@
 id: lfitw
+access_class: unknown
 adapter: http-index
 params:
   index_url: https://swfsc-fisheries.github.io/labeled-fishes-in-the-wild/

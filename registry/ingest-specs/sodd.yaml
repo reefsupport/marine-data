@@ -1,4 +1,5 @@
 id: sodd
+access_class: open
 adapter: zenodo
 params:
   zenodo_record: 10230328

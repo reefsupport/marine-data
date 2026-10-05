@@ -1,4 +1,5 @@
 id: plasticinwater
+access_class: open
 adapter: hf
 params:
   repo: OceanCV/PlasticInWater

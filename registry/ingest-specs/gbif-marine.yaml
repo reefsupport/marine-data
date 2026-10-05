@@ -1,5 +1,6 @@
 # GBIF occurrences with StillImage media in wholly-marine clades, EXCLUDING iNaturalist (inat-marine covers it) and specimens/fossils.
 id: gbif-marine
+access_class: restricted-nc
 adapter: gbif-occurrence-media
 license: 'per record: CC0-1.0 / CC-BY-4.0 / CC-BY-NC-4.0 (GBIF licence facet)'
 attribution: GBIF.org and the publishing institutions

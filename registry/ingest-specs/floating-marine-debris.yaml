@@ -1,4 +1,5 @@
 id: floating-marine-debris
+access_class: open
 adapter: github
 params:
   repo: miguelmendesduarte/Floating-Marine-Debris-Data

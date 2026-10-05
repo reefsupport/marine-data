@@ -1,5 +1,6 @@
 # WP-6l-B (2026-09-25) new source: candidate — WP-6l-B sonar+video: acoustic-camera fish species ID across 2 camera types and 2 sites
 id: aris-didson-fish-td
+access_class: open
 adapter: zenodo
 params:
   zenodo_record: 5046708

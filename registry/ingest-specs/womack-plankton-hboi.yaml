@@ -1,5 +1,6 @@
 # WP-6g (2026-09-25) new source: candidate — WP-6g gap 7: HBOI (Florida) plankton set is the new part; fetch should filter to hboi19 (95 GB record)
 id: womack-plankton-hboi
+access_class: open
 adapter: zenodo
 params:
   zenodo_record: 18497521

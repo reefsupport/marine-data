@@ -1,4 +1,5 @@
 id: deolhonoscorais
+access_class: open
 adapter: zenodo
 params:
   zenodo_record: 7338208

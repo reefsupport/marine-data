@@ -1,5 +1,6 @@
 # WP-6g (2026-09-25) new source: pangaea-series (WP-6j) — WP-6g gap 1,6: PS81 Antarctic OFOS: Antarctic seabed stills, largest of the four series
 id: pangaea-ps81-ofos-antarctic
+access_class: open
 adapter: pangaea-series
 params:
   doi: 10.1594/PANGAEA.872719

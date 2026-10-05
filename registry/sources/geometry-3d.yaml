@@ -2,6 +2,7 @@
 
 sources:
   - id: sweet-corals
+    access_class: open
     name: wildflow/sweet-corals
     # habitat inferred (WP-2b) from this source's own description/notes, not independently verified
     habitat: [coral_reef]
@@ -67,6 +68,7 @@ sources:
     tags: [3d, scaled, in-modality, gopro]
 
   - id: deepreefmap-data
+    access_class: open
     name: DeepReefMap reference data and checkpoints
     # habitat inferred (WP-2b) from this source's own description/notes, not independently verified
     habitat: [coral_reef]
@@ -106,6 +108,7 @@ sources:
     tags: [3d, reference-pipeline]
 
   - id: noaa-ncrmp-structural-complexity
+    access_class: open
     name: NOAA NCRMP structural complexity (SfM)
     # habitat inferred (WP-2b) from this source's own description/notes, not independently verified
     habitat: [coral_reef]
@@ -139,6 +142,7 @@ sources:
     tags: [metric-3d, rugosity, public-domain]
 
   - id: atlantis-synthetic-depth
+    access_class: open
     name: Atlantis (synthetic underwater depth)
     # habitat inferred (WP-2b) from this source's own description/notes, not independently verified
     habitat: [mixed]

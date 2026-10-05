@@ -1,5 +1,6 @@
 # SPEC-w3 discovery: SeaTurtleID2022 re-identification.
 id: seaturtleid2022
+access_class: unknown
 adapter: hf
 license: '?'
 attribution: EnmmmmOvO

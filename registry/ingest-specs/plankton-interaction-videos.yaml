@@ -1,5 +1,6 @@
 # SPEC-w3 discovery: plankton interaction videos.
 id: plankton-interaction-videos
+access_class: open
 adapter: hf
 license: apache-2.0
 attribution: bcdemattei

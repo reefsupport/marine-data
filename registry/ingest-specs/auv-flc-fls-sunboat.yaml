@@ -1,5 +1,6 @@
 # WP-6l-B (2026-09-25) new source: candidate — WP-6l-B sonar+depth-3d: time-aligned optical/sonar pairs from an AUV: cross-modal training
 id: auv-flc-fls-sunboat
+access_class: open
 adapter: zenodo
 params:
   zenodo_record: 10544811

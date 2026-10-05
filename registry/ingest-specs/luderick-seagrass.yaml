@@ -1,5 +1,6 @@
 # luderick-seagrass: Ditria et al. 2021
 id: luderick-seagrass
+access_class: open
 adapter: zenodo
 license: CC-BY-4.0 (Zenodo API)
 attribution: Ditria et al. — Luderick/seagrass fish detection dataset

@@ -1,4 +1,5 @@
 id: tascpc
+access_class: internal-only
 adapter: http
 params:
   urls:

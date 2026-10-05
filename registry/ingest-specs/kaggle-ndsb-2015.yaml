@@ -1,4 +1,5 @@
 id: kaggle-ndsb-2015
+access_class: internal-only
 adapter: needs:kaggle-login
 license: unknown (Kaggle competition terms)
 attribution: Kaggle / NDSB 2015 organizers, Hastings/WHOI

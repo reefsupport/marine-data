@@ -38,6 +38,7 @@ from ..annotation_schema import (
     validate_row,
     write_annotations,
 )
+from ..licence_class import source_class
 
 PENDING_COLUMNS = ("image_key",)
 _PLACEHOLDER_SHA = "0" * 64
@@ -148,7 +149,10 @@ def free_row(
         "label_status": "ok",
         **payload,
         "attrs": json.dumps(
-            {**dict(attrs or {}), "licence_class": spec.licence_class}, sort_keys=True
+            {
+                **dict(attrs or {}),
+                "licence_class": source_class(spec.source_id, spec.licence_class),
+            }, sort_keys=True
         ),
     }
 

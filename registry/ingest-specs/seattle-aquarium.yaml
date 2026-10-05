@@ -1,5 +1,6 @@
 # Seattle Aquarium ROV benthic survey stills (Puget Sound). JPG only: every image is also a TIF (425 GB) and 'reject/' is QC-rejected.
 id: seattle-aquarium
+access_class: restricted-nc
 adapter: hf
 license: CC-BY-NC-4.0 (HF card)
 attribution: Seattle Aquarium

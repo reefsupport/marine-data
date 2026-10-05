@@ -1,4 +1,5 @@
 id: sweet-corals
+access_class: open
 adapter: hf
 params:
   repo: wildflow/sweet-corals

@@ -1,5 +1,6 @@
 # DeepSeagrass: QUT/CSIRO seagrass substrate classification imagery (5-class + background).
 id: deepseagrass
+access_class: restricted-nd
 adapter: csiro_dap
 license: cc-by-nc-nd-4.0
 attribution: Raine, Marchant, Moghadam, Maire, Kettle, Kusy (CSIRO)

@@ -1,5 +1,6 @@
 # WP-6l-B (2026-09-25) new source: needs_adapter:hdf5-events — WP-6l-B depth-3d: underwater event-camera modality with flow labels
 id: estonefish-scenes-real
+access_class: open
 adapter: zenodo
 params:
   zenodo_record: 18473013

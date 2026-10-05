@@ -1,6 +1,8 @@
 # iNaturalist Open Data (AWS ODR): research-grade observations of marine taxa. Marine = 34 wholly-marine clades, or a mixed-clade
 # species that WoRMS AphiaRecordsByMatchNames marks isMarine (40,387 names queried; 729 unmatched are excluded).
 id: inat-marine
+access_class: restricted-nd
+licence_per_row: true
 adapter: inat-open-data
 params:
   # D-AE durable copy (S3 key sources/inat-marine/_manifest/inat-marine-manifest.parquet, 147,704,319 B);

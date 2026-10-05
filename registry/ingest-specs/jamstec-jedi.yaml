@@ -1,5 +1,6 @@
 # JAMSTEC J-EDI deep-sea image database (trench/hadal imagery, to 11,000 m). Retried per brief; still unreachable.
 id: jamstec-jedi
+access_class: internal-only
 adapter: needs:jamstec-request
 license: JAMSTEC terms (request-based)
 attribution: JAMSTEC GODAC

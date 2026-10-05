@@ -1,4 +1,5 @@
 id: underwater-image-enhancement
+access_class: open
 adapter: hf
 params:
   repo: iamvastava/underwater_image_enhancement

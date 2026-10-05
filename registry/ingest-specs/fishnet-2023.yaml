@@ -1,4 +1,5 @@
 id: fishnet-2023
+access_class: internal-only
 adapter: http
 params: {}
 license: NOASSERTION

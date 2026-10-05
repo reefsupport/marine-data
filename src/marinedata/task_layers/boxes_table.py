@@ -46,6 +46,8 @@ from ..annotation_schema import (
     validate_row,
     write_annotations,
 )
+from ..licence_class import UNKNOWN, per_row_source, resolve_row_class, source_class
+from ..licence_class import licence_class_of as licence_class_of_str
 from ..registry import Registry, _default_root
 from .boxes_licence_join import FathomnetLicenceJoin, JoinedLicence, image_uuid
 from .image_labels_table import Resolved, _splits, _stride, axes_resolver_for
@@ -60,6 +62,7 @@ from .sources.boxes_yolo import read_yolo, yolo_names
 
 OPEN, NC, ND = "open", "restricted-nc", "restricted-nd"
 _RANK = {OPEN: 0, NC: 1, ND: 2}
+_licence_class = licence_class_of_str
 PENDING_COLUMNS = ("image_key",)
 _PLACEHOLDER_SHA = "0" * 64
 _CC = re.compile(r"^cc[- ]?(?P<rest>(?:by|0).*)$", re.I)
@@ -87,13 +90,11 @@ def normalise_licence(text: str | None) -> str | None:
 
 
 def licence_class_of(*licences: str | None, default: str) -> str:
-    """The strictest class among the recognised ``licences`` (ND > NC > open), else ``default``."""
-    found = [normalise_licence(x) for x in licences]
-    classes = []
-    for spdx in filter(None, found):
-        parts = spdx.split("-")
-        classes.append(ND if "ND" in parts else NC if "NC" in parts else OPEN)
-    return max(classes, key=_RANK.__getitem__) if classes else default
+    """The strictest class among the *recognised* ``licences`` (ND > NC > open), else ``default``.
+    Kept for per-photo callers; the table builder goes through
+    :func:`marinedata.licence_class.resolve_row_class`."""
+    known = [c for c in map(_licence_class, licences) if c != UNKNOWN]
+    return max(known, key=_RANK.__getitem__) if known else default
 
 
 @dataclass(frozen=True)
@@ -205,9 +206,16 @@ def box_row(
         attrs["image_licence"] = image_licence
     elif image_licence:
         attrs["image_licence"] = normalise_licence(image_licence)
-    attrs["licence_class"] = licence_class_of(
-        box.licence, image_licence, default=spec.licence_class
+    src_class = source_class(spec.source_id, spec.licence_class)
+    row_class = resolve_row_class(
+        src_class,
+        box.licence,
+        image_licence,
+        per_row=spec.licence_join or per_row_source(spec.source_id),
     )
+    # a per-row source whose row carries no parseable licence keeps the source's bound
+    # (FathomNet: an unmatched image is restricted-nd), never a bare ``unknown``
+    attrs["licence_class"] = src_class if row_class == UNKNOWN else row_class
     return {
         "image_sha256": image_sha256,
         "source_id": spec.source_id,

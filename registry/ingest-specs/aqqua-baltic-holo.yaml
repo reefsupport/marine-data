@@ -1,5 +1,6 @@
 # WP-6g (2026-09-25) new source: candidate — WP-6g gap 7,6: in-situ holographic plankton imagery (Baltic, 2024): a new modality
 id: aqqua-baltic-holo
+access_class: open
 adapter: zenodo
 params:
   zenodo_record: 18405776

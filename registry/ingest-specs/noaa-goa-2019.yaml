@@ -1,4 +1,5 @@
 id: noaa-goa-2019
+access_class: open
 adapter: ncei-accession
 params:
   accession: '0305766'

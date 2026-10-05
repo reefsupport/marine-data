@@ -1,4 +1,5 @@
 id: oceancv-rovtransect
+access_class: open
 adapter: hf
 params:
   repo: OceanCV/ROVTransectCompressed

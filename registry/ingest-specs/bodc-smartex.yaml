@@ -1,4 +1,5 @@
 id: bodc-smartex
+access_class: open
 adapter: bodc-catalogue
 params:
   doi: 10.5285/298e66b2-d9d1-2f58-e063-7086abc085bf

@@ -7,6 +7,7 @@
 
 sources:
   - id: uieb
+    access_class: internal-only
     name: UIEB (Underwater Image Enhancement Benchmark)
     # habitat inferred (WP-2b) from this source's own description/notes, not independently verified
     habitat: [mixed]
@@ -71,6 +72,7 @@ sources:
     tags: [enhancement, noncommercial]
 
   - id: squid
+    access_class: restricted-nc
     name: SQUID (Stereo Quantitative Underwater Image Dataset)
     # habitat inferred (WP-2b) from this source's own description/notes, not independently verified
     habitat: [mixed]
@@ -109,6 +111,7 @@ sources:
     tags: [stereo, physical-gt]
 
   - id: varos
+    access_class: open
     name: VAROS synthetic underwater dataset
     # habitat inferred (WP-2b) from this source's own description/notes, not independently verified
     habitat: [mixed]
@@ -138,6 +141,7 @@ sources:
     tags: [synthetic, permissive]
 
   - id: flsea
+    access_class: restricted-nc
     name: FLSea (visual-inertial and stereo)
     # habitat inferred (WP-2b) from this source's own description/notes, not independently verified
     habitat: [mixed]
@@ -162,6 +166,7 @@ sources:
     tags: [depth, benchmark, noncommercial]
 
   - id: suim
+    access_class: open
     name: SUIM (Semantic Segmentation of Underwater Imagery)
     # habitat inferred (WP-2b) from this source's own description/notes, not independently verified
     habitat: [mixed]

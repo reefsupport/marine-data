@@ -1,4 +1,5 @@
 id: noaa-coral-icra
+access_class: open
 adapter: hf
 params:
   repo: NMFS-OSI/NOAA-PIFSC-ESD-ESA-CORAL-ICRA-Dataset

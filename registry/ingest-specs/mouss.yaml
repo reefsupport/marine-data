@@ -1,4 +1,5 @@
 id: mouss
+access_class: open
 adapter: hf
 params:
   repo: akridge/MOUSS_fish_imagery_dataset_grayscale_small

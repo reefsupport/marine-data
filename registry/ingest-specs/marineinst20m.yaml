@@ -1,6 +1,7 @@
 # MarineInst20M (Zheng et al., ECCV 2024): annotations released on GitHub as 28 zips (COCO-RLE instance masks + instance captions).
 # Images are NOT redistributed: they come from ~50 public datasets (many already in our catalog) + public websites (scrape scripts) + private data (not released).
 id: marineinst20m
+access_class: internal-only
 adapter: needs:annotation-overlay
 license: 'annotations: repo LICENSE.txt; images: per upstream dataset/website'
 attribution: Zheng et al., HKUST VGD — MarineInst20M

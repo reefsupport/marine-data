@@ -1,5 +1,6 @@
 # WP-6g (2026-09-25) new source: candidate — WP-6g gap 7: plankton classification under dataset shift (in-situ imager); not a planktonzilla constituent
 id: plankton-noctiluca-capsules
+access_class: open
 adapter: zenodo
 params:
   zenodo_record: 4431509

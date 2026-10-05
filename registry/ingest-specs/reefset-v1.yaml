@@ -1,4 +1,5 @@
 id: reefset-v1
+access_class: open
 adapter: zenodo
 params:
   zenodo_record: 11071202

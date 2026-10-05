@@ -1,4 +1,5 @@
 id: seaclear
+access_class: open
 adapter: figshare
 params: {}
 notes: needs_adapter:figshare-id-unresolved — figshare adapter built + tested (WP-6d-A); the exact figshare article/collection id for SeaClear's Sci Data supplementary data was not resolved this pass (author/title search on api.figshare.com/v2/articles/search did not surface it).

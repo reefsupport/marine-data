@@ -57,7 +57,7 @@ def _labels_tree(labels, n_images=None):
 def test_nine_sources_every_row_carries_a_licence_class(reg):
     assert len(it.LABEL_SOURCES) == 9
     assert set(BLEACHING_SOURCES) <= set(it.LABEL_SOURCES)
-    registry_class = {"PERMISSIVE": "permissive"}
+    registry_class = {"PERMISSIVE": "open"}
     for sid, spec in it.LABEL_SOURCES.items():
         if sid in BLEACHING_SOURCES:  # in neither lic TSV: the registry tier decides
             tier = reg.source(sid).licence.tier.name
@@ -95,7 +95,7 @@ def test_roboflow_rows_resolve_condition_and_keep_non_corals_as_a_class_row(reg)
     assert bad["taxon_node_id"] is bad["condition_node_id"] is None
     assert {r["annotator_type"] for r in rows} == {"crowd"}
     assert [r["ann_id"] for r in rows] == [f"{rows[0]['source_id']}:{i}" for i in range(4)]
-    assert all(json.loads(r["attrs"])["licence_class"] == "permissive" for r in rows)
+    assert all(json.loads(r["attrs"])["licence_class"] == "open" for r in rows)
 
 
 def test_limit_takes_evenly_spaced_images_not_the_first_block(reg):
@@ -200,7 +200,7 @@ def test_bleaching_config_reads_unified_rows_and_keeps_the_legacy_columns(reg, t
     )
     assert (
         got["CORAL"]["sha256"] == got["CORAL"]["image_sha256"]
-        and got["CORAL"]["licence_class"] == "permissive"
+        and got["CORAL"]["licence_class"] == "open"
     )
     assert result.unmapped_by_source[spec.source_id] == 0.0
 

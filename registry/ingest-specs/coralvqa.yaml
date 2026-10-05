@@ -1,4 +1,5 @@
 id: coralvqa
+access_class: open
 adapter: hf
 license: CC-BY-4.0 (HF card CoralReefData/CoralVQA)
 attribution: CoralVQA authors (CoralReefData)

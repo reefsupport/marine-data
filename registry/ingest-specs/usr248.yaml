@@ -1,5 +1,6 @@
 # usr248: NOT loadable by marinedata.cli today (needs:gdrive). Documentation-only spec for WP-6d.
 id: usr248
+access_class: internal-only
 adapter: needs:gdrive
 license: research (non-commercial, per upstream)
 attribution: Islam et al. — USR-248

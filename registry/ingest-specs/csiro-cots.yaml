@@ -1,5 +1,6 @@
 # csiro-cots: Kaggle "TensorFlow — Help Protect the Great Barrier Reef" COTS detection competition.
 id: csiro-cots
+access_class: internal-only
 adapter: local_dir
 params:
   path: ~/Downloads/marine-manual/csiro-cots/data

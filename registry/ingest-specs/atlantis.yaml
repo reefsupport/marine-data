@@ -1,4 +1,5 @@
 id: atlantis
+access_class: open
 adapter: local_dir
 params:
   path: ~/Downloads/marine-manual/atlantis/data

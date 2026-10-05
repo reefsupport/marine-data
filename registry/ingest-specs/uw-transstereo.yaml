@@ -1,5 +1,6 @@
 # WP-6g (2026-09-25) new source: needs_adapter:svo2-decoder — WP-6g gap 5: underwater stereo video with ranging; .svo2 needs the ZED SDK to decode
 id: uw-transstereo
+access_class: open
 adapter: zenodo
 params:
   zenodo_record: 16753748

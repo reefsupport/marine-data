@@ -2,6 +2,7 @@
 # Tagged out-of-water on the registry/sources/fish.yaml `large-scale-fish` entry so the
 # release builder can exclude it from underwater/in-situ outputs.
 id: large-scale-fish
+access_class: open
 adapter: local_dir
 params:
   path: ~/Downloads/marine-manual/large-scale-fish/data

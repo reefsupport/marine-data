@@ -7,6 +7,7 @@
 
 sources:
   - id: ozfish
+    access_class: open
     name: OzFish
     # habitat inferred (WP-2b) from this source's own description/notes, not independently verified
     habitat: [coral_reef]
@@ -62,6 +63,7 @@ sources:
     tags: [stereo, biomass, length]
 
   - id: deepfish
+    access_class: open
     name: DeepFish
     # habitat inferred (WP-2b) from this source's own description/notes, not independently verified
     habitat: [mixed]
@@ -152,6 +154,7 @@ sources:
     tags: [turbid, weak-labels]
 
   - id: seamapd21
+    access_class: internal-only
     name: SEAMAPD21
     # habitat inferred (WP-2b) from this source's own description/notes, not independently verified
     habitat: [mixed]
@@ -196,6 +199,7 @@ sources:
     tags: [caribbean-adjacent, needs-verification]
 
   - id: fishnet-2023
+    access_class: internal-only
     name: FishNet (ICCV 2023)
     # habitat inferred (WP-2b) from this source's own description/notes, not independently verified
     habitat: [mixed]
@@ -248,6 +252,7 @@ sources:
     tags: [taxonomy, copyleft]
 
   - id: mft25
+    access_class: open
     name: MFT25 (Multiple Fish Tracking 2025)
     # habitat inferred (WP-2b) from this source's own description/notes, not independently verified
     habitat: [mixed]
@@ -290,6 +295,7 @@ sources:
     tags: [tracking, benchmark]
 
   - id: deepsea-mot
+    access_class: open
     name: DeepSea MOT (MBARI)
     # habitat inferred (WP-2b) from this source's own description/notes, not independently verified
     habitat: [deep_sea_benthic]
@@ -327,6 +333,8 @@ sources:
     tags: [tracking, tooling]
 
   - id: fathomnet
+    access_class: restricted-nd
+    licence_per_row: true
     name: FathomNet
     # habitat inferred (WP-2b) from this source's own description/notes, not independently verified
     habitat: [deep_sea_benthic]
@@ -383,6 +391,7 @@ sources:
     tags: [deep-sea, api]
 
   - id: mouss-detection
+    access_class: open
     name: MOUSS fish imagery (NOAA PIFSC)
     # habitat inferred (WP-2b) from this source's own description/notes, not independently verified
     habitat: [deep_sea_benthic]
@@ -420,6 +429,7 @@ sources:
     tags: [public-domain, baseline]
 
   - id: labeled-fishes-in-the-wild
+    access_class: open
     name: Labeled Fishes in the Wild (NOAA SWFSC)
     # habitat inferred (WP-2b) from this source's own description/notes, not independently verified
     habitat: [rocky_reef]
@@ -480,6 +490,7 @@ sources:
     tags: [public-domain, small]
 
   - id: brackish-dataset
+    access_class: open
     name: Brackish Dataset (AAU)
     # habitat inferred (WP-2b) from this source's own description/notes, not independently verified
     habitat: [soft_sediment]
@@ -523,6 +534,7 @@ sources:
     tags: [temperate, turbidity]
 
   - id: fish4knowledge
+    access_class: internal-only
     name: Fish4Knowledge
     # habitat inferred (WP-2b) from this source's own description/notes, not independently verified
     habitat: [coral_reef]
@@ -580,6 +592,7 @@ sources:
     tags: [classic, imbalanced]
 
   - id: sea-urchin-detection
+    access_class: open
     name: Sea Urchin detection (Roboflow)
     # habitat inferred (WP-2b) from this source's own description/notes, not independently verified
     habitat: [rocky_reef]
@@ -616,6 +629,7 @@ sources:
     tags: [urchin, herbivory]
 
   - id: large-scale-fish
+    access_class: open
     name: "A Large Scale Fish Dataset (Ulucan et al.) — market/out-of-water"
     # habitat inferred (WP-2b): OUT OF WATER (market/countertop fish photos), never in situ
     habitat: [artificial]

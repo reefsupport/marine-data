@@ -1,5 +1,6 @@
 # WP-6l-B (2026-09-25) new source: candidate — WP-6l-B enhancement: only set with instrument-measured turbidity per image (degradation severity label)
 id: uwturbidity-fnu
+access_class: unknown
 adapter: zenodo
 params:
   zenodo_record: 10951021

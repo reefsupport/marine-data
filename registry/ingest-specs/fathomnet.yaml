@@ -3,6 +3,8 @@
 # full, staged as shards (D-D, > 200k), deduped by sha256 against the 223,863 NOAA NODD GFISHER
 # frames (noaa-gfisher / seamapd21) that overlap FathomNet's storage.googleapis.com host.
 id: fathomnet
+access_class: restricted-nd
+licence_per_row: true
 adapter: fathomnet
 params:
   full: true

@@ -1,4 +1,5 @@
 id: uw-img-imu-sonar
+access_class: open
 adapter: hf
 params:
   repo: jclboeng/underwater-img-imu-sonar-datasets

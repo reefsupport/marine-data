@@ -5,6 +5,8 @@
 # same mechanism as marineinst20m-web.yaml): a parquet built from the two JSON files carries key/url/labels per
 # image, the adapter fetches each coco_url itself. No new adapter code.
 id: fathomnet-fgvc25
+access_class: restricted-nd
+licence_per_row: true
 adapter: manifest
 license: CC-BY-4.0
 attribution: FathomNet / MBARI, FGVC12 workshop

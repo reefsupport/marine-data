@@ -5,6 +5,8 @@
 # bundled files — the HF mirror bundles the same training split as images.zip + metadata.jsonl (verified by
 # matching example ids against the official README, see history below).
 id: fathomnet-fgvc23
+access_class: restricted-nd
+licence_per_row: true
 adapter: hf
 license: CC-BY-4.0
 attribution: FathomNet / MBARI, FGVC10 workshop

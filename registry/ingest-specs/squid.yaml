@@ -1,4 +1,5 @@
 id: squid
+access_class: restricted-nc
 adapter: zenodo
 params:
   zenodo_record: 5744037

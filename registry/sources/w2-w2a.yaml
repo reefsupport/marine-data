@@ -4,6 +4,7 @@
 
 sources:
 - id: soneva-corals
+  access_class: open
   name: wildflow soneva-corals
   version: unversioned
   description: Coral-reef imagery + 3D reconstructions from Soneva resort reefs (Maldives), from the wildflow
@@ -46,6 +47,7 @@ sources:
   items: 22422
   items_note: rows (HF viewer); full 66.68 GB, first-pass subset ~44.6 GB (max_images:15000)
 - id: benthoz15
+  access_class: open
   name: BENTHOZ-2015
   version: unversioned
   description: AUV benthic imagery + point annotations across Australian AUV survey campaigns (Bewley
@@ -91,6 +93,7 @@ sources:
   items: 9874
   items_note: images (~407k point annotations)
 - id: noaa-coral-icra
+  access_class: open
   name: NOAA PIFSC ESD-ESA coral ICRA
   version: unversioned
   description: NOAA PIFSC coral image classification/detection assessment (ICRA) dataset.
@@ -127,6 +130,7 @@ sources:
     queued for a dry-run ingest via the supported adapter.'
   items_note: <1K (HF viewer)
 - id: coralnet-small
+  access_class: internal-only
   name: CoralNet small (WHOI mirror)
   version: unversioned
   description: Small CoralNet point-annotation mirror re-packed by WHOI on HuggingFace.
@@ -163,6 +167,7 @@ sources:
   items: 450
   items_note: rows (HF viewer)
 - id: tascpc
+  access_class: internal-only
   name: Tasmania Coral Point Count
   version: unversioned
   description: Tasmania AUV benthic imagery with coral point-count annotations (Sydney ACFR marine dataset
@@ -199,6 +204,7 @@ sources:
   items: 1300
   items_note: est. (catalog)
 - id: eilat-rsmas
+  access_class: internal-only
   name: EILAT / RSMAS coral texture
   version: unversioned
   description: Coral texture-patch classification benchmark (Eilat + RSMAS collections).
@@ -246,6 +252,8 @@ sources:
     supervises:
     - taxon
 - id: fathomnet-coverage
+  access_class: restricted-nd
+  licence_per_row: true
   name: FathomNet full-coverage test sets
   version: unversioned
   description: FathomNet exhaustively-boxed test sets for full-coverage detector evaluation.
@@ -282,6 +290,8 @@ sources:
     queued for a dry-run ingest via the supported adapter.'
   items_note: unknown (HF usedStorage ~0)
 - id: fathomnet-megalodon
+  access_class: restricted-nd
+  licence_per_row: true
   name: FathomNet 2024 Megalodon benchmark
   version: unversioned
   description: FathomNet single-class object-detection benchmark (2024 Megalodon challenge).
@@ -317,6 +327,7 @@ sources:
     queued for a dry-run ingest via the supported adapter.'
   items_note: unknown
 - id: noaa-dscrtp
+  access_class: open
   name: NOAA Deep-Sea Coral & Sponge database
   version: unversioned
   description: 'NOAA DSCRTP national database: taxon-labelled deep-sea coral/sponge image records with
@@ -362,6 +373,7 @@ sources:
     with a non-empty ImageURL, then fetches each URL individually. Endpoint: https://www.ncei.noaa.gov/erddap/tabledap/deep_sea_corals.csv?ImageURL,CatalogNumber,ScientificName,ObservationYear&ImageURL!=""'
   items_note: '>100k records w/ images (est, catalog)'
 - id: noaa-goa-2019
+  access_class: open
   name: Gulf of Alaska corals/sponges/fishes 2019
   version: unversioned
   description: NOAA/NCEI 2019 Gulf of Alaska deep-sea coral, sponge and fish imagery (accession 0305766).
@@ -401,6 +413,7 @@ sources:
     archive info/download API, not a flat file list)'
   items_note: unknown
 - id: pangaea-ccz-gsr
+  access_class: open
   name: PANGAEA seafloor images GSR mining trial (CCZ)
   version: unversioned
   description: Seafloor photo images from a Global Sea Mineral Resources (GSR) mining trial in the Clarion-Clipperton
@@ -445,6 +458,7 @@ sources:
     adapter that follows child datasets'
   items_note: unknown
 - id: pangaea-ofos-msm77
+  access_class: open
   name: PANGAEA OFOS seabed photos MSM77
   version: unversioned
   description: Ocean Floor Observation System (OFOS) seabed photo profiles from RV Maria S. Merian cruise
@@ -488,6 +502,7 @@ sources:
     sibling OFOS profile datasets under the MSM77 cruise series that a real ingest would need to enumerate'
   items_note: unknown; ~50 linked OFOS profiles
 - id: bodc-smartex
+  access_class: open
   name: BODC JC241/JC257 ROV/AUV benthic images (CCZ)
   version: unversioned
   description: ROV/AUV benthic seafloor images from SMARTEX cruises JC241/JC257 in the Clarion-Clipperton
@@ -529,6 +544,7 @@ sources:
     resolved catalogue page to find the file access route'
   items_note: unknown
 - id: oceancv-rovtransect
+  access_class: open
   name: OceanCV ROV transects
   version: unversioned
   description: Compressed ROV transect imagery from the OceanCV project.
@@ -569,6 +585,7 @@ sources:
   items: 2
   items_note: rows (HF viewer)
 - id: deepsea-coral-cornerrise
+  access_class: open
   name: Deep-sea coral+sponge Corner Rise
   version: unversioned
   description: Deep-sea coral and sponge count/classification records (with imagery) from the Corner Rise
@@ -608,6 +625,7 @@ sources:
     queued for a dry-run ingest via the supported adapter.'
   items_note: unknown; mostly xlsx count tables, imagery unconfirmed
 - id: oceandark
+  access_class: internal-only
   name: OceanDark
   version: unversioned
   description: Low-light deep-sea benthic imagery for visibility/enhancement research.
@@ -646,6 +664,7 @@ sources:
   items: 183
   items_note: images
 - id: ntnu-arl-uw
+  access_class: open
   name: NTNU ARL underwater datasets
   version: unversioned
   description: Multi-sensor (camera/IMU/sonar) underwater SLAM rosbag datasets from NTNU's Autonomous
@@ -690,6 +709,7 @@ sources:
     that lands.'
   items_note: 8 rosbags, 148.68 GB total (confirmed via HF tree API)
 - id: subpipe
+  access_class: open
   name: SubPipe pipeline inspection
   version: unversioned
   description: Underwater pipeline-inspection dataset with semantic labels, SLAM ground truth and sonar.
@@ -729,6 +749,7 @@ sources:
     queued for a dry-run ingest via the supported adapter.'
   items_note: unknown
 - id: uw-img-imu-sonar
+  access_class: open
   name: underwater img+IMU+sonar
   version: unversioned
   description: Multi-sensor underwater dataset combining imagery, IMU and sonar streams.
@@ -767,6 +788,7 @@ sources:
     queued for a dry-run ingest via the supported adapter.'
   items_note: unknown
 - id: galapagos-3d
+  access_class: open
   name: Galapagos 3D
   version: unversioned
   description: 3D photogrammetry / geodesic-walk reef structure captures from the Galapagos.
@@ -806,6 +828,7 @@ sources:
     queued for a dry-run ingest via the supported adapter.'
   items_note: unknown
 - id: port-royal
+  access_class: open
   name: Port Royal Jamaica 2010 (NatGeo)
   version: unversioned
   description: Stereo/3D underwater archaeology imagery from the sunken city of Port Royal, Jamaica (2010
@@ -844,6 +867,7 @@ sources:
     queued for a dry-run ingest via the supported adapter.'
   items_note: unknown
 - id: aqualoc
+  access_class: restricted-nc
   name: AQUALOC
   version: unversioned
   description: Visual-inertial SLAM sequences (harbor + underwater archaeology) with ground-truth trajectories.
@@ -890,6 +914,7 @@ sources:
   - kind: camera-pose
     supervises: []
 - id: seathru-nerf
+  access_class: internal-only
   name: SeaThru-NeRF scenes
   version: unversioned
   description: Posed underwater image sets (COLMAP) for NeRF reconstruction with backscatter removal.
@@ -933,6 +958,7 @@ sources:
   - kind: camera-pose
     supervises: []
 - id: seagrassfinder
+  access_class: restricted-nd
   name: SeagrassFinder eelgrass
   version: unversioned
   description: Eelgrass (seagrass) classification imagery for the SeagrassFinder project.
@@ -971,6 +997,7 @@ sources:
     queued for a dry-run ingest via the supported adapter.'
   items_note: unknown
 - id: posidonia
+  access_class: open
   name: Posidonia oceanica images
   version: unversioned
   description: Posidonia oceanica (Mediterranean seagrass) imagery for segmentation/classification.
@@ -1008,6 +1035,7 @@ sources:
     queued for a dry-run ingest via the supported adapter.'
   items_note: unknown
 - id: whoi-plankton
+  access_class: internal-only
   name: WHOI plankton (IFCB)
   version: unversioned
   description: Imaging FlowCytobot (IFCB) plankton image classification dataset from WHOI.
@@ -1044,6 +1072,7 @@ sources:
   items: 956867
   items_note: rows (HF viewer)
 - id: openimages-marine
+  access_class: open
   name: Open Images V7 marine classes
   version: unversioned
   description: Curated marine-class subset (Fish, Jellyfish, Starfish, Sea turtle, Shark, ...) of Open
@@ -1089,6 +1118,7 @@ sources:
   items: 50000
   items_note: est. (catalog, marine classes only)
 - id: liaci
+  access_class: unknown
   name: LIACi ship-hull inspection
   version: unversioned
   description: Ship-hull underwater inspection imagery with semantic segmentation masks (LIACi project,
@@ -1128,6 +1158,7 @@ sources:
   items: 1893
   items_note: images
 - id: smartbay
+  access_class: open
   name: SmartBay marine types OD
   version: unversioned
   description: Object-detection dataset of marine organism types from SmartBay (Galway Bay, Ireland) camera
@@ -1167,6 +1198,7 @@ sources:
     queued for a dry-run ingest via the supported adapter.'
   items_note: unknown
 - id: plasticinwater
+  access_class: open
   name: OceanCV PlasticInWater
   version: unversioned
   description: Underwater marine-debris (plastic) detection imagery from the OceanCV project.
@@ -1203,6 +1235,7 @@ sources:
   items: 1032
   items_note: rows (HF viewer)
 - id: caddy
+  access_class: restricted-nc
   name: CADDY underwater gestures/diver pose
   version: unversioned
   description: Stereo underwater imagery of diver gestures/pose for human-robot interaction.
@@ -1247,6 +1280,7 @@ sources:
     notes: diver-gesture classes; verify count
     supervises: []
 - id: vdd-c
+  access_class: open
   name: VDD-C diver detection
   version: unversioned
   description: Large diver-detection bounding-box dataset (Virtual Diver Dataset - Combined).
@@ -1287,6 +1321,7 @@ sources:
   items: 105000
   items_note: est. (catalog)
 - id: sodd
+  access_class: open
   name: SODD subaquatic object detection
   version: unversioned
   description: Subaquatic object-detection dataset (YOLO format).

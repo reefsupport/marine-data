@@ -1,4 +1,5 @@
 id: port-royal
+access_class: open
 adapter: zenodo
 params:
   zenodo_record: 10271767

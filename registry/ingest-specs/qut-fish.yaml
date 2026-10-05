@@ -1,5 +1,7 @@
 # QUT fish dataset (fine-grained fish species recognition, WACV14).
 id: qut-fish
+access_class: restricted-nc
+licence_per_row: true
 adapter: local_dir
 params:
   path: ~/Downloads/marine-manual/qut-fish/data

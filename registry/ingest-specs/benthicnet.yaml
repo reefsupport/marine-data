@@ -4,6 +4,7 @@
 # adapter for this family; params.urls has no entries yet because no anonymous listing was resolved.
 # Third-party partial mirror: hf ndotm/benthicnet_labelled (1.09 GB).
 id: benthicnet
+access_class: unknown
 adapter: frdr-https
 params: {}
 notes: needs_adapter:frdr-urls-unresolved — frdr-https adapter built + tested (WP-6d-A); Globus HTTPS download links are advertised (setDownloadLinks(true)) but no anonymous listing endpoint was found this pass. W3-scale (CATAMI-labelled subset) stays out of scope until a listing method lands.

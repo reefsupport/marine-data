@@ -1,5 +1,6 @@
 # WP-6l-B (2026-09-25) new source: candidate — WP-6l-B sonar+depth-3d: co-registered RGB and sonar of live fish at 3 ranges
 id: koi-rgb-sonar
+access_class: open
 adapter: hf
 params:
   repo: perona-lab/Huntington_and_Caltech_Koi_RGB_and_Sonar

@@ -1,5 +1,6 @@
 # SPEC-w3 discovery: IFCB NE-shelf plankton classifier set 2022.
 id: nes-plankton-2022
+access_class: open
 adapter: hf
 license: cc-by-4.0
 attribution: sosiklab

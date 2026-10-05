@@ -1,4 +1,5 @@
 id: marineeval
+access_class: open
 adapter: hf
 params:
   repo: WongYukKwan/MarineEval

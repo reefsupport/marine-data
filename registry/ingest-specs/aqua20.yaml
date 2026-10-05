@@ -1,5 +1,6 @@
 # AQUA20: underwater species classification benchmark (20 classes) mirrored on HF.
 id: aqua20
+access_class: internal-only
 adapter: hf
 license: unknown (not stated on HF card)
 attribution: taufiktrf (HF mirror; upstream AQUA20 paper authors unconfirmed)

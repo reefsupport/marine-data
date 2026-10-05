@@ -1,5 +1,6 @@
 # WP-6l-B (2026-09-25) new source: candidate — WP-6l-B sonar: dense pixel labels on recreational-grade side-scan sonar
 id: pingmapper-sss-seg
+access_class: open
 adapter: zenodo
 params:
   zenodo_record: 10119320

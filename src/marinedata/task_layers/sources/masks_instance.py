@@ -27,6 +27,7 @@ from dataclasses import dataclass
 from pathlib import PurePosixPath
 
 from ...annotation_schema import annotator_from_origin, normalise_split
+from ...licence_class import source_class
 from ...registry import Registry
 from ..points_table import _taxon_rank, resolver_for
 from ..s3_keyed import StagedTree
@@ -145,7 +146,7 @@ def instance_row(
         "area": ann.get("area"),
         "img_w": img_w,
         "img_h": img_h,
-        "licence_class": spec.licence_class,
+        "licence_class": source_class(spec.source_id, spec.licence_class),
         "modality": spec.modality,
     }
     return {

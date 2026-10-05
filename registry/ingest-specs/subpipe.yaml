@@ -1,4 +1,5 @@
 id: subpipe
+access_class: open
 adapter: zenodo
 params:
   zenodo_record: 12666132

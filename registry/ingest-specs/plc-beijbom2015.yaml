@@ -1,5 +1,6 @@
 # PLC (Beijbom et al. 2015) Heron Reef benthic point-annotation set — CoralNet-lineage, high labels-per-GB value.
 id: plc-beijbom2015
+access_class: open
 adapter: zenodo
 license: cc0-1.0
 attribution: Beijbom et al. 2015

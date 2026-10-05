@@ -10,6 +10,7 @@
 # replaces the blocked IRVLab/Drive source as the primary fetch path.
 # mirror_of: Ken1053/EUVP (HF, revision e3c6d08a8b07ed806e61977ffbcefd9d5ba60933)
 id: euvp
+access_class: internal-only
 adapter: hf
 license: research (non-commercial, per upstream)
 attribution: Islam et al. — EUVP / FUnIE-GAN (IRVLab original)

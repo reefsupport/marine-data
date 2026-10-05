@@ -36,6 +36,7 @@ from ..annotation_schema import (
     normalise_split,
     write_annotations,
 )
+from ..licence_class import source_class
 from ..registry import Registry
 from ..schema import Axis
 from .masks_table import INTERNAL_ONLY, drop_internal_only, is_internal_only
@@ -78,20 +79,20 @@ LABEL_SOURCES: dict[str, LabelSource] = {
     s.source_id: s
     for s in (
         LabelSource("noaa-pifsc-bleaching", "1-image-labels", "noaa-pifsc-bleaching-condition",
-                    "labels", "human_expert", "US-GOV-PD", "permissive"),
+                    "labels", "human_expert", "US-GOV-PD", "open"),
         LabelSource("roboflow-coral-bleaching-final-v6i", "v6i-image-labels-r2", _HB, "labels",
-                    "human_crowd", "CC-BY-4.0", "permissive", label_set=_RF),
+                    "human_crowd", "CC-BY-4.0", "open", label_set=_RF),
         LabelSource("roboflow-coral-bleaching-general-v1-yolov8s", "v1-yolov8s-image-labels-r2",
-                    _HB, "labels", "human_crowd", "CC-BY-4.0", "permissive", label_set=_RF),
+                    _HB, "labels", "human_crowd", "CC-BY-4.0", "open", label_set=_RF),
         LabelSource("roboflow-coral-classification-copy-changed-v13i", "v13i-image-labels", _HB,
-                    "labels", "human_crowd", "CC-BY-4.0", "permissive", label_set=_RF),
+                    "labels", "human_crowd", "CC-BY-4.0", "open", label_set=_RF),
         LabelSource("roboflow-coral-reef-bleach-detection-v2i", "v2i-image-labels", _HB, "labels",
-                    "human_crowd", "CC-BY-4.0", "permissive", label_set=_RF),
+                    "human_crowd", "CC-BY-4.0", "open", label_set=_RF),
         LabelSource("roboflow-coral-reef-classification-v3i", "v3i-image-labels", _HU, "labels",
-                    "human_crowd", "CC-BY-4.0", "permissive"),
+                    "human_crowd", "CC-BY-4.0", "open"),
         # condition raster: 0 unlabelled, 1 bleached, 2 non_bleached (loaders/staged_tree.py).
         LabelSource("reef-support-bleaching", "2026-09-24", "reef-support-bleaching-condition",
-                    "mask", "human_expert", "CC-BY-4.0", "permissive",
+                    "mask", "human_expert", "CC-BY-4.0", "open",
                     mask_values={1: "bleached", 2: "non_bleached"}),
         LabelSource("kaggle-healthy-bleached-corals", "zip-5e15452254a9",
                     "kaggle-healthy-bleached-corals", "kv", "human", None, INTERNAL_ONLY),
@@ -178,7 +179,10 @@ def image_label_row(
         "upstream_split": normalise_split(split),
         "label_status": "ok",
         "attrs": json.dumps(
-            {**dict(attrs or {}), "licence_class": spec.licence_class}, sort_keys=True
+            {
+                **dict(attrs or {}),
+                "licence_class": source_class(spec.source_id, spec.licence_class),
+            }, sort_keys=True
         ),
         "label_key": key,
     }  # noqa: E501, RUF100

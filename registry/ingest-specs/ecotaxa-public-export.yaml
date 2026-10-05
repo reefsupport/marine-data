@@ -1,5 +1,6 @@
 # EcoTaxa public-project plankton image export (Villefranche-sur-Mer marine station platform).
 id: ecotaxa-public-export
+access_class: internal-only
 adapter: needs:ecotaxa-api
 license: per-project (stated per EcoTaxa project metadata)
 attribution: EcoTaxa / Sorbonne Universite, CNRS

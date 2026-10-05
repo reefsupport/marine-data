@@ -1,4 +1,5 @@
 id: coralnet-small
+access_class: internal-only
 adapter: hf
 params:
   repo: nf-whoi/coralnet-small

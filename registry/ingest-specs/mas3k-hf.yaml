@@ -1,5 +1,6 @@
 # WP-6g (2026-09-25) new source: candidate — WP-6g gap 3: MAS3K camouflaged marine-animal masks; resolves the w3-discovery `mas3k` row (github route) via an open HF mirror
 id: mas3k-hf
+access_class: internal-only
 adapter: hf
 params:
   repo: KRMayD/MAS3K_Dataset

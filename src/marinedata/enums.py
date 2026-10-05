@@ -39,6 +39,19 @@ class Tier(str, Enum):
     """Provenance-defective or contract-blocked. Never usable, on any profile."""
 
 
+class AccessClass(str, Enum):
+    """What a source may be released as (WP-L1a); see :mod:`marinedata.licence_class`.
+
+    ``unknown`` is treated exactly like ``internal-only``: never released."""
+
+    OPEN = "open"
+    """Commercial use and redistribution are fine."""
+    RESTRICTED_NC = "restricted-nc"
+    RESTRICTED_ND = "restricted-nd"
+    INTERNAL_ONLY = "internal-only"
+    UNKNOWN = "unknown"
+
+
 class LegalBasis(str, Enum):
     """*Why* we are allowed to use this item. Recorded per source, surfaced in lineage."""
 

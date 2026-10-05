@@ -1,4 +1,5 @@
 id: aqualoc
+access_class: restricted-nc
 adapter: seafile-share
 params:
   landing: https://www.lirmm.fr/aqualoc/

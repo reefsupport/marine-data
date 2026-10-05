@@ -95,7 +95,7 @@ def test_brackishmot_tracks_resolve_class_licence_and_sha(reg):
     )  # jellyfish
     assert rows[1]["label_native_id"] == "2" and rows[1]["taxon_node_id"] == "A106673"
     attrs = [json.loads(r["attrs"]) for r in rows]
-    assert {a["licence_class"] for a in attrs} == {"internal-only"}
+    assert {a["licence_class"] for a in attrs} == {"unknown"}
     assert attrs[0]["frame_staged"] is True and attrs[1]["frame_staged"] is False
     assert attrs[2]["ignore"] is True and rows[0]["is_crowd"] is None
     assert tt.write_tracks  # the table writer is importable next to the reader

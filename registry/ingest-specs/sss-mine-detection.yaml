@@ -1,5 +1,6 @@
 # WP-6l-B (2026-09-25) new source: candidate — WP-6l-B sonar+debris: side-scan mine detection across 5 survey years
 id: sss-mine-detection
+access_class: open
 adapter: figshare
 params:
   article: 24574879

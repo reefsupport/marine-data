@@ -1,4 +1,5 @@
 id: hicrd
+access_class: internal-only
 adapter: gdrive-public
 params:
   files:

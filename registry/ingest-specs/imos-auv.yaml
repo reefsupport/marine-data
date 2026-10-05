@@ -4,6 +4,7 @@
 # yields a manifest. The manifest (> 10 MB) lives on S3 only; pin manifest_sha256 once uploaded.
 # D-AC2: all annotated + <= 150k unannotated, <= 370k; re-select via build_imos_manifest.py --reselect-from-cache.
 id: imos-auv
+access_class: open
 adapter: manifest
 params:
   manifest: https://hel1.your-objectstorage.com/rs-storage-open/sources/imos-auv/_manifest/imos-auv-DAC2.parquet

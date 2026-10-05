@@ -1,4 +1,5 @@
 id: caddy
+access_class: restricted-nc
 adapter: http-index
 params:
   index_url: http://www.caddian.eu/

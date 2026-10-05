@@ -39,6 +39,7 @@ from ...annotation_schema import (
     normalise_split,
     write_annotations,
 )
+from ...licence_class import source_class
 from ...registry import Registry
 from ..image_labels_table import _stride, axes_resolver_for
 from ..points_table import _taxon_rank
@@ -130,7 +131,7 @@ def identity_row(
         annotator_detail=detail, ann_license=spec.ann_license, upstream_split=normalise_split(split),
         label_status="ok", individual_id=individual_id, individual_scope=spec.scope,
         attrs=json.dumps(
-            {**attrs, "species_origin": "dataset-level", "licence_class": spec.licence_class},
+            {**attrs, "species_origin": "dataset-level", "licence_class": source_class(spec.source_id, spec.licence_class)},
             sort_keys=True,
         ),
     )  # fmt: skip

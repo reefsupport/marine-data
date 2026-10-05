@@ -1,5 +1,6 @@
 # USOD10k: large underwater salient-object-detection set (RGB/GT/depth/boundary, TR/TE/VAL splits).
 id: usod10k
+access_class: internal-only
 adapter: local_dir
 params:
   path: ~/Downloads/marine-manual/usod10k/data

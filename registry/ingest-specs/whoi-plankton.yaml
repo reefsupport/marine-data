@@ -1,4 +1,5 @@
 id: whoi-plankton
+access_class: internal-only
 adapter: hf
 params:
   repo: nf-whoi/whoi-plankton

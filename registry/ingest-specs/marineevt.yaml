@@ -1,5 +1,6 @@
 # WP-6l-B (2026-09-25) new source: candidate — WP-6l-B vqa+video: event-centric underwater video QA: temporal/causal reasoning labels
 id: marineevt
+access_class: open
 adapter: hf
 params:
   repo: AnTo2209/MarineEVT

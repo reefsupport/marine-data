@@ -1,5 +1,6 @@
 # NOAA PIFSC ESD coral-bleaching photo dataset (HF, official NMFS-OSI org). Catalog marks this 'have-staged (10422 obj)' — spec written for completeness/measurement record; check S3 before re-fetching.
 id: noaa-pifsc-bleaching
+access_class: open
 adapter: hf
 license: unknown (not stated on HF card)
 attribution: NMFS-OSI
