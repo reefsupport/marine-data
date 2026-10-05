@@ -1,5 +1,13 @@
 # Taxonomy changelog
 
+## 2.2.1 — 2026-10-05
+
+PATCH-sized cut for already-landed work: crosswalk edges added after 2.2.0 was frozen. The
+frozen 2.2.0 manifest is untouched; this release freezes the working tree as it stands.
+
+- **WP-U3:** `seaview-point-labels` and `ibf-cpce-codes` crosswalks (+ vocab TSVs), no
+  nodes added and no existing edge retargeted.
+
 ## 2.2.0 — 2026-09-30
 
 MINOR: new crosswalk + vocab, no nodes/edges retargeted.
