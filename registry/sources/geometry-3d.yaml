@@ -164,15 +164,17 @@ sources:
       verified_by: "github.com/zkawfanx/Atlantis — MIT licence"
       method: licence-file
     access:
-      method: s3
-      uri: s3://rs-storage-open/sources/atlantis/zip-6fc81e3c43a5/
-      size_bytes: 1966882001  # staged tree incl. CHECKSUMS.sha256 (one bucket listing, WP-R5 2026-10-05)
+      method: api
+      uri: https://github.com/zkawfanx/Atlantis
+      size_bytes: 1962319455
       params:
-        bucket: rs-storage-open
-        endpoint: hel1.your-objectstorage.com
-        region: hel1
-        prefix: sources/atlantis/zip-6fc81e3c43a5/
-        upstream_uri: https://github.com/zkawfanx/Atlantis
+        client: atlantis
+        # Release rooting only (WP-R5b): the staged `atlantis` tree. `fetch_sample` reads the
+        # `staged_*` keys instead of the access method, so fetch dispatch stays `api`/`atlantis`.
+        staged_bucket: rs-storage-open
+        staged_endpoint: hel1.your-objectstorage.com
+        staged_region: hel1
+        staged_prefix: sources/atlantis/zip-6fc81e3c43a5/
       notes: >
         Checked 2026-08-28: sole distribution is Kaggle (zkawfanx/atlantis, 1.96GB,
         no smaller subset; verified as a real zip by reading local file headers, not
@@ -182,10 +184,11 @@ sources:
         depth map, several water-type variants), a one-to-many relationship this
         registry's stem/suffix-matching image-mask-pairs convention cannot express as
         declared. Needs both a smaller host and a different pairing rule.
-        WP-R5 (2026-10-05): the hand-downloaded archive is staged under the id `atlantis`
+        WP-R5/R5b (2026-10-05): the hand-downloaded archive is staged under the id `atlantis`
         (registry/ingest-specs/atlantis.yaml; flat `images/` of 3600 files + metadata.parquet,
-        CHECKSUMS.sha256) and this canonical entry now points at that tree (prefix +
-        root digest read from the staged CHECKSUMS.sha256), so a release build can root it.
+        CHECKSUMS.sha256) and this canonical entry's `access.params.staged_*` keys point at that tree (prefix +
+        root digest read from the staged CHECKSUMS.sha256), so a release build can root it while
+        fetch dispatch stays `api`/`atlantis`.
         The licence class is unchanged (restricted-nc, LICV 2026-10-05).
     modalities: [image]
     capabilities: [depth-estimation, image-enhancement]
