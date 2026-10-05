@@ -26,6 +26,7 @@ from pathlib import Path
 
 from .builder import SUPERVISED_DEFAULT_RATIOS, DatasetBuilder, PartialAbstainExclusion, SplitName
 from .checksums import file_digest
+from .flavours import check_profile, flavour_source_ids, release_record
 from .gate import evaluate
 from .labelcheck import release_label_gate
 from .neardup import (
@@ -445,8 +446,14 @@ def build_release(
     v2: bool = False,
     tasklabels_root: str | Path | None = None,
     digest: Callable[[Path], str] = file_digest,
+    flavour: str | None = None,
 ) -> ReleaseResult:
     """Build every registry task against a frozen split map and write the release.
+
+    ``flavour`` (WP-L1b, ``open`` | ``nc``): ship only that flavour's sources, under one of
+    its shipping profiles, into ``<out_dir>/releases/<release>/<flavour>/``; RELEASE.json
+    records the flavour, class counts and every excluded source. ``None`` (default) is the
+    unfiltered v1 build, byte-identical to before.
 
     ``tasks`` (WP-8c, charter D-X): ``"v1"`` (default) never touches the task-layer
     configs below and produces byte-identical output to before this parameter existed.
@@ -497,16 +504,24 @@ def build_release(
             "`marinedata splitmap generate`."
         )
 
+    if flavour is not None:
+        check_profile(flavour, profile)
     admitted = _admitted_source_ids(registry, roots, profile)
+    if flavour is not None:
+        admitted = flavour_source_ids(registry, admitted, flavour)
     if not admitted:
-        raise ValueError(f"no admitted source under profile {profile!r} has a resolved root")
+        raise ValueError(
+            f"no admitted source under profile {profile!r}"
+            + (f" in flavour {flavour!r}" if flavour else "")
+            + " has a resolved root"
+        )
     # WP-7: the label gate — 0 silent drops, >= 95% mapped (or a documented exception),
     # every canonical taxon node anchored. Skipped for in-memory registries (no root).
     taxonomy_stamp = {} if allow_unmapped else release_label_gate(registry, admitted)
     admitted_roots = {source_id: Path(roots[source_id]) for source_id in admitted}
     never_eval_sources = _never_eval_source_ids(registry, admitted)
 
-    release_root = Path(out_dir) / "releases" / release
+    release_root = Path(out_dir) / "releases" / release / (flavour or "")
     manifests_dir = release_root / "tasks"
     manifests_dir.mkdir(parents=True, exist_ok=True)
 
@@ -646,6 +661,8 @@ def build_release(
         from .decon import run_decon_gate
 
         run_decon_gate(release_root, registry, admitted_roots, dedup_crop=dedup_crop)
+    if flavour is not None:
+        release_json.update(release_record(registry, flavour, profile, admitted))
     release_json_text = json.dumps(release_json, indent=2, sort_keys=True) + "\n"
     (release_root / "RELEASE.json").write_text(release_json_text)
 
@@ -655,7 +672,7 @@ def build_release(
 
         # INT-core3c: never the cwd — explicit root, else derived from the registry.
         base_dir = resolve_tasklabels_root(registry, tasklabels_root)
-        results = build_all_configs(registry, base_dir)
+        results = build_all_configs(registry, base_dir, flavour)
         write_configs(results, release_root / "task_layers")
         task_layer_configs = {config_id: result.n_images for config_id, result in results.items()}
 

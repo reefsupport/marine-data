@@ -16,6 +16,7 @@ import pytest
 import marinedata.cli_release as cli_release
 from marinedata.cli import main
 from marinedata.enums import (
+    AccessClass,
     AccessMethod,
     Capability,
     LegalBasis,
@@ -48,6 +49,7 @@ def _source() -> Source:
         description="Fixture staged source for the release-build gate test.",
         version="v1",
         licence=Licence(id="CC-BY-4.0", name="CC BY 4.0", tier=Tier.PERMISSIVE),
+        access_class=AccessClass.OPEN,
         verification=Verification(
             verified_on=date(2026, 8, 17), verified_by="synthetic fixture", method="licence-file"
         ),
@@ -66,14 +68,24 @@ def _registry() -> Registry:
     schema = LabelSchema(id="rs-benthic-v1", name="Fixture", axes=(Axis.TAXON,), nodes=())
     tasks = {"pretrain-set": TaskSpec(id="pretrain-set", kind=TaskKind.SELF_SUPERVISED)}
     profile = Profile(
-        id="research",
+        id="ship-open",
         description="fixture",
-        allow_tiers=(Tier.OWN, Tier.PERMISSIVE, Tier.COPYLEFT, Tier.NONCOMMERCIAL),
+        allow_tiers=(Tier.OWN, Tier.PERMISSIVE, Tier.COPYLEFT),
+        allow_access_classes=("open",),
     )
     return Registry(
         sources={SOURCE_ID: _source()},
         licences={},
-        profiles={"research": profile},
+        profiles={
+            "ship-open": profile,
+            "ship-noncommercial": Profile(
+                id="ship-noncommercial",
+                description="fixture",
+                allow_tiers=(Tier.OWN, Tier.PERMISSIVE, Tier.COPYLEFT, Tier.NONCOMMERCIAL),
+                allow_access_classes=("open", "restricted-nc"),
+                public_release=True,
+            ),
+        },
         schemas={"rs-benthic-v1": schema},
         tasks=tasks,
     )
@@ -134,8 +146,10 @@ def _run(monkeypatch: pytest.MonkeyPatch, tmp_path: Path, split_map: Path, extra
             str(split_map),
             "--out",
             str(tmp_path / "out"),
+            "--flavour",
+            "open",
             "--profile",
-            "research",
+            "ship-open",
             "--local",
             f"{SOURCE_ID}={root}",
             *extra,
@@ -241,8 +255,10 @@ def test_fetch_failure_for_admitted_source_fails_the_build(
             str(split_map),
             "--out",
             str(out_dir),
+            "--flavour",
+            "open",
             "--profile",
-            "research",
+            "ship-open",
             "--generate-split-map",
         ]
     )

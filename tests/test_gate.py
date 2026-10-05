@@ -15,6 +15,7 @@ import pytest
 
 from marinedata import LicenceViolation, Registry, evaluate
 from marinedata.enums import (
+    AccessClass,
     AccessMethod,
     Capability,
     LegalBasis,
@@ -33,6 +34,15 @@ from marinedata.models import (
     Verification,
 )
 
+_CLASS_OF_TIER = {
+    Tier.OWN: AccessClass.OPEN,
+    Tier.PERMISSIVE: AccessClass.OPEN,
+    Tier.COPYLEFT: AccessClass.OPEN,
+    Tier.NONCOMMERCIAL: AccessClass.RESTRICTED_NC,
+    Tier.TDM_ONLY: AccessClass.UNKNOWN,
+    Tier.PROHIBITED: AccessClass.UNKNOWN,
+}
+
 
 def make_source(
     *,
@@ -42,6 +52,7 @@ def make_source(
     legal_basis: LegalBasis = LegalBasis.LICENCE,
     disputed: bool = False,
     notes: str | None = "test entry",
+    access_class: AccessClass | None = None,
 ) -> Source:
     """Minimal valid source, varied on the axes the gate cares about."""
     return Source(
@@ -57,6 +68,7 @@ def make_source(
             dispute_note="conflicting sources" if disputed else None,
         ),
         legal_basis=legal_basis,
+        access_class=access_class or _CLASS_OF_TIER[tier],
         provenance=Provenance.PUBLIC,
         access=Access(method=AccessMethod.HTTP, uri="https://example.invalid"),
         modalities=(Modality.IMAGE,),
@@ -77,6 +89,7 @@ EXPECTED = {
     # profile            T0     T1     T2     T3     T4     TX
     "ship-commercial": (True, True, False, False, False, False),
     "ship-open": (True, True, True, False, False, False),
+    "ship-noncommercial": (True, True, True, True, False, False),
     "research": (True, True, True, True, False, False),
     "pretrain-eu": (True, True, True, True, True, False),
 }

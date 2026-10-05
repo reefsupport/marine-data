@@ -1,0 +1,15 @@
+# Release flavours (WP-L1b): one HF repo each, no duplication between them.
+#   open -> ungated, commercial use OK, class `open` rows only.
+#   nc   -> gated, the `restricted-nc` DELTA only. open + nc together = "full" (non-commercial).
+# restricted-nd, internal-only, unknown and per-row-licence sources ship in neither flavour.
+takedown_url: https://github.com/reefsupport/marine-data/issues
+
+flavours:
+  open:
+    repo_id: reefsupport/marine-data
+    profile: ship-open
+    profiles: [ship-open, ship-commercial]
+  nc:
+    repo_id: reefsupport/marine-data-nc
+    profile: ship-noncommercial
+    profiles: [ship-noncommercial]

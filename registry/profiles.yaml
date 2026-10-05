@@ -13,6 +13,7 @@ profiles:
       the default for anything customer-facing.
     allow_tiers: [T0_OWN, T1_PERMISSIVE]
     deny_flags: [no_derivatives, provenance_defective, contract_gated]
+    allow_access_classes: [open]
 
   - id: ship-open
     description: >
@@ -20,7 +21,20 @@ profiles:
       because the share-alike obligation is discharged by the release itself.
     allow_tiers: [T0_OWN, T1_PERMISSIVE, T2_COPYLEFT]
     deny_flags: [no_derivatives, provenance_defective, contract_gated]
+    allow_access_classes: [open]
     weights_licence: CC-BY-SA-4.0
+
+  - id: ship-noncommercial
+    description: >
+      Public NON-COMMERCIAL release (the gated `nc` flavour, WP-L1b). Admits the open tiers
+      plus T3 noncommercial sources, bars derivatives-forbidden, provenance-defective and
+      contract-gated licences, and holds disputed / secondary-verified licences out exactly
+      like any other public release. Only access classes open and restricted-nc are
+      admitted; the `nc` flavour then ships the restricted-nc DELTA only.
+    allow_tiers: [T0_OWN, T1_PERMISSIVE, T2_COPYLEFT, T3_NONCOMMERCIAL]
+    deny_flags: [no_derivatives, provenance_defective, contract_gated]
+    allow_access_classes: [open, restricted-nc]
+    public_release: true
 
   - id: research
     description: >

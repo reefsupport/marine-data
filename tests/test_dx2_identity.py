@@ -269,7 +269,7 @@ def test_manifest_only_task_files_match_full_build(
     monkeypatch.setattr(cli_release, "checksums_digest", _local_checksums)
     full, lite = tmp_path / "full", tmp_path / "lite"
     split_map = full / "SPLIT_MAP.json"
-    base = ["release", "build", "--release", "r", "--profile", "research", *local]
+    base = ["release", "build", "--release", "r", "--flavour", "open", "--profile", "ship-open", *local]  # noqa: E501
     assert (
         main(
             [
@@ -286,5 +286,5 @@ def test_manifest_only_task_files_match_full_build(
         == 0
     )
     assert main([*base, "--out", str(lite), "--split-map", str(split_map), "--manifest-only"]) == 0
-    status = compare_task_dirs(full / "releases" / "r" / "tasks", lite / "releases" / "r" / "tasks")
+    status = compare_task_dirs(full / "releases" / "r" / "open" / "tasks", lite / "releases" / "r" / "open" / "tasks")  # noqa: E501
     assert status and set(status.values()) == {"identical"}, status

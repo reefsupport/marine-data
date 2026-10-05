@@ -49,6 +49,7 @@ from .hf_export import (
     SampleRow as ExportSampleRow,
 )
 from .hf_parquet import ConfigSpec, ExportRow, plan_config, write_shard
+from .licence_class import flavour_filter, resolve_row_class
 from .registry import Registry, Source
 
 METADATA = "metadata"
@@ -58,6 +59,7 @@ METADATA_COLUMNS: tuple[tuple[str, str], ...] = (
     ("source_id", "string"),
     ("source_version", "string"),
     ("license", "string"),
+    ("licence_class", "string"),
     ("attribution", "string"),
     ("upstream_id", "string"),
     ("upstream_url", "string"),
@@ -244,8 +246,12 @@ def build_rows(
     backfill_root: Path = BACKFILL_ROOT,
     sample_labels: Mapping[str, Sequence[str]] | None = None,
     cr_en_labels: frozenset[str] = frozenset(),
+    flavour: str | None = None,
 ) -> list[dict]:
-    """``sample_labels`` (``image_sha256 -> label strings``) + ``cr_en_labels`` feed the
+    """``flavour`` (``open`` | ``nc``) keeps only the rows that flavour may ship; every row
+    carries ``licence_class`` (``resolve_row_class``: the source's class, stricter if its own
+    licence string says so; a per-row source with no row licence is ``unknown``).
+    ``sample_labels`` (``image_sha256 -> label strings``) + ``cr_en_labels`` feed the
     WP-2b CR/EN location gate per sample; v1 has no species-level per-sample labels, so the
     default is a no-op there. Geography comes from :mod:`marinedata.geo_backfill`."""
     rows: list[dict] = []
@@ -276,6 +282,11 @@ def build_rows(
                 "source_id": ref.source_id,
                 "source_version": source.version,
                 "license": source.licence.id,
+                "licence_class": resolve_row_class(
+                    getattr(source, "access_class", None),
+                    source.licence.id,
+                    per_row=getattr(source, "licence_per_row", False),
+                ),
                 "attribution": attribution_for(source),
                 "upstream_id": staged_row.get("upstream_path"),
                 "upstream_url": None,
@@ -307,6 +318,8 @@ def build_rows(
                 "quality_flags": ",".join(q.get("flags") or []) or None,
             }
         )
+    if flavour is not None:
+        rows = flavour_filter(rows, flavour)
     return sorted(rows, key=lambda r: r["image_sha256"])
 
 
@@ -488,7 +501,8 @@ def main(argv: list[str] | None = None) -> int:
     from .geo_meow import load_meow_polygons
 
     polygons = load_meow_polygons(args.meow) if args.meow and args.meow.is_file() else ()
-    rows = build_rows(refs, registry, args.stage_root, quality_by_sha, polygons)
+    flavour = json.loads((args.release_dir / "RELEASE.json").read_text()).get("flavour")
+    rows = build_rows(refs, registry, args.stage_root, quality_by_sha, polygons, flavour=flavour)
     split_by_sha = {r.sha256: r.split for r in refs}  # already HF split names (build_layout)
     for row in rows:
         row["_split"] = split_by_sha[row["image_sha256"]]

@@ -10,6 +10,7 @@ from __future__ import annotations
 
 import json
 
+from .hf_card_flavour import license_header, tail_sections, top_notice
 from .hf_export import (
     DEFAULT_EXCLUDE_CONFIGS,
     DEFAULT_REPO_ID,
@@ -83,6 +84,8 @@ def render_card(
     excluded: dict[str, str] | None = None,
     metadata_licence_rows: list[str] | None = None,
     task_layers: dict | None = None,
+    flavour: str | None = None,
+    takedown_url: str | None = None,
 ) -> str:
     near = release["near_dup"]
     empty_note = [
@@ -102,9 +105,11 @@ def render_card(
     yaml = [
         "---",
         f"pretty_name: {json.dumps(pretty_name)}",
-        "license: other",
-        "license_name: mixed-per-source",
-        "license_link: LICENSE",
+        *(
+            license_header(flavour)
+            if flavour
+            else ["license: other", "license_name: mixed-per-source", "license_link: LICENSE"]
+        ),
         "task_categories:",
         "- image-classification",
         "- image-segmentation",
@@ -120,6 +125,7 @@ def render_card(
     ]
     body = [
         f"# {pretty_name}",
+        *(top_notice(flavour, repo_id) if flavour else []),
         "",
         f"Release `{release['release']}` of the Reef Support coral-reef imagery corpus: "
         f"{n_images} unique images from {len(sources)} sources, one frozen split shared by "
@@ -224,6 +230,8 @@ def render_card(
         "",
         *_tl.card_section(task_layers),
     ]
+    if flavour:
+        body += tail_sections(flavour, repo_id, sources, takedown_url or "")
     return "\n".join(yaml + body)
 
 
@@ -306,6 +314,12 @@ def render_licence(sources: list[dict]) -> str:
     return "\n".join(lines) + "\n"
 
 
+def _attribution(source) -> str:
+    from .metadata_release import attribution_for
+
+    return attribution_for(source)
+
+
 def source_rows(registry, release: dict, image_counts: dict[str, int]) -> list[dict]:
     """Card/licence rows for every release source, licence exactly as the registry states."""
     rows = []
@@ -322,6 +336,7 @@ def source_rows(registry, release: dict, image_counts: dict[str, int]) -> list[d
                 "licence_note": licence.notes,
                 "tier": licence.tier.value,
                 "citation": source.citation or source.homepage,
+                "attribution": _attribution(source),
                 "images": image_counts.get(entry["id"], 0),
             }
         )
@@ -342,7 +357,10 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--summary", type=Path, required=True)
     parser.add_argument("--out", type=Path, required=True)
     parser.add_argument("--pretty-name", default="Reef Support coral-reef imagery v1")
-    parser.add_argument("--repo-id", default=DEFAULT_REPO_ID)
+    parser.add_argument("--repo-id", default=None, help="default: the flavour's repo id")
+    parser.add_argument(
+        "--flavour", choices=("open", "nc"), default=None, help="default: RELEASE.json's flavour"
+    )
     parser.add_argument(
         "--exclude-configs",
         default=",".join(DEFAULT_EXCLUDE_CONFIGS),
@@ -352,6 +370,10 @@ def main(argv: list[str] | None = None) -> int:
 
     summary = json.loads(args.summary.read_text())
     release = json.loads((args.release_dir / "RELEASE.json").read_text())
+    flavour = args.flavour or release.get("flavour")
+    if flavour and release.get("flavour") not in (None, flavour):
+        parser.error(f"--flavour {flavour} but the release was built as {release['flavour']}")
+    repo_id = args.repo_id or release.get("repo_id") or DEFAULT_REPO_ID
     counts: dict[str, int] = {}
     for path in sorted((args.out / "data" / IMAGES).glob("*.parquet")):
         for ids in pq.read_table(path, columns=["source_ids"]).column(0).to_pylist():
@@ -371,7 +393,9 @@ def main(argv: list[str] | None = None) -> int:
             release,
             sources,
             pretty_name=args.pretty_name,
-            repo_id=args.repo_id,
+            repo_id=repo_id,
+            flavour=flavour,
+            takedown_url=release.get("takedown_url"),
             unsupervised=empty,
             excluded=excluded,
             metadata_licence_rows=licence_rows,

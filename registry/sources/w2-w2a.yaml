@@ -1272,7 +1272,7 @@ sources:
   homepage: http://www.caddian.eu/
   notes: 'Not yet ingested (access: pending-ingest per S57 catalog planning; checksums unset until staged).
     needs_adapter:site-scrape — caddian.eu root and a guessed /index.php/downloads path (404) exposed
-    no direct zip links on this pass; the catalog''s ''zip links'' note implies a subpage not yet located'
+    no direct zip links on this pass; the catalog''s ''zip links'' note implies a subpage not yet located. access_class restricted-nc is held until the authors confirm the licence (lic-A evidence says CC-BY-4.0, unconfirmed; WP-L1b decision 2026-10-05)'
   items: 10000
   items_note: stereo pairs (est, catalog)
   annotations:

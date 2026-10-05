@@ -443,6 +443,14 @@ class Profile(_Frozen):
     require_legal_opinion: bool = False
     """TDM-based profiles cannot be instantiated without a counsel opinion reference."""
 
+    allow_access_classes: tuple[str, ...] = ()
+    """WP-L1b: the ``access_class`` values this profile admits (empty = no class bar). A
+    shipping profile sets it so the tier gate and the release flavour never disagree."""
+
+    public_release: bool = False
+    """WP-L1b: the output is published even though ``T3_NONCOMMERCIAL`` is allowed (the NC
+    flavour), so the disputed / secondary-verification bars apply as on any shipping profile."""
+
     retention_days: int | None = None
     weights_licence: str | None = None
     """If set, derivative weights must be released under this licence for the profile

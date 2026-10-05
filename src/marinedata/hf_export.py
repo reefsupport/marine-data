@@ -396,7 +396,17 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--out", type=Path, required=True)
     parser.add_argument("--summary", type=Path, required=True)
     parser.add_argument("--sample", action="store_true", help="one shard per config only")
-    parser.add_argument("--profile", default="research")
+    parser.add_argument(
+        "--flavour",
+        choices=("open", "nc"),
+        default=None,
+        help="open -> reefsupport/marine-data, nc -> reefsupport/marine-data-nc; must match "
+        "the --release-dir's RELEASE.json (default: that file's flavour; collect_rows stays "
+        "unfiltered for its manifest check)",
+    )
+    parser.add_argument(
+        "--profile", default=None, help="default: the profile recorded in RELEASE.json"
+    )
     parser.add_argument(
         "--exclude-configs",
         default=",".join(DEFAULT_EXCLUDE_CONFIGS),
@@ -405,13 +415,26 @@ def main(argv: list[str] | None = None) -> int:
     args = parser.parse_args(argv)
 
     registry = Registry.load()
+    release = json.loads((args.release_dir / "RELEASE.json").read_text())
+    flavour = args.flavour or release.get("flavour")
+    if args.flavour and release.get("flavour") != args.flavour:
+        raise HFExportError(
+            f"--flavour {args.flavour} but {args.release_dir} was built as flavour "
+            f"{release.get('flavour')!r}"
+        )
+    profile = args.profile or release.get("profile") or "research"
     roots = _roots(args.release_dir, cache_root())
-    rows = collect_rows(registry, roots, args.release_dir, args.profile)
+    rows = collect_rows(registry, roots, args.release_dir, profile)
     exclude = [c for c in args.exclude_configs.split(",") if c]
     rows = drop_excluded(rows, exclude)
     pseudo = frozenset(s for s in roots if PSEUDO_TAG in registry.source(s).tags)
-    layout = build_layout(rows, pseudo, task_layers=_tl.read_task_layers(args.release_dir))
+    layout = build_layout(
+        rows, pseudo, task_layers=_tl.read_task_layers(args.release_dir), flavour=flavour
+    )
     summary = export(layout, args.out, sample=args.sample)
+    if flavour:
+        summary["flavour"] = flavour
+        summary["repo_id"] = release["repo_id"]
     summary["per_task_embedding_bytes"] = per_task_embedding_bytes(rows)
     args.summary.parent.mkdir(parents=True, exist_ok=True)
     args.summary.write_text(json.dumps(summary, indent=1, sort_keys=True))

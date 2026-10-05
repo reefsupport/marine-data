@@ -71,8 +71,9 @@ def evaluate(source: Source, profile: Profile, *, legal_opinion_ref: str | None 
         )
 
     # 2. Disputed verification blocks anything that ships.
-    ships = any(t in profile.allow_tiers for t in (Tier.PERMISSIVE, Tier.COPYLEFT)) and (
-        Tier.NONCOMMERCIAL not in profile.allow_tiers
+    ships = profile.public_release or (
+        any(t in profile.allow_tiers for t in (Tier.PERMISSIVE, Tier.COPYLEFT))
+        and Tier.NONCOMMERCIAL not in profile.allow_tiers
     )
     if source.verification.disputed and ships:
         note = " ".join((source.verification.dispute_note or "").split())
@@ -101,6 +102,16 @@ def evaluate(source: Source, profile: Profile, *, legal_opinion_ref: str | None 
             False,
             f"{source.id}: tier {lic.tier.value} not permitted by profile "
             f"'{profile.id}' (allows: {allowed}).",
+        )
+
+    # 3b. Access class (WP-L1b): a shipping profile admits only the classes its flavour ships.
+    allowed_classes = profile.allow_access_classes
+    if allowed_classes and source.access_class.value not in allowed_classes:
+        return Decision(
+            source.id,
+            False,
+            f"{source.id}: access_class {source.access_class.value} not permitted by profile "
+            f"'{profile.id}' (allows: {', '.join(profile.allow_access_classes)}).",
         )
 
     # 4. Flags denied by the profile.

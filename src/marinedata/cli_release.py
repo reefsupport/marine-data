@@ -22,6 +22,7 @@ from .decon import DeconError
 from .dedup.groups import DedupGateError
 from .fetch import FetchError, cache_root, fetch_sample
 from .fetchers_remote import _is_pinned_staged_tree
+from .flavours import SPLIT_MAP_PROFILE, check_profile, flavour_spec, ships_in
 from .gate import evaluate
 from .manifest_identity import checksums_digest
 from .neardup import NearDupConfig, NearDupError, default_workers, pil_version
@@ -59,7 +60,9 @@ class ReleaseFetchError(Exception):
         super().__init__(f"failed to fetch {len(failures)} admitted source(s): {detail}")
 
 
-def _resolve_roots(registry: Registry, profile: str, local: dict[str, Path]) -> dict[str, Path]:
+def _resolve_roots(
+    registry: Registry, profile: str, local: dict[str, Path], flavour: str | None = None
+) -> dict[str, Path]:
     """Every admitted source's local root: a ``--local`` override first, else a fetched
     pinned staged tree. A fetch failure for an admitted source raises
     :class:`ReleaseFetchError` naming every failed source — the build must fail closed
@@ -72,6 +75,8 @@ def _resolve_roots(registry: Registry, profile: str, local: dict[str, Path]) -> 
             continue
         if not evaluate(source, prof).allowed:
             continue
+        if flavour is not None and not ships_in(registry, source.id, flavour):
+            continue  # never fetch another flavour's bytes
         if not _is_pinned_staged_tree(source):
             continue
         try:
@@ -86,7 +91,11 @@ def _resolve_roots(registry: Registry, profile: str, local: dict[str, Path]) -> 
 
 
 def _cached_roots(
-    registry: Registry, profile: str, local: dict[str, Path], only: set[str] | None
+    registry: Registry,
+    profile: str,
+    local: dict[str, Path],
+    only: set[str] | None,
+    flavour: str | None = None,
 ) -> dict[str, Path]:
     """``--manifest-only`` roots: a ``--local`` override, else the source's already-staged
     tree under :func:`cache_root` — NEVER a fetch. ``only`` (from ``--sources-from``)
@@ -99,6 +108,8 @@ def _cached_roots(
         if source.id in roots or (only is not None and source.id not in only):
             continue
         if not evaluate(source, prof).allowed or not _is_pinned_staged_tree(source):
+            continue
+        if flavour is not None and not ships_in(registry, source.id, flavour):
             continue
         cached = cache_root() / source.id
         if (cached / "metadata.parquet").is_file():
@@ -122,6 +133,21 @@ def _sources_from(path: str | None) -> set[str] | None:
 
 def _cmd_release_build(args: argparse.Namespace) -> int:
     registry = Registry.load()
+    flavour = getattr(args, "flavour", None)
+    if flavour is None:
+        print(
+            "release build: --flavour open|nc is required (open = ungated repo, "
+            "nc = gated non-commercial delta)",
+            file=sys.stderr,
+        )
+        return 1
+    if args.profile is None:
+        args.profile = flavour_spec(flavour).profile
+    try:
+        check_profile(flavour, args.profile)
+    except ValueError as exc:
+        print(f"release build: {exc}", file=sys.stderr)
+        return 1
     try:
         local = _parse_local(args.local)
     except ValueError as exc:
@@ -136,10 +162,12 @@ def _cmd_release_build(args: argparse.Namespace) -> int:
         return 1
     try:
         if args.manifest_only:
-            roots = _cached_roots(registry, args.profile, local, _sources_from(args.sources_from))
+            roots = _cached_roots(
+                registry, args.profile, local, _sources_from(args.sources_from), flavour
+            )
             digest = checksums_digest(registry, roots)
         else:
-            roots = _resolve_roots(registry, args.profile, local)
+            roots = _resolve_roots(registry, args.profile, local, flavour)
     except ValueError as exc:
         print(f"release build: {exc}", file=sys.stderr)
         return 1
@@ -182,11 +210,13 @@ def _cmd_release_build(args: argparse.Namespace) -> int:
             return 1
         skipped_sources: dict[str, str] = {}
         try:
+            # One frozen map serves both flavours: generate it over every open + nc source.
+            map_roots = _resolve_roots(registry, SPLIT_MAP_PROFILE, local)
             stats = generate_split_map(
                 registry,
                 out=split_map_path,
-                roots=roots,
-                profile=args.profile,
+                roots=map_roots,
+                profile=SPLIT_MAP_PROFILE,
                 ratios=ratios,
                 seed=args.seed,
                 min_groups=args.min_groups,
@@ -195,7 +225,7 @@ def _cmd_release_build(args: argparse.Namespace) -> int:
                 skipped=skipped_sources,
                 near_dup=near_dup,
             )
-        except NearDupError as exc:
+        except (NearDupError, ReleaseFetchError) as exc:
             print(f"release build: {exc}", file=sys.stderr)
             return 1
         print(
@@ -247,6 +277,7 @@ def _cmd_release_build(args: argparse.Namespace) -> int:
             v2=args.v2,
             tasklabels_root=args.tasklabels_root,
             digest=digest,
+            flavour=flavour,
         )
     except (NearDupError, DedupGateError, DeconError) as exc:
         print(f"release build: {exc}", file=sys.stderr)
@@ -345,7 +376,18 @@ def add_release_subparser(sub: argparse._SubParsersAction) -> None:
     )
     p_build.add_argument("--out", default=".", help="Output root (default: current directory)")
     p_build.add_argument(
-        "--profile", default="research", help="Release profile to admit sources under"
+        "--flavour",
+        choices=("open", "nc"),
+        default=None,
+        help="REQUIRED. open = class-open sources (ungated repo reefsupport/marine-data); nc = the "
+        "restricted-nc delta (gated repo reefsupport/marine-data-nc). Writes "
+        "<out>/releases/<release>/<flavour>/",
+    )
+    p_build.add_argument(
+        "--profile",
+        default=None,
+        help="Shipping profile to admit sources under (default: the flavour's own, "
+        "registry/flavours.yaml)",
     )
     p_build.add_argument(
         "--local",
