@@ -185,19 +185,31 @@ _COVERAGE_EXCEPTIONS: dict[str, str] = {
 }
 
 
+# Upstream directory labels that name a canonical split but that the product-level
+# ``normalise_split`` deliberately does not alias (``te``/``tr`` would also match
+# unrelated path parts in ``adapters.decode``). USOD10K names its dirs TR/VAL/TE.
+_UPSTREAM_LABEL_ALIASES = {"tr": "train", "te": "test"}
+
+
+def _norm_label(value: str) -> str | None:
+    """Canonical split for an upstream label: the shared normaliser, then the
+    test-local upstream-dir aliases above."""
+    return normalise_split(value) or _UPSTREAM_LABEL_ALIASES.get(value.strip().lower())
+
+
 def _expected_eval_count(entry) -> int | None:
     """Sum of published ``counts`` entries that correspond to this benchmark's eval
     splits (``eval_split`` + ``heldout_val``), matched by exact string or, failing
     that, by :func:`normalise_split` so ``val``/``validation``/``test``/``eval``
     variants line up. ``None`` when no matching integer-valued count exists."""
     raw_targets = entry.upstream_split.eval_splits  # {eval_split, heldout_val} - {None}
-    norm_targets = {t for t in (normalise_split(s) for s in raw_targets) if t is not None}
+    norm_targets = {t for t in (_norm_label(s) for s in raw_targets) if t is not None}
     total = 0
     found = False
     for key, n in entry.upstream_split.counts.items():
         if n is None or not isinstance(n, int):
             continue
-        norm_key = normalise_split(key)
+        norm_key = _norm_label(key)
         if key in raw_targets or (norm_key is not None and norm_key in norm_targets):
             total += n
             found = True
@@ -211,10 +223,10 @@ def _split_in_eval_targets(split: str, entry) -> bool:
     raw_targets = entry.upstream_split.eval_splits
     if "all" in raw_targets or split in raw_targets:
         return True
-    norm_split = normalise_split(split)
+    norm_split = _norm_label(split)
     if norm_split is None:
         return False
-    norm_targets = {t for t in (normalise_split(s) for s in raw_targets) if t is not None}
+    norm_targets = {t for t in (_norm_label(s) for s in raw_targets) if t is not None}
     return norm_split in norm_targets
 
 

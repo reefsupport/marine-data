@@ -113,8 +113,8 @@ benchmarks:
      split_verified: false, verified_by: "not fetched; counts from the paper — re-checked 2026-09-25: GitHub tree has no annotation JSON (Drive-only) and the arXiv abstract page (2106.05681) does not give per-split counts", obtain: {status: w2, via: "Drive link in the repo"},
      policy: route-to-our-test, policy_reason: "fish/echinoderm det", chain: [c6]}
   - {id: usod10k, name: USOD10K, task: salient, catalog_id: usod10k, registry_id: null,
-     upstream_split: {rule: "TR/VAL/TE dirs", eval_split: TE, heldout_val: VAL, counts: {train: 7178, val: 1026, test: 2051}, definition_url: "https://github.com/LinHong-HIT/USOD10K", image_subdir: RGB},
-     split_verified: true, verified_by: "https://raw.githubusercontent.com/LinHong-HIT/USOD10K/main/README.md (2026-09-25): folder tree names USOD10K-TR / USOD10K-Val / USOD10K-TE and states the ~7:2:1 split; per-split counts still from the paper, not enumerated in the README", obtain: {status: w2, via: "Drive links"},
+     upstream_split: {rule: "TR/VAL/TE dirs", eval_split: TE, heldout_val: VAL, counts: {train: 7178, val: 2051, test: 1026}, definition_url: "https://github.com/LinHong-HIT/USOD10K", image_subdir: RGB},
+     split_verified: true, verified_by: "https://raw.githubusercontent.com/LinHong-HIT/USOD10K/main/README.md (2026-09-25): folder tree names USOD10K-TR / USOD10K-Val / USOD10K-TE and states the ~7:2:1 split; per-split counts (TR 7178 / VAL 2051 / TE 1026) enumerated from the staged directories, consistent with the README ~7:2:1", obtain: {status: w2, via: "Drive links"},
      policy: route-to-our-test, policy_reason: "salient + depth", chain: [c7]}
   - {id: lsui, name: LSUI, task: enhancement, catalog_id: lsui, registry_id: null,
      upstream_split: {rule: "U-shape Transformer protocol: 3879 train / 400 test (Test-L400)", eval_split: test, heldout_val: null, counts: {train: 3879, test: 400}, definition_url: "https://github.com/LintaoPeng/U-shape_Transformer_for_Underwater_Image_Enhancement"},
