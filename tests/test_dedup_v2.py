@@ -252,8 +252,8 @@ def test_cli_gate(tmp_path: Path) -> None:
     import pyarrow.parquet as pq
 
     rel = tmp_path / "rel"
-    (rel / "manifests").mkdir(parents=True)
-    (rel / "manifests" / "t.tsv").write_text("image_sha256\tsplit\na\ttrain\nb\ttest\n")
+    (rel / "tasks").mkdir(parents=True)
+    (rel / "tasks" / "t.tsv").write_text("image_sha256\tsplit\na\ttrain\nb\ttest\n")
     groups = tmp_path / "groups.parquet"
     pq.write_table(
         pa.table(
