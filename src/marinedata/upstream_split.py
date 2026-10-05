@@ -1,7 +1,8 @@
 """Upstream split names -> ours (WP-R2b step 2, normaliser half).
 
 ``TEST``/``Test``/``testing`` -> ``test``; ``val``/``valid``/``validation`` -> ``val``;
-``train``/``training`` -> ``train``; anything else (``dev``, ``trainval``, empty) -> ``None`` (unknown, never guessed).
+``train``/``training`` -> ``train``; anything else (``dev``, ``trainval``, empty) -> ``None``
+(unknown, never guessed).
 :func:`upstream_test_groups` is the input a "honour upstream test" split rule needs: every split
 group that contains at least one upstream-test row goes to OUR test split as a whole group.
 NOT yet wired into the split allocator (see the WP-R2b report).
