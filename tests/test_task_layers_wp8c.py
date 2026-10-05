@@ -158,6 +158,7 @@ def test_build_all_configs_and_rollup(tmp_path, registry):
         "benthic-coarse",
         "benthic-cover",
         "bleaching",
+        "boxes",
     }
 
     points = results["points"]

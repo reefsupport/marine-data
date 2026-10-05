@@ -28,6 +28,7 @@ from ..annotation_schema import annotator_from_origin
 from ..registry import Registry
 from ..schema import Axis
 from ..tables import _require_pyarrow
+from .boxes_table import BOX_SOURCES
 from .masks_table import MASK_SOURCES
 from .rollup import MIXED, UNKNOWN, rollup_counts
 
@@ -35,7 +36,7 @@ BENTHIC_COARSE_TASK = "benthic-coarse"
 BLEACHING_TASK = "bleaching-condition"
 HEALTH_TASK = "coral-health-binary"
 
-CONFIG_IDS = ("points", "vqa", "semseg", "benthic-coarse", "benthic-cover", "bleaching")
+CONFIG_IDS = ("points", "vqa", "semseg", "benthic-coarse", "benthic-cover", "bleaching", "boxes")
 
 # WP-8e-resume (manager decision 3): the staged point/mask sources each config reads.
 POINT_SOURCES = ("reefolution", "mermaid-aws")
@@ -44,6 +45,8 @@ POINT_SOURCES = ("reefolution", "mermaid-aws")
 # pseudo-label, a 3-class and a scene-segmentation source must not feed cover).
 SEMSEG_SOURCES = tuple(MASK_SOURCES)
 ROLLUP_MASK_SOURCES = ("coralscapes", "reef-support-benthic-own")
+# WP-U6a: registry-driven like masks: every source with a unified ``boxes`` producer.
+BOX_CONFIG_SOURCES = tuple(BOX_SOURCES)
 # WP-8e-resume (manager decision 2): bleaching is a headline reef task with its own config.
 BLEACHING_SOURCES = (
     "noaa-pifsc-bleaching",
@@ -180,6 +183,13 @@ def _annotation_image_labels(base_dir: Path, source_id: str) -> list[dict]:
     """The unified ``image_labels`` rows of ``source_id`` (newest ``_annotations/image_labels/<source>/<version>.parquet``)."""  # noqa: E501
     root = base_dir / "_annotations" / "image_labels" / source_id
     files = sorted(root.glob("*.parquet")) if root.is_dir() else []
+    return [r for r in _read_parquet(files[-1]) if r.get("image_sha256")] if files else []
+
+
+def _annotation_boxes(base_dir: Path, source_id: str) -> list[dict]:
+    """The unified ``boxes`` rows of ``source_id`` (newest ``_annotations/boxes/<source>/<version>.parquet``)."""  # noqa: E501
+    root = base_dir / "_annotations" / "boxes" / source_id
+    files = sorted(p for p in root.glob("*.parquet") if not p.name.endswith(".pending.parquet"))
     return [r for r in _read_parquet(files[-1]) if r.get("image_sha256")] if files else []
 
 
@@ -568,6 +578,30 @@ def build_bleaching_config(registry: Registry, base_dir: str | Path) -> ConfigRe
     )
 
 
+def build_boxes_config(registry: Registry, base_dir: str | Path) -> ConfigResult:
+    """``boxes``: every unified ``boxes`` row (xyxy normalised + pixel columns, native label,
+    resolve fields, ``annotator_type``, ``ann_license``, ``attrs.licence_class`` lifted to a
+    ``licence_class`` column so the open / restricted split is a filter, not a re-parse).
+    ``unmapped_by_source`` is the fraction of boxes with ``match_type == unmapped``."""
+    base_dir = Path(base_dir)
+    label_status = _load_label_status(base_dir)
+    rows: list[dict] = []
+    unmapped: dict[str, float] = {}
+    for source_id in BOX_CONFIG_SOURCES:
+        records = _annotation_boxes(base_dir, source_id)
+        for r in records:
+            rows.append(
+                {
+                    **r,
+                    "licence_class": _attrs(r).get("licence_class"),
+                    "label_status": label_status.get(r["image_sha256"], r["label_status"]),
+                }
+            )
+        if records:
+            unmapped[source_id] = sum(r["match_type"] == "unmapped" for r in records) / len(records)
+    return ConfigResult("boxes", tuple(rows), unmapped)
+
+
 def assert_no_mixed_origin_in_eval(
     rows: list[dict], split_of: Mapping[str, str], *, train_split: str = "train"
 ) -> None:
@@ -600,6 +634,7 @@ def build_all_configs(registry: Registry, base_dir: str | Path) -> dict[str, Con
         "benthic-coarse": build_benthic_coarse_config(registry, base_dir),
         "benthic-cover": build_benthic_cover_config(registry, base_dir),
         "bleaching": build_bleaching_config(registry, base_dir),
+        "boxes": build_boxes_config(registry, base_dir),
     }
 
 
