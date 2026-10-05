@@ -44,7 +44,8 @@ def built(reg):
 
 def test_rows_validate_and_tally(built):
     rows, tally = built
-    assert [r["attrs"] and json.loads(r["attrs"])["instance_id"] for r in rows] == ["7", "8"]
+    assert [r["instance_id"] for r in rows] == [7, 8]
+    assert all("instance_id" not in json.loads(r["attrs"]) for r in rows)
     assert dict(tally) == {"no_geometry": 1, "no_category": 1, "orphan_image": 1}
     validate_rows("masks", rows)
 
@@ -73,3 +74,33 @@ def test_stems_stride_and_gaps(reg):
     for spec in mi.INSTANCE_SOURCES.values():
         assert reg.crosswalk(spec.crosswalk_id)
     assert {"pingmapper-sss-seg", "aris-didson-fish-td"} <= set(mi.U7_GAPS)
+
+
+def test_instance_id_is_int32_or_null(built):
+    assert [r["instance_id"] for r in built[0]] == [7, 8]
+    assert mi._instance_id(None) is None
+    assert mi._instance_id("abc") is None
+    assert mi._instance_id(True) is None
+    assert mi._instance_id(-3) is None
+    assert mi._instance_id(2**31) is None
+    assert mi._instance_id("12") == 12
+
+
+def test_instance_config_is_registry_driven_and_disjoint_from_semseg(tmp_path, reg, built):
+    from marinedata.annotation_schema import read_annotations
+    from marinedata.task_layers import configs, masks_table
+
+    rows, _ = built
+    masks_table.write_masks(tmp_path, SPEC.source_id, SPEC.version, rows)
+    path = tmp_path / "_annotations/masks/usis10k" / f"{SPEC.version}.parquet"
+    assert read_annotations(path, "masks").column("instance_id").to_pylist() == [7, 8]
+    out = configs.build_instance_config(reg, tmp_path)
+    assert out.config_id == "instances" and len(out.rows) == 2 and out.n_images == 1
+    assert {r["instance_id"] for r in out.rows} == {7, 8}
+    assert {r["licence_class"] for r in out.rows} == {"open"}
+    assert {r["modality"] for r in out.rows} == {"optical"}
+    assert out.unmapped_by_source == {"usis10k": 0.0}
+    assert set(configs.INSTANCE_CONFIG_SOURCES) == set(mi.INSTANCE_SOURCES)
+    assert not set(configs.INSTANCE_CONFIG_SOURCES) & set(configs.SEMSEG_SOURCES)
+    assert "instances" in configs.CONFIG_IDS
+    assert configs.build_instance_config(reg, tmp_path / "empty").rows == ()

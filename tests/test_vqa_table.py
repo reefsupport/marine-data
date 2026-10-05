@@ -72,6 +72,50 @@ def test_parse_options_needs_consecutive_lettered_choices():
     assert vt.parse_options("Q\nA. one\nC. skipped B") == []
 
 
+_INSTR = '\nPlease output only the letter and corresponding term (e.g., A. Mutualism), with no additional explanation.'
+MARINEEVT_FORMATS = {  # every layout seen in the staged MarineEVT question files (6,175 MC questions)
+    "one choice per line": (MCQ, ["A. Touches the turtle", "B. Watches the turtle", "C. Feeds it"]),
+    "inline, no instruction line": (
+        "Why does the flatfish bury itself in the sand?\n"
+        "A. To attract mates B. To avoid sunlight C. To ambush prey using camouflage D. To rest",
+        ["A. To attract mates", "B. To avoid sunlight", "C. To ambush prey using camouflage",
+         "D. To rest"],
+    ),
+    "inline + instruction line quoting an option": (
+        "What is the next action of the octopus?\n"
+        "A. It changes color B. It jets away rapidly using siphon propulsion C. It hides"
+        "\nPlease output only the letter and corresponding term (e.g., A. It changes color), "
+        "with no additional explanation.",
+        ["A. It changes color", "B. It jets away rapidly using siphon propulsion", "C. It hides"],
+    ),
+    "inline, leading space, eight choices": (
+        "What are the ecological relationship of those two species in the video?\n"
+        " A. Mutualism B. Commensalism C. Parasitism D. Predation E. Competition F. Herbivory "
+        "G. Amensalism H. Neutralism" + _INSTR,
+        ["A. Mutualism", "B. Commensalism", "C. Parasitism", "D. Predation", "E. Competition",
+         "F. Herbivory", "G. Amensalism", "H. Neutralism"],
+    ),
+    "inline, source typo (D. twice, trailing comma)": (
+        "What is the current life stage of the species shown in the videos?\n"
+        " A. Egg/Unborn B. Larval C. Juvenile D. Sub-adult D. Adult, E. Senescent \n" + _INSTR,
+        ["A. Egg/Unborn", "B. Larval", "C. Juvenile", "D. Sub-adult D. Adult", "E. Senescent"],
+    ),
+    "inline with parenthesis markers": ("Q\nA) one B) two", ["A. one", "B. two"]),
+}  # fmt: skip
+
+
+@pytest.mark.parametrize("name", sorted(MARINEEVT_FORMATS))
+def test_parse_options_reads_every_marineevt_layout(name):
+    question, want = MARINEEVT_FORMATS[name]
+    assert vt.parse_options(question) == want
+
+
+def test_parse_options_inline_needs_an_a_marker_at_the_line_start():
+    assert vt.parse_options("Is it plan B. Or plan C. maybe?") == []
+    assert vt.parse_options("Q\nA. alone\nstem mentions B. x") == []
+    assert vt.parse_options("Q\nB. one C. two") == []
+
+
 def test_vqa_row_validates_and_rejects_bad_rows():
     spec = vt.VQA_SOURCES["coralvqa"]
     row = vt.vqa_row(
@@ -350,3 +394,51 @@ def test_configs_read_unified_vqa_and_captions_and_keep_the_legacy_fallback(tmp_
     assert [(r["sha256"], r["question"]) for r in configs.build_vqa_config(base).rows] == [
         (SHA_B, "lq")
     ]
+
+
+def test_uwbench_lists_only_images_and_labels_and_stops_at_limit():
+    spec = vt.VQA_SOURCES["uwbench"]
+    base = f"sources/uwbench/{spec.version}/"
+    files = {
+        base + f"labels/files/unresolved-{n}.json": json.dumps(
+            {"image_id": f"A{n}.jpg", "question": "q?", "ground_truth": "a",
+             "question_id": str(n), "type": "t"}
+        ).encode()
+        for n in range(600)
+    }  # fmt: skip
+    files |= {base + f"images/images_test_zip_A{n}.jpg": b"" for n in range(600)}  # all staged
+    listed: list[str] = []
+    fetched: list[str] = []
+
+    def lister(prefix):
+        listed.append(prefix)
+        return sorted(k for k in files if k.startswith(prefix))
+
+    def fetch(key):
+        fetched.append(key)
+        return files[key]
+
+    res = vt.staged_vqa(spec, limit=10, fetch=fetch, lister=lister)
+    assert listed == [base + "images/", base + "labels/files/"]  # never the whole prefix
+    assert len(res.pending) == 10 and len(set(r["ann_id"] for r in res.pending)) == 10
+    assert len(fetched) < 600 and res.seen == len(fetched)  # stopped after one batch
+    ids = sorted(int(r["ann_id"].split(":")[1]) for r in res.pending)
+    assert ids[-1] - ids[0] > 100  # spread over the label range, not the first files
+    from marinedata.task_layers.producers import uwbench_vqa
+
+    late = uwbench_vqa.staged(spec, limit=10, fetch=fetch, lister=lister, budget_s=-1)
+    assert late.pending == [] and late.skipped["read time budget reached"] == 600
+
+
+def test_uwbench_flaky_label_fetch_is_skipped_not_fatal():
+    spec = vt.VQA_SOURCES["uwbench"]
+    base = f"sources/uwbench/{spec.version}/"
+    files = {base + "labels/files/unresolved-1.json": b"{}", base + "images/images_test_zip_X.jpg": b""}
+
+    def boom(key):
+        raise TimeoutError(key)
+
+    res = vt.staged_vqa(
+        spec, fetch=boom, lister=lambda prefix: sorted(k for k in files if k.startswith(prefix))
+    )
+    assert res.pending == [] and res.skipped["label file fetch failed"] == 1

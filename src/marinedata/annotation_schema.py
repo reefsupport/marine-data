@@ -136,6 +136,7 @@ _HEX64 = re.compile(r"^[0-9a-f]{64}$")
 _ORDINAL = re.compile(r"^[0-9]+$")
 _LANG = re.compile(r"^[A-Za-z]{2,3}(-[A-Za-z0-9]{2,8})*$")
 _LICENSE = re.compile(r"^[A-Za-z0-9][A-Za-z0-9.+:_()\- ]*$")  # SPDX id or expression
+_INT32_MAX = 2**31 - 1
 _PIXEL_KEY = re.compile(r"^-?[0-9]+$")
 
 
@@ -256,6 +257,7 @@ TABLES: dict[str, TableSpec] = {
                 _c("ignore_value", "int32"),
                 _c("class_counts"),
                 _c("canonical_class_counts"),
+                _c("instance_id", "int32"),
             ),
         ),
         _taxon_table(
@@ -502,6 +504,8 @@ def _masks_checks(row: Mapping[str, object], errs: list[str]) -> None:
             errs.append("a semantic mask needs mask_ref")
         if row.get("rle") is not None or row.get("polygon") is not None:
             errs.append("a semantic mask carries no rle or polygon")
+        if row.get("instance_id") is not None:
+            errs.append("a semantic mask carries no instance_id")
         if cm is None:
             errs.append("a semantic mask needs class_map")
         elif msg := _json_error("class_map", cm, dict):
@@ -515,6 +519,10 @@ def _masks_checks(row: Mapping[str, object], errs: list[str]) -> None:
             errs.append("an instance mask needs mask_ref, rle or polygon")
         if cm is not None:
             errs.append("class_map is for semantic masks only")
+        if (iid := row.get("instance_id")) is not None and (
+            isinstance(iid, bool) or not isinstance(iid, int) or not 0 <= iid <= _INT32_MAX
+        ):
+            errs.append("instance_id must be a non-negative int32")
 
 
 def _points_checks(row: Mapping[str, object], errs: list[str]) -> None:

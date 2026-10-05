@@ -32,6 +32,7 @@ from .boxes_table import BOX_SOURCES
 from .depth_table import DEPTH_PAIR_SOURCES
 from .masks_table import MASK_SOURCES
 from .rollup import MIXED, UNKNOWN, rollup_counts
+from .sources.masks_instance import INSTANCE_SOURCES
 from .vqa_table import VQA_SOURCES
 
 BENTHIC_COARSE_TASK = "benthic-coarse"
@@ -40,7 +41,7 @@ HEALTH_TASK = "coral-health-binary"
 
 CONFIG_IDS = (
     "points", "vqa", "semseg", "benthic-coarse", "benthic-cover", "bleaching", "boxes", "captions",
-    "depth", "pairs",
+    "depth", "pairs", "instances",
 )  # fmt: skip
 
 # WP-8e-resume (manager decision 3): the staged point/mask sources each config reads.
@@ -59,6 +60,10 @@ LEGACY_VQA_SOURCES = ("coralvqa",)
 # WP-U11: registry-driven: every source bound to a depth / pairs producer feeds its config.
 DEPTH_CONFIG_SOURCES = tuple(s for s, v in DEPTH_PAIR_SOURCES.items() if "depth" in v.tables)
 PAIRS_CONFIG_SOURCES = tuple(s for s, v in DEPTH_PAIR_SOURCES.items() if "pairs" in v.tables)
+# WP-U10b: registry-driven like the U4 masks: every source with a unified *instance* ``masks``
+# producer (``sources.masks_instance.INSTANCE_SOURCES``: usis10k, uiis, uiis10k). Disjoint from
+# SEMSEG_SOURCES, so no mask row is counted by both configs.
+INSTANCE_CONFIG_SOURCES = tuple(INSTANCE_SOURCES)
 # WP-8e-resume (manager decision 2): bleaching is a headline reef task with its own config.
 BLEACHING_SOURCES = (
     "noaa-pifsc-bleaching",
@@ -678,6 +683,35 @@ def build_boxes_config(registry: Registry, base_dir: str | Path) -> ConfigResult
     return ConfigResult("boxes", tuple(rows), unmapped)
 
 
+def build_instance_config(registry: Registry, base_dir: str | Path) -> ConfigResult:
+    """``instances``: every unified ``masks`` row with ``mask_kind == instance`` of
+    :data:`INSTANCE_CONFIG_SOURCES` (``instance_id`` column, ``polygon`` / ``rle``, native label,
+    resolve fields, ``annotator_type``, ``ann_license``; ``licence_class`` and ``modality`` lifted
+    from ``attrs``). ``unmapped_by_source`` is the fraction of instances with
+    ``match_type == unmapped``."""
+    base_dir = Path(base_dir)
+    label_status = _load_label_status(base_dir)
+    rows: list[dict] = []
+    unmapped: dict[str, float] = {}
+    for source_id in INSTANCE_CONFIG_SOURCES:
+        masks = _annotation_masks(base_dir, source_id)
+        records = [r for r in masks if r["mask_kind"] == "instance"]
+        for r in records:
+            attrs = _attrs(r)
+            rows.append(
+                {
+                    **r,
+                    "sha256": r["image_sha256"],
+                    "licence_class": attrs.get("licence_class"),
+                    "modality": attrs.get("modality"),
+                    "label_status": label_status.get(r["image_sha256"], r["label_status"]),
+                }
+            )
+        if records:
+            unmapped[source_id] = sum(r["match_type"] == "unmapped" for r in records) / len(records)
+    return ConfigResult("instances", tuple(rows), unmapped)
+
+
 def assert_no_mixed_origin_in_eval(
     rows: list[dict], split_of: Mapping[str, str], *, train_split: str = "train"
 ) -> None:
@@ -714,6 +748,7 @@ def build_all_configs(registry: Registry, base_dir: str | Path) -> dict[str, Con
         "captions": build_captions_config(base_dir),
         "depth": build_depth_config(base_dir),
         "pairs": build_pairs_config(base_dir),
+        "instances": build_instance_config(registry, base_dir),
     }
 
 

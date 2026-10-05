@@ -87,14 +87,39 @@ class VqaResult:
     seen: int = 0  # Q/A pairs read from the source
 
 
+def _inline_options(line: str) -> list[tuple[str, str]]:
+    """``(letter, text)`` pairs of a one-line ``A. x B. y C. z`` list, else ``[]``. The line must
+    open with the ``A`` marker; each next marker is the *next expected letter* only, so a stray
+    ``D.`` inside an option text (``D. Sub-adult D. Adult``) never splits it."""
+    text = line.strip()
+    marks: list[tuple[str, int, int]] = []  # (letter, marker start, marker end)
+    letter, cursor = "A", 0
+    while (m := re.compile(rf"(?<!\S){letter}[.)]\s+").search(text, cursor)) is not None:
+        if not marks and m.start() != 0:
+            return []
+        marks.append((letter, m.start(), m.end()))
+        cursor, letter = m.end(), chr(ord(letter) + 1)
+        if letter > "Z":
+            break
+    options = [
+        (lt, text[end : marks[i + 1][1] if i + 1 < len(marks) else len(text)].strip(" ,;"))
+        for i, (lt, _start, end) in enumerate(marks)
+    ]
+    return options if len(options) >= 2 and all(t for _, t in options) else []
+
+
 def parse_options(question: str) -> list[str]:
-    """The lettered choices of a multiple-choice question (``A. text`` lines), in order; ``[]``
-    when fewer than two consecutive choices are found."""
+    """The lettered choices of a multiple-choice question, in order, as ``"A. text"``. Two layouts
+    exist in the sources: one choice per line (``A. text`` lines) and all choices on one line
+    (``A. x B. y C. z``; MarineEVT). ``[]`` when fewer than two consecutive choices are found."""
     found = [m for line in question.splitlines() if (m := _OPTION.match(line))]
     letters = [m["letter"] for m in found]
-    if len(found) < 2 or letters != [chr(ord("A") + i) for i in range(len(letters))]:
-        return []
-    return [f"{m['letter']}. {m['text']}" for m in found]
+    if len(found) >= 2 and letters == [chr(ord("A") + i) for i in range(len(letters))]:
+        return [f"{m['letter']}. {m['text']}" for m in found]
+    for line in question.splitlines():
+        if pairs := _inline_options(line):
+            return [f"{letter}. {text}" for letter, text in pairs]
+    return []
 
 
 def free_row(

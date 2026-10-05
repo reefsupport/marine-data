@@ -7,8 +7,9 @@ rings) or, for a dict segmentation, the COCO RLE (``rle``); ``mask_ref`` stays n
 rasterised). Each instance's own category name is ``label_native`` and resolves through
 :meth:`marinedata.schema.Crosswalk.resolve` exactly like WP-U4 (same ``match_type`` vocabulary).
 
-``instance_id`` (the upstream COCO annotation id), the crowd flag, the box and the image size live in
-``attrs`` (the ``masks`` table has no column for them; U1). ``attrs.modality`` is ``optical`` here and
+``instance_id`` (the upstream COCO annotation id) is the nullable int32 ``masks.instance_id`` column
+(null on semantic rows); the crowd flag, the box and the image size live in ``attrs`` (the ``masks``
+table has no column for them; U1). ``attrs.modality`` is ``optical`` here and
 ``sonar`` for the acoustic sets, so a later reader can split them without a join.
 
 USIS10K ships a class-agnostic ``foreground`` and a ``multi_class`` document over the *same* instances;
@@ -108,6 +109,17 @@ def _geometry(seg: object) -> tuple[str | None, str | None]:
     return None, None
 
 
+def _instance_id(raw: object) -> int | None:
+    """The COCO annotation id as an int32, or ``None`` when it is absent or not an integer."""
+    if isinstance(raw, bool):
+        return None
+    try:
+        value = int(str(raw))
+    except ValueError:
+        return None
+    return value if 0 <= value <= 2**31 - 1 else None
+
+
 def instance_row(
     *,
     spec: InstanceSource,
@@ -128,7 +140,6 @@ def instance_row(
     taxon, match, aphia, l2 = resolve(native)
     typ, detail = annotator_from_origin(spec.annotator)
     attrs = {
-        "instance_id": str(ann.get("id")),
         "is_crowd": bool(ann.get("iscrowd")),
         "bbox_xywh": ann.get("bbox"),
         "area": ann.get("area"),
@@ -142,6 +153,7 @@ def instance_row(
         "source_id": spec.source_id,
         "source_version": spec.version,
         "ann_id": f"{spec.source_id}:{ordinal}",
+        "instance_id": _instance_id(ann.get("id")),
         "label_native": native,
         "label_native_id": str(ann.get("category_id")),
         "label_set": spec.label_set,

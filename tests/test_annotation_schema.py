@@ -19,7 +19,7 @@ SHA2 = "b" * 64
 
 COLUMN_COUNTS = {
     "boxes": 33,
-    "masks": 30,
+    "masks": 31,
     "points": 26,
     "image_labels": 23,
     "tracks": 36,
@@ -188,6 +188,8 @@ def test_key_and_common_column_types():
     assert an.arrow_schema("points").field("x").type == pa.float32()
     assert an.arrow_schema("tracks").field("frame_idx").type == pa.int32()
     assert an.arrow_schema("masks").field("ignore_value").type == pa.int32()
+    iid = an.arrow_schema("masks").field("instance_id")
+    assert iid.type == pa.int32() and iid.nullable
 
 
 def test_required_columns():
@@ -450,6 +452,30 @@ def test_instance_mask_rules():
     assert errors("masks", **{**inst, "rle": None, "polygon": "{}"})
     assert errors("masks", **{**inst, "rle": None, "mask_ref": "k.png"}) == []
     assert errors("masks", **{**inst, "class_map": '{"1": "x"}'})
+
+
+def test_instance_id_is_an_optional_int32_on_instance_rows_only():
+    inst = dict(mask_kind="instance", class_map=None, mask_ref=None, rle="5 3 2")
+    assert errors("masks", **inst) == []  # null is allowed
+    assert errors("masks", instance_id=None) == []  # semantic row, null
+    for ok in (0, 7, 2**31 - 1):
+        assert errors("masks", **{**inst, "instance_id": ok}) == []
+    for bad in (-1, 2**31, "7", 1.5, True):
+        assert errors("masks", **{**inst, "instance_id": bad}), bad
+    assert errors("masks", instance_id=7)  # a semantic mask carries none
+
+
+def test_instance_id_round_trips_as_int32_with_nulls(tmp_path):
+    inst = dict(
+        mask_kind="instance", class_map=None, mask_ref=None, ignore_value=None,
+        class_counts=None, canonical_class_counts=None, rle="5 3 2",
+    )  # fmt: skip
+    rows = [make_row("masks", 0, instance_id=41, **inst), make_row("masks", 1, **inst)]
+    path = tmp_path / "m.parquet"
+    an.write_annotations(path, "masks", rows)
+    got = an.read_annotations(path, "masks")
+    assert got.schema.field("instance_id").type == pa.int32()
+    assert got.column("instance_id").to_pylist() == [41, None]
 
 
 # --- points, image_labels, tracks, identities ----------------------------------------------
