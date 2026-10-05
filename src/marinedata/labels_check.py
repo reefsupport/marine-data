@@ -33,6 +33,7 @@ from pathlib import Path
 
 import yaml
 
+from .licence_class import collapse_aliases, staged_id
 from .registry import Registry, _default_root
 from .taxonomy import (
     MIN_MAPPED,
@@ -237,7 +238,9 @@ def evaluate(
     labelled = set(labelled_sources(registry))
     vocab = {a.source_id: a for a in audit_all(registry, root)}
     crosswalk_ids = {c.id for c in registry.crosswalks}
-    ids = sorted(reg_ids | specs | set(cache) | set(staged_labels) | release_ids)
+    unalias = {staged_id(r): r for r in reg_ids if staged_id(r) != r}
+    release_ids = {unalias.get(r, r) for r in release_ids}
+    ids = collapse_aliases(reg_ids | specs | set(cache) | set(staged_labels) | release_ids, reg_ids)
     if only:
         ids = [i for i in ids if i in set(only)]
 
@@ -245,7 +248,7 @@ def evaluate(
     for sid in ids:
         origin = (
             "both"
-            if sid in reg_ids and sid in specs
+            if sid in reg_ids and (sid in specs or staged_id(sid) in specs)
             else "registry"
             if sid in reg_ids
             else "spec"
@@ -256,7 +259,10 @@ def evaluate(
             if sid in staged_labels
             else "release"
         )
-        ingested = sid in cache or sid in staged_labels
+        staged = staged_id(
+            sid
+        )  # WP-R4: the bucket/audit key (atlantis-synthetic-depth -> atlantis)
+        ingested = {sid, staged} & (set(cache) | set(staged_labels)) != set()
         gated = strict or sid in release_ids
         base = {"source_id": sid, "origin": origin, "ingested": bool(ingested), "gated": gated}
         if origin == "release":
@@ -276,8 +282,8 @@ def evaluate(
                 root=root,
                 labelled=labelled,
                 vocab=vocab.get(sid),
-                cache=cache.get(sid),
-                staged=staged_labels.get(sid, 0),
+                cache=cache.get(sid) or cache.get(staged),
+                staged=staged_labels.get(sid, 0) or staged_labels.get(staged, 0),
                 declared=declared.get(sid),
                 exception=sid in exceptions,
                 crosswalk_ids=crosswalk_ids,

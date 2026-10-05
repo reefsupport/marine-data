@@ -108,7 +108,23 @@ def _registry_root(root: str | Path | None) -> Path:
 
 
 SPEC_ALIASES = {"atlantis-synthetic-depth": "atlantis"}
-"""registry/sources id -> ingest-spec id, for the few sources whose two ids differ."""
+"""registry/sources id -> ingest-spec id == staged bucket id (``sources/<id>/``), for the few
+sources whose two ids differ (WP-R4: the ONE place; the licence class, the staged-id lookups and
+the census all read it). Only a true same-dataset pair belongs here: ``seathru`` (Akkaynak 2019,
+HF, restricted-nc) is NOT ``seathru-nerf`` (Levy 2023, internal-only), so it is not an alias."""
+
+
+def staged_id(source_id: str) -> str:
+    """The id a source is staged (and ingest-specced) under: its :data:`SPEC_ALIASES` target, else
+    itself. ``atlantis-synthetic-depth`` -> ``atlantis``."""
+    return SPEC_ALIASES.get(source_id, source_id)
+
+
+def collapse_aliases(ids: Iterable[str], registry_ids: Iterable[str]) -> list[str]:
+    """``ids`` sorted, with a staged id dropped when the registry id aliased to it is present
+    (``atlantis`` next to ``atlantis-synthetic-depth``): one dataset is never counted twice."""
+    shadowed = {staged_id(r) for r in registry_ids if staged_id(r) != r}
+    return sorted(set(ids) - shadowed)
 
 
 def _tagged_excluded(e: dict[str, Any]) -> bool:
@@ -137,7 +153,7 @@ def _spec_entries(base: str) -> dict[str, dict[str, Any]]:
 def spec_for(source_id: str, root: str | Path | None = None) -> dict[str, Any] | None:
     """The ingest-spec entry that governs ``source_id`` (same id, else its alias), or None."""
     specs = _spec_entries(str(_registry_root(root)))
-    return specs.get(source_id) or specs.get(SPEC_ALIASES.get(source_id, ""))
+    return specs.get(source_id) or specs.get(staged_id(source_id))
 
 
 def _scan(base: Path) -> dict[str, dict[str, Any]]:
@@ -169,7 +185,7 @@ def _scan(base: Path) -> dict[str, dict[str, Any]]:
             excluded.add(sid)
         out.setdefault(sid, {"access_class": UNKNOWN, "licence_per_row": False})
     for sid, entry in out.items():
-        spec = specs.get(sid) or specs.get(SPEC_ALIASES.get(sid, ""))
+        spec = specs.get(sid) or specs.get(staged_id(sid))
         if spec is None:
             continue
         if "access_class" in spec:
