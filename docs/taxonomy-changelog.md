@@ -1,5 +1,18 @@
 # Taxonomy changelog
 
+## 2.6.0 — 2026-10-05
+
+MINOR: 6 nodes and 5 edges added, nothing removed or re-parented, no existing target changed
+(`marinedata taxonomy diff 2.5.0 HEAD`: nodes removed 0 / changed 0; 81 edges changed = 80 `unmappable` -> mapped
+(they had no target) and `bony fish` fidelity coarsened -> approximate on the same target).
+
+- **WP-U8b:** `fathomnet-concepts` long tail: every unmapped label with >= 10 boxes (echinoderm, ctenophore, chaetognath,
+  hermit crab, sea spider, isopod, ...) decided in `vocab/fathomnet-common-names.tsv` with WoRMS-confirmed ids
+  (box-weighted mapped 0.9637 -> 0.9835). `bony fish` -> Actinopterygii is now `related` (note: Osteichthyes not a node;
+  adding it would re-parent, i.e. MAJOR). Non-taxon axis: equipment / litter / unknown labels map `exact` to
+  `NT_EQUIPMENT` / `NT_DEBRIS` / `NT_UNKNOWN` (new `target` column of the table). New `brackishmot-class-id` crosswalk +
+  `vocab/brackishmot.tsv` (class ids 1-5 = fish, crab, shrimp, starfish, small fish; BrackishMOT paper arXiv:2302.10645).
+
 ## 2.5.0 — 2026-10-05
 
 MINOR: 1,776 nodes and 1,702 edges added, nothing removed, re-parented or retargeted
