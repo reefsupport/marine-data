@@ -77,7 +77,7 @@ def test_items_reports_what_was_consumed_not_declared(registry: Registry, one_so
 def test_licence_flags_are_present_on_every_entry(registry: Registry) -> None:
     """⭐ The defect: two T3_NONCOMMERCIAL sources can carry different obligations
     (share-alike, no-derivatives) that the tier string alone cannot distinguish."""
-    nc_share_alike = registry.source("seatizen-atlas")  # ND, per test_mirror.py
+    nc_share_alike = registry.source("seatizen-atlas")  # open since WP-R2 (CC-BY-4.0 on the Zenodo record)
     lineage = build_lineage([nc_share_alike], registry.profile("research"))
     entry = lineage.datasets[0]
     assert entry.licence_flags == nc_share_alike.licence.flags.model_dump()

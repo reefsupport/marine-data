@@ -107,33 +107,75 @@ def _registry_root(root: str | Path | None) -> Path:
     return _default_root()
 
 
+SPEC_ALIASES = {"atlantis-synthetic-depth": "atlantis"}
+"""registry/sources id -> ingest-spec id, for the few sources whose two ids differ."""
+
+
+def _tagged_excluded(e: dict[str, Any]) -> bool:
+    measured = e.get("measured")
+    return "release-excluded" in (e.get("tags") or ()) or (
+        isinstance(measured, dict) and measured.get("release_excluded") is True
+    )
+
+
+@functools.lru_cache(maxsize=8)
+def _spec_entries(base: str) -> dict[str, dict[str, Any]]:
+    """``registry/ingest-specs/*.yaml`` -> ``{id: {access_class?, licence_per_row?, excluded}}``
+    (only the keys a spec actually sets)."""
+    out: dict[str, dict[str, Any]] = {}
+    for path in sorted((Path(base) / "ingest-specs").glob("*.yaml")):
+        e = yaml.safe_load(path.read_text()) or {}
+        if not (isinstance(e, dict) and isinstance(e.get("id"), str)):
+            continue
+        out[e["id"]] = {
+            **{k: e[k] for k in ("access_class", "licence_per_row") if k in e},
+            "excluded": _tagged_excluded(e),
+        }
+    return out
+
+
+def spec_for(source_id: str, root: str | Path | None = None) -> dict[str, Any] | None:
+    """The ingest-spec entry that governs ``source_id`` (same id, else its alias), or None."""
+    specs = _spec_entries(str(_registry_root(root)))
+    return specs.get(source_id) or specs.get(SPEC_ALIASES.get(source_id, ""))
+
+
 def _scan(base: Path) -> dict[str, dict[str, Any]]:
-    """``{id: {"access_class", "licence_per_row", "release_excluded"}}``: registry sources, then
-    ingest specs. ``release_excluded`` is true when any entry carries the ``release-excluded``
-    tag or ``measured.release_excluded`` (U11/U15 triage): such a source ships in no flavour."""
+    """``{id: {"access_class", "licence_per_row", "release_excluded"}}``: registry sources, with
+    the ingest spec of the same id (or its :data:`SPEC_ALIASES` alias) winning for
+    ``access_class`` and ``licence_per_row`` (WP-R2: ONE licence truth). ``release_excluded`` is
+    true when any entry carries the ``release-excluded`` tag or ``measured.release_excluded``
+    (U11/U15 triage): such a source ships in no flavour."""
     out: dict[str, dict[str, Any]] = {}
     excluded: set[str] = set()
-    paths = [
-        *sorted((base / "sources").glob("*.yaml")),
-        *sorted((base / "ingest-specs").glob("*.yaml")),
-    ]
-    for path in paths:
+    for path in sorted((base / "sources").glob("*.yaml")):
         data = yaml.safe_load(path.read_text()) or {}
-        entries = data.get("sources", []) if path.parent.name == "sources" else [data]
+        entries = data.get("sources", [])
         for e in entries if isinstance(entries, list) else []:
             if not (isinstance(e, dict) and isinstance(e.get("id"), str)):
                 continue
-            measured = e.get("measured")
-            if "release-excluded" in (e.get("tags") or ()) or (
-                isinstance(measured, dict) and measured.get("release_excluded") is True
-            ):
+            if _tagged_excluded(e):
                 excluded.add(e["id"])
-            if e["id"] not in out:
-                out[e["id"]] = {
+            out.setdefault(
+                e["id"],
+                {
                     "access_class": coerce_class(e.get("access_class")),
                     "licence_per_row": bool(e.get("licence_per_row", False)),
-                    "release_excluded": False,
-                }
+                },
+            )
+    specs = _spec_entries(str(base))
+    for sid, spec in specs.items():
+        if spec["excluded"]:
+            excluded.add(sid)
+        out.setdefault(sid, {"access_class": UNKNOWN, "licence_per_row": False})
+    for sid, entry in out.items():
+        spec = specs.get(sid) or specs.get(SPEC_ALIASES.get(sid, ""))
+        if spec is None:
+            continue
+        if "access_class" in spec:
+            entry["access_class"] = coerce_class(spec["access_class"])
+        if "licence_per_row" in spec:
+            entry["licence_per_row"] = bool(spec["licence_per_row"])
     return {k: {**v, "release_excluded": k in excluded} for k, v in out.items()}
 
 

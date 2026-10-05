@@ -6,7 +6,7 @@
 
 sources:
   - id: reefnet-hf
-    access_class: open
+    access_class: restricted-nc  # WP-R2: upstream ReefNet-1.0 cardData.license cc-by-nc-sa-4.0 (LICV lic-B)
     name: ReefNet 1.0 (HuggingFace release)
     # habitat inferred (WP-2b) from this source's own description/notes, not independently verified
     habitat: [coral_reef]
@@ -15,7 +15,7 @@ sources:
       The ReefNet fine-grained coral benchmark, published openly on HuggingFace as
       tabular point annotations: CoralNet source, image name, row/column, CoralNet
       label and a harmonised ReefNet label.
-    licence: CC-BY-4.0
+    licence: CC-BY-NC-SA-4.0
     legal_basis: licence
     redistribution: ok
     provenance: public

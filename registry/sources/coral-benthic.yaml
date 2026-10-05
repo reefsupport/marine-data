@@ -182,7 +182,7 @@ sources:
     tags: [pretraining, catami, largest]
 
   - id: reefnet
-    access_class: open
+    access_class: restricted-nc  # WP-R2: upstream ReefNet-1.0 cardData.license cc-by-nc-sa-4.0 (LICV lic-B)
     name: ReefNet
     # habitat inferred (WP-2b) from this source's own description/notes, not independently verified
     habitat: [coral_reef]
@@ -191,7 +191,7 @@ sources:
       Fine-grained hard-coral genus benchmark aggregating 76 CoralNet sources plus new
       Red Sea (Al-Wajh) imagery, standardised to WoRMS taxonomy. The most honest
       cross-source generalisation testbed available.
-    licence: CC-BY-4.0
+    licence: CC-BY-NC-SA-4.0
     legal_basis: licence
     redistribution: ok
     provenance: public
@@ -612,13 +612,13 @@ sources:
     description: >
       1.6M geolocated underwater and aerial images from the SW Indian Ocean, 14,492
       annotated with multilabel and instance segmentation across 38 classes.
-    licence: CC-BY-NC-ND-4.0
+    licence: CC-BY-4.0  # WP-R2: Zenodo API license.id=cc-by-4.0 (records 12819157, 11125847); the NC-ND was the Sci Data article licence
     legal_basis: licence
     redistribution: ok
     provenance: public
     verification:
       verified_on: 2026-08-17
-      verified_by: "Nature Scientific Data s41597-024-04267-z / Zenodo 11125847 — CC-BY-NC-ND 4.0"
+      verified_by: "Nature Scientific Data s41597-024-04267-z / Zenodo 11125847 — CC-BY-4.0 on the Zenodo record (WP-R2)"
       method: dataset-card
     access:
       method: zenodo
@@ -636,12 +636,13 @@ sources:
       regions: [western-indian]
       ecoregions: ["Reunion", "Seychelles", "Mauritius"]
     notes: >
-      ND — NoDerivatives. Generating masks, crops, resizes or augmentations are all
-      derivative acts, so this is untrainable, not merely non-commercial. Frequently
-      misused. Readable as a methods reference only.
+      WP-R2 (LICV evidence, lic-B): the Zenodo API reports license.id = cc-by-4.0 for both
+      records (11125847, 12819157). The CC-BY-NC-ND previously recorded here is the licence of
+      the Sci Data ARTICLE, not of the dataset. Attribution required. Re-check the record
+      licence before every release; a regression to ND must flip access_class to restricted-nd.
     loader: { layout: metadata-only }
     citation: "Matteo Contini, Julien Barde, Sylvain Bonhommeau, Victor Illien, Alexis Joly, & Anne-Elise Nieblas. (2026). Seatizen Atlas (Version v1.2.6) [Dataset]. Zenodo. https://doi.org/10.5281/ZENODO.11125847"
-    tags: [no-derivatives, trap]
+    tags: [licence-contradiction-resolved]
 
   - id: mermaid-aws
     access_class: restricted-nc

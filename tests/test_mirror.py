@@ -165,7 +165,7 @@ def test_real_registry_public_mirror_excludes_nc_and_prohibited(registry: Regist
     plan = plan_mirror(list(registry), MirrorTarget.PUBLIC_MIRROR)
     excluded = {d.source_id for d in plan.excluded}
     assert "marineinst20m" in excluded
-    assert "seatizen-atlas" in excluded, "ND must never be publicly mirrored"
+    assert "wildfish" in excluded, "no-derivatives / no-redistribution is never publicly mirrored"
     assert "coralscop-masks-rs" in excluded, "NC must never be publicly mirrored"
     assert plan.included, "some permissive sources should be mirrorable"
 

@@ -142,7 +142,7 @@ sources:
     tags: [metric-3d, rugosity, public-domain]
 
   - id: atlantis-synthetic-depth
-    access_class: open
+    access_class: restricted-nc  # LICV 2026-10-05 (was open); same as registry/ingest-specs/atlantis.yaml
     name: Atlantis (synthetic underwater depth)
     # habitat inferred (WP-2b) from this source's own description/notes, not independently verified
     habitat: [mixed]

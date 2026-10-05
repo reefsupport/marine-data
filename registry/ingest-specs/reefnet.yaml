@@ -1,5 +1,5 @@
 id: reefnet
-access_class: open
+access_class: restricted-nc  # WP-R2: license is CC-BY-NC-SA-4.0 (was open)
 adapter: hf
 params: {}
 license: CC-BY-NC-SA-4.0
