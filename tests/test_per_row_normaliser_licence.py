@@ -90,3 +90,33 @@ def test_fathomnet_cc_by_label_json_reaches_the_open_flavour(fathomnet_build) ->
     assert _manifest(rel, "nc") == {shas["u-nc"]}
     assert shas["u-nd"] not in _manifest(rel, "open") | _manifest(rel, "nc")
     assert shas["u-none"] not in _manifest(rel, "open") | _manifest(rel, "nc")
+
+
+def test_export_contains_the_metadata_table_with_a_licence_class_per_row(
+    fathomnet_build, tmp_path
+) -> None:
+    import pyarrow.parquet as pq
+
+    from marinedata.hf_export import build_layout, collect_rows, export
+    from marinedata.metadata_release import add_metadata_config
+
+    run, shas, rel = fathomnet_build
+    assert run("--flavour", "open", "--generate-split-map") == 0
+    registry, root = Registry.load(), tmp_path / "src" / "fathomnet"
+    profile = json.loads((rel / "open" / "RELEASE.json").read_text())["profile"]
+    rows = collect_rows(registry, {"fathomnet": root}, rel / "open", profile)
+    layout = add_metadata_config(
+        build_layout(rows, flavour="open"), registry, {"fathomnet": root}, flavour="open"
+    )
+    summary = export(layout, tmp_path / "hf")
+    assert "metadata" in summary["configs"]
+    import pyarrow as pa
+
+    shards = [tmp_path / "hf" / w["name"] for w in summary["configs"]["metadata"]["written"]]
+    table = pa.concat_tables([pq.read_table(p) for p in shards])
+    got = table.to_pylist()
+    assert {r["image_sha256"] for r in got} == {shas["u-by"]}
+    assert all(r["licence_class"] == "open" for r in got)
+    assert all(r["license"] == "CC-BY-4.0" and r["split_group"] for r in got)
+    for col in ("lat", "lon", "capture_datetime", "camera", "attribution", "source_version"):
+        assert col in table.column_names

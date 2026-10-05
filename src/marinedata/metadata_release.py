@@ -61,6 +61,7 @@ METADATA_COLUMNS: tuple[tuple[str, str], ...] = (
     ("license", "string"),
     ("licence_class", "string"),
     ("attribution", "string"),
+    ("split_group", "string"),
     ("upstream_id", "string"),
     ("upstream_url", "string"),
     ("fetch_date", "string"),
@@ -145,6 +146,42 @@ class ImageRef:
     split: str
 
 
+def refs_from_layout(layout) -> list[ImageRef]:
+    """The ``image_sha256`` set + primary file of a built layout's ``images`` config."""
+    _, splits = layout["images"]
+    return [
+        ImageRef(row.values["image_sha256"], row.values["source_id"], row.file, split)
+        for split, export_rows in splits.items()
+        for row in export_rows
+    ]
+
+
+def add_metadata_config(
+    layout,
+    registry: Registry,
+    roots: Mapping[str, Path],
+    *,
+    flavour: str | None = None,
+    quality_by_sha: Mapping[str, dict] | None = None,
+    meow_polygons: Sequence[MeowFeature] = (),
+):
+    """``layout`` plus the ``metadata`` config (WP-R2b): one row per exported image, joined on
+    ``image_sha256`` + ``source_id`` + ``source_version``, split-aligned with ``images``. Rows come
+    from each source's staged ``metadata.parquet`` (under ``roots``) and are flavour-filtered per
+    row, so every row carries a non-null ``licence_class``. Returns a new layout."""
+    refs = refs_from_layout(layout)
+    rows = build_rows(
+        refs, registry, Path("."), quality_by_sha or {}, meow_polygons, flavour=flavour,
+        source_roots=roots,
+    )  # fmt: skip
+    split_by_sha = {r.sha256: r.split for r in refs}
+    splits = {
+        s: [ExportRow(values=r) for r in rows if split_by_sha[r["image_sha256"]] == s]
+        for s in SPLIT_ORDER
+    }
+    return {**layout, METADATA: (METADATA_SPEC, {s: v for s, v in splits.items() if v})}
+
+
 def collect_image_refs(registry: Registry, release_dir: Path, cache: Path) -> list[ImageRef]:
     """Exactly the ``image_sha256`` set + primary file the ``images`` config embeds."""
     roots = _roots(release_dir, cache)
@@ -154,13 +191,7 @@ def collect_image_refs(registry: Registry, release_dir: Path, cache: Path) -> li
     release = json.loads(release_json.read_text()) if release_json.is_file() else {}
     flavour = release.get("flavour")
     layout = build_layout(rows, flavour=flavour)
-    _, splits = layout["images"]
-    refs = []
-    for split, export_rows in splits.items():
-        for row in export_rows:
-            sha, sid = row.values["image_sha256"], row.values["source_id"]
-            refs.append(ImageRef(sha, sid, row.file, split))
-    return refs
+    return refs_from_layout(layout)
 
 
 STAGING_BUCKET = "rs-storage-open"
@@ -184,19 +215,27 @@ def _fetch_staged_metadata_from_s3(source: Source, dest: Path) -> bool:
     return True
 
 
-def _staged_lookup(stage_root: Path, source: Source) -> dict[tuple[str, str], dict]:
+STAGED_GEO = ("lat", "lon", "capture_datetime", "camera", "platform", "depth_m")
+"""Normalised SampleRow columns a staged ``metadata.parquet`` may carry; the geo backfill wins."""
+
+
+def _staged_lookup(
+    stage_root: Path, source: Source, root: Path | None = None
+) -> dict[tuple[str, str], dict]:
     """``(partition, stem) -> staged metadata row`` for one source's version: local copy
     if present, else the D-D S3 fallback (:func:`_fetch_staged_metadata_from_s3`)."""
     import pyarrow.parquet as pq
 
     path = stage_root / source.id / source.version / "metadata.parquet"
+    if root is not None and (Path(root) / "metadata.parquet").is_file():
+        path = Path(root) / "metadata.parquet"  # the source's own staged tree (hf_export roots)
     if not path.is_file():
         cached = stage_root / ".s3-cache" / source.id / source.version / "metadata.parquet"
         if cached.is_file() or _fetch_staged_metadata_from_s3(source, cached):
             path = cached
         else:
             return {}
-    wanted = ["stem", "partition", "upstream_path", "license"]
+    wanted = ["stem", "partition", "upstream_path", "license", "split_group", *STAGED_GEO]
     present = set(pq.read_schema(path).names)
     table = pq.read_table(path, columns=[c for c in wanted if c in present])
     own: dict[str, str] = {}
@@ -259,6 +298,7 @@ def build_rows(
     sample_labels: Mapping[str, Sequence[str]] | None = None,
     cr_en_labels: frozenset[str] = frozenset(),
     flavour: str | None = None,
+    source_roots: Mapping[str, Path] | None = None,
 ) -> list[dict]:
     """``flavour`` (``open`` | ``nc``) keeps only the rows that flavour may ship; every row
     carries ``licence_class`` (``resolve_row_class``: the source's class, stricter if its own
@@ -273,14 +313,17 @@ def build_rows(
     for ref in refs:
         source = registry.source(ref.source_id)
         if ref.source_id not in staged_cache:
-            staged_cache[ref.source_id] = _staged_lookup(stage_root, source)
+            staged_cache[ref.source_id] = _staged_lookup(
+                stage_root, source, (source_roots or {}).get(ref.source_id)
+            )
         staged = staged_cache[ref.source_id]
         partition, stem = ref.file.parent.name, ref.file.stem
         staged_row = staged.get((partition, stem), {})
         if ref.source_id not in geo_cache:
             geo_cache[ref.source_id] = load_backfill(ref.source_id, backfill_root)
         geo = geo_cache[ref.source_id].get(f"{partition}/{stem}", {})
-        lat, lon, depth_m = geo.get("lat"), geo.get("lon"), geo.get("depth_m")
+        own = {k: geo.get(k) if geo.get(k) is not None else staged_row.get(k) for k in STAGED_GEO}
+        lat, lon, depth_m = own["lat"], own["lon"], own["depth_m"]
         gps_precision_m = None
         sensitive = is_location_sensitive(
             source, sample_labels=sample_labels.get(ref.sha256, ()), cr_en_labels=cr_en_labels
@@ -303,11 +346,12 @@ def build_rows(
                     per_row=getattr(source, "licence_per_row", False),
                 ),
                 "attribution": attribution_for(source),
+                "split_group": staged_row.get("split_group"),
                 "upstream_id": staged_row.get("upstream_path"),
                 "upstream_url": None,
                 "fetch_date": source.verification.verified_on.isoformat(),
                 "lineage_root_digest": lineage_root_digest_for(source, registry),
-                "capture_datetime": geo.get("capture_datetime"),
+                "capture_datetime": own["capture_datetime"],
                 "lat": lat,
                 "lon": lon,
                 "geo_precision": geo.get("geo_precision") or "none",
@@ -315,8 +359,8 @@ def build_rows(
                 "gps_precision_m": gps_precision_m,
                 "depth_m": depth_m,
                 "depth_source": None,
-                "platform": geo.get("platform"),
-                "camera": geo.get("camera"),
+                "platform": own["platform"],
+                "camera": own["camera"],
                 "meow_realm": meow.realm if meow else None,
                 "meow_province": meow.province if meow else None,
                 "meow_ecoregion": meow.ecoregion if meow else None,

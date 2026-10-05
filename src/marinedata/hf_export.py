@@ -26,7 +26,7 @@ from pathlib import Path
 
 from .builder import DatasetBuilder
 from .checksums import file_digest
-from .flavours import row_licence_class
+from .flavours import row_licence_class, sample_ships
 from .hf_parquet import ConfigSpec, ExportRow, files_per_folder, plan_config, write_shard
 from .licence_class import drop_release_excluded, flavour_filter, require_flavour
 from .registry import Registry
@@ -187,6 +187,7 @@ def collect_rows(
     release = json.loads((release_dir / "RELEASE.json").read_text())
     split_map = release_dir / "SPLIT_MAP.json"
     excluded = frozenset(release["never_eval_near_dup_excluded"]["sha256"])
+    flavour = release.get("flavour")
     admitted = {sid: Path(roots[sid]) for sid in _admitted_source_ids(registry, roots, profile)}
     never_eval = _never_eval_source_ids(registry, admitted)
     pseudo = {sid for sid in admitted if PSEUDO_TAG in registry.source(sid).tags}
@@ -207,8 +208,8 @@ def collect_rows(
         for split_name, positions in dataset.splits.items():
             for position in positions:
                 sample = dataset.samples[position]
-                if sample.image is None:
-                    continue
+                if sample.image is None or not sample_ships(registry, sample, flavour):
+                    continue  # per-row-licence sources: the rows the release manifest kept
                 row_licence = sample.meta.get("license")
                 image = Path(sample.image)
                 sha = digests.get(image) or digests.setdefault(image, file_digest(image))
@@ -419,6 +420,12 @@ def main(argv: list[str] | None = None) -> int:
         default=",".join(DEFAULT_EXCLUDE_CONFIGS),
         help="comma-separated task configs to drop from the Hub export (D-A); '' for none",
     )
+    parser.add_argument(
+        "--no-metadata", action="store_true", help="skip the per-image `metadata` config"
+    )
+    parser.add_argument(
+        "--quality", type=Path, default=None, help="WP-1 quality.parquet joined into `metadata`"
+    )
     args = parser.parse_args(argv)
 
     registry = Registry.load()
@@ -439,6 +446,16 @@ def main(argv: list[str] | None = None) -> int:
     layout = build_layout(
         rows, pseudo, task_layers=_tl.read_task_layers(args.release_dir), flavour=flavour
     )
+    if not args.no_metadata:  # WP-R2b: licence_class / geo / split_group per image, same flavour
+        import pyarrow.parquet as pq
+
+        from .metadata_release import add_metadata_config
+
+        quality = pq.read_table(args.quality).to_pylist() if args.quality else []
+        layout = add_metadata_config(
+            layout, registry, roots, flavour=flavour,
+            quality_by_sha={r["image_sha256"]: r for r in quality},
+        )  # fmt: skip
     summary = export(layout, args.out, sample=args.sample)
     if flavour:
         summary["flavour"] = flavour
