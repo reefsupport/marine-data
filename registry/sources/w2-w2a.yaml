@@ -240,6 +240,11 @@ sources:
     file URL'
   items: 1889
   items_note: patches
+  annotations:
+  - classes: 14
+    kind: image-label
+    supervises:
+    - taxon
 - id: fathomnet-coverage
   name: FathomNet full-coverage test sets
   version: unversioned
@@ -881,6 +886,9 @@ sources:
     given the share token)'
   items: 17
   items_note: sequences
+  annotations:
+  - kind: camera-pose
+    supervises: []
 - id: seathru-nerf
   name: SeaThru-NeRF scenes
   version: unversioned
@@ -921,6 +929,9 @@ sources:
     needs a Drive-aware fetcher (large-file confirm-token handshake)'
   items: 4
   items_note: scenes
+  annotations:
+  - kind: camera-pose
+    supervises: []
 - id: seagrassfinder
   name: SeagrassFinder eelgrass
   version: unversioned
@@ -1231,6 +1242,10 @@ sources:
     no direct zip links on this pass; the catalog''s ''zip links'' note implies a subpage not yet located'
   items: 10000
   items_note: stereo pairs (est, catalog)
+  annotations:
+  - kind: image-label
+    notes: diver-gesture classes; verify count
+    supervises: []
 - id: vdd-c
   name: VDD-C diver detection
   version: unversioned

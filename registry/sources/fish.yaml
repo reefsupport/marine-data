@@ -649,9 +649,13 @@ sources:
     capabilities: [fish-classification]
     items: 18429
     annotations:
-      - kind: none
-        supervises: []
-        notes: "9 species class folders; no taxonomy crosswalk done this pass (see tags: out-of-water)."
+    - classes: 9
+      kind: image-label
+      supervises:
+      - taxon
+    - kind: dense-mask
+      notes: binary fish GT png
+      supervises: []
     coverage: { regions: [unknown] }
     loader: { layout: metadata-only }
-    tags: [out-of-water, market, general-pretraining]
+    tags: [out-of-water, market, general-pretraining, release-excluded, quarantined]

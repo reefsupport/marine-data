@@ -8,3 +8,8 @@ attribution: Kitware / VIAME community data collection
 citation: Kitware VIAME public data
 homepage: https://data.kitware.com/#collection/58b747ec8d777f0aef5d0f6a
 disk_floor_gib: 34.0
+
+measured:
+  label_type: stereo pairs with disparity maps (HabCam2019 3d_models); detection labels not staged
+  method: u15-label-kind-triage (registry-patch.yaml)
+  date: '2026-10-05'

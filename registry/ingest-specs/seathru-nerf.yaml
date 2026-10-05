@@ -16,3 +16,8 @@ notes: >-
   in the zip's own README.txt — left `unknown (see homepage)` pending a read of the
   project page/paper terms.
 disk_floor_gib: 1.0
+
+measured:
+  label_type: 'none (camera poses: COLMAP and LLFF poses_bounds)'
+  method: u15-label-kind-triage (registry-patch.yaml)
+  date: '2026-10-05'

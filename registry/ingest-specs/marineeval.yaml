@@ -11,3 +11,8 @@ citation: "Wong et al. 2025, MarineEval: A Large-scale Benchmark for Marine Unde
 homepage: https://huggingface.co/datasets/WongYukKwan/MarineEval
 
 disk_floor_gib: 34.0
+
+measured:
+  label_type: 'vqa: question-only prompts (answers withheld)'
+  method: u15-label-kind-triage (registry-patch.yaml)
+  date: '2026-10-05'

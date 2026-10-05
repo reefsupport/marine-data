@@ -16,7 +16,7 @@ measured:
   date: '2026-09-25'
   per_item_license: cc-by-4.0
   by_depth_band_m: {}
-  label_type: none stated (crops + metadata xlsx)
+  label_type: none (unlabelled holographic plankton crops; per-station csv holds date and location)
   wp6g_gaps:
   - 7
   - 6

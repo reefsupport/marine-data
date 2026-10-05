@@ -12,3 +12,8 @@ notes: needs_adapter:site-scrape — caddian.eu root and a guessed /index.php/do
   path (404) exposed no direct zip links on this pass; the catalog's 'zip links' note
   implies a subpage not yet located
 disk_floor_gib: 34.0
+
+measured:
+  label_type: diver-gesture class labels on ~10k stereo images; file format unverified
+  method: u15-label-kind-triage (registry-patch.yaml)
+  date: '2026-10-05'

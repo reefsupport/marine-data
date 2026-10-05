@@ -17,3 +17,10 @@ notes: >-
   government works, public domain by default; not independently re-verified against
   this specific export's own terms page this pass.
 disk_floor_gib: 1.0
+
+measured:
+  label_type: none (tabular occurrence records of species and position; no imagery)
+  release_excluded: true
+  release_exclusion_reason: tabular occurrence records, no imagery
+  method: u15-label-kind-triage (registry-patch.yaml)
+  date: '2026-10-05'

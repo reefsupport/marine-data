@@ -18,7 +18,7 @@ measured:
   date: '2026-09-25'
   per_item_license: cc-by-4.0
   by_depth_band_m: {}
-  label_type: interferometric SAS imagery (3 cm) + bathymetry (25 cm) mosaics
+  label_type: none (unlabelled SAS backscatter and bathymetry rasters)
   habitat_region: Galapagos Spreading Center hydrothermal fields
   dedup_chain: new; no registry/ingest-spec/WP-6g/S57 match on title, DOI or record id
   wp6l_gap: sonar

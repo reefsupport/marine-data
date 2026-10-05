@@ -9,3 +9,8 @@ homepage: https://zenodo.org/records/2542305
 params:
   zenodo_record: 2542305
 disk_floor_gib: 34.0
+
+measured:
+  label_type: none stated (README only; GT folder contents unverified)
+  method: u15-label-kind-triage (registry-patch.yaml)
+  date: '2026-10-05'

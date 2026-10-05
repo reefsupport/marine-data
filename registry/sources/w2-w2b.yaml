@@ -530,6 +530,10 @@ sources:
   - enhancement
   - euvp
   notes: 'access: pending-ingest — see registry/ingest-specs/euvp.yaml (S57/w2b sweep, 2026-09-25).'
+  annotations:
+  - kind: none
+    notes: paired enhancement reference image (pairs); AnnotationKind has no pairs value
+    supervises: []
 - id: underwater-images-2542305
   name: Underwater image collection (Zenodo 2542305)
   version: unversioned
@@ -703,6 +707,10 @@ sources:
   - enhancement
   - paired
   notes: 'access: pending-ingest — see registry/ingest-specs/lsui.yaml (S57/w2b sweep, 2026-09-25).'
+  annotations:
+  - kind: none
+    notes: paired enhancement reference image (pairs)
+    supervises: []
 - id: u45
   name: U45 underwater enhancement test set
   version: unversioned
@@ -908,6 +916,12 @@ sources:
   - enhancement
   - salient-object
   notes: 'access: pending-ingest — see registry/ingest-specs/usod10k.yaml (S57/w2b sweep, 2026-09-25).'
+  annotations:
+  - kind: dense-mask
+    notes: binary salient-object GT
+    supervises: []
+  - kind: depth-map
+    supervises: []
 - id: viame-public
   name: VIAME public data collection (Kitware)
   version: unversioned
@@ -946,6 +960,10 @@ sources:
   - fish
   - mixed-survey
   notes: 'access: pending-ingest — see registry/ingest-specs/viame-public.yaml (S57/w2b sweep, 2026-09-25).'
+  annotations:
+  - kind: depth-map
+    notes: HabCam2019 disparity; stereo pairs
+    supervises: []
 - id: duo
   name: DUO (Detecting Underwater Objects)
   version: unversioned
@@ -980,3 +998,8 @@ sources:
   - detection
   - invertebrate
   notes: 'access: pending-ingest — see registry/ingest-specs/duo.yaml (S57/w2b sweep, 2026-09-25).'
+  annotations:
+  - classes: 4
+    kind: bbox
+    supervises:
+    - taxon

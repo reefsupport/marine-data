@@ -18,3 +18,8 @@ notes: >-
   WP-6d-A gdrive-public adapter; 4,279 paired images; Baidu mirror not used (D-E).
   LOCAL-ingest -- LSUI/{GT,input} paired enhancement images, no README inside the zip.
 disk_floor_gib: 34.0
+
+measured:
+  label_type: paired enhancement images (input and GT reference)
+  method: u15-label-kind-triage (registry-patch.yaml)
+  date: '2026-10-05'

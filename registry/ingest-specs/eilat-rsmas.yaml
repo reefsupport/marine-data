@@ -13,3 +13,8 @@ notes: needs_adapter:site-scrape — page https://sci2s.ugr.es/CNN-coral-image-c
   to https); the EILAT+RSMAS image archive itself is referenced from a same-page 'dataset'
   anchor that needs a follow-up fetch to resolve to an exact file URL
 disk_floor_gib: 34.0
+
+measured:
+  label_type: image-level coral class (14 classes; class code in filename)
+  method: u15-label-kind-triage (registry-patch.yaml)
+  date: '2026-10-05'

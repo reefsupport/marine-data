@@ -23,3 +23,8 @@ params:
   revision: e3c6d08a8b07ed806e61977ffbcefd9d5ba60933
   image_column: input_image
 disk_floor_gib: 36.0
+
+measured:
+  label_type: paired underwater image enhancement (input and enhanced reference)
+  method: u15-label-kind-triage (registry-patch.yaml)
+  date: '2026-10-05'

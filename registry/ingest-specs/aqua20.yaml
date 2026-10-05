@@ -12,4 +12,5 @@ measured:
   method: HF API usedStorage; item count not queried (budget)
   date: '2026-09-25'
   per_item_license: unknown
+  label_type: image-level labels, 20 classes (HF ClassLabel)
 disk_floor_gib: 34.0
