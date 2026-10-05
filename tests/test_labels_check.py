@@ -115,7 +115,9 @@ def test_declared_unknown_labels_are_listed_not_failed(reg, tmp_path):
 
 
 def test_a_crosswalk_without_a_vocab_is_measured_on_its_edges(rows):
-    row = rows["mouss-detection"]
+    # mouss-detection used to be the example; WP-R3 gave it a vocab TSV (label-types basis)
+    assert rows["mouss-detection"].basis == "label-types"
+    row = rows["benthicnet-1m"]
     assert row.basis == "crosswalk-edges" and row.status == lc.PASS and row.mapped_pct == 100.0
 
 

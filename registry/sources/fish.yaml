@@ -531,6 +531,7 @@ sources:
     loader:
       layout: yolo-txt
       schema_id: dataset-native
+      crosswalk_id: brackish-dataset
     citation: "@InProceedings{pedersen2019brackish, title={Detection of Marine Animals in a New Underwater Dataset with Varying Visibility}, author={Pedersen, Malte and Haurum, Joakim Bruslund and Gade, Rikke and Moeslund, Thomas B. and Madsen, Niels}, booktitle = {The IEEE Conference on Computer Vision and Pattern Recognition (CVPR) Workshops}, month = {June}, year = {2019}}"
     tags: [temperate, turbidity]
 

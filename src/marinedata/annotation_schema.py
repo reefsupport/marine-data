@@ -14,7 +14,7 @@ Null semantics (a null always means one specific thing):
 * ``label_native`` is the source's own string, byte-exact. It is required except on a
   semantic mask row (the per-class strings live in ``class_map``) and on ``identities``.
   ``label_native_id`` null = the source has no id of its own.
-* ``taxon_node_id`` / ``form_node_id`` / ``condition_node_id`` are nodes of taxonomy 2.8.0
+* ``taxon_node_id`` / ``form_node_id`` / ``condition_node_id`` are nodes of taxonomy 2.9.0
   (the three ``rs-benthic-v1`` axes). ``match_type = unmapped`` means all three are null and so
   are the derived ``taxon_rank`` / ``worms_aphia_id`` / ``rs_benthic_code``. Any other match
   type needs at least one node (semantic masks excepted: their classes map per pixel value).

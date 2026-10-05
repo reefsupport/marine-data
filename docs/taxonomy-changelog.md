@@ -1,5 +1,18 @@
 # Taxonomy changelog
 
+## 2.9.0 — 2026-10-05
+
+MINOR: 0 nodes and 6 edges added, nothing removed, re-parented or retargeted
+(`marinedata taxonomy diff 2.8.0 HEAD`: nodes added 0 / removed 0 / changed 0; edges added 6 / removed 0 / changed 0).
+
+- **WP-R3 (bbox release label gate):** new `brackish-dataset` crosswalk (6 edges, all to existing nodes, same targets and
+  fidelities as `brackishmot-class-id`: fish and small fish -> `A146419` Vertebrata, crab -> `A106673`, shrimp -> `A1130`,
+  jellyfish -> `A1740301`, starfish -> `A123080`) with `vocab/brackish-dataset.tsv`; the loader gains `crosswalk_id` and the
+  `no_crosswalk_yet` entry is dropped. The vocabulary is the paper's (no tree is staged), so edges are keyed by name.
+- `vocab/mouss-detection.tsv` and `vocab/labeled-fishes-in-the-wild.tsv` added for the existing single-class `fish` crosswalks
+  (their coverage was unmeasured, so the release gate failed them); no edge changes.
+- Still open: `ozfish` and `sea-urchin-detection` have no crosswalk (vocabulary not obtainable offline).
+
 ## 2.8.0 — 2026-10-05
 
 MINOR: 0 nodes and 23 edges added, nothing removed, re-parented or retargeted
