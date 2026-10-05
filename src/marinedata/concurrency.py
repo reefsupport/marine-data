@@ -16,8 +16,10 @@ import time
 import urllib.error
 from collections.abc import Callable, Iterator
 from contextlib import contextmanager
-from typing import TypeVar
+from typing import Any, TypeVar
 from urllib.parse import urlsplit
+
+import botocore.exceptions as _bce
 
 T = TypeVar("T")
 
@@ -33,6 +35,18 @@ _RETRYABLE_BOTO_CODES = frozenset(
         "RequestTimeTooSkewed",
     }
 )
+# A lone PutObject 400 ("BadRequest ... N/A", empty body) hit a 2 h and a 6 h deepseagrass
+# run and brackishmot; an identical re-run succeeded, so it is transient. ONLY this code
+# (botocore reports "400" for body-less replies) at status 400 is retried: InvalidArgument,
+# MalformedXML, EntityTooLarge etc. are 400s that are real client bugs and stay fatal.
+_TRANSIENT_400_CODES = frozenset({"BadRequest", "400"})
+# botocore transport failures that are not an ``OSError`` (timeouts already are one).
+_RETRYABLE_BOTOCORE = (
+    _bce.ReadTimeoutError,
+    _bce.ConnectTimeoutError,
+    _bce.EndpointConnectionError,
+    _bce.ConnectionClosedError,
+)
 
 
 class RetriesExhausted(RuntimeError):
@@ -42,7 +56,8 @@ class RetriesExhausted(RuntimeError):
 
 
 def is_retryable_exc(exc: BaseException) -> bool:
-    """429/5xx (HTTP or S3) and connection resets — never a 4xx auth/validation error."""
+    """429/5xx (HTTP or S3), connection resets/timeouts and a transient S3 ``BadRequest``
+    (400) — never a 403/404 or any other 4xx auth/validation error."""
     code = getattr(exc, "code", None)  # urllib.error.HTTPError
     if isinstance(exc, urllib.error.HTTPError):
         # HTTPError subclasses URLError, so without this a 404/410 fell through to the
@@ -58,7 +73,61 @@ def is_retryable_exc(exc: BaseException) -> bool:
             return True
         if isinstance(status, int) and status in _RETRYABLE_HTTP_STATUS:
             return True
+        if status == 400 and err.get("Code") in _TRANSIENT_400_CODES:
+            return True
+    if isinstance(exc, _RETRYABLE_BOTOCORE):
+        return True
     return isinstance(exc, (urllib.error.URLError, ConnectionError, TimeoutError, OSError))
+
+
+def _s3_response(exc: BaseException | None) -> dict[str, Any] | None:
+    """The botocore ``response`` dict of ``exc`` or, for a ``RetriesExhausted`` wrapper,
+    of its cause."""
+    for cand in (exc, getattr(exc, "__cause__", None)):
+        response = getattr(cand, "response", None)
+        if isinstance(response, dict):
+            return response
+    return None
+
+
+S3_CONTEXT_MARK = " [s3 "
+
+
+def describe_error(exc: BaseException) -> str:
+    """``"Type: message"`` plus, when the failure is an S3 call, `` [s3 op=… key=… status=…
+    code=… request_id=…]``. ``key`` is set by the put path via :func:`tag_s3_key`. Only the
+    key, status, error code and RequestId are read — never headers, URLs or credentials."""
+    text = f"{type(exc).__name__}: {exc}"
+    response = _s3_response(exc)
+    ctx: list[str] = []
+    op = getattr(exc, "operation_name", None) or getattr(exc.__cause__, "operation_name", None)
+    if op:
+        ctx.append(f"op={op}")
+    key = getattr(exc, "s3_key", None)
+    if key:
+        ctx.append(f"key={key}")
+    if response is not None:
+        meta = response.get("ResponseMetadata") or {}
+        code = (response.get("Error") or {}).get("Code")
+        for name, val in (
+            ("status", meta.get("HTTPStatusCode")),
+            ("code", code),
+            ("request_id", meta.get("RequestId")),
+        ):
+            if val not in (None, ""):
+                ctx.append(f"{name}={val}")
+    return f"{text}{S3_CONTEXT_MARK}{' '.join(ctx)}]" if ctx else text
+
+
+def tag_s3_key(key: str, fn: Callable[[], T]) -> T:
+    """Run ``fn``; if it raises, remember the S3 ``key`` on the exception (first tag wins,
+    exception type unchanged) so :func:`describe_error` can name the failing object."""
+    try:
+        return fn()
+    except Exception as exc:
+        if getattr(exc, "s3_key", None) is None:
+            exc.s3_key = key  # type: ignore[attr-defined]
+        raise
 
 
 def retry_with_backoff(

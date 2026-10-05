@@ -24,6 +24,8 @@ from typing import Any
 
 import yaml
 
+from .concurrency import S3_CONTEXT_MARK, describe_error
+
 # D-AA (2026-09-25 charter): anonymous HF only, no token. On a 429, cool down at
 # least this long, then retry the same source (its worker thread just sleeps and
 # re-runs it in place — with all sources submitted to the pool up front, a source
@@ -37,7 +39,8 @@ HF_MAX_COOLDOWNS = 3
 def _is_hf_rate_limited(result: dict[str, Any]) -> bool:
     if result.get("status") != "error":
         return False
-    error = result.get("error", "")
+    # the [s3 key=… request_id=…] context may contain "429" by chance: not an HF signal
+    error = str(result.get("error", "")).partition(S3_CONTEXT_MARK)[0]
     return "429" in error or "Too Many Requests" in error
 
 
@@ -133,7 +136,7 @@ def run_one(
         return {
             "source_id": spec.id,
             "status": "error",
-            "error": f"{type(exc).__name__}: {exc}",
+            "error": describe_error(exc),
             "elapsed_s": elapsed(),
         }
 

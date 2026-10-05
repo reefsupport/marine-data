@@ -43,7 +43,7 @@ from typing import Any
 
 from . import checksums
 from .adapters import suffix_of
-from .concurrency import HostLimiter, retry_with_backoff
+from .concurrency import HostLimiter, retry_with_backoff, tag_s3_key
 from .ingest_missing import MissingLedger, decode_status, fetch_status
 from .ingest_source import (
     _CONTAINERS,
@@ -179,10 +179,13 @@ class _Putter:
 
     def _send(self, rel: str, data: bytes, sha: str) -> None:
         try:
-            retry_with_backoff(
-                lambda: self.client.put_object(
-                    Bucket=self.bucket, Key=self.key(rel), Body=data, Metadata={"sha256": sha}
-                )
+            tag_s3_key(
+                self.key(rel),
+                lambda: retry_with_backoff(
+                    lambda: self.client.put_object(
+                        Bucket=self.bucket, Key=self.key(rel), Body=data, Metadata={"sha256": sha}
+                    )
+                ),
             )
             with self._lock:
                 self.uploaded += 1
@@ -247,15 +250,21 @@ class _S3Stream(io.RawIOBase):
     def _send_part(self, chunk: bytes) -> None:
         client, bucket, key = self.putter.client, self.putter.bucket, self.putter.key(self.rel)
         if self._upload_id is None:
-            resp = retry_with_backoff(
-                lambda: client.create_multipart_upload(Bucket=bucket, Key=key)
+            resp = tag_s3_key(
+                key,
+                lambda: retry_with_backoff(
+                    lambda: client.create_multipart_upload(Bucket=bucket, Key=key)
+                ),
             )
             self._upload_id = str(resp["UploadId"])
         n, md5 = len(self._md5s) + 1, _md5(chunk)
-        resp = retry_with_backoff(
-            lambda: client.upload_part(
-                Bucket=bucket, Key=key, UploadId=self._upload_id, PartNumber=n, Body=chunk
-            )
+        resp = tag_s3_key(
+            key,
+            lambda: retry_with_backoff(
+                lambda: client.upload_part(
+                    Bucket=bucket, Key=key, UploadId=self._upload_id, PartNumber=n, Body=chunk
+                )
+            ),
         )
         if str(resp["ETag"]).strip('"') != md5:
             raise RuntimeError(f"{key} part {n}: ETag {resp['ETag']} != local md5 {md5}")
@@ -271,13 +280,16 @@ class _S3Stream(io.RawIOBase):
             else:
                 self._send_part(data)
                 parts = [{"PartNumber": i + 1, "ETag": f'"{m}"'} for i, m in enumerate(self._md5s)]
-                retry_with_backoff(
-                    lambda: self.putter.client.complete_multipart_upload(
-                        Bucket=self.putter.bucket,
-                        Key=self.putter.key(self.rel),
-                        UploadId=self._upload_id,
-                        MultipartUpload={"Parts": parts},
-                    )
+                tag_s3_key(
+                    self.putter.key(self.rel),
+                    lambda: retry_with_backoff(
+                        lambda: self.putter.client.complete_multipart_upload(
+                            Bucket=self.putter.bucket,
+                            Key=self.putter.key(self.rel),
+                            UploadId=self._upload_id,
+                            MultipartUpload={"Parts": parts},
+                        )
+                    ),
                 )
                 joined = b"".join(bytes.fromhex(m) for m in self._md5s)
                 etag = f"{_md5(joined)}-{len(self._md5s)}"
@@ -383,7 +395,12 @@ class _Parts:
 
     def _put(self, name: str, data: bytes) -> None:
         key = f"{self.prefix}/{name}"
-        retry_with_backoff(lambda: self.client.put_object(Bucket=self.bucket, Key=key, Body=data))
+        tag_s3_key(
+            key,
+            lambda: retry_with_backoff(
+                lambda: self.client.put_object(Bucket=self.bucket, Key=key, Body=data)
+            ),
+        )
 
     def load(self) -> list[tuple[dict[str, Any], list[SampleRow]]]:
         names = set(_list_existing(self.client, self.bucket, self.prefix))
