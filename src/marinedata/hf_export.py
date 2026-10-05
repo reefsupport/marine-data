@@ -26,8 +26,8 @@ from pathlib import Path
 
 from .builder import DatasetBuilder
 from .checksums import file_digest
-from .hf_parquet import ConfigSpec, ExportRow, files_per_folder, plan_config, write_shard
 from .flavours import row_licence_class
+from .hf_parquet import ConfigSpec, ExportRow, files_per_folder, plan_config, write_shard
 from .licence_class import drop_release_excluded, flavour_filter, require_flavour
 from .registry import Registry
 from .release import DEFAULT_SCHEMA_ID, _admitted_source_ids, _never_eval_source_ids

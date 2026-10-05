@@ -280,7 +280,7 @@ def build_rows(
         meow = classify(lat, lon, meow_polygons) if lat is not None else None
         q = quality_by_sha.get(ref.sha256, {})
         row_licence = (
-            staged_row.get("license") if source.licence_per_row else None
+            staged_row.get("license") if getattr(source, "licence_per_row", False) else None
         ) or source.licence.id
         rows.append(
             {

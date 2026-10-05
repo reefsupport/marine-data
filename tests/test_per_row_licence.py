@@ -1,5 +1,6 @@
-"""WP-R2: a ``licence_per_row`` source (FathomNet, iNat, ...) ships row by row in the release
-path: CC0 / CC-BY rows -> open flavour, BY-NC rows -> nc flavour, ND / unknown / missing -> never."""
+"""WP-R2: a ``licence_per_row`` source (FathomNet, iNat, ...) ships row by row.
+
+CC0 / CC-BY rows -> open flavour, BY-NC rows -> nc flavour, ND / unknown / missing -> never."""
 
 from __future__ import annotations
 
@@ -53,17 +54,22 @@ def per_row_build(monkeypatch, tmp_path):
         update={"id": "row1", "name": "row1", "licence": lic, "licence_per_row": True,
                 "access_class": AccessClass.RESTRICTED_ND}
     )  # fmt: skip
-    reg = type(base)(sources={"row1": row}, licences={}, profiles={p.id: p for p in base.profiles},
-                     schemas={s.id: s for s in base.schemas}, tasks={t.id: t for t in base.tasks})  # fmt: skip
+    reg = type(base)(
+        sources={"row1": row},
+        licences={},
+        profiles={p.id: p for p in base.profiles},
+        schemas={s.id: s for s in base.schemas},
+        tasks={t.id: t for t in base.tasks},
+    )
     monkeypatch.setattr(Registry, "load", classmethod(lambda cls, root=None: reg))
     monkeypatch.setenv("MARINEDATA_CACHE", str(tmp_path / "cache"))
     root = tmp_path / "src" / "row1"
     shas = _stage_per_row(root)
 
     def run(*extra: str) -> int:
-        return main(["release", "build", "--release", "r1", "--split-map", str(tmp_path / "sm.json"),
-                     "--out", str(tmp_path / "out"), "--local-only", f"--local=row1={root}",
-                     *extra])  # fmt: skip
+        args = ["release", "build", "--release", "r1", "--split-map", str(tmp_path / "sm.json")]
+        args += ["--out", str(tmp_path / "out"), "--local-only", f"--local=row1={root}"]
+        return main([*args, *extra])
 
     return run, shas, tmp_path / "out" / "releases" / "r1"
 

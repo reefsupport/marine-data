@@ -102,7 +102,8 @@ def ships_in(registry, source_id: str, flavour: str) -> bool:
 
 
 def row_licence_class(registry, source_id: str, licence: str | None) -> str:
-    """One row's class: the source class bound + the row's own licence string (``resolve_row_class``).
+    """One row's class: the source class bound plus the row's own licence string.
+
     A per-row source with no (parseable) row licence is ``unknown`` and never ships."""
     source = registry.source(source_id)
     return resolve_row_class(

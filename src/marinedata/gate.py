@@ -109,7 +109,8 @@ def evaluate(source: Source, profile: Profile, *, legal_opinion_ref: str | None 
 
     # 3b. Access class (WP-L1b): a shipping profile admits only the classes its flavour ships.
     allowed_classes = profile.allow_access_classes
-    if allowed_classes and not per_row_shipping and source.access_class.value not in allowed_classes:
+    class_ok = per_row_shipping or source.access_class.value in allowed_classes
+    if allowed_classes and not class_ok:
         return Decision(
             source.id,
             False,
