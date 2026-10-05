@@ -44,6 +44,7 @@ pinned-tree fetch). Nothing here uploads.
    filtered per row, so every row has a non-null `licence_class`. `--no-metadata` skips the config.
 7. (optional refresh) `python -m marinedata.metadata_release --release-dir ... --stage-root ...
    --quality ... --out hf-<flavour> --summary ... --coverage ...` rewrites the same `metadata`
-   shards with the staged-version lookup and the coverage report.
+   shards with the staged-version lookup and the coverage report. Its `--summary` holds only the
+   metadata config: use a file of its own, never hf_export's summary (the card step reads that one).
 8. `marinedata hf-card` / upload stages per `docs/formats.md`; check that every config in the card has
    its `data_files` and that `metadata` is listed.

@@ -159,7 +159,10 @@ def read_release_rows(release_dir: str | Path) -> list[tuple[str, str]]:
                 raise DedupGateError(f"{manifest}: unexpected header {header}")
             for line in fh:
                 sha, split = line.rstrip("\n").split("\t")[:2]
-                rows.append((sha, split))
+                # `probe` is general-pretraining's name for the held-out `val` images (builder
+                # _to_pretrain_vocabulary), not a split of its own: val here + probe there is
+                # one split, not a group spanning two.
+                rows.append((sha, "val" if split == "probe" else split))
     return rows
 
 
