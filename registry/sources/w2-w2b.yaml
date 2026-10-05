@@ -948,7 +948,7 @@ sources:
   - kind: depth-map
     supervises: []
 - id: viame-public
-  access_class: open
+  access_class: unknown  # LICV 2026-10-05 (was open)
   name: VIAME public data collection (Kitware)
   version: unversioned
   description: Multi-survey mixed marine imagery collection served over the Kitware Girder REST API.
@@ -985,7 +985,7 @@ sources:
   tags:
   - fish
   - mixed-survey
-  notes: 'access: pending-ingest — see registry/ingest-specs/viame-public.yaml (S57/w2b sweep, 2026-09-25).'
+  notes: 'access: pending-ingest — see registry/ingest-specs/viame-public.yaml (S57/w2b sweep, 2026-09-25). LICV 2026-10-05: access_class open -> unknown; evidence https://data.kitware.com/#collection/58b747ec8d777f0aef5d0f6a (Girder collection has no licence metadata; spec claim of NOAA public domain is secondary only).'
   annotations:
   - kind: depth-map
     notes: HabCam2019 disparity; stereo pairs

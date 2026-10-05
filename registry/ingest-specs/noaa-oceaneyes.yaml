@@ -1,6 +1,12 @@
 # SPEC-w3 discovery: NOAA OceanEyes (Zooniverse-labelled fish frames) (NOAA NODD public GCS bucket, anonymous).
 id: noaa-oceaneyes
-access_class: open
+access_class: unknown  # LICV 2026-10-05 (was open)
+notes: >-
+  LICV 2026-10-05: access_class -> unknown (was open). Evidence:
+  https://www.fisheries.noaa.gov/website-policies-and-disclaimers . GCS
+  nmfs_odp_hq/nodd_tools/datasets/oceaneyes has no README/LICENSE (only image prefixes).
+  Likely US-gov imagery but no dataset statement; labels are Zooniverse volunteer work
+  (project terms unread). NOAA text also "encourage[s]" non-commercial/scientific use.
 adapter: bucket
 license: public domain (US government work) — NODD
 attribution: NOAA Fisheries / NODD

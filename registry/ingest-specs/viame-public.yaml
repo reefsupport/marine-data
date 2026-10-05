@@ -1,5 +1,10 @@
 id: viame-public
-access_class: open
+access_class: unknown  # LICV 2026-10-05 (was open)
+notes: >-
+  LICV 2026-10-05: access_class -> unknown (was open). Evidence:
+  https://data.kitware.com/#collection/58b747ec8d777f0aef5d0f6a . Collection (77 GB) mixes
+  many surveys; no per-folder licence metadata anonymously. Spec/registry claim of NOAA PD
+  is secondary only.
 adapter: girder
 params:
   collection: 58b747ec8d777f0aef5d0f6a

@@ -399,7 +399,12 @@ sources:
     tags: [time-series, gbr]
 
   - id: coralvqa
-    access_class: open
+    access_class: restricted-nc  # LICV 2026-10-05 (was open)
+    notes: >-
+      LICV 2026-10-05: access_class -> restricted-nc (was open). Evidence:
+      https://huggingface.co/datasets/CoralReefData/CoralVQA/blob/main/README.md . TRAP: HF
+      card field says cc-by-4.0 but the README Licensing Information section says BY-NC 4.0.
+      Take the stricter text until authors clarify.
     name: CoralVQA
     # habitat inferred (WP-2b) from this source's own description/notes, not independently verified
     habitat: [coral_reef]
@@ -1683,7 +1688,12 @@ sources:
     tags: [needs-permission, tar-only]
 
   - id: rf100-coral-lwptl
-    access_class: open
+    access_class: unknown  # LICV 2026-10-05 (was open)
+    notes: >-
+      LICV 2026-10-05: access_class -> unknown (was open). Evidence:
+      https://huggingface.co/datasets/LibreYOLO/coral-lwptl . Third-party HF mirror defers to
+      the original Roboflow Universe project (roboflow-100/coral-lwptl, 403 anonymously).
+      Upstream licence not read.
     name: RF100 Coral Growth-Form (LWPTL)
     version: "rev-83f0a33679b0"
     description: >
