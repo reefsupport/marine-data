@@ -256,3 +256,50 @@ def test_review_band_limit_enforced() -> None:
     assert overlap.review_band_fail is True
     assert overlap.ok is False
     assert not any(n for stages in overlap.counts.values() for n in stages.values())
+
+
+# -- decon_exempt_reason: the coverage gate is default-deny (WP-R8) ---------------
+
+
+def _registry(*entries: BenchmarkEntry):
+    from marinedata.benchmarks import BenchmarkRegistry
+
+    return BenchmarkRegistry(
+        schema_version=1, thresholds=_thresholds(), benchmarks=tuple(entries), raw={}
+    )
+
+
+def _exempt(entry: BenchmarkEntry, reason: str) -> BenchmarkEntry:
+    return entry.model_copy(update={"decon_exempt_reason": reason})
+
+
+def test_no_manifest_with_exemption_passes_and_is_recorded(tmp_path) -> None:
+    from marinedata.decon import check, decon_record
+    from marinedata.hf_card import decon_limitations
+
+    reg = _registry(_exempt(_entry("b-one", status="registry-only"), "not staged"))
+    result = check(tmp_path, reg, [], manifests_root=tmp_path)
+    assert result.ok and result.exempt == {"b-one": "not staged"}
+    record = decon_record(result)
+    assert record["exempt"] == {"b-one": "not staged"} and record["gate"] == "pass"
+    card = "\n".join(decon_limitations({"decon": record}))
+    assert "## Limitations" in card and "Decontamination not verified against: `b-one`" in card
+    assert decon_limitations({"decon": {"exempt": {}}}) == []
+
+
+@pytest.mark.parametrize("status", ["staged", "registry-only", "needs-yohan"])
+def test_no_manifest_and_no_exemption_fails(tmp_path, status: str) -> None:
+    from marinedata.decon import check
+
+    reg = _registry(_entry("b-two", status=status))
+    result = check(tmp_path, reg, [], manifests_root=tmp_path)
+    assert not result.ok
+    assert result.failures == ["b-two: no manifest and no decon_exempt_reason"]
+    assert reg.uncovered(tmp_path) == ["b-two"]
+
+
+def test_blank_exemption_reason_is_rejected() -> None:
+    with pytest.raises(ValueError, match="decon_exempt_reason"):
+        _exempt(_entry("b-three"), "  ").model_validate(
+            _exempt(_entry("b-three"), "  ").model_dump()
+        )

@@ -149,9 +149,9 @@ def test_iter_bucket_images_sample_schema_metadata_only_part():
 
 
 def test_bucket_has_no_stream_prefix_raises_no_embedded_bytes():
-    # staged-layout fallback with no metadata.parquet present -> KeyError surfaces
+    # staged-layout fallback with no metadata.parquet present -> a named build error
     client = FakeS3Client({})
-    with pytest.raises(KeyError):
+    with pytest.raises(ManifestBuildError, match=r"no metadata\.parquet"):
         list(iter_bucket_images(client, "rs-storage-open", _entry()))
 
 
@@ -272,9 +272,7 @@ def test_iter_upstream_images_max_bytes_stops_stream(tmp_path: Path):
     )
     entry = _entry(eval_split="all")
     images = list(
-        iter_upstream_images(
-            entry, tmp_path, tmp_path, adapter=adapter, max_bytes=len(RED) - 1
-        )
+        iter_upstream_images(entry, tmp_path, tmp_path, adapter=adapter, max_bytes=len(RED) - 1)
     )
     assert [i.stem for i in images] == ["1"]
 
@@ -312,9 +310,7 @@ def test_iter_upstream_images_zip_fixture_excludes_unreferenced_original_data(
     adapter = FakeAdapter(decoded)
     entry = _entry(eval_split="val")
     images = list(iter_upstream_images(entry, tmp_path, tmp_path, adapter=adapter))
-    assert [i.upstream_path.rsplit("#", 1)[-1] for i in images] == [
-        "instance_version/val/b.jpg"
-    ]
+    assert [i.upstream_path.rsplit("#", 1)[-1] for i in images] == ["instance_version/val/b.jpg"]
 
 
 def test_spec_resolves(tmp_path: Path):
@@ -333,8 +329,19 @@ def test_build_manifest_computes_hash_columns():
     assert row["embedding_ref"] == row["sha256"]
     assert row["embedding_model"] == "sscd_disc_mixup"
     assert set(row) == {
-        "benchmark_id", "upstream_path", "stem", "upstream_split", "sha256", "pixel_sha256",
-        "width", "height", "dhash", "phash", "phash64", "margin", "embedding_ref",
+        "benchmark_id",
+        "upstream_path",
+        "stem",
+        "upstream_split",
+        "sha256",
+        "pixel_sha256",
+        "width",
+        "height",
+        "dhash",
+        "phash",
+        "phash64",
+        "margin",
+        "embedding_ref",
         "embedding_model",
     }
 
@@ -434,9 +441,7 @@ def test_build_manifest_checkpoints_at_row_threshold(tmp_path: Path):
             mid_run["rows"] = len(pq.read_table(ckpt).to_pylist())
         yield RawImage("c.png", "c", "test", RED)
 
-    build_manifest(
-        entry, images(), ckpt, checkpoint_every_rows=2, checkpoint_every_s=10_000
-    )
+    build_manifest(entry, images(), ckpt, checkpoint_every_rows=2, checkpoint_every_s=10_000)
     assert mid_run["exists"] is True
     assert mid_run["rows"] == 2
 
@@ -469,8 +474,11 @@ def test_build_manifest_progress_line_format(capsys: pytest.CaptureFixture[str])
     entry = _entry()
     images = iter([RawImage("a.png", "a", "test", RED)])
     build_manifest(
-        entry, images, Path("/nonexistent/does-not-exist.parquet"),
-        progress_every=1, progress_every_s=10_000,
+        entry,
+        images,
+        Path("/nonexistent/does-not-exist.parquet"),
+        progress_every=1,
+        progress_every_s=10_000,
     )
     err = capsys.readouterr().err
     # BENCH-vmfix: the progress block now fires right after bytes_total is updated,
@@ -500,4 +508,6 @@ def test_build_manifest_progress_fires_on_already_seen_rows(
         progress_every_s=10_000,
     )
     err = capsys.readouterr().err
-    assert re.search(r"^fakebench rows=1 bytes=[\d.]+MB rate=[\d.]+img/min skipped=0$", err, re.MULTILINE)
+    assert re.search(
+        r"^fakebench rows=1 bytes=[\d.]+MB rate=[\d.]+img/min skipped=0$", err, re.MULTILINE
+    )

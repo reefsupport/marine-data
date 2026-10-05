@@ -14,8 +14,14 @@ from pathlib import Path
 from typing import Any
 
 
-def client_from_rclone(remote: str = "rs-hel1", conf: Path | None = None) -> Any:
-    """boto3 S3 client for ``remote``'s section of an rclone config file."""
+def client_from_rclone(
+    remote: str = "rs-hel1", conf: Path | None = None, *, concurrent: bool = False
+) -> Any:
+    """boto3 S3 client for ``remote``'s section of an rclone config file.
+
+    ``concurrent=True`` sizes the connection pool for ~24 parallel GETs and bounds a
+    hung socket (connect 15 s, read 30 s) so one dead keep-alive cannot stall an
+    in-order stream for minutes."""
     import boto3
     from botocore.config import Config
 
@@ -30,5 +36,12 @@ def client_from_rclone(remote: str = "rs-hel1", conf: Path | None = None) -> Any
         region_name=sec.get("region") or None,
         aws_access_key_id=sec.get("access_key_id"),
         aws_secret_access_key=sec.get("secret_access_key"),
-        config=Config(retries={"max_attempts": 8, "mode": "standard"}),
+        config=Config(
+            retries={"max_attempts": 8, "mode": "standard"},
+            **(
+                {"max_pool_connections": 48, "connect_timeout": 15, "read_timeout": 30}
+                if concurrent
+                else {}
+            ),
+        ),
     )

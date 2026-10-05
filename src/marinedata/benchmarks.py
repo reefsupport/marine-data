@@ -43,6 +43,10 @@ class UpstreamSplit(_Frozen):
     heldout_val: str | None = None
     counts: dict[str, int | None] = Field(default_factory=dict)
     definition_url: str = Field(min_length=1)
+    image_subdir: str | None = None
+    """Directory name that holds the benchmark's real images when its tree also ships
+    masks/depth/edge maps beside them (USOD10K: ``RGB`` next to ``GT``/``depth``/
+    ``Boundary``). The manifest builder keeps only rows under it; ``None`` = every row."""
 
     @property
     def eval_splits(self) -> frozenset[str]:
@@ -73,6 +77,16 @@ class BenchmarkEntry(_Frozen):
     policy: Policy
     policy_reason: str = Field(min_length=1)
     chain: list[str] = Field(default_factory=list)
+    decon_exempt_reason: str | None = None
+    """Reviewed reason this benchmark has no eval-image manifest (decon cannot hash what
+    is not staged). With a reason and no manifest the coverage gate records the benchmark
+    as exempt, in ``RELEASE.json`` and the dataset card; with neither it FAILS."""
+
+    @model_validator(mode="after")
+    def _exempt_reason_is_text(self) -> BenchmarkEntry:
+        if self.decon_exempt_reason is not None and not self.decon_exempt_reason.strip():
+            raise ValueError(f"{self.id}: decon_exempt_reason must be non-empty text or absent")
+        return self
 
     @model_validator(mode="after")
     def _verified_needs_evidence(self) -> BenchmarkEntry:
@@ -164,6 +178,15 @@ class BenchmarkRegistry(_Frozen):
     def pending(self, root: Path | None = None) -> list[str]:
         """Benchmark ids with no manifest parquet yet — the "still missing" list."""
         return [e.id for e in self.benchmarks if not self.manifest_path(e.id, root).is_file()]
+
+    def exemptions(self) -> dict[str, str]:
+        """``benchmark id -> decon_exempt_reason`` for every entry that carries one."""
+        return {e.id: e.decon_exempt_reason for e in self.benchmarks if e.decon_exempt_reason}
+
+    def uncovered(self, root: Path | None = None) -> list[str]:
+        """Ids with neither a manifest nor an exemption — what the decon coverage gate fails."""
+        exempt = self.exemptions()
+        return [i for i in self.pending(root) if i not in exempt]
 
     @classmethod
     def load(cls, path: str | Path | None = None) -> BenchmarkRegistry:

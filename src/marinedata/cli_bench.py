@@ -23,8 +23,16 @@ def _cmd_check(args: argparse.Namespace) -> int:
     print(f"benchmarks {len(reg.benchmarks)} verified {verified}/{len(reg.benchmarks)}")
     print(f"benchmarks_sha256 {digest}")
     print(f"manifests present {len(reg.benchmarks) - len(pending)} pending {len(pending)}")
+    uncovered = reg.uncovered()
+    print(f"decon-exempt {len(reg.exemptions())} uncovered {len(uncovered)}")
     if args.strict and pending:
         print(f"pending: {', '.join(sorted(pending))}", file=sys.stderr)
+    if args.strict and uncovered:
+        print(
+            f"uncovered (no manifest, no exemption): {', '.join(sorted(uncovered))}",
+            file=sys.stderr,
+        )
+        return 1
     return 0
 
 
@@ -70,11 +78,11 @@ def _cmd_manifest(args: argparse.Namespace) -> int:
         print(f"unknown benchmark id: {args.benchmark_id}", file=sys.stderr)
         return 1
     out_path = reg.manifest_path(entry.id)
-    client = client_from_rclone(args.remote) if args.source != "upstream" else None
+    client = client_from_rclone(args.remote, concurrent=True) if args.source != "upstream" else None
     source = resolve_source(args.source, entry, client, args.bucket) if client else "upstream"
     try:
         if source == "bucket":
-            images = iter_bucket_images(client, args.bucket, entry)
+            images = iter_bucket_images(client, args.bucket, entry, layout=args.layout)
             table, n_before = build_manifest(entry, images, out_path)
         else:
             with tempfile.TemporaryDirectory(prefix="marinedata-bench-") as tmp:
@@ -121,6 +129,14 @@ def add_bench_subparser(sub: argparse._SubParsersAction) -> None:
         default="auto",
         help="bucket: rs-storage-open parquet; upstream: ingest adapter stream; "
         "auto: pick by CHECKSUMS.sha256 (default)",
+    )
+    q.add_argument(
+        "--layout",
+        choices=("auto", "staged"),
+        default="auto",
+        help="bucket source only. auto: _stream parts when present, else staged images/. "
+        "staged: metadata.parquet + loose images/ only, fetching just the eval-split objects "
+        "(use when the eval split is a small slice of the tree)",
     )
     q.add_argument("--bucket", default="rs-storage-open")
     q.add_argument("--remote", default="rs-hel1", help="rclone remote name for bucket credentials")

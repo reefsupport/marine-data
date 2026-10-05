@@ -36,6 +36,22 @@ CONFIG_BLURB = {
 }
 
 
+def decon_limitations(release: dict) -> list[str]:
+    """The card's limitations lines for benchmarks decon could not verify (from
+    ``RELEASE.json``'s ``decon.exempt``); empty when every benchmark was checked."""
+    exempt = (release.get("decon") or {}).get("exempt") or {}
+    if not exempt:
+        return []
+    return [
+        "",
+        "## Limitations",
+        "",
+        "Decontamination not verified against: "
+        + "; ".join(f"`{bid}` ({reason})" for bid, reason in sorted(exempt.items()))
+        + ".",
+    ]
+
+
 def _yaml_configs(summary: dict) -> list[str]:
     lines = ["configs:"]
     for config in summary["configs"]:
@@ -227,6 +243,7 @@ def render_card(
         "- CoralSCOP masks are model output (`coralscop-pseudo-masks`) and never an "
         "evaluation target.",
         *empty_note,
+        *decon_limitations(release),
         "",
         *_tl.card_section(task_layers),
     ]

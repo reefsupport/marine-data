@@ -1023,9 +1023,10 @@ def build_release(
             "status": "config-validated-only; per-sample gate deferred to the v2 build",
         }
     if decon:  # WP-12 P2 hook, off by default; the integrator flips it at the v2 build
-        from .decon import run_decon_gate
+        from .decon import decon_record, run_decon_gate
 
-        run_decon_gate(release_root, registry, admitted_roots, dedup_crop=dedup_crop)
+        decon_result = run_decon_gate(release_root, registry, admitted_roots, dedup_crop=dedup_crop)
+        release_json["decon"] = decon_record(decon_result)
     if flavour is not None:
         release_json.update(release_record(registry, flavour, profile, admitted))
     release_json_text = json.dumps(release_json, indent=2, sort_keys=True) + "\n"
