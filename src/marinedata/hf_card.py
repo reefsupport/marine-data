@@ -20,6 +20,7 @@ from .hf_export import (
     PSEUDO_MASKS,
     SPLIT_ORDER,
 )
+from .privacy import policy as privacy_policy
 from .task_layers import hf_wiring as _tl
 
 METADATA = "metadata"
@@ -244,6 +245,7 @@ def render_card(
         "evaluation target.",
         *empty_note,
         *decon_limitations(release),
+        *privacy_policy.card_lines(release),
         "",
         *_tl.card_section(task_layers),
     ]

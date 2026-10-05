@@ -50,6 +50,8 @@ from .hf_export import (
 )
 from .hf_parquet import ConfigSpec, ExportRow, plan_config, write_shard
 from .licence_class import drop_release_excluded, flavour_filter, resolve_row_class
+from .privacy import policy as privacy_policy
+from .privacy.policy import POSSIBLE_FACE, PrivacyOutcome
 from .registry import Registry, Source
 
 METADATA = "metadata"
@@ -91,6 +93,8 @@ METADATA_COLUMNS: tuple[tuple[str, str], ...] = (
     ("q_entropy", "double"),
     ("q_blank", "bool"),
     ("quality_flags", "string"),
+    ("privacy_flag", "string"),
+    ("face_score", "double"),
 )
 """Every field the WP-2 brief lists, plus WP-1's quality join and the join key itself.
 ``fetch_date``/``capture_datetime`` are ISO-8601 strings (:mod:`marinedata.hf_parquet`
@@ -192,6 +196,7 @@ def add_metadata_config(
     flavour: str | None = None,
     quality_by_sha: Mapping[str, dict] | None = None,
     meow_polygons: Sequence[MeowFeature] = (),
+    privacy_flags: Mapping[str, float] | None = None,
 ):
     """``layout`` plus the ``metadata`` config (WP-R2b): one row per exported image, joined on
     ``image_sha256`` + ``source_id`` + ``source_version``, split-aligned with ``images``. Rows come
@@ -202,7 +207,7 @@ def add_metadata_config(
         return layout  # no images config -> nothing to describe
     rows = build_rows(
         refs, registry, Path("."), quality_by_sha or {}, meow_polygons, flavour=flavour,
-        source_roots=roots,
+        source_roots=roots, privacy_flags=privacy_flags,
     )  # fmt: skip
     require_split_groups(rows)
     split_by_sha = {r.sha256: r.split for r in refs}
@@ -330,6 +335,7 @@ def build_rows(
     cr_en_labels: frozenset[str] = frozenset(),
     flavour: str | None = None,
     source_roots: Mapping[str, Path] | None = None,
+    privacy_flags: Mapping[str, float] | None = None,
 ) -> list[dict]:
     """``flavour`` (``open`` | ``nc``) keeps only the rows that flavour may ship; every row
     carries ``licence_class`` (``resolve_row_class``: the source's class, stricter if its own
@@ -407,6 +413,8 @@ def build_rows(
                 "q_entropy": q.get("q_entropy"),
                 "q_blank": q.get("q_blank"),
                 "quality_flags": ",".join(q.get("flags") or []) or None,
+                "privacy_flag": POSSIBLE_FACE if ref.sha256 in (privacy_flags or {}) else None,
+                "face_score": (privacy_flags or {}).get(ref.sha256),
             }
         )
     rows = flavour_filter(rows, flavour) if flavour is not None else drop_release_excluded(rows)
@@ -577,6 +585,12 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--release-dir", type=Path, required=True)
     parser.add_argument("--stage-root", type=Path, required=True)
     parser.add_argument("--quality", type=Path, required=True)
+    parser.add_argument(
+        "--privacy",
+        type=Path,
+        default=None,
+        help="privacy.parquet: apply the release privacy policy",
+    )
     parser.add_argument("--meow", type=Path, default=None)
     parser.add_argument("--out", type=Path, required=True)
     parser.add_argument("--summary", type=Path, required=True)
@@ -586,13 +600,22 @@ def main(argv: list[str] | None = None) -> int:
 
     registry = Registry.load()
     refs = collect_image_refs(registry, args.release_dir, cache_root())
+    outcome = PrivacyOutcome()
+    if args.privacy:
+        outcome = privacy_policy.evaluate(
+            privacy_policy.load_privacy_rows(args.privacy), {r.sha256: r.source_id for r in refs}
+        )
+        refs = [r for r in refs if r.sha256 not in outcome.excluded]
     quality_table = pq.read_table(args.quality)
     quality_by_sha = {r["image_sha256"]: r for r in quality_table.to_pylist()}
     from .geo_meow import load_meow_polygons
 
     polygons = load_meow_polygons(args.meow) if args.meow and args.meow.is_file() else ()
     flavour = json.loads((args.release_dir / "RELEASE.json").read_text()).get("flavour")
-    rows = build_rows(refs, registry, args.stage_root, quality_by_sha, polygons, flavour=flavour)
+    rows = build_rows(
+        refs, registry, args.stage_root, quality_by_sha, polygons, flavour=flavour,
+        privacy_flags=outcome.flags,
+    )  # fmt: skip
     require_split_groups(rows)
     split_by_sha = {r.sha256: r.split for r in refs}  # already HF split names (build_layout)
     for row in rows:

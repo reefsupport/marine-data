@@ -48,3 +48,13 @@ pinned-tree fetch). Nothing here uploads.
    metadata config: use a file of its own, never hf_export's summary (the card step reads that one).
 8. `marinedata hf-card` / upload stages per `docs/formats.md`; check that every config in the card has
    its `data_files` and that `metadata` is listed.
+
+## Privacy policy (WP-R9)
+
+After `hf_export` (first pass) run `marinedata privacy-scan` on the shards, then re-run
+`python -m marinedata.hf_export ... --privacy <privacy.parquet>` and the metadata refresh with the
+same `--privacy`. A face score >= 0.85 excludes the image from every config and lists it in
+`RELEASE.json` (`privacy_exclusions`: image id, source, score, detector + version); 0.60-0.85 keeps
+it with `privacy_flag` = `possible_face` and `face_score` in `metadata`. The thresholds are the two
+constants in `src/marinedata/privacy/policy.py`; the dataset card prints them. Without `--privacy`
+nothing is excluded or flagged.

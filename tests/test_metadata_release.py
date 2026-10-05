@@ -270,3 +270,12 @@ def test_a_null_split_group_cannot_reach_the_export_silently(tmp_path):
     }
     with pytest.raises(mr.MetadataBuildError, match="src-a"):
         mr.add_metadata_config(layout, registry, {"src-a": tmp_path / "src-a" / "v1"})
+
+
+def test_metadata_rows_carry_privacy_flag_and_face_score(tmp_path):
+    """WP-R9: the 0.60-0.85 band is kept and flagged; everything else has neither column set."""
+    registry = _group_fixture(tmp_path, "g1")
+    (flagged,) = mr.build_rows(_ref("g1"), registry, tmp_path, {}, privacy_flags={"s" * 64: 0.7})
+    assert (flagged["privacy_flag"], flagged["face_score"]) == ("possible_face", 0.7)
+    (plain,) = mr.build_rows(_ref("g1"), registry, tmp_path, {})
+    assert (plain["privacy_flag"], plain["face_score"]) == (None, None)

@@ -29,6 +29,7 @@ from .checksums import file_digest
 from .flavours import row_licence_class, sample_ships
 from .hf_parquet import ConfigSpec, ExportRow, files_per_folder, plan_config, write_shard
 from .licence_class import drop_release_excluded, flavour_filter, require_flavour
+from .privacy import policy as privacy_policy
 from .registry import Registry
 from .release import (
     DEFAULT_SCHEMA_ID,
@@ -448,6 +449,13 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument(
         "--quality", type=Path, default=None, help="WP-1 quality.parquet joined into `metadata`"
     )
+    parser.add_argument(
+        "--privacy",
+        type=Path,
+        default=None,
+        help="privacy.parquet from `privacy-scan`: apply the release privacy policy (score >= "
+        "0.85 excludes the image and lists it in RELEASE.json; 0.60-0.85 flags it in `metadata`)",
+    )
     args = parser.parse_args(argv)
 
     registry = Registry.load()
@@ -464,6 +472,9 @@ def main(argv: list[str] | None = None) -> int:
     rows = collect_rows(registry, roots, args.release_dir, profile)
     exclude = [c for c in args.exclude_configs.split(",") if c]
     rows = drop_excluded(rows, exclude)
+    rows, privacy = privacy_policy.apply_to_rows(rows, args.privacy)
+    if args.privacy:
+        privacy_policy.record_in_release(release_json, privacy)
     pseudo = frozenset(s for s in roots if PSEUDO_TAG in registry.source(s).tags)
     layout = build_layout(
         rows, pseudo, task_layers=_tl.read_task_layers(args.release_dir), flavour=flavour
@@ -477,6 +488,7 @@ def main(argv: list[str] | None = None) -> int:
         layout = add_metadata_config(
             layout, registry, roots, flavour=flavour,
             quality_by_sha={r["image_sha256"]: r for r in quality},
+            privacy_flags=privacy.flags,
         )  # fmt: skip
     summary = export(layout, args.out, sample=args.sample)
     if flavour:
