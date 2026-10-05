@@ -145,6 +145,9 @@ class ImageRef:
     source_id: str
     file: Path
     split: str
+    split_group: str | None = None
+    """The release's own group for the image (the ``images`` config value, fail-closed at the
+    group split), used when the source's staged metadata carries none (WP-R9)."""
 
 
 def refs_from_layout(layout) -> list[ImageRef]:
@@ -153,10 +156,32 @@ def refs_from_layout(layout) -> list[ImageRef]:
         return []
     _, splits = layout["images"]
     return [
-        ImageRef(row.values["image_sha256"], row.values["source_id"], row.file, split)
+        ImageRef(
+            row.values["image_sha256"],
+            row.values["source_id"],
+            row.file,
+            split,
+            row.values.get("split_group"),
+        )
         for split, export_rows in splits.items()
         for row in export_rows
     ]
+
+
+def require_split_groups(rows: Sequence[Mapping[str, object]]) -> None:
+    """Fail closed (WP-R9): a ``metadata`` row with no ``split_group`` must not be exported.
+    The group is what keeps a site/station out of two splits; the error names every source."""
+    missing: dict[str, int] = {}
+    for row in rows:
+        if not row.get("split_group"):
+            sid = str(row.get("source_id"))
+            missing[sid] = missing.get(sid, 0) + 1
+    if missing:
+        listing = ", ".join(f"{sid} ({n} rows)" for sid, n in sorted(missing.items()))
+        raise MetadataBuildError(
+            f"metadata rows with a NULL split_group for source(s): {listing}; neither the staged "
+            "metadata nor the release's images config carries one"
+        )
 
 
 def add_metadata_config(
@@ -179,6 +204,7 @@ def add_metadata_config(
         refs, registry, Path("."), quality_by_sha or {}, meow_polygons, flavour=flavour,
         source_roots=roots,
     )  # fmt: skip
+    require_split_groups(rows)
     split_by_sha = {r.sha256: r.split for r in refs}
     splits = {
         s: [ExportRow(values=r) for r in rows if split_by_sha[r["image_sha256"]] == s]
@@ -351,7 +377,7 @@ def build_rows(
                     per_row=getattr(source, "licence_per_row", False),
                 ),
                 "attribution": attribution_for(source),
-                "split_group": staged_row.get("split_group"),
+                "split_group": staged_row.get("split_group") or ref.split_group,
                 "split": ref.split,  # the frozen map's split (Hub name), so check 8 can read it
                 "upstream_id": staged_row.get("upstream_path"),
                 "upstream_url": None,
@@ -567,6 +593,7 @@ def main(argv: list[str] | None = None) -> int:
     polygons = load_meow_polygons(args.meow) if args.meow and args.meow.is_file() else ()
     flavour = json.loads((args.release_dir / "RELEASE.json").read_text()).get("flavour")
     rows = build_rows(refs, registry, args.stage_root, quality_by_sha, polygons, flavour=flavour)
+    require_split_groups(rows)
     split_by_sha = {r.sha256: r.split for r in refs}  # already HF split names (build_layout)
     for row in rows:
         row["_split"] = split_by_sha[row["image_sha256"]]
