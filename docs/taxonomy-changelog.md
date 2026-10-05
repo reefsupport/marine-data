@@ -1,5 +1,16 @@
 # Taxonomy changelog
 
+## 2.5.0 — 2026-10-05
+
+MINOR: 1,776 nodes and 1,702 edges added, nothing removed, re-parented or retargeted
+(`marinedata taxonomy diff 2.4.0 HEAD`: removed 0, changed 0).
+
+- **WP-U8a:** fauna crosswalks through the pinned WoRMS snapshot. `fathomnet-concepts` 294 -> 1,989 edges
+  (1,950 observed concepts, 150,458 boxes; box-weighted 0.964 mapped), new `roboflow-aquarium` (7 edges),
+  `vocab/fathomnet{,-fgvc25}.tsv`, `vocab/roboflow-aquarium.tsv`. 52 lowercase common names (>= 100 boxes) are
+  decided by hand in `vocab/fathomnet-common-names.tsv` (WoRMS-confirmed ids; sea fan -> Octocorallia,
+  bony fish -> Actinopterygii, marine organism -> Biota, non-taxa unmapped). Snapshot +2,029 rows, never rewritten.
+
 ## 2.4.0 — 2026-10-05
 
 MINOR: two new crosswalks + vocabs, no nodes added and no existing edge retargeted.

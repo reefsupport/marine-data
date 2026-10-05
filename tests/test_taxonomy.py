@@ -193,7 +193,7 @@ def test_reefolution_meets_the_floor_without_an_exception(reg):
     assert "reefolution" not in (tx.load_meta(reg.root).get("coverage_exceptions") or {})
 
 
-FROZEN_TAXONOMY_VERSION = "2.4.0"
+FROZEN_TAXONOMY_VERSION = "2.5.0"
 """Charter D-AD: the v2 release ships taxonomy 2.1.0. Bumping it is a deliberate act —
 freeze a new ``registry/taxonomy/releases/<v>.json`` and update this pin together."""
 
