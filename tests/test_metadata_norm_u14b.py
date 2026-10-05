@@ -45,10 +45,15 @@ def test_platform_vocabulary():
 
 
 FATHOM = {
-    "uuid": "u1", "latitude": 36.067347, "longitude": -122.297455, "depthMeters": 1631.0,
-    "timestamp": "2009-12-13T21:44:24Z", "imagingType": "ROV",
-    "tags": [{"key": "platform", "value": "Doc Ricketts"}], "boundingBoxes": [],
-}  # fmt: skip
+    "uuid": "u1",
+    "latitude": 36.067347,
+    "longitude": -122.297455,
+    "depthMeters": 1631.0,
+    "timestamp": "2009-12-13T21:44:24Z",
+    "imagingType": "ROV",
+    "tags": [{"key": "platform", "value": "Doc Ricketts"}],
+    "boundingBoxes": [],
+}
 
 
 def test_fathomnet_row_fields_and_provenance():
@@ -73,8 +78,14 @@ def test_fathomnet_bad_depth_and_position_are_null():
     assert "depth_m" not in out and "lat" not in out and out["capture_datetime"]
 
 
-INAT = {"photo_id": 1, "observation_uuid": "o1", "latitude": -27.3333233777, "longitude": 152.7666665241,
-        "observed_on": "2023-10-16", "license": "CC-BY-NC"}  # fmt: skip
+INAT = {
+    "photo_id": 1,
+    "observation_uuid": "o1",
+    "latitude": -27.3333233777,
+    "longitude": 152.7666665241,
+    "observed_on": "2023-10-16",
+    "license": "CC-BY-NC",
+}
 
 
 def test_inat_without_geoprivacy_column_is_generalised_never_exact():
@@ -127,8 +138,9 @@ def test_mermaid_join_and_no_join():
 
 
 def test_registry_defaults_validated_and_fallback_provenance():
-    assert dfl.validated_defaults({"default_platform": "lander", "default_habitat": "brackish_water"}) == {
-        "platform": "lander", "habitat": "brackish_water"}  # fmt: skip
+    assert dfl.validated_defaults(
+        {"default_platform": "lander", "default_habitat": "brackish_water"}
+    ) == {"platform": "lander", "habitat": "brackish_water"}
     with pytest.raises(ValueError):
         dfl.validated_defaults({"default_platform": "submarine"})
     with pytest.raises(ValueError):

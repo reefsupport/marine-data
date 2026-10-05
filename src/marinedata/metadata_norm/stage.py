@@ -218,11 +218,11 @@ def earliest_modified(client, prefix: str) -> tuple[Any, str]:
 
 def split_rule(source_id: str, root: str | Path | None = None):
     """The source's registry ``SplitGroupRule`` (``None`` when the source is not registered)."""
-    from ..registry import Registry
+    from ..registry import Registry, RegistryError
 
     try:
         return Registry.load(Path(root) if root else _default_root()).source(source_id).split_group
-    except KeyError:
+    except (KeyError, RegistryError):  # ingest-spec-only source: fallback grouping
         return None
 
 

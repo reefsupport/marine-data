@@ -152,6 +152,8 @@ class IngestSpec:
     attribution: str
     # WP-L1a: open | restricted-nc | restricted-nd | internal-only | unknown
     access_class: str = "unknown"
+    default_platform: str = ""  # WP-U14b source-level constants (metadata_norm.defaults)
+    default_habitat: str = ""
     licence_per_row: bool = False  # every item carries its own licence string
     citation: str = ""
     homepage: str = ""

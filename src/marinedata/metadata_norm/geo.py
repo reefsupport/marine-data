@@ -43,7 +43,7 @@ def to_float(value: Any) -> float | None:
 
 
 def valid_position(lat: Any, lon: Any) -> tuple[float, float] | None:
-    """``(lat, lon)`` when both parse and lie in WGS84 range; ``(0, 0)`` (null island) is rejected."""
+    """``(lat, lon)`` when both parse and lie in WGS84 range; ``(0, 0)`` (null island) is not."""
     la, lo = to_float(lat), to_float(lon)
     if la is None or lo is None or not (-90 <= la <= 90 and -180 <= lo <= 180):
         return None
@@ -101,15 +101,21 @@ def fathomnet_fields(rec: Mapping[str, Any]) -> dict[str, Any]:
         out["capture_datetime"] = when
         prov["capture_datetime"] = "fathomnet-json:timestamp"
     tag = next(
-        (t.get("value") for t in rec.get("tags") or [] if isinstance(t, dict) and t.get("key") == "platform"),
+        (
+            t.get("value")
+            for t in rec.get("tags") or []
+            if isinstance(t, dict) and t.get("key") == "platform"
+        ),
         None,
-    )  # fmt: skip
+    )
     platform = platform_from(rec.get("imagingType")) or platform_from(tag)
     if platform:
         out["platform"] = platform
         prov["platform"] = (
-            "fathomnet-json:imagingType" if platform_from(rec.get("imagingType")) else "fathomnet-json:tags.platform"
-        )  # fmt: skip
+            "fathomnet-json:imagingType"
+            if platform_from(rec.get("imagingType"))
+            else "fathomnet-json:tags.platform"
+        )
     return {**out, "_prov": prov}
 
 
