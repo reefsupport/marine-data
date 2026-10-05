@@ -1,9 +1,9 @@
-.PHONY: ci lint check taxonomy-check test e2e
+.PHONY: ci lint check taxonomy-check labels-check test e2e
 
 # `ci` is the exact sequence the GitHub Actions "Test" step runs — kept here so a
 # contributor can reproduce a CI failure locally with one command, and so the
 # workflow itself has no logic beyond `make ci` (D12, 5star-rubric WP-4).
-ci: lint check taxonomy-check test e2e
+ci: lint check taxonomy-check labels-check test e2e
 
 lint:
 	uv run ruff check .
@@ -20,6 +20,12 @@ check:
 # the rest (registered-but-not-staged sources are reported, never fail `make ci`).
 taxonomy-check:
 	uv run marinedata taxonomy check
+
+# WP-U2 crosswalk contract: every id in registry/sources AND registry/ingest-specs. Report
+# only (non-strict, exit 0): `--strict` or `--release-sources FILE` turn the 0.95 floor into
+# a failing gate for those ids.
+labels-check:
+	uv run marinedata labels check
 
 test:
 	uv run pytest -q

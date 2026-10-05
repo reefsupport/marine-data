@@ -295,7 +295,15 @@ def _cmd_taxonomy(args: argparse.Namespace) -> int:
 
 
 def _cmd_labels(args: argparse.Namespace) -> int:
-    """Audit crosswalk labels against the labels the data actually contains."""
+    """Audit crosswalk labels against the labels the data actually contains.
+
+    ``labels check`` (first positional) is the offline coverage gate over every source id
+    in the registry and the ingest specs (:mod:`marinedata.labels_check`).
+    """
+    if args.source_id[:1] == ["check"]:
+        from .labels_check import run as run_labels_check
+
+        return run_labels_check(args)
     from .fetch import FetchError, fetch_sample
     from .labelcheck import audit_source, summarise
 
@@ -428,8 +436,28 @@ def build_parser() -> argparse.ArgumentParser:
     )
     p_labels.add_argument("source_id", nargs="*")
     p_labels.add_argument("--limit", type=int, default=50)
-    p_labels.add_argument("--strict", action="store_true", help="Exit 1 on any silent drop")
+    p_labels.add_argument(
+        "--strict",
+        action="store_true",
+        help="Exit 1 on any silent drop; with `check`, gate every source id",
+    )
     p_labels.add_argument("-v", "--verbose", action="store_true")
+    check = p_labels.add_argument_group("labels check", "first positional `check`, then ids")
+    check.add_argument("--json", metavar="PATH", help="check: write the machine-readable report")
+    check.add_argument("--tsv", metavar="PATH", help="check: write the per-source TSV")
+    check.add_argument(
+        "--release-sources",
+        metavar="FILE",
+        help="check: ids (one per line, or a RELEASE.json) that must meet the floor",
+    )
+    check.add_argument(
+        "--audit-cache", metavar="TSV", help="check: audit.tsv-style cache (offline, no bucket)"
+    )
+    check.add_argument(
+        "--bucket",
+        action="store_true",
+        help="check: also list rs-storage-open sources/ (read-only)",
+    )
     p_labels.set_defaults(func=_cmd_labels)
 
     p_tax = sub.add_parser(

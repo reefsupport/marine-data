@@ -28,9 +28,12 @@ import yaml
 
 from . import coralnet_labels
 from .registry import Registry
-from .schema import Axis, Fidelity
+from .schema import Axis, Fidelity, NodeFacts
 
 MIN_MAPPED = 0.95
+WARN_MAPPED = 0.90
+"""Soft floor reported as WARN by ``labels check`` (:mod:`marinedata.labels_check`)."""
+L2_TASK = "benthic-l2"
 LABELLED_KINDS = frozenset(
     {"point-label", "dense-mask", "instance-mask", "bbox", "image-label", "track"}
 )
@@ -97,6 +100,22 @@ def check_nodes(registry: Registry, snapshot: dict[int, dict]) -> list[str]:
     return out
 
 
+def node_facts(
+    registry: Registry, node_id: str | None, schema_id: str = "rs-benthic-v1"
+) -> NodeFacts:
+    """``(taxon_rank, worms_aphia_id, rs_benthic_code)`` of one canonical node.
+
+    The L2 vocabulary is the ``benthic-l2`` task's class list (MariMap ``CoralLabelCode``),
+    so the code follows the registry rather than a second hard-coded list.
+    """
+    l2 = set(registry.task(L2_TASK).classes) if _has_task(registry, L2_TASK) else set()
+    return registry.label_schema(schema_id).node_facts(node_id, l2)
+
+
+def _has_task(registry: Registry, task_id: str) -> bool:
+    return any(t.id == task_id for t in registry.tasks)
+
+
 def node_counts(registry: Registry) -> dict[str, int]:
     nodes = [n for s in registry.schemas if s.canonical for n in s.nodes if n.axis is Axis.TAXON]
     return {
@@ -140,17 +159,30 @@ class VocabAudit:
         )
 
 
-def read_vocab(path: str | Path) -> tuple[dict[str, str], dict[str, int | None]]:
+def read_vocab_rows(path: str | Path) -> tuple[dict[str, str], list[dict[str, str]]]:
+    """Header comments and one dict per label row (``label``, ``count``, ``label_native_id``,
+    ``description``; absent columns are ``""``). Columns are read by header name, so the
+    optional ``label_native_id`` column can sit anywhere after ``label``."""
     head: dict[str, str] = {}
-    counts: dict[str, int | None] = {}
+    rows: list[dict[str, str]] = []
+    columns = ["label", "count"]
     for line in Path(path).read_text().splitlines():
         if line.startswith("# "):
             key, _, value = line[2:].partition(": ")
             head[key] = value
-        elif line and not line.startswith("label\t"):
-            label, count = ([*line.split("\t"), ""])[:2]
-            counts[label] = int(count) if count else None
-    return head, counts
+        elif line.startswith("label\t"):
+            columns = line.split("\t")
+        elif line:
+            cells = line.split("\t")
+            row = dict.fromkeys(("label", "count", "label_native_id", "description"), "")
+            row.update(zip(columns, cells, strict=False))
+            rows.append(row)
+    return head, rows
+
+
+def read_vocab(path: str | Path) -> tuple[dict[str, str], dict[str, int | None]]:
+    head, rows = read_vocab_rows(path)
+    return head, {r["label"]: int(r["count"]) if r["count"] else None for r in rows}
 
 
 def crosswalk_for(registry: Registry, registry_root: str | Path, crosswalk_id: str):
@@ -161,33 +193,55 @@ def crosswalk_for(registry: Registry, registry_root: str | Path, crosswalk_id: s
     return registry.crosswalk(crosswalk_id)
 
 
-def audit_vocab(
-    registry: Registry, path: str | Path, registry_root: str | Path | None = None
+def audit_crosswalk(
+    source_id: str,
+    crosswalk,
+    target_ids: set[str],
+    counts: dict[str, int | None],
+    *,
+    weighted: bool,
+    label_ids: dict[str, str] | None = None,
 ) -> VocabAudit:
-    head, counts = read_vocab(path)
-    root = registry_root if registry_root is not None else Path(path).resolve().parents[2]
-    crosswalk = crosswalk_for(registry, root, head["crosswalk"])
-    target = registry.label_schema(crosswalk.target_schema)
-    ids = {n.id for n in target.nodes}
+    """Audit observed ``counts`` against ``crosswalk``. ``label_ids`` (label -> native id)
+    makes edges match by id first, name second. ``narrower`` counts as mapped."""
+    ids = label_ids or {}
     mapped, unmappable, silent, dead = [], {}, [], []
     for label in counts:
-        edge = crosswalk.edge(label)
+        edge = crosswalk.edge(label, ids.get(label) or None)
         if edge is None:
             silent.append(label)
         elif edge.fidelity is Fidelity.UNMAPPABLE:
             unmappable[label] = edge.note or ""
         else:
             mapped.append(label)
-            dead += [f"{label}->{t}" for t in edge.targets.values() if t not in ids]
+            dead += [f"{label}->{t}" for t in edge.targets.values() if t not in target_ids]
     return VocabAudit(
-        source_id=head["source"],
+        source_id=source_id,
         crosswalk_id=crosswalk.id,
-        weighted=head.get("counts") == "annotations",
+        weighted=weighted,
         counts=counts,
         mapped=tuple(mapped),
         unmappable=unmappable,
         silent_drops=tuple(silent),
         dead_targets=tuple(dead),
+    )
+
+
+def audit_vocab(
+    registry: Registry, path: str | Path, registry_root: str | Path | None = None
+) -> VocabAudit:
+    head, rows = read_vocab_rows(path)
+    counts = {r["label"]: int(r["count"]) if r["count"] else None for r in rows}
+    root = registry_root if registry_root is not None else Path(path).resolve().parents[2]
+    crosswalk = crosswalk_for(registry, root, head["crosswalk"])
+    target = registry.label_schema(crosswalk.target_schema)
+    return audit_crosswalk(
+        head["source"],
+        crosswalk,
+        {n.id for n in target.nodes},
+        counts,
+        weighted=head.get("counts") == "annotations",
+        label_ids={r["label"]: r["label_native_id"] for r in rows if r["label_native_id"]},
     )
 
 
