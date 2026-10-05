@@ -17,7 +17,13 @@ from typing import Any
 
 import numpy as np
 
-from .benchmarks import BenchmarkEntry, BenchmarkRegistry, Thresholds, benchmarks_sha256
+from .benchmarks import (
+    BenchmarkEntry,
+    BenchmarkRegistry,
+    Thresholds,
+    benchmarks_sha256,
+    expected_eval_count,
+)
 from .dedup.corpus import Item, hash_items, read_payloads
 from .dedup.crop import thumb_pair
 from .dedup.embed import DEFAULT_SCALES, EMBED_SIDE, match_patch, prepare
@@ -137,7 +143,12 @@ class DeconResult:
             if o.status == "uncovered":
                 out.append(f"{o.benchmark_id}: no manifest and no decon_exempt_reason")
             elif o.coverage_fail:
-                out.append(f"{o.benchmark_id}: manifest coverage below gate_manifest_min_coverage")
+                have = (
+                    f"{o.hashed_n} hashed manifest rows / {o.eval_n or 'no'} registry eval images"
+                )
+                out.append(
+                    f"{o.benchmark_id}: manifest coverage below gate_manifest_min_coverage ({have})"
+                )
             if o.review_band_fail:
                 out.append(f"{o.benchmark_id}: review-band hits exceed the max")
             if any(n for stages in o.counts.values() for n in stages.values()):
@@ -268,11 +279,17 @@ def check_benchmark(
     corpus_records: list[ImageRecord],
     dedup_crop: bool = False,
 ) -> BenchmarkOverlap:
-    eval_n = entry.upstream_split.counts.get(entry.upstream_split.eval_split) or len(bench_records)
-    hashed_n = len(bench_records)
+    # WP-R9: the denominator is the registry's eval-split image count, never the manifest under
+    # judgement (R8c: 8.5k of 28353 deepseagrass images read as "100%"). A staged/w1/w2
+    # benchmark whose registry has no such count cannot be verified and fails.
+    eval_n = expected_eval_count(entry)
+    hashed_n = sum(1 for r in bench_records if r.sha256)
     coverage_fail = entry.obtain.status in {"staged", "w1", "w2"} and (
-        hashed_n == 0 or (eval_n and hashed_n < 0.99 * eval_n)
+        hashed_n == 0
+        or (eval_n is None and bool(bench_records))
+        or (eval_n is not None and hashed_n < thresholds.gate_manifest_min_coverage * eval_n)
     )
+    eval_n = eval_n or 0
 
     candidates: set[tuple[int, int]] = set()
     candidates.update(_exact_hits(bench_records, corpus_records, "upstream_id"))
@@ -339,7 +356,7 @@ def check_benchmark(
 
     review_max = max(
         thresholds.gate_review_band_max.get("absolute", 5),
-        thresholds.gate_review_band_max.get("fraction_of_eval", 0.01) * eval_n,
+        thresholds.gate_review_band_max.get("fraction_of_eval", 0.01) * (eval_n or hashed_n),
     )
     review_band_fail = len(review) > review_max
 
@@ -350,7 +367,7 @@ def check_benchmark(
     return BenchmarkOverlap(
         benchmark_id=entry.id,
         task=entry.task,
-        eval_n=eval_n or 0,
+        eval_n=eval_n,
         hashed_n=hashed_n,
         policy=entry.policy,
         status=status,
@@ -509,7 +526,7 @@ def check(
                 BenchmarkOverlap(
                     benchmark_id=entry.id,
                     task=entry.task,
-                    eval_n=entry.upstream_split.counts.get(entry.upstream_split.eval_split) or 0,
+                    eval_n=expected_eval_count(entry) or 0,
                     hashed_n=0,
                     policy=entry.policy,
                     status="uncovered",
@@ -528,7 +545,7 @@ def check(
                 BenchmarkOverlap(
                     benchmark_id=entry.id,
                     task=entry.task,
-                    eval_n=entry.upstream_split.counts.get(entry.upstream_split.eval_split) or 0,
+                    eval_n=expected_eval_count(entry) or 0,
                     hashed_n=0,
                     policy=entry.policy,
                     status="exempt",

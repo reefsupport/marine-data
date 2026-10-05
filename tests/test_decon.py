@@ -303,3 +303,39 @@ def test_blank_exemption_reason_is_rejected() -> None:
         _exempt(_entry("b-three"), "  ").model_validate(
             _exempt(_entry("b-three"), "  ").model_dump()
         )
+
+
+def test_coverage_is_judged_against_the_registry_eval_count_not_the_manifest():
+    """WP-R9 (R8c): 8.5k of 28353 images must not read as 100% covered."""
+    entry = _entry(eval_n=100)
+    corp = [_rec(f"c{i}") for i in range(3)]
+    short = [_rec(f"b{i}") for i in range(30)]
+    result = check_benchmark(entry, _thresholds(), short, corp)
+    assert result.coverage_fail and (result.hashed_n, result.eval_n) == (30, 100)
+    full = [_rec(f"b{i}") for i in range(100)]
+    ok = check_benchmark(entry, _thresholds(), full, corp)
+    assert not ok.coverage_fail and (ok.hashed_n, ok.eval_n) == (100, 100)
+    nulls = [_rec(f"b{i}") for i in range(50)] + [_rec("") for _ in range(50)]
+    assert check_benchmark(entry, _thresholds(), nulls, corp).hashed_n == 50
+    assert check_benchmark(entry, _thresholds(), nulls, corp).coverage_fail
+
+
+def test_a_staged_benchmark_without_a_registry_eval_count_fails_coverage():
+    entry = _entry(eval_n=100)
+    entry = entry.model_copy(
+        update={
+            "upstream_split": entry.upstream_split.model_copy(update={"counts": {"images": 1701}})
+        }
+    )
+    result = check_benchmark(entry, _thresholds(), [_rec("b0"), _rec("b1")], [_rec("c0")])
+    assert result.coverage_fail and result.eval_n == 0
+
+
+def test_expected_eval_count_sums_eval_and_heldout_val_with_aliases():
+    from marinedata.benchmarks import expected_eval_count
+
+    entry = _entry(eval_n=100)
+    split = entry.upstream_split.model_copy(
+        update={"heldout_val": "val", "counts": {"TR": 5, "validation": 20, "TE": 100}}
+    )
+    assert expected_eval_count(entry.model_copy(update={"upstream_split": split})) == 120

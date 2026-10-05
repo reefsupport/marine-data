@@ -228,3 +228,31 @@ def benchmarks_sha256(registry: BenchmarkRegistry) -> str:
     """
     canonical = json.dumps(registry.raw, sort_keys=True, separators=(",", ":"), default=str)
     return hashlib.sha256(canonical.encode("utf-8")).hexdigest()
+
+
+_UPSTREAM_LABEL_ALIASES = {"tr": "train", "te": "test"}
+
+
+def _split_key(value: str) -> str | None:
+    from .sample_schema import normalise_split
+
+    return normalise_split(value) or _UPSTREAM_LABEL_ALIASES.get(str(value).strip().lower())
+
+
+def expected_eval_count(entry: BenchmarkEntry) -> int | None:
+    """The registry's eval-image count: the sum of the published ``counts`` entries that
+    correspond to the entry's eval splits (``eval_split`` + ``heldout_val``), matched exactly or
+    through the split normaliser (``val``/``validation``, ``te``/``test``). ``None`` when the
+    registry carries no integer count for them. The decon coverage gate divides by this, never
+    by the manifest it is judging (WP-R9)."""
+    raw = entry.upstream_split.eval_splits
+    targets = {t for t in (_split_key(s) for s in raw) if t is not None}
+    total, found = 0, False
+    for key, n in entry.upstream_split.counts.items():
+        if not isinstance(n, int) or isinstance(n, bool):
+            continue
+        norm = _split_key(key)
+        if key in raw or (norm is not None and norm in targets):
+            total += n
+            found = True
+    return total if found else None
