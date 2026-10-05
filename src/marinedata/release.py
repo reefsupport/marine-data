@@ -205,6 +205,23 @@ def _guard_degenerate_grouping(
     return [(sha, f"{source_id}/sha:{sha}", split, path) for sha, _, split, path in entries]
 
 
+def release_skip_reason(source: Source) -> str | None:
+    """Why the split-map enumerator leaves ``source`` out, or ``None`` when it is enumerated.
+
+    A source tagged ``needs-attribution`` (WS-D S23) or whose loader layout is not
+    ``staged-tree`` has no rows in a generated map. :func:`build_release` asks the same
+    question, so it never roots a source the map cannot cover (WP-R2d)."""
+    if "needs-attribution" in source.tags:
+        return "needs-attribution: attribution target unconfirmed, not in release"
+    layout = source.loader.layout if source.loader is not None else None
+    if layout != "staged-tree":
+        return (
+            f"{layout if layout is not None else 'no loader'}: not in release "
+            "until labels format decided"
+        )
+    return None
+
+
 def enumerate_release_rows(
     registry: Registry,
     roots: dict[str, str | Path],
@@ -267,19 +284,10 @@ def enumerate_release_rows(
 
     for source_id in _admitted_source_ids(registry, roots, profile):
         source = registry.source(source_id)
-        if "needs-attribution" in source.tags:
+        reason = release_skip_reason(source)
+        if reason is not None:
             if skipped is not None:
-                skipped[source_id] = (
-                    "needs-attribution: attribution target unconfirmed, not in release"
-                )
-            continue
-        layout = source.loader.layout if source.loader is not None else None
-        if layout != "staged-tree":
-            if skipped is not None:
-                skipped[source_id] = (
-                    f"{layout if layout is not None else 'no loader'}: not in release "
-                    "until labels format decided"
-                )
+                skipped[source_id] = reason
             continue
         root = Path(roots[source_id])
         metadata_path = root / "metadata.parquet"
@@ -385,6 +393,8 @@ def generate_split_map(
     """
     if load_split_map(out) is not None:
         raise ValueError(f"{out} already exists — remove it first to regenerate")
+    # One map serves every flavour (WP-R2d): a source released in no flavour never shapes it.
+    roots = {s: r for s, r in roots.items() if not release_excluded(s)}
     never_eval_sources = _never_eval_source_ids(
         registry, _admitted_source_ids(registry, roots, profile)
     )
@@ -588,6 +598,14 @@ def build_release(
         admitted = flavour_source_ids(registry, admitted, flavour)
     else:  # test escape only: release-excluded sources never ship
         admitted = [s for s in admitted if not release_excluded(s)]
+    not_in_map: dict[str, str] = {}
+    if flavour is not None:  # the map enumerator never saw these (WP-R2d): don't root them
+        not_in_map = {
+            sid: reason
+            for sid in admitted
+            if (reason := release_skip_reason(registry.source(sid))) is not None
+        }
+        admitted = [sid for sid in admitted if sid not in not_in_map]
     if not admitted:
         raise ValueError(
             f"no admitted source under profile {profile!r}"
@@ -698,6 +716,10 @@ def build_release(
             for exclusion in partial_abstain_excluded
         ],
     }
+    if not_in_map:
+        release_json["skipped_sources"] = [
+            {"id": sid, "reason": reason} for sid, reason in sorted(not_in_map.items())
+        ]
     if near_dup is not None:
         release_json["near_dup"] = near_dup_record(near_dup)
         release_json["never_eval_near_dup_excluded"] = {

@@ -131,6 +131,76 @@ def _sources_from(path: str | None) -> set[str] | None:
     return {entry["id"] for entry in json.loads(Path(path).read_text())["sources"]}
 
 
+def _generate_global_split_map(
+    registry: Registry,
+    args: argparse.Namespace,
+    local: dict[str, Path],
+    split_map_path: Path,
+    near_dup: NearDupConfig,
+) -> int:
+    """Generate the ONE frozen split map every flavour builds from (WP-R2d): enumerate the
+    superset (open + nc sources under ``SPLIT_MAP_PROFILE``, never-released sources excluded),
+    so an image or near-dup group has the same split in both repos."""
+    try:
+        ratios = _parse_ratios(args.ratios)
+    except ValueError as exc:
+        print(f"release: {exc}", file=sys.stderr)
+        return 1
+    skipped_sources: dict[str, str] = {}
+    try:
+        map_roots = (
+            dict(local) if args.local_only else _resolve_roots(registry, SPLIT_MAP_PROFILE, local)
+        )
+        stats = generate_split_map(
+            registry,
+            out=split_map_path,
+            roots=map_roots,
+            profile=SPLIT_MAP_PROFILE,
+            ratios=ratios,
+            seed=args.seed,
+            min_groups=args.min_groups,
+            now=datetime.now(UTC).isoformat(),
+            release=args.release,
+            skipped=skipped_sources,
+            near_dup=near_dup,
+            upstream_test_off=args.no_honour_upstream_test or (),
+        )
+    except (NearDupError, ReleaseFetchError) as exc:
+        print(f"release: {exc}", file=sys.stderr)
+        return 1
+    print(
+        f"release: generated {split_map_path} (stratify=source) "
+        f"merged_components={stats.merged_components} "
+        f"merged_cross_partition={stats.merged_cross_partition} "
+        f"near_dup_pairs={stats.near_dup_pairs} near_dup_unions={stats.near_dup_unions} "
+        f"near_dup_max_component={stats.near_dup_max_component} "
+        f"upstream_test_groups={stats.upstream_test_groups} "
+        f"upstream_test_components={stats.upstream_test_components}"
+    )
+    for source_id, reason in sorted(skipped_sources.items()):
+        print(f"  skipped {source_id}: {reason}", file=sys.stderr)
+    return 0
+
+
+def _cmd_release_split_map(args: argparse.Namespace) -> int:
+    """``release split-map``: write the global split map once; both flavour builds read it."""
+    registry = Registry.load()
+    try:
+        local = _parse_local(args.local)
+    except ValueError as exc:
+        print(f"release split-map: {exc}", file=sys.stderr)
+        return 1
+    split_map_path = Path(args.split_map)
+    if load_split_map(split_map_path) is not None:
+        print(
+            f"release split-map: {split_map_path} already exists; never overwritten",
+            file=sys.stderr,
+        )
+        return 1
+    near_dup = NearDupConfig(cache_dir=cache_root() / "_dhash", workers=default_workers())
+    return _generate_global_split_map(registry, args, local, split_map_path, near_dup)
+
+
 def _cmd_release_build(args: argparse.Namespace) -> int:
     registry = Registry.load()
     flavour = getattr(args, "flavour", None)
@@ -202,50 +272,9 @@ def _cmd_release_build(args: argparse.Namespace) -> int:
         return 1
 
     if not split_map_exists:
-        # --generate-split-map: enumerate the resolved staged trees directly and generate
-        # a fresh, source-stratified map at the path this same command then freezes
-        # against — one command, pinned/local trees straight to a release.
-        try:
-            ratios = _parse_ratios(args.ratios)
-        except ValueError as exc:
-            print(f"release build: {exc}", file=sys.stderr)
-            return 1
-        skipped_sources: dict[str, str] = {}
-        try:
-            # One frozen map serves both flavours: generate it over every open + nc source.
-            map_roots = (
-                dict(local)
-                if args.local_only
-                else _resolve_roots(registry, SPLIT_MAP_PROFILE, local)
-            )
-            stats = generate_split_map(
-                registry,
-                out=split_map_path,
-                roots=map_roots,
-                profile=SPLIT_MAP_PROFILE,
-                ratios=ratios,
-                seed=args.seed,
-                min_groups=args.min_groups,
-                now=datetime.now(UTC).isoformat(),
-                release=args.release,
-                skipped=skipped_sources,
-                near_dup=near_dup,
-                upstream_test_off=args.no_honour_upstream_test or (),
-            )
-        except (NearDupError, ReleaseFetchError) as exc:
-            print(f"release build: {exc}", file=sys.stderr)
-            return 1
-        print(
-            f"release build: generated {split_map_path} (stratify=source) "
-            f"merged_components={stats.merged_components} "
-            f"merged_cross_partition={stats.merged_cross_partition} "
-            f"near_dup_pairs={stats.near_dup_pairs} near_dup_unions={stats.near_dup_unions} "
-            f"near_dup_max_component={stats.near_dup_max_component} "
-            f"upstream_test_groups={stats.upstream_test_groups} "
-            f"upstream_test_components={stats.upstream_test_components}"
-        )
-        for source_id, reason in sorted(skipped_sources.items()):
-            print(f"  skipped {source_id}: {reason}", file=sys.stderr)
+        rc = _generate_global_split_map(registry, args, local, split_map_path, near_dup)
+        if rc:
+            return rc
 
     # Fail closed on a Pillow mismatch (WS-D S49): dHash's LANCZOS resize is a Pillow
     # implementation detail, so a map's rule-A/rule-B near-dup exclusions are only valid
@@ -465,3 +494,25 @@ def add_release_subparser(sub: argparse._SubParsersAction) -> None:
         "lists (e.g. to rebuild v1's task files under the current code)",
     )
     p_build.set_defaults(func=_cmd_release_build)
+
+    p_map = release_sub.add_parser(
+        "split-map",
+        help="Generate the one global SPLIT_MAP.json (open + nc sources) both flavours build from",
+    )
+    p_map.add_argument("--release", required=True, help="Release id recorded in the map")
+    p_map.add_argument("--split-map", dest="split_map", required=True, help="Map to create")
+    p_map.add_argument("--ratios", default="70/15/15", help="'/'-separated train/val/test ratios")
+    p_map.add_argument("--seed", type=int, default=0)
+    p_map.add_argument("--min-groups", dest="min_groups", type=int, default=DEFAULT_MIN_GROUPS)
+    p_map.add_argument(
+        "--no-honour-upstream-test",
+        dest="no_honour_upstream_test",
+        action="append",
+        metavar="SOURCE_ID",
+        help="Opt a source out of the upstream-test rule (repeatable, '*' = all)",
+    )
+    p_map.add_argument("--local", action="append", metavar="ID=PATH", help="Staged tree override")
+    p_map.add_argument(
+        "--local-only", dest="local_only", action="store_true", help="Exactly the --local trees"
+    )
+    p_map.set_defaults(func=_cmd_release_split_map)
