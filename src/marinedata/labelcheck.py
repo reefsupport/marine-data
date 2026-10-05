@@ -23,11 +23,12 @@ every layout that yields scalar labels without a second parser to keep in sync.
 from __future__ import annotations
 
 from collections import Counter
+from collections.abc import Iterable
 from dataclasses import dataclass, field
 from pathlib import Path
 
 from .loaders import DataNotAvailable, LoaderError, build_loader
-from .registry import Registry
+from .registry import Registry, RegistryError
 from .sample import Sample
 
 
@@ -172,7 +173,34 @@ def summarise(audits: list[LabelAudit]) -> str:
     )
 
 
-def release_label_gate(registry: Registry, source_ids: list[str]) -> dict[str, str]:
+def gate_scope(
+    registry: Registry, source_ids: Iterable[str], *, empty: Iterable[str] = ()
+) -> tuple[list[str], dict[str, str]]:
+    """``(judged, skipped)``: the label gate judges only sources that contribute rows (WP-R4).
+
+    ``skipped`` maps a source id to why it is left out: its registry ``release_skip_reason``, or
+    ``no-staged-images`` when its id is in ``empty`` (the caller found no staged rows). A skipped
+    source neither fails nor passes the gate; a source WITH rows and no crosswalk still fails."""
+    no_rows = set(empty)
+    judged: list[str] = []
+    skipped: dict[str, str] = {}
+    for sid in source_ids:
+        try:
+            registered = registry.source(sid).release_skip_reason
+        except RegistryError:  # unknown id: leave it to the gate to report
+            registered = None
+        if registered:
+            skipped[sid] = registered
+        elif sid in no_rows:
+            skipped[sid] = "no-staged-images: 0 staged rows"
+        else:
+            judged.append(sid)
+    return judged, skipped
+
+
+def release_label_gate(
+    registry: Registry, source_ids: list[str], *, empty: Iterable[str] = ()
+) -> dict[str, str]:
     """The release gate (WP-7): fail on silent drops, dead edges, unanchored taxon nodes,
     and sources under 95% mapped without a documented exception.
 
@@ -186,4 +214,5 @@ def release_label_gate(registry: Registry, source_ids: list[str]) -> dict[str, s
     root = getattr(registry, "root", None)
     if root is None or not (Path(root) / "taxonomy" / "taxonomy.yaml").exists():
         return {}
-    return assert_release_gate(registry, root, list(source_ids))
+    judged, _skipped = gate_scope(registry, source_ids, empty=empty)
+    return assert_release_gate(registry, root, judged)

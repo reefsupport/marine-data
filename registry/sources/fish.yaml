@@ -7,6 +7,7 @@
 
 sources:
   - id: ozfish
+    release_skip_reason: "no-staged-images: nothing staged under sources/ozfish/ in rs-storage-open (Pawsey portal is unlistable; WP-R3 listing = 0 keys)"
     access_class: open
     name: OzFish
     # habitat inferred (WP-2b) from this source's own description/notes, not independently verified
@@ -594,6 +595,7 @@ sources:
     tags: [classic, imbalanced]
 
   - id: sea-urchin-detection
+    release_skip_reason: "no-staged-images: nothing staged under sources/sea-urchin-detection/ in rs-storage-open (WP-R3 listing = 0 keys)"
     access_class: open
     name: Sea Urchin detection (Roboflow)
     # habitat inferred (WP-2b) from this source's own description/notes, not independently verified

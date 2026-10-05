@@ -265,6 +265,10 @@ def evaluate(
         ingested = {sid, staged} & (set(cache) | set(staged_labels)) != set()
         gated = strict or sid in release_ids
         base = {"source_id": sid, "origin": origin, "ingested": bool(ingested), "gated": gated}
+        skip = _skip_reason(registry, sid, cache.get(sid) or cache.get(staged)) if gated else None
+        if skip:  # WP-R4: a source with no rows is a skip with a reason, never a pass or a fail
+            rows.append(LabelRow(**base, status=NA, reasons=(f"skipped: {skip}",)))
+            continue
         if origin == "release":
             rows.append(
                 LabelRow(
@@ -291,6 +295,22 @@ def evaluate(
             )
         )
     return rows
+
+
+def _skip_reason(registry: Registry, sid: str, cache_row: dict[str, str] | None) -> str | None:
+    """Why a gated source contributes no rows to the release: its registry
+    ``release_skip_reason``, else an audit-cache row with ``meta_rows`` = 0 (staged, nothing in
+    it). ``None`` = it is judged."""
+    try:
+        reason = registry.source(sid).release_skip_reason
+    except Exception:  # not a registry source: judged on what the cache/spec say
+        reason = None
+    if reason:
+        return reason
+    meta_rows = (cache_row or {}).get("meta_rows") or ""
+    if meta_rows.isdigit() and int(meta_rows) == 0:
+        return "no-staged-images: 0 staged rows (audit cache)"
+    return None
 
 
 def _row_for(

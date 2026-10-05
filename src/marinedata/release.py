@@ -662,7 +662,8 @@ def _skipped_sources(
 
     The hard gate (WP-R2e): a source the split map cannot cover that has rows > 0 raises unless
     ``--allow-skip`` names it or its registry carries ``release_skip_reason``; a source with no
-    rows is recorded (``allowed_by`` = ``no-rows``) and never blocks."""
+    rows is recorded (``allowed_by`` = ``no-rows``, reason ``no-staged-images`` when the split map
+    would have covered it) and never blocks."""
     skipped: dict[str, tuple[str, str]] = {}
     blocked: list[str] = []
     for sid in admitted:
@@ -671,6 +672,8 @@ def _skipped_sources(
         if sid in allow_skip:
             skipped[sid] = (reason or "--allow-skip: skipped on request", "allow-skip")
         elif reason is None:
+            if not _has_rows(Path(roots[sid])):  # WP-R4: no rows to build, so nothing to judge
+                skipped[sid] = (f"no-staged-images: no staged rows under {roots[sid]}", "no-rows")
             continue
         elif source.release_skip_reason:
             skipped[sid] = (reason, "registry")
@@ -791,7 +794,12 @@ def build_release(
         )
     # WP-7: the label gate — 0 silent drops, >= 95% mapped (or a documented exception),
     # every canonical taxon node anchored. Skipped for in-memory registries (no root).
-    taxonomy_stamp = {} if allow_unmapped else release_label_gate(registry, admitted)
+    unstaged = (  # flavour builds already dropped rowless sources in _skipped_sources
+        [] if flavour is not None else [sid for sid in admitted if not _has_rows(Path(roots[sid]))]
+    )
+    taxonomy_stamp = (
+        {} if allow_unmapped else release_label_gate(registry, admitted, empty=unstaged)
+    )
     admitted_roots = {source_id: Path(roots[source_id]) for source_id in admitted}
     never_eval_sources = _never_eval_source_ids(registry, admitted)
     walk_groups = {
