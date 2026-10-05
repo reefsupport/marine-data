@@ -23,3 +23,5 @@ measured:
   habitat_region: temperate rivers/estuaries, France
   dedup_chain: new; no registry/ingest-spec/WP-6g/S57 match on title, DOI or record id
   wp6l_gap: sonar+video
+# WP-U14b: source-level constants (evidence: u14-sample/upstream-fields.tsv, marked known)
+default_habitat: river

@@ -492,6 +492,7 @@ sources:
 
   - id: coralscop-masks-rs
     access_class: internal-only
+    default_habitat: coral_reef  # WP-U14b: evidence table marks the setting known
     name: CoralSCOP pseudo-masks (our generation)
     # habitat inferred (WP-2b) from this source's own description/notes, not independently verified
     habitat: [coral_reef]

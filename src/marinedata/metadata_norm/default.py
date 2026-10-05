@@ -8,6 +8,7 @@ from typing import Any
 
 from ..licence_class import resolve_row_class
 from .base import NormContext, Staged, parse_date, staged_rows, to_table
+from .split_group import derive_split_group
 
 _IMAGE_DIR = "images"
 
@@ -67,6 +68,7 @@ def normalise_row(
     row_licences: tuple[str, ...] = (),
     override: Mapping[str, Any] | None = None,
     origin: str = "per-row",
+    prov: Mapping[str, str] | None = None,
 ) -> dict[str, Any]:
     r = _Row(staged, override or {}, origin)
     stem = str(staged.get("stem") or "")
@@ -86,21 +88,55 @@ def normalise_row(
     r.take("image_format", (ext, "derived"))
     r.take("license", (ctx.registry_licence, "registry"), (ing.get("license"), "INGEST.json"))
     r.take("attribution", (attribution_text(ctx), "registry"))
-    r.take("fetch_date", (parse_date(ing.get("fetch_date")), "INGEST.json"))
+    r.take(
+        "fetch_date",
+        (parse_date(ing.get("fetch_date")), "INGEST.json"),
+        (ctx.fetch_date_fallback, ctx.fetch_date_origin or "fallback"),
+    )
     for name in (
         "image_bytes", "image_member", "width", "height", "upstream_id", "upstream_url",
         "upstream_digest", "lineage_root_digest", "split_hint", "split_group", "upstream_split",
         "upstream_path", "capture_datetime", "lat", "lon", "gps_precision_m", "depth_m",
-        "depth_source", "platform", "camera", "meow_realm", "meow_province", "meow_ecoregion",
-        "depth_zone", "habitat", "label_refs",
+        "depth_source", "camera", "meow_realm", "meow_province", "meow_ecoregion",
+        "depth_zone", "label_refs",
     ):  # fmt: skip
         r.take(name)
+    r.take("platform", (ctx.default_platform, "registry_default"))
+    r.take("habitat", (ctx.default_habitat, "registry_default"))
     r.take("upstream_id", (r.values.get("upstream_path"), "upstream_path"))
-    r.values["location_generalized"] = bool(staged.get("location_generalized"))
+    r.values["location_generalized"] = bool(
+        r.over.get("location_generalized", staged.get("location_generalized"))
+    )
     own = row_licences or ((str(staged["license"]),) if not _blank(staged.get("license")) else ())
     r.values["licence_class"] = resolve_row_class(ctx.source_class, *own, per_row=ctx.per_row)
     r.prov["licence_class"] = "resolve_row_class" + ("(per_row)" if ctx.per_row else "")
+    r.prov.update({k: o for k, o in (prov or {}).items() if k in r.values})
+    _finish_geo(r, source_id, staged, ctx)
     return {**r.values, "provenance": r.prov}
+
+
+def _finish_geo(r: _Row, source_id: str, staged: Mapping[str, Any], ctx: NormContext) -> None:
+    """Fallbacks and consistency checks that need every field: position pair, depth source,
+    MEOW lookup, registry defaults, split_group."""
+    v = r.values
+    if (v.get("lat") is None) != (v.get("lon") is None):
+        for k in ("lat", "lon"):
+            v.pop(k, None)
+            r.prov.pop(k, None)
+    if v.get("depth_m") is not None and not v.get("depth_source"):
+        v["depth_source"], r.prov["depth_source"] = "metadata", "derived"
+    if v.get("lat") is not None and ctx.meow and not v.get("meow_realm"):
+        from ..geo_meow import classify
+
+        hit = classify(v["lat"], v["lon"], ctx.meow)
+        if hit.realm and hit.province and hit.ecoregion:
+            v.update(meow_realm=hit.realm, meow_province=hit.province, meow_ecoregion=hit.ecoregion)
+            r.prov.update(
+                {k: "geo_meow.classify" for k in ("meow_realm", "meow_province", "meow_ecoregion")}
+            )
+    if not v.get("split_group"):
+        group, rule = derive_split_group(source_id, staged, v, ctx.split_rule)
+        v["split_group"], r.prov["split_group"] = group, rule
 
 
 def default_normalise(source_id: str, version: str, staged: Staged, ctx: NormContext):

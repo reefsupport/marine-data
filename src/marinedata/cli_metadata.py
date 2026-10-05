@@ -22,7 +22,13 @@ def _cmd_normalise(args: argparse.Namespace) -> int:
         print("error: --limit must be >= 1", file=sys.stderr)
         return 2
     try:
-        version, staged, ctx = load_inputs(args.source, args.version, args.limit)
+        version, staged, ctx = load_inputs(
+            args.source,
+            args.version,
+            args.limit,
+            events_path=args.events,
+            meow_path=args.meow,
+        )
     except Exception as exc:  # network / registry failure: report, never traceback
         print(f"error: {args.source}: {type(exc).__name__}: {exc}", file=sys.stderr)
         return 1
@@ -48,4 +54,6 @@ def add_metadata_subparser(sub: argparse._SubParsersAction) -> None:
     n.add_argument("--version", help="Staged version (default: the ingest spec's)")
     n.add_argument("--out", required=True, help="Local output directory")
     n.add_argument("--limit", type=int, default=1000, help="Max rows (default 1000)")
+    n.add_argument("--events", help="Cached MERMAID sample-event JSON (see metadata_norm.geo)")
+    n.add_argument("--meow", help="Local MEOW polygon file (lat/lon -> ecoregion; no download)")
     n.set_defaults(func=_cmd_normalise)

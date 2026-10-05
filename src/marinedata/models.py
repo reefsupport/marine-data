@@ -344,6 +344,8 @@ class Source(_Frozen):
     yet, which is every source today — never "ingested but unverified"."""
 
     split_group: SplitGroupRule = Field(default_factory=SplitGroupRule)
+    default_platform: str | None = None
+    default_habitat: str | None = None
     """Required per-source rule for ``resolve_splits(by="group")``. Defaults to the
     explicit fallback (``<source_id>/<partition>``) so every source has one without
     needing a per-entry YAML edit."""

@@ -38,6 +38,18 @@ class NormContext:
     labels: Mapping[str, Any] = field(default_factory=dict)
     """Per-source extras, keyed by stem or photo id (e.g. FathomNet per-image JSON)."""
     version: str = ""
+    fetch_date_fallback: dt.date | None = None
+    """Used when ``INGEST.json`` is missing (registry ``retrieved``/``fetched``, else the
+    earliest object ``LastModified``); ``fetch_date_origin`` names which."""
+    fetch_date_origin: str = ""
+    default_platform: str = ""
+    default_habitat: str = ""
+    split_rule: Any = None
+    """The source's registry ``SplitGroupRule`` (``None`` = fallback grouping only)."""
+    events: Mapping[str, Any] = field(default_factory=dict)
+    """Cached MERMAID sample events (see :func:`.geo.mermaid_fields`)."""
+    meow: Sequence[Any] = ()
+    """MEOW polygons (``geo_meow.load_meow_polygons``); empty = no ecoregion lookup."""
 
 
 class Normaliser(Protocol):

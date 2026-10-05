@@ -11,6 +11,7 @@ import io
 import json
 from collections.abc import Callable
 from concurrent.futures import ThreadPoolExecutor
+from dataclasses import replace
 from pathlib import Path
 from typing import Any
 
@@ -19,6 +20,7 @@ from ..licence_class import per_row_source, source_class
 from ..registry import _default_root
 from ..task_layers.s3_keyed import FetchFailed, fetch_small
 from .base import NormContext
+from .defaults import registry_entry, registry_fetch_date, validated_defaults
 
 BUCKET = "rs-storage-open"
 Fetch = Callable[..., bytes]
@@ -133,8 +135,11 @@ def load_inputs(
     fetch: Fetch = fetch_small,
     client=None,
     registry_root: str | Path | None = None,
+    events_path: str | Path | None = None,
+    meow_path: str | Path | None = None,
 ) -> tuple[str, list[dict], NormContext]:
-    """``(version, staged rows <= limit, context)`` for one source version."""
+    """``(version, staged rows <= limit, context)`` for one source version. ``events_path`` =
+    cached MERMAID sample-event JSON, ``meow_path`` = a local MEOW polygon file (no download)."""
     spec = spec_fields(source_id, registry_root)
     version = version or spec["version"]
     tree = f"sources/{source_id}/{version}/"
@@ -150,6 +155,24 @@ def load_inputs(
         checksums=parse_checksums(sums.decode()) if sums else {},
         ingest=json.loads(ingest) if ingest else {},
         version=version,
+    )
+    entry = registry_entry(source_id, registry_root)
+    defaults = validated_defaults(entry)
+    fetched, fetched_from = (None, "")
+    if not ctx.ingest:  # INGEST.json missing: registry date, else the earliest LastModified
+        fetched, fetched_from = registry_fetch_date(entry)
+        if fetched is None:
+            client = client or s3_client()
+            fetched, fetched_from = earliest_modified(client, tree)
+    ctx = replace(
+        ctx,
+        fetch_date_fallback=fetched,
+        fetch_date_origin=fetched_from,
+        default_platform=defaults.get("platform", ""),
+        default_habitat=defaults.get("habitat", ""),
+        split_rule=split_rule(source_id, registry_root),
+        events=json.loads(Path(events_path).read_text()) if events_path else {},
+        meow=_meow(meow_path),
     )
     rows: list[dict] = []
     meta = _get(fetch, tree + "metadata.parquet")
@@ -181,6 +204,31 @@ def load_inputs(
 
 
 def _with_labels(ctx: NormContext, labels: dict[str, Any]) -> NormContext:
-    from dataclasses import replace
-
     return replace(ctx, labels=labels)
+
+
+def earliest_modified(client, prefix: str) -> tuple[Any, str]:
+    """``(date, origin)`` of the earliest ``LastModified`` on the first listing page of
+    ``prefix`` (one request, <= 1000 objects); ``(None, "")`` when the prefix is empty."""
+    stamps = [o["LastModified"] for o in _list(client, prefix, 1000) if o.get("LastModified")]
+    if not stamps:
+        return None, ""
+    return min(stamps).date(), "s3:earliest LastModified (first page)"
+
+
+def split_rule(source_id: str, root: str | Path | None = None):
+    """The source's registry ``SplitGroupRule`` (``None`` when the source is not registered)."""
+    from ..registry import Registry
+
+    try:
+        return Registry.load(Path(root) if root else _default_root()).source(source_id).split_group
+    except KeyError:
+        return None
+
+
+def _meow(path: str | Path | None):
+    if not path:
+        return ()
+    from ..geo_meow import load_meow_polygons
+
+    return load_meow_polygons(Path(path))
