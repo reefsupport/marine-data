@@ -162,3 +162,16 @@ def test_nc_card_snapshot() -> None:
             "  I will use this dataset for non-commercial purposes only: checkbox\n") in head  # fmt: skip
     assert "combined set" in head and "## Excluded from both repos" in card
     assert "NON-COMMERCIAL, gated" in card
+
+
+def test_local_only_never_fetches_and_builds_from_local_trees(built, monkeypatch) -> None:
+    """WP-R1: --local-only builds (incl. the split-map generation) from the --local trees alone."""
+    import marinedata.cli_release as cr
+
+    def _no_fetch(*a, **k):
+        raise AssertionError("--local-only must never resolve/fetch a root")
+
+    monkeypatch.setattr(cr, "_resolve_roots", _no_fetch)
+    run, _roots, rel = built
+    assert run("--flavour", "open", "--generate-split-map", "--local-only") == 0
+    assert (rel / "open" / "RELEASE.json").is_file()

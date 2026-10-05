@@ -161,7 +161,9 @@ def _cmd_release_build(args: argparse.Namespace) -> int:
         print("release build: --manifest-only needs a frozen --split-map", file=sys.stderr)
         return 1
     try:
-        if args.manifest_only:
+        if args.local_only:
+            roots = dict(local)  # offline / mini build: exactly the --local trees, never a fetch
+        elif args.manifest_only:
             roots = _cached_roots(
                 registry, args.profile, local, _sources_from(args.sources_from), flavour
             )
@@ -211,7 +213,11 @@ def _cmd_release_build(args: argparse.Namespace) -> int:
         skipped_sources: dict[str, str] = {}
         try:
             # One frozen map serves both flavours: generate it over every open + nc source.
-            map_roots = _resolve_roots(registry, SPLIT_MAP_PROFILE, local)
+            map_roots = (
+                dict(local)
+                if args.local_only
+                else _resolve_roots(registry, SPLIT_MAP_PROFILE, local)
+            )
             stats = generate_split_map(
                 registry,
                 out=split_map_path,
@@ -395,6 +401,13 @@ def add_release_subparser(sub: argparse._SubParsersAction) -> None:
         dest="local",
         metavar="SOURCE_ID=PATH",
         help="Use a local staged tree instead of fetching one; repeatable",
+    )
+    p_build.add_argument(
+        "--local-only",
+        action="store_true",
+        dest="local_only",
+        help="Build from exactly the --local trees: never fetch another admitted source "
+        "(mini / offline builds, incl. the split-map generation)",
     )
     p_build.add_argument(
         "--tasks",
