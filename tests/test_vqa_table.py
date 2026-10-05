@@ -52,7 +52,7 @@ def test_sources_never_claim_human_for_machine_text():
             "template",
             "vlm",
         }
-        assert spec.licence_class in {"open", "internal-only", "unknown"}
+        assert spec.licence_class in {"open", "restricted-nc", "internal-only", "unknown"}
         row = vt.vqa_row(spec=spec, ordinal=0, sha=SHA_A, question="q?", answer="a", qa_type="t")
         assert (
             row["annotator_type"] == spec.annotator
@@ -371,7 +371,7 @@ def test_configs_read_unified_vqa_and_captions_and_keep_the_legacy_fallback(tmp_
     vqa = configs.build_vqa_config(tmp_path)
     assert [
         (r["image_sha256"], r["sha256"], r["licence_class"], r["annotator_type"]) for r in vqa.rows
-    ] == [(SHA_A, SHA_A, "open", "pseudo")]  # pending never reaches the config
+    ] == [(SHA_A, SHA_A, "restricted-nc", "pseudo")]  # pending never reaches the config
     caps = configs.build_captions_config(tmp_path)
     assert len(caps.rows) == 2 and {r["licence_class"] for r in caps.rows} == {"unknown"}
     assert "captions" in configs.CONFIG_IDS and set(configs.VQA_CONFIG_SOURCES) == set(

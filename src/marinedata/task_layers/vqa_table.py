@@ -38,7 +38,7 @@ from ..annotation_schema import (
     validate_row,
     write_annotations,
 )
-from ..licence_class import source_class
+from ..licence_class import NC, source_class
 
 PENDING_COLUMNS = ("image_key",)
 _PLACEHOLDER_SHA = "0" * 64
@@ -65,9 +65,9 @@ class VqaSource:
 VQA_SOURCES: dict[str, VqaSource] = {
     s.source_id: s
     for s in (
-        # Registry licence CC-BY-4.0 (HF card); not in lic-A/B. Questions are fixed templates.
+        # LICV 2026-10-05: README says CC-BY-NC-4.0 (HF card field says CC-BY-4.0). Fixed templates.
         VqaSource("coralvqa", "rev-3da50a4429e4", "coralvqa_unified", "pseudo",
-                  "template:coralvqa-question-templates", "CC-BY-4.0", OPEN),
+                  "template:coralvqa-question-templates", "CC-BY-NC-4.0", NC),
         # lic-A: open (MIT README); the QA are model-generated (has_hallucination flags kept).
         VqaSource("marineevt", "rev-37488d3c7690", "marineevt_vqa", "model",
                   "vlm:unspecified (MarineEVT pipeline; model not named in the staged files)",
