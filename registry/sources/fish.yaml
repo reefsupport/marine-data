@@ -252,6 +252,7 @@ sources:
     tags: [taxonomy, copyleft]
 
   - id: mft25
+    release_skip_reason: "non-image-modality: video tracking benchmark, frames not extracted"
     access_class: open
     name: MFT25 (Multiple Fish Tracking 2025)
     # habitat inferred (WP-2b) from this source's own description/notes, not independently verified

@@ -7,6 +7,7 @@
 
 sources:
 - id: fish-vista
+  release_skip_reason: "no-staged-images: registry lists imagery, nothing staged under sources/ in rs-storage-open (U7/queue follow-up)"
   access_class: restricted-nc
   name: Fish-Vista
   version: unversioned
@@ -92,6 +93,7 @@ sources:
   - classification
   notes: 'access: pending-ingest — see registry/ingest-specs/wildfish.yaml (S57/w2b sweep, 2026-09-25).'
 - id: fish-length-stereo
+  release_skip_reason: "no-staged-images: registry lists imagery, nothing staged under sources/ in rs-storage-open (U7/queue follow-up)"
   access_class: open
   name: Stereo fish-length dataset (Zenodo 19408363)
   version: unversioned
@@ -150,7 +152,7 @@ sources:
     params:
       zenodo_record: 4931418
   loader:
-    layout: metadata-only
+    layout: staged-tree
   modalities:
   - video
   capabilities:
@@ -169,6 +171,7 @@ sources:
   - video
   notes: 'access: pending-ingest — see registry/ingest-specs/salmon-cage.yaml (S57/w2b sweep, 2026-09-25).'
 - id: luderick-seagrass
+  release_skip_reason: "no-staged-images: registry lists imagery, nothing staged under sources/ in rs-storage-open (U7/queue follow-up)"
   access_class: open
   name: Luderick/seagrass fish detection (Zenodo 7659203)
   version: unversioned
@@ -204,6 +207,7 @@ sources:
   - seagrass
   notes: 'access: pending-ingest — see registry/ingest-specs/luderick-seagrass.yaml (S57/w2b sweep, 2026-09-25).'
 - id: med-fish
+  release_skip_reason: "no-staged-images: registry lists imagery, nothing staged under sources/ in rs-storage-open (U7/queue follow-up)"
   access_class: open
   name: DEEPECOMAR Mediterranean fish YOLO dataset (Zenodo 7534425)
   version: unversioned
@@ -238,6 +242,7 @@ sources:
   - mediterranean
   notes: 'access: pending-ingest — see registry/ingest-specs/med-fish.yaml (S57/w2b sweep, 2026-09-25).'
 - id: mouss-seg
+  release_skip_reason: "no-staged-images: registry lists imagery, nothing staged under sources/ in rs-storage-open (U7/queue follow-up)"
   access_class: open
   name: MOUSS fish segmentation (grayscale)
   version: unversioned
@@ -279,6 +284,7 @@ sources:
   - segmentation
   notes: 'access: pending-ingest — see registry/ingest-specs/mouss-seg.yaml (S57/w2b sweep, 2026-09-25).'
 - id: urpc
+  release_skip_reason: "no-staged-images: registry lists imagery, nothing staged under sources/ in rs-storage-open (U7/queue follow-up)"
   access_class: open
   name: URPC underwater robot competition dataset (HF mirror)
   version: unversioned
@@ -316,6 +322,7 @@ sources:
   - urpc
   notes: 'access: pending-ingest — see registry/ingest-specs/urpc.yaml (S57/w2b sweep, 2026-09-25).'
 - id: marinelife16k
+  release_skip_reason: "no-staged-images: registry lists imagery, nothing staged under sources/ in rs-storage-open (U7/queue follow-up)"
   access_class: open
   name: MarineLife-16K
   version: unversioned
@@ -355,6 +362,7 @@ sources:
   - captioning
   notes: 'access: pending-ingest — see registry/ingest-specs/marinelife16k.yaml (S57/w2b sweep, 2026-09-25).'
 - id: ocean-r1
+  release_skip_reason: "no-staged-images: registry lists imagery, nothing staged under sources/ in rs-storage-open (U7/queue follow-up)"
   access_class: open
   name: Ocean-R1 collected visual data
   version: unversioned
@@ -392,6 +400,7 @@ sources:
   - captioning
   notes: 'access: pending-ingest — see registry/ingest-specs/ocean-r1.yaml (S57/w2b sweep, 2026-09-25).'
 - id: marine-animals-mm
+  release_skip_reason: "no-staged-images: registry lists imagery, nothing staged under sources/ in rs-storage-open (U7/queue follow-up)"
   access_class: open
   name: Marine animals multimodal dataset
   version: unversioned
@@ -429,6 +438,7 @@ sources:
   - captioning
   notes: 'access: pending-ingest — see registry/ingest-specs/marine-animals-mm.yaml (S57/w2b sweep, 2026-09-25).'
 - id: oceaninstruct
+  release_skip_reason: "non-image-modality: instruction text; 10000 label keys staged, 0 images"
   access_class: open
   name: OceanInstruct v0.1 (OceanGPT)
   version: unversioned
@@ -467,6 +477,7 @@ sources:
   - instruction-tuning
   notes: 'access: pending-ingest — see registry/ingest-specs/oceaninstruct.yaml (S57/w2b sweep, 2026-09-25).'
 - id: seathru
+  release_skip_reason: "no-staged-images: registry lists imagery, nothing staged under sources/ in rs-storage-open (U7/queue follow-up)"
   access_class: restricted-nc
   name: Sea-thru dataset (HF mirror)
   version: unversioned
@@ -549,6 +560,7 @@ sources:
     notes: paired enhancement reference image (pairs); AnnotationKind has no pairs value
     supervises: []
 - id: underwater-images-2542305
+  release_skip_reason: "no-staged-images: raw mirror of 3850 images only, no INGEST.json/metadata.parquet (U7/queue follow-up)"
   access_class: open
   name: Underwater image collection (Zenodo 2542305)
   version: unversioned
@@ -587,6 +599,7 @@ sources:
   notes: 'access: pending-ingest — see registry/ingest-specs/underwater-images-2542305.yaml (S57/w2b sweep,
     2026-09-25).'
 - id: marine-snow
+  release_skip_reason: "no-staged-images: registry lists imagery, nothing staged under sources/ in rs-storage-open (U7/queue follow-up)"
   access_class: open
   name: Synthetic marine-snow overlay dataset (Zenodo 6424752)
   version: unversioned
@@ -623,6 +636,7 @@ sources:
   - synthetic
   notes: 'access: pending-ingest — see registry/ingest-specs/marine-snow.yaml (S57/w2b sweep, 2026-09-25).'
 - id: rcaustic
+  release_skip_reason: "no-staged-images: registry lists imagery, nothing staged under sources/ in rs-storage-open (U7/queue follow-up)"
   access_class: open
   name: R-CAUSTIC v2.0 (Zenodo 10728861)
   version: unversioned
@@ -659,6 +673,7 @@ sources:
   - caustics
   notes: 'access: pending-ingest — see registry/ingest-specs/rcaustic.yaml (S57/w2b sweep, 2026-09-25).'
 - id: sea-undistort
+  release_skip_reason: "no-staged-images: registry lists imagery, nothing staged under sources/ in rs-storage-open (U7/queue follow-up)"
   access_class: restricted-nc
   name: Sea-Undistort (Zenodo 15639838)
   version: unversioned

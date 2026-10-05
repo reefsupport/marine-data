@@ -6,6 +6,7 @@
 
 sources:
   - id: reefnet-hf
+    release_skip_reason: "non-image-modality: tabular benchmark features"
     access_class: restricted-nc  # WP-R2: upstream ReefNet-1.0 cardData.license cc-by-nc-sa-4.0 (LICV lic-B)
     name: ReefNet 1.0 (HuggingFace release)
     # habitat inferred (WP-2b) from this source's own description/notes, not independently verified
@@ -138,6 +139,7 @@ sources:
     tags: [robotics, pretraining, qut]
 
   - id: marrs-reef-soundscapes
+    release_skip_reason: "non-image-modality: audio clips: keep out of the v2 image release, candidate for a later audio config"
     access_class: open
     name: MARRS global coral reef soundscapes
     # habitat inferred (WP-2b) from this source's own description/notes, not independently verified

@@ -68,6 +68,7 @@ sources:
     tags: [3d, scaled, in-modality, gopro]
 
   - id: deepreefmap-data
+    release_skip_reason: "non-image-modality: video + point-cloud, no stills"
     access_class: open
     name: DeepReefMap reference data and checkpoints
     # habitat inferred (WP-2b) from this source's own description/notes, not independently verified
@@ -108,6 +109,7 @@ sources:
     tags: [3d, reference-pipeline]
 
   - id: noaa-ncrmp-structural-complexity
+    release_skip_reason: "no-staged-images: registry lists imagery, nothing staged under sources/ in rs-storage-open (U7/queue follow-up)"
     access_class: open
     name: NOAA NCRMP structural complexity (SfM)
     # habitat inferred (WP-2b) from this source's own description/notes, not independently verified

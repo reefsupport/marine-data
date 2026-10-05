@@ -274,3 +274,25 @@ def test_release_split_map_cli_writes_once_and_never_overwrites(
     assert main(argv) == 1
     assert "never overwritten" in capsys.readouterr().err
     assert IMAGE_SUFFIXES  # imported for the walk-layout fixtures' suffix
+
+
+_REASONS = ("context-layer", "non-image-modality", "no-staged-images")
+
+
+def test_every_releasable_registry_source_is_covered_or_carries_an_explicit_reason() -> None:
+    """The R2e gate passes for a full dry run without ``--allow-skip`` (WP-R2f): a releasable
+    source is enumerated (any loader layout) or skipped with a registry ``release_skip_reason``
+    naming one of the triage reasons; ``metadata-only`` never means "covered"."""
+    from marinedata.licence_class import release_excluded, source_class
+    from marinedata.registry import Registry
+
+    registry = Registry.load()
+    for source in registry.sources:
+        if source_class(source.id) not in ("open", "restricted-nc") or release_excluded(source.id):
+            continue
+        reason = release_skip_reason(source)
+        layout = source.loader.layout if source.loader is not None else None
+        if reason is not None:
+            assert source.release_skip_reason, (source.id, reason)  # never a layout skip
+            assert source.release_skip_reason.split(":")[0] in _REASONS, source.id
+        assert reason is not None or layout != "metadata-only", (source.id, "metadata-only")

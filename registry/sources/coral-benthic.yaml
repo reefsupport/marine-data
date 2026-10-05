@@ -604,6 +604,7 @@ sources:
     tags: [tdm, unlicensed, incumbent]
 
   - id: seatizen-atlas
+    release_skip_reason: "no-staged-images: registry lists imagery, nothing staged under sources/ in rs-storage-open (U7/queue follow-up)"
     access_class: open
     name: Seatizen Atlas
     # habitat inferred (WP-2b) from this source's own description/notes, not independently verified
@@ -783,6 +784,7 @@ sources:
     tags: [prohibited, provenance-risk]
 
   - id: noaa-esd-coral-bleaching
+    release_skip_reason: "no-staged-images: registry lists imagery, nothing staged under sources/ in rs-storage-open (U7/queue follow-up)"
     access_class: open
     name: NOAA ESD coral bleaching dataset (bucket mirror)
     # habitat inferred (WP-2b) from this source's own description/notes, not independently verified
@@ -1438,6 +1440,7 @@ sources:
     tags: [needs-permission]
 
   - id: seaview-survey-imagery
+    release_skip_reason: "no-staged-images: registry lists imagery, nothing staged under sources/ in rs-storage-open (U7/queue follow-up)"
     access_class: open
     name: SEAVIEW raw survey imagery (UQ eSpace)
     # habitat inferred (WP-2b) from this source's own description/notes, not independently verified
