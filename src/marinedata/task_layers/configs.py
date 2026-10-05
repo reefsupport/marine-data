@@ -24,6 +24,7 @@ from dataclasses import dataclass
 from functools import cache, lru_cache
 from pathlib import Path
 
+from ..annotation_schema import annotator_from_origin
 from ..registry import Registry
 from ..schema import Axis
 from ..tables import _require_pyarrow
@@ -63,7 +64,13 @@ class ConfigResult:
 
     @property
     def n_images(self) -> int:
-        return len({row["sha256"] for row in self.rows})
+        return len({_row_sha(row) for row in self.rows})
+
+
+def _row_sha(row: Mapping) -> str | None:
+    """The image join key of a task-layer row: ``image_sha256`` (unified schema) else the legacy
+    ``sha256`` (D-Z2 parquet written before WP-U3 keeps being read)."""
+    return row.get("image_sha256") or row.get("sha256")
 
 
 def _read_parquet(path: Path) -> list[dict]:
@@ -146,7 +153,40 @@ def _read_tasklabels(base_dir: Path, source_id: str, task: str) -> list[dict]:
     if tasklabels_status(base_dir, source_id, task) == "invalid":
         return []
     rows = _read_parquet(_tasklabels_path(base_dir, source_id, task))
-    return [row for row in rows if row.get("sha256")]
+    return [row for row in rows if _row_sha(row)]
+
+
+def _annotation_points(base_dir: Path, source_id: str) -> list[dict]:
+    """The unified ``points`` rows of ``source_id`` (``_annotations/points/<source>/<version>.parquet``,
+    newest version), or ``[]`` when none were written. Rows without an ``image_sha256`` are skipped."""  # noqa: E501
+    root = base_dir / "_annotations" / "points" / source_id
+    files = sorted(root.glob("*.parquet")) if root.is_dir() else []
+    return [r for r in _read_parquet(files[-1]) if r.get("image_sha256")] if files else []
+
+
+def _point_records(base_dir: Path, source_id: str) -> list[dict]:
+    """Point rows of one source in the unified column names. The unified table wins; else the
+    legacy ``_tasklabels/<source>/points.parquet`` is renamed on read (``native_label`` ->
+    ``label_native``, ``label_origin`` -> ``annotator_type``, ``sha256`` -> ``image_sha256``)
+    with ``match_type`` left null (legacy rows were never resolved through ``Crosswalk.resolve``)."""  # noqa: E501
+    unified = _annotation_points(base_dir, source_id)
+    if unified:
+        return unified
+    out: list[dict] = []
+    for i, point in enumerate(_read_tasklabels(base_dir, source_id, "points")):
+        origin = point.get("label_origin")
+        out.append(
+            {
+                "image_sha256": _row_sha(point),
+                "source_id": source_id,
+                "ann_id": f"{source_id}:{i}",
+                "label_native": point.get("label_native") or point["native_label"],
+                "annotator_type": point.get("annotator_type") or annotator_from_origin(origin or "human")[0],  # noqa: E501
+                "x": point["x"],
+                "y": point["y"],
+            }
+        )
+    return out
 
 
 @dataclass
@@ -181,7 +221,9 @@ def _canonical_taxon(registry: Registry, source_id: str, native_label: str) -> s
 
 
 def build_points_config(registry: Registry, base_dir: str | Path) -> ConfigResult:
-    """``points``: every :data:`POINT_SOURCES` point row, native label + canonical taxon."""
+    """``points``: every :data:`POINT_SOURCES` point in the unified column names (WP-U3):
+    ``image_sha256, source_id, ann_id, label_native, label_set, taxon_node_id, match_type,
+    worms_aphia_id, rs_benthic_code, annotator_type, x, y, x_px, y_px, label_status``."""
     base_dir = Path(base_dir)
     label_status = _load_label_status(base_dir)
     unmapped: dict[str, _SourceUnmapped] = {}
@@ -189,22 +231,30 @@ def build_points_config(registry: Registry, base_dir: str | Path) -> ConfigResul
 
     for source_id in POINT_SOURCES:
         tally = unmapped.setdefault(source_id, _SourceUnmapped())
-        for point in _read_tasklabels(base_dir, source_id, "points"):
-            canonical = _canonical_taxon(registry, source_id, point["native_label"])
-            if canonical is None:
+        for point in _point_records(base_dir, source_id):
+            native = point["label_native"]
+            taxon = point.get("taxon_node_id") or _canonical_taxon(registry, source_id, native)
+            if taxon is None:
                 tally.unmapped += 1
             else:
                 tally.known += 1
             rows.append(
                 {
-                    "sha256": point["sha256"],
+                    "image_sha256": point["image_sha256"],
                     "source_id": source_id,
-                    "label_origin": point["label_origin"],
-                    "native_label": point["native_label"],
-                    "canonical_taxon": canonical,
+                    "ann_id": point["ann_id"],
+                    "label_native": native,
+                    "label_set": point.get("label_set"),
+                    "taxon_node_id": taxon,
+                    "match_type": point.get("match_type") or ("unmapped" if taxon is None else None),  # noqa: E501
+                    "worms_aphia_id": point.get("worms_aphia_id"),
+                    "rs_benthic_code": point.get("rs_benthic_code"),
+                    "annotator_type": point["annotator_type"],
                     "x": point["x"],
                     "y": point["y"],
-                    "label_status": label_status.get(point["sha256"], "ok"),
+                    "x_px": point.get("x_px"),
+                    "y_px": point.get("y_px"),
+                    "label_status": label_status.get(point["image_sha256"], "ok"),
                 }
             )
 
@@ -265,8 +315,8 @@ def _coarse_counts_from_points(
     """``{sha256: {coarse_class_or_unknown: n}}`` for one source's point rows."""
     per_image: dict[str, dict[str, int]] = {}
     for point in points:
-        counts = per_image.setdefault(point["sha256"], {})
-        canonical = _canonical_taxon(registry, source_id, point["native_label"])
+        counts = per_image.setdefault(point["image_sha256"], {})
+        canonical = point.get("taxon_node_id") or _canonical_taxon(registry, source_id, point["label_native"])  # noqa: E501
         target = projector.project(canonical).target_class if canonical is not None else None
         cls = target or UNKNOWN
         counts[cls] = counts.get(cls, 0) + 1
@@ -315,7 +365,7 @@ def _build_benthic_rollup(
             source_of.setdefault(sha256, source_id)
 
     for source_id in POINT_SOURCES:
-        points = _read_tasklabels(base_dir, source_id, "points")
+        points = _point_records(base_dir, source_id)
         add(source_id, _coarse_counts_from_points(registry, projector, source_id, points))
     for source_id in SEMSEG_SOURCES:
         masks = _read_tasklabels(base_dir, source_id, "semseg")
@@ -421,10 +471,10 @@ def assert_no_mixed_origin_in_eval(
     """
     origins_by_split: dict[str, set[str]] = {}
     for row in rows:
-        split = split_of.get(row["sha256"])
+        split = split_of.get(_row_sha(row))
         if split is None or split == train_split:
             continue
-        origins_by_split.setdefault(split, set()).add(row["label_origin"])
+        origins_by_split.setdefault(split, set()).add(row.get("label_origin") or row["annotator_type"])  # noqa: E501
     mixed = {split: origins for split, origins in origins_by_split.items() if len(origins) > 1}
     if mixed:
         raise ValueError(f"human and model rows mixed in eval split(s): {mixed}")

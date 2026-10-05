@@ -1,0 +1,20 @@
+# source: ibf
+# crosswalk: ibf-cpce-codes
+# counts: annotations
+# retrieved: 2026-10-05 from rs-storage-open benthic_datasets/point_labels/IBF/**/*.cpc (boto3 GET)
+label	count	description
+S	564	standard CPCe lifeform code S = sand
+R	370	R = rubble
+SC	290	SC = soft coral
+SP	285	SP = sponge
+CB	201	CB = coral branching
+CHL	135	English et al. 1997 CHL = Coral Heliopora; the CPCe code file KODEKA~1.TXT is not in the bucket, so unverified
+ACB	127	ACB = Acropora branching
+DCA	106	DCA = dead coral with algae
+CMR	91	CMR = coral mushroom
+MA	47	MA = macroalgae
+HA	10	HA = Halimeda
+CM	10	CM = coral massive
+CF	9	CF = coral foliose
+OT	4	OT = other biota; no canonical node
+CE	1	CE = coral encrusting

@@ -112,3 +112,28 @@ entries:
     from: the source's image_labels via registry/crosswalks (1:1 rename)
     confidence: high
     evidence: HF build label_reason column. Inherit the upstream origin for noise purposes.
+
+  - source: mermaid-aws
+    label_set: points (MERMAID benthic photo-quadrat points)
+    origin: human_expert
+    confidence: medium
+    evidence: >-
+      WP-U3: MERMAID photo-quadrat annotations are human point annotations by trained survey
+      teams (staged labels/points.parquet, CoralNet-style). Annotator qualification is not
+      recorded per point, hence medium.
+
+  - source: reefolution
+    label_set: points (CoralNet point annotations)
+    origin: human_expert
+    confidence: medium
+    evidence: >-
+      WP-U3: Reefolution's annotations.csv (Name,Row,Column,Label) is a CoralNet human export
+      (reefolution.org, Kenya). No machine suggestions are marked in the export.
+
+  - source: seaview-survey-imagery
+    label_set: points (SEAVIEW photo-quadrat point labels)
+    origin: human_expert
+    confidence: medium
+    evidence: >-
+      WP-U3: benthic_datasets/point_labels/SEAVIEW/tabular-data annotations_<REGION>.csv, point
+      labels of the University of Queensland Seaview Survey (method column: random).

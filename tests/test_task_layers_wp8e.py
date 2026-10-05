@@ -381,7 +381,7 @@ def test_points_and_semseg_configs_read_mermaid_and_own_masks(tmp_path, registry
     )
     out = configs.build_all_configs(registry, tmp_path)
     (prow,) = out["points"].rows
-    assert prow["source_id"] == "mermaid-aws" and prow["canonical_taxon"] is not None
+    assert prow["source_id"] == "mermaid-aws" and prow["taxon_node_id"] is not None
     (srow,) = out["semseg"].rows
     assert json.loads(srow["canonical_class_counts"]) and srow["source_id"].startswith("reef-")
     cover = {r["sha256"]: r for r in out["benthic-cover"].rows}

@@ -165,11 +165,11 @@ def test_build_all_configs_and_rollup(tmp_path, registry):
     assert points.unmapped_by_source["reefolution"] == pytest.approx(1 / 11)
 
     coarse_by_sha = {row["sha256"]: row for row in results["benthic-coarse"].rows}
-    img1_sha = next(r["sha256"] for r in results["points"].rows if r["native_label"] == "Acr")
+    img1_sha = next(r["image_sha256"] for r in results["points"].rows if r["label_native"] == "Acr")
     assert coarse_by_sha[img1_sha]["benthic_dominant"] == "HC"
 
     img2_sha = next(
-        r["sha256"] for r in results["points"].rows if r["native_label"] == "Zzz_unmapped"
+        r["image_sha256"] for r in results["points"].rows if r["label_native"] == "Zzz_unmapped"
     )
     assert coarse_by_sha[img2_sha]["benthic_dominant"] is None  # excluded: 100% unknown
 

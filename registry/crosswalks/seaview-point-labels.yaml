@@ -1,0 +1,194 @@
+# Hand-authored (WP-U3, 2026-10-05) for taxonomy 2.2.0. Codes are the `label` column of
+# rs-storage-open benthic_datasets/point_labels/SEAVIEW/tabular-data/annotations_<REGION>.csv (9 regions,
+# 859,870 points, 181 codes). Meanings come from the same rows' `label_name` and `func_group`. Where two
+# regions use different names for one code the edge follows the name common to both. Growth-form and
+# family-level labels are `coarsened` (broader) onto HC/SC/ALGAE/PORIFERA; species labels are `coarsened`
+# onto their genus node. Nothing is guessed: the source's own unknown/other bucket is `unmappable`.
+# Point counts per code: registry/taxonomy/vocab/seaview-point-labels.tsv.
+crosswalks:
+  - id: seaview-point-labels
+    source_schema: dataset-native
+    target_schema: rs-benthic-v1
+    description: SEAVIEW survey photo-quadrat point labels (9 regional label sets) onto RS-Benthic v1, taxon axis.
+    edges:
+      - { source_label: "EAM_DHC", targets: { taxon: TA }, fidelity: approximate, note: "Epilithic Algal Matrix (SEAVIEW) is turf-dominated algal cover on hard substrate; TA is the nearest node, not identical" }
+      - { source_label: "Unc", targets: { taxon: TA }, fidelity: approximate, note: "Epilithic Algal Matrix (SEAVIEW) is turf-dominated algal cover on hard substrate; TA is the nearest node, not identical" }
+      - { source_label: "DSUB", targets: { taxon: TA }, fidelity: approximate, note: "Epilithic Algal Matrix (SEAVIEW) is turf-dominated algal cover on hard substrate; TA is the nearest node, not identical" }
+      - { source_label: "LSUB_SAND", targets: { taxon: SD }, fidelity: exact }
+      - { source_label: "AMAT", targets: { taxon: TA }, fidelity: approximate, note: "Epilithic Algal Matrix (SEAVIEW) is turf-dominated algal cover on hard substrate; TA is the nearest node, not identical" }
+      - { source_label: "EAM_RB", targets: { taxon: TA }, fidelity: approximate, note: "Epilithic Algal Matrix (SEAVIEW) is turf-dominated algal cover on hard substrate; TA is the nearest node, not identical" }
+      - { source_label: "MASE_SMO_P", targets: { taxon: HC_PORITES }, fidelity: exact }
+      - { source_label: "Turf", targets: { taxon: TA }, fidelity: exact }
+      - { source_label: "CAL_CCA_DC", targets: { taxon: CCA }, fidelity: exact, note: "calcifying crustose coralline algae" }
+      - { source_label: "MASE_SML_O", targets: { taxon: HC }, fidelity: coarsened, note: "growth-form or family-level hard coral label; no matching genus node" }
+      - { source_label: "MASE_LRG_O", targets: { taxon: HC }, fidelity: coarsened, note: "growth-form or family-level hard coral label; no matching genus node" }
+      - { source_label: "TFP_RDG_Al", targets: { taxon: HC }, fidelity: coarsened, note: "growth-form or family-level hard coral label; no matching genus node" }
+      - { source_label: "BRA_TAB-Ac", targets: { taxon: HC_ACROPORA }, fidelity: exact, note: "Acropora with a growth form" }
+      - { source_label: "SINV_SFC_O", targets: { taxon: SC }, fidelity: coarsened, note: "soft coral / octocoral group" }
+      - { source_label: "SINV_SFC_A", targets: { taxon: SC }, fidelity: coarsened, note: "soft coral / octocoral group" }
+      - { source_label: "CCA", targets: { taxon: CCA }, fidelity: exact, note: "calcifying crustose coralline algae" }
+      - { source_label: "ACR-TCD", targets: { taxon: HC }, fidelity: coarsened, note: "Acroporidae (family-level); no family node in 2.2.0" }
+      - { source_label: "POR-MASS", targets: { taxon: HC_PORITIDAE }, fidelity: exact, note: "Poritidae growth form (bleached state not carried)" }
+      - { source_label: "POCI", targets: { taxon: HC }, fidelity: coarsened, note: "growth-form or family-level hard coral label; no matching genus node" }
+      - { source_label: "MACR_Cal_H", targets: { taxon: HA }, fidelity: exact }
+      - { source_label: "FAV-MUS", targets: { taxon: HC }, fidelity: coarsened, note: "growth-form or family-level hard coral label; no matching genus node" }
+      - { source_label: "MLAG", targets: { taxon: ALGAE }, fidelity: coarsened, note: "macroalgae morphology group" }
+      - { source_label: "BRA_ARB_Ac", targets: { taxon: HC_ACROPORA }, fidelity: exact, note: "Acropora with a growth form" }
+      - { source_label: "SINV_SPO_M", targets: { taxon: PORIFERA }, fidelity: coarsened, note: "sponge morphology or species" }
+      - { source_label: "ALC-SF", targets: { taxon: SC }, fidelity: coarsened, note: "soft coral / octocoral group" }
+      - { source_label: "Sand", targets: { taxon: SD }, fidelity: exact }
+      - { source_label: "ACR-PE", targets: { taxon: HC }, fidelity: coarsened, note: "Acroporidae (family-level); no family node in 2.2.0" }
+      - { source_label: "ACR-OTH", targets: { taxon: HC }, fidelity: coarsened, note: "Acroporidae (family-level); no family node in 2.2.0" }
+      - { source_label: "ACR-BRA", targets: { taxon: HC }, fidelity: coarsened, note: "Acroporidae (family-level); no family node in 2.2.0" }
+      - { source_label: "TFP_RND_Al", targets: { taxon: HC }, fidelity: coarsened, note: "growth-form or family-level hard coral label; no matching genus node" }
+      - { source_label: "OTH-SF", targets: { taxon: SC }, fidelity: coarsened, note: "soft coral / octocoral group" }
+      - { source_label: "POR_Com_fi", targets: { taxon: HC_PORITES }, fidelity: coarsened, note: "Porites species" }
+      - { source_label: "BRA_VER_Po", targets: { taxon: HC_POCILLOPORA }, fidelity: exact }
+      - { source_label: "OTH-SINV", targets: { taxon: OTHER_FAUNA }, fidelity: approximate, note: "other (sessile or mobile) invertebrates" }
+      - { source_label: "MASE_MEA_O", targets: { taxon: HC }, fidelity: coarsened, note: "growth-form or family-level hard coral label; no matching genus node" }
+      - { source_label: "BRA_SMO_Po", targets: { taxon: HC_PORITES }, fidelity: exact }
+      - { source_label: "LSUB_SEDI", targets: { taxon: SI }, fidelity: approximate, note: "sediment, incl. terrigenous sediment with turf" }
+      - { source_label: "MALG", targets: { taxon: ALGAE }, fidelity: coarsened, note: "macroalgae morphology group" }
+      - { source_label: "POR-BRA", targets: { taxon: HC_PORITIDAE }, fidelity: exact, note: "Poritidae growth form (bleached state not carried)" }
+      - { source_label: "OTH-HC", targets: { taxon: HC }, fidelity: coarsened, note: "growth-form or family-level hard coral label; no matching genus node" }
+      - { source_label: "SCplu", targets: { taxon: SC }, fidelity: coarsened, note: "soft coral / octocoral group" }
+      - { source_label: "MON_Cap_br", targets: { taxon: HC_MONTIPORA }, fidelity: coarsened, note: "Montipora species" }
+      - { source_label: "NON_MIL", targets: { taxon: MIL }, fidelity: exact }
+      - { source_label: "BRA_OTH", targets: { taxon: HC }, fidelity: coarsened, note: "growth-form or family-level hard coral label; no matching genus node" }
+      - { source_label: "POR-ENC", targets: { taxon: HC_PORITIDAE }, fidelity: exact, note: "Poritidae growth form (bleached state not carried)" }
+      - { source_label: "MPATU", targets: { taxon: HC_MONTIPORA }, fidelity: coarsened, note: "Montipora species" }
+      - { source_label: "ERGR", targets: { taxon: SC }, fidelity: coarsened, note: "soft coral / octocoral group" }
+      - { source_label: "OCOM", targets: { taxon: HC_ORBICELLA }, fidelity: exact, note: "Orbicella species complex" }
+      - { source_label: "MACR_Fol_B", targets: { taxon: ALGAE }, fidelity: coarsened, note: "macroalgae morphology group" }
+      - { source_label: "NON_FREE", targets: { taxon: HC }, fidelity: coarsened, note: "growth-form or family-level hard coral label; no matching genus node" }
+      - { source_label: "MACR_Fil_A", targets: { taxon: ALGAE }, fidelity: coarsened, note: "macroalgae morphology group" }
+      - { source_label: "Turfsa", targets: { taxon: TA }, fidelity: approximate, note: "turf algae and sand" }
+      - { source_label: "TFP_SMO_Po", targets: { taxon: HC_PORITES }, fidelity: exact }
+      - { source_label: "BRA_DIG_Ac", targets: { taxon: HC_ACROPORA }, fidelity: exact, note: "Acropora with a growth form" }
+      - { source_label: "MASE_MEA_L", targets: { taxon: HC_LOBOPHYLLIA }, fidelity: exact }
+      - { source_label: "MON_Cap_pl", targets: { taxon: HC_MONTIPORA }, fidelity: coarsened, note: "Montipora species" }
+      - { source_label: "BRA_RND_St", targets: { taxon: HC_STYLOPHORA }, fidelity: exact }
+      - { source_label: "SINV_HYD", targets: { taxon: CN_HYDROZOA }, fidelity: coarsened, note: "hydroids" }
+      - { source_label: "SpMass", targets: { taxon: PORIFERA }, fidelity: coarsened, note: "sponge morphology or species" }
+      - { source_label: "GORG", targets: { taxon: SC }, fidelity: coarsened, note: "soft coral / octocoral group" }
+      - { source_label: "POCI_CAU", targets: { taxon: HC_POCILLOPORA }, fidelity: coarsened, note: "Pocillopora species (Blpocill: bleached)" }
+      - { source_label: "Dict", targets: { taxon: ALG_DICTYOTACEAE }, fidelity: coarsened, note: "genus Dictyota" }
+      - { source_label: "BRA_FIN_Se", targets: { taxon: HC }, fidelity: coarsened, note: "growth-form or family-level hard coral label; no matching genus node" }
+      - { source_label: "MASE_LRG_I", targets: { taxon: HC_ISOPORA }, fidelity: exact }
+      - { source_label: "Lvar", targets: { taxon: ALG_LOBOPHORA }, fidelity: coarsened, note: "Lobophora variegata" }
+      - { source_label: "CVIR", targets: { taxon: PORIFERA }, fidelity: coarsened, note: "sponge morphology or species" }
+      - { source_label: "MINV_CRI", targets: { taxon: OTHER_FAUNA }, fidelity: approximate, note: "other (sessile or mobile) invertebrates" }
+      - { source_label: "CYANO_DHC", targets: { taxon: CYANOBACTERIA }, fidelity: approximate, note: "cyanobacteria smothering dead coral/rubble" }
+      - { source_label: "CYAN", targets: { taxon: CYANOBACTERIA }, fidelity: exact }
+      - { source_label: "AGAR", targets: { taxon: HC_AGARICIA }, fidelity: exact }
+      - { source_label: "SINV_SPO_V", targets: { taxon: PORIFERA }, fidelity: coarsened, note: "sponge morphology or species" }
+      - { source_label: "MACR_Cal_P", targets: { taxon: ALG_PADINA }, fidelity: exact }
+      - { source_label: "B_Monti", targets: { taxon: HC_MONTIPORA }, fidelity: exact, note: "bleached Montipora" }
+      - { source_label: "SINV_TUN", targets: { taxon: OTHER_FAUNA }, fidelity: approximate, note: "other (sessile or mobile) invertebrates" }
+      - { source_label: "ACR-HIP", targets: { taxon: HC }, fidelity: coarsened, note: "Acroporidae (family-level); no family node in 2.2.0" }
+      - { source_label: "SINV_HEX_O", targets: { taxon: CNIDARIA }, fidelity: coarsened, note: "other soft hexacorals" }
+      - { source_label: "BRA_BLC", targets: { taxon: HC }, fidelity: coarsened, note: "branching bleached coral" }
+      - { source_label: "PSEU", targets: { taxon: HC_PSEUDODIPLORIA }, fidelity: exact }
+      - { source_label: "SINV_SFC_E", targets: { taxon: SC }, fidelity: coarsened, note: "soft coral / octocoral group" }
+      - { source_label: "SINV_SPO_E", targets: { taxon: PORIFERA }, fidelity: coarsened, note: "sponge morphology or species" }
+      - { source_label: "Mille", targets: { taxon: MIL }, fidelity: exact }
+      - { source_label: "XMUT", targets: { taxon: PORIFERA }, fidelity: coarsened, note: "sponge morphology or species" }
+      - { source_label: "CAL_CCA_RB", targets: { taxon: CCA }, fidelity: exact, note: "calcifying crustose coralline algae" }
+      - { source_label: "FISH", targets: { taxon: FISH }, fidelity: exact }
+      - { source_label: "SINV_SPO_C", targets: { taxon: PORIFERA }, fidelity: coarsened, note: "sponge morphology or species" }
+      - { source_label: "MADR", targets: { taxon: HC }, fidelity: coarsened, note: "growth-form or family-level hard coral label; no matching genus node" }
+      - { source_label: "Seagrass", targets: { taxon: SG }, fidelity: exact }
+      - { source_label: "POR_OTH_EP", targets: { taxon: HC_PORITES }, fidelity: coarsened, note: "Porites species" }
+      - { source_label: "BRA_BOT_Ac", targets: { taxon: HC_ACROPORA }, fidelity: exact, note: "Acropora with a growth form" }
+      - { source_label: "IRCI", targets: { taxon: PORIFERA }, fidelity: coarsened, note: "sponge morphology or species" }
+      - { source_label: "MINV_COTS", targets: { taxon: COTS }, fidelity: exact }
+      - { source_label: "ROSP", targets: { taxon: PORIFERA }, fidelity: coarsened, note: "sponge morphology or species" }
+      - { source_label: "MCAV", targets: { taxon: HC_MONTASTRAEA }, fidelity: coarsened, note: "Montastraea cavernosa" }
+      - { source_label: "ERHD", targets: { taxon: ALG_RHODOPHYTA }, fidelity: exact }
+      - { source_label: "NN_HEL", targets: { taxon: SC_HELIOPORA }, fidelity: exact }
+      - { source_label: "PASTR", targets: { taxon: HC_PORITES }, fidelity: coarsened, note: "Porites species" }
+      - { source_label: "SINV_OTH", targets: { taxon: OTHER_FAUNA }, fidelity: approximate, note: "other (sessile or mobile) invertebrates" }
+      - { source_label: "CNAT", targets: { taxon: HC_COLPOPHYLLIA }, fidelity: coarsened, note: "Colpophyllia natans" }
+      - { source_label: "ENGR1", targets: { taxon: SC }, fidelity: coarsened, note: "soft coral / octocoral group" }
+      - { source_label: "PPOR", targets: { taxon: HC_PORITES }, fidelity: coarsened, note: "Porites species" }
+      - { source_label: "SSID", targets: { taxon: HC_SIDERASTREA }, fidelity: coarsened, note: "Siderastrea siderea" }
+      - { source_label: "MALGAE", targets: { taxon: ALGAE }, fidelity: coarsened, note: "macroalgae morphology group" }
+      - { source_label: "ApFuCa", targets: { taxon: PORIFERA }, fidelity: coarsened, note: "sponge morphology or species" }
+      - { source_label: "SGRASS", targets: { taxon: SG }, fidelity: exact }
+      - { source_label: "MACR_GLOB", targets: { taxon: ALGAE }, fidelity: coarsened, note: "macroalgae morphology group" }
+      - { source_label: "MAENR", targets: { taxon: ALGAE }, fidelity: coarsened, note: "macroalgae morphology group" }
+      - { source_label: "Sediment", targets: { taxon: SI }, fidelity: approximate, note: "sediment, incl. terrigenous sediment with turf" }
+      - { source_label: "ENSP", targets: { taxon: PORIFERA }, fidelity: coarsened, note: "sponge morphology or species" }
+      - { source_label: "DLAB", targets: { taxon: HC_PSEUDODIPLORIA }, fidelity: coarsened, note: "Diploria labyrinthiformis, now Pseudodiploria" }
+      - { source_label: "POR-MASS-B", targets: { taxon: HC_PORITIDAE }, fidelity: exact, note: "Poritidae growth form (bleached state not carried)" }
+      - { source_label: "UTEN", targets: { taxon: HC_AGARICIA }, fidelity: coarsened, note: "Agaricia tenuifolia" }
+      - { source_label: "EAM_Sub", targets: { taxon: TA }, fidelity: approximate, note: "Epilithic Algal Matrix (SEAVIEW) is turf-dominated algal cover on hard substrate; TA is the nearest node, not identical" }
+      - { source_label: "MACR_Fol_F", targets: { taxon: ALGAE }, fidelity: coarsened, note: "macroalgae morphology group" }
+      - { source_label: "LSUB_RUB", targets: { taxon: RB }, fidelity: exact, note: "name says Loose Substrate: Rubble (func_group is mis-set to Algae in the source)" }
+      - { source_label: "Sponge", targets: { taxon: PORIFERA }, fidelity: exact }
+      - { source_label: "Hali", targets: { taxon: HA }, fidelity: exact }
+      - { source_label: "ACER", targets: { taxon: HC_ACROPORA }, fidelity: coarsened, note: "Acropora species" }
+      - { source_label: "MFLAB", targets: { taxon: HC_MONTIPORA }, fidelity: coarsened, note: "Montipora species" }
+      - { source_label: "SINV_SPO_F", targets: { taxon: PORIFERA }, fidelity: coarsened, note: "sponge morphology or species" }
+      - { source_label: "NON_HEL", targets: { taxon: SC_HELIOPORA }, fidelity: exact }
+      - { source_label: "Gnep", targets: { taxon: PORIFERA }, fidelity: coarsened, note: "sponge morphology or species" }
+      - { source_label: "ZOAN", targets: { taxon: ZO }, fidelity: exact }
+      - { source_label: "Unk", targets: {}, fidelity: unmappable, note: "the source's own unknown/other bucket" }
+      - { source_label: "CYANO_RB", targets: { taxon: CYANOBACTERIA }, fidelity: approximate, note: "cyanobacteria smothering dead coral/rubble" }
+      - { source_label: "LSUB_VOL", targets: {}, fidelity: unmappable, note: "volcanic sediment: no canonical node" }
+      - { source_label: "POR_NOD", targets: { taxon: HC_PORITES }, fidelity: coarsened, note: "Porites species" }
+      - { source_label: "CPLI", targets: { taxon: PORIFERA }, fidelity: coarsened, note: "sponge morphology or species" }
+      - { source_label: "Acra", targets: { taxon: PORIFERA }, fidelity: coarsened, note: "sponge morphology or species" }
+      - { source_label: "OCOM-BL", targets: { taxon: HC_ORBICELLA }, fidelity: exact, note: "Orbicella species complex" }
+      - { source_label: "Ndig", targets: { taxon: PORIFERA }, fidelity: coarsened, note: "sponge morphology or species" }
+      - { source_label: "CVAG", targets: { taxon: PORIFERA }, fidelity: coarsened, note: "sponge morphology or species" }
+      - { source_label: "MACR_Fol_O", targets: { taxon: ALGAE }, fidelity: coarsened, note: "macroalgae morphology group" }
+      - { source_label: "ATUB", targets: { taxon: PORIFERA }, fidelity: coarsened, note: "sponge morphology or species" }
+      - { source_label: "AFIS", targets: { taxon: PORIFERA }, fidelity: coarsened, note: "sponge morphology or species" }
+      - { source_label: "Blpocill", targets: { taxon: HC_POCILLOPORA }, fidelity: coarsened, note: "Pocillopora species (Blpocill: bleached)" }
+      - { source_label: "MACR_Fol_P", targets: { taxon: ALG_PADINA }, fidelity: exact }
+      - { source_label: "MTUN", targets: { taxon: OTHER_FAUNA }, fidelity: approximate, note: "other (sessile or mobile) invertebrates" }
+      - { source_label: "MEAN", targets: { taxon: HC_MEANDRINA }, fidelity: exact }
+      - { source_label: "MINV_OTH", targets: { taxon: OTHER_FAUNA }, fidelity: approximate, note: "other (sessile or mobile) invertebrates" }
+      - { source_label: "PLAK", targets: { taxon: PORIFERA }, fidelity: coarsened, note: "sponge morphology or species" }
+      - { source_label: "ALGAE_OTH", targets: { taxon: ALGAE }, fidelity: coarsened, note: "macroalgae morphology group" }
+      - { source_label: "PSEU-BL", targets: { taxon: HC_PSEUDODIPLORIA }, fidelity: exact }
+      - { source_label: "SPvase", targets: { taxon: PORIFERA }, fidelity: coarsened, note: "sponge morphology or species" }
+      - { source_label: "APAL", targets: { taxon: HC_ACROPORA }, fidelity: coarsened, note: "Acropora species" }
+      - { source_label: "DLAB-BL", targets: { taxon: HC_PSEUDODIPLORIA }, fidelity: coarsened, note: "Diploria labyrinthiformis, now Pseudodiploria" }
+      - { source_label: "AARC", targets: { taxon: PORIFERA }, fidelity: coarsened, note: "sponge morphology or species" }
+      - { source_label: "MINV_Dia", targets: { taxon: URCH }, fidelity: coarsened, note: "sea urchin genus" }
+      - { source_label: "ERSP", targets: { taxon: PORIFERA }, fidelity: coarsened, note: "sponge morphology or species" }
+      - { source_label: "CDEL", targets: { taxon: PORIFERA }, fidelity: coarsened, note: "sponge morphology or species" }
+      - { source_label: "TSH", targets: { taxon: TRASH }, fidelity: exact }
+      - { source_label: "EFAS", targets: { taxon: HC }, fidelity: coarsened, note: "growth-form or family-level hard coral label; no matching genus node" }
+      - { source_label: "MINV_Ech", targets: { taxon: URCH }, fidelity: coarsened, note: "sea urchin genus" }
+      - { source_label: "Trans", targets: {}, fidelity: unmappable, note: "transect hardware: a non-target object, no taxon-axis node" }
+      - { source_label: "MSE-HC", targets: { taxon: HC }, fidelity: coarsened, note: "growth-form or family-level hard coral label; no matching genus node" }
+      - { source_label: "GEAR", targets: { taxon: TRASH }, fidelity: approximate, note: "fishing gear" }
+      - { source_label: "MASE_BLC", targets: { taxon: HC }, fidelity: coarsened, note: "growth-form or family-level hard coral label; no matching genus node" }
+      - { source_label: "MINV_Tri", targets: { taxon: URCH }, fidelity: coarsened, note: "sea urchin genus" }
+      - { source_label: "ACOM", targets: { taxon: PORIFERA }, fidelity: coarsened, note: "sponge morphology or species" }
+      - { source_label: "Other", targets: {}, fidelity: unmappable, note: "the source's own unknown/other bucket" }
+      - { source_label: "PEYDO", targets: { taxon: HC_POCILLOPORA }, fidelity: coarsened, note: "Pocillopora species (Blpocill: bleached)" }
+      - { source_label: "CAL_CCA_S", targets: { taxon: CCA }, fidelity: exact, note: "calcifying crustose coralline algae" }
+      - { source_label: "MOB-INV", targets: { taxon: OTHER_FAUNA }, fidelity: approximate, note: "other (sessile or mobile) invertebrates" }
+      - { source_label: "POR_Com_fu", targets: { taxon: HC_PORITES }, fidelity: coarsened, note: "Porites species" }
+      - { source_label: "Mille-BL", targets: { taxon: MIL }, fidelity: exact }
+      - { source_label: "H20", targets: { taxon: WC }, fidelity: exact }
+      - { source_label: "CYANO_Sub", targets: { taxon: CYANOBACTERIA }, fidelity: exact }
+      - { source_label: "WATER", targets: { taxon: WC }, fidelity: exact }
+      - { source_label: "Lepto", targets: { taxon: HC_LEPTOSERIS }, fidelity: exact }
+      - { source_label: "MEA-HC", targets: { taxon: HC }, fidelity: coarsened, note: "growth-form or family-level hard coral label; no matching genus node" }
+      - { source_label: "MLAE", targets: { taxon: PORIFERA }, fidelity: coarsened, note: "sponge morphology or species" }
+      - { source_label: "PVAR", targets: { taxon: HC_PAVONA }, fidelity: coarsened, note: "Pavona species" }
+      - { source_label: "POR_EP_B", targets: { taxon: HC_PORITES }, fidelity: coarsened, note: "Porites species" }
+      - { source_label: "MACR_Cal_O", targets: { taxon: ALGAE }, fidelity: coarsened, note: "macroalgae morphology group" }
+      - { source_label: "PAV_Due", targets: { taxon: HC_PAVONA }, fidelity: coarsened, note: "Pavona species" }
+      - { source_label: "TFP_BLC", targets: { taxon: HC }, fidelity: coarsened, note: "growth-form or family-level hard coral label; no matching genus node" }
+      - { source_label: "CYANO", targets: { taxon: CYANOBACTERIA }, fidelity: exact }
+      - { source_label: "PDAM", targets: { taxon: HC_POCILLOPORA }, fidelity: coarsened, note: "Pocillopora species (Blpocill: bleached)" }
+      - { source_label: "MACR_Fol_S", targets: { taxon: ALGAE }, fidelity: coarsened, note: "macroalgae morphology group" }
+      - { source_label: "PMal", targets: { taxon: HC_PAVONA }, fidelity: coarsened, note: "Pavona species" }
+      - { source_label: "FAV_SID", targets: { taxon: HC }, fidelity: coarsened, note: "growth-form or family-level hard coral label; no matching genus node" }
+      - { source_label: "MACR_LTH_O", targets: { taxon: ALGAE }, fidelity: coarsened, note: "macroalgae morphology group" }
