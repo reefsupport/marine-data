@@ -95,7 +95,10 @@ def evaluate(source: Source, profile: Profile, *, legal_opinion_ref: str | None 
         )
 
     # 3. Tier must be allowed by the profile.
-    if lic.tier not in profile.allow_tiers:
+    # A per-row-licence source's tier is only a bound; on a shipping profile (one that names
+    # its access classes) each row is classified instead (WP-R2, flavours.sample_ships).
+    per_row_shipping = bool(source.licence_per_row and profile.allow_access_classes)
+    if lic.tier not in profile.allow_tiers and not per_row_shipping:
         allowed = ", ".join(t.value for t in profile.allow_tiers)
         return Decision(
             source.id,
@@ -106,7 +109,7 @@ def evaluate(source: Source, profile: Profile, *, legal_opinion_ref: str | None 
 
     # 3b. Access class (WP-L1b): a shipping profile admits only the classes its flavour ships.
     allowed_classes = profile.allow_access_classes
-    if allowed_classes and source.access_class.value not in allowed_classes:
+    if allowed_classes and not per_row_shipping and source.access_class.value not in allowed_classes:
         return Decision(
             source.id,
             False,

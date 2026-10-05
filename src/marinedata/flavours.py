@@ -15,7 +15,17 @@ from pathlib import Path
 
 import yaml
 
-from .licence_class import ACCESS_CLASSES, FLAVOURS, NC, OPEN, coerce_class, release_excluded
+from .licence_class import (
+    ACCESS_CLASSES,
+    FLAVOURS,
+    INTERNAL_ONLY,
+    NC,
+    OPEN,
+    UNKNOWN,
+    coerce_class,
+    release_excluded,
+    resolve_row_class,
+)
 
 SPLIT_MAP_PROFILE = "ship-noncommercial"
 """A frozen split map is shared by both flavours, so it is generated over the superset
@@ -81,11 +91,33 @@ def _class(registry, source_id: str) -> str:
 
 def ships_in(registry, source_id: str, flavour: str) -> bool:
     """A whole source ships in ``flavour`` when its class is the flavour's. A per-row-licence
-    source never does: its class is only a bound, each row decides."""
+    source is ADMITTED to either flavour (WP-R2): its class is only a bound, so
+    :func:`sample_ships` decides row by row (unless the source is internal-only / unknown)."""
     if release_excluded(source_id):
         return False  # never released in any flavour (registry flag)
     source = registry.source(source_id)
-    return not source.licence_per_row and _class(registry, source_id) == FLAVOURS[flavour]
+    if source.licence_per_row:
+        return _class(registry, source_id) not in (INTERNAL_ONLY, UNKNOWN)
+    return _class(registry, source_id) == FLAVOURS[flavour]
+
+
+def row_licence_class(registry, source_id: str, licence: str | None) -> str:
+    """One row's class: the source class bound + the row's own licence string (``resolve_row_class``).
+    A per-row source with no (parseable) row licence is ``unknown`` and never ships."""
+    source = registry.source(source_id)
+    return resolve_row_class(
+        _class(registry, source_id), licence, per_row=bool(source.licence_per_row)
+    )
+
+
+def sample_ships(registry, sample, flavour: str | None) -> bool:
+    """Whether one built sample may ship in ``flavour``. Only per-row sources are decided here
+    (CC0/CC-BY -> open, BY-NC -> nc, ND/unknown -> dropped); every other source was already
+    decided whole by :func:`ships_in`."""
+    if flavour is None or not registry.source(sample.source_id).licence_per_row:
+        return True
+    cls = row_licence_class(registry, sample.source_id, (sample.meta or {}).get("license"))
+    return cls == FLAVOURS[flavour]
 
 
 def flavour_source_ids(registry, source_ids: Iterable[str], flavour: str) -> list[str]:

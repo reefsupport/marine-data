@@ -26,7 +26,7 @@ from pathlib import Path
 
 from .builder import SUPERVISED_DEFAULT_RATIOS, DatasetBuilder, PartialAbstainExclusion, SplitName
 from .checksums import file_digest
-from .flavours import check_profile, flavour_source_ids, release_record
+from .flavours import check_profile, flavour_source_ids, release_record, sample_ships
 from .gate import evaluate
 from .labelcheck import release_label_gate
 from .licence_class import release_excluded, require_flavour
@@ -569,7 +569,7 @@ def build_release(
         for split_name, positions in dataset.splits.items():
             for position in positions:
                 sample = dataset.samples[position]
-                if sample.image is None:
+                if sample.image is None or not sample_ships(registry, sample, flavour):
                     continue
                 sha256 = digest(Path(sample.image))
                 if sample.source_id in never_eval_sources and sha256 in near_dup_excluded_set:

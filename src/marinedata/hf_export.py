@@ -27,6 +27,7 @@ from pathlib import Path
 from .builder import DatasetBuilder
 from .checksums import file_digest
 from .hf_parquet import ConfigSpec, ExportRow, files_per_folder, plan_config, write_shard
+from .flavours import row_licence_class
 from .licence_class import drop_release_excluded, flavour_filter, require_flavour
 from .registry import Registry
 from .release import DEFAULT_SCHEMA_ID, _admitted_source_ids, _never_eval_source_ids
@@ -114,6 +115,8 @@ class SampleRow:
     native_label: str | None = None
     label_reason: str | None = None
     mask_class_map: str | None = None
+    licence_class: str | None = None
+    license: str | None = None
 
     @property
     def split(self) -> str:
@@ -206,6 +209,7 @@ def collect_rows(
                 sample = dataset.samples[position]
                 if sample.image is None:
                     continue
+                row_licence = sample.meta.get("license")
                 image = Path(sample.image)
                 sha = digests.get(image) or digests.setdefault(image, file_digest(image))
                 if sample.source_id in never_eval and (sha in excluded or split_name != TRAIN):
@@ -224,6 +228,8 @@ def collect_rows(
                         sample_key=sample.key,
                         image=image,
                         split_group=sample.meta.get("split_group"),
+                        licence_class=row_licence_class(registry, sample.source_id, row_licence),
+                        license=row_licence,
                         mask=mask,
                         mask_values=",".join(f"{k}={v}" for k, v in values.items()) or None,
                         **_labels(registry, task, projector, sample),

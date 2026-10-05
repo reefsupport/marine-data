@@ -279,15 +279,18 @@ def build_rows(
         lat, lon, generalized = _generalize(lat, lon, sensitive)
         meow = classify(lat, lon, meow_polygons) if lat is not None else None
         q = quality_by_sha.get(ref.sha256, {})
+        row_licence = (
+            staged_row.get("license") if source.licence_per_row else None
+        ) or source.licence.id
         rows.append(
             {
                 "image_sha256": ref.sha256,
                 "source_id": ref.source_id,
                 "source_version": source.version,
-                "license": source.licence.id,
+                "license": row_licence,
                 "licence_class": resolve_row_class(
                     getattr(source, "access_class", None),
-                    source.licence.id,
+                    row_licence,
                     per_row=getattr(source, "licence_per_row", False),
                 ),
                 "attribution": attribution_for(source),

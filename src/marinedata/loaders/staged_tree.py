@@ -255,6 +255,8 @@ class StagedTreeLoader(_HarmonizingLoader):
             }
             if record.get("upstream_split"):
                 meta["upstream_split"] = record["upstream_split"]
+            if record.get("license"):
+                meta["license"] = record["license"]  # WP-R2: per-row licence string
             if native:
                 meta["native_labels"] = native
                 meta["n_points"] = len(points)
