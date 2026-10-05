@@ -148,21 +148,31 @@ sources:
     name: Atlantis (synthetic underwater depth)
     # habitat inferred (WP-2b) from this source's own description/notes, not independently verified
     habitat: [mixed]
-    version: "2024"
+    version: "zip-6fc81e3c43a5"  # staged version (sources/atlantis/<version>/); upstream release year 2024
     description: Synthetic underwater image/depth/text triplets for monocular depth training.
     licence: MIT
     legal_basis: licence
     redistribution: ok
     provenance: public
+    checksums:
+      version: "zip-6fc81e3c43a5"
+      root_digest: 1ea830727733657f0b5b6f60ef23912995a2c44717b8355d0456038573e6f163
+      files: 3603
+      size_bytes: 1966506966
     verification:
       verified_on: 2026-08-17
       verified_by: "github.com/zkawfanx/Atlantis — MIT licence"
       method: licence-file
     access:
-      method: api
-      uri: https://github.com/zkawfanx/Atlantis
-      size_bytes: 1962319455
-      params: { client: atlantis }
+      method: s3
+      uri: s3://rs-storage-open/sources/atlantis/zip-6fc81e3c43a5/
+      size_bytes: 1966882001  # staged tree incl. CHECKSUMS.sha256 (one bucket listing, WP-R5 2026-10-05)
+      params:
+        bucket: rs-storage-open
+        endpoint: hel1.your-objectstorage.com
+        region: hel1
+        prefix: sources/atlantis/zip-6fc81e3c43a5/
+        upstream_uri: https://github.com/zkawfanx/Atlantis
       notes: >
         Checked 2026-08-28: sole distribution is Kaggle (zkawfanx/atlantis, 1.96GB,
         no smaller subset; verified as a real zip by reading local file headers, not
@@ -172,6 +182,11 @@ sources:
         depth map, several water-type variants), a one-to-many relationship this
         registry's stem/suffix-matching image-mask-pairs convention cannot express as
         declared. Needs both a smaller host and a different pairing rule.
+        WP-R5 (2026-10-05): the hand-downloaded archive is staged under the id `atlantis`
+        (registry/ingest-specs/atlantis.yaml; flat `images/` of 3600 files + metadata.parquet,
+        CHECKSUMS.sha256) and this canonical entry now points at that tree (prefix +
+        root digest read from the staged CHECKSUMS.sha256), so a release build can root it.
+        The licence class is unchanged (restricted-nc, LICV 2026-10-05).
     modalities: [image]
     capabilities: [depth-estimation, image-enhancement]
     items: 3200
@@ -184,5 +199,5 @@ sources:
       caveats:
         - "Synthetic (Stable-Diffusion generated). Useful for domain-adaptation experiments; not a substitute for real metric ground truth."
         - "Monocular depth underwater is not metric without an in-scene scale reference. Treat as a relative prior only."
-    loader: { layout: image-mask-pairs }
+    loader: { layout: staged-tree }
     tags: [synthetic, depth, permissive]
