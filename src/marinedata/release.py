@@ -21,7 +21,7 @@ from __future__ import annotations
 import hashlib
 import json
 import logging
-from collections.abc import Callable, Iterable, Iterator
+from collections.abc import Callable, Iterable, Iterator, Mapping
 from dataclasses import dataclass, field, replace
 from pathlib import Path
 
@@ -122,6 +122,9 @@ class SplitMapStats:
     (WP-R2c) pulled to ``test``; their merged components are counted below."""
     upstream_test_components: int = 0
     """Merged components forced to ``test`` by that rule (a never-eval-only one stays train)."""
+    dedup_group_links: int = 0
+    """Links added from the ``dedup run`` groups (WP-R6): every image of a dedup group in the
+    enumeration is tied to the group's first image, so a near-dup group never straddles splits."""
 
 
 def _never_eval_source_ids(registry: Registry, source_ids: Iterable[str]) -> set[str]:
@@ -407,6 +410,25 @@ def enumerate_release_rows(
             yield entry.sha256, entry.group, source_id
 
 
+def dedup_group_links(
+    sha_to_group: Mapping[str, str], shas: Iterable[str]
+) -> list[tuple[str, str]]:
+    """Chain links ``(first, other)`` for every dedup group (``dedup run`` groups.parquet) that has
+    two or more images among ``shas``: unioned like a shared digest, so the group is one split
+    component. Deterministic: members are sorted, the first is the anchor."""
+    members: dict[str, list[str]] = {}
+    for sha in set(shas):
+        group = sha_to_group.get(sha)
+        if group is not None:
+            members.setdefault(group, []).append(sha)
+    return [
+        (ordered[0], other)
+        for _, group_members in sorted(members.items())
+        for ordered in (sorted(group_members),)
+        for other in ordered[1:]
+    ]
+
+
 def generate_split_map(
     registry: Registry,
     *,
@@ -422,6 +444,8 @@ def generate_split_map(
     near_dup: NearDupConfig | None = None,
     honour_upstream_test: bool = True,
     upstream_test_off: Iterable[str] = (),
+    near_dup_groups: Mapping[str, str] | None = None,
+    near_dup_header: Mapping[str, object] | None = None,
 ) -> SplitMapStats:
     """Enumerate every admitted staged tree in ``roots`` and write a fresh, stratified
     ``SPLIT_MAP.json`` at ``out`` — the "no hand-built TSV" path from staged trees straight
@@ -470,6 +494,12 @@ def generate_split_map(
     digest or near-dup union), and a mixed upstream train+test group goes whole. A component of
     only ``never-eval`` sources stays ``train``. Sources without any upstream-test row are
     unaffected; ``upstream_test_off`` lists source ids that opt out (``"*"`` = all sources).
+
+    ``near_dup_groups`` (WP-R6): ``image_sha256 -> dedup group id`` from ``dedup run``'s
+    groups.parquet. Every group's images in the enumeration are unioned into one component (all
+    sources, never-eval included), so a near-duplicate group has one split and ``dedup gate``
+    finds no spanning group. ``near_dup_header`` is recorded under the map's ``near_dup`` header
+    (the groups file digest, or the explicit ``--no-near-dup`` opt-out).
     """
     if load_split_map(out) is not None:
         raise ValueError(f"{out} already exists — remove it first to regenerate")
@@ -501,6 +531,10 @@ def generate_split_map(
             workers=near_dup.workers,
         )
         links = [(a, b) for a, b, _ in near_pairs(hashes, near_dup.union_max)]
+    dedup_links: list[tuple[str, str]] = []
+    if near_dup_groups is not None:
+        dedup_links = dedup_group_links(near_dup_groups, {sha for sha, _, _ in rows})
+        links = [*links, *dedup_links]
     counts, strata, merge_info = rows_to_counts(rows, stratified=True, links=links)
     near_dup_max_component = 0
     if near_dup is not None:
@@ -538,7 +572,13 @@ def generate_split_map(
         min_groups=min_groups,
         merge_canonical=merge_info.canonical,
         forced=forced,
-        near_dup=near_dup_record(near_dup) if near_dup is not None else None,
+        near_dup=(
+            {
+                **(near_dup_record(near_dup) if near_dup is not None else {}),
+                **(near_dup_header or {}),
+            }
+            or None
+        ),
     )
 
     members_of: dict[str, list[str]] = {}
@@ -559,6 +599,7 @@ def generate_split_map(
         near_dup_max_component=near_dup_max_component,
         upstream_test_groups=len(test_groups),
         upstream_test_components=sum(1 for c in upstream_test_components if forced[c] == TEST),
+        dedup_group_links=len(dedup_links),
     )
 
 

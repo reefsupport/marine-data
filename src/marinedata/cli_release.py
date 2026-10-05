@@ -131,19 +131,73 @@ def _sources_from(path: str | None) -> set[str] | None:
     return {entry["id"] for entry in json.loads(Path(path).read_text())["sources"]}
 
 
+def _add_near_dup_args(parser: argparse.ArgumentParser, *, required_note: str) -> None:
+    group = parser.add_mutually_exclusive_group()
+    group.add_argument(
+        "--near-dup",
+        dest="near_dup",
+        type=Path,
+        metavar="GROUPS_PARQUET",
+        help=f"groups.parquet from `marinedata dedup run`: every dedup group is one split "
+        f"component ({required_note})",
+    )
+    group.add_argument(
+        "--no-near-dup",
+        dest="no_near_dup",
+        action="store_true",
+        help="Explicitly generate the map without the dedup groups (recorded in the map header)",
+    )
+
+
+def _near_dup_input(
+    args: argparse.Namespace, *, required: bool
+) -> tuple[dict[str, str] | None, dict[str, object]]:
+    """``(sha -> dedup group, map header)`` from ``--near-dup <groups.parquet>``; ``--no-near-dup``
+    records the explicit opt-out. With neither, ``required`` raises (``release split-map``);
+    otherwise (``release build --generate-split-map``) the header records that none was used."""
+    groups = getattr(args, "near_dup", None)
+    if groups is not None:
+        from .dedup.groups import load_groups
+
+        sha_to_group, _ = load_groups(groups)
+        return sha_to_group, {
+            "dedup_groups": {
+                "file": Path(groups).name,
+                "sha256": file_digest(Path(groups)),
+                "images": len(sha_to_group),
+            }
+        }
+    if getattr(args, "no_near_dup", False):
+        return None, {"dedup_groups": "disabled by --no-near-dup"}
+    if required:
+        raise ValueError(
+            "no near-dup input: pass --near-dup <groups.parquet> (from `marinedata dedup run`) so "
+            "a near-duplicate group never straddles splits, or --no-near-dup to opt out explicitly"
+        )
+    print(
+        "release build: WARNING no --near-dup groups; near-duplicates beyond the dHash check "
+        "may straddle splits (use `release split-map --near-dup` for a release)",
+        file=sys.stderr,
+    )
+    return None, {"dedup_groups": "not provided"}
+
+
 def _generate_global_split_map(
     registry: Registry,
     args: argparse.Namespace,
     local: dict[str, Path],
     split_map_path: Path,
     near_dup: NearDupConfig,
+    *,
+    required_near_dup: bool = False,
 ) -> int:
     """Generate the ONE frozen split map every flavour builds from (WP-R2d): enumerate the
     superset (open + nc sources under ``SPLIT_MAP_PROFILE``, never-released sources excluded),
     so an image or near-dup group has the same split in both repos."""
     try:
         ratios = _parse_ratios(args.ratios)
-    except ValueError as exc:
+        dedup_groups, dedup_header = _near_dup_input(args, required=required_near_dup)
+    except (ValueError, OSError) as exc:
         print(f"release: {exc}", file=sys.stderr)
         return 1
     skipped_sources: dict[str, str] = {}
@@ -164,6 +218,8 @@ def _generate_global_split_map(
             skipped=skipped_sources,
             near_dup=near_dup,
             upstream_test_off=args.no_honour_upstream_test or (),
+            near_dup_groups=dedup_groups,
+            near_dup_header=dedup_header,
         )
     except (NearDupError, ReleaseFetchError) as exc:
         print(f"release: {exc}", file=sys.stderr)
@@ -175,7 +231,8 @@ def _generate_global_split_map(
         f"near_dup_pairs={stats.near_dup_pairs} near_dup_unions={stats.near_dup_unions} "
         f"near_dup_max_component={stats.near_dup_max_component} "
         f"upstream_test_groups={stats.upstream_test_groups} "
-        f"upstream_test_components={stats.upstream_test_components}"
+        f"upstream_test_components={stats.upstream_test_components} "
+        f"dedup_group_links={stats.dedup_group_links}"
     )
     for source_id, reason in sorted(skipped_sources.items()):
         print(f"  skipped {source_id}: {reason}", file=sys.stderr)
@@ -198,7 +255,9 @@ def _cmd_release_split_map(args: argparse.Namespace) -> int:
         )
         return 1
     near_dup = NearDupConfig(cache_dir=cache_root() / "_dhash", workers=default_workers())
-    return _generate_global_split_map(registry, args, local, split_map_path, near_dup)
+    return _generate_global_split_map(
+        registry, args, local, split_map_path, near_dup, required_near_dup=True
+    )
 
 
 def _cmd_release_build(args: argparse.Namespace) -> int:
@@ -503,6 +562,7 @@ def add_release_subparser(sub: argparse._SubParsersAction) -> None:
         help="With --manifest-only: admit only the sources a published RELEASE.json "
         "lists (e.g. to rebuild v1's task files under the current code)",
     )
+    _add_near_dup_args(p_build, required_note="only used with --generate-split-map")
     p_build.set_defaults(func=_cmd_release_build)
 
     p_map = release_sub.add_parser(
@@ -525,4 +585,5 @@ def add_release_subparser(sub: argparse._SubParsersAction) -> None:
     p_map.add_argument(
         "--local-only", dest="local_only", action="store_true", help="Exactly the --local trees"
     )
+    _add_near_dup_args(p_map, required_note="required unless --no-near-dup")
     p_map.set_defaults(func=_cmd_release_split_map)

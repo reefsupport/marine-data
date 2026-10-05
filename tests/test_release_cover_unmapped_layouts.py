@@ -265,6 +265,7 @@ def test_release_split_map_cli_writes_once_and_never_overwrites(
         "--min-groups",
         "3",
         "--local-only",
+        "--no-near-dup",
     ]
     for sid, root in roots.items():
         argv += ["--local", f"{sid}={root}"]
