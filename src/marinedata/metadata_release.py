@@ -49,7 +49,7 @@ from .hf_export import (
     SampleRow as ExportSampleRow,
 )
 from .hf_parquet import ConfigSpec, ExportRow, plan_config, write_shard
-from .licence_class import flavour_filter, resolve_row_class
+from .licence_class import drop_release_excluded, flavour_filter, resolve_row_class
 from .registry import Registry, Source
 
 METADATA = "metadata"
@@ -150,7 +150,10 @@ def collect_image_refs(registry: Registry, release_dir: Path, cache: Path) -> li
     roots = _roots(release_dir, cache)
     rows: dict[str, list[ExportSampleRow]] = collect_rows(registry, roots, release_dir)
     rows = drop_excluded(rows, DEFAULT_EXCLUDE_CONFIGS)
-    layout = build_layout(rows)
+    release_json = release_dir / "RELEASE.json"
+    release = json.loads(release_json.read_text()) if release_json.is_file() else {}
+    flavour = release.get("flavour")
+    layout = build_layout(rows, flavour=flavour)
     _, splits = layout["images"]
     refs = []
     for split, export_rows in splits.items():
@@ -318,8 +321,7 @@ def build_rows(
                 "quality_flags": ",".join(q.get("flags") or []) or None,
             }
         )
-    if flavour is not None:
-        rows = flavour_filter(rows, flavour)
+    rows = flavour_filter(rows, flavour) if flavour is not None else drop_release_excluded(rows)
     return sorted(rows, key=lambda r: r["image_sha256"])
 
 

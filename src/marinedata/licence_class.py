@@ -16,6 +16,7 @@ A *flavour* is a release repo: ``open`` ships class ``open`` only; ``nc`` ships 
 
 from __future__ import annotations
 
+import contextlib
 import functools
 import json
 import re
@@ -207,3 +208,37 @@ def flavour_filter(
 def _row_excluded(row: object) -> bool:
     sid = _field(row, "source_id")
     return isinstance(sid, str) and release_excluded(sid)
+
+
+# -- the no-flavour guard (WP-U14b) ----------------------------------------------
+
+_UNFLAVOURED_FOR_TESTS = False
+
+
+@contextlib.contextmanager
+def unflavoured_for_tests():
+    """TEST-ONLY escape: inside this context the release/export entry points accept
+    ``flavour=None`` (legacy fixtures). Release-excluded sources are still dropped. Production
+    code never enters it (``tests/conftest.py`` does)."""
+    global _UNFLAVOURED_FOR_TESTS
+    prev, _UNFLAVOURED_FOR_TESTS = _UNFLAVOURED_FOR_TESTS, True
+    try:
+        yield
+    finally:
+        _UNFLAVOURED_FOR_TESTS = prev
+
+
+def require_flavour(flavour: str | None, where: str) -> str | None:
+    """``flavour`` unchanged when set; ``ValueError`` for ``None`` outside the test escape.
+    Without a flavour nothing decides which access classes may ship."""
+    if flavour is None and not _UNFLAVOURED_FOR_TESTS:
+        raise ValueError(
+            f"{where}: flavour is required ({' | '.join(sorted(FLAVOURS))}); a release is never "
+            "built without one (restricted-nd / internal-only / unknown must not ship)"
+        )
+    return flavour
+
+
+def drop_release_excluded(rows: Iterable[T]) -> list[T]:
+    """``rows`` minus those of a release-excluded source: applies on every build path."""
+    return [r for r in rows if not _row_excluded(r)]

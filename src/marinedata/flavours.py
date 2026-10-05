@@ -15,7 +15,7 @@ from pathlib import Path
 
 import yaml
 
-from .licence_class import ACCESS_CLASSES, FLAVOURS, NC, OPEN, coerce_class
+from .licence_class import ACCESS_CLASSES, FLAVOURS, NC, OPEN, coerce_class, release_excluded
 
 SPLIT_MAP_PROFILE = "ship-noncommercial"
 """A frozen split map is shared by both flavours, so it is generated over the superset
@@ -82,6 +82,8 @@ def _class(registry, source_id: str) -> str:
 def ships_in(registry, source_id: str, flavour: str) -> bool:
     """A whole source ships in ``flavour`` when its class is the flavour's. A per-row-licence
     source never does: its class is only a bound, each row decides."""
+    if release_excluded(source_id):
+        return False  # never released in any flavour (registry flag)
     source = registry.source(source_id)
     return not source.licence_per_row and _class(registry, source_id) == FLAVOURS[flavour]
 

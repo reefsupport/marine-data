@@ -26,7 +26,7 @@ from functools import cache, lru_cache
 from pathlib import Path
 
 from ..annotation_schema import annotator_from_origin
-from ..licence_class import flavour_filter
+from ..licence_class import drop_release_excluded, flavour_filter, require_flavour
 from ..registry import Registry
 from ..schema import Axis
 from ..tables import _require_pyarrow
@@ -737,10 +737,10 @@ def assert_no_mixed_origin_in_eval(
 
 
 def apply_flavour(result: ConfigResult, flavour: str | None) -> ConfigResult:
-    """``result`` restricted to the rows ``flavour`` may ship (``None`` = untouched)."""
-    if flavour is None:
-        return result
-    return dataclasses.replace(result, rows=tuple(flavour_filter(result.rows, flavour)))
+    """``result`` restricted to the rows ``flavour`` may ship; with ``flavour=None`` (test
+    escape only) the release-excluded sources are still dropped."""
+    rows = flavour_filter(result.rows, flavour) if flavour else drop_release_excluded(result.rows)
+    return dataclasses.replace(result, rows=tuple(rows))
 
 
 def build_all_configs(
@@ -748,6 +748,7 @@ def build_all_configs(
 ) -> dict[str, ConfigResult]:
     """Every config the sources available today can build (D-Z2 producers wired).
     ``flavour`` (``open`` | ``nc``) keeps only the rows that flavour ships (WP-L1a)."""
+    require_flavour(flavour, "build_all_configs")
     built = _build_all_configs(registry, Path(base_dir))
     return {k: apply_flavour(v, flavour) for k, v in built.items()}
 

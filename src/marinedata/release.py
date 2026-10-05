@@ -29,6 +29,7 @@ from .checksums import file_digest
 from .flavours import check_profile, flavour_source_ids, release_record
 from .gate import evaluate
 from .labelcheck import release_label_gate
+from .licence_class import release_excluded, require_flavour
 from .neardup import (
     NearDupChainError,
     NearDupConfig,
@@ -504,11 +505,14 @@ def build_release(
             "`marinedata splitmap generate`."
         )
 
+    require_flavour(flavour, "build_release")
     if flavour is not None:
         check_profile(flavour, profile)
     admitted = _admitted_source_ids(registry, roots, profile)
     if flavour is not None:
         admitted = flavour_source_ids(registry, admitted, flavour)
+    else:  # test escape only: release-excluded sources never ship
+        admitted = [s for s in admitted if not release_excluded(s)]
     if not admitted:
         raise ValueError(
             f"no admitted source under profile {profile!r}"

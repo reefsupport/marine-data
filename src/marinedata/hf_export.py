@@ -27,7 +27,7 @@ from pathlib import Path
 from .builder import DatasetBuilder
 from .checksums import file_digest
 from .hf_parquet import ConfigSpec, ExportRow, files_per_folder, plan_config, write_shard
-from .licence_class import flavour_filter
+from .licence_class import drop_release_excluded, flavour_filter, require_flavour
 from .registry import Registry
 from .release import DEFAULT_SCHEMA_ID, _admitted_source_ids, _never_eval_source_ids
 from .strata import TRAIN
@@ -270,9 +270,10 @@ def build_layout(
     """``{config: (spec, {hf_split: rows})}`` — images once, tasks label-only, masks apart.
     ``flavour`` (``open`` | ``nc``, WP-L1a) keeps only the rows that flavour may ship, in the
     images, masks and task configs alike."""
-    if flavour is not None:
-        rows_by_task = {t: flavour_filter(r, flavour) for t, r in rows_by_task.items()}
-        task_layers = {t: flavour_filter(r, flavour) for t, r in (task_layers or {}).items()}
+    require_flavour(flavour, "build_layout")
+    keep = (lambda r: flavour_filter(r, flavour)) if flavour else drop_release_excluded
+    rows_by_task = {t: keep(r) for t, r in rows_by_task.items()}
+    task_layers = {t: keep(r) for t, r in (task_layers or {}).items()}
     by_sha: dict[str, list[SampleRow]] = defaultdict(list)
     for rows in rows_by_task.values():
         for row in rows:
