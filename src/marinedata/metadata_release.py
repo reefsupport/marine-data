@@ -148,6 +148,8 @@ class ImageRef:
 
 def refs_from_layout(layout) -> list[ImageRef]:
     """The ``image_sha256`` set + primary file of a built layout's ``images`` config."""
+    if "images" not in layout:
+        return []
     _, splits = layout["images"]
     return [
         ImageRef(row.values["image_sha256"], row.values["source_id"], row.file, split)
@@ -170,6 +172,8 @@ def add_metadata_config(
     from each source's staged ``metadata.parquet`` (under ``roots``) and are flavour-filtered per
     row, so every row carries a non-null ``licence_class``. Returns a new layout."""
     refs = refs_from_layout(layout)
+    if not refs:
+        return layout  # no images config -> nothing to describe
     rows = build_rows(
         refs, registry, Path("."), quality_by_sha or {}, meow_polygons, flavour=flavour,
         source_roots=roots,
