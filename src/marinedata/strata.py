@@ -33,6 +33,7 @@ from collections.abc import Mapping
 from .scan import SplitName
 
 TRAIN: SplitName = "train"
+TEST: SplitName = "test"
 DEFAULT_MIN_GROUPS = 3
 
 

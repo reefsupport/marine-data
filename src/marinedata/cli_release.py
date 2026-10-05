@@ -230,6 +230,7 @@ def _cmd_release_build(args: argparse.Namespace) -> int:
                 release=args.release,
                 skipped=skipped_sources,
                 near_dup=near_dup,
+                upstream_test_off=args.no_honour_upstream_test or (),
             )
         except (NearDupError, ReleaseFetchError) as exc:
             print(f"release build: {exc}", file=sys.stderr)
@@ -239,7 +240,9 @@ def _cmd_release_build(args: argparse.Namespace) -> int:
             f"merged_components={stats.merged_components} "
             f"merged_cross_partition={stats.merged_cross_partition} "
             f"near_dup_pairs={stats.near_dup_pairs} near_dup_unions={stats.near_dup_unions} "
-            f"near_dup_max_component={stats.near_dup_max_component}"
+            f"near_dup_max_component={stats.near_dup_max_component} "
+            f"upstream_test_groups={stats.upstream_test_groups} "
+            f"upstream_test_components={stats.upstream_test_components}"
         )
         for source_id, reason in sorted(skipped_sources.items()):
             print(f"  skipped {source_id}: {reason}", file=sys.stderr)
@@ -378,6 +381,15 @@ def add_release_subparser(sub: argparse._SubParsersAction) -> None:
         type=int,
         default=DEFAULT_MIN_GROUPS,
         help="A stratum with fewer groups than this is train-only (default 3); only used "
+        "with --generate-split-map",
+    )
+    p_build.add_argument(
+        "--no-honour-upstream-test",
+        action="append",
+        dest="no_honour_upstream_test",
+        metavar="SOURCE_ID",
+        help="Opt a source out of 'an upstream-test group goes to our test split' (default on "
+        "for every source with upstream test rows; '*' = all sources, repeatable); only used "
         "with --generate-split-map",
     )
     p_build.add_argument("--out", default=".", help="Output root (default: current directory)")

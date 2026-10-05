@@ -40,8 +40,9 @@ from .neardup import (
 from .registry import Registry
 from .sample_schema import staged_partition
 from .splitmap import MergeInfo, Row, load_split_map, resolve_splits, rows_to_counts
-from .strata import DEFAULT_MIN_GROUPS, TRAIN
+from .strata import DEFAULT_MIN_GROUPS, TEST, TRAIN
 from .tables import _require_pyarrow
+from .upstream_split import honoured_test_groups
 
 DEFAULT_SCHEMA_ID = "rs-benthic-v1"
 
@@ -103,6 +104,11 @@ class SplitMapStats:
     """Of those pairs, how many joined two still-separate components."""
     near_dup_max_component: int = 0
     """Images in the largest component a near-dup union formed — the chain guard's input."""
+    upstream_test_groups: int = 0
+    """Raw split groups holding an upstream-test row that the "honour upstream test" rule
+    (WP-R2c) pulled to ``test``; their merged components are counted below."""
+    upstream_test_components: int = 0
+    """Merged components forced to ``test`` by that rule (a never-eval-only one stays train)."""
 
 
 def _never_eval_source_ids(registry: Registry, source_ids: Iterable[str]) -> set[str]:
@@ -159,6 +165,7 @@ def enumerate_release_rows(
     *,
     skipped: dict[str, str] | None = None,
     upstream_splits: dict[str, set[str]] | None = None,
+    upstream_splits_by_source: dict[str, dict[str, set[str]]] | None = None,
     paths: dict[str, Path] | None = None,
     digest: Callable[[Path], str] = file_digest,
 ) -> Iterator[Row]:
@@ -181,6 +188,10 @@ def enumerate_release_rows(
     by the *raw* (pre-merge) group id. :func:`generate_split_map` uses it to flag a
     merged component whose members carry more than one upstream partition — report-only
     evidence of upstream leakage (WS-D S15c), not a blocker.
+
+    ``upstream_splits_by_source``, if given, is filled the same way but one level deeper,
+    ``{source_id: {split_group: {upstream_split, ...}}}`` — the per-source input the
+    "honour upstream test" rule needs so one source can opt out (WP-R2c).
 
     ``paths``, if given, is filled in-place with ``{image_sha256: file}`` (first file seen
     for each digest) — what the near-duplicate check (WS-D S47) hashes.
@@ -257,10 +268,13 @@ def enumerate_release_rows(
                     f"{source_id}: metadata.parquet references image {stem!r} (partition "
                     f"{partition!r}) not found under {root / 'images' / partition}"
                 )
-            if upstream_splits is not None:
-                upstream_split = record.get("upstream_split")
-                if upstream_split:
+            upstream_split = record.get("upstream_split")
+            if upstream_split:
+                if upstream_splits is not None:
                     upstream_splits.setdefault(group, set()).add(upstream_split)
+                if upstream_splits_by_source is not None:
+                    by_group = upstream_splits_by_source.setdefault(source_id, {})
+                    by_group.setdefault(group, set()).add(upstream_split)
             sha256 = digest(matches[0])
             if paths is not None:
                 paths.setdefault(sha256, matches[0])
@@ -280,6 +294,8 @@ def generate_split_map(
     release: str | None = None,
     skipped: dict[str, str] | None = None,
     near_dup: NearDupConfig | None = None,
+    honour_upstream_test: bool = True,
+    upstream_test_off: Iterable[str] = (),
 ) -> SplitMapStats:
     """Enumerate every admitted staged tree in ``roots`` and write a fresh, stratified
     ``SPLIT_MAP.json`` at ``out`` — the "no hand-built TSV" path from staged trees straight
@@ -320,6 +336,14 @@ def generate_split_map(
     :class:`~marinedata.neardup.NearDupChainError` before anything is written if the
     largest component a near-dup union formed exceeds ``near_dup.chain_fraction`` of all
     images (dHash links chain; the thresholds are policy, never auto-retuned).
+
+    ``honour_upstream_test`` (WP-R2c, default on): every split group holding at least one row
+    whose upstream split normalises to ``test`` (:mod:`marinedata.upstream_split`) is forced
+    into OUR ``test`` split before the stratified assigner balances the rest, so an upstream
+    held-out set is never trained on. The group's whole merged component goes with it (shared
+    digest or near-dup union), and a mixed upstream train+test group goes whole. A component of
+    only ``never-eval`` sources stays ``train``. Sources without any upstream-test row are
+    unaffected; ``upstream_test_off`` lists source ids that opt out (``"*"`` = all sources).
     """
     if load_split_map(out) is not None:
         raise ValueError(f"{out} already exists — remove it first to regenerate")
@@ -327,6 +351,7 @@ def generate_split_map(
         registry, _admitted_source_ids(registry, roots, profile)
     )
     upstream_splits: dict[str, set[str]] = {}
+    upstream_by_source: dict[str, dict[str, set[str]]] = {}
     paths: dict[str, Path] = {}
     rows = list(
         enumerate_release_rows(
@@ -335,6 +360,7 @@ def generate_split_map(
             profile,
             skipped=skipped,
             upstream_splits=upstream_splits,
+            upstream_splits_by_source=upstream_by_source,
             paths=paths if near_dup is not None else None,
         )
     )
@@ -361,6 +387,15 @@ def generate_split_map(
         for group, sources in group_to_strata.items()
         if sources and sources <= never_eval_sources
     }
+    # WP-R2c: a group with an upstream-test row pulls its whole merged component to test.
+    # `merge_info.canonical` already joins digest and near-dup components; the never-eval
+    # train rule above wins over it.
+    test_groups = honoured_test_groups(
+        upstream_by_source, honour=honour_upstream_test, off=upstream_test_off
+    )
+    upstream_test_components = {merge_info.canonical.get(g, g) for g in test_groups}
+    for canon in sorted(upstream_test_components):
+        forced.setdefault(canon, TEST)
 
     resolve_splits(
         out,
@@ -394,6 +429,8 @@ def generate_split_map(
         near_dup_pairs=len(links),
         near_dup_unions=merge_info.near_dup_unions,
         near_dup_max_component=near_dup_max_component,
+        upstream_test_groups=len(test_groups),
+        upstream_test_components=sum(1 for c in upstream_test_components if forced[c] == TEST),
     )
 
 
