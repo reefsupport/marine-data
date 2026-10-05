@@ -1,0 +1,9 @@
+# source: coralseg-ucsd-mosaics
+# crosswalk: coralseg-ucsd-mosaics
+# counts: annotations
+# retrieved: 2026-10-05 from rs-storage-open sources/coralseg-ucsd-mosaics/unversioned/labels/files/*.png (4922 masks, boto3 GET, streamed, not stored)
+# note: one annotation = one mask containing the class value (red channel 0 Other, 1 Hard Coral, 2 Soft Coral; D-AI3); pixel totals 783.7M / 319.4M / 187.2M
+label	count	description
+Other	4915	
+Hard Coral	4780	
+Soft Coral	3215	

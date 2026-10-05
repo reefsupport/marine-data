@@ -28,6 +28,7 @@ from ..annotation_schema import annotator_from_origin
 from ..registry import Registry
 from ..schema import Axis
 from ..tables import _require_pyarrow
+from .masks_table import MASK_SOURCES
 from .rollup import MIXED, UNKNOWN, rollup_counts
 
 BENTHIC_COARSE_TASK = "benthic-coarse"
@@ -38,7 +39,11 @@ CONFIG_IDS = ("points", "vqa", "semseg", "benthic-coarse", "benthic-cover", "ble
 
 # WP-8e-resume (manager decision 3): the staged point/mask sources each config reads.
 POINT_SOURCES = ("reefolution", "mermaid-aws")
-SEMSEG_SOURCES = ("coralscapes", "reef-support-benthic-own")
+# WP-U4: registry-driven. The semseg config reads every source with a unified ``masks`` producer
+# (``masks_table.MASK_SOURCES``); the benthic rollups stay on the two benthic-cover sources (a
+# pseudo-label, a 3-class and a scene-segmentation source must not feed cover).
+SEMSEG_SOURCES = tuple(MASK_SOURCES)
+ROLLUP_MASK_SOURCES = ("coralscapes", "reef-support-benthic-own")
 # WP-8e-resume (manager decision 2): bleaching is a headline reef task with its own config.
 BLEACHING_SOURCES = (
     "noaa-pifsc-bleaching",
@@ -164,6 +169,45 @@ def _annotation_points(base_dir: Path, source_id: str) -> list[dict]:
     return [r for r in _read_parquet(files[-1]) if r.get("image_sha256")] if files else []
 
 
+def _annotation_masks(base_dir: Path, source_id: str) -> list[dict]:
+    """The unified ``masks`` rows of ``source_id`` (newest ``_annotations/masks/<source>/<version>.parquet``)."""  # noqa: E501
+    root = base_dir / "_annotations" / "masks" / source_id
+    files = sorted(root.glob("*.parquet")) if root.is_dir() else []
+    return [r for r in _read_parquet(files[-1]) if r.get("image_sha256")] if files else []
+
+
+def _attrs(row: Mapping) -> dict:
+    return json.loads(row["attrs"]) if row.get("attrs") else {}
+
+
+def _mask_records(base_dir: Path, source_id: str) -> list[dict]:
+    """Semantic mask rows of one source in the legacy semseg shape (``sha256``, ``label_origin``,
+    ``mask_key``, ``class_counts``) plus the unified columns. The unified table wins; else the
+    legacy ``_tasklabels/<source>/semseg.parquet`` is read as before."""
+    unified = _annotation_masks(base_dir, source_id)
+    if not unified:
+        return _read_tasklabels(base_dir, source_id, "semseg")
+    return [
+        {
+            "sha256": r["image_sha256"],
+            "label_origin": r.get("annotator_type"),
+            "mask_key": r["mask_ref"],
+            "class_counts": r["class_counts"],
+            "image_sha256": r["image_sha256"],
+            "ann_id": r.get("ann_id"),
+            "mask_kind": r.get("mask_kind"),
+            "match_type": r.get("match_type"),
+            "annotator_type": r.get("annotator_type"),
+            "ann_license": r.get("ann_license"),
+            "licence_class": _attrs(r).get("licence_class"),
+            "taxon_by_label": {
+                k: v["taxon_node_id"] for k, v in _attrs(r).get("class_resolution", {}).items()
+            },  # noqa: E501, RUF100
+        }
+        for r in unified
+    ]
+
+
 def _point_records(base_dir: Path, source_id: str) -> list[dict]:
     """Point rows of one source in the unified column names. The unified table wins; else the
     legacy ``_tasklabels/<source>/points.parquet`` is renamed on read (``native_label`` ->
@@ -181,7 +225,8 @@ def _point_records(base_dir: Path, source_id: str) -> list[dict]:
                 "source_id": source_id,
                 "ann_id": f"{source_id}:{i}",
                 "label_native": point.get("label_native") or point["native_label"],
-                "annotator_type": point.get("annotator_type") or annotator_from_origin(origin or "human")[0],  # noqa: E501
+                "annotator_type": point.get("annotator_type")
+                or annotator_from_origin(origin or "human")[0],  # noqa: E501, RUF100
                 "x": point["x"],
                 "y": point["y"],
             }
@@ -246,7 +291,8 @@ def build_points_config(registry: Registry, base_dir: str | Path) -> ConfigResul
                     "label_native": native,
                     "label_set": point.get("label_set"),
                     "taxon_node_id": taxon,
-                    "match_type": point.get("match_type") or ("unmapped" if taxon is None else None),  # noqa: E501
+                    "match_type": point.get("match_type")
+                    or ("unmapped" if taxon is None else None),  # noqa: E501, RUF100
                     "worms_aphia_id": point.get("worms_aphia_id"),
                     "rs_benthic_code": point.get("rs_benthic_code"),
                     "annotator_type": point["annotator_type"],
@@ -284,11 +330,16 @@ def build_semseg_config(registry: Registry, base_dir: str | Path) -> ConfigResul
 
     for source_id in SEMSEG_SOURCES:
         tally = unmapped.setdefault(source_id, _SourceUnmapped())
-        for record in _read_tasklabels(base_dir, source_id, "semseg"):
+        for record in _mask_records(base_dir, source_id):
             native_counts: dict[str, int] = json.loads(record["class_counts"])
             canonical_counts: dict[str, int] = {}
+            resolved = record.get("taxon_by_label")  # unified rows carry U2's per-class resolve
             for native_label, n in native_counts.items():
-                canonical = _canonical_taxon(registry, source_id, native_label)
+                canonical = (
+                    resolved.get(native_label)
+                    if resolved is not None
+                    else _canonical_taxon(registry, source_id, native_label)
+                )
                 if canonical is None:
                     tally.unmapped += n
                     continue
@@ -303,6 +354,19 @@ def build_semseg_config(registry: Registry, base_dir: str | Path) -> ConfigResul
                     "class_counts": record["class_counts"],
                     "canonical_class_counts": json.dumps(canonical_counts, sort_keys=True),
                     "label_status": label_status.get(record["sha256"], "ok"),
+                    **{
+                        k: record[k]  # unified columns, present only on unified rows
+                        for k in (
+                            "image_sha256",
+                            "ann_id",
+                            "mask_kind",
+                            "match_type",
+                            "annotator_type",
+                            "ann_license",
+                            "licence_class",
+                        )  # noqa: E501, RUF100
+                        if k in record
+                    },
                 }
             )
 
@@ -316,7 +380,9 @@ def _coarse_counts_from_points(
     per_image: dict[str, dict[str, int]] = {}
     for point in points:
         counts = per_image.setdefault(point["image_sha256"], {})
-        canonical = point.get("taxon_node_id") or _canonical_taxon(registry, source_id, point["label_native"])  # noqa: E501
+        canonical = point.get("taxon_node_id") or _canonical_taxon(
+            registry, source_id, point["label_native"]
+        )  # noqa: E501, RUF100
         target = projector.project(canonical).target_class if canonical is not None else None
         cls = target or UNKNOWN
         counts[cls] = counts.get(cls, 0) + 1
@@ -367,8 +433,8 @@ def _build_benthic_rollup(
     for source_id in POINT_SOURCES:
         points = _point_records(base_dir, source_id)
         add(source_id, _coarse_counts_from_points(registry, projector, source_id, points))
-    for source_id in SEMSEG_SOURCES:
-        masks = _read_tasklabels(base_dir, source_id, "semseg")
+    for source_id in ROLLUP_MASK_SOURCES:
+        masks = _mask_records(base_dir, source_id)
         add(source_id, _coarse_counts_from_masks(registry, projector, source_id, masks))
 
     result = {
@@ -474,7 +540,9 @@ def assert_no_mixed_origin_in_eval(
         split = split_of.get(_row_sha(row))
         if split is None or split == train_split:
             continue
-        origins_by_split.setdefault(split, set()).add(row.get("label_origin") or row["annotator_type"])  # noqa: E501
+        origins_by_split.setdefault(split, set()).add(
+            row.get("label_origin") or row["annotator_type"]
+        )  # noqa: E501, RUF100
     mixed = {split: origins for split, origins in origins_by_split.items() if len(origins) > 1}
     if mixed:
         raise ValueError(f"human and model rows mixed in eval split(s): {mixed}")

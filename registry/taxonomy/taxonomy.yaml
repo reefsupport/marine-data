@@ -2,7 +2,7 @@
 # retargeted; MINOR = nodes/edges/vocabularies added; PATCH = notes and reasons only.
 # `marinedata taxonomy export` freezes releases/<version>.json;
 # `marinedata taxonomy diff <a> <b>` compares two of them (HEAD = working tree).
-version: 2.2.1
+version: 2.3.0
 snapshot: worms-2026-09-25.parquet
 
 # Sources under the 95% mapped floor. Each entry says what is lost and why.
@@ -12,6 +12,11 @@ coverage_exceptions:
     bucket for every non-target substrate and organism. It has no canonical meaning, so
     it is an unmappable edge (the point is unsupervised on the taxon axis), not forced
     into a class.
+  coralseg-ucsd-mosaics: >-
+    "Other" (4,915 of 12,910 mask-class annotations, 38%; 783.7M of 1.29G pixels) is the
+    residual class of the 3-class UCSD mosaic masks: every non-coral pixel (substrate, algae,
+    other fauna, water). It has no taxonomic content, so it is an unmappable edge (unsupervised
+    on the taxon axis), not forced into a class. Hard Coral and Soft Coral map exactly.
 
 # Labelled image/video sources whose label vocabulary WP-7 has not harvested. The
 # W1 vocabularies are all crosswalked; each of these gets one when its labels are

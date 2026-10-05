@@ -1,5 +1,13 @@
 # Taxonomy changelog
 
+## 2.3.0 — 2026-10-05
+
+MINOR: new crosswalk + vocab, no nodes added and no existing edge retargeted.
+
+- **WP-U4:** `coralseg-ucsd-mosaics` crosswalk (Hard Coral -> HC, Soft Coral -> SC exact; "Other"
+  unmappable, listed under `coverage_exceptions`) and `vocab/coralseg-ucsd-mosaics.tsv`
+  (4,922 masks scanned).
+
 ## 2.2.1 — 2026-10-05
 
 PATCH-sized cut for already-landed work: crosswalk edges added after 2.2.0 was frozen. The
