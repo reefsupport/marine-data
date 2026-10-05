@@ -39,7 +39,9 @@ def layout_entries(
     out: dict[str, tuple[ConfigSpec, dict[str, list[ExportRow]]]] = {}
     for config_id in config_ids:
         rows = [
-            r for r in task_layers.get(config_id, ()) if (r.get("image_sha256") or r.get("sha256")) in split_by_sha  # noqa: E501
+            r
+            for r in task_layers.get(config_id, ())
+            if (r.get("image_sha256") or r.get("sha256")) in split_by_sha  # noqa: E501
         ]
         if not rows:
             continue
@@ -47,9 +49,9 @@ def layout_entries(
         grouped: dict[str, list[ExportRow]] = {}
         for row in rows:
             values = {n: (None if row.get(n) is None else str(row[n])) for n, _ in columns}
-            grouped.setdefault(
-                split_by_sha[row.get("image_sha256") or row["sha256"]], []
-            ).append(ExportRow(values=values))
+            grouped.setdefault(split_by_sha[row.get("image_sha256") or row["sha256"]], []).append(
+                ExportRow(values=values)
+            )
         ordered = {s: grouped[s] for s in (*SPLIT_ORDER, *sorted(grouped)) if s in grouped}
         out[config_id] = (ConfigSpec(config_id, columns), ordered)
     return out

@@ -20,7 +20,6 @@ Licence class (``attrs.licence_class``) per source: the registry licence / ``lic
 class (``open``, ``internal-only``, ...); a source with neither is ``unknown``.
 """
 
-
 from __future__ import annotations
 
 import json
@@ -152,7 +151,8 @@ def free_row(
             {
                 **dict(attrs or {}),
                 "licence_class": source_class(spec.source_id, spec.licence_class),
-            }, sort_keys=True
+            },
+            sort_keys=True,
         ),
     }
 

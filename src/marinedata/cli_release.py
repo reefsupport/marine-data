@@ -27,7 +27,7 @@ from .gate import evaluate
 from .manifest_identity import checksums_digest
 from .neardup import NearDupConfig, NearDupError, default_workers, pil_version
 from .registry import Registry
-from .release import build_release, generate_split_map
+from .release import ReleaseSkipError, build_release, generate_split_map
 from .splitmap import load_split_map
 from .strata import DEFAULT_MIN_GROUPS
 
@@ -316,8 +316,9 @@ def _cmd_release_build(args: argparse.Namespace) -> int:
             tasklabels_root=args.tasklabels_root,
             digest=digest,
             flavour=flavour,
+            allow_skip=args.allow_skip or (),
         )
-    except (NearDupError, DedupGateError, DeconError) as exc:
+    except (NearDupError, DedupGateError, DeconError, ReleaseSkipError) as exc:
         print(f"release build: {exc}", file=sys.stderr)
         return 1
 
@@ -449,6 +450,15 @@ def add_release_subparser(sub: argparse._SubParsersAction) -> None:
         dest="local_only",
         help="Build from exactly the --local trees: never fetch another admitted source "
         "(mini / offline builds, incl. the split-map generation)",
+    )
+    p_build.add_argument(
+        "--allow-skip",
+        action="append",
+        dest="allow_skip",
+        metavar="SOURCE_ID",
+        help="Leave this releasable source out of a flavour build on purpose (repeatable). "
+        "Without it (or a registry release_skip_reason) a source with rows that the split map "
+        "cannot cover fails the build; RELEASE.json keeps it under skipped_sources",
     )
     p_build.add_argument(
         "--tasks",

@@ -22,7 +22,7 @@ import hashlib
 import json
 import logging
 from collections.abc import Callable, Iterable, Iterator
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, replace
 from pathlib import Path
 
 from .builder import SUPERVISED_DEFAULT_RATIOS, DatasetBuilder, PartialAbstainExclusion, SplitName
@@ -30,7 +30,10 @@ from .checksums import file_digest
 from .flavours import check_profile, flavour_source_ids, release_record, sample_ships
 from .gate import evaluate
 from .labelcheck import release_label_gate
-from .licence_class import release_excluded, require_flavour
+from .licence_class import release_excluded, require_flavour, spec_for
+from .loaders.generic import IMAGE_SUFFIXES
+from .metadata_norm.base import NormContext
+from .metadata_norm.default import attribution_text
 from .metadata_norm.split_group import derive_split_group
 from .models import Source
 from .neardup import (
@@ -205,21 +208,128 @@ def _guard_degenerate_grouping(
     return [(sha, f"{source_id}/sha:{sha}", split, path) for sha, _, split, path in entries]
 
 
+WALK_LAYOUTS = ("flat-images", "image-mask-pairs")
+"""Loader layouts whose primary images the split map enumerates (WP-R2e): from the staged
+``metadata.parquet`` when the tree has one, else by walking the image directory. A pair's
+mask/depth file is never its own row, so a pair always shares its primary image's group."""
+
+
+def source_attribution(source: Source) -> str | None:
+    """Attribution for ``source`` from the metadata_norm default normaliser: the ingest-spec
+    attribution + registry citation + upstream URL, joined; ``None`` when all are empty."""
+    spec = spec_for(source.id) or {}
+    ctx = NormContext(
+        attribution=str(spec.get("attribution") or ""),
+        citation=source.citation or "",
+        homepage=source.homepage or "",
+    )
+    return attribution_text(ctx)
+
+
 def release_skip_reason(source: Source) -> str | None:
     """Why the split-map enumerator leaves ``source`` out, or ``None`` when it is enumerated.
 
-    A source tagged ``needs-attribution`` (WS-D S23) or whose loader layout is not
-    ``staged-tree`` has no rows in a generated map. :func:`build_release` asks the same
-    question, so it never roots a source the map cannot cover (WP-R2d)."""
-    if "needs-attribution" in source.tags:
-        return "needs-attribution: attribution target unconfirmed, not in release"
+    Skipped: a registry ``release_skip_reason``; a ``needs-attribution`` source that still has
+    no attribution after the metadata_norm default (registry citation + upstream URL); a loader
+    layout that is neither ``staged-tree`` nor one of :data:`WALK_LAYOUTS`. :func:`build_release`
+    asks the same question, so it never roots a source the map cannot cover (WP-R2d/R2e)."""
+    if source.release_skip_reason:
+        return f"registry: {source.release_skip_reason}"
+    if "needs-attribution" in source.tags and source_attribution(source) is None:
+        return "needs-attribution: no attribution (registry citation, upstream URL) to take"
     layout = source.loader.layout if source.loader is not None else None
-    if layout != "staged-tree":
+    if layout != "staged-tree" and layout not in WALK_LAYOUTS:
         return (
             f"{layout if layout is not None else 'no loader'}: not in release "
             "until labels format decided"
         )
     return None
+
+
+@dataclass(frozen=True)
+class ReleaseEntry:
+    """One primary image of a source as the split map sees it."""
+
+    sha256: str
+    group: str
+    upstream_split: str | None
+    path: Path
+    key: str
+    """Path relative to the source root — what ``Sample.key`` holds for a loader-read sample."""
+
+
+def _staged_meta(path: Path) -> bool:
+    """True when ``path`` is a staged sample index (``stem`` + ``partition`` or ``image_path``)."""
+    if not path.is_file():
+        return False
+    import pyarrow.parquet as pq
+
+    names = set(pq.read_schema(path).names)
+    return "stem" in names and bool(names & {"partition", "image_path"})
+
+
+def _staged_entries(
+    source: Source, root: Path, digest: Callable[[Path], str]
+) -> list[ReleaseEntry]:
+    import pyarrow.parquet as pq
+
+    metadata_path = root / "metadata.parquet"
+    if not metadata_path.is_file():
+        raise ValueError(
+            f"{source.id}: no metadata.parquet under {root} — the release enumerator "
+            "reads the staging pipeline's sample index, independent of the source's "
+            "own loader layout"
+        )
+    partition_indexes: dict[str, dict[str, list[Path]]] = {}
+    entries: list[tuple[str, str, str | None, Path]] = []
+    for record in pq.read_table(metadata_path).to_pylist():
+        partition, stem = staged_partition(record), record["stem"]
+        index = partition_indexes.get(partition)
+        if index is None:
+            index = _partition_stem_index(root / "images" / partition)
+            partition_indexes[partition] = index
+        matches = index.get(stem, [])
+        if not matches:
+            raise ValueError(
+                f"{source.id}: metadata.parquet references image {stem!r} (partition "
+                f"{partition!r}) not found under {root / 'images' / partition}"
+            )
+        sha256 = digest(matches[0])
+        group = _release_group(source, record, stem=stem, partition=partition, sha256=sha256)
+        entries.append((sha256, group, record.get("upstream_split") or None, matches[0]))
+    entries = _guard_degenerate_grouping(source.id, entries)
+    return [ReleaseEntry(sha, g, u, p, str(p.relative_to(root))) for sha, g, u, p in entries]
+
+
+def _walk_entries(source: Source, root: Path, digest: Callable[[Path], str]) -> list[ReleaseEntry]:
+    """Primary images of an unstaged flat-images / image-mask-pairs tree, grouped with the
+    same chain as a staged row (registry pattern, else the metadata_norm chain: the upstream
+    path is the only per-row evidence, so it usually ends at the image sha256)."""
+    params = source.loader.params if source.loader is not None else {}
+    layout = source.loader.layout if source.loader is not None else ""
+    sub = params.get("images_dir", "images" if layout == "image-mask-pairs" else "")
+    base = root / str(sub) if sub else root
+    entries: list[tuple[str, str, str | None, Path]] = []
+    for path in sorted(base.rglob("*")) if base.is_dir() else ():
+        if path.is_file() and path.suffix.lower() in IMAGE_SUFFIXES:
+            sha256 = digest(path)
+            record = {"upstream_path": str(path.relative_to(root))}
+            group = _release_group(source, record, stem=path.stem, partition="", sha256=sha256)
+            entries.append((sha256, group, None, path))
+    entries = _guard_degenerate_grouping(source.id, entries)
+    return [ReleaseEntry(sha, g, u, p, str(p.relative_to(root))) for sha, g, u, p in entries]
+
+
+def source_release_entries(
+    source: Source, root: str | Path, digest: Callable[[Path], str] = file_digest
+) -> list[ReleaseEntry]:
+    """Every primary image of ``source`` with its release group: the one enumeration the split
+    map generator and the build's group hook share, so they cannot disagree."""
+    root = Path(root)
+    layout = source.loader.layout if source.loader is not None else None
+    if layout in WALK_LAYOUTS and not _staged_meta(root / "metadata.parquet"):
+        return _walk_entries(source, root, digest)
+    return _staged_entries(source, root, digest)
 
 
 def enumerate_release_rows(
@@ -280,7 +390,6 @@ def enumerate_release_rows(
     read anywhere in ``src/`` (``grep -rn needs-attribution src`` = 0).
     """
     _require_pyarrow()
-    import pyarrow.parquet as pq
 
     for source_id in _admitted_source_ids(registry, roots, profile):
         source = registry.source(source_id)
@@ -289,42 +398,16 @@ def enumerate_release_rows(
             if skipped is not None:
                 skipped[source_id] = reason
             continue
-        root = Path(roots[source_id])
-        metadata_path = root / "metadata.parquet"
-        if not metadata_path.is_file():
-            raise ValueError(
-                f"{source_id}: no metadata.parquet under {root} — the release enumerator "
-                "reads the staging pipeline's sample index, independent of the source's "
-                "own loader layout"
-            )
-        partition_indexes: dict[str, dict[str, list[Path]]] = {}
-        entries: list[tuple[str, str, str | None, Path]] = []
-        for record in pq.read_table(metadata_path).to_pylist():
-            partition, stem = staged_partition(record), record["stem"]
-            index = partition_indexes.get(partition)
-            if index is None:
-                index = _partition_stem_index(root / "images" / partition)
-                partition_indexes[partition] = index
-            matches = index.get(stem, [])
-            if not matches:
-                raise ValueError(
-                    f"{source_id}: metadata.parquet references image {stem!r} (partition "
-                    f"{partition!r}) not found under {root / 'images' / partition}"
-                )
-            sha256 = digest(matches[0])
-            group = _release_group(source, record, stem=stem, partition=partition, sha256=sha256)
-            entries.append((sha256, group, record.get("upstream_split") or None, matches[0]))
-        entries = _guard_degenerate_grouping(source_id, entries)
-        for sha256, group, upstream_split, path in entries:
-            if upstream_split:
+        for entry in source_release_entries(source, roots[source_id], digest):
+            if entry.upstream_split:
                 if upstream_splits is not None:
-                    upstream_splits.setdefault(group, set()).add(upstream_split)
+                    upstream_splits.setdefault(entry.group, set()).add(entry.upstream_split)
                 if upstream_splits_by_source is not None:
                     by_group = upstream_splits_by_source.setdefault(source_id, {})
-                    by_group.setdefault(group, set()).add(upstream_split)
+                    by_group.setdefault(entry.group, set()).add(entry.upstream_split)
             if paths is not None:
-                paths.setdefault(sha256, path)
-            yield sha256, group, source_id
+                paths.setdefault(entry.sha256, entry.path)
+            yield entry.sha256, entry.group, source_id
 
 
 def generate_split_map(
@@ -514,6 +597,88 @@ def _check_near_dup_chain(
     )
 
 
+class ReleaseSkipError(ValueError):
+    """A releasable source with rows would be silently left out of a flavour build (WP-R2e)."""
+
+
+def _loader_layout(source: Source) -> str | None:
+    return source.loader.layout if source.loader is not None else None
+
+
+def _memoized(digest: Callable[[Path], str]) -> Callable[[Path], str]:
+    """``digest`` computed once per path: the group hook, the near-dup check and the manifest
+    loop all hash the same files, and a 26 GB source must not be read three times."""
+    seen: dict[Path, str] = {}
+
+    def cached(path: Path) -> str:
+        key = Path(path)
+        if key not in seen:
+            seen[key] = digest(key)
+        return seen[key]
+
+    return cached
+
+
+def _with_release_group(sample, groups: dict[str, dict[str, str]]):  # type: ignore[no-untyped-def]
+    """``sample`` with ``meta["split_group"]`` set from the enumeration the split map was
+    generated from (a flat-images / image-mask-pairs loader never sets one). A pair is one
+    sample: its mask/depth file rides along with the primary image's group."""
+    by_key = groups.get(sample.source_id)
+    if by_key is None or sample.meta.get("split_group"):
+        return sample
+    group = by_key.get(sample.key)
+    return sample if group is None else replace(sample, meta={**sample.meta, "split_group": group})
+
+
+def _has_rows(root: Path) -> bool:
+    """True when the staged tree holds at least one row (``metadata.parquet``) or, without one,
+    at least one image file."""
+    index = root / "metadata.parquet"
+    if index.is_file():
+        import pyarrow.parquet as pq
+
+        return pq.ParquetFile(index).metadata.num_rows > 0
+    return root.is_dir() and any(
+        p.is_file() and p.suffix.lower() in IMAGE_SUFFIXES for p in root.rglob("*")
+    )
+
+
+def _skipped_sources(
+    registry: Registry,
+    admitted: list[str],
+    roots: dict[str, str | Path],
+    allow_skip: frozenset[str],
+) -> dict[str, tuple[str, str]]:
+    """``{source_id: (reason, allowed_by)}`` for every admitted source the build leaves out.
+
+    The hard gate (WP-R2e): a source the split map cannot cover that has rows > 0 raises unless
+    ``--allow-skip`` names it or its registry carries ``release_skip_reason``; a source with no
+    rows is recorded (``allowed_by`` = ``no-rows``) and never blocks."""
+    skipped: dict[str, tuple[str, str]] = {}
+    blocked: list[str] = []
+    for sid in admitted:
+        source = registry.source(sid)
+        reason = release_skip_reason(source)
+        if sid in allow_skip:
+            skipped[sid] = (reason or "--allow-skip: skipped on request", "allow-skip")
+        elif reason is None:
+            continue
+        elif source.release_skip_reason:
+            skipped[sid] = (reason, "registry")
+        elif not _has_rows(Path(roots[sid])):
+            skipped[sid] = (reason, "no-rows")
+        else:
+            blocked.append(sid)
+    if blocked:
+        raise ReleaseSkipError(
+            "releasable source(s) with rows the split map cannot cover would be silently "
+            "dropped: "
+            + "; ".join(f"{sid} ({release_skip_reason(registry.source(sid))})" for sid in blocked)
+            + " -- cover them, set a registry release_skip_reason, or pass --allow-skip SOURCE_ID"
+        )
+    return skipped
+
+
 def build_release(
     registry: Registry,
     *,
@@ -533,6 +698,7 @@ def build_release(
     tasklabels_root: str | Path | None = None,
     digest: Callable[[Path], str] = file_digest,
     flavour: str | None = None,
+    allow_skip: Iterable[str] = (),
 ) -> ReleaseResult:
     """Build every registry task against a frozen split map and write the release.
 
@@ -576,7 +742,13 @@ def build_release(
     ``near_dup.exclude_max`` dHash Hamming of any row of an eval-capable admitted source
     (any split) is dropped from every task manifest, and recorded in ``RELEASE.json`` as
     a count plus the sorted sha256 list, alongside the check's own parameters.
+
+    Hard gate (WP-R2e, flavour builds): a releasable source with rows > 0 that the split map
+    cannot cover FAILS the build, unless it is named in ``allow_skip`` (``--allow-skip``) or
+    carries a registry ``release_skip_reason``. Every skipped source is recorded, with its
+    reason and what allowed it, under ``skipped_sources`` in RELEASE.json.
     """
+    digest = _memoized(digest)
     if v2:
         decon = True
         dedup_crop = True
@@ -598,13 +770,9 @@ def build_release(
         admitted = flavour_source_ids(registry, admitted, flavour)
     else:  # test escape only: release-excluded sources never ship
         admitted = [s for s in admitted if not release_excluded(s)]
-    not_in_map: dict[str, str] = {}
+    not_in_map: dict[str, tuple[str, str]] = {}
     if flavour is not None:  # the map enumerator never saw these (WP-R2d): don't root them
-        not_in_map = {
-            sid: reason
-            for sid in admitted
-            if (reason := release_skip_reason(registry.source(sid))) is not None
-        }
+        not_in_map = _skipped_sources(registry, admitted, roots, frozenset(allow_skip))
         admitted = [sid for sid in admitted if sid not in not_in_map]
     if not admitted:
         raise ValueError(
@@ -617,6 +785,11 @@ def build_release(
     taxonomy_stamp = {} if allow_unmapped else release_label_gate(registry, admitted)
     admitted_roots = {source_id: Path(roots[source_id]) for source_id in admitted}
     never_eval_sources = _never_eval_source_ids(registry, admitted)
+    walk_groups = {
+        sid: {e.key: e.group for e in source_release_entries(registry.source(sid), root, digest)}
+        for sid, root in admitted_roots.items()
+        if _loader_layout(registry.source(sid)) in WALK_LAYOUTS
+    }
 
     release_root = Path(out_dir) / "releases" / release / (flavour or "")
     manifests_dir = release_root / "tasks"
@@ -656,6 +829,7 @@ def build_release(
             continue
 
         partial_abstain_excluded.extend(dataset.partial_abstain_excluded)
+        dataset.samples = [_with_release_group(sample, walk_groups) for sample in dataset.samples]
         dataset.split(by="group", split_map=split_map_path, frozen=True, tolerance=None)
 
         rows: list[tuple[str, str]] = []
@@ -718,7 +892,8 @@ def build_release(
     }
     if not_in_map:
         release_json["skipped_sources"] = [
-            {"id": sid, "reason": reason} for sid, reason in sorted(not_in_map.items())
+            {"id": sid, "reason": reason, "allowed_by": allowed_by}
+            for sid, (reason, allowed_by) in sorted(not_in_map.items())
         ]
     if near_dup is not None:
         release_json["near_dup"] = near_dup_record(near_dup)

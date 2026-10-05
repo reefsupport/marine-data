@@ -363,6 +363,9 @@ class Source(_Frozen):
     homepage: str | None = None
     tags: tuple[str, ...] = ()
     notes: str | None = None
+    release_skip_reason: str | None = None
+    """Why this source is deliberately left out of a release (WP-R2e). Set, the split map skips
+    it and ``release build`` records it under ``skipped_sources`` with no ``--allow-skip``."""
 
     habitat: tuple[Habitat, ...] | None = Field(default=None)
     """WP-2b: controlled-vocabulary physical setting(s) this source's imagery was

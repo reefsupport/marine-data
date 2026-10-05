@@ -73,7 +73,7 @@ def test_one_map_two_flavours_same_split_and_nc_build_does_not_raise(tmp_path: P
         [
             _src("src-open", "open"),
             _src("src-nc", "restricted-nc"),
-            _src("src-vqa", "restricted-nc", layout="flat-images"),
+            _src("src-vqa", "restricted-nc", layout="metadata-only"),
         ]
     )
     shared = b"the-same-image-in-an-open-and-an-nc-source"
@@ -113,7 +113,7 @@ def test_one_map_two_flavours_same_split_and_nc_build_does_not_raise(tmp_path: P
         for flavour, profile in (("open", "ship-open"), ("nc", "ship-noncommercial"))
     }
     assert results["open"].sources == ("src-open",)
-    assert results["nc"].sources == ("src-nc",)  # flat-images src-vqa dropped, no raise
+    assert results["nc"].sources == ("src-nc",)  # metadata-only src-vqa dropped, no raise
     release_nc = json.loads((out / "releases" / "r1" / "nc" / "RELEASE.json").read_text())
     assert [s["id"] for s in release_nc["skipped_sources"]] == ["src-vqa"]
     sha = hashlib.sha256(shared).hexdigest()

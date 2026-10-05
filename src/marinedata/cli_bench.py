@@ -116,7 +116,9 @@ def add_bench_subparser(sub: argparse._SubParsersAction) -> None:
     path_arg(q)
     q.add_argument("benchmark_id")
     q.add_argument(
-        "--source", choices=("bucket", "upstream", "auto"), default="auto",
+        "--source",
+        choices=("bucket", "upstream", "auto"),
+        default="auto",
         help="bucket: rs-storage-open parquet; upstream: ingest adapter stream; "
         "auto: pick by CHECKSUMS.sha256 (default)",
     )
@@ -124,7 +126,9 @@ def add_bench_subparser(sub: argparse._SubParsersAction) -> None:
     q.add_argument("--remote", default="rs-hel1", help="rclone remote name for bucket credentials")
     q.add_argument("--specs-dir", type=Path, default=_default_specs_dir())
     q.add_argument(
-        "--max-bytes", type=int, default=None,
+        "--max-bytes",
+        type=int,
+        default=None,
         help="Upstream source only: stop once fetched sample bytes reach this cap "
         "(resumable — rerun to continue past it)",
     )

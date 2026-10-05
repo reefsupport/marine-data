@@ -110,9 +110,7 @@ class HttpAdapter(BaseAdapter):
             if suffix == ".zip" and expand_zip and not self.is_label(item.key):
                 yield from self._expand_zip(item)
             elif (
-                stream_tar
-                and suffix in (".tar", ".tar.gz", ".tgz")
-                and not self.is_label(item.key)
+                stream_tar and suffix in (".tar", ".tar.gz", ".tgz") and not self.is_label(item.key)
             ):
                 yield from self._expand_tar(item)
             else:

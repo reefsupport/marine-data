@@ -200,9 +200,7 @@ def _iter_stream_parts(
     for key in parts:
         table = pq.read_table(pa.BufferReader(_get_object_bytes(client, bucket, key)))
         names = table.schema.names
-        split_col = next(
-            (c for c in ("upstream_split", "split", "split_hint") if c in names), None
-        )
+        split_col = next((c for c in ("upstream_split", "split", "split_hint") if c in names), None)
         try:
             img_col, sub = _image_bytes_field(table.schema)
             external = False

@@ -182,7 +182,8 @@ def image_label_row(
             {
                 **dict(attrs or {}),
                 "licence_class": source_class(spec.source_id, spec.licence_class),
-            }, sort_keys=True
+            },
+            sort_keys=True,
         ),
         "label_key": key,
     }  # noqa: E501, RUF100
