@@ -511,3 +511,35 @@ def test_build_manifest_progress_fires_on_already_seen_rows(
     assert re.search(
         r"^fakebench rows=1 bytes=[\d.]+MB rate=[\d.]+img/min skipped=0$", err, re.MULTILINE
     )
+
+
+def test_ordered_map_retries_a_hung_call_and_raises_when_it_never_returns():
+    """WP-R9: one GET that never returns must not block the stream (R8b: 0% CPU > 10 min)."""
+    import threading
+    import time
+
+    from marinedata.bench_manifest import _ordered_map
+
+    release = threading.Event()
+    calls: dict[int, int] = {}
+
+    def flaky(x):
+        calls[x] = calls.get(x, 0) + 1
+        if x == 2 and calls[x] == 1:
+            release.wait(30)  # first attempt hangs; the retry answers at once
+        return x * 10
+
+    def hung(x):
+        if x == 1:
+            release.wait(30)
+        return x
+
+    try:
+        got = list(_ordered_map(flaky, range(5), workers=2, timeout=0.3, retries=1))
+        assert got == [(i, i * 10) for i in range(5)] and calls[2] == 2
+        start = time.monotonic()
+        with pytest.raises(TimeoutError, match="after 2 attempts"):
+            list(_ordered_map(hung, range(3), workers=3, timeout=0.2, retries=1))
+        assert time.monotonic() - start < 5  # returned without joining the hung thread
+    finally:
+        release.set()

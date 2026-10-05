@@ -255,9 +255,7 @@ def test_manifest_coverage_at_least_five_or_documented(
             msgs.append(f"{path.name}: {table.num_rows} rows / {expected} eval images < 99%")
         # Skip upper-bound check for trashcan (two annotation versions with separate val splits)
         if entry.id != "trashcan" and table.num_rows > 1.05 * expected:
-            msgs.append(
-                f"{path.name}: {table.num_rows} rows > 105% of {expected} eval images"
-            )
+            msgs.append(f"{path.name}: {table.num_rows} rows > 105% of {expected} eval images")
 
     # Skip split-label check for suim (stale 'images' label from before path-split fix)
     if entry.id != "suim" and "upstream_split" in table.schema.names:

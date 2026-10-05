@@ -196,23 +196,53 @@ _DONE = object()
 STAGED_GET_WORKERS = 6
 
 
+FUTURE_TIMEOUT_S = 120.0
+"""Seconds one fetch may take before it is abandoned and retried (R8b: a GET sat at 0% CPU for
+more than 10 minutes and ignored SIGTERM)."""
+FUTURE_RETRIES = 2
+
+
 def _ordered_map(
-    fn: Callable[[Any], Any], items: Iterable[Any], workers: int = STAGED_GET_WORKERS
+    fn: Callable[[Any], Any],
+    items: Iterable[Any],
+    workers: int = STAGED_GET_WORKERS,
+    *,
+    timeout: float = FUTURE_TIMEOUT_S,
+    retries: int = FUTURE_RETRIES,
 ) -> Iterator[tuple[Any, Any]]:
     """``(item, fn(item))`` in input order with ``workers`` calls in flight — bounded, so a
-    long stream never holds more than ``4 * workers`` results in memory."""
+    long stream never holds more than ``4 * workers`` results in memory.
+
+    One call that does not finish within ``timeout`` seconds is resubmitted, up to ``retries``
+    times; then ``TimeoutError`` is raised instead of blocking the stream forever. The pool is
+    shut down without waiting on a hung thread when that happens."""
     it = iter(items)
-    with ThreadPoolExecutor(max_workers=workers) as pool:
+    pool = ThreadPoolExecutor(max_workers=workers)
+    clean = False
+    try:
         window: deque[tuple[Any, Any]] = deque(
             (item, pool.submit(fn, item)) for item in itertools.islice(it, workers * 4)
         )
         while window:
             item, fut = window.popleft()
-            result = fut.result()
+            for attempt in range(retries + 1):
+                try:
+                    result = fut.result(timeout=timeout)
+                    break
+                except TimeoutError:
+                    fut.cancel()
+                    if attempt == retries:
+                        raise TimeoutError(
+                            f"no result for {item!r} after {retries + 1} attempts of {timeout}s"
+                        ) from None
+                    fut = pool.submit(fn, item)
             nxt = next(it, _DONE)
             if nxt is not _DONE:
                 window.append((nxt, pool.submit(fn, nxt)))
             yield item, result
+        clean = True
+    finally:
+        pool.shutdown(wait=clean, cancel_futures=not clean)
 
 
 def _norm(name: Any) -> str:
