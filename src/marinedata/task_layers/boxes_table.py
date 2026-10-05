@@ -100,7 +100,7 @@ def licence_class_of(*licences: str | None, default: str) -> str:
 class BoxSource:
     source_id: str
     version: str
-    reader: str  # fathomnet | coco-columnar | coco-fragments | yolo | coco-docs | mot | yolo-flat
+    reader: str  # fathomnet | coco-* | yolo | yolo-flat | yolo-parquet | mot | synthetic-json
     annotator: str
     ann_license: str | None  # the source's licence (fallback for ann_license)
     licence_class: str  # the source's class (fallback for attrs.licence_class)
@@ -150,6 +150,15 @@ BOX_SOURCES: dict[str, BoxSource] = {
         BoxSource("obsea-fish", "v1", "yolo-flat", "human", "CC-BY-4.0", OPEN,
                   crosswalk_id="obsea-fish", label_set="obsea-fish-species",
                   names_rel="labels/files/23sp_4120img_34945annots_2688res_data.yaml"),
+        # WP-U6c: licences from the sources' own metadata (lic-A: synthetic-seabed-debris is NC)
+        BoxSource("sss-mine-detection", "2", "yolo-parquet", "human", "CC-BY-4.0", OPEN,
+                  crosswalk_id="sss-mine-detection", label_set="sss-mine-classid",
+                  names_rel="labels/image_labels.parquet"),
+        BoxSource("swdd-sss-wall", "record-13692547", "coco-doc-frames", "human", "CC-BY-4.0",
+                  OPEN, crosswalk_id="swdd-sss-wall", label_set="swdd-wall"),
+        BoxSource("synthetic-seabed-debris", "1.0.0", "synthetic-json", "derived_rule",
+                  "CC-BY-NC-4.0", NC, crosswalk_id="synthetic-seabed-debris",
+                  label_set="synthetic-seabed-debris"),
     )
 }  # fmt: skip
 
@@ -595,6 +604,10 @@ def staged_boxes(
     if spec.reader == "yolo-flat":
         return _yolo_flat(spec, registry, limit, fetch, lister or bucket_lister())
     tree = tree or StagedTree(spec.tree, fetch)
+    if spec.reader in ("yolo-parquet", "coco-doc-frames", "synthetic-json"):
+        from .boxes_sonar import staged_sonar  # WP-U6c; imports this module, so lazy
+
+        return staged_sonar(spec, registry, tree, limit)
     if spec.licence_join:
         join = join or fathomnet_join(fetch)
         return {"coco-columnar": _fgvc23, "coco-fragments": _fgvc25}[spec.reader](

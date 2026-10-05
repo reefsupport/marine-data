@@ -1,0 +1,15 @@
+# Hand-written (WP-U6c): additive, non-taxon targets only; the labels are objects, not organisms.
+crosswalks:
+- id: sss-mine-detection
+  source_schema: dataset-native
+  target_schema: rs-taxa-v1
+  description: 'WP-U6c crosswalk for sss-mine-detection: YOLO class ids 0 and 1 (names are not staged) are mine-like sonar objects.'
+  edges:
+  - source_label: '0'
+    targets: {taxon: NT_UNKNOWN}
+    fidelity: approximate
+    note: 'class names are not in the staged tree; per the registry spec both ids are side-scan mine-like objects, so the identity is left unresolved rather than guessed'
+  - source_label: '1'
+    targets: {taxon: NT_UNKNOWN}
+    fidelity: approximate
+    note: 'class names are not in the staged tree; per the registry spec both ids are side-scan mine-like objects, so the identity is left unresolved rather than guessed'
