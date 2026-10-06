@@ -80,6 +80,17 @@ def is_retryable_exc(exc: BaseException) -> bool:
     return isinstance(exc, (urllib.error.URLError, ConnectionError, TimeoutError, OSError))
 
 
+def is_retryable_head(exc: BaseException) -> bool:
+    """:func:`is_retryable_exc` plus a 405 on ``HeadObject``. RGW answered one HEAD of a
+    key that a full sweep then served 200 with "405 Method Not Allowed" (deepseagrass
+    run4, after 7.7 h); a HEAD of an existing key is idempotent, so retry it. Verify only."""
+    response = getattr(exc, "response", None)
+    if isinstance(response, dict) and getattr(exc, "operation_name", None) == "HeadObject":
+        if (response.get("ResponseMetadata") or {}).get("HTTPStatusCode") == 405:
+            return True
+    return is_retryable_exc(exc)
+
+
 def _s3_response(exc: BaseException | None) -> dict[str, Any] | None:
     """The botocore ``response`` dict of ``exc`` or, for a ``RetriesExhausted`` wrapper,
     of its cause."""

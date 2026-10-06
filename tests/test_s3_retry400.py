@@ -166,3 +166,37 @@ def test_putter_send_tags_the_failing_key_and_retries_a_400(monkeypatch):
     with pytest.raises(RetriesExhausted) as ei:
         putter(dead)._send("a/b.jpg", b"data", "sha")
     assert dead.calls == 5 and ei.value.s3_key == "pfx/a/b.jpg"
+
+
+def test_verify_head_405_is_retried_then_succeeds_and_names_the_key(monkeypatch):
+    monkeypatch.setattr("marinedata.concurrency.time.sleep", lambda _s: None)
+    from marinedata.concurrency import is_retryable_head
+
+    def head_405():
+        return _client_error(405, "405", op="HeadObject")
+
+    assert is_retryable_head(head_405())
+    assert not is_retryable_head(_client_error(405, "405", op="PutObject"))
+    assert not is_retryable_head(_client_error(403, "403", op="HeadObject"))
+
+    class Client:
+        def __init__(self, fail: int) -> None:
+            self.fail, self.calls = fail, 0
+
+        def head_object(self, **kw):
+            self.calls += 1
+            if self.calls <= self.fail:
+                raise head_405()
+            return {"ETag": '"e"', "ContentLength": 4, "Metadata": {"sha256": "s"}}
+
+    def putter(client):
+        p = ingest_stream._Putter.__new__(ingest_stream._Putter)
+        p.client, p.bucket, p.key_prefix, p.ledger = client, "bkt", "pfx", {}
+        return p
+
+    ok = Client(fail=2)
+    assert putter(ok).verify({"a/b.jpg": ("s", 4)}) == 1 and ok.calls == 3
+    dead = Client(fail=99)
+    with pytest.raises(RetriesExhausted) as ei:
+        putter(dead).verify({"a/b.jpg": ("s", 4)})
+    assert dead.calls == 6 and ei.value.s3_key == "pfx/a/b.jpg"

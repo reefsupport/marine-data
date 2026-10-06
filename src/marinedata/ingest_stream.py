@@ -43,7 +43,7 @@ from typing import Any
 
 from . import checksums
 from .adapters import suffix_of
-from .concurrency import HostLimiter, retry_with_backoff, tag_s3_key
+from .concurrency import HostLimiter, is_retryable_head, retry_with_backoff, tag_s3_key
 from .ingest_missing import MissingLedger, decode_status, fetch_status
 from .ingest_source import (
     _CONTAINERS,
@@ -202,7 +202,16 @@ class _Putter:
         ok = 0
         for rel in sorted(files):
             sha, size = files[rel]
-            head = self.client.head_object(Bucket=self.bucket, Key=self.key(rel))
+            head = tag_s3_key(
+                self.key(rel),
+                lambda rel=rel: retry_with_backoff(
+                    lambda: self.client.head_object(Bucket=self.bucket, Key=self.key(rel)),
+                    retries=6,
+                    base=1.0,
+                    cap=30.0,
+                    retryable=is_retryable_head,
+                ),
+            )
             etag = str(head["ETag"]).strip('"')
             if int(head["ContentLength"]) != size or (
                 etag != self.ledger.get(rel, {}).get("etag")
