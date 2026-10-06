@@ -234,7 +234,9 @@ def test_brackishmot_class_ids_follow_the_paper_class_list(registry, nodes):
         "6": "Medusozoa",
     }  # fmt: skip
     assert edges["2"].fidelity is Fidelity.EXACT and edges["1"].fidelity is Fidelity.COARSENED
-    assert edges["6"].fidelity is Fidelity.COARSENED  # jellyfish: Medusozoa, as in roboflow-aquarium
+    assert (
+        edges["6"].fidelity is Fidelity.COARSENED
+    )  # jellyfish: Medusozoa, as in roboflow-aquarium
 
 
 #: Labels with >= 10 boxes that stay unmapped after U8b, each on purpose: natural detritus and

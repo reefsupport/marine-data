@@ -189,7 +189,7 @@ class _FakeTimeoutResp:
     def read(self) -> bytes:
         return self._data
 
-    def __enter__(self) -> "_FakeTimeoutResp":
+    def __enter__(self) -> _FakeTimeoutResp:
         return self
 
     def __exit__(self, *exc: object) -> None:
@@ -214,7 +214,9 @@ def test_remote_file_recovers_when_a_cached_direct_redirect_goes_dead() -> None:
     data = b"x" * 10
     calls: list[tuple[str, float | None]] = []
 
-    def flaky_open(url: str, *, headers: dict[str, str] | None = None, timeout: float | None = None):
+    def flaky_open(
+        url: str, *, headers: dict[str, str] | None = None, timeout: float | None = None
+    ):
         calls.append((url, timeout))
         if url == direct:
             raise RetriesExhausted(f"GET {url}: no progress after 4 resumes")

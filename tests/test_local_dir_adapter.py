@@ -43,9 +43,7 @@ def test_label_patterns_carry_non_image_files_as_plain_label_files(tmp_path):
     (root / "img.jpg").write_bytes(png(1))
     (root / "meta.csv").write_text("id,label\n1,fish\n")
 
-    adapter = make_adapter(
-        "local_dir", {"path": str(root), "label_patterns": ["*.csv"]}
-    )
+    adapter = make_adapter("local_dir", {"path": str(root), "label_patterns": ["*.csv"]})
     items = {i.key: i for i in adapter.enumerate()}
     assert set(items) == {"img.jpg", "meta.csv"}
 

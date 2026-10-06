@@ -72,7 +72,7 @@ def test_parse_options_needs_consecutive_lettered_choices():
     assert vt.parse_options("Q\nA. one\nC. skipped B") == []
 
 
-_INSTR = '\nPlease output only the letter and corresponding term (e.g., A. Mutualism), with no additional explanation.'
+_INSTR = "\nPlease output only the letter and corresponding term (e.g., A. Mutualism), with no additional explanation."
 MARINEEVT_FORMATS = {  # every layout seen in the staged MarineEVT question files (6,175 MC questions)
     "one choice per line": (MCQ, ["A. Touches the turtle", "B. Watches the turtle", "C. Feeds it"]),
     "inline, no instruction line": (
@@ -434,7 +434,10 @@ def test_uwbench_lists_only_images_and_labels_and_stops_at_limit():
 def test_uwbench_flaky_label_fetch_is_skipped_not_fatal():
     spec = vt.VQA_SOURCES["uwbench"]
     base = f"sources/uwbench/{spec.version}/"
-    files = {base + "labels/files/unresolved-1.json": b"{}", base + "images/images_test_zip_X.jpg": b""}
+    files = {
+        base + "labels/files/unresolved-1.json": b"{}",
+        base + "images/images_test_zip_X.jpg": b"",
+    }
 
     def boom(key):
         raise TimeoutError(key)

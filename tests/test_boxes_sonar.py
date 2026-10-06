@@ -1,4 +1,4 @@
-"""WP-U6c: sonar + synthetic-debris box readers and their crosswalks (no network: fake staged trees)."""
+"""WP-U6c: sonar + synthetic-debris box readers and crosswalks (no network, fake staged trees)."""
 
 from __future__ import annotations
 
@@ -72,7 +72,8 @@ def test_synthetic_seabed_binds_final_composite_optical_nc(reg):
 def test_sss_mine_reads_yolo_text_from_parquet_and_keeps_class_ids(reg):
     spec = bt.BOX_SOURCES["sss-mine-detection"]
     stems = ["2010_0001", "2010_0002"]
-    labels = _pq([{"stem": stems[0], "key": "txt", "value": "0 0.5 0.5 0.2 0.2\n1 0.25 0.25 0.1 0.1"},
+    labels = _pq([{"stem": stems[0], "key": "txt", "value": "0 0.5 0.5 0.2 0.2\n"
+                                                                        "1 0.25 0.25 0.1 0.1"},
                   {"stem": stems[1], "key": "txt", "value": ""}])  # fmt: skip
     files = {"metadata.parquet": _meta(stems, 416, 416), "labels/image_labels.parquet": labels}
     res = staged_sonar(spec, reg, _tree(spec, files, stems), None)

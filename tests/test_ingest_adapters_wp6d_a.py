@@ -179,7 +179,9 @@ def test_gdrive_usercontent_confirm_form_parsed():
     with hidden id/export/confirm/uuid inputs (not the old bare confirm= anchor)."""
     from marinedata.adapters.gdrive import GDriveAdapter
 
-    adapter = GDriveAdapter({"file_id": "big2", "name": "c.zip", "endpoint": "https://drive.google.com"})
+    adapter = GDriveAdapter(
+        {"file_id": "big2", "name": "c.zip", "endpoint": "https://drive.google.com"}
+    )
     html = (
         '<html><body><form id="download-form" '
         'action="https://drive.usercontent.google.com/download" method="get">'

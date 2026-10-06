@@ -41,7 +41,7 @@ def layout_entries(
         rows = [
             r
             for r in task_layers.get(config_id, ())
-            if (r.get("image_sha256") or r.get("sha256")) in split_by_sha  # noqa: E501
+            if (r.get("image_sha256") or r.get("sha256")) in split_by_sha
         ]
         if not rows:
             continue
