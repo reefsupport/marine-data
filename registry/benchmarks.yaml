@@ -89,8 +89,8 @@ benchmarks:
      split_verified: false, verified_by: "not fetched", obtain: {status: w1, via: "DRUM bitstreams"},
      policy: route-to-our-test, policy_reason: "J-EDI chain with trashcan", chain: [c5]}
   - {id: deepseagrass, name: DeepSeagrass, task: cls, catalog_id: deepseagrass, registry_id: null,
-     upstream_split: {rule: "train/val/test image lists (Raine+ ECCVW 2020); patches follow the parent", eval_split: test, heldout_val: val, counts: {images: 1701, patches: 66000}, definition_url: "https://data.csiro.au/collection/csiro:47653"},
-     split_verified: false, verified_by: "not fetched", obtain: {status: w1, via: "CSIRO DAP file list"},
+     upstream_split: {rule: "train/val/test image lists (Raine+ ECCVW 2020); patches follow the parent", eval_split: test, heldout_val: val, counts: {images: 1701, patches: 66000, test: 28353}, definition_url: "https://data.csiro.au/collection/csiro:47653"},
+     split_verified: false, verified_by: "test: 28353 = staged test-dir file count = deepseagrass manifest rows (97c1bbb); images/patches are the paper counts, not fetched", obtain: {status: w1, via: "CSIRO DAP file list"},
      policy: route-to-our-test, policy_reason: "whole source falls in ood-geo-temperate-australasia (Moreton Bay)", chain: []}
   - {id: mlc-moorea, name: Moorea Labeled Corals, task: points, catalog_id: mlc-moorea, registry_id: null,
      upstream_split: {rule: "by survey year: 2008 train; 2009 test (Exp 1); 2010 test with 2008+2009 train (Exp 3)", eval_split: "2009+2010", heldout_val: null, counts: {"2008": 671, "2009": 695, "2010": 689}, definition_url: "https://doi.org/10.6073/pasta/88dde0e68ab5232a470389f4bedd1892"},
