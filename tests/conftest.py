@@ -226,3 +226,13 @@ def ample_disk(monkeypatch):
         return 1 << 50
 
     monkeypatch.setattr(DiskGuard, "free_bytes", _free)
+
+
+@pytest.fixture(autouse=True)
+def _legacy_unflavoured_fixtures():
+    """Legacy fixtures build releases without a flavour; production refuses that
+    (``require_flavour``). Tests of the guard itself use ``flavour_guard_on``."""
+    from marinedata.licence_class import unflavoured_for_tests
+
+    with unflavoured_for_tests():
+        yield

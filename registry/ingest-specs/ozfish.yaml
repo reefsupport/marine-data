@@ -1,4 +1,5 @@
 id: ozfish
+access_class: open
 adapter: pawsey-portal
 params:
   container_url: https://storage.pawsey.org.au/public/m/FDFML/frames

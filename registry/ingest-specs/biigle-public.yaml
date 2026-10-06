@@ -1,5 +1,6 @@
 # BIIGLE public annotation-platform volumes (multiple deep-sea and reef projects hosted by University of Bielefeld / GEOMAR groups).
 id: biigle-public
+access_class: internal-only
 adapter: needs:biigle-token
 license: per-volume (mostly CC-BY, per BIIGLE norms)
 attribution: BIIGLE / Biodata.pl consortium

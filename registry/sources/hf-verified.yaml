@@ -6,6 +6,8 @@
 
 sources:
   - id: reefnet-hf
+    release_skip_reason: "non-image-modality: tabular benchmark features"
+    access_class: restricted-nc  # WP-R2: upstream ReefNet-1.0 cardData.license cc-by-nc-sa-4.0 (LICV lic-B)
     name: ReefNet 1.0 (HuggingFace release)
     # habitat inferred (WP-2b) from this source's own description/notes, not independently verified
     habitat: [coral_reef]
@@ -14,7 +16,7 @@ sources:
       The ReefNet fine-grained coral benchmark, published openly on HuggingFace as
       tabular point annotations: CoralNet source, image name, row/column, CoralNet
       label and a harmonised ReefNet label.
-    licence: CC-BY-4.0
+    licence: CC-BY-NC-SA-4.0
     legal_basis: licence
     redistribution: ok
     provenance: public
@@ -54,6 +56,7 @@ sources:
     tags: [genus, benchmark, tabular]
 
   - id: reefnet-species-images
+    access_class: open
     name: ReefNet species images
     # habitat inferred (WP-2b) from this source's own description/notes, not independently verified
     habitat: [coral_reef]
@@ -100,6 +103,7 @@ sources:
     tags: [pretraining, mis-registered-corrected]
 
   - id: reef-guidance-system
+    access_class: open
     name: QUT reef guidance system imagery
     # habitat inferred (WP-2b) from this source's own description/notes, not independently verified
     habitat: [mixed]
@@ -135,6 +139,8 @@ sources:
     tags: [robotics, pretraining, qut]
 
   - id: marrs-reef-soundscapes
+    release_skip_reason: "non-image-modality: audio clips: keep out of the v2 image release, candidate for a later audio config"
+    access_class: open
     name: MARRS global coral reef soundscapes
     # habitat inferred (WP-2b) from this source's own description/notes, not independently verified
     habitat: [coral_reef]
@@ -179,6 +185,7 @@ sources:
     tags: [bioacoustics, reef-audio, multi-region]
 
   - id: whoi-plankton-small
+    access_class: open
     name: WHOI-Plankton (small)
     # habitat inferred (WP-2b) from this source's own description/notes, not independently verified
     habitat: [pelagic]
@@ -210,6 +217,7 @@ sources:
     tags: [plankton, microscopy, permissive]
 
   - id: underwater-image-enhancement
+    access_class: open
     name: Underwater image enhancement set
     # habitat inferred (WP-2b) from this source's own description/notes, not independently verified
     habitat: [mixed]
@@ -242,6 +250,7 @@ sources:
     tags: [enhancement]
 
   - id: satellite-coral-mapping
+    access_class: open
     name: AIMS satellite coral mapping
     # habitat inferred (WP-2b) from this source's own description/notes, not independently verified
     habitat: [coral_reef]

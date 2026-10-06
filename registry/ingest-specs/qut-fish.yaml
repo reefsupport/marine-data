@@ -1,5 +1,7 @@
 # QUT fish dataset (fine-grained fish species recognition, WACV14).
 id: qut-fish
+access_class: restricted-nc
+licence_per_row: true
 adapter: local_dir
 params:
   path: ~/Downloads/marine-manual/qut-fish/data
@@ -16,3 +18,8 @@ notes: >-
   label file) + the paper (`WACV14.pdf`) and `LicenceAndAuthors.pdf` (excluded — not
   data; the licence pdf itself was not parsed this pass, hence `license: unknown`).
 disk_floor_gib: 1.5
+
+measured:
+  label_type: image-level species class labels (483 species, '=' delimited index)
+  method: u15-label-kind-triage (registry-patch.yaml)
+  date: '2026-10-05'

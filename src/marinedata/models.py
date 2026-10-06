@@ -13,6 +13,7 @@ from datetime import date
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 from .enums import (
+    AccessClass,
     AccessMethod,
     AnnotationKind,
     Capability,
@@ -323,6 +324,13 @@ class Source(_Frozen):
     see :class:`~marinedata.enums.Redistribution`."""
     provenance: Provenance
 
+    access_class: AccessClass = AccessClass.UNKNOWN
+    """WP-L1a: what this source may be released as (open / restricted-nc / restricted-nd /
+    internal-only / unknown). Orthogonal to ``licence.tier``; the flavour filter reads this."""
+    licence_per_row: bool = False
+    """Every item carries its own licence string (FathomNet, iNat, ...): the row class wins
+    over ``access_class``, which is then only the strictest-member bound."""
+
     access: Access
     modalities: tuple[Modality, ...]
     capabilities: tuple[Capability, ...]
@@ -335,6 +343,9 @@ class Source(_Frozen):
     """Set once this source's declared version is stored. ``None`` means not ingested
     yet, which is every source today — never "ingested but unverified"."""
 
+    default_platform: str | None = None
+    default_habitat: str | None = None
+    default_instrument: str | None = None
     split_group: SplitGroupRule = Field(default_factory=SplitGroupRule)
     """Required per-source rule for ``resolve_splits(by="group")``. Defaults to the
     explicit fallback (``<source_id>/<partition>``) so every source has one without
@@ -352,6 +363,9 @@ class Source(_Frozen):
     homepage: str | None = None
     tags: tuple[str, ...] = ()
     notes: str | None = None
+    release_skip_reason: str | None = None
+    """Why this source is deliberately left out of a release (WP-R2e). Set, the split map skips
+    it and ``release build`` records it under ``skipped_sources`` with no ``--allow-skip``."""
 
     habitat: tuple[Habitat, ...] | None = Field(default=None)
     """WP-2b: controlled-vocabulary physical setting(s) this source's imagery was
@@ -434,6 +448,14 @@ class Profile(_Frozen):
     deny_flags: tuple[str, ...] = ()
     require_legal_opinion: bool = False
     """TDM-based profiles cannot be instantiated without a counsel opinion reference."""
+
+    allow_access_classes: tuple[str, ...] = ()
+    """WP-L1b: the ``access_class`` values this profile admits (empty = no class bar). A
+    shipping profile sets it so the tier gate and the release flavour never disagree."""
+
+    public_release: bool = False
+    """WP-L1b: the output is published even though ``T3_NONCOMMERCIAL`` is allowed (the NC
+    flavour), so the disputed / secondary-verification bars apply as on any shipping profile."""
 
     retention_days: int | None = None
     weights_licence: str | None = None

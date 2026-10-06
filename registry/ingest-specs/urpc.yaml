@@ -1,5 +1,6 @@
 # urpc: URPC competition dataset
 id: urpc
+access_class: open
 adapter: hf
 license: Apache-2.0 (HF card)
 attribution: Underwater Robot Professional Contest (URPC) organizers, via fuhao7i

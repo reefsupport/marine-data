@@ -1,4 +1,5 @@
 id: vdd-c
+access_class: open
 adapter: drum
 params:
   landing: https://conservancy.umn.edu/handle/11299/219383

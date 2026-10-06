@@ -1,5 +1,6 @@
 # SPEC-w3 discovery: underwater vision-language benchmark (UWBench, 2025).
 id: uwbench
+access_class: internal-only
 adapter: hf
 license: '?'
 attribution: da1018

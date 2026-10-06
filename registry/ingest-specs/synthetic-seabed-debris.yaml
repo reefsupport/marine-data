@@ -1,5 +1,6 @@
 # WP-6l-B (2026-09-25) new source: candidate — WP-6l-B debris: generated seabed-litter images for debris detection augmentation
 id: synthetic-seabed-debris
+access_class: restricted-nc
 adapter: zenodo
 params:
   zenodo_record: 21208479

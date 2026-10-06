@@ -1,5 +1,6 @@
 # CoralVOS: coral video object segmentation benchmark.
 id: coralvos
+access_class: internal-only
 adapter: needs:gdrive-login
 license: unknown (not stated in repo)
 attribution: Zheng et al. / hkust-vgd

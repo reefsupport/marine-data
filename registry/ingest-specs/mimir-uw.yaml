@@ -1,5 +1,6 @@
 # WP-6g (2026-09-25) new source: candidate — WP-6g gap 5: synthetic underwater nav/inspection with dense depth ground truth
 id: mimir-uw
+access_class: open
 adapter: zenodo
 params:
   zenodo_record: 10406384

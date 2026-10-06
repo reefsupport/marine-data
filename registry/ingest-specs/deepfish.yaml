@@ -1,4 +1,5 @@
 id: deepfish
+access_class: open
 adapter: http
 params:
   version: '2020'

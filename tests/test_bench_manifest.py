@@ -15,6 +15,7 @@ from PIL import Image
 from marinedata.bench_manifest import (
     ManifestBuildError,
     RawImage,
+    _build_row_tolerant,
     build_manifest,
     iter_bucket_images,
     iter_upstream_images,
@@ -149,9 +150,9 @@ def test_iter_bucket_images_sample_schema_metadata_only_part():
 
 
 def test_bucket_has_no_stream_prefix_raises_no_embedded_bytes():
-    # staged-layout fallback with no metadata.parquet present -> KeyError surfaces
+    # staged-layout fallback with no metadata.parquet present -> a named build error
     client = FakeS3Client({})
-    with pytest.raises(KeyError):
+    with pytest.raises(ManifestBuildError, match=r"no metadata\.parquet"):
         list(iter_bucket_images(client, "rs-storage-open", _entry()))
 
 
@@ -272,9 +273,7 @@ def test_iter_upstream_images_max_bytes_stops_stream(tmp_path: Path):
     )
     entry = _entry(eval_split="all")
     images = list(
-        iter_upstream_images(
-            entry, tmp_path, tmp_path, adapter=adapter, max_bytes=len(RED) - 1
-        )
+        iter_upstream_images(entry, tmp_path, tmp_path, adapter=adapter, max_bytes=len(RED) - 1)
     )
     assert [i.stem for i in images] == ["1"]
 
@@ -312,9 +311,7 @@ def test_iter_upstream_images_zip_fixture_excludes_unreferenced_original_data(
     adapter = FakeAdapter(decoded)
     entry = _entry(eval_split="val")
     images = list(iter_upstream_images(entry, tmp_path, tmp_path, adapter=adapter))
-    assert [i.upstream_path.rsplit("#", 1)[-1] for i in images] == [
-        "instance_version/val/b.jpg"
-    ]
+    assert [i.upstream_path.rsplit("#", 1)[-1] for i in images] == ["instance_version/val/b.jpg"]
 
 
 def test_spec_resolves(tmp_path: Path):
@@ -333,8 +330,19 @@ def test_build_manifest_computes_hash_columns():
     assert row["embedding_ref"] == row["sha256"]
     assert row["embedding_model"] == "sscd_disc_mixup"
     assert set(row) == {
-        "benchmark_id", "upstream_path", "stem", "upstream_split", "sha256", "pixel_sha256",
-        "width", "height", "dhash", "phash", "phash64", "margin", "embedding_ref",
+        "benchmark_id",
+        "upstream_path",
+        "stem",
+        "upstream_split",
+        "sha256",
+        "pixel_sha256",
+        "width",
+        "height",
+        "dhash",
+        "phash",
+        "phash64",
+        "margin",
+        "embedding_ref",
         "embedding_model",
     }
 
@@ -434,9 +442,7 @@ def test_build_manifest_checkpoints_at_row_threshold(tmp_path: Path):
             mid_run["rows"] = len(pq.read_table(ckpt).to_pylist())
         yield RawImage("c.png", "c", "test", RED)
 
-    build_manifest(
-        entry, images(), ckpt, checkpoint_every_rows=2, checkpoint_every_s=10_000
-    )
+    build_manifest(entry, images(), ckpt, checkpoint_every_rows=2, checkpoint_every_s=10_000)
     assert mid_run["exists"] is True
     assert mid_run["rows"] == 2
 
@@ -469,8 +475,11 @@ def test_build_manifest_progress_line_format(capsys: pytest.CaptureFixture[str])
     entry = _entry()
     images = iter([RawImage("a.png", "a", "test", RED)])
     build_manifest(
-        entry, images, Path("/nonexistent/does-not-exist.parquet"),
-        progress_every=1, progress_every_s=10_000,
+        entry,
+        images,
+        Path("/nonexistent/does-not-exist.parquet"),
+        progress_every=1,
+        progress_every_s=10_000,
     )
     err = capsys.readouterr().err
     # BENCH-vmfix: the progress block now fires right after bytes_total is updated,
@@ -500,4 +509,98 @@ def test_build_manifest_progress_fires_on_already_seen_rows(
         progress_every_s=10_000,
     )
     err = capsys.readouterr().err
-    assert re.search(r"^fakebench rows=1 bytes=[\d.]+MB rate=[\d.]+img/min skipped=0$", err, re.MULTILINE)
+    assert re.search(
+        r"^fakebench rows=1 bytes=[\d.]+MB rate=[\d.]+img/min skipped=0$", err, re.MULTILINE
+    )
+
+
+def test_ordered_map_retries_a_hung_call_and_raises_when_it_never_returns():
+    """WP-R9: one GET that never returns must not block the stream (R8b: 0% CPU > 10 min)."""
+    import threading
+    import time
+
+    from marinedata.bench_manifest import _ordered_map
+
+    release = threading.Event()
+    calls: dict[int, int] = {}
+
+    def flaky(x):
+        calls[x] = calls.get(x, 0) + 1
+        if x == 2 and calls[x] == 1:
+            release.wait(30)  # first attempt hangs; the retry answers at once
+        return x * 10
+
+    def hung(x):
+        if x == 1:
+            release.wait(30)
+        return x
+
+    try:
+        got = list(_ordered_map(flaky, range(5), workers=2, timeout=0.3, retries=1))
+        assert got == [(i, i * 10) for i in range(5)] and calls[2] == 2
+        start = time.monotonic()
+        with pytest.raises(TimeoutError, match="after 2 attempts"):
+            list(_ordered_map(hung, range(3), workers=3, timeout=0.2, retries=1))
+        assert time.monotonic() - start < 5  # returned without joining the hung thread
+    finally:
+        release.set()
+
+
+def test_iter_staged_bucket_resolves_split_from_label_files():
+    """WP-R11: staged metadata with no split (CoralVQA) takes the eval split from the staged
+    annotation file named for it; a train image is never promoted to ``test``."""
+    meta = _stream_part_bytes(
+        [
+            {"stem": "a", "upstream_id": "Img.zip#1.jpg"},
+            {"stem": "b", "upstream_id": "Img.zip#2.jpg"},
+        ]
+    )
+    client = FakeS3Client(
+        {
+            "sources/fakebench/metadata.parquet": meta,
+            "sources/fakebench/images/a.jpg": RED,
+            "sources/fakebench/images/b.jpg": BLUE,
+            "sources/fakebench/labels/files/Fake_test.jsonl": b'{"image": "1.jpg", "q": "x"}\n'
+            b'{"image": "1.jpg", "q": "y"}\n',
+            "sources/fakebench/labels/files/Fake_train.jsonl": b'{"image": "2.jpg"}\n',
+        }
+    )
+    images = list(iter_bucket_images(client, "rs-storage-open", _entry(eval_split="test")))
+    assert [(i.stem, i.upstream_split) for i in images] == [("a", "test")]
+
+
+def test_iter_staged_bucket_split_hint_column_is_split_evidence():
+    meta = _stream_part_bytes(
+        [{"stem": "a", "split_hint": "test"}, {"stem": "b", "split_hint": "train"}]
+    )
+    client = FakeS3Client(
+        {
+            "sources/fakebench/metadata.parquet": meta,
+            "sources/fakebench/images/a.jpg": RED,
+            "sources/fakebench/images/b.jpg": BLUE,
+        }
+    )
+    images = list(iter_bucket_images(client, "rs-storage-open", _entry(eval_split="test")))
+    assert [i.stem for i in images] == ["a"]
+
+
+def test_a_truncated_jpeg_still_gets_a_manifest_row_with_its_exact_sha256():
+    """WP-R12: CoralVQA ships 5 truncated JPEGs; they must not drop out of the manifest."""
+    from PIL import ImageFile
+
+    buf = io.BytesIO()
+    rng = __import__("random").Random(0)
+    Image.frombytes("RGB", (96, 96), bytes(rng.randrange(256) for _ in range(96 * 96 * 3))).save(
+        buf, "JPEG", quality=95
+    )
+    whole = buf.getvalue()
+    cut = whole[: int(len(whole) * 0.8)]
+    flag = ImageFile.LOAD_TRUNCATED_IMAGES
+    img = RawImage(upstream_path="images/t.jpg", stem="t", upstream_split="test", data=cut)
+    row = _build_row_tolerant("coralvqa", img)
+    assert row["sha256"] == hashlib.sha256(cut).hexdigest() and row["phash64"] is not None
+    assert flag == ImageFile.LOAD_TRUNCATED_IMAGES  # scoped to the retry
+    junk = RawImage(upstream_path="images/j.jpg", stem="j", upstream_split="test", data=b"nope")
+    with pytest.raises(Exception, match="cannot decode"):
+        _build_row_tolerant("coralvqa", junk)
+    assert flag == ImageFile.LOAD_TRUNCATED_IMAGES

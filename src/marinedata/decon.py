@@ -17,7 +17,13 @@ from typing import Any
 
 import numpy as np
 
-from .benchmarks import BenchmarkEntry, BenchmarkRegistry, Thresholds, benchmarks_sha256
+from .benchmarks import (
+    BenchmarkEntry,
+    BenchmarkRegistry,
+    Thresholds,
+    benchmarks_sha256,
+    expected_eval_count,
+)
 from .dedup.corpus import Item, hash_items, read_payloads
 from .dedup.crop import thumb_pair
 from .dedup.embed import DEFAULT_SCALES, EMBED_SIDE, match_patch, prepare
@@ -96,7 +102,7 @@ class BenchmarkOverlap:
     eval_n: int
     hashed_n: int
     policy: str
-    status: str  # clean | contaminated | not-checked
+    status: str  # clean | contaminated | not-checked | exempt | uncovered
     counts: dict[str, dict[str, int]]  # split -> stage -> count, FAILING placements only
     home_counts: dict[str, dict[str, int]]  # split -> stage -> count, test/ood-* (informational)
     excluded: int
@@ -104,10 +110,18 @@ class BenchmarkOverlap:
     coverage_fail: bool
     review_band_fail: bool
     reason: str = ""
+    # WP-R11: a reviewed ``decon_exempt_reason`` on a benchmark that HAS a manifest the registry
+    # cannot size (no independent eval count, or a short manifest): hit detection ran, the
+    # coverage gate is waived, and the benchmark is reported as partially verified.
+    partial_reason: str = ""
+
+    @property
+    def partial(self) -> bool:
+        return bool(self.partial_reason)
 
     @property
     def ok(self) -> bool:
-        if self.status == "not-checked":
+        if self.status in {"not-checked", "exempt"}:
             return True
         any_hit = any(n for stages in self.counts.values() for n in stages.values())
         return not any_hit and not self.coverage_fail and not self.review_band_fail
@@ -124,13 +138,31 @@ class DeconResult:
         return all(o.ok for o in self.overlaps)
 
     @property
+    def exempt(self) -> dict[str, str]:
+        """``benchmark id -> reviewed reason`` for every benchmark decon did not verify."""
+        return {o.benchmark_id: o.reason for o in self.overlaps if o.status == "exempt"}
+
+    @property
+    def partial(self) -> dict[str, str]:
+        """``benchmark id -> reviewed reason`` for every benchmark checked on a manifest whose
+        coverage the registry could not verify."""
+        return {o.benchmark_id: o.partial_reason for o in self.overlaps if o.partial}
+
+    @property
     def failures(self) -> list[str]:
         out = []
         for o in self.overlaps:
             if o.ok:
                 continue
-            if o.coverage_fail:
-                out.append(f"{o.benchmark_id}: manifest coverage below gate_manifest_min_coverage")
+            if o.status == "uncovered":
+                out.append(f"{o.benchmark_id}: no manifest and no decon_exempt_reason")
+            elif o.coverage_fail:
+                have = (
+                    f"{o.hashed_n} hashed manifest rows / {o.eval_n or 'no'} registry eval images"
+                )
+                out.append(
+                    f"{o.benchmark_id}: manifest coverage below gate_manifest_min_coverage ({have})"
+                )
             if o.review_band_fail:
                 out.append(f"{o.benchmark_id}: review-band hits exceed the max")
             if any(n for stages in o.counts.values() for n in stages.values()):
@@ -261,11 +293,26 @@ def check_benchmark(
     corpus_records: list[ImageRecord],
     dedup_crop: bool = False,
 ) -> BenchmarkOverlap:
-    eval_n = entry.upstream_split.counts.get(entry.upstream_split.eval_split) or len(bench_records)
-    hashed_n = len(bench_records)
+    # WP-R9: the denominator is the registry's eval-split image count, never the manifest under
+    # judgement (R8c: 8.5k of 28353 deepseagrass images read as "100%"). A staged/w1/w2
+    # benchmark whose registry has no such count cannot be verified and fails.
+    eval_n = expected_eval_count(entry)
+    # WP-R12: the numerator is the UNIQUE non-null sha256 in the manifest, capped at the registry
+    # eval count (<= 100%). Duplicate rows (QA rows per image, repeated images) never raise
+    # coverage: marineeval has 2672 rows for 2643 unique images.
+    hashed_n = len({r.sha256 for r in bench_records if r.sha256})
+    if eval_n is not None:
+        hashed_n = min(hashed_n, eval_n)
     coverage_fail = entry.obtain.status in {"staged", "w1", "w2"} and (
-        hashed_n == 0 or (eval_n and hashed_n < 0.99 * eval_n)
+        hashed_n == 0
+        or (eval_n is None and bool(bench_records))
+        or (eval_n is not None and hashed_n < thresholds.gate_manifest_min_coverage * eval_n)
     )
+    eval_n = eval_n or 0
+    # A reviewed reason waives the coverage gate for a benchmark that has a manifest (hit
+    # detection below still runs); one with neither a count nor a reason fails as before.
+    partial_reason = (entry.decon_exempt_reason or "") if coverage_fail else ""
+    coverage_fail = coverage_fail and not partial_reason
 
     candidates: set[tuple[int, int]] = set()
     candidates.update(_exact_hits(bench_records, corpus_records, "upstream_id"))
@@ -332,7 +379,7 @@ def check_benchmark(
 
     review_max = max(
         thresholds.gate_review_band_max.get("absolute", 5),
-        thresholds.gate_review_band_max.get("fraction_of_eval", 0.01) * eval_n,
+        thresholds.gate_review_band_max.get("fraction_of_eval", 0.01) * (eval_n or hashed_n),
     )
     review_band_fail = len(review) > review_max
 
@@ -343,7 +390,7 @@ def check_benchmark(
     return BenchmarkOverlap(
         benchmark_id=entry.id,
         task=entry.task,
-        eval_n=eval_n or 0,
+        eval_n=eval_n,
         hashed_n=hashed_n,
         policy=entry.policy,
         status=status,
@@ -353,6 +400,7 @@ def check_benchmark(
         review=tuple(review),
         coverage_fail=coverage_fail,
         review_band_fail=review_band_fail,
+        partial_reason=partial_reason,
     )
 
 
@@ -476,9 +524,10 @@ def check(
 ) -> DeconResult:
     """Run the S0-S5 gate for every benchmark with a manifest against ``release_dir``.
 
-    A benchmark whose ``obtain.status`` is not in ``{staged, w1, w2}`` and has no
-    manifest is ``not-checked`` (§1: counts toward neither target). One with that
-    status and no/short manifest fails coverage (§2.2 rule 4).
+    A benchmark with no manifest passes only with a reviewed ``decon_exempt_reason``
+    (status ``exempt``, recorded in ``RELEASE.json`` and the dataset card); with neither
+    it is ``uncovered`` and fails coverage. A short manifest on a staged/w1/w2 benchmark
+    fails coverage too (§2.2 rule 4).
 
     ``dedup_crop`` (D-T, default off): gates the S5 patch/crop stage, same switch and
     same default as WP-10c's ``--dedup-crop`` for corpus-internal dedup.
@@ -494,22 +543,43 @@ def check(
         bench_records = load_benchmark_records(manifest_path, (image_roots or {}).get(entry.id))
         if embed_weights is not None and embed_cache is not None:
             bench_records = add_embeddings(bench_records, embed_weights, embed_cache)
-        if not bench_records and entry.obtain.status not in {"staged", "w1", "w2"}:
+        if not bench_records and not entry.decon_exempt_reason:
+            # Default deny: no manifest AND no reviewed exemption fails coverage, whatever
+            # the obtain status (an unfetched benchmark must be exempted explicitly).
             overlaps.append(
                 BenchmarkOverlap(
                     benchmark_id=entry.id,
                     task=entry.task,
-                    eval_n=entry.upstream_split.counts.get(entry.upstream_split.eval_split) or 0,
+                    eval_n=expected_eval_count(entry) or 0,
                     hashed_n=0,
                     policy=entry.policy,
-                    status="not-checked",
+                    status="uncovered",
+                    counts={},
+                    home_counts={},
+                    excluded=0,
+                    review=(),
+                    coverage_fail=True,
+                    review_band_fail=False,
+                    reason="no manifest and no decon_exempt_reason",
+                )
+            )
+            continue
+        if not bench_records:
+            overlaps.append(
+                BenchmarkOverlap(
+                    benchmark_id=entry.id,
+                    task=entry.task,
+                    eval_n=expected_eval_count(entry) or 0,
+                    hashed_n=0,
+                    policy=entry.policy,
+                    status="exempt",
                     counts={},
                     home_counts={},
                     excluded=0,
                     review=(),
                     coverage_fail=False,
                     review_band_fail=False,
-                    reason=f"obtain.status={entry.obtain.status}",
+                    reason=entry.decon_exempt_reason or "",
                 )
             )
             continue
@@ -557,11 +627,18 @@ def overlap_table_md(result: DeconResult, registry: BenchmarkRegistry) -> str:
         f"S5 NCC >= {registry.thresholds.s5_parent_ncc_min}. "
         f"Registry sha256: {result.registry_sha256}."
     )
-    not_checked = [o for o in result.overlaps if o.status == "not-checked"]
+    not_checked = [o for o in result.overlaps if o.status in {"not-checked", "exempt", "uncovered"}]
     if not_checked:
-        lines.append("\nNot checked:")
+        lines.append("\nNot checked (exempt = reviewed reason; uncovered = gate failure):")
         for o in not_checked:
-            lines.append(f"- {o.benchmark_id}: {o.reason}")
+            lines.append(f"- {o.benchmark_id} [{o.status}]: {o.reason}")
+    partial = [o for o in result.overlaps if o.partial]
+    if partial:
+        lines.append("\nPartially verified (hit detection ran; coverage not verifiable):")
+        for o in partial:
+            lines.append(
+                f"- {o.benchmark_id} [{o.status}, {o.hashed_n} hashed]: {o.partial_reason}"
+            )
     return "\n".join(lines) + "\n"
 
 
@@ -595,6 +672,17 @@ def write_outputs(result: DeconResult, registry: BenchmarkRegistry, out_dir: Pat
     )
     pq.write_table(table, out_dir / "overlap.parquet")
     (out_dir / "overlap.md").write_text(overlap_table_md(result, registry))
+
+
+def decon_record(result: DeconResult) -> dict[str, Any]:
+    """The ``RELEASE.json`` ``decon`` block: what was verified, and what was exempted."""
+    exempt = result.exempt
+    return {
+        "gate": "pass" if result.ok else "fail",
+        "benchmarks_checked": sum(1 for o in result.overlaps if o.status not in {"exempt"}),
+        "exempt": dict(sorted(exempt.items())),
+        "partially_verified": dict(sorted(result.partial.items())),
+    }
 
 
 def run_decon_gate(

@@ -1,5 +1,6 @@
 # WP-6g (2026-09-25) new source: pangaea-series (WP-6j) — WP-6g gap 1,6: PS96 Weddell Sea OFOS: Antarctic shelf seabed stills
 id: pangaea-ps96-ofos-weddell
+access_class: open
 adapter: pangaea-series
 params:
   doi: 10.1594/PANGAEA.862097

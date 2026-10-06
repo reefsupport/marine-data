@@ -294,7 +294,8 @@ def benthic_rule(label: str, desc: str) -> tuple:
 
 def main(cache: Path, offline: bool) -> None:
     reg = Registry.load(ROOT)
-    vocabs = {p.stem: read_vocab(p) for p in sorted(VOCAB.glob("*.tsv"))}
+    vocab_files = [p for p in sorted(VOCAB.glob("*.tsv")) if "# crosswalk:" in p.read_text()]
+    vocabs = {p.stem: read_vocab(p) for p in vocab_files}
     benthic_xw = {"coralnet-noaa-pifsc", "plc-beijbom2015", "mlc-moorea", "deepseagrass"}
     names: set[str] = set()
     plans: dict[str, dict[str, tuple]] = {}

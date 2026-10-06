@@ -1,5 +1,6 @@
 # WP-6g (2026-09-25) new source: candidate — WP-6g gap 7,6: Baltic (Utö) IFCB phytoplankton; not among planktonzilla's 15 constituents (only syke_ifcb_2022 is)
 id: syke-ifcb-uto-2021
+access_class: open
 adapter: http
 params:
   version: b2share-w7y96-6jd66

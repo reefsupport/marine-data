@@ -1,4 +1,5 @@
 id: mermaid
+access_class: unknown
 adapter: bucket
 params:
   endpoint: s3.amazonaws.com

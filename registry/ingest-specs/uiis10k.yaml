@@ -1,4 +1,5 @@
 id: uiis10k
+access_class: open
 adapter: hf
 params:
   repo: LiamLian0727/UIIS10K

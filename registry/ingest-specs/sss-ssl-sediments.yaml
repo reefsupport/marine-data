@@ -1,5 +1,6 @@
 # WP-6l-B (2026-09-25) new source: needs_adapter:split-zip — WP-6l-B sonar: large-scale side-scan sonar SSL pre-training corpus
 id: sss-ssl-sediments
+access_class: open
 adapter: zenodo
 params:
   zenodo_record: 10209445

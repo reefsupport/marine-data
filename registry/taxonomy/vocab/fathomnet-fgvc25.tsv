@@ -1,0 +1,85 @@
+# source: fathomnet-fgvc25
+# crosswalk: fathomnet-concepts
+# counts: annotations
+# retrieved: 2026-10-05 from the staged metadata annotations_json (all images)
+label	count	description
+Abyssocucumis abyssorum	300	
+Acanthascinae	300	
+Acanthoptilum	300	
+Actinernus	300	
+Actiniaria	300	
+Actinopterygii	300	
+Amphipoda	300	
+Apostichopus leukothele	300	
+Asbestopluma	300	
+Asbestopluma monticola	300	
+Asteroidea	300	
+Benthocodon pedunculata	300	
+Brisingida	300	
+Caridea	300	
+Ceriantharia	300	
+Chionoecetes tanneri	300	
+Chorilia longipes	300	
+Corallimorphus pilatus	300	
+Crinoidea	300	
+Delectopecten	300	
+Elpidia	299	
+Farrea	300	
+Florometra serratissima	300	
+Funiculina	300	
+Gastropoda	300	
+Gersemia juliepackardae	300	
+Heterocarpus	300	
+Heterochone calyx	300	
+Heteropolypus ritteri	300	
+Hexactinellida	300	
+Hippasteria	300	
+Holothuroidea	300	
+Hormathiidae	300	
+Isidella tentaculum	300	
+Isididae	300	
+Isosicyonis	300	
+Keratoisis	300	
+Liponema brevicorne	300	
+Lithodidae	300	
+Mediaster aequalis	300	
+Merluccius productus	300	
+Metridium farcimen	300	
+Microstomus pacificus	300	
+Munidopsis	300	
+Munnopsidae	300	
+Mycale	300	
+Octopus rubescens	300	
+Ophiacanthidae	300	
+Ophiuroidea	300	
+Paelopatides confundens	300	
+Pandalus amplus	300	
+Pandalus platyceros	300	
+Pannychia moseleyi	300	
+Paragorgia	300	
+Paragorgia arborea	300	
+Paralomis multispina	300	
+Parastenella	300	
+Peniagone	300	
+Pennatula phosphorea	300	
+Porifera	300	
+Psathyrometra fragilis	300	
+Psolus squamatus	300	
+Ptychogastria polaris	300	
+Pyrosoma atlanticum	300	
+Rathbunaster californicus	300	
+Scleractinia	300	
+Scotoplanes	300	
+Scotoplanes globosa	300	
+Sebastes	300	
+Sebastes diploproa	299	
+Sebastolobus	300	
+Serpulidae	300	
+Staurocalyptus	300	
+Strongylocentrotus fragilis	300	
+Terebellidae	300	
+Tunicata	300	
+Umbellula	300	
+Vesicomyidae	300	
+Zoantharia	300	
+__unlabelled	788	

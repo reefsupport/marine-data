@@ -26,9 +26,21 @@ from pathlib import Path
 
 from .builder import DatasetBuilder
 from .checksums import file_digest
+from .flavours import row_licence_class, sample_ships
 from .hf_parquet import ConfigSpec, ExportRow, files_per_folder, plan_config, write_shard
+from .licence_class import drop_release_excluded, flavour_filter, require_flavour
+from .privacy import policy as privacy_policy
 from .registry import Registry
-from .release import DEFAULT_SCHEMA_ID, _admitted_source_ids, _never_eval_source_ids
+from .release import (
+    DEFAULT_SCHEMA_ID,
+    SplitGroupError,
+    _admitted_source_ids,
+    _loader_layout,
+    _never_eval_source_ids,
+    _with_release_group,
+    require_split_groups,
+    source_release_entries,
+)
 from .strata import TRAIN
 from .task_layers import hf_wiring as _tl
 
@@ -113,6 +125,8 @@ class SampleRow:
     native_label: str | None = None
     label_reason: str | None = None
     mask_class_map: str | None = None
+    licence_class: str | None = None
+    license: str | None = None
 
     @property
     def split(self) -> str:
@@ -183,10 +197,18 @@ def collect_rows(
     release = json.loads((release_dir / "RELEASE.json").read_text())
     split_map = release_dir / "SPLIT_MAP.json"
     excluded = frozenset(release["never_eval_near_dup_excluded"]["sha256"])
+    flavour = release.get("flavour")
     admitted = {sid: Path(roots[sid]) for sid in _admitted_source_ids(registry, roots, profile)}
     never_eval = _never_eval_source_ids(registry, admitted)
     pseudo = {sid for sid in admitted if PSEUDO_TAG in registry.source(sid).tags}
     digests: dict[Path, str] = {}
+    walk_groups = {  # the same group lookup build_release applies to non-staged-tree layouts
+        sid: {
+            e.key: e.group for e in source_release_entries(registry.source(sid), root, file_digest)
+        }
+        for sid, root in admitted.items()
+        if _loader_layout(registry.source(sid)) != "staged-tree"
+    }
     out: dict[str, list[SampleRow]] = {}
     for task_id in release["tasks"]:
         task = registry.task(task_id)
@@ -196,15 +218,22 @@ def collect_rows(
             roots=admitted,
             schema_id=task.schema_id or DEFAULT_SCHEMA_ID,
             task_id=task_id,
+            exclude_unmapped=True,  # the release left these sources out of the task (RELEASE.json)
         ).build()
+        dataset.samples = [_with_release_group(s, walk_groups, admitted) for s in dataset.samples]
+        try:
+            require_split_groups(dataset.samples, task_id)
+        except SplitGroupError as exc:
+            raise HFExportError(str(exc)) from exc
         dataset.split(by="group", split_map=split_map, frozen=True, tolerance=None)
         projector = dataset.projector
         rows: list[SampleRow] = []
         for split_name, positions in dataset.splits.items():
             for position in positions:
                 sample = dataset.samples[position]
-                if sample.image is None:
-                    continue
+                if sample.image is None or not sample_ships(registry, sample, flavour):
+                    continue  # per-row-licence sources: the rows the release manifest kept
+                row_licence = sample.meta.get("license")
                 image = Path(sample.image)
                 sha = digests.get(image) or digests.setdefault(image, file_digest(image))
                 if sample.source_id in never_eval and (sha in excluded or split_name != TRAIN):
@@ -223,6 +252,8 @@ def collect_rows(
                         sample_key=sample.key,
                         image=image,
                         split_group=sample.meta.get("split_group"),
+                        licence_class=row_licence_class(registry, sample.source_id, row_licence),
+                        license=row_licence,
                         mask=mask,
                         mask_values=",".join(f"{k}={v}" for k, v in values.items()) or None,
                         **_labels(registry, task, projector, sample),
@@ -264,8 +295,15 @@ def build_layout(
     rows_by_task: dict[str, list[SampleRow]],
     pseudo_sources: frozenset[str] = frozenset(),
     task_layers: dict[str, list[dict]] | None = None,
+    flavour: str | None = None,
 ) -> dict[str, tuple[ConfigSpec, dict[str, list[ExportRow]]]]:
-    """``{config: (spec, {hf_split: rows})}`` — images once, tasks label-only, masks apart."""
+    """``{config: (spec, {hf_split: rows})}`` — images once, tasks label-only, masks apart.
+    ``flavour`` (``open`` | ``nc``, WP-L1a) keeps only the rows that flavour may ship, in the
+    images, masks and task configs alike."""
+    require_flavour(flavour, "build_layout")
+    keep = (lambda r: flavour_filter(r, flavour)) if flavour else drop_release_excluded
+    rows_by_task = {t: keep(r) for t, r in rows_by_task.items()}
+    task_layers = {t: keep(r) for t, r in (task_layers or {}).items()}
     by_sha: dict[str, list[SampleRow]] = defaultdict(list)
     for rows in rows_by_task.values():
         for row in rows:
@@ -389,22 +427,73 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--out", type=Path, required=True)
     parser.add_argument("--summary", type=Path, required=True)
     parser.add_argument("--sample", action="store_true", help="one shard per config only")
-    parser.add_argument("--profile", default="research")
+    parser.add_argument(
+        "--flavour",
+        choices=("open", "nc"),
+        default=None,
+        help="open -> reefsupport/marine-data, nc -> reefsupport/marine-data-nc; must match "
+        "the --release-dir's RELEASE.json (default: that file's flavour; collect_rows stays "
+        "unfiltered for its manifest check)",
+    )
+    parser.add_argument(
+        "--profile", default=None, help="default: the profile recorded in RELEASE.json"
+    )
     parser.add_argument(
         "--exclude-configs",
         default=",".join(DEFAULT_EXCLUDE_CONFIGS),
         help="comma-separated task configs to drop from the Hub export (D-A); '' for none",
     )
+    parser.add_argument(
+        "--no-metadata", action="store_true", help="skip the per-image `metadata` config"
+    )
+    parser.add_argument(
+        "--quality", type=Path, default=None, help="WP-1 quality.parquet joined into `metadata`"
+    )
+    parser.add_argument(
+        "--privacy",
+        type=Path,
+        default=None,
+        help="privacy.parquet from `privacy-scan`: apply the release privacy policy (score >= "
+        "0.85 excludes the image and lists it in RELEASE.json; 0.60-0.85 flags it in `metadata`)",
+    )
     args = parser.parse_args(argv)
 
     registry = Registry.load()
+    release_json = args.release_dir / "RELEASE.json"
+    release = json.loads(release_json.read_text()) if release_json.is_file() else {}
+    flavour = args.flavour or release.get("flavour")
+    if args.flavour and release.get("flavour") != args.flavour:
+        raise HFExportError(
+            f"--flavour {args.flavour} but {args.release_dir} was built as flavour "
+            f"{release.get('flavour')!r}"
+        )
+    profile = args.profile or release.get("profile") or "research"
     roots = _roots(args.release_dir, cache_root())
-    rows = collect_rows(registry, roots, args.release_dir, args.profile)
+    rows = collect_rows(registry, roots, args.release_dir, profile)
     exclude = [c for c in args.exclude_configs.split(",") if c]
     rows = drop_excluded(rows, exclude)
+    rows, privacy = privacy_policy.apply_to_rows(rows, args.privacy)
+    if args.privacy:
+        privacy_policy.record_in_release(release_json, privacy)
     pseudo = frozenset(s for s in roots if PSEUDO_TAG in registry.source(s).tags)
-    layout = build_layout(rows, pseudo, task_layers=_tl.read_task_layers(args.release_dir))
+    layout = build_layout(
+        rows, pseudo, task_layers=_tl.read_task_layers(args.release_dir), flavour=flavour
+    )
+    if not args.no_metadata:  # WP-R2b: licence_class / geo / split_group per image, same flavour
+        import pyarrow.parquet as pq
+
+        from .metadata_release import add_metadata_config
+
+        quality = pq.read_table(args.quality).to_pylist() if args.quality else []
+        layout = add_metadata_config(
+            layout, registry, roots, flavour=flavour,
+            quality_by_sha={r["image_sha256"]: r for r in quality},
+            privacy_flags=privacy.flags,
+        )  # fmt: skip
     summary = export(layout, args.out, sample=args.sample)
+    if flavour:
+        summary["flavour"] = flavour
+        summary["repo_id"] = release["repo_id"]
     summary["per_task_embedding_bytes"] = per_task_embedding_bytes(rows)
     args.summary.parent.mkdir(parents=True, exist_ok=True)
     args.summary.write_text(json.dumps(summary, indent=1, sort_keys=True))

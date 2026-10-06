@@ -1,4 +1,5 @@
 id: atlantis
+access_class: restricted-nc  # LICV 2026-10-05 (was open)
 adapter: local_dir
 params:
   path: ~/Downloads/marine-manual/atlantis/data
@@ -16,4 +17,8 @@ notes: >-
   3,200 depth maps + multiple water-type variants per depth map — see geometry-3d.yaml
   for the one-to-many pairing note). `license: NOASSERTION` on the old http spec
   replaced with the verified MIT from the source registry entry.
+  LICV 2026-10-05: access_class -> restricted-nc (was open). Evidence:
+  https://www.kaggle.com/datasets/zkawfanx/atlantis . Registry/spec said MIT (code repo).
+  Kaggle host licence is NC-SA and images are per-photo Flickr CC, so NC/SA terms cannot
+  be excluded. Comm=no, redistribution=yes with SA, derivatives=SA.
 disk_floor_gib: 2.0

@@ -1,5 +1,6 @@
 # marine-animals-mm: -
 id: marine-animals-mm
+access_class: open
 adapter: hf
 license: CC-BY-4.0 (HF card)
 attribution: Hariprasath5128 — marine-animals-multimodal-dataset

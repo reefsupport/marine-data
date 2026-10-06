@@ -22,11 +22,12 @@ from .decon import DeconError
 from .dedup.groups import DedupGateError
 from .fetch import FetchError, cache_root, fetch_sample
 from .fetchers_remote import _is_pinned_staged_tree
+from .flavours import SPLIT_MAP_PROFILE, check_profile, flavour_spec, ships_in
 from .gate import evaluate
 from .manifest_identity import checksums_digest
 from .neardup import NearDupConfig, NearDupError, default_workers, pil_version
 from .registry import Registry
-from .release import build_release, generate_split_map
+from .release import ReleaseSkipError, build_release, generate_split_map
 from .splitmap import load_split_map
 from .strata import DEFAULT_MIN_GROUPS
 
@@ -59,7 +60,9 @@ class ReleaseFetchError(Exception):
         super().__init__(f"failed to fetch {len(failures)} admitted source(s): {detail}")
 
 
-def _resolve_roots(registry: Registry, profile: str, local: dict[str, Path]) -> dict[str, Path]:
+def _resolve_roots(
+    registry: Registry, profile: str, local: dict[str, Path], flavour: str | None = None
+) -> dict[str, Path]:
     """Every admitted source's local root: a ``--local`` override first, else a fetched
     pinned staged tree. A fetch failure for an admitted source raises
     :class:`ReleaseFetchError` naming every failed source — the build must fail closed
@@ -72,6 +75,8 @@ def _resolve_roots(registry: Registry, profile: str, local: dict[str, Path]) -> 
             continue
         if not evaluate(source, prof).allowed:
             continue
+        if flavour is not None and not ships_in(registry, source.id, flavour):
+            continue  # never fetch another flavour's bytes
         if not _is_pinned_staged_tree(source):
             continue
         try:
@@ -86,7 +91,11 @@ def _resolve_roots(registry: Registry, profile: str, local: dict[str, Path]) -> 
 
 
 def _cached_roots(
-    registry: Registry, profile: str, local: dict[str, Path], only: set[str] | None
+    registry: Registry,
+    profile: str,
+    local: dict[str, Path],
+    only: set[str] | None,
+    flavour: str | None = None,
 ) -> dict[str, Path]:
     """``--manifest-only`` roots: a ``--local`` override, else the source's already-staged
     tree under :func:`cache_root` — NEVER a fetch. ``only`` (from ``--sources-from``)
@@ -99,6 +108,8 @@ def _cached_roots(
         if source.id in roots or (only is not None and source.id not in only):
             continue
         if not evaluate(source, prof).allowed or not _is_pinned_staged_tree(source):
+            continue
+        if flavour is not None and not ships_in(registry, source.id, flavour):
             continue
         cached = cache_root() / source.id
         if (cached / "metadata.parquet").is_file():
@@ -120,8 +131,152 @@ def _sources_from(path: str | None) -> set[str] | None:
     return {entry["id"] for entry in json.loads(Path(path).read_text())["sources"]}
 
 
+def _add_near_dup_args(parser: argparse.ArgumentParser, *, required_note: str) -> None:
+    group = parser.add_mutually_exclusive_group()
+    group.add_argument(
+        "--near-dup",
+        dest="near_dup",
+        type=Path,
+        metavar="GROUPS_PARQUET",
+        help=f"groups.parquet from `marinedata dedup run`: every dedup group is one split "
+        f"component ({required_note})",
+    )
+    group.add_argument(
+        "--no-near-dup",
+        dest="no_near_dup",
+        action="store_true",
+        help="Explicitly generate the map without the dedup groups (recorded in the map header)",
+    )
+
+
+def _near_dup_input(
+    args: argparse.Namespace, *, required: bool
+) -> tuple[dict[str, str] | None, dict[str, object]]:
+    """``(sha -> dedup group, map header)`` from ``--near-dup <groups.parquet>``; ``--no-near-dup``
+    records the explicit opt-out. With neither, ``required`` raises (``release split-map`` and
+    ``release build --generate-split-map`` alike); ``required=False`` only warns."""
+    groups = getattr(args, "near_dup", None)
+    if groups is not None:
+        from .dedup.groups import load_groups
+
+        sha_to_group, _ = load_groups(groups)
+        return sha_to_group, {
+            "dedup_groups": {
+                "file": Path(groups).name,
+                "sha256": file_digest(Path(groups)),
+                "images": len(sha_to_group),
+            }
+        }
+    if getattr(args, "no_near_dup", False):
+        return None, {"dedup_groups": "disabled by --no-near-dup"}
+    if required:
+        raise ValueError(
+            "no near-dup input: pass --near-dup <groups.parquet> (from `marinedata dedup run`) so "
+            "a near-duplicate group never straddles splits, or --no-near-dup to opt out explicitly"
+        )
+    print(
+        "release build: WARNING no --near-dup groups; near-duplicates beyond the dHash check "
+        "may straddle splits (use `release split-map --near-dup` for a release)",
+        file=sys.stderr,
+    )
+    return None, {}
+
+
+def _generate_global_split_map(
+    registry: Registry,
+    args: argparse.Namespace,
+    local: dict[str, Path],
+    split_map_path: Path,
+    near_dup: NearDupConfig,
+    *,
+    required_near_dup: bool = False,
+) -> int:
+    """Generate the ONE frozen split map every flavour builds from (WP-R2d): enumerate the
+    superset (open + nc sources under ``SPLIT_MAP_PROFILE``, never-released sources excluded),
+    so an image or near-dup group has the same split in both repos."""
+    try:
+        ratios = _parse_ratios(args.ratios)
+        dedup_groups, dedup_header = _near_dup_input(args, required=required_near_dup)
+    except (ValueError, OSError) as exc:
+        print(f"release: {exc}", file=sys.stderr)
+        return 1
+    skipped_sources: dict[str, str] = {}
+    try:
+        map_roots = (
+            dict(local) if args.local_only else _resolve_roots(registry, SPLIT_MAP_PROFILE, local)
+        )
+        stats = generate_split_map(
+            registry,
+            out=split_map_path,
+            roots=map_roots,
+            profile=SPLIT_MAP_PROFILE,
+            ratios=ratios,
+            seed=args.seed,
+            min_groups=args.min_groups,
+            now=datetime.now(UTC).isoformat(),
+            release=args.release,
+            skipped=skipped_sources,
+            near_dup=near_dup,
+            upstream_test_off=args.no_honour_upstream_test or (),
+            near_dup_groups=dedup_groups,
+            near_dup_header=dedup_header,
+        )
+    except (NearDupError, ReleaseFetchError) as exc:
+        print(f"release: {exc}", file=sys.stderr)
+        return 1
+    print(
+        f"release: generated {split_map_path} (stratify=source) "
+        f"merged_components={stats.merged_components} "
+        f"merged_cross_partition={stats.merged_cross_partition} "
+        f"near_dup_pairs={stats.near_dup_pairs} near_dup_unions={stats.near_dup_unions} "
+        f"near_dup_max_component={stats.near_dup_max_component} "
+        f"upstream_test_groups={stats.upstream_test_groups} "
+        f"upstream_test_components={stats.upstream_test_components} "
+        f"dedup_group_links={stats.dedup_group_links}"
+    )
+    for source_id, reason in sorted(skipped_sources.items()):
+        print(f"  skipped {source_id}: {reason}", file=sys.stderr)
+    return 0
+
+
+def _cmd_release_split_map(args: argparse.Namespace) -> int:
+    """``release split-map``: write the global split map once; both flavour builds read it."""
+    registry = Registry.load()
+    try:
+        local = _parse_local(args.local)
+    except ValueError as exc:
+        print(f"release split-map: {exc}", file=sys.stderr)
+        return 1
+    split_map_path = Path(args.split_map)
+    if load_split_map(split_map_path) is not None:
+        print(
+            f"release split-map: {split_map_path} already exists; never overwritten",
+            file=sys.stderr,
+        )
+        return 1
+    near_dup = NearDupConfig(cache_dir=cache_root() / "_dhash", workers=default_workers())
+    return _generate_global_split_map(
+        registry, args, local, split_map_path, near_dup, required_near_dup=True
+    )
+
+
 def _cmd_release_build(args: argparse.Namespace) -> int:
     registry = Registry.load()
+    flavour = getattr(args, "flavour", None)
+    if flavour is None:
+        print(
+            "release build: --flavour open|nc is required (open = ungated repo, "
+            "nc = gated non-commercial delta)",
+            file=sys.stderr,
+        )
+        return 1
+    if args.profile is None:
+        args.profile = flavour_spec(flavour).profile
+    try:
+        check_profile(flavour, args.profile)
+    except ValueError as exc:
+        print(f"release build: {exc}", file=sys.stderr)
+        return 1
     try:
         local = _parse_local(args.local)
     except ValueError as exc:
@@ -135,11 +290,15 @@ def _cmd_release_build(args: argparse.Namespace) -> int:
         print("release build: --manifest-only needs a frozen --split-map", file=sys.stderr)
         return 1
     try:
-        if args.manifest_only:
-            roots = _cached_roots(registry, args.profile, local, _sources_from(args.sources_from))
+        if args.local_only:
+            roots = dict(local)  # offline / mini build: exactly the --local trees, never a fetch
+        elif args.manifest_only:
+            roots = _cached_roots(
+                registry, args.profile, local, _sources_from(args.sources_from), flavour
+            )
             digest = checksums_digest(registry, roots)
         else:
-            roots = _resolve_roots(registry, args.profile, local)
+            roots = _resolve_roots(registry, args.profile, local, flavour)
     except ValueError as exc:
         print(f"release build: {exc}", file=sys.stderr)
         return 1
@@ -172,41 +331,11 @@ def _cmd_release_build(args: argparse.Namespace) -> int:
         return 1
 
     if not split_map_exists:
-        # --generate-split-map: enumerate the resolved staged trees directly and generate
-        # a fresh, source-stratified map at the path this same command then freezes
-        # against — one command, pinned/local trees straight to a release.
-        try:
-            ratios = _parse_ratios(args.ratios)
-        except ValueError as exc:
-            print(f"release build: {exc}", file=sys.stderr)
-            return 1
-        skipped_sources: dict[str, str] = {}
-        try:
-            stats = generate_split_map(
-                registry,
-                out=split_map_path,
-                roots=roots,
-                profile=args.profile,
-                ratios=ratios,
-                seed=args.seed,
-                min_groups=args.min_groups,
-                now=datetime.now(UTC).isoformat(),
-                release=args.release,
-                skipped=skipped_sources,
-                near_dup=near_dup,
-            )
-        except NearDupError as exc:
-            print(f"release build: {exc}", file=sys.stderr)
-            return 1
-        print(
-            f"release build: generated {split_map_path} (stratify=source) "
-            f"merged_components={stats.merged_components} "
-            f"merged_cross_partition={stats.merged_cross_partition} "
-            f"near_dup_pairs={stats.near_dup_pairs} near_dup_unions={stats.near_dup_unions} "
-            f"near_dup_max_component={stats.near_dup_max_component}"
+        rc = _generate_global_split_map(
+            registry, args, local, split_map_path, near_dup, required_near_dup=True
         )
-        for source_id, reason in sorted(skipped_sources.items()):
-            print(f"  skipped {source_id}: {reason}", file=sys.stderr)
+        if rc:
+            return rc
 
     # Fail closed on a Pillow mismatch (WS-D S49): dHash's LANCZOS resize is a Pillow
     # implementation detail, so a map's rule-A/rule-B near-dup exclusions are only valid
@@ -247,8 +376,10 @@ def _cmd_release_build(args: argparse.Namespace) -> int:
             v2=args.v2,
             tasklabels_root=args.tasklabels_root,
             digest=digest,
+            flavour=flavour,
+            allow_skip=args.allow_skip or (),
         )
-    except (NearDupError, DedupGateError, DeconError) as exc:
+    except (NearDupError, DedupGateError, DeconError, ReleaseSkipError) as exc:
         print(f"release build: {exc}", file=sys.stderr)
         return 1
 
@@ -343,9 +474,29 @@ def add_release_subparser(sub: argparse._SubParsersAction) -> None:
         help="A stratum with fewer groups than this is train-only (default 3); only used "
         "with --generate-split-map",
     )
+    p_build.add_argument(
+        "--no-honour-upstream-test",
+        action="append",
+        dest="no_honour_upstream_test",
+        metavar="SOURCE_ID",
+        help="Opt a source out of 'an upstream-test group goes to our test split' (default on "
+        "for every source with upstream test rows; '*' = all sources, repeatable); only used "
+        "with --generate-split-map",
+    )
     p_build.add_argument("--out", default=".", help="Output root (default: current directory)")
     p_build.add_argument(
-        "--profile", default="research", help="Release profile to admit sources under"
+        "--flavour",
+        choices=("open", "nc"),
+        default=None,
+        help="REQUIRED. open = class-open sources (ungated repo reefsupport/marine-data); nc = the "
+        "restricted-nc delta (gated repo reefsupport/marine-data-nc). Writes "
+        "<out>/releases/<release>/<flavour>/",
+    )
+    p_build.add_argument(
+        "--profile",
+        default=None,
+        help="Shipping profile to admit sources under (default: the flavour's own, "
+        "registry/flavours.yaml)",
     )
     p_build.add_argument(
         "--local",
@@ -353,6 +504,22 @@ def add_release_subparser(sub: argparse._SubParsersAction) -> None:
         dest="local",
         metavar="SOURCE_ID=PATH",
         help="Use a local staged tree instead of fetching one; repeatable",
+    )
+    p_build.add_argument(
+        "--local-only",
+        action="store_true",
+        dest="local_only",
+        help="Build from exactly the --local trees: never fetch another admitted source "
+        "(mini / offline builds, incl. the split-map generation)",
+    )
+    p_build.add_argument(
+        "--allow-skip",
+        action="append",
+        dest="allow_skip",
+        metavar="SOURCE_ID",
+        help="Leave this releasable source out of a flavour build on purpose (repeatable). "
+        "Without it (or a registry release_skip_reason) a source with rows that the split map "
+        "cannot cover fails the build; RELEASE.json keeps it under skipped_sources",
     )
     p_build.add_argument(
         "--tasks",
@@ -397,4 +564,30 @@ def add_release_subparser(sub: argparse._SubParsersAction) -> None:
         help="With --manifest-only: admit only the sources a published RELEASE.json "
         "lists (e.g. to rebuild v1's task files under the current code)",
     )
+    _add_near_dup_args(
+        p_build, required_note="required with --generate-split-map unless --no-near-dup"
+    )
     p_build.set_defaults(func=_cmd_release_build)
+
+    p_map = release_sub.add_parser(
+        "split-map",
+        help="Generate the one global SPLIT_MAP.json (open + nc sources) both flavours build from",
+    )
+    p_map.add_argument("--release", required=True, help="Release id recorded in the map")
+    p_map.add_argument("--split-map", dest="split_map", required=True, help="Map to create")
+    p_map.add_argument("--ratios", default="70/15/15", help="'/'-separated train/val/test ratios")
+    p_map.add_argument("--seed", type=int, default=0)
+    p_map.add_argument("--min-groups", dest="min_groups", type=int, default=DEFAULT_MIN_GROUPS)
+    p_map.add_argument(
+        "--no-honour-upstream-test",
+        dest="no_honour_upstream_test",
+        action="append",
+        metavar="SOURCE_ID",
+        help="Opt a source out of the upstream-test rule (repeatable, '*' = all)",
+    )
+    p_map.add_argument("--local", action="append", metavar="ID=PATH", help="Staged tree override")
+    p_map.add_argument(
+        "--local-only", dest="local_only", action="store_true", help="Exactly the --local trees"
+    )
+    _add_near_dup_args(p_map, required_note="required unless --no-near-dup")
+    p_map.set_defaults(func=_cmd_release_split_map)

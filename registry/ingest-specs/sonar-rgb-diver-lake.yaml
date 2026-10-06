@@ -1,5 +1,6 @@
 # WP-6g (2026-09-25) new source: candidate — WP-6g gap 6,5: low-visibility freshwater lake: camera/sonar pairs
 id: sonar-rgb-diver-lake
+access_class: open
 adapter: zenodo
 params:
   zenodo_record: 7728089

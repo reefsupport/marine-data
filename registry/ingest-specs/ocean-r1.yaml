@@ -1,5 +1,6 @@
 # ocean-r1: Ocean-R1 2025
 id: ocean-r1
+access_class: open
 adapter: hf
 license: Apache-2.0 (HF card)
 attribution: Ocean-R1 project

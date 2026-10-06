@@ -1,5 +1,7 @@
 # FathomNet 2024 Vulnerable Marine Ecosystem (VME) indicator-taxa benchmark (HF).
 id: fathomnet-vme
+access_class: restricted-nd
+licence_per_row: true
 adapter: hf
 license: other (HF card)
 attribution: FathomNet / MBARI

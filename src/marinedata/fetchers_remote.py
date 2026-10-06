@@ -166,6 +166,38 @@ def _is_pinned_staged_tree(source: Source) -> bool:
     )
 
 
+def staged_root_params(source: Source) -> dict[str, str] | None:
+    """The ``access.params.staged_*`` keys (bucket, endpoint, region, prefix) of a source whose
+    release root is a staged tree that is NOT its fetch method, else ``None``.
+
+    ``atlantis-synthetic-depth`` must stay ``method: api`` / ``client: atlantis`` (its upstream
+    is a Kaggle download, and ``tests/test_fetch_api_dispatch.py`` guards that it is never
+    routed to another client), yet a release build roots it from the staged ``atlantis`` tree.
+    Only a pinned staged tree (``checksums.root_digest`` + ``layout: staged-tree``) with a
+    bucket and prefix qualifies.
+    """
+    params = source.access.params
+    staged = {
+        key: str(params[f"staged_{key}"])
+        for key in ("bucket", "endpoint", "region", "prefix")
+        if params.get(f"staged_{key}")
+    }
+    if "bucket" not in staged or "prefix" not in staged:
+        return None
+    return staged if _is_pinned_staged_tree(source) else None
+
+
+def fetch_staged_root(source: Source, root: Path, limit: int) -> FetchResult:
+    """Fetch the staged tree named by ``access.params.staged_*`` by its pinned manifest."""
+    staged = staged_root_params(source)
+    if staged is None:
+        raise FetchNotSupported(
+            f"{source.id}: no pinned staged tree declared in access.params.staged_*"
+        )
+    host = f"{staged['bucket']}.{staged.get('endpoint', 's3.amazonaws.com')}"
+    return _fetch_s3_manifest(source, root, limit, host, staged["prefix"])
+
+
 def _fetch_s3_manifest(
     source: Source, root: Path, limit: int, host: str, prefix: str
 ) -> FetchResult:

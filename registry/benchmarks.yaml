@@ -35,23 +35,23 @@ benchmarks:
   - {id: uieb, name: UIEB, task: enhancement, catalog_id: uieb, registry_id: uieb,
      upstream_split: {rule: "no official split in the paper; community T90 = 90 of the 890 paired, plus C60 challenging (no reference)", eval_split: test, heldout_val: null, counts: {train: 800, test: 90, challenging: 60}, definition_url: "https://huggingface.co/datasets/Hikari0608/UIEB"},
      split_verified: true, verified_by: "mirror datasets-server 800/90 (a convention, not upstream)", obtain: {status: registry-only, via: "hf://datasets/Hikari0608/UIEB"},
-     policy: route-to-our-test, policy_reason: "T90 and C60 both pinned to test (covers both protocols)", chain: [c11]}
+     policy: route-to-our-test, policy_reason: "T90 and C60 both pinned to test (covers both protocols)", chain: [c11], decon_exempt_reason: "not staged: no sources/uieb/ in rs-storage-open (obtain.status=registry-only); no eval images to hash"}
   - {id: euvp, name: EUVP, task: enhancement, catalog_id: euvp, registry_id: null,
      upstream_split: {rule: "test_samples/ folder of the original release", eval_split: test_samples, heldout_val: null, counts: {test_samples: 515}, definition_url: "https://irvlab.cs.umn.edu/resources/euvp-dataset"},
      split_verified: false, verified_by: "IRVLab 403 to scripts; HF mirror Ken1053/EUVP has train only (5550 rows) — re-checked 2026-09-25 via datasets-server /splits, still no test_samples split published anywhere reachable", obtain: {status: w2, via: "original release, not the partial HF mirror"},
-     policy: route-to-our-test, policy_reason: "enhancement pairs", chain: [c9, c11]}
+     policy: route-to-our-test, policy_reason: "enhancement pairs", chain: [c9, c11], decon_exempt_reason: "eval split test_samples (515) not staged: the staged copy is the HF mirror's 5550-image train parquet only (every row upstream_split=train)"}
   - {id: deepfish, name: DeepFish, task: cls, catalog_id: deepfish, registry_id: deepfish,
      upstream_split: {rule: "per task dir {Classification,Localization,Segmentation}/{train,val,test}.csv", eval_split: test, heldout_val: val, counts: {test: null}, definition_url: "https://github.com/alzayats/DeepFish/blob/master/DeepFish/datasets/fish_seg.py"},
      split_verified: true, verified_by: "loader reads '%s.csv' % split (rule; counts not seen)", obtain: {status: registry-only, via: "data.qld.edu.au DeepFish.tar"},
-     policy: route-to-our-test, policy_reason: "whole source is also ood-source-deepfish, so every image is non-train anyway", chain: []}
+     policy: route-to-our-test, policy_reason: "whole source is also ood-source-deepfish, so every image is non-train anyway", chain: [], decon_exempt_reason: "not staged: no sources/deepfish/ in rs-storage-open (obtain.status=registry-only); no eval images to hash"}
   - {id: fishnet-2023, name: FishNet (ICCV 2023), task: det, catalog_id: fishnet-2023, registry_id: fishnet-2023,
      upstream_split: {rule: "anns/train.csv vs anns/test.csv (paper)", eval_split: test, heldout_val: null, counts: {test: null}, definition_url: "https://fishnet-2023.github.io/"},
      split_verified: false, verified_by: "GitHub repo holds Images/ only; split CSVs are on Drive — re-checked 2026-09-25 (site + GitHub tree API), no repo or arXiv listing enumerates train.csv/test.csv contents", obtain: {status: registry-only, via: "project page Drive links"},
-     policy: route-to-our-test, policy_reason: "fish cls/det layer", chain: []}
+     policy: route-to-our-test, policy_reason: "fish cls/det layer", chain: [], decon_exempt_reason: "not staged: no sources/fishnet-2023/ in rs-storage-open (obtain.status=registry-only); no eval images to hash"}
   - {id: fathomnet-fgvc23, name: FathomNet FGVC 2023, task: det, catalog_id: fathomnet-fgvc23, registry_id: null,
      upstream_split: {rule: "train = images 0-800 m; eval = images 0-1300 m (Monterey Bay, MBARI)", eval_split: test, heldout_val: null, counts: {train: 5950, test: 10744}, definition_url: "https://github.com/fathomnet/fgvc-comp-2023"},
      split_verified: true, verified_by: "README depth rule (L5, L30); counts from the Kaggle page, not seen", obtain: {status: needs-yohan, via: "Kaggle fathomnet-out-of-sample-detection COCO JSON (login + competition rules)"},
-     policy: route-to-our-test, policy_reason: "eval images >= 800 m go to ood-depth-deep first", chain: [c3]}
+     policy: route-to-our-test, policy_reason: "eval images >= 800 m go to ood-depth-deep first", chain: [c3], decon_exempt_reason: "eval split test (10744) not staged: the staged copy is the 5950-image train set (upstream_split null, matches counts.train)"}
   - {id: fathomnet-vme, name: FathomNet VME 2024, task: det, catalog_id: fathomnet-vme, registry_id: null,
      upstream_split: {rule: "coco_train/coco_val/coco_test.json", eval_split: test, heldout_val: val, counts: {train: 23636, val: 5846, test: 685}, definition_url: "https://huggingface.co/datasets/FathomNet/2024-vme-benchmark"},
      split_verified: true, verified_by: "README split summary table", obtain: {status: w1, via: "COCO JSON + FathomNet image URLs"},
@@ -59,10 +59,10 @@ benchmarks:
   - {id: seaclear, name: SeaClear Marine Debris, task: inst-seg, catalog_id: seaclear, registry_id: seaclear-marine-debris,
      upstream_split: {rule: "paper's train/val/test", eval_split: test, heldout_val: val, counts: {total: 8610}, definition_url: "https://www.nature.com/articles/s41597-024-03759-2"},
      split_verified: false, verified_by: "not fetched", obtain: {status: registry-only, via: "registry uri"},
-     policy: route-to-our-test, policy_reason: "debris layer; independent of J-EDI", chain: []}
+     policy: route-to-our-test, policy_reason: "debris layer; independent of J-EDI", chain: [], decon_exempt_reason: "not staged: no sources/seaclear-marine-debris/ in rs-storage-open (obtain.status=registry-only); no eval images to hash"}
   - {id: ruod, name: RUOD, task: det, catalog_id: ruod, registry_id: null,
-     upstream_split: {rule: "instances_train.json vs instances_val.json (val = the paper's test)", eval_split: val, heldout_val: null, counts: {train: 9800, val: 4200}, definition_url: "https://huggingface.co/datasets/Mortallll/RUOD/tree/main/coco/annotations"},
-     split_verified: true, verified_by: "HF tree: both annotation files present; counts from the paper", obtain: {status: w1, via: "hf://datasets/Mortallll/RUOD"},
+     upstream_split: {rule: "instances_train.json vs instances_val.json (val = the paper's test)", eval_split: val, heldout_val: null, counts: {train: 9800, val: 4100, val_files: 4200}, definition_url: "https://huggingface.co/datasets/Mortallll/RUOD/tree/main/coco/annotations"},
+     split_verified: true, verified_by: "HF tree: both annotation files present; train from the paper; val: 4100 = unique sha256 over the 4200 val image lines of staged rev-c22094e45b7f (CHECKSUMS.sha256 paths via metadata.parquet split_hint=val; 100 byte-identical duplicate files), val_files: 4200 = those file lines; not the manifest", obtain: {status: w1, via: "hf://datasets/Mortallll/RUOD"},
      policy: route-to-our-test, policy_reason: "overlaps DUO/URPC; groups unify them", chain: [c6, c9]}
   - {id: usis10k, name: USIS10K, task: inst-seg, catalog_id: usis10k, registry_id: null,
      upstream_split: {rule: "{foreground,multi_class}_{train,val,test}_annotations.json", eval_split: test, heldout_val: val, counts: {train: 7442, val: 1594, test: 1596}, definition_url: "https://huggingface.co/datasets/LiamLian0727/USIS10K/blob/main/README.md"},
@@ -73,12 +73,12 @@ benchmarks:
      split_verified: true, verified_by: "datasets-server /size 3937/691", obtain: {status: w1, via: "hf://datasets/LiamLian0727/UIIS"},
      policy: route-to-our-test, policy_reason: "UIIS is a subset of UIIS10K; both eval sets pinned", chain: [c7]}
   - {id: uiis10k, name: UIIS10K, task: inst-seg, catalog_id: uiis10k, registry_id: null,
-     upstream_split: {rule: "multiclass_train.json vs multiclass_test.json", eval_split: test, heldout_val: null, counts: {total: 10048, test: null}, definition_url: "https://huggingface.co/datasets/LiamLian0727/UIIS10K/blob/main/README.md"},
-     split_verified: true, verified_by: "README file tree; per-split counts not seen", obtain: {status: w1, via: "hf://datasets/LiamLian0727/UIIS10K"},
+     upstream_split: {rule: "multiclass_train.json vs multiclass_test.json", eval_split: test, heldout_val: null, counts: {total: 10048, test: 2010}, definition_url: "https://huggingface.co/datasets/LiamLian0727/UIIS10K/blob/main/README.md"},
+     split_verified: true, verified_by: "test: 2010 = staged rev-5c4316368a8e labels/files/UIIS10K_annotations_multiclass_test.json (COCO images, 2010 unique file names) = metadata.parquet split_hint=test (2010 unique image_sha256) = CHECKSUMS.sha256 (2010 unique test image lines); not the manifest", obtain: {status: w1, via: "hf://datasets/LiamLian0727/UIIS10K"},
      policy: route-to-our-test, policy_reason: "instance layer", chain: [c7]}
   - {id: marineeval, name: MarineEval, task: vqa, catalog_id: marineeval, registry_id: null,
-     upstream_split: {rule: "eval-only; per-task dirs with data.json", eval_split: all, heldout_val: null, counts: {files: 827}, definition_url: "https://huggingface.co/datasets/WongYukKwan/MarineEval"},
-     split_verified: true, verified_by: "HF tree (827 files, no train split)", obtain: {status: w1, via: "hf://datasets/WongYukKwan/MarineEval"},
+     upstream_split: {rule: "eval-only; per-task dirs with data.json", eval_split: all, heldout_val: null, counts: {files: 827, all: 2643}, definition_url: "https://huggingface.co/datasets/WongYukKwan/MarineEval"},
+     split_verified: true, verified_by: "HF tree (827 files, no train split); all: 2643 = unique sha256 over the 2672 image lines of staged rev-cb94f5a61594 CHECKSUMS.sha256 (= metadata.parquet unique image_sha256); not the manifest", obtain: {status: w1, via: "hf://datasets/WongYukKwan/MarineEval"},
      policy: exclude, policy_reason: "eval-only VLM benchmark; its value depends on staying external", chain: []}
   - {id: trashcan, name: TrashCan 1.0, task: inst-seg, catalog_id: trashcan, registry_id: null,
      upstream_split: {rule: "instances_train/val_trashcan.json (instance + material versions); val is the eval split", eval_split: val, heldout_val: null, counts: {train: 6065, val: 1147}, definition_url: "https://conservancy.umn.edu/handle/11299/214865"},
@@ -89,20 +89,21 @@ benchmarks:
      split_verified: false, verified_by: "not fetched", obtain: {status: w1, via: "DRUM bitstreams"},
      policy: route-to-our-test, policy_reason: "J-EDI chain with trashcan", chain: [c5]}
   - {id: deepseagrass, name: DeepSeagrass, task: cls, catalog_id: deepseagrass, registry_id: null,
-     upstream_split: {rule: "train/val/test image lists (Raine+ ECCVW 2020); patches follow the parent", eval_split: test, heldout_val: val, counts: {images: 1701, patches: 66000}, definition_url: "https://data.csiro.au/collection/csiro:47653"},
-     split_verified: false, verified_by: "not fetched", obtain: {status: w1, via: "CSIRO DAP file list"},
+     upstream_split: {rule: "train/val/test image lists (Raine+ ECCVW 2020); patches follow the parent", eval_split: test, heldout_val: val, counts: {images: 1701, patches: 66000, test: 24098, test_files: 28353}, definition_url: "https://data.csiro.au/collection/csiro:47653"},
+     split_verified: false, verified_by: "test: 24098 = unique sha256 over the 28353 test image lines of staged dap-47653-72004 (CHECKSUMS.sha256 paths via metadata.parquet upstream test dir; 4255 byte-identical duplicate files), test_files: 28353 = those file lines; images/patches are the paper counts, not fetched; not the manifest", obtain: {status: w1, via: "CSIRO DAP file list"},
      policy: route-to-our-test, policy_reason: "whole source falls in ood-geo-temperate-australasia (Moreton Bay)", chain: []}
   - {id: mlc-moorea, name: Moorea Labeled Corals, task: points, catalog_id: mlc-moorea, registry_id: null,
      upstream_split: {rule: "by survey year: 2008 train; 2009 test (Exp 1); 2010 test with 2008+2009 train (Exp 3)", eval_split: "2009+2010", heldout_val: null, counts: {"2008": 671, "2009": 695, "2010": 689}, definition_url: "https://doi.org/10.6073/pasta/88dde0e68ab5232a470389f4bedd1892"},
      split_verified: false, verified_by: "year rule and counts from Beijbom+ CVPR 2012; they sum to the catalog total of 2055", obtain: {status: w1, via: "EDI knb-lter-mcr.5006.3"},
-     policy: route-to-our-test, policy_reason: "pin both test years so neither published protocol is contaminated", chain: [c1]}
+     policy: route-to-our-test, policy_reason: "pin both test years so neither published protocol is contaminated", chain: [c1], decon_exempt_reason: "not staged: no sources/mlc-moorea/ in rs-storage-open (obtain.status=w1); no eval images to hash"}
   - {id: plc-beijbom2015, name: Pacific Labeled Corals, task: points, catalog_id: plc-beijbom2015, registry_id: null,
      upstream_split: {rule: "no split in the release; the paper evaluates across sites/operational modes", eval_split: none, heldout_val: null, counts: {images: 5090}, definition_url: "https://zenodo.org/records/5000003"},
      split_verified: true, verified_by: "Zenodo file list + READMEs (heron_reef, line_islands): no split files", obtain: {status: w1, via: "Zenodo 5000003"},
-     policy: route-to-our-test, policy_reason: "nothing to pin; the allocator groups it by (site, year); decon still runs vs CoralNet mirrors", chain: [c1]}
+     policy: route-to-our-test, policy_reason: "nothing to pin; the allocator groups it by (site, year); decon still runs vs CoralNet mirrors", chain: [c1],
+     decon_exempt_reason: "coverage not verifiable: no eval split and not in rs-storage-open (no sources/plc-beijbom2015/), so no independent image count exists; manifest covers 732 of the 5090 images, all from line_islands.zip (532 reference + 200 evaluation images) of Zenodo 5000003, read upstream"}
   - {id: coralvqa, name: CoralVQA, task: vqa, catalog_id: coralvqa, registry_id: coralvqa,
-     upstream_split: {rule: "HF train/test (QA rows; the image is the split unit)", eval_split: test, heldout_val: null, counts: {train_qa: 226726, test_qa: 27984}, definition_url: "https://huggingface.co/datasets/CoralReefData/CoralVQA"},
-     split_verified: true, verified_by: "datasets-server /size", obtain: {status: staged, via: "sources/coralvqa"},
+     upstream_split: {rule: "HF train/test (QA rows; the image is the split unit)", eval_split: test, heldout_val: null, counts: {train_qa: 226726, test_qa: 27984, test: 1274}, definition_url: "https://huggingface.co/datasets/CoralReefData/CoralVQA"},
+     split_verified: true, verified_by: "datasets-server /size; test: 1274 = unique images in staged rev-3da50a4429e4 labels/files/CoralVQA_test.jsonl (27984 QA rows), all present in the staged images with 1274 unique sha256, none shared with CoralVQA_train.jsonl; not the manifest", obtain: {status: staged, via: "sources/coralvqa"},
      policy: route-to-our-test, policy_reason: "VQA layer (WP-8); a test image pins every QA row on it", chain: []}
   - {id: urpc, name: URPC (mirror), task: det, catalog_id: urpc, registry_id: null,
      upstream_split: {rule: "HF mirror train/test", eval_split: test, heldout_val: null, counts: {train: 4602, test: 1973}, definition_url: "https://huggingface.co/datasets/fuhao7i/URPC"},
@@ -113,13 +114,13 @@ benchmarks:
      split_verified: false, verified_by: "not fetched; counts from the paper — re-checked 2026-09-25: GitHub tree has no annotation JSON (Drive-only) and the arXiv abstract page (2106.05681) does not give per-split counts", obtain: {status: w2, via: "Drive link in the repo"},
      policy: route-to-our-test, policy_reason: "fish/echinoderm det", chain: [c6]}
   - {id: usod10k, name: USOD10K, task: salient, catalog_id: usod10k, registry_id: null,
-     upstream_split: {rule: "TR/VAL/TE dirs", eval_split: TE, heldout_val: VAL, counts: {train: 7178, val: 1026, test: 2051}, definition_url: "https://github.com/LinHong-HIT/USOD10K"},
-     split_verified: true, verified_by: "https://raw.githubusercontent.com/LinHong-HIT/USOD10K/main/README.md (2026-09-25): folder tree names USOD10K-TR / USOD10K-Val / USOD10K-TE and states the ~7:2:1 split; per-split counts still from the paper, not enumerated in the README", obtain: {status: w2, via: "Drive links"},
+     upstream_split: {rule: "TR/VAL/TE dirs", eval_split: TE, heldout_val: VAL, counts: {train: 7178, val: 2051, test: 1026}, definition_url: "https://github.com/LinHong-HIT/USOD10K", image_subdir: RGB},
+     split_verified: true, verified_by: "https://raw.githubusercontent.com/LinHong-HIT/USOD10K/main/README.md (2026-09-25): folder tree names USOD10K-TR / USOD10K-Val / USOD10K-TE and states the ~7:2:1 split; per-split counts (TR 7178 / VAL 2051 / TE 1026) enumerated from the staged directories, consistent with the README ~7:2:1", obtain: {status: w2, via: "Drive links"},
      policy: route-to-our-test, policy_reason: "salient + depth", chain: [c7]}
   - {id: lsui, name: LSUI, task: enhancement, catalog_id: lsui, registry_id: null,
      upstream_split: {rule: "U-shape Transformer protocol: 3879 train / 400 test (Test-L400)", eval_split: test, heldout_val: null, counts: {train: 3879, test: 400}, definition_url: "https://github.com/LintaoPeng/U-shape_Transformer_for_Underwater_Image_Enhancement"},
      split_verified: true, verified_by: "https://raw.githubusercontent.com/LintaoPeng/U-shape_Transformer_for_Underwater_Image_Enhancement/main/README.md (2026-09-25): 'randomly select 3879 picture pairs as the training set ... and the remaining 400 as the test set'", obtain: {status: w2, via: "Drive links"},
-     policy: route-to-our-test, policy_reason: "LSUI contains UIEB images; the chain pins them", chain: [c11]}
+     policy: route-to-our-test, policy_reason: "LSUI contains UIEB images; the chain pins them", chain: [c11], decon_exempt_reason: "eval split (400 of 4279 pairs) not identifiable: the staged tree is LSUI/input + LSUI/GT with no train/test list, so no row can be named as test"}
   - {id: u45, name: U45, task: enhancement, catalog_id: u45, registry_id: null,
      upstream_split: {rule: "eval-only, 45 images", eval_split: all, heldout_val: null, counts: {all: 45}, definition_url: "https://github.com/IPNUISTlegal/underwater-test-dataset-U45-"},
      split_verified: true, verified_by: "GitHub tree API (2026-09-25): upload/U45/U45/ contains exactly 45 files (1.png..45.png)", obtain: {status: w2, via: "GitHub repo"},
@@ -127,12 +128,12 @@ benchmarks:
   - {id: ufo120, name: UFO-120, task: enhancement, catalog_id: ufo120, registry_id: null,
      upstream_split: {rule: "train 1500 / TEST 120", eval_split: test, heldout_val: null, counts: {train: 1500, test: 120}, definition_url: "https://irvlab.cs.umn.edu/resources/ufo-120-dataset"},
      split_verified: true, verified_by: "Wayback Machine snapshot 20260516225545 of irvlab.cs.umn.edu/resources/ufo-120-dataset (live site 403s): 'train_val/ contains 1500 paired samples for training/validation' and 'TEST/ contains 120 paired samples for benchmark evaluation'", obtain: {status: w2, via: "Google Drive (from the landing page)"},
-     policy: route-to-our-test, policy_reason: "SR/enhancement pairs; shares raws with EUVP", chain: [c11]}
+     policy: route-to-our-test, policy_reason: "SR/enhancement pairs; shares raws with EUVP", chain: [c11], decon_exempt_reason: "not staged: no sources/ufo120/ in rs-storage-open (obtain.status=w2); no eval images to hash"}
   - {id: squid, name: SQUID, task: depth, catalog_id: squid, registry_id: squid,
      upstream_split: {rule: "eval-only, 57 stereo pairs in 4 dive sites", eval_split: all, heldout_val: null, counts: {pairs: 57}, definition_url: "https://zenodo.org/records/5744037"},
      split_verified: true, verified_by: "Zenodo API record 5744037 (2026-09-25): 4 files, one zip per dive site (Satil, Nachsolim, Michmoret, Katzaa), matching the 4-site rule; the 57 stereo-pair count is from the paper, not enumerated by the API", obtain: {status: registry-only, via: "Zenodo 5744037"},
-     policy: exclude, policy_reason: "colour-restoration eval set; keep external", chain: []}
+     policy: exclude, policy_reason: "colour-restoration eval set; keep external", chain: [], decon_exempt_reason: "not staged: no sources/squid/ in rs-storage-open (obtain.status=registry-only); no eval images to hash"}
   - {id: brackish, name: Brackish Dataset, task: det, catalog_id: brackish, registry_id: null,
      upstream_split: {rule: "train/valid/test.txt frame lists (video-level)", eval_split: test, heldout_val: valid, counts: {frames: 14500}, definition_url: "https://vap.aau.dk/the-brackish-dataset/"},
      split_verified: false, verified_by: "HF mirror dronefreak/Brackish viewer errors; original not fetched", obtain: {status: registry-only, via: "original (never also the HF mirror)"},
-     policy: route-to-our-test, policy_reason: "video frames; BrackishMOT shares the videos", chain: [c6, c9]}
+     policy: route-to-our-test, policy_reason: "video frames; BrackishMOT shares the videos", chain: [c6, c9], decon_exempt_reason: "not staged: no sources/brackish/ in rs-storage-open (obtain.status=registry-only); no eval images to hash"}

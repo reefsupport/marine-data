@@ -1,0 +1,33 @@
+# Hand-written (WP-R3): additive crosswalk for the Brackish Dataset (Pedersen et al. 2019, AAU), six animal classes.
+# Same targets and fidelities as brackishmot-class-id (the MOT release of the same footage and classes), keyed by class NAME
+# (the YOLO class-id order of the Kaggle export is not staged, so ids are not used). Vocabulary from the paper, not a staged tree.
+crosswalks:
+- id: brackish-dataset
+  source_schema: dataset-native
+  target_schema: rs-taxa-v1
+  description: 'WP-R3 crosswalk for brackish-dataset: the six paper classes (fish, small fish, crab, shrimp, jellyfish, starfish) onto rs-taxa-v1; observed vocabulary in registry/taxonomy/vocab/brackish-dataset.tsv.'
+  edges:
+  - source_label: fish
+    targets: {taxon: A146419}
+    fidelity: coarsened
+    note: 'fish is paraphyletic and WoRMS Pisces is unaccepted, so fish land on the smallest accepted clade holding all of them (Vertebrata)'
+  - source_label: small fish
+    targets: {taxon: A146419}
+    fidelity: coarsened
+    note: 'small fish (a school-forming size class of fish): fish is paraphyletic and WoRMS Pisces is unaccepted, so fish land on the smallest accepted clade holding all of them (Vertebrata)'
+  - source_label: crab
+    targets: {taxon: A106673}
+    fidelity: exact
+    note: crab = true crabs (Brachyura)
+  - source_label: shrimp
+    targets: {taxon: A1130}
+    fidelity: coarsened
+    note: shrimp is paraphyletic (Caridea, Dendrobranchiata, Stenopodidea); the smallest accepted clade holding all of them is Decapoda
+  - source_label: jellyfish
+    targets: {taxon: A1740301}
+    fidelity: coarsened
+    note: jellyfish are medusozoans; ctenophores would be missed
+  - source_label: starfish
+    targets: {taxon: A123080}
+    fidelity: exact
+    note: starfish = sea stars (Asteroidea)

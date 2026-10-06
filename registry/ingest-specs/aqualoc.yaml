@@ -1,4 +1,5 @@
 id: aqualoc
+access_class: restricted-nc
 adapter: seafile-share
 params:
   landing: https://www.lirmm.fr/aqualoc/
@@ -12,3 +13,8 @@ notes: needs_adapter:seafile-share — the real download host is a Seafile share
   a Seafile-share adapter (its API lists folder contents as JSON under /api/v2.1 given
   the share token)
 disk_floor_gib: 34.0
+
+measured:
+  label_type: none (SLAM sequences with reference trajectories; ROS bag)
+  method: u15-label-kind-triage (registry-patch.yaml)
+  date: '2026-10-05'

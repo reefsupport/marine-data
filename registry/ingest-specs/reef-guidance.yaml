@@ -1,4 +1,5 @@
 id: reef-guidance
+access_class: restricted-nc
 adapter: hf
 params:
   repo: QCR-Underwater-Perception/reef-guidance-system

@@ -40,11 +40,15 @@ stream indefinitely.
 
 from __future__ import annotations
 
+import itertools
+import json
 import os
+import re
 import signal
 import sys
 import time
-from collections.abc import Iterator
+from collections import deque
+from collections.abc import Callable, Collection, Iterable, Iterator
 from concurrent.futures import ThreadPoolExecutor
 from concurrent.futures import TimeoutError as FutureTimeoutError
 from dataclasses import dataclass
@@ -104,6 +108,29 @@ class RawImage:
     stem: str
     upstream_split: str
     data: bytes
+
+
+def _build_row_tolerant(benchmark_id: str, img: RawImage) -> dict[str, Any]:
+    """``build_row``, retrying once with Pillow's truncated-image loading.
+
+    WP-R12: 5 of 1274 CoralVQA test images are truncated JPEGs (the bytes are what upstream
+    ships). Dropping them left the manifest short of the registry count; their sha256 is
+    exact either way and the perceptual hashes of the decoded part are a conservative
+    approximation. The flag is scoped to the retry and restored.
+    """
+    try:
+        return build_row(benchmark_id, img)
+    except FeatureError as first:
+        from PIL import ImageFile
+
+        previous = ImageFile.LOAD_TRUNCATED_IMAGES
+        ImageFile.LOAD_TRUNCATED_IMAGES = True
+        try:
+            return build_row(benchmark_id, img)
+        except FeatureError:
+            raise first from None
+        finally:
+            ImageFile.LOAD_TRUNCATED_IMAGES = previous
 
 
 def _log_stderr(msg: str) -> None:
@@ -179,30 +206,135 @@ def _get_object_bytes(client: Any, bucket: str, key: str) -> bytes:
     return client.get_object(Bucket=bucket, Key=key)["Body"].read()
 
 
-def iter_bucket_images(client: Any, bucket: str, entry: BenchmarkEntry) -> Iterator[RawImage]:
-    parts = [
-        k
-        for k in _list_all(client, bucket, f"sources/{entry.id}/_stream/")
-        if k.endswith(".parquet")
-    ]
+def _get_with_retry(client: Any, bucket: str, key: str, tries: int = 3) -> bytes:
+    for attempt in range(tries):
+        try:
+            return _get_object_bytes(client, bucket, key)
+        except Exception:  # transient network/5xx; the last attempt re-raises
+            if attempt == tries - 1:
+                raise
+            time.sleep(1.0 + attempt)
+    raise AssertionError("unreachable")
+
+
+_DONE = object()
+STAGED_GET_WORKERS = 6
+
+
+FUTURE_TIMEOUT_S = 120.0
+"""Seconds one fetch may take before it is abandoned and retried (R8b: a GET sat at 0% CPU for
+more than 10 minutes and ignored SIGTERM)."""
+FUTURE_RETRIES = 2
+
+
+def _ordered_map(
+    fn: Callable[[Any], Any],
+    items: Iterable[Any],
+    workers: int = STAGED_GET_WORKERS,
+    *,
+    timeout: float = FUTURE_TIMEOUT_S,
+    retries: int = FUTURE_RETRIES,
+) -> Iterator[tuple[Any, Any]]:
+    """``(item, fn(item))`` in input order with ``workers`` calls in flight — bounded, so a
+    long stream never holds more than ``4 * workers`` results in memory.
+
+    One call that does not finish within ``timeout`` seconds is resubmitted, up to ``retries``
+    times; then ``TimeoutError`` is raised instead of blocking the stream forever. The pool is
+    shut down without waiting on a hung thread when that happens."""
+    it = iter(items)
+    pool = ThreadPoolExecutor(max_workers=workers)
+    clean = False
+    try:
+        window: deque[tuple[Any, Any]] = deque(
+            (item, pool.submit(fn, item)) for item in itertools.islice(it, workers * 4)
+        )
+        while window:
+            item, fut = window.popleft()
+            for attempt in range(retries + 1):
+                try:
+                    result = fut.result(timeout=timeout)
+                    break
+                except TimeoutError:
+                    fut.cancel()
+                    if attempt == retries:
+                        raise TimeoutError(
+                            f"no result for {item!r} after {retries + 1} attempts of {timeout}s"
+                        ) from None
+                    fut = pool.submit(fn, item)
+            nxt = next(it, _DONE)
+            if nxt is not _DONE:
+                window.append((nxt, pool.submit(fn, nxt)))
+            yield item, result
+        clean = True
+    finally:
+        pool.shutdown(wait=clean, cancel_futures=not clean)
+
+
+def _norm(name: Any) -> str:
+    return str(name).strip().lower()
+
+
+def _dir_parts(path: str) -> list[str]:
+    """Lowercased directory names of an upstream path (``a.zip#d/x.png`` -> ``[a.zip, d]``)."""
+    parts = [p for p in str(path).replace("#", "/").replace("\\", "/").split("/") if p]
+    return [_norm(p) for p in parts[:-1]]
+
+
+def resolve_eval_split(row_split: Any, upstream_path: str, split: UpstreamSplit) -> str | None:
+    """The canonical eval-split name a row belongs to, or ``None`` when it is not eval.
+
+    A labelled row is matched case-insensitively against ``eval_splits`` (the adapter says
+    ``val``, the registry ``VAL``). An *unlabelled* row falls back to its directory names
+    (``.../TE/RGB/x.png`` -> ``TE``; a directory also matches when it starts with a split
+    name of 3+ letters, ``Validate`` -> ``val``) — never to a guess (BENCH-trashsplit):
+    no label and no matching directory means excluded, unless every row is eval (``all``).
+    ``image_subdir`` additionally drops masks/depth maps shipped beside the images.
+    """
+    eval_splits = sorted(split.eval_splits)
+    dirs = _dir_parts(upstream_path)
+    if split.image_subdir and _norm(split.image_subdir) not in dirs:
+        return None
+    if "all" in eval_splits:
+        return str(row_split) if row_split is not None else split.eval_split
+    if row_split is not None:
+        return next((s for s in eval_splits if _norm(s) == _norm(row_split)), None)
+    for name in eval_splits:
+        n = _norm(name)
+        if any(d == n or (len(n) >= 3 and d.startswith(n)) for d in dirs):
+            return name
+    return None
+
+
+def iter_bucket_images(
+    client: Any,
+    bucket: str,
+    entry: BenchmarkEntry,
+    layout: str = "auto",
+    skip_stems: Collection[str] = frozenset(),
+) -> Iterator[RawImage]:
+    parts = (
+        []
+        if layout == "staged"
+        else [
+            k
+            for k in _list_all(client, bucket, f"sources/{entry.id}/_stream/")
+            if k.endswith(".parquet")
+        ]
+    )
     split = entry.upstream_split
     if parts:
         yield from _iter_stream_parts(client, bucket, parts, split)
         return
-    yield from _iter_staged_bucket(client, bucket, entry.id, split)
+    yield from _iter_staged_bucket(client, bucket, entry.id, split, skip_stems)
 
 
 def _iter_stream_parts(
     client: Any, bucket: str, parts: list[str], split: UpstreamSplit
 ) -> Iterator[RawImage]:
-    eval_split = split.eval_split
-    eval_splits = split.eval_splits
     for key in parts:
         table = pq.read_table(pa.BufferReader(_get_object_bytes(client, bucket, key)))
         names = table.schema.names
-        split_col = next(
-            (c for c in ("upstream_split", "split", "split_hint") if c in names), None
-        )
+        split_col = next((c for c in ("upstream_split", "split", "split_hint") if c in names), None)
         try:
             img_col, sub = _image_bytes_field(table.schema)
             external = False
@@ -215,52 +347,107 @@ def _iter_stream_parts(
         )
         rev_prefix = _rev_prefix(key) if external else None
         for row in table.to_pylist():
-            # BENCH-trashsplit: a row with no split evidence at all must never be
-            # guessed into the eval split. Only ``eval_split: all`` entries (every
-            # row is eval, e.g. marineeval, u45) still fall back to ``eval_split``.
-            row_split = row.get(split_col) if split_col else None
+            upath = row.get(path_col) or row.get("stem") or ""
+            row_split = resolve_eval_split(row.get(split_col) if split_col else None, upath, split)
             if row_split is None:
-                if "all" not in eval_splits:
-                    continue
-                row_split = eval_split
-            if "all" not in eval_splits and row_split not in eval_splits:
                 continue
             raw = row[img_col]
             if external:
                 data = _get_object_bytes(client, bucket, rev_prefix + str(raw))
             else:
                 data = raw[sub] if sub else raw
-            upath = row.get(path_col) or row.get("stem") or ""
             stem = row.get("stem") or Path(str(upath)).stem
             yield RawImage(str(upath), stem, row_split, data)
 
 
-def _iter_staged_bucket(
-    client: Any, bucket: str, benchmark_id: str, split: UpstreamSplit
-) -> Iterator[RawImage]:
-    eval_split = split.eval_split
-    eval_splits = split.eval_splits
-    meta_key = f"sources/{benchmark_id}/metadata.parquet"
-    meta_bytes = _get_object_bytes(client, bucket, meta_key)
-    meta = pq.read_table(pa.BufferReader(meta_bytes)).to_pylist()
-    root = f"sources/{benchmark_id}/images/"
-    by_stem = {Path(k).stem: k for k in _list_all(client, bucket, root)}
-    for row in meta:
-        # BENCH-trashsplit: same rule as the stream-parts branch above — no split
-        # evidence means exclude, unless this entry's eval_split is ``all``.
-        row_split = row.get("upstream_split")
-        if row_split is None:
-            if "all" not in eval_splits:
+def _staged_root(keys: list[str], benchmark_id: str) -> str:
+    """The prefix holding ``metadata.parquet`` + ``images/``: the flat
+    ``sources/<id>/`` layout, else the newest ``sources/<id>/<rev>/`` revision."""
+    flat = f"sources/{benchmark_id}/metadata.parquet"
+    if flat in keys:
+        return f"sources/{benchmark_id}/"
+    revs = sorted(k for k in keys if k.endswith("/metadata.parquet") and "/_stream/" not in k)
+    if not revs:
+        raise ManifestBuildError(
+            f"{benchmark_id}: no metadata.parquet under sources/{benchmark_id}/"
+        )
+    return revs[-1].rsplit("/", 1)[0] + "/"
+
+
+_LABEL_REF_FIELDS = ("image", "file_name", "image_path")
+
+
+def _label_split_map(
+    client: Any, bucket: str, label_keys: list[str], split: UpstreamSplit
+) -> dict[str, str]:
+    """``image file name -> eval split`` from the upstream annotation files staged under
+    ``labels/files/`` whose name ends in an eval split (``CoralVQA_test.jsonl`` -> ``test``).
+
+    Only consulted for a staged row whose metadata carries no split (CoralVQA's metadata has
+    none; the split lives in the annotation files, where the image is the unit: WP-R11, the
+    ``upstream`` manifest had labelled 1934 *train* images ``test``)."""
+    names = {_norm(s): s for s in split.eval_splits if _norm(s) != "all"}
+    out: dict[str, str] = {}
+    for key in label_keys:
+        match = re.search(r"[_.-]([A-Za-z]+)\.jsonl$", key)
+        name = names.get(_norm(match.group(1))) if match else None
+        if name is None:
+            continue
+        for line in _get_with_retry(client, bucket, key).decode("utf-8").splitlines():
+            if not line.strip():
                 continue
-            row_split = eval_split
-        if "all" not in eval_splits and row_split not in eval_splits:
+            row = json.loads(line)
+            ref = next((row[f] for f in _LABEL_REF_FIELDS if row.get(f)), None)
+            if ref:
+                out[Path(str(ref)).name] = name
+    return out
+
+
+def _iter_staged_bucket(
+    client: Any,
+    bucket: str,
+    benchmark_id: str,
+    split: UpstreamSplit,
+    skip_stems: Collection[str] = frozenset(),
+) -> Iterator[RawImage]:
+    """``skip_stems``: stems a resumed build already holds, never re-fetched."""
+    keys = _list_all(client, bucket, f"sources/{benchmark_id}/")
+    root = _staged_root(keys, benchmark_id)
+    meta = pq.read_table(
+        pa.BufferReader(_get_object_bytes(client, bucket, root + "metadata.parquet"))
+    ).to_pylist()
+    present = set(keys)
+    by_stem = {Path(k).stem: k for k in keys if k.startswith(root + "images/")}
+    label_split = _label_split_map(
+        client,
+        bucket,
+        [k for k in keys if k.startswith(root + "labels/") and k.endswith(".jsonl")],
+        split,
+    )
+    jobs: list[tuple[str, str, str, str]] = []
+    for row in meta:
+        upath = row.get("upstream_path") or row.get("upstream_id") or row.get("stem") or ""
+        hint = row.get("upstream_split") or row.get("split_hint")
+        if hint is None:
+            hint = label_split.get(Path(str(upath).rsplit("#", 1)[-1]).name)
+        row_split = resolve_eval_split(hint, upath, split)
+        if row_split is None:
             continue
         stem = row["stem"]
-        key = by_stem.get(stem)
+        if stem in skip_stems:
+            continue
+        image_path = row.get("image_path")
+        key = root + str(image_path) if image_path and root + str(image_path) in present else None
+        key = key or by_stem.get(stem)
         if key is None:
             continue
-        data = _get_object_bytes(client, bucket, key)
-        yield RawImage(key[len(f"sources/{benchmark_id}/") :], stem, row_split, data)
+        jobs.append(
+            (key, str(upath) if row.get("upstream_path") else key[len(root) :], stem, row_split)
+        )
+    for (_, shown, stem, row_split), data in _ordered_map(
+        lambda job: _get_with_retry(client, bucket, job[0]), jobs
+    ):
+        yield RawImage(shown, stem, row_split, data)
 
 
 # ------------------------------------------------------------------------- upstream
@@ -468,7 +655,7 @@ def build_manifest(
                     "from upstream — decoder/adapter bug, not a per-item skip"
                 )
             try:
-                rows.append(build_row(entry.id, img))
+                rows.append(_build_row_tolerant(entry.id, img))
             except FeatureError as exc:
                 log(f"{entry.id}: skip {img.stem}: {exc}")
                 skipped += 1

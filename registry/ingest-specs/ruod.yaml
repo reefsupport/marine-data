@@ -1,4 +1,5 @@
 id: ruod
+access_class: internal-only
 adapter: hf
 params:
   repo: Mortallll/RUOD

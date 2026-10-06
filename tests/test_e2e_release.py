@@ -25,6 +25,7 @@ import pytest
 from marinedata import fetch
 from marinedata.cli import main
 from marinedata.enums import (
+    AccessClass,
     AccessMethod,
     Capability,
     LegalBasis,
@@ -74,6 +75,7 @@ def _source(source_id: str) -> Source:
         description="D12 e2e fixture source (WP-4).",
         version="v1",
         licence=Licence(id="CC0-1.0", name="CC0 1.0", tier=Tier.PERMISSIVE),
+        access_class=AccessClass.OPEN,
         verification=Verification(
             verified_on=date(2026, 9, 25), verified_by="wp4-e2e-fixture", method="licence-file"
         ),
@@ -106,14 +108,24 @@ def _registry() -> Registry:
     schema = LabelSchema(id="rs-benthic-v1", name="Fixture", axes=(Axis.TAXON,), nodes=())
     tasks = {"pretrain-set": TaskSpec(id="pretrain-set", kind=TaskKind.SELF_SUPERVISED)}
     profile = Profile(
-        id="research",
+        id="ship-open",
         description="fixture",
-        allow_tiers=(Tier.OWN, Tier.PERMISSIVE, Tier.COPYLEFT, Tier.NONCOMMERCIAL),
+        allow_tiers=(Tier.OWN, Tier.PERMISSIVE, Tier.COPYLEFT),
+        allow_access_classes=("open",),
     )
     return Registry(
         sources={sid: _source(sid) for sid in SOURCES},
         licences={},
-        profiles={"research": profile},
+        profiles={
+            "ship-open": profile,
+            "ship-noncommercial": Profile(
+                id="ship-noncommercial",
+                description="fixture",
+                allow_tiers=(Tier.OWN, Tier.PERMISSIVE, Tier.COPYLEFT, Tier.NONCOMMERCIAL),
+                allow_access_classes=("open", "restricted-nc"),
+                public_release=True,
+            ),
+        },
         schemas={"rs-benthic-v1": schema},
         tasks=tasks,
     )
@@ -199,11 +211,11 @@ def _sha256_tree(root: Path) -> dict[str, str]:
 # Golden manifest: relative path -> sha256, for every file this test produces. A
 # change here means a release output changed — regenerate deliberately, never blindly.
 GOLDEN_RELEASE = {
-    "releases/wp4-e2e/RELEASE.json": (
-        "da0fb627202e61cf837a994ba5005284f6d045a411103fa11767905b41d69bda"
+    "releases/wp4-e2e/open/RELEASE.json": (
+        "b18b4eb8623dc7273c659cf708e607af3233d5f5cf0c53bb92d4b55d60d6aeea"
     ),
-    "SPLIT_MAP.json": "2205149509c88f900c212d5be41c3cb53b2823f0ad6b617acd736772c4777300",
-    "releases/wp4-e2e/tasks/pretrain-set.tsv": (
+    "SPLIT_MAP.json": "383a640ac3afec6cf8c961388261d1a4fe0306e3fd90b6c26e928e6a513a4a48",
+    "releases/wp4-e2e/open/tasks/pretrain-set.tsv": (
         "6ea2774662feb0d80e5737b24d66d9159f0c208969c1cdac1cdbe7568212dc53"
     ),
 }
@@ -246,9 +258,12 @@ def test_e2e_ingest_release_hf_export_is_reproducible(
             str(split_map),
             "--out",
             str(out_dir),
+            "--flavour",
+            "open",
             "--profile",
-            "research",
+            "ship-open",
             "--generate-split-map",
+            "--no-near-dup",
             "--seed",
             "0",
             *[f"--local={sid}={root}" for sid, root in roots.items()],
@@ -261,8 +276,8 @@ def test_e2e_ingest_release_hf_export_is_reproducible(
         assert rel_path in got_release, f"missing release output {rel_path}"
         assert got_release[rel_path] == expected, f"{rel_path} changed: {got_release[rel_path]}"
 
-    release_dir = out_dir / "releases" / "wp4-e2e"
-    rows = collect_rows(registry, roots, release_dir, "research")
+    release_dir = out_dir / "releases" / "wp4-e2e" / "open"
+    rows = collect_rows(registry, roots, release_dir, "ship-open")
     layout = build_layout(rows)
     export_dir = tmp_path / "hf_export"
     export(layout, export_dir)

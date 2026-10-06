@@ -1,5 +1,6 @@
 # Trash-ICRA19: bounding-box labeled dataset of underwater trash (Fulton et al., ICRA 2019)
 id: trash-icra19
+access_class: open
 adapter: http
 license: cc-by-4.0
 attribution: Fulton, Hong, Islam, Sattar (Univ. of Minnesota DRUM)

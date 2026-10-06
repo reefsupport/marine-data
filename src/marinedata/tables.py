@@ -50,6 +50,9 @@ class StagedImage:
     """The source's registry ``split_group`` rule applied to this row (D-group, WS-D
     step 3). ``None`` for ingest paths that have not been wired to compute it yet —
     the column stays nullable rather than every caller needing a placeholder value."""
+    license: str | None = None
+    """WP-R2: this image's own licence string, for ``licence_per_row`` sources (FathomNet, iNat,
+    ...). The parquet column is written only when some row carries one."""
 
 
 @dataclass(frozen=True)
@@ -131,18 +134,19 @@ def write_metadata_table(path: Path, rows: Sequence[StagedImage]) -> str:
         ]
     )
     ordered = sorted(rows, key=lambda r: (r.partition, r.stem))
-    table = pa.table(
-        {
-            "stem": [r.stem for r in ordered],
-            "partition": [r.partition for r in ordered],
-            "upstream_path": [r.upstream_path for r in ordered],
-            "upstream_split": [r.upstream_split for r in ordered],
-            "width": [r.width for r in ordered],
-            "height": [r.height for r in ordered],
-            "split_group": [r.split_group for r in ordered],
-        },
-        schema=schema,
-    )
+    columns = {
+        "stem": [r.stem for r in ordered],
+        "partition": [r.partition for r in ordered],
+        "upstream_path": [r.upstream_path for r in ordered],
+        "upstream_split": [r.upstream_split for r in ordered],
+        "width": [r.width for r in ordered],
+        "height": [r.height for r in ordered],
+        "split_group": [r.split_group for r in ordered],
+    }
+    if any(r.license for r in ordered):
+        schema = schema.append(pa.field("license", pa.string(), nullable=True))
+        columns["license"] = [r.license for r in ordered]
+    table = pa.table(columns, schema=schema)
     path.parent.mkdir(parents=True, exist_ok=True)
     pq.write_table(table, path, **_WRITE_KWARGS)
     return file_digest(path)

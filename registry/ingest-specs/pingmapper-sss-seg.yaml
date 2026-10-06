@@ -1,5 +1,6 @@
 # WP-6l-B (2026-09-25) new source: candidate — WP-6l-B sonar: dense pixel labels on recreational-grade side-scan sonar
 id: pingmapper-sss-seg
+access_class: open
 adapter: zenodo
 params:
   zenodo_record: 10119320
@@ -21,3 +22,5 @@ measured:
   habitat_region: US rivers and lakes (PINGMapper, freshwater)
   dedup_chain: new; no registry/ingest-spec/WP-6g/S57 match on title, DOI or record id
   wp6l_gap: sonar
+# WP-U14c: title 'Sidescan Sonar ...'; staged names carry `_ss_port_` and a Humminbird SOLIX unit
+default_instrument: side-scan-sonar

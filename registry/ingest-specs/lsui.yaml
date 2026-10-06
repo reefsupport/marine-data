@@ -6,6 +6,7 @@
 # over the unzipped copy. Provenance kept: gdrive-public files 10gD4s12uJxCHcuFdX9Khkv37zzBwNFbL
 # (lsui_input.zip) + 19a_kDJTT5S96kzwQntEMhSxAPYw4xY2P (lsui_gt.zip).
 id: lsui
+access_class: internal-only
 adapter: local_dir
 params:
   path: ~/Downloads/marine-manual/lsui/data
@@ -18,3 +19,8 @@ notes: >-
   WP-6d-A gdrive-public adapter; 4,279 paired images; Baidu mirror not used (D-E).
   LOCAL-ingest -- LSUI/{GT,input} paired enhancement images, no README inside the zip.
 disk_floor_gib: 34.0
+
+measured:
+  label_type: paired enhancement images (input and GT reference)
+  method: u15-label-kind-triage (registry-patch.yaml)
+  date: '2026-10-05'

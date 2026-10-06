@@ -1,5 +1,6 @@
 # USOD10k: large underwater salient-object-detection set (RGB/GT/depth/boundary, TR/TE/VAL splits).
 id: usod10k
+access_class: internal-only
 adapter: local_dir
 params:
   path: ~/Downloads/marine-manual/usod10k/data
@@ -21,3 +22,8 @@ notes: >-
   double-ingested through the zip-container decode path too. No distribution licence
   stated in-repo; left `unknown (see homepage)`.
 disk_floor_gib: 1.0
+
+measured:
+  label_type: binary salient-object segmentation masks (GT png) plus depth maps and boundary maps
+  method: u15-label-kind-triage (registry-patch.yaml)
+  date: '2026-10-05'

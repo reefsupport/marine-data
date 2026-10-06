@@ -1,5 +1,6 @@
 # rcaustic: Zenodo 10728861
 id: rcaustic
+access_class: open
 adapter: zenodo
 license: CC-BY-4.0 (Zenodo API)
 attribution: R-CAUSTIC v2.0 authors

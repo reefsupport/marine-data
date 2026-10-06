@@ -37,6 +37,7 @@ from .concurrency import HostLimiter, head_with_retry, retry_with_backoff
 from .ingest_deferred import DeferredLedger
 from .ingest_listing import list_source
 from .ingest_missing import MISSING_FILE, MissingLedger, decode_status, fetch_status
+from .licence_class import ACCESS_CLASSES
 from .s3_upload import DEFAULT_PART, DiskGuard, GiB, local_digest, upload_file
 from .staged_writer import DEFAULT_SHARD_BYTES, DEFAULT_THRESHOLD, StagedWriter, WriterConfig
 from .subset_filter import SubsetFilter
@@ -149,6 +150,14 @@ class IngestSpec:
     params: dict[str, Any]
     license: str
     attribution: str
+    # WP-L1a: open | restricted-nc | restricted-nd | internal-only | unknown
+    access_class: str = "unknown"
+    default_platform: str = ""  # WP-U14b source-level constants (metadata_norm.defaults)
+    default_habitat: str = ""
+    default_instrument: str = (
+        ""  # WP-U14c: controlled vocabulary, metadata_norm.defaults.INSTRUMENTS
+    )
+    licence_per_row: bool = False  # every item carries its own licence string
     citation: str = ""
     homepage: str = ""
     notes: str = ""
@@ -189,6 +198,8 @@ class IngestSpec:
         if unknown:
             raise ValueError(f"{path}: unknown spec keys {unknown}")
         spec = cls(**raw)
+        if spec.access_class not in ACCESS_CLASSES:
+            raise ValueError(f"{path}: access_class {spec.access_class!r} not in {ACCESS_CLASSES}")
         if not spec.license.strip() or not spec.attribution.strip():
             raise ValueError(f"{path}: license and attribution are required (D-C)")
         return spec

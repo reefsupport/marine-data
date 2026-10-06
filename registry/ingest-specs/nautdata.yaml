@@ -1,5 +1,6 @@
 # SPEC-w3 discovery: deep-sea/underwater VQA + caption (NautData, 2025).
 id: nautdata
+access_class: open
 adapter: hf
 license: apache-2.0
 attribution: H-EmbodVis

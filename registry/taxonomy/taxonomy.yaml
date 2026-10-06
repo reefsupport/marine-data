@@ -2,7 +2,7 @@
 # retargeted; MINOR = nodes/edges/vocabularies added; PATCH = notes and reasons only.
 # `marinedata taxonomy export` freezes releases/<version>.json;
 # `marinedata taxonomy diff <a> <b>` compares two of them (HEAD = working tree).
-version: 2.2.0
+version: 2.9.0
 snapshot: worms-2026-09-25.parquet
 
 # Sources under the 95% mapped floor. Each entry says what is lost and why.
@@ -12,6 +12,11 @@ coverage_exceptions:
     bucket for every non-target substrate and organism. It has no canonical meaning, so
     it is an unmappable edge (the point is unsupervised on the taxon axis), not forced
     into a class.
+  coralseg-ucsd-mosaics: >-
+    "Other" (4,915 of 12,910 mask-class annotations, 38%; 783.7M of 1.29G pixels) is the
+    residual class of the 3-class UCSD mosaic masks: every non-coral pixel (substrate, algae,
+    other fauna, water). It has no taxonomic content, so it is an unmappable edge (unsupervised
+    on the taxon axis), not forced into a class. Hard Coral and Soft Coral map exactly.
 
 # Labelled image/video sources whose label vocabulary WP-7 has not harvested. The
 # W1 vocabularies are all crosswalked; each of these gets one when its labels are
@@ -34,9 +39,11 @@ no_crosswalk_yet:
     ~2k CoralNet sources, each with its own label set. The PIFSC, PLC and MLC sets are
     crosswalked (coralnet-noaa-pifsc, plc-beijbom2015, mlc-moorea) and the global label
     list is in coralnet-labelset; each other CoralNet source needs its own at ingest.
-  fathomnet: >-
-    The full FathomNet concept tree (~2.4k concepts). fathomnet-concepts covers the FGVC23
-    (290) and VME (4) subsets; the rest is resolved at ingest through the same WoRMS path.
+  large-scale-fish: quarantined (out-of-water, no licence); 9 market-fish folders, crosswalk only if ever released.
+  eilat-rsmas: image-level coral class (14 classes in the filename), vocabulary not harvested (U15 label-kind triage); crosswalk at ingest.
+  caddy: diver-gesture class labels, vocabulary not harvested (U15 label-kind triage); crosswalk at ingest.
+  duo: COCO bbox, 4 categories, vocabulary not harvested (U15 label-kind triage); crosswalk at ingest.
+  usod10k: binary salient-object masks (no class vocabulary) plus depth maps (U15 label-kind triage); crosswalk only if a class set is ever derived.
   deolhonoscorais: vocabulary not harvested in WP-7 (not a W1 vocabulary); crosswalk at ingest.
   seatizen-atlas: multilabel species/habitat set not harvested in WP-7; crosswalk at ingest.
   ozfish: fish bbox vocabulary not harvested in WP-7; crosswalk at ingest.
@@ -45,7 +52,6 @@ no_crosswalk_yet:
   fishnet-2023: fish species set not harvested in WP-7; crosswalk at ingest.
   mft25: tracking set (fish ids, not taxa) not harvested in WP-7; crosswalk at ingest.
   deepsea-mot: deep-sea tracking set not harvested in WP-7; crosswalk at ingest.
-  brackish-dataset: 6-class bbox set not harvested in WP-7; crosswalk at ingest.
   fish4knowledge: species set not harvested in WP-7; crosswalk at ingest.
   sea-urchin-detection: urchin bbox set not harvested in WP-7; crosswalk at ingest.
   reefnet-species-images: species image-label set not harvested in WP-7; crosswalk at ingest.

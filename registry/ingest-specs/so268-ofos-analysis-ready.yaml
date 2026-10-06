@@ -1,5 +1,6 @@
 # Analysis-ready (colour-corrected, mosaic-tiled) OFOS images along SO268/1+2 CCZ profiles — Mbani & Greinert 2023, a processed companion to pangaea-ccz-gsr's raw Purser 2021 series.
 id: so268-ofos-analysis-ready
+access_class: open
 adapter: pangaea-series
 params:
   doi: 10.1594/PANGAEA.957274

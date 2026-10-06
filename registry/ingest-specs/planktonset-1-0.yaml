@@ -1,5 +1,6 @@
 # PlanktonSet 1.0 — WHOI/NDSB-lineage plankton image classification set (the closest anonymous public mirror to the original Kaggle National Data Science Bowl 2015 data).
 id: planktonset-1-0
+access_class: internal-only
 adapter: hf
 license: other (HF card)
 attribution: project-oceania

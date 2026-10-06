@@ -256,3 +256,148 @@ def test_review_band_limit_enforced() -> None:
     assert overlap.review_band_fail is True
     assert overlap.ok is False
     assert not any(n for stages in overlap.counts.values() for n in stages.values())
+
+
+# -- decon_exempt_reason: the coverage gate is default-deny (WP-R8) ---------------
+
+
+def _registry(*entries: BenchmarkEntry):
+    from marinedata.benchmarks import BenchmarkRegistry
+
+    return BenchmarkRegistry(
+        schema_version=1, thresholds=_thresholds(), benchmarks=tuple(entries), raw={}
+    )
+
+
+def _exempt(entry: BenchmarkEntry, reason: str) -> BenchmarkEntry:
+    return entry.model_copy(update={"decon_exempt_reason": reason})
+
+
+def test_no_manifest_with_exemption_passes_and_is_recorded(tmp_path) -> None:
+    from marinedata.decon import check, decon_record
+    from marinedata.hf_card import decon_limitations
+
+    reg = _registry(_exempt(_entry("b-one", status="registry-only"), "not staged"))
+    result = check(tmp_path, reg, [], manifests_root=tmp_path)
+    assert result.ok and result.exempt == {"b-one": "not staged"}
+    record = decon_record(result)
+    assert record["exempt"] == {"b-one": "not staged"} and record["gate"] == "pass"
+    card = "\n".join(decon_limitations({"decon": record}))
+    assert "## Limitations" in card and "Decontamination not verified against: `b-one`" in card
+    assert decon_limitations({"decon": {"exempt": {}}}) == []
+
+
+@pytest.mark.parametrize("status", ["staged", "registry-only", "needs-yohan"])
+def test_no_manifest_and_no_exemption_fails(tmp_path, status: str) -> None:
+    from marinedata.decon import check
+
+    reg = _registry(_entry("b-two", status=status))
+    result = check(tmp_path, reg, [], manifests_root=tmp_path)
+    assert not result.ok
+    assert result.failures == ["b-two: no manifest and no decon_exempt_reason"]
+    assert reg.uncovered(tmp_path) == ["b-two"]
+
+
+def test_blank_exemption_reason_is_rejected() -> None:
+    with pytest.raises(ValueError, match="decon_exempt_reason"):
+        _exempt(_entry("b-three"), "  ").model_validate(
+            _exempt(_entry("b-three"), "  ").model_dump()
+        )
+
+
+def test_coverage_is_judged_against_the_registry_eval_count_not_the_manifest():
+    """WP-R9 (R8c): 8.5k of 28353 images must not read as 100% covered."""
+    entry = _entry(eval_n=100)
+    corp = [_rec(f"c{i}") for i in range(3)]
+    short = [_rec(f"b{i}") for i in range(30)]
+    result = check_benchmark(entry, _thresholds(), short, corp)
+    assert result.coverage_fail and (result.hashed_n, result.eval_n) == (30, 100)
+    full = [_rec(f"b{i}") for i in range(100)]
+    ok = check_benchmark(entry, _thresholds(), full, corp)
+    assert not ok.coverage_fail and (ok.hashed_n, ok.eval_n) == (100, 100)
+    nulls = [_rec(f"b{i}") for i in range(50)] + [_rec("") for _ in range(50)]
+    assert check_benchmark(entry, _thresholds(), nulls, corp).hashed_n == 50
+    assert check_benchmark(entry, _thresholds(), nulls, corp).coverage_fail
+
+
+def test_coverage_numerator_is_unique_non_null_sha256_capped_at_the_eval_count():
+    """WP-R12 (marineeval-like): 2672 rows for 2643 unique images read 100%, never 101%;
+    2483 unique images stay below the gate however many duplicate rows pad the manifest."""
+    entry = _entry(eval_n=2643)
+    corp = [_rec("c0")]
+    dup = [_rec(f"b{i}") for i in range(2643)] + [_rec(f"b{i}") for i in range(29)]
+    assert len(dup) == 2672
+    full = check_benchmark(entry, _thresholds(), dup, corp)
+    assert (full.hashed_n, full.eval_n) == (2643, 2643) and not full.coverage_fail
+    padded = [_rec(f"b{i}") for i in range(2483)] + [_rec(f"b{i % 2483}") for i in range(189)]
+    assert len(padded) == 2672
+    short = check_benchmark(entry, _thresholds(), padded, corp)
+    assert (short.hashed_n, short.eval_n) == (2483, 2643) and short.coverage_fail
+    over = [_rec(f"b{i}") for i in range(2700)]
+    capped = check_benchmark(entry, _thresholds(), over, corp)
+    assert capped.hashed_n == 2643 and not capped.coverage_fail
+
+
+def test_a_staged_benchmark_without_a_registry_eval_count_fails_coverage():
+    entry = _entry(eval_n=100)
+    entry = entry.model_copy(
+        update={
+            "upstream_split": entry.upstream_split.model_copy(update={"counts": {"images": 1701}})
+        }
+    )
+    result = check_benchmark(entry, _thresholds(), [_rec("b0"), _rec("b1")], [_rec("c0")])
+    assert result.coverage_fail and result.eval_n == 0
+
+
+def test_expected_eval_count_sums_eval_and_heldout_val_with_aliases():
+    from marinedata.benchmarks import expected_eval_count
+
+    entry = _entry(eval_n=100)
+    split = entry.upstream_split.model_copy(
+        update={"heldout_val": "val", "counts": {"TR": 5, "validation": 20, "TE": 100}}
+    )
+    assert expected_eval_count(entry.model_copy(update={"upstream_split": split})) == 120
+
+
+# -- exempt-with-manifest: partially verified (WP-R11) ------------------------------
+
+
+def _uncounted(entry: BenchmarkEntry) -> BenchmarkEntry:
+    split = entry.upstream_split.model_copy(update={"counts": {"images": 5090}})
+    return entry.model_copy(update={"upstream_split": split})
+
+
+def test_manifest_with_reviewed_reason_runs_hit_detection_and_is_partially_verified():
+    from marinedata.decon import DeconResult, decon_record
+    from marinedata.hf_card import decon_limitations
+
+    reason = "coverage not verifiable: manifest covers 2 of 5090 images from Zenodo"
+    entry = _exempt(_uncounted(_entry("b-plc")), reason)
+    result = check_benchmark(entry, _thresholds(), [_rec("b0"), _rec("b1")], [_rec("c0")])
+    assert not result.coverage_fail and result.ok and result.partial
+    assert result.partial_reason == reason and result.hashed_n == 2
+    record = decon_record(DeconResult((result,), "t", "r"))
+    assert record["partially_verified"] == {"b-plc": reason} and record["exempt"] == {}
+    assert record["benchmarks_checked"] == 1 and record["gate"] == "pass"
+    card = "\n".join(decon_limitations({"decon": record}))
+    assert "partially verified" in card and "`b-plc`" in card
+
+
+def test_manifest_with_reviewed_reason_still_fails_on_a_hit():
+    entry = _exempt(_uncounted(_entry("b-plc")), "coverage not verifiable")
+    shared = _rec("same")
+    corp = [_rec("same", splits=frozenset({"train"}))]
+    result = check_benchmark(entry, _thresholds(), [shared], corp)
+    assert result.status == "contaminated" and not result.ok and result.partial
+
+
+def test_manifest_without_count_and_without_reason_still_fails():
+    entry = _uncounted(_entry("b-plc"))
+    result = check_benchmark(entry, _thresholds(), [_rec("b0")], [_rec("c0")])
+    assert result.coverage_fail and not result.ok and not result.partial
+
+
+def test_a_verified_complete_manifest_with_a_reason_is_not_partial():
+    entry = _exempt(_entry("b-ok", eval_n=2), "stale reason")
+    result = check_benchmark(entry, _thresholds(), [_rec("b0"), _rec("b1")], [_rec("c0")])
+    assert result.ok and not result.partial

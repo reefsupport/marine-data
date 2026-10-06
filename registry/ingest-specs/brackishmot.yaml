@@ -1,6 +1,7 @@
 # BrackishMOT: multi-object tracking benchmark in brackish water (fish/crab/shrimp), plus a
 # synthetic twin (brackishMOTSynth) and a background-video pool used for synthetic compositing.
 id: brackishmot
+access_class: unknown
 adapter: local_dir
 params:
   path: ~/Downloads/marine-manual/brackishmot/data
@@ -19,3 +20,6 @@ notes: >-
   frames, per source instructions). No distribution licence stated on the Kaggle page
   read this pass; left `unknown (see homepage)`.
 disk_floor_gib: 2.0
+# WP-U14b: source-level constants (evidence: u14-sample/upstream-fields.tsv, marked known)
+default_platform: lander
+default_habitat: brackish_water

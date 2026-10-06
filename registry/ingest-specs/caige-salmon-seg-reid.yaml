@@ -1,5 +1,6 @@
 # WP-6g (2026-09-25) new source: candidate — WP-6g gap 3: aquaculture sea-cage salmon: masks + individual re-ID, a label type we lack
 id: caige-salmon-seg-reid
+access_class: open
 adapter: zenodo
 params:
   zenodo_record: 20280854

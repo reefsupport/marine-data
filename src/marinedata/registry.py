@@ -118,7 +118,7 @@ class Registry:
 
         licences = cls._load_licences(base / "licences.yaml")
         profiles = cls._load_profiles(base / "profiles.yaml")
-        sources = cls._load_sources(base / "sources", licences)
+        sources = cls._apply_spec_truth(cls._load_sources(base / "sources", licences), base)
         schemas = cls._load_collection(base / "schemas", "schemas", LabelSchema)
         tasks = cls._load_collection(base / "tasks", "tasks", TaskSpec)
         crosswalks = cls._load_collection(base / "crosswalks", "crosswalks", Crosswalk)
@@ -232,6 +232,25 @@ class Registry:
 
         if not out:
             raise RegistryError(f"No sources found under {base}")
+        return out
+
+    @staticmethod
+    def _apply_spec_truth(sources: dict[str, Source], base: Path) -> dict[str, Source]:
+        """WP-R2, one licence truth: where an ingest spec governs a source (same id or a
+        ``SPEC_ALIASES`` alias), its ``access_class`` / ``licence_per_row`` win, so the release
+        path (``registry.source(id)``) never reads a staler copy than the ingest path."""
+        from .enums import AccessClass
+        from .licence_class import coerce_class, spec_for
+
+        out: dict[str, Source] = {}
+        for sid, src in sources.items():
+            spec = spec_for(sid, base)
+            update: dict[str, Any] = {}
+            if spec and "access_class" in spec:
+                update["access_class"] = AccessClass(coerce_class(spec["access_class"]))
+            if spec and "licence_per_row" in spec:
+                update["licence_per_row"] = bool(spec["licence_per_row"])
+            out[sid] = src.model_copy(update=update) if update else src
         return out
 
     @staticmethod

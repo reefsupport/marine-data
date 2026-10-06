@@ -1,5 +1,6 @@
 # WP-6l-B (2026-09-25) new source: candidate — WP-6l-B depth-3d: underwater stereo depth pairs
 id: uw-stereodepth-40k
+access_class: internal-only
 adapter: hf
 params:
   repo: AIGeeksGroup/UW-StereoDepth-40K

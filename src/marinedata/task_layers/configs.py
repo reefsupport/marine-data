@@ -18,26 +18,54 @@ wires the two together, and joins ``label_status`` (D-U) when present.
 
 from __future__ import annotations
 
+import dataclasses
 import json
 from collections.abc import Mapping
 from dataclasses import dataclass
 from functools import cache, lru_cache
 from pathlib import Path
 
+from ..annotation_schema import annotator_from_origin
+from ..licence_class import drop_release_excluded, flavour_filter, require_flavour
 from ..registry import Registry
 from ..schema import Axis
 from ..tables import _require_pyarrow
+from .boxes_table import BOX_SOURCES
+from .depth_table import DEPTH_PAIR_SOURCES
+from .masks_table import MASK_SOURCES
 from .rollup import MIXED, UNKNOWN, rollup_counts
+from .sources.masks_instance import INSTANCE_SOURCES
+from .vqa_table import VQA_SOURCES
 
 BENTHIC_COARSE_TASK = "benthic-coarse"
 BLEACHING_TASK = "bleaching-condition"
 HEALTH_TASK = "coral-health-binary"
 
-CONFIG_IDS = ("points", "vqa", "semseg", "benthic-coarse", "benthic-cover", "bleaching")
+CONFIG_IDS = (
+    "points", "vqa", "semseg", "benthic-coarse", "benthic-cover", "bleaching", "boxes", "captions",
+    "depth", "pairs", "instances",
+)  # fmt: skip
 
 # WP-8e-resume (manager decision 3): the staged point/mask sources each config reads.
 POINT_SOURCES = ("reefolution", "mermaid-aws")
-SEMSEG_SOURCES = ("coralscapes", "reef-support-benthic-own")
+# WP-U4: registry-driven. The semseg config reads every source with a unified ``masks`` producer
+# (``masks_table.MASK_SOURCES``); the benthic rollups stay on the two benthic-cover sources (a
+# pseudo-label, a 3-class and a scene-segmentation source must not feed cover).
+SEMSEG_SOURCES = tuple(MASK_SOURCES)
+ROLLUP_MASK_SOURCES = ("coralscapes", "reef-support-benthic-own")
+# WP-U6a: registry-driven like masks: every source with a unified ``boxes`` producer.
+BOX_CONFIG_SOURCES = tuple(BOX_SOURCES)
+# WP-U10: registry-driven too: every source with a unified ``vqa`` producer; coralvqa keeps its
+# D-Z2 ``_tasklabels`` payload as the fallback while no unified file has been written.
+VQA_CONFIG_SOURCES = tuple(VQA_SOURCES)
+LEGACY_VQA_SOURCES = ("coralvqa",)
+# WP-U11: registry-driven: every source bound to a depth / pairs producer feeds its config.
+DEPTH_CONFIG_SOURCES = tuple(s for s, v in DEPTH_PAIR_SOURCES.items() if "depth" in v.tables)
+PAIRS_CONFIG_SOURCES = tuple(s for s, v in DEPTH_PAIR_SOURCES.items() if "pairs" in v.tables)
+# WP-U10b: registry-driven like the U4 masks: every source with a unified *instance* ``masks``
+# producer (``sources.masks_instance.INSTANCE_SOURCES``: usis10k, uiis, uiis10k). Disjoint from
+# SEMSEG_SOURCES, so no mask row is counted by both configs.
+INSTANCE_CONFIG_SOURCES = tuple(INSTANCE_SOURCES)
 # WP-8e-resume (manager decision 2): bleaching is a headline reef task with its own config.
 BLEACHING_SOURCES = (
     "noaa-pifsc-bleaching",
@@ -63,7 +91,13 @@ class ConfigResult:
 
     @property
     def n_images(self) -> int:
-        return len({row["sha256"] for row in self.rows})
+        return len({_row_sha(row) for row in self.rows})
+
+
+def _row_sha(row: Mapping) -> str | None:
+    """The image join key of a task-layer row: ``image_sha256`` (unified schema) else the legacy
+    ``sha256`` (D-Z2 parquet written before WP-U3 keeps being read)."""
+    return row.get("image_sha256") or row.get("sha256")
 
 
 def _read_parquet(path: Path) -> list[dict]:
@@ -146,7 +180,139 @@ def _read_tasklabels(base_dir: Path, source_id: str, task: str) -> list[dict]:
     if tasklabels_status(base_dir, source_id, task) == "invalid":
         return []
     rows = _read_parquet(_tasklabels_path(base_dir, source_id, task))
-    return [row for row in rows if row.get("sha256")]
+    return [row for row in rows if _row_sha(row)]
+
+
+def _annotation_points(base_dir: Path, source_id: str) -> list[dict]:
+    """The unified ``points`` rows of ``source_id`` (``_annotations/points/<source>/<version>.parquet``,
+    newest version), or ``[]`` when none were written. Rows without an ``image_sha256`` are skipped."""  # noqa: E501
+    root = base_dir / "_annotations" / "points" / source_id
+    files = sorted(root.glob("*.parquet")) if root.is_dir() else []
+    return [r for r in _read_parquet(files[-1]) if r.get("image_sha256")] if files else []
+
+
+def _annotation_masks(base_dir: Path, source_id: str) -> list[dict]:
+    """The unified ``masks`` rows of ``source_id`` (newest ``_annotations/masks/<source>/<version>.parquet``)."""  # noqa: E501
+    root = base_dir / "_annotations" / "masks" / source_id
+    files = sorted(root.glob("*.parquet")) if root.is_dir() else []
+    return [r for r in _read_parquet(files[-1]) if r.get("image_sha256")] if files else []
+
+
+def _annotation_image_labels(base_dir: Path, source_id: str) -> list[dict]:
+    """The unified ``image_labels`` rows of ``source_id`` (newest ``_annotations/image_labels/<source>/<version>.parquet``)."""  # noqa: E501
+    root = base_dir / "_annotations" / "image_labels" / source_id
+    files = sorted(root.glob("*.parquet")) if root.is_dir() else []
+    return [r for r in _read_parquet(files[-1]) if r.get("image_sha256")] if files else []
+
+
+def _annotation_boxes(base_dir: Path, source_id: str) -> list[dict]:
+    """The unified ``boxes`` rows of ``source_id`` (newest ``_annotations/boxes/<source>/<version>.parquet``)."""  # noqa: E501
+    root = base_dir / "_annotations" / "boxes" / source_id
+    files = sorted(p for p in root.glob("*.parquet") if not p.name.endswith(".pending.parquet"))
+    return [r for r in _read_parquet(files[-1]) if r.get("image_sha256")] if files else []
+
+
+def _annotation_free(base_dir: Path, table: str, source_id: str) -> list[dict]:
+    """The unified ``captions`` / ``vqa`` rows of ``source_id`` (newest non-pending parquet); rows
+    that are pending (no ``image_sha256``) never reach a config."""
+    root = base_dir / "_annotations" / table / source_id
+    files = sorted(p for p in root.glob("*.parquet") if not p.name.endswith(".pending.parquet"))
+    return [r for r in _read_parquet(files[-1]) if r.get("image_sha256")] if files else []
+
+
+def _free_config_rows(records: list[dict], label_status: Mapping[str, str]) -> list[dict]:
+    return [
+        {
+            **r,
+            "sha256": r["image_sha256"],
+            "licence_class": _attrs(r).get("licence_class"),
+            "label_status": label_status.get(r["image_sha256"], r["label_status"]),
+        }
+        for r in records
+    ]
+
+
+def _bleaching_records(base_dir: Path, source_id: str) -> list[dict]:
+    """Bleaching rows of one source in the legacy shape (``sha256``, ``label_origin``,
+    ``native_label``, ``evidence``, ``pixel_count``, ``confidence``) plus the unified columns
+    (``image_sha256, ann_id, condition_node_id, match_type, annotator_type, licence_class``).
+    The unified ``image_labels`` table wins (WP-U5); else ``_tasklabels/<source>/bleaching.parquet``."""  # noqa: E501
+    unified = _annotation_image_labels(base_dir, source_id)
+    if not unified:
+        return _read_tasklabels(base_dir, source_id, "bleaching")
+    out = []
+    for r in unified:
+        extra = _attrs(r)
+        out.append(
+            {
+                "sha256": r["image_sha256"], "label_origin": r.get("annotator_type"),
+                "native_label": r["label_native"], "evidence": extra.get("evidence", "image"),
+                "pixel_count": extra.get("pixel_count"), "confidence": r.get("confidence"),
+                "image_sha256": r["image_sha256"], "ann_id": r.get("ann_id"),
+                "condition_node_id": r.get("condition_node_id"), "unified": True,
+                "match_type": r.get("match_type"), "annotator_type": r.get("annotator_type"),
+                "licence_class": extra.get("licence_class"),
+            }
+        )  # fmt: skip
+    return out
+
+
+def _attrs(row: Mapping) -> dict:
+    return json.loads(row["attrs"]) if row.get("attrs") else {}
+
+
+def _mask_records(base_dir: Path, source_id: str) -> list[dict]:
+    """Semantic mask rows of one source in the legacy semseg shape (``sha256``, ``label_origin``,
+    ``mask_key``, ``class_counts``) plus the unified columns. The unified table wins; else the
+    legacy ``_tasklabels/<source>/semseg.parquet`` is read as before."""
+    unified = _annotation_masks(base_dir, source_id)
+    if not unified:
+        return _read_tasklabels(base_dir, source_id, "semseg")
+    return [
+        {
+            "sha256": r["image_sha256"],
+            "label_origin": r.get("annotator_type"),
+            "mask_key": r["mask_ref"],
+            "class_counts": r["class_counts"],
+            "image_sha256": r["image_sha256"],
+            "ann_id": r.get("ann_id"),
+            "mask_kind": r.get("mask_kind"),
+            "match_type": r.get("match_type"),
+            "annotator_type": r.get("annotator_type"),
+            "ann_license": r.get("ann_license"),
+            "licence_class": _attrs(r).get("licence_class"),
+            "taxon_by_label": {
+                k: v["taxon_node_id"] for k, v in _attrs(r).get("class_resolution", {}).items()
+            },  # noqa: E501, RUF100
+        }
+        for r in unified
+    ]
+
+
+def _point_records(base_dir: Path, source_id: str) -> list[dict]:
+    """Point rows of one source in the unified column names. The unified table wins; else the
+    legacy ``_tasklabels/<source>/points.parquet`` is renamed on read (``native_label`` ->
+    ``label_native``, ``label_origin`` -> ``annotator_type``, ``sha256`` -> ``image_sha256``)
+    with ``match_type`` left null (legacy rows were never resolved through ``Crosswalk.resolve``)."""  # noqa: E501
+    unified = _annotation_points(base_dir, source_id)
+    if unified:
+        return unified
+    out: list[dict] = []
+    for i, point in enumerate(_read_tasklabels(base_dir, source_id, "points")):
+        origin = point.get("label_origin")
+        out.append(
+            {
+                "image_sha256": _row_sha(point),
+                "source_id": source_id,
+                "ann_id": f"{source_id}:{i}",
+                "label_native": point.get("label_native") or point["native_label"],
+                "annotator_type": point.get("annotator_type")
+                or annotator_from_origin(origin or "human")[0],  # noqa: E501, RUF100
+                "x": point["x"],
+                "y": point["y"],
+            }
+        )
+    return out
 
 
 @dataclass
@@ -181,7 +347,9 @@ def _canonical_taxon(registry: Registry, source_id: str, native_label: str) -> s
 
 
 def build_points_config(registry: Registry, base_dir: str | Path) -> ConfigResult:
-    """``points``: every :data:`POINT_SOURCES` point row, native label + canonical taxon."""
+    """``points``: every :data:`POINT_SOURCES` point in the unified column names (WP-U3):
+    ``image_sha256, source_id, ann_id, label_native, label_set, taxon_node_id, match_type,
+    worms_aphia_id, rs_benthic_code, annotator_type, x, y, x_px, y_px, label_status``."""
     base_dir = Path(base_dir)
     label_status = _load_label_status(base_dir)
     unmapped: dict[str, _SourceUnmapped] = {}
@@ -189,22 +357,31 @@ def build_points_config(registry: Registry, base_dir: str | Path) -> ConfigResul
 
     for source_id in POINT_SOURCES:
         tally = unmapped.setdefault(source_id, _SourceUnmapped())
-        for point in _read_tasklabels(base_dir, source_id, "points"):
-            canonical = _canonical_taxon(registry, source_id, point["native_label"])
-            if canonical is None:
+        for point in _point_records(base_dir, source_id):
+            native = point["label_native"]
+            taxon = point.get("taxon_node_id") or _canonical_taxon(registry, source_id, native)
+            if taxon is None:
                 tally.unmapped += 1
             else:
                 tally.known += 1
             rows.append(
                 {
-                    "sha256": point["sha256"],
+                    "image_sha256": point["image_sha256"],
                     "source_id": source_id,
-                    "label_origin": point["label_origin"],
-                    "native_label": point["native_label"],
-                    "canonical_taxon": canonical,
+                    "ann_id": point["ann_id"],
+                    "label_native": native,
+                    "label_set": point.get("label_set"),
+                    "taxon_node_id": taxon,
+                    "match_type": point.get("match_type")
+                    or ("unmapped" if taxon is None else None),  # noqa: E501, RUF100
+                    "worms_aphia_id": point.get("worms_aphia_id"),
+                    "rs_benthic_code": point.get("rs_benthic_code"),
+                    "annotator_type": point["annotator_type"],
                     "x": point["x"],
                     "y": point["y"],
-                    "label_status": label_status.get(point["sha256"], "ok"),
+                    "x_px": point.get("x_px"),
+                    "y_px": point.get("y_px"),
+                    "label_status": label_status.get(point["image_sha256"], "ok"),
                 }
             )
 
@@ -212,15 +389,59 @@ def build_points_config(registry: Registry, base_dir: str | Path) -> ConfigResul
 
 
 def build_vqa_config(base_dir: str | Path) -> ConfigResult:
-    """``vqa``: CoralVQA (today: train split) Q/A rows, unchanged — no crosswalk applies
-    to free-text VQA (D-Y note: "treat as a language/UX asset, not a measurement one")."""
+    """``vqa``: every unified ``vqa`` row (``_annotations/vqa/<source>``: question, answer,
+    ``qa_type``, ``annotator_type``, ``licence_class`` lifted from ``attrs``), registry-driven over
+    :data:`VQA_CONFIG_SOURCES`. A legacy source with no unified file still reads its D-Z2
+    ``_tasklabels`` rows unchanged. No crosswalk applies to free-text VQA (D-Y note: "treat as a
+    language/UX asset, not a measurement one")."""
     base_dir = Path(base_dir)
     label_status = _load_label_status(base_dir)
     rows: list[dict] = []
-    for source_id in ("coralvqa",):
-        for record in _read_tasklabels(base_dir, source_id, "vqa"):
-            rows.append({**record, "label_status": label_status.get(record["sha256"], "ok")})
+    for source_id in VQA_CONFIG_SOURCES:
+        if records := _annotation_free(base_dir, "vqa", source_id):
+            rows.extend(_free_config_rows(records, label_status))
+        elif source_id in LEGACY_VQA_SOURCES:
+            for record in _read_tasklabels(base_dir, source_id, "vqa"):
+                rows.append({**record, "label_status": label_status.get(record["sha256"], "ok")})
     return ConfigResult("vqa", tuple(rows), {})
+
+
+def build_captions_config(base_dir: str | Path) -> ConfigResult:
+    """``captions``: every unified ``captions`` row of every source that has a
+    ``_annotations/captions/<source>`` directory (text, ``lang``, ``caption_type``,
+    ``annotator_type`` / ``annotator_detail``, ``licence_class`` lifted from ``attrs``)."""
+    base_dir = Path(base_dir)
+    label_status = _load_label_status(base_dir)
+    root = base_dir / "_annotations" / "captions"
+    rows: list[dict] = []
+    for source_dir in sorted(p for p in root.iterdir() if p.is_dir()) if root.is_dir() else []:
+        rows.extend(
+            _free_config_rows(_annotation_free(base_dir, "captions", source_dir.name), label_status)
+        )
+    return ConfigResult("captions", tuple(rows), {})
+
+
+def _build_free_table_config(config_id: str, base_dir: str | Path, sources: tuple[str, ...]):
+    base_dir = Path(base_dir)
+    label_status = _load_label_status(base_dir)
+    rows: list[dict] = []
+    for source_id in sources:
+        records = _annotation_free(base_dir, config_id, source_id)
+        rows.extend(_free_config_rows(records, label_status))
+    return ConfigResult(config_id, tuple(rows), {})
+
+
+def build_depth_config(base_dir: str | Path) -> ConfigResult:
+    """``depth``: every unified ``depth`` row (``depth_ref``, ``units``, ``gt_type``,
+    ``licence_class`` lifted from ``attrs``) of :data:`DEPTH_CONFIG_SOURCES`; pending rows (no
+    ``image_sha256``) never reach the config. No crosswalk: depth carries no label."""
+    return _build_free_table_config("depth", base_dir, DEPTH_CONFIG_SOURCES)
+
+
+def build_pairs_config(base_dir: str | Path) -> ConfigResult:
+    """``pairs``: every unified ``pairs`` row (``pair_role``, ``ref_image_sha256``,
+    ``licence_class`` lifted from ``attrs``) of :data:`PAIRS_CONFIG_SOURCES`."""
+    return _build_free_table_config("pairs", base_dir, PAIRS_CONFIG_SOURCES)
 
 
 def build_semseg_config(registry: Registry, base_dir: str | Path) -> ConfigResult:
@@ -234,11 +455,16 @@ def build_semseg_config(registry: Registry, base_dir: str | Path) -> ConfigResul
 
     for source_id in SEMSEG_SOURCES:
         tally = unmapped.setdefault(source_id, _SourceUnmapped())
-        for record in _read_tasklabels(base_dir, source_id, "semseg"):
+        for record in _mask_records(base_dir, source_id):
             native_counts: dict[str, int] = json.loads(record["class_counts"])
             canonical_counts: dict[str, int] = {}
+            resolved = record.get("taxon_by_label")  # unified rows carry U2's per-class resolve
             for native_label, n in native_counts.items():
-                canonical = _canonical_taxon(registry, source_id, native_label)
+                canonical = (
+                    resolved.get(native_label)
+                    if resolved is not None
+                    else _canonical_taxon(registry, source_id, native_label)
+                )
                 if canonical is None:
                     tally.unmapped += n
                     continue
@@ -253,6 +479,19 @@ def build_semseg_config(registry: Registry, base_dir: str | Path) -> ConfigResul
                     "class_counts": record["class_counts"],
                     "canonical_class_counts": json.dumps(canonical_counts, sort_keys=True),
                     "label_status": label_status.get(record["sha256"], "ok"),
+                    **{
+                        k: record[k]  # unified columns, present only on unified rows
+                        for k in (
+                            "image_sha256",
+                            "ann_id",
+                            "mask_kind",
+                            "match_type",
+                            "annotator_type",
+                            "ann_license",
+                            "licence_class",
+                        )  # noqa: E501, RUF100
+                        if k in record
+                    },
                 }
             )
 
@@ -265,8 +504,10 @@ def _coarse_counts_from_points(
     """``{sha256: {coarse_class_or_unknown: n}}`` for one source's point rows."""
     per_image: dict[str, dict[str, int]] = {}
     for point in points:
-        counts = per_image.setdefault(point["sha256"], {})
-        canonical = _canonical_taxon(registry, source_id, point["native_label"])
+        counts = per_image.setdefault(point["image_sha256"], {})
+        canonical = point.get("taxon_node_id") or _canonical_taxon(
+            registry, source_id, point["label_native"]
+        )  # noqa: E501, RUF100
         target = projector.project(canonical).target_class if canonical is not None else None
         cls = target or UNKNOWN
         counts[cls] = counts.get(cls, 0) + 1
@@ -315,10 +556,10 @@ def _build_benthic_rollup(
             source_of.setdefault(sha256, source_id)
 
     for source_id in POINT_SOURCES:
-        points = _read_tasklabels(base_dir, source_id, "points")
+        points = _point_records(base_dir, source_id)
         add(source_id, _coarse_counts_from_points(registry, projector, source_id, points))
-    for source_id in SEMSEG_SOURCES:
-        masks = _read_tasklabels(base_dir, source_id, "semseg")
+    for source_id in ROLLUP_MASK_SOURCES:
+        masks = _mask_records(base_dir, source_id)
         add(source_id, _coarse_counts_from_masks(registry, projector, source_id, masks))
 
     result = {
@@ -384,8 +625,12 @@ def build_bleaching_config(registry: Registry, base_dir: str | Path) -> ConfigRe
     rows: list[dict] = []
     for source_id in BLEACHING_SOURCES:
         tally = unmapped.setdefault(source_id, _SourceUnmapped())
-        for record in _read_tasklabels(base_dir, source_id, "bleaching"):
-            node = _canonical(registry, source_id, record["native_label"], Axis.CONDITION)
+        for record in _bleaching_records(base_dir, source_id):
+            node = (
+                record.get("condition_node_id")
+                if record.get("unified")
+                else _canonical(registry, source_id, record["native_label"], Axis.CONDITION)
+            )
             if node is None:
                 tally.unmapped += 1
             else:
@@ -393,10 +638,16 @@ def build_bleaching_config(registry: Registry, base_dir: str | Path) -> ConfigRe
             rows.append(
                 {
                     "sha256": record["sha256"],
+                    "image_sha256": record["sha256"],
                     "source_id": source_id,
+                    "ann_id": record.get("ann_id"),
                     "label_origin": record["label_origin"],
+                    "annotator_type": record.get("annotator_type"),
+                    "licence_class": record.get("licence_class"),
                     "native_label": record["native_label"],
+                    "label_native": record["native_label"],
                     "canonical_condition": node,
+                    "match_type": record.get("match_type"),
                     "bleaching_condition": fine.project(node).target_class if node else None,
                     "coral_health": binary.project(node).target_class if node else None,
                     "evidence": record.get("evidence"),
@@ -410,6 +661,59 @@ def build_bleaching_config(registry: Registry, base_dir: str | Path) -> ConfigRe
     )
 
 
+def build_boxes_config(registry: Registry, base_dir: str | Path) -> ConfigResult:
+    """``boxes``: every unified ``boxes`` row (xyxy normalised + pixel columns, native label,
+    resolve fields, ``annotator_type``, ``ann_license``, ``attrs.licence_class`` lifted to a
+    ``licence_class`` column so the open / restricted split is a filter, not a re-parse).
+    ``unmapped_by_source`` is the fraction of boxes with ``match_type == unmapped``."""
+    base_dir = Path(base_dir)
+    label_status = _load_label_status(base_dir)
+    rows: list[dict] = []
+    unmapped: dict[str, float] = {}
+    for source_id in BOX_CONFIG_SOURCES:
+        records = _annotation_boxes(base_dir, source_id)
+        for r in records:
+            rows.append(
+                {
+                    **r,
+                    "licence_class": _attrs(r).get("licence_class"),
+                    "label_status": label_status.get(r["image_sha256"], r["label_status"]),
+                }
+            )
+        if records:
+            unmapped[source_id] = sum(r["match_type"] == "unmapped" for r in records) / len(records)
+    return ConfigResult("boxes", tuple(rows), unmapped)
+
+
+def build_instance_config(registry: Registry, base_dir: str | Path) -> ConfigResult:
+    """``instances``: every unified ``masks`` row with ``mask_kind == instance`` of
+    :data:`INSTANCE_CONFIG_SOURCES` (``instance_id`` column, ``polygon`` / ``rle``, native label,
+    resolve fields, ``annotator_type``, ``ann_license``; ``licence_class`` and ``modality`` lifted
+    from ``attrs``). ``unmapped_by_source`` is the fraction of instances with
+    ``match_type == unmapped``."""
+    base_dir = Path(base_dir)
+    label_status = _load_label_status(base_dir)
+    rows: list[dict] = []
+    unmapped: dict[str, float] = {}
+    for source_id in INSTANCE_CONFIG_SOURCES:
+        masks = _annotation_masks(base_dir, source_id)
+        records = [r for r in masks if r["mask_kind"] == "instance"]
+        for r in records:
+            attrs = _attrs(r)
+            rows.append(
+                {
+                    **r,
+                    "sha256": r["image_sha256"],
+                    "licence_class": attrs.get("licence_class"),
+                    "modality": attrs.get("modality"),
+                    "label_status": label_status.get(r["image_sha256"], r["label_status"]),
+                }
+            )
+        if records:
+            unmapped[source_id] = sum(r["match_type"] == "unmapped" for r in records) / len(records)
+    return ConfigResult("instances", tuple(rows), unmapped)
+
+
 def assert_no_mixed_origin_in_eval(
     rows: list[dict], split_of: Mapping[str, str], *, train_split: str = "train"
 ) -> None:
@@ -421,18 +725,35 @@ def assert_no_mixed_origin_in_eval(
     """
     origins_by_split: dict[str, set[str]] = {}
     for row in rows:
-        split = split_of.get(row["sha256"])
+        split = split_of.get(_row_sha(row))
         if split is None or split == train_split:
             continue
-        origins_by_split.setdefault(split, set()).add(row["label_origin"])
+        origins_by_split.setdefault(split, set()).add(
+            row.get("label_origin") or row["annotator_type"]
+        )  # noqa: E501, RUF100
     mixed = {split: origins for split, origins in origins_by_split.items() if len(origins) > 1}
     if mixed:
         raise ValueError(f"human and model rows mixed in eval split(s): {mixed}")
 
 
-def build_all_configs(registry: Registry, base_dir: str | Path) -> dict[str, ConfigResult]:
-    """Every config the sources available today can build (D-Z2 producers wired)."""
-    base_dir = Path(base_dir)
+def apply_flavour(result: ConfigResult, flavour: str | None) -> ConfigResult:
+    """``result`` restricted to the rows ``flavour`` may ship; with ``flavour=None`` (test
+    escape only) the release-excluded sources are still dropped."""
+    rows = flavour_filter(result.rows, flavour) if flavour else drop_release_excluded(result.rows)
+    return dataclasses.replace(result, rows=tuple(rows))
+
+
+def build_all_configs(
+    registry: Registry, base_dir: str | Path, flavour: str | None = None
+) -> dict[str, ConfigResult]:
+    """Every config the sources available today can build (D-Z2 producers wired).
+    ``flavour`` (``open`` | ``nc``) keeps only the rows that flavour ships (WP-L1a)."""
+    require_flavour(flavour, "build_all_configs")
+    built = _build_all_configs(registry, Path(base_dir))
+    return {k: apply_flavour(v, flavour) for k, v in built.items()}
+
+
+def _build_all_configs(registry: Registry, base_dir: Path) -> dict[str, ConfigResult]:
     return {
         "points": build_points_config(registry, base_dir),
         "vqa": build_vqa_config(base_dir),
@@ -440,6 +761,11 @@ def build_all_configs(registry: Registry, base_dir: str | Path) -> dict[str, Con
         "benthic-coarse": build_benthic_coarse_config(registry, base_dir),
         "benthic-cover": build_benthic_cover_config(registry, base_dir),
         "bleaching": build_bleaching_config(registry, base_dir),
+        "boxes": build_boxes_config(registry, base_dir),
+        "captions": build_captions_config(base_dir),
+        "depth": build_depth_config(base_dir),
+        "pairs": build_pairs_config(base_dir),
+        "instances": build_instance_config(registry, base_dir),
     }
 
 

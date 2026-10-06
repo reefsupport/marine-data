@@ -1,5 +1,6 @@
 # WP-6l-B (2026-09-25) new source: candidate — WP-6l-B sonar+video: acoustic-camera fish species ID across 2 camera types and 2 sites
 id: aris-didson-fish-td
+access_class: open
 adapter: zenodo
 params:
   zenodo_record: 5046708
@@ -22,3 +23,7 @@ measured:
   habitat_region: temperate rivers/estuaries, France
   dedup_chain: new; no registry/ingest-spec/WP-6g/S57 match on title, DOI or record id
   wp6l_gap: sonar+video
+# WP-U14b: source-level constants (evidence: u14-sample/upstream-fields.tsv, marked known)
+default_habitat: river
+# WP-U14c: the title and label_type name ARIS and DIDSON acoustic cameras (imaging sonar)
+default_instrument: imaging-sonar

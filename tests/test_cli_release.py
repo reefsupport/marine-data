@@ -16,6 +16,7 @@ import pytest
 import marinedata.cli_release as cli_release
 from marinedata.cli import main
 from marinedata.enums import (
+    AccessClass,
     AccessMethod,
     Capability,
     LegalBasis,
@@ -48,6 +49,7 @@ def _source() -> Source:
         description="Fixture staged source for the release-build gate test.",
         version="v1",
         licence=Licence(id="CC-BY-4.0", name="CC BY 4.0", tier=Tier.PERMISSIVE),
+        access_class=AccessClass.OPEN,
         verification=Verification(
             verified_on=date(2026, 8, 17), verified_by="synthetic fixture", method="licence-file"
         ),
@@ -66,14 +68,24 @@ def _registry() -> Registry:
     schema = LabelSchema(id="rs-benthic-v1", name="Fixture", axes=(Axis.TAXON,), nodes=())
     tasks = {"pretrain-set": TaskSpec(id="pretrain-set", kind=TaskKind.SELF_SUPERVISED)}
     profile = Profile(
-        id="research",
+        id="ship-open",
         description="fixture",
-        allow_tiers=(Tier.OWN, Tier.PERMISSIVE, Tier.COPYLEFT, Tier.NONCOMMERCIAL),
+        allow_tiers=(Tier.OWN, Tier.PERMISSIVE, Tier.COPYLEFT),
+        allow_access_classes=("open",),
     )
     return Registry(
         sources={SOURCE_ID: _source()},
         licences={},
-        profiles={"research": profile},
+        profiles={
+            "ship-open": profile,
+            "ship-noncommercial": Profile(
+                id="ship-noncommercial",
+                description="fixture",
+                allow_tiers=(Tier.OWN, Tier.PERMISSIVE, Tier.COPYLEFT, Tier.NONCOMMERCIAL),
+                allow_access_classes=("open", "restricted-nc"),
+                public_release=True,
+            ),
+        },
         schemas={"rs-benthic-v1": schema},
         tasks=tasks,
     )
@@ -134,8 +146,10 @@ def _run(monkeypatch: pytest.MonkeyPatch, tmp_path: Path, split_map: Path, extra
             str(split_map),
             "--out",
             str(tmp_path / "out"),
+            "--flavour",
+            "open",
             "--profile",
-            "research",
+            "ship-open",
             "--local",
             f"{SOURCE_ID}={root}",
             *extra,
@@ -159,20 +173,31 @@ def test_missing_split_map_with_flag_generates_it(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     split_map = tmp_path / "SPLIT_MAP.json"
-    code = _run(monkeypatch, tmp_path, split_map, ["--generate-split-map"])
+    code = _run(monkeypatch, tmp_path, split_map, ["--generate-split-map", "--no-near-dup"])
     assert code == 0
     assert split_map.exists()
+
+
+def test_generate_split_map_without_near_dup_input_fails_like_split_map(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
+    split_map = tmp_path / "SPLIT_MAP.json"
+    code = _run(monkeypatch, tmp_path, split_map, ["--generate-split-map"])
+    assert code == 1
+    assert not split_map.exists()
+    err = capsys.readouterr().err
+    assert "--near-dup" in err and "--no-near-dup" in err
 
 
 def test_generate_flag_with_existing_path_refuses_and_leaves_bytes_unchanged(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
 ) -> None:
     split_map = tmp_path / "SPLIT_MAP.json"
-    code = _run(monkeypatch, tmp_path, split_map, ["--generate-split-map"])
+    code = _run(monkeypatch, tmp_path, split_map, ["--generate-split-map", "--no-near-dup"])
     assert code == 0
     before = split_map.read_bytes()
 
-    code = _run(monkeypatch, tmp_path, split_map, ["--generate-split-map"])
+    code = _run(monkeypatch, tmp_path, split_map, ["--generate-split-map", "--no-near-dup"])
     assert code != 0
     assert split_map.read_bytes() == before
     err = capsys.readouterr().err
@@ -183,7 +208,7 @@ def test_existing_split_map_without_flag_is_unchanged_behaviour(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     split_map = tmp_path / "SPLIT_MAP.json"
-    code = _run(monkeypatch, tmp_path, split_map, ["--generate-split-map"])
+    code = _run(monkeypatch, tmp_path, split_map, ["--generate-split-map", "--no-near-dup"])
     assert code == 0
     before = split_map.read_bytes()
 
@@ -200,7 +225,7 @@ def test_pillow_mismatch_against_a_frozen_map_fails_closed(
     frozen map built under a different Pillow than the running one must fail the
     build closed, naming both versions, rather than silently trust stale dHashes."""
     split_map = tmp_path / "SPLIT_MAP.json"
-    code = _run(monkeypatch, tmp_path, split_map, ["--generate-split-map"])
+    code = _run(monkeypatch, tmp_path, split_map, ["--generate-split-map", "--no-near-dup"])
     assert code == 0
     before = split_map.read_bytes()
 
@@ -241,9 +266,12 @@ def test_fetch_failure_for_admitted_source_fails_the_build(
             str(split_map),
             "--out",
             str(out_dir),
+            "--flavour",
+            "open",
             "--profile",
-            "research",
+            "ship-open",
             "--generate-split-map",
+            "--no-near-dup",
         ]
     )
     assert code != 0

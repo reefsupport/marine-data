@@ -1,0 +1,25 @@
+# source: synthetic-seabed-debris
+# crosswalk: synthetic-seabed-debris
+# counts: types
+# retrieved: 2026-10-05 from the 700 staged labels/files/*.json (19 placed classes + generic fauna boxes)
+label	count	description
+Towel		
+Bottle		
+Pipe		
+Plastic_Bag		
+Can		
+Metal_Debris		
+Packaging_Bag		
+Basket		
+Glove		
+Tire		
+Squared_Can		
+Metal_Chain		
+Rope		
+Plastic_Debris		
+Shoe		
+Fishing_Net		
+Car_Bumper		
+Wood		
+WashingMachine		
+Fauna		

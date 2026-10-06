@@ -1,5 +1,6 @@
 # oceaninstruct: Bi et al. 2024, ACL (OceanGPT)
 id: oceaninstruct
+access_class: open
 adapter: hf
 license: MIT (HF card)
 attribution: ZJUNLP — OceanInstruct (OceanGPT)

@@ -1,4 +1,10 @@
 id: viame-public
+access_class: unknown  # LICV 2026-10-05 (was open)
+notes: >-
+  LICV 2026-10-05: access_class -> unknown (was open). Evidence:
+  https://data.kitware.com/#collection/58b747ec8d777f0aef5d0f6a . Collection (77 GB) mixes
+  many surveys; no per-folder licence metadata anonymously. Spec/registry claim of NOAA PD
+  is secondary only.
 adapter: girder
 params:
   collection: 58b747ec8d777f0aef5d0f6a
@@ -8,3 +14,8 @@ attribution: Kitware / VIAME community data collection
 citation: Kitware VIAME public data
 homepage: https://data.kitware.com/#collection/58b747ec8d777f0aef5d0f6a
 disk_floor_gib: 34.0
+
+measured:
+  label_type: stereo pairs with disparity maps (HabCam2019 3d_models); detection labels not staged
+  method: u15-label-kind-triage (registry-patch.yaml)
+  date: '2026-10-05'

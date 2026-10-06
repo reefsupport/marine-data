@@ -1,5 +1,6 @@
 # mouss-seg: NOAA PIFSC MOUSS
 id: mouss-seg
+access_class: open
 adapter: hf
 license: NOASSERTION (not stated on HF card; confirm with NOAA PIFSC MOUSS project)
 attribution: NOAA PIFSC MOUSS project

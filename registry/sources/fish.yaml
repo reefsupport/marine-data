@@ -7,6 +7,8 @@
 
 sources:
   - id: ozfish
+    release_skip_reason: "no-staged-images: nothing staged under sources/ozfish/ in rs-storage-open (Pawsey portal is unlistable; WP-R3 listing = 0 keys)"
+    access_class: open
     name: OzFish
     # habitat inferred (WP-2b) from this source's own description/notes, not independently verified
     habitat: [coral_reef]
@@ -62,6 +64,7 @@ sources:
     tags: [stereo, biomass, length]
 
   - id: deepfish
+    access_class: open
     name: DeepFish
     # habitat inferred (WP-2b) from this source's own description/notes, not independently verified
     habitat: [mixed]
@@ -152,6 +155,7 @@ sources:
     tags: [turbid, weak-labels]
 
   - id: seamapd21
+    access_class: internal-only
     name: SEAMAPD21
     # habitat inferred (WP-2b) from this source's own description/notes, not independently verified
     habitat: [mixed]
@@ -196,6 +200,7 @@ sources:
     tags: [caribbean-adjacent, needs-verification]
 
   - id: fishnet-2023
+    access_class: internal-only
     name: FishNet (ICCV 2023)
     # habitat inferred (WP-2b) from this source's own description/notes, not independently verified
     habitat: [mixed]
@@ -248,6 +253,8 @@ sources:
     tags: [taxonomy, copyleft]
 
   - id: mft25
+    release_skip_reason: "non-image-modality: video tracking benchmark, frames not extracted"
+    access_class: open
     name: MFT25 (Multiple Fish Tracking 2025)
     # habitat inferred (WP-2b) from this source's own description/notes, not independently verified
     habitat: [mixed]
@@ -290,6 +297,7 @@ sources:
     tags: [tracking, benchmark]
 
   - id: deepsea-mot
+    access_class: open
     name: DeepSea MOT (MBARI)
     # habitat inferred (WP-2b) from this source's own description/notes, not independently verified
     habitat: [deep_sea_benthic]
@@ -327,6 +335,8 @@ sources:
     tags: [tracking, tooling]
 
   - id: fathomnet
+    access_class: restricted-nd
+    licence_per_row: true
     name: FathomNet
     # habitat inferred (WP-2b) from this source's own description/notes, not independently verified
     habitat: [deep_sea_benthic]
@@ -383,6 +393,7 @@ sources:
     tags: [deep-sea, api]
 
   - id: mouss-detection
+    access_class: open
     name: MOUSS fish imagery (NOAA PIFSC)
     # habitat inferred (WP-2b) from this source's own description/notes, not independently verified
     habitat: [deep_sea_benthic]
@@ -420,6 +431,7 @@ sources:
     tags: [public-domain, baseline]
 
   - id: labeled-fishes-in-the-wild
+    access_class: open
     name: Labeled Fishes in the Wild (NOAA SWFSC)
     # habitat inferred (WP-2b) from this source's own description/notes, not independently verified
     habitat: [rocky_reef]
@@ -480,6 +492,7 @@ sources:
     tags: [public-domain, small]
 
   - id: brackish-dataset
+    access_class: open
     name: Brackish Dataset (AAU)
     # habitat inferred (WP-2b) from this source's own description/notes, not independently verified
     habitat: [soft_sediment]
@@ -519,10 +532,12 @@ sources:
     loader:
       layout: yolo-txt
       schema_id: dataset-native
+      crosswalk_id: brackish-dataset
     citation: "@InProceedings{pedersen2019brackish, title={Detection of Marine Animals in a New Underwater Dataset with Varying Visibility}, author={Pedersen, Malte and Haurum, Joakim Bruslund and Gade, Rikke and Moeslund, Thomas B. and Madsen, Niels}, booktitle = {The IEEE Conference on Computer Vision and Pattern Recognition (CVPR) Workshops}, month = {June}, year = {2019}}"
     tags: [temperate, turbidity]
 
   - id: fish4knowledge
+    access_class: internal-only
     name: Fish4Knowledge
     # habitat inferred (WP-2b) from this source's own description/notes, not independently verified
     habitat: [coral_reef]
@@ -580,6 +595,8 @@ sources:
     tags: [classic, imbalanced]
 
   - id: sea-urchin-detection
+    release_skip_reason: "no-staged-images: nothing staged under sources/sea-urchin-detection/ in rs-storage-open (WP-R3 listing = 0 keys)"
+    access_class: open
     name: Sea Urchin detection (Roboflow)
     # habitat inferred (WP-2b) from this source's own description/notes, not independently verified
     habitat: [rocky_reef]
@@ -616,6 +633,7 @@ sources:
     tags: [urchin, herbivory]
 
   - id: large-scale-fish
+    access_class: open
     name: "A Large Scale Fish Dataset (Ulucan et al.) — market/out-of-water"
     # habitat inferred (WP-2b): OUT OF WATER (market/countertop fish photos), never in situ
     habitat: [artificial]
@@ -649,9 +667,13 @@ sources:
     capabilities: [fish-classification]
     items: 18429
     annotations:
-      - kind: none
-        supervises: []
-        notes: "9 species class folders; no taxonomy crosswalk done this pass (see tags: out-of-water)."
+    - classes: 9
+      kind: image-label
+      supervises:
+      - taxon
+    - kind: dense-mask
+      notes: binary fish GT png
+      supervises: []
     coverage: { regions: [unknown] }
     loader: { layout: metadata-only }
-    tags: [out-of-water, market, general-pretraining]
+    tags: [out-of-water, market, general-pretraining, release-excluded, quarantined]

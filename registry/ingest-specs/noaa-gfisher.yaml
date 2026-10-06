@@ -1,5 +1,6 @@
 # SPEC-w3 discovery: NOAA SEAMAPD/GFISHER Gulf reef-fish video frames.
 id: noaa-gfisher
+access_class: open
 adapter: hf
 license: cc0-1.0
 attribution: NMFS-OSI

@@ -1,4 +1,5 @@
 id: deepsea-coral-cornerrise
+access_class: open
 adapter: zenodo
 params:
   zenodo_record: 18171047

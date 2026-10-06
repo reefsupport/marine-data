@@ -895,7 +895,15 @@ def fetch_sample(
                 truncated=cached_truncated,
             )
 
-    fetcher = _FETCHERS.get(source.access.method)
+    from .fetchers_remote import fetch_staged_root, staged_root_params
+
+    # A pinned staged tree declared in `access.params.staged_*` roots the source regardless of its
+    # fetch method (atlantis stays `api`/`atlantis`; its release root is the staged tree).
+    fetcher = (
+        fetch_staged_root
+        if staged_root_params(source) is not None
+        else _FETCHERS.get(source.access.method)
+    )
     if fetcher is None:
         raise FetchNotSupported(
             f"{source.id}: access method '{source.access.method.value}' cannot be "

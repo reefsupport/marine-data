@@ -1,5 +1,6 @@
 # SPEC-w3 discovery: plankton interaction videos.
 id: plankton-interaction-videos
+access_class: open
 adapter: hf
 license: apache-2.0
 attribution: bcdemattei
@@ -10,3 +11,8 @@ params:
   revision: f7d40238215e2fa2fa9e5100ccbc882a499e55ba
 
 disk_floor_gib: 34.0
+
+measured:
+  label_type: bbox YOLOv5 txt labels (Label Studio), 2 organisms
+  method: u15-label-kind-triage (registry-patch.yaml)
+  date: '2026-10-05'

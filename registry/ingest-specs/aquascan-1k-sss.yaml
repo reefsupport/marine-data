@@ -1,5 +1,6 @@
 # WP-6l-B (2026-09-25) new source: candidate — WP-6l-B sonar: small labelled side-scan detection set
 id: aquascan-1k-sss
+access_class: open
 adapter: zenodo
 params:
   zenodo_record: 18771165

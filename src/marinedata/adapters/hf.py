@@ -86,9 +86,7 @@ class HFAdapter(BaseAdapter):
         url = f"{self._base}/api/datasets/{self._repo}/tree/{self.sha}?recursive=true"
         pages = get_json_pages(url)
         first_page = next(pages, [])
-        first_files = [
-            e for e in first_page if isinstance(e, dict) and e.get("type") == "file"
-        ]
+        first_files = [e for e in first_page if isinstance(e, dict) and e.get("type") == "file"]
         prefer_parquet = not self.params.get("include") and any(
             suffix_of(e["path"]) == ".parquet" for e in first_files
         )
@@ -97,7 +95,9 @@ class HFAdapter(BaseAdapter):
             yield from first_files
             for page in pages:
                 yield from (
-                    e for e in page if isinstance(e, dict) and e.get("type") == "file"  # type: ignore[union-attr]
+                    e
+                    for e in page
+                    if isinstance(e, dict) and e.get("type") == "file"  # type: ignore[union-attr]
                 )
 
         for e in _files():

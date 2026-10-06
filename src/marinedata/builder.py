@@ -356,6 +356,7 @@ class DatasetBuilder:
         strict: bool = False,
         allow_unmapped: bool = False,
         task_id: str | None = None,
+        exclude_unmapped: bool = False,
     ) -> None:
         """
         Args:
@@ -368,6 +369,9 @@ class DatasetBuilder:
                 canonical node ids. That is almost always a mistake — a class list of
                 ``["HC", "SC", "18", "47"]`` is two vocabularies pretending to be one —
                 so it is off by default and must be chosen deliberately.
+            exclude_unmapped: drop a source with no crosswalk into ``schema_id`` from this
+                build (reason in :attr:`unmapped_excluded`) instead of raising for the whole
+                task — the release builder's per-source task exclusion (WP-R6).
         """
         self.registry = registry
         self.profile = registry.profile(profile)
@@ -379,6 +383,10 @@ class DatasetBuilder:
         self.allow_unmapped = allow_unmapped
         self.task_id = task_id
         self.task_spec = registry.task(task_id) if task_id else None
+        self.exclude_unmapped = exclude_unmapped
+        self.unmapped_excluded: tuple[tuple[str, str], ...] = ()
+        """``(source_id, reason)`` per source dropped for lacking a crosswalk into the task's
+        schema (only with ``exclude_unmapped``); set by :meth:`build`/:meth:`stream_samples`."""
         self.partial_abstain_excluded: tuple[PartialAbstainExclusion, ...] = ()
         """Set by :meth:`stream_samples`/:meth:`build_streaming` once run — see
         ``Dataset.partial_abstain_excluded`` for the eager path's equivalent."""
@@ -435,6 +443,24 @@ class DatasetBuilder:
             )
         return allowed, denied
 
+    def _drop_unmapped(self, allowed: list[Source]) -> list[Source]:
+        """With ``exclude_unmapped``: ``allowed`` minus the sources that cannot map into
+        ``schema_id`` (recorded with the reason); otherwise ``allowed`` unchanged."""
+        if not self.exclude_unmapped or self.allow_unmapped:
+            return allowed
+        unmapped = set(self._check_mappable(allowed))
+        self.unmapped_excluded = tuple(
+            (sid, f"no crosswalk into schema {self.schema_id!r} for task {self.task_id!r}")
+            for sid in sorted(unmapped)
+        )
+        kept = [source for source in allowed if source.id not in unmapped]
+        if not kept:
+            raise ValueError(
+                "every permitted source lacks a crosswalk into "
+                f"'{self.schema_id}': {', '.join(sorted(unmapped))}."
+            )
+        return kept
+
     def _partial_abstain_fits(self, sources: list[Source]) -> dict[str, SourceFit]:
         """Sources among ``sources`` whose native labels on the task's axis are a mix of
         resolved and coarser-abstaining (WS-D S26).
@@ -490,6 +516,7 @@ class DatasetBuilder:
             raise ValueError(
                 f"No permitted sources for profile '{self.profile.id}':\n  - {reasons}"
             )
+        allowed = self._drop_unmapped(allowed)
         unmapped = self._check_mappable(allowed)
         if unmapped and not self.allow_unmapped:
             raise ValueError(
@@ -607,6 +634,7 @@ class DatasetBuilder:
                 f"No permitted sources for profile '{self.profile.id}':\n  - {reasons}"
             )
 
+        allowed = self._drop_unmapped(allowed)
         unmapped = self._check_mappable(allowed)
         if unmapped and not self.allow_unmapped:
             raise ValueError(

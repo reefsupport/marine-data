@@ -7,6 +7,7 @@
 
 sources:
   - id: uieb
+    access_class: internal-only
     name: UIEB (Underwater Image Enhancement Benchmark)
     # habitat inferred (WP-2b) from this source's own description/notes, not independently verified
     habitat: [mixed]
@@ -71,6 +72,7 @@ sources:
     tags: [enhancement, noncommercial]
 
   - id: squid
+    access_class: restricted-nc
     name: SQUID (Stereo Quantitative Underwater Image Dataset)
     # habitat inferred (WP-2b) from this source's own description/notes, not independently verified
     habitat: [mixed]
@@ -109,6 +111,8 @@ sources:
     tags: [stereo, physical-gt]
 
   - id: varos
+    release_skip_reason: "no-staged-images: registry lists imagery, nothing staged under sources/ in rs-storage-open (U7/queue follow-up)"
+    access_class: open
     name: VAROS synthetic underwater dataset
     # habitat inferred (WP-2b) from this source's own description/notes, not independently verified
     habitat: [mixed]
@@ -138,6 +142,7 @@ sources:
     tags: [synthetic, permissive]
 
   - id: flsea
+    access_class: restricted-nc
     name: FLSea (visual-inertial and stereo)
     # habitat inferred (WP-2b) from this source's own description/notes, not independently verified
     habitat: [mixed]
@@ -157,11 +162,12 @@ sources:
     annotations: [{ kind: depth-map, supervises: [] }]
     coverage: { regions: [mediterranean, red-sea] }
     notes: "The reference benchmark for underwater monocular metric depth papers. NC blocks shipping use."
-    loader: { layout: metadata-only }
+    loader: { layout: staged-tree }
     citation: "Yelena Randall, Ori Lifschitz, Tali Treibitz. FLSea: Underwater Visual-Inertial and Stereo-Vision Forward-Looking Datasets. Authorea. DOI: 10.22541/au.175434035.54074686/v1. August 04, 2025. https://www.authorea.com/users/952772/articles/1322072-flsea-underwater-visual-inertial-and-stereo-vision-forward-looking-datasets"
     tags: [depth, benchmark, noncommercial]
 
   - id: suim
+    access_class: open
     name: SUIM (Semantic Segmentation of Underwater Imagery)
     # habitat inferred (WP-2b) from this source's own description/notes, not independently verified
     habitat: [mixed]

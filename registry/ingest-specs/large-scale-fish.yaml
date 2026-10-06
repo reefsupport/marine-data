@@ -2,6 +2,7 @@
 # Tagged out-of-water on the registry/sources/fish.yaml `large-scale-fish` entry so the
 # release builder can exclude it from underwater/in-situ outputs.
 id: large-scale-fish
+access_class: open
 adapter: local_dir
 params:
   path: ~/Downloads/marine-manual/large-scale-fish/data
@@ -18,3 +19,11 @@ notes: >-
   code, not data). See registry/sources/fish.yaml `large-scale-fish` entry
   (`tags: [out-of-water, ...]`) for the release-builder exclusion tag.
 disk_floor_gib: 4.0
+
+measured:
+  label_type: image-level class labels (9 classes via folder name) plus binary segmentation masks (GT png)
+  release_excluded: true
+  quarantined: true
+  release_exclusion_reason: out-of-water market photos and no licence stated
+  method: u15-label-kind-triage (registry-patch.yaml)
+  date: '2026-10-05'

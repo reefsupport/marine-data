@@ -1,5 +1,6 @@
 # ruie: NOT loadable by marinedata.cli today (needs:baidu). Documentation-only spec for WP-6d.
 id: ruie
+access_class: internal-only
 adapter: needs:baidu
 license: research (non-commercial, per upstream)
 attribution: Liu et al. — RUIE benchmark

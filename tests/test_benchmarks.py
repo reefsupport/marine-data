@@ -18,6 +18,7 @@ from marinedata.benchmarks import (
     BenchmarkRegistry,
     BenchmarksError,
     benchmarks_sha256,
+    expected_eval_count,
 )
 from marinedata.sample_schema import normalise_split
 
@@ -185,23 +186,47 @@ _COVERAGE_EXCEPTIONS: dict[str, str] = {
 }
 
 
+# Upstream directory labels that name a canonical split but that the product-level
+# ``normalise_split`` deliberately does not alias (``te``/``tr`` would also match
+# unrelated path parts in ``adapters.decode``). USOD10K names its dirs TR/VAL/TE.
+_UPSTREAM_LABEL_ALIASES = {"tr": "train", "te": "test"}
+
+
+def _norm_label(value: str) -> str | None:
+    """Canonical split for an upstream label: the shared normaliser, then the
+    test-local upstream-dir aliases above."""
+    return normalise_split(value) or _UPSTREAM_LABEL_ALIASES.get(value.strip().lower())
+
+
 def _expected_eval_count(entry) -> int | None:
     """Sum of published ``counts`` entries that correspond to this benchmark's eval
     splits (``eval_split`` + ``heldout_val``), matched by exact string or, failing
     that, by :func:`normalise_split` so ``val``/``validation``/``test``/``eval``
     variants line up. ``None`` when no matching integer-valued count exists."""
     raw_targets = entry.upstream_split.eval_splits  # {eval_split, heldout_val} - {None}
-    norm_targets = {t for t in (normalise_split(s) for s in raw_targets) if t is not None}
+    norm_targets = {t for t in (_norm_label(s) for s in raw_targets) if t is not None}
     total = 0
     found = False
     for key, n in entry.upstream_split.counts.items():
         if n is None or not isinstance(n, int):
             continue
-        norm_key = normalise_split(key)
+        norm_key = _norm_label(key)
         if key in raw_targets or (norm_key is not None and norm_key in norm_targets):
             total += n
             found = True
     return total if found else None
+
+
+def _expected_eval_files(entry) -> int | None:
+    """Documented eval FILE count (``<eval split>_files`` in ``counts``), when the registry
+    keeps it apart from the unique-image count; ``None`` otherwise."""
+    counts = entry.upstream_split.counts
+    vals = [
+        n
+        for s in entry.upstream_split.eval_splits
+        if isinstance(n := counts.get(f"{s}_files"), int) and not isinstance(n, bool)
+    ]
+    return sum(vals) if vals else None
 
 
 def _split_in_eval_targets(split: str, entry) -> bool:
@@ -211,10 +236,10 @@ def _split_in_eval_targets(split: str, entry) -> bool:
     raw_targets = entry.upstream_split.eval_splits
     if "all" in raw_targets or split in raw_targets:
         return True
-    norm_split = normalise_split(split)
+    norm_split = _norm_label(split)
     if norm_split is None:
         return False
-    norm_targets = {t for t in (normalise_split(s) for s in raw_targets) if t is not None}
+    norm_targets = {t for t in (_norm_label(s) for s in raw_targets) if t is not None}
     return norm_split in norm_targets
 
 
@@ -238,14 +263,24 @@ def test_manifest_coverage_at_least_five_or_documented(
 
     expected = _expected_eval_count(entry)
     if expected:
-        ratio = table.num_rows / expected
+        # WP-R12: coverage counts UNIQUE non-null sha256 (as the decon gate does); duplicate
+        # rows never raise it. Manifests without a sha256 column fall back to the row count.
+        if "sha256" in table.schema.names:
+            covered = len({h for h in table.column("sha256").to_pylist() if h})
+        else:
+            covered = table.num_rows
+        ratio = covered / expected
         if ratio < 0.99:
-            msgs.append(f"{path.name}: {table.num_rows} rows / {expected} eval images < 99%")
+            msgs.append(f"{path.name}: {covered} unique images / {expected} eval images < 99%")
         # Skip upper-bound check for trashcan (two annotation versions with separate val splits)
-        if entry.id != "trashcan" and table.num_rows > 1.05 * expected:
-            msgs.append(
-                f"{path.name}: {table.num_rows} rows > 105% of {expected} eval images"
-            )
+        # WP-R13: the registry count is UNIQUE images; byte-identical duplicate files each keep a
+        # manifest row. The row cap therefore uses the documented file count (``<split>_files``,
+        # e.g. deepseagrass test_files) when there is one, and the unique cap stays on ``expected``.
+        row_cap_base = _expected_eval_files(entry) or expected
+        if entry.id != "trashcan" and table.num_rows > 1.05 * row_cap_base:
+            msgs.append(f"{path.name}: {table.num_rows} rows > 105% of {row_cap_base} eval images")
+        if entry.id != "trashcan" and covered > 1.05 * expected:
+            msgs.append(f"{path.name}: {covered} unique images > 105% of {expected} eval images")
 
     # Skip split-label check for suim (stale 'images' label from before path-split fix)
     if entry.id != "suim" and "upstream_split" in table.schema.names:
@@ -320,3 +355,19 @@ def _load_fixture(doc: dict, tmp_path: Path | None = None, name: str = "fixture.
     path = tmp_path / name
     path.write_text(json.dumps(doc))
     return BenchmarkRegistry.load(path)
+
+
+@pytest.mark.parametrize(
+    ("bench", "unique", "files"), [("deepseagrass", 24098, 28353), ("ruod", 4100, 4200)]
+)
+def test_duplicate_heavy_benchmarks_pin_unique_count_and_documented_files(
+    registry: BenchmarkRegistry, bench: str, unique: int, files: int
+) -> None:
+    """WP-R13: the eval count is the UNIQUE sha256 count (verified from the staged CHECKSUMS),
+    the file count is a separate documented field that never feeds the coverage denominator,
+    and ``verified_by`` names the artefact and the unique-sha256 rule."""
+    entry = registry.by_id(bench)
+    assert _expected_eval_count(entry) == unique
+    assert expected_eval_count(entry) == unique
+    assert _expected_eval_files(entry) == files
+    assert "CHECKSUMS" in entry.verified_by and "unique sha256" in entry.verified_by

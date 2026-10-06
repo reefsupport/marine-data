@@ -1,4 +1,10 @@
 id: rf100-coral-lwptl
+access_class: unknown  # LICV 2026-10-05 (was open)
+notes: >-
+  LICV 2026-10-05: access_class -> unknown (was open). Evidence:
+  https://huggingface.co/datasets/LibreYOLO/coral-lwptl . Third-party HF mirror defers to
+  the original Roboflow Universe project (roboflow-100/coral-lwptl, 403 anonymously).
+  Upstream licence not read.
 adapter: hf
 params:
   repo: LibreYOLO/coral-lwptl

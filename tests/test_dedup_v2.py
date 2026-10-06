@@ -252,8 +252,8 @@ def test_cli_gate(tmp_path: Path) -> None:
     import pyarrow.parquet as pq
 
     rel = tmp_path / "rel"
-    (rel / "manifests").mkdir(parents=True)
-    (rel / "manifests" / "t.tsv").write_text("image_sha256\tsplit\na\ttrain\nb\ttest\n")
+    (rel / "tasks").mkdir(parents=True)
+    (rel / "tasks" / "t.tsv").write_text("image_sha256\tsplit\na\ttrain\nb\ttest\n")
     groups = tmp_path / "groups.parquet"
     pq.write_table(
         pa.table(
@@ -270,3 +270,15 @@ def test_cli_gate(tmp_path: Path) -> None:
         groups,
     )
     assert main(["dedup", "gate", str(rel), "--groups", str(groups)]) == 0
+
+
+def test_gate_reads_probe_as_val_not_as_a_second_split(tmp_path: Path) -> None:
+    from marinedata.dedup.groups import read_release_rows, run_gate
+
+    rel = tmp_path / "rel"
+    (rel / "tasks").mkdir(parents=True)
+    # the same val image is `probe` in general-pretraining (builder._to_pretrain_vocabulary)
+    (rel / "tasks" / "a.tsv").write_text("image_sha256\tsplit\nx\tval\n")
+    (rel / "tasks" / "general-pretraining.tsv").write_text("image_sha256\tsplit\nx\tprobe\n")
+    assert sorted(read_release_rows(rel)) == [("x", "val"), ("x", "val")]
+    assert run_gate(read_release_rows(rel), {"x": "g"}, {}).ok

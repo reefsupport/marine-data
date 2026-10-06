@@ -147,9 +147,11 @@ def load_groups(path: str | Path) -> tuple[dict[str, str], dict[str, list[str]]]
 
 def read_release_rows(release_dir: str | Path) -> list[tuple[str, str]]:
     rows: list[tuple[str, str]] = []
-    manifests = sorted((Path(release_dir) / "manifests").glob("*.tsv"))
+    # `release build` writes the per-task manifests to <release>/tasks/ (hf_export and decon read
+    # them there); the gate used to look in <release>/manifests/ and so never found a built release.
+    manifests = sorted((Path(release_dir) / "tasks").glob("*.tsv"))
     if not manifests:
-        raise DedupGateError(f"no manifests/*.tsv under {release_dir}")
+        raise DedupGateError(f"no tasks/*.tsv under {release_dir}")
     for manifest in manifests:
         with manifest.open() as fh:
             header = fh.readline().rstrip("\n").split("\t")
@@ -157,7 +159,10 @@ def read_release_rows(release_dir: str | Path) -> list[tuple[str, str]]:
                 raise DedupGateError(f"{manifest}: unexpected header {header}")
             for line in fh:
                 sha, split = line.rstrip("\n").split("\t")[:2]
-                rows.append((sha, split))
+                # `probe` is general-pretraining's name for the held-out `val` images (builder
+                # _to_pretrain_vocabulary), not a split of its own: val here + probe there is
+                # one split, not a group spanning two.
+                rows.append((sha, "val" if split == "probe" else split))
     return rows
 
 

@@ -73,7 +73,7 @@ def test_gate_on_the_full_registry_fails_only_on_no_crosswalk_yet(reg):
     target or an unmappable-with-no-reason. (The unscoped gate; CI runs scoped_gate.)"""
     meta = tx.load_meta(reg.root)
     no_crosswalk = set(meta.get("no_crosswalk_yet") or {})
-    assert len(no_crosswalk) == 17
+    assert len(no_crosswalk) == 20  # 21 before WP-R3 gave brackish-dataset its crosswalk
     fails = tx.gate(reg, reg.root)
     assert fails, "expected the 17 unresolved no_crosswalk_yet sources to fail"
     staged = set(tx.staged_sources(reg))
@@ -193,7 +193,7 @@ def test_reefolution_meets_the_floor_without_an_exception(reg):
     assert "reefolution" not in (tx.load_meta(reg.root).get("coverage_exceptions") or {})
 
 
-FROZEN_TAXONOMY_VERSION = "2.2.0"
+FROZEN_TAXONOMY_VERSION = "2.9.0"
 """Charter D-AD: the v2 release ships taxonomy 2.1.0. Bumping it is a deliberate act —
 freeze a new ``registry/taxonomy/releases/<v>.json`` and update this pin together."""
 
@@ -323,6 +323,7 @@ def test_binary_not_bleached_labels_share_one_rule(reg):
         ("roboflow-bleaching-condition-hb", "Healthy"),
         ("roboflow-bleaching-condition-hu", "Healthy"),
         ("reef-support-bleaching-condition", "non_bleached"),
+        ("kaggle-healthy-bleached-corals", "healthy_corals"),
     ]
     edges = {pair: reg.crosswalk(pair[0]).edge(pair[1]) for pair in pairs}
     assert all(e is not None for e in edges.values()), edges

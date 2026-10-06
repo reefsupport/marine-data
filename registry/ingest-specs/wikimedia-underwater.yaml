@@ -1,5 +1,6 @@
 # Wikimedia Commons: files in 'Category:Underwater photographs' and every subcategory whose title contains 'nderwater' (depth <= 6).
 id: wikimedia-underwater
+access_class: open
 adapter: commons-api
 params:
   root_category: Underwater photographs

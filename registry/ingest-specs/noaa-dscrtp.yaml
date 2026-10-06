@@ -1,4 +1,5 @@
 id: noaa-dscrtp
+access_class: open
 adapter: erddap-csv-imagelist
 params:
   endpoint: https://www.ncei.noaa.gov/erddap/tabledap/deep_sea_corals.csv

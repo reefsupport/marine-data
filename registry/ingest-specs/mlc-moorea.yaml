@@ -1,5 +1,6 @@
 # MCR LTER Moorea Labelled Corals point-annotation set (knb-lter-mcr.5006.3), EDI/DataONE PASTA.
 id: mlc-moorea
+access_class: open
 adapter: needs:pasta-api
 license: CC-BY-4.0 (MCR LTER policy)
 attribution: Moorea Coral Reef LTER

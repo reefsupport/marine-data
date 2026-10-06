@@ -1,5 +1,6 @@
 # WP-6g (2026-09-25) new source: candidate — WP-6g gap 1,2: Ocean Networks Canada fixed observatory camera, Aug 2022-Aug 2023: a year-long time series with fauna labels
 id: onc-camdsb103-fauna
+access_class: open
 adapter: zenodo
 params:
   zenodo_record: 22134596

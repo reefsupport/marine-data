@@ -2,6 +2,7 @@
 # copy of this dataset (tar member of coral_bleaching/others.tar.gz, never extracted)
 # already exists at registry/sources/coral-benthic.yaml `kaggle-healthy-bleached-corals`.
 id: kaggle-healthy-bleached-corals
+access_class: internal-only
 adapter: local_dir
 params:
   path: ~/Downloads/marine-manual/kaggle-healthy-bleached-corals/data

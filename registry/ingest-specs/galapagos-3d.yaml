@@ -1,4 +1,5 @@
 id: galapagos-3d
+access_class: open
 adapter: zenodo
 params:
   zenodo_record: 14914807

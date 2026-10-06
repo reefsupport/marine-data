@@ -1,4 +1,5 @@
 id: obsea-fish
+access_class: open
 adapter: zenodo
 params:
   zenodo_record: 14888440

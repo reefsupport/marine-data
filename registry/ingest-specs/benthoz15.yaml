@@ -1,4 +1,5 @@
 id: benthoz15
+access_class: open
 adapter: bucket
 params:
   endpoint: s3-ap-southeast-2.amazonaws.com

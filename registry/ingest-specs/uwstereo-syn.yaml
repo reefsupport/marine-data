@@ -1,5 +1,6 @@
 # WP-6l-B (2026-09-25) new source: needs_adapter:split-zip — WP-6l-B depth-3d: large synthetic underwater stereo-matching set
 id: uwstereo-syn
+access_class: open
 adapter: hf
 params:
   repo: daviddev96/UWStereo_2

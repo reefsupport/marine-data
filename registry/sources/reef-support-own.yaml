@@ -5,6 +5,7 @@
 
 sources:
   - id: reef-support-benthic-own
+    access_class: open
     name: Reef Support benthic instance masks — own imagery (Colombia)
     # habitat inferred (WP-2b) from this source's own description/notes, not independently verified
     habitat: [coral_reef]
@@ -140,6 +141,7 @@ sources:
     tags: [moat, caribbean, octocoral, biota-only]
 
   - id: reef-support-seaview-labels
+    access_class: internal-only
     name: Reef Support annotations on XL Catlin Seaview imagery
     # habitat inferred (WP-2b) from this source's own description/notes, not independently verified
     habitat: [coral_reef]
@@ -240,6 +242,7 @@ sources:
     tags: [needs-permission, annotation-ip, octocoral]
 
   - id: reef-support-bleaching
+    access_class: open
     name: Reef Support bleaching masks (Tayrona)
     # habitat inferred (WP-2b) from this source's own description/notes, not independently verified
     habitat: [coral_reef]
@@ -346,6 +349,7 @@ sources:
     tags: [multi-task, caribbean]
 
   - id: reefolution
+    access_class: internal-only
     name: Reefolution partner imagery (Kenya)
     # habitat inferred (WP-2b) from this source's own description/notes, not independently verified
     habitat: [coral_reef]
@@ -438,6 +442,7 @@ sources:
     tags: [needs-permission]
 
   - id: ibf
+    access_class: internal-only
     name: IBF partner imagery
     # habitat inferred (WP-2b) from this source's own description/notes, not independently verified
     habitat: [coral_reef]
@@ -486,6 +491,8 @@ sources:
     tags: [needs-permission]
 
   - id: coralscop-masks-rs
+    access_class: internal-only
+    default_habitat: coral_reef  # WP-U14b: evidence table marks the setting known
     name: CoralSCOP pseudo-masks (our generation)
     # habitat inferred (WP-2b) from this source's own description/notes, not independently verified
     habitat: [coral_reef]
@@ -559,6 +566,7 @@ sources:
     tags: [pseudo-label, never-eval]
 
   - id: rs-labelled-masks
+    access_class: internal-only
     name: rs_labelled segmentation masks (second annotation set over reef_support images)
     # habitat inferred (WP-2b) from this source's own description/notes, not independently verified
     habitat: [coral_reef]
@@ -633,6 +641,7 @@ sources:
     tags: [needs-permission]
 
   - id: mussel-ai-data
+    access_class: unknown
     name: Mussel AI detector data (origin unconfirmed)
     # habitat inferred (WP-2b) from this source's own description/notes, not independently verified
     habitat: [rocky_reef]

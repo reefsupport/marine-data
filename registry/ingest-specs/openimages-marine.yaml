@@ -1,4 +1,5 @@
 id: openimages-marine
+access_class: open
 adapter: csv-url-index
 params:
   bucket: s3://open-images-dataset/

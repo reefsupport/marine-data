@@ -1,5 +1,6 @@
 # Ocean Networks Canada Oceans 3.0 / SeaTube cabled-observatory video + stills (Barkley Canyon, Folger Passage, to 2,700 m).
 id: onc
+access_class: open
 adapter: needs:onc-token
 license: CC-BY-4.0 (with account)
 attribution: Ocean Networks Canada (University of Victoria)

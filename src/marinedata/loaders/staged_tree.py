@@ -198,6 +198,15 @@ class StagedTreeLoader(_HarmonizingLoader):
             grouped.setdefault((record["partition"], record["stem"]), []).append(record)
         return grouped
 
+    def _row_licences(self) -> dict[str, str]:
+        """``stem -> own licence`` from the source's per-row normaliser (WP-R2b); empty for
+        every source whose licence is decided whole."""
+        if not self.source.licence_per_row:
+            return {}
+        from ..metadata_norm.local import staged_row_licences
+
+        return staged_row_licences(self.source.id, self.root)
+
     def _iter_samples(self) -> Iterator[Sample]:
         images_by_key = _by_partition_stem(self.root / "images")
         masks_by_key = self._masks_by_key()
@@ -205,6 +214,7 @@ class StagedTreeLoader(_HarmonizingLoader):
         points_by_key = self._points_by_key()
         image_labels_by_key = self._image_labels_by_key()
         mask_values = self._mask_values()
+        row_licences = self._row_licences()
 
         for record in _read_parquet(self._metadata_path()).to_pylist():
             partition = staged_partition(record)
@@ -255,6 +265,9 @@ class StagedTreeLoader(_HarmonizingLoader):
             }
             if record.get("upstream_split"):
                 meta["upstream_split"] = record["upstream_split"]
+            if record.get("license") or row_licences.get(stem):
+                # WP-R2/R2b: the row's own licence (metadata_norm per-row normaliser output)
+                meta["license"] = record.get("license") or row_licences[stem]
             if native:
                 meta["native_labels"] = native
                 meta["n_points"] = len(points)

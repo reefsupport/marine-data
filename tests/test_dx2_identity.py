@@ -223,7 +223,9 @@ def test_sentinel_to_value_is_enrichment_only_where_listed() -> None:
 def test_manifest_only_refuses_generate_and_sources_from_alone(tmp_path: Path) -> None:
     common = ["release", "build", "--release", "v1", "--out", str(tmp_path)]
     split_map = ["--split-map", str(tmp_path / "SPLIT_MAP.json")]
-    assert main([*common, *split_map, "--manifest-only", "--generate-split-map"]) == 1
+    assert (
+        main([*common, *split_map, "--manifest-only", "--generate-split-map", "--no-near-dup"]) == 1
+    )
     assert main([*common, *split_map, "--sources-from", str(tmp_path / "R.json")]) == 1
 
 
@@ -269,7 +271,17 @@ def test_manifest_only_task_files_match_full_build(
     monkeypatch.setattr(cli_release, "checksums_digest", _local_checksums)
     full, lite = tmp_path / "full", tmp_path / "lite"
     split_map = full / "SPLIT_MAP.json"
-    base = ["release", "build", "--release", "r", "--profile", "research", *local]
+    base = [
+        "release",
+        "build",
+        "--release",
+        "r",
+        "--flavour",
+        "open",
+        "--profile",
+        "ship-open",
+        *local,
+    ]
     assert (
         main(
             [
@@ -279,6 +291,7 @@ def test_manifest_only_task_files_match_full_build(
                 "--split-map",
                 str(split_map),
                 "--generate-split-map",
+                "--no-near-dup",
                 "--seed",
                 "0",
             ]
@@ -286,5 +299,7 @@ def test_manifest_only_task_files_match_full_build(
         == 0
     )
     assert main([*base, "--out", str(lite), "--split-map", str(split_map), "--manifest-only"]) == 0
-    status = compare_task_dirs(full / "releases" / "r" / "tasks", lite / "releases" / "r" / "tasks")
+    status = compare_task_dirs(
+        full / "releases" / "r" / "open" / "tasks", lite / "releases" / "r" / "open" / "tasks"
+    )
     assert status and set(status.values()) == {"identical"}, status

@@ -1,5 +1,6 @@
 # MUOT-3M: 3,030 MP4 tracking videos + per-frame box txt. WP-6e-B: D-AB frame sampler (1 per 10 frames, <= 1 fps).
 id: muot3m
+access_class: restricted-nd
 adapter: hf
 license: CC-BY-NC-ND-4.0 (HF card)
 attribution: MUOT-3M authors

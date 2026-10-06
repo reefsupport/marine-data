@@ -1,4 +1,5 @@
 id: oceandark
+access_class: internal-only
 adapter: gdrive
 params:
   landing: https://sites.google.com/view/oceandark/home

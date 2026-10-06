@@ -1,6 +1,8 @@
 # Planktonzilla-17M: 15 plankton imaging instruments pooled (UVP5/6, ZooScan, IFCB, FlowCam, ISIIS...). Stage ALL (91 GB, cheap);
 # WP-6e-B: the D-AB subset is ENFORCED at ingest (subset.enforce) -- the full 91 GB is streamed, only the subset is staged.
 id: planktonzilla
+access_class: restricted-nc
+licence_per_row: true
 adapter: hf
 license: other (HF card); per-sample licence = the originating instrument dataset (column `dataset`)
 attribution: project-oceania — Planktonzilla-17M

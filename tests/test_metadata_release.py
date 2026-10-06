@@ -211,3 +211,71 @@ def test_build_rows_joins_geo_backfill_and_generalizes_sensitive(tmp_path):
     assert (gen["lat"], gen["lon"], gen["location_generalized"]) == (12.4, -81.5, True)
     (none,) = mr.build_rows(refs, registry, tmp_path, {}, backfill_root=tmp_path / "empty")
     assert none["geo_precision"] == "none" and none["lat"] is None
+
+
+def _group_fixture(tmp_path, staged_group):
+    import pyarrow as pa
+    import pyarrow.parquet as pq
+
+    staged_dir = tmp_path / "src-a" / "v1"
+    staged_dir.mkdir(parents=True)
+    cols = {"stem": ["stem1"], "partition": ["default"], "upstream_path": ["o/stem1.jpg"]}
+    if staged_group is not None:
+        cols["split_group"] = [staged_group]
+    pq.write_table(pa.table(cols), staged_dir / "metadata.parquet")
+    return _Registry({"src-a": _source()})
+
+
+def _ref(group):
+    from pathlib import Path
+
+    return [mr.ImageRef("s" * 64, "src-a", Path("/x/default/stem1.jpg"), "train", group)]
+
+
+def test_split_group_falls_back_to_the_release_group_and_staged_wins(tmp_path):
+    """WP-R9: suim/mermaid/atlantis had a NULL split_group in the metadata config because only
+    the staged metadata.parquet was read; the release's own group is the fallback."""
+    registry = _group_fixture(tmp_path, None)
+    (row,) = mr.build_rows(_ref("site-7"), registry, tmp_path, {})
+    assert row["split_group"] == "site-7"
+    mr.require_split_groups([row])
+    registry = _group_fixture(tmp_path / "b", "staged-1")
+    (row,) = mr.build_rows(_ref("site-7"), registry, tmp_path / "b", {})
+    assert row["split_group"] == "staged-1"
+
+
+def test_a_null_split_group_cannot_reach_the_export_silently(tmp_path):
+    registry = _group_fixture(tmp_path, None)
+    (row,) = mr.build_rows(_ref(None), registry, tmp_path, {})
+    assert row["split_group"] is None
+    with pytest.raises(mr.MetadataBuildError, match=r"NULL split_group.*src-a \(1 rows\)"):
+        mr.require_split_groups([row])
+    # the export entry point enforces it too
+    from pathlib import Path
+
+    from marinedata.hf_export import ExportRow
+
+    layout = {
+        "images": (
+            None,
+            {
+                "train": [
+                    ExportRow(
+                        values={"image_sha256": "s" * 64, "source_id": "src-a"},
+                        file=Path("/x/default/stem1.jpg"),
+                    )
+                ]
+            },
+        )
+    }
+    with pytest.raises(mr.MetadataBuildError, match="src-a"):
+        mr.add_metadata_config(layout, registry, {"src-a": tmp_path / "src-a" / "v1"})
+
+
+def test_metadata_rows_carry_privacy_flag_and_face_score(tmp_path):
+    """WP-R9: the 0.60-0.85 band is kept and flagged; everything else has neither column set."""
+    registry = _group_fixture(tmp_path, "g1")
+    (flagged,) = mr.build_rows(_ref("g1"), registry, tmp_path, {}, privacy_flags={"s" * 64: 0.7})
+    assert (flagged["privacy_flag"], flagged["face_score"]) == ("possible_face", 0.7)
+    (plain,) = mr.build_rows(_ref("g1"), registry, tmp_path, {})
+    assert (plain["privacy_flag"], plain["face_score"]) == (None, None)

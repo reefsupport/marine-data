@@ -50,6 +50,9 @@ from .hf_export import (
     SampleRow as ExportSampleRow,
 )
 from .hf_parquet import ConfigSpec, ExportRow, plan_config, write_shard
+from .licence_class import drop_release_excluded, flavour_filter, resolve_row_class
+from .privacy import policy as privacy_policy
+from .privacy.policy import POSSIBLE_FACE, PrivacyOutcome
 from .registry import Registry, Source
 
 METADATA = "metadata"
@@ -59,7 +62,10 @@ METADATA_COLUMNS: tuple[tuple[str, str], ...] = (
     ("source_id", "string"),
     ("source_version", "string"),
     ("license", "string"),
+    ("licence_class", "string"),
     ("attribution", "string"),
+    ("split_group", "string"),
+    ("split", "string"),
     ("upstream_id", "string"),
     ("upstream_url", "string"),
     ("fetch_date", "string"),
@@ -88,6 +94,8 @@ METADATA_COLUMNS: tuple[tuple[str, str], ...] = (
     ("q_entropy", "double"),
     ("q_blank", "bool"),
     ("quality_flags", "string"),
+    ("privacy_flag", "string"),
+    ("face_score", "double"),
 )
 """Every field the WP-2 brief lists, plus WP-1's quality join and the join key itself.
 ``fetch_date``/``capture_datetime`` are ISO-8601 strings (:mod:`marinedata.hf_parquet`
@@ -142,6 +150,73 @@ class ImageRef:
     source_id: str
     file: Path
     split: str
+    split_group: str | None = None
+    """The release's own group for the image (the ``images`` config value, fail-closed at the
+    group split), used when the source's staged metadata carries none (WP-R9)."""
+
+
+def refs_from_layout(layout) -> list[ImageRef]:
+    """The ``image_sha256`` set + primary file of a built layout's ``images`` config."""
+    if "images" not in layout:
+        return []
+    _, splits = layout["images"]
+    return [
+        ImageRef(
+            row.values["image_sha256"],
+            row.values["source_id"],
+            row.file,
+            split,
+            row.values.get("split_group"),
+        )
+        for split, export_rows in splits.items()
+        for row in export_rows
+    ]
+
+
+def require_split_groups(rows: Sequence[Mapping[str, object]]) -> None:
+    """Fail closed (WP-R9): a ``metadata`` row with no ``split_group`` must not be exported.
+    The group is what keeps a site/station out of two splits; the error names every source."""
+    missing: dict[str, int] = {}
+    for row in rows:
+        if not row.get("split_group"):
+            sid = str(row.get("source_id"))
+            missing[sid] = missing.get(sid, 0) + 1
+    if missing:
+        listing = ", ".join(f"{sid} ({n} rows)" for sid, n in sorted(missing.items()))
+        raise MetadataBuildError(
+            f"metadata rows with a NULL split_group for source(s): {listing}; neither the staged "
+            "metadata nor the release's images config carries one"
+        )
+
+
+def add_metadata_config(
+    layout,
+    registry: Registry,
+    roots: Mapping[str, Path],
+    *,
+    flavour: str | None = None,
+    quality_by_sha: Mapping[str, dict] | None = None,
+    meow_polygons: Sequence[MeowFeature] = (),
+    privacy_flags: Mapping[str, float] | None = None,
+):
+    """``layout`` plus the ``metadata`` config (WP-R2b): one row per exported image, joined on
+    ``image_sha256`` + ``source_id`` + ``source_version``, split-aligned with ``images``. Rows come
+    from each source's staged ``metadata.parquet`` (under ``roots``) and are flavour-filtered per
+    row, so every row carries a non-null ``licence_class``. Returns a new layout."""
+    refs = refs_from_layout(layout)
+    if not refs:
+        return layout  # no images config -> nothing to describe
+    rows = build_rows(
+        refs, registry, Path("."), quality_by_sha or {}, meow_polygons, flavour=flavour,
+        source_roots=roots, privacy_flags=privacy_flags,
+    )  # fmt: skip
+    require_split_groups(rows)
+    split_by_sha = {r.sha256: r.split for r in refs}
+    splits = {
+        s: [ExportRow(values=r) for r in rows if split_by_sha[r["image_sha256"]] == s]
+        for s in SPLIT_ORDER
+    }
+    return {**layout, METADATA: (METADATA_SPEC, {s: v for s, v in splits.items() if v})}
 
 
 def collect_image_refs(registry: Registry, release_dir: Path, cache: Path) -> list[ImageRef]:
@@ -149,14 +224,11 @@ def collect_image_refs(registry: Registry, release_dir: Path, cache: Path) -> li
     roots = _roots(release_dir, cache)
     rows: dict[str, list[ExportSampleRow]] = collect_rows(registry, roots, release_dir)
     rows = drop_excluded(rows, DEFAULT_EXCLUDE_CONFIGS)
-    layout = build_layout(rows)
-    _, splits = layout["images"]
-    refs = []
-    for split, export_rows in splits.items():
-        for row in export_rows:
-            sha, sid = row.values["image_sha256"], row.values["source_id"]
-            refs.append(ImageRef(sha, sid, row.file, split))
-    return refs
+    release_json = release_dir / "RELEASE.json"
+    release = json.loads(release_json.read_text()) if release_json.is_file() else {}
+    flavour = release.get("flavour")
+    layout = build_layout(rows, flavour=flavour)
+    return refs_from_layout(layout)
 
 
 STAGING_BUCKET = "rs-storage-open"
@@ -187,21 +259,38 @@ def _fetch_staged_metadata_from_s3(source: Source, dest: Path) -> bool:
     return True
 
 
-def _staged_lookup(stage_root: Path, source: Source) -> dict[tuple[str, str], dict]:
+STAGED_GEO = ("lat", "lon", "capture_datetime", "camera", "platform", "depth_m")
+"""Normalised SampleRow columns a staged ``metadata.parquet`` may carry; the geo backfill wins."""
+
+
+def _staged_lookup(
+    stage_root: Path, source: Source, root: Path | None = None
+) -> dict[tuple[str, str], dict]:
     """``(partition, stem) -> staged metadata row`` for one source's version: local copy
     if present, else the D-D S3 fallback (:func:`_fetch_staged_metadata_from_s3`)."""
     import pyarrow.parquet as pq
 
     path = stage_root / source.id / source.version / "metadata.parquet"
+    if root is not None and (Path(root) / "metadata.parquet").is_file():
+        path = Path(root) / "metadata.parquet"  # the source's own staged tree (hf_export roots)
     if not path.is_file():
         cached = stage_root / ".s3-cache" / source.id / source.version / "metadata.parquet"
         if cached.is_file() or _fetch_staged_metadata_from_s3(source, cached):
             path = cached
         else:
             return {}
-    table = pq.read_table(path, columns=["stem", "partition", "upstream_path"])
+    wanted = ["stem", "partition", "upstream_path", "license", "split_group", *STAGED_GEO]
+    present = set(pq.read_schema(path).names)
+    table = pq.read_table(path, columns=[c for c in wanted if c in present])
+    own: dict[str, str] = {}
+    if getattr(source, "licence_per_row", False):
+        from .metadata_norm.local import staged_row_licences
+
+        own = staged_row_licences(source.id, path.parent)
     out = {}
     for row in table.to_pylist():
+        if own.get(row["stem"]) and not row.get("license"):
+            row = {**row, "license": own[row["stem"]]}
         out[(row["partition"], row["stem"])] = row
     return out
 
@@ -252,8 +341,14 @@ def build_rows(
     backfill_root: Path = BACKFILL_ROOT,
     sample_labels: Mapping[str, Sequence[str]] | None = None,
     cr_en_labels: frozenset[str] = frozenset(),
+    flavour: str | None = None,
+    source_roots: Mapping[str, Path] | None = None,
+    privacy_flags: Mapping[str, float] | None = None,
 ) -> list[dict]:
-    """``sample_labels`` (``image_sha256 -> label strings``) + ``cr_en_labels`` feed the
+    """``flavour`` (``open`` | ``nc``) keeps only the rows that flavour may ship; every row
+    carries ``licence_class`` (``resolve_row_class``: the source's class, stricter if its own
+    licence string says so; a per-row source with no row licence is ``unknown``).
+    ``sample_labels`` (``image_sha256 -> label strings``) + ``cr_en_labels`` feed the
     WP-2b CR/EN location gate per sample; v1 has no species-level per-sample labels, so the
     default is a no-op there. Geography comes from :mod:`marinedata.geo_backfill`."""
     rows: list[dict] = []
@@ -263,14 +358,17 @@ def build_rows(
     for ref in refs:
         source = registry.source(ref.source_id)
         if ref.source_id not in staged_cache:
-            staged_cache[ref.source_id] = _staged_lookup(stage_root, source)
+            staged_cache[ref.source_id] = _staged_lookup(
+                stage_root, source, (source_roots or {}).get(ref.source_id)
+            )
         staged = staged_cache[ref.source_id]
         partition, stem = ref.file.parent.name, ref.file.stem
         staged_row = staged.get((partition, stem), {})
         if ref.source_id not in geo_cache:
             geo_cache[ref.source_id] = load_backfill(ref.source_id, backfill_root)
         geo = geo_cache[ref.source_id].get(f"{partition}/{stem}", {})
-        lat, lon, depth_m = geo.get("lat"), geo.get("lon"), geo.get("depth_m")
+        own = {k: geo.get(k) if geo.get(k) is not None else staged_row.get(k) for k in STAGED_GEO}
+        lat, lon, depth_m = own["lat"], own["lon"], own["depth_m"]
         gps_precision_m = None
         sensitive = is_location_sensitive(
             source, sample_labels=sample_labels.get(ref.sha256, ()), cr_en_labels=cr_en_labels
@@ -278,18 +376,28 @@ def build_rows(
         lat, lon, generalized = _generalize(lat, lon, sensitive)
         meow = classify(lat, lon, meow_polygons) if lat is not None else None
         q = quality_by_sha.get(ref.sha256, {})
+        row_licence = (
+            staged_row.get("license") if getattr(source, "licence_per_row", False) else None
+        ) or source.licence.id
         rows.append(
             {
                 "image_sha256": ref.sha256,
                 "source_id": ref.source_id,
                 "source_version": source.version,
-                "license": source.licence.id,
+                "license": row_licence,
+                "licence_class": resolve_row_class(
+                    getattr(source, "access_class", None),
+                    row_licence,
+                    per_row=getattr(source, "licence_per_row", False),
+                ),
                 "attribution": attribution_for(source),
+                "split_group": staged_row.get("split_group") or ref.split_group,
+                "split": ref.split,  # the frozen map's split (Hub name), so check 8 can read it
                 "upstream_id": staged_row.get("upstream_path"),
                 "upstream_url": None,
                 "fetch_date": source.verification.verified_on.isoformat(),
                 "lineage_root_digest": lineage_root_digest_for(source, registry),
-                "capture_datetime": geo.get("capture_datetime"),
+                "capture_datetime": own["capture_datetime"],
                 "lat": lat,
                 "lon": lon,
                 "geo_precision": geo.get("geo_precision") or "none",
@@ -297,8 +405,8 @@ def build_rows(
                 "gps_precision_m": gps_precision_m,
                 "depth_m": depth_m,
                 "depth_source": None,
-                "platform": geo.get("platform"),
-                "camera": geo.get("camera"),
+                "platform": own["platform"],
+                "camera": own["camera"],
                 "meow_realm": meow.realm if meow else None,
                 "meow_province": meow.province if meow else None,
                 "meow_ecoregion": meow.ecoregion if meow else None,
@@ -313,8 +421,11 @@ def build_rows(
                 "q_entropy": q.get("q_entropy"),
                 "q_blank": q.get("q_blank"),
                 "quality_flags": ",".join(q.get("flags") or []) or None,
+                "privacy_flag": POSSIBLE_FACE if ref.sha256 in (privacy_flags or {}) else None,
+                "face_score": (privacy_flags or {}).get(ref.sha256),
             }
         )
+    rows = flavour_filter(rows, flavour) if flavour is not None else drop_release_excluded(rows)
     return sorted(rows, key=lambda r: r["image_sha256"])
 
 
@@ -482,6 +593,12 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--release-dir", type=Path, required=True)
     parser.add_argument("--stage-root", type=Path, required=True)
     parser.add_argument("--quality", type=Path, required=True)
+    parser.add_argument(
+        "--privacy",
+        type=Path,
+        default=None,
+        help="privacy.parquet: apply the release privacy policy",
+    )
     parser.add_argument("--meow", type=Path, default=None)
     parser.add_argument("--out", type=Path, required=True)
     parser.add_argument("--summary", type=Path, required=True)
@@ -491,12 +608,23 @@ def main(argv: list[str] | None = None) -> int:
 
     registry = Registry.load()
     refs = collect_image_refs(registry, args.release_dir, cache_root())
+    outcome = PrivacyOutcome()
+    if args.privacy:
+        outcome = privacy_policy.evaluate(
+            privacy_policy.load_privacy_rows(args.privacy), {r.sha256: r.source_id for r in refs}
+        )
+        refs = [r for r in refs if r.sha256 not in outcome.excluded]
     quality_table = pq.read_table(args.quality)
     quality_by_sha = {r["image_sha256"]: r for r in quality_table.to_pylist()}
     from .geo_meow import load_meow_polygons
 
     polygons = load_meow_polygons(args.meow) if args.meow and args.meow.is_file() else ()
-    rows = build_rows(refs, registry, args.stage_root, quality_by_sha, polygons)
+    flavour = json.loads((args.release_dir / "RELEASE.json").read_text()).get("flavour")
+    rows = build_rows(
+        refs, registry, args.stage_root, quality_by_sha, polygons, flavour=flavour,
+        privacy_flags=outcome.flags,
+    )  # fmt: skip
+    require_split_groups(rows)
     split_by_sha = {r.sha256: r.split for r in refs}  # already HF split names (build_layout)
     for row in rows:
         row["_split"] = split_by_sha[row["image_sha256"]]

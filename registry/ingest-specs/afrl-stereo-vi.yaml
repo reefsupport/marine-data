@@ -1,5 +1,6 @@
 # SPEC-w3 discovery: underwater stereo + visual-inertial sequences.
 id: afrl-stereo-vi
+access_class: open
 adapter: hf
 license: mit
 attribution: afrl-uw

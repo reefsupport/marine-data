@@ -1,5 +1,6 @@
 # DISCOL Peru Basin Disturbance-and-Colonization abyssal-plain seafloor images (RV SONNE SO242/2), PANGAEA.
 id: discol-peru-basin-ofos
+access_class: open
 adapter: pangaea-series
 params:
   doi: 10.1594/PANGAEA.890634

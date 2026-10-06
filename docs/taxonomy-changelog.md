@@ -1,5 +1,86 @@
 # Taxonomy changelog
 
+## 2.9.0 — 2026-10-05
+
+MINOR: 0 nodes and 6 edges added, nothing removed, re-parented or retargeted
+(`marinedata taxonomy diff 2.8.0 HEAD`: nodes added 0 / removed 0 / changed 0; edges added 6 / removed 0 / changed 0).
+
+- **WP-R3 (bbox release label gate):** new `brackish-dataset` crosswalk (6 edges, all to existing nodes, same targets and
+  fidelities as `brackishmot-class-id`: fish and small fish -> `A146419` Vertebrata, crab -> `A106673`, shrimp -> `A1130`,
+  jellyfish -> `A1740301`, starfish -> `A123080`) with `vocab/brackish-dataset.tsv`; the loader gains `crosswalk_id` and the
+  `no_crosswalk_yet` entry is dropped. The vocabulary is the paper's (no tree is staged), so edges are keyed by name.
+- `vocab/mouss-detection.tsv` and `vocab/labeled-fishes-in-the-wild.tsv` added for the existing single-class `fish` crosswalks
+  (their coverage was unmeasured, so the release gate failed them); no edge changes.
+- Still open: `ozfish` and `sea-urchin-detection` have no crosswalk (vocabulary not obtainable offline).
+
+## 2.8.0 — 2026-10-05
+
+MINOR: 0 nodes and 23 edges added, nothing removed, re-parented or retargeted
+(`marinedata taxonomy diff 2.7.0 HEAD`: nodes added 0 / removed 0 / changed 0; edges removed 0 / changed 0).
+
+- **WP-U6c:** three new crosswalks for the sonar box readers, each with its `vocab/<source>.tsv`, all pointing at existing nodes
+  (no new nodes): `sss-mine-detection` (2 edges, both classes -> `NT_UNKNOWN`), `swdd-sss-wall` (1 edge -> `NT_WRECK`, an existing node) and
+  `synthetic-seabed-debris` (20 edges: 19 debris classes -> `NT_DEBRIS`, generic `Fauna` -> `A2` Animalia).
+
+## 2.7.0 — 2026-10-05
+
+MINOR: 2 nodes and 2 edges added, nothing removed, re-parented or retargeted
+(`marinedata taxonomy diff 2.6.0 HEAD`: nodes removed 0 / changed 0; edges removed 0 / changed 0).
+
+- **WP-U9 step 0:** `brackishmot-class-id` gains class 6 = jellyfish -> Medusozoa (`coarsened`, as in `roboflow-aquarium`).
+  Class 6 is documented by the BrackishMOT paper (arXiv:2302.10645) and occurs in the staged gt.txt files (the WP-U8a smoke
+  had missed it); `vocab/brackishmot.tsv` and its header note are corrected.
+- **WP-U13:** new `seaturtleid2022` crosswalk + `vocab/seaturtleid2022.tsv`: the dataset-level species `Caretta caretta`
+  (WoRMS 137205, accepted; loggerhead sea turtles per arXiv:2311.05524) -> `A137205` (`exact`), with the genus node `A137066`.
+
+## 2.6.0 — 2026-10-05
+
+MINOR: 6 nodes and 5 edges added, nothing removed or re-parented, no existing target changed
+(`marinedata taxonomy diff 2.5.0 HEAD`: nodes removed 0 / changed 0; 81 edges changed = 80 `unmappable` -> mapped
+(they had no target) and `bony fish` fidelity coarsened -> approximate on the same target).
+
+- **WP-U8b:** `fathomnet-concepts` long tail: every unmapped label with >= 10 boxes (echinoderm, ctenophore, chaetognath,
+  hermit crab, sea spider, isopod, ...) decided in `vocab/fathomnet-common-names.tsv` with WoRMS-confirmed ids
+  (box-weighted mapped 0.9637 -> 0.9835). `bony fish` -> Actinopterygii is now `related` (note: Osteichthyes not a node;
+  adding it would re-parent, i.e. MAJOR). Non-taxon axis: equipment / litter / unknown labels map `exact` to
+  `NT_EQUIPMENT` / `NT_DEBRIS` / `NT_UNKNOWN` (new `target` column of the table). New `brackishmot-class-id` crosswalk +
+  `vocab/brackishmot.tsv` (class ids 1-5 = fish, crab, shrimp, starfish, small fish; BrackishMOT paper arXiv:2302.10645).
+
+## 2.5.0 — 2026-10-05
+
+MINOR: 1,776 nodes and 1,702 edges added, nothing removed, re-parented or retargeted
+(`marinedata taxonomy diff 2.4.0 HEAD`: removed 0, changed 0).
+
+- **WP-U8a:** fauna crosswalks through the pinned WoRMS snapshot. `fathomnet-concepts` 294 -> 1,989 edges
+  (1,950 observed concepts, 150,458 boxes; box-weighted 0.964 mapped), new `roboflow-aquarium` (7 edges),
+  `vocab/fathomnet{,-fgvc25}.tsv`, `vocab/roboflow-aquarium.tsv`. 52 lowercase common names (>= 100 boxes) are
+  decided by hand in `vocab/fathomnet-common-names.tsv` (WoRMS-confirmed ids; sea fan -> Octocorallia,
+  bony fish -> Actinopterygii, marine organism -> Biota, non-taxa unmapped). Snapshot +2,029 rows, never rewritten.
+
+## 2.4.0 — 2026-10-05
+
+MINOR: two new crosswalks + vocabs, no nodes added and no existing edge retargeted.
+
+- **WP-U5:** `kaggle-healthy-bleached-corals` (bleached_corals -> BLEACHED exact, healthy_corals ->
+  HEALTHY coarsened, the shared not-bleached rule) and `noaa-pifsc-esa-coral-icra` (ICRA ->
+  HC_ISOPORA coarsened), with `vocab/*.tsv` (923 image labels, 470 label files).
+
+## 2.3.0 — 2026-10-05
+
+MINOR: new crosswalk + vocab, no nodes added and no existing edge retargeted.
+
+- **WP-U4:** `coralseg-ucsd-mosaics` crosswalk (Hard Coral -> HC, Soft Coral -> SC exact; "Other"
+  unmappable, listed under `coverage_exceptions`) and `vocab/coralseg-ucsd-mosaics.tsv`
+  (4,922 masks scanned).
+
+## 2.2.1 — 2026-10-05
+
+PATCH-sized cut for already-landed work: crosswalk edges added after 2.2.0 was frozen. The
+frozen 2.2.0 manifest is untouched; this release freezes the working tree as it stands.
+
+- **WP-U3:** `seaview-point-labels` and `ibf-cpce-codes` crosswalks (+ vocab TSVs), no
+  nodes added and no existing edge retargeted.
+
 ## 2.2.0 — 2026-09-30
 
 MINOR: new crosswalk + vocab, no nodes/edges retargeted.

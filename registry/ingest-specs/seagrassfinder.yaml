@@ -1,4 +1,5 @@
 id: seagrassfinder
+access_class: restricted-nd
 adapter: zenodo
 params:
   zenodo_record: 13904604

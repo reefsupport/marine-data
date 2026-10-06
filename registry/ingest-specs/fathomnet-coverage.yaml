@@ -1,4 +1,6 @@
 id: fathomnet-coverage
+access_class: restricted-nd
+licence_per_row: true
 adapter: hf
 params:
   repo: FathomNet/full-coverage-test-sets

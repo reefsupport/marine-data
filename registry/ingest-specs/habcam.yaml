@@ -1,5 +1,6 @@
 # HabCam towed stereo-camera scallop/benthic survey imagery (NOAA NEFSC, Georges Bank / Mid-Atlantic).
 id: habcam
+access_class: internal-only
 adapter: needs:nefsc-request
 license: public domain (US government work, per NOAA norm), request-based access
 attribution: NOAA NEFSC / WHOI HabCam group

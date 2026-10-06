@@ -1,5 +1,6 @@
 # NOAA Ocean Exploration ROV dive video (Okeanos Explorer). NCEI video portal unreachable (curl 000) on 2026-09-25, three tries.
 id: noaa-oer-video
+access_class: open
 adapter: needs:source-down
 license: public domain (US government work)
 attribution: NOAA Ocean Exploration

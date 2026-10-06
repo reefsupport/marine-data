@@ -23,8 +23,16 @@ def _cmd_check(args: argparse.Namespace) -> int:
     print(f"benchmarks {len(reg.benchmarks)} verified {verified}/{len(reg.benchmarks)}")
     print(f"benchmarks_sha256 {digest}")
     print(f"manifests present {len(reg.benchmarks) - len(pending)} pending {len(pending)}")
+    uncovered = reg.uncovered()
+    print(f"decon-exempt {len(reg.exemptions())} uncovered {len(uncovered)}")
     if args.strict and pending:
         print(f"pending: {', '.join(sorted(pending))}", file=sys.stderr)
+    if args.strict and uncovered:
+        print(
+            f"uncovered (no manifest, no exemption): {', '.join(sorted(uncovered))}",
+            file=sys.stderr,
+        )
+        return 1
     return 0
 
 
@@ -53,6 +61,8 @@ def _default_specs_dir() -> Path:
 
 
 def _cmd_manifest(args: argparse.Namespace) -> int:
+    import pyarrow.parquet as pq
+
     from .bench_manifest import (
         ManifestBuildError,
         build_manifest,
@@ -70,11 +80,18 @@ def _cmd_manifest(args: argparse.Namespace) -> int:
         print(f"unknown benchmark id: {args.benchmark_id}", file=sys.stderr)
         return 1
     out_path = reg.manifest_path(entry.id)
-    client = client_from_rclone(args.remote) if args.source != "upstream" else None
+    client = client_from_rclone(args.remote, concurrent=True) if args.source != "upstream" else None
     source = resolve_source(args.source, entry, client, args.bucket) if client else "upstream"
     try:
         if source == "bucket":
-            images = iter_bucket_images(client, args.bucket, entry)
+            done = (
+                frozenset(pq.read_table(out_path, columns=["stem"]).column("stem").to_pylist())
+                if out_path.is_file()
+                else frozenset()
+            )  # a resumed build never re-fetches the images it already hashed
+            images = iter_bucket_images(
+                client, args.bucket, entry, layout=args.layout, skip_stems=done
+            )
             table, n_before = build_manifest(entry, images, out_path)
         else:
             with tempfile.TemporaryDirectory(prefix="marinedata-bench-") as tmp:
@@ -116,15 +133,27 @@ def add_bench_subparser(sub: argparse._SubParsersAction) -> None:
     path_arg(q)
     q.add_argument("benchmark_id")
     q.add_argument(
-        "--source", choices=("bucket", "upstream", "auto"), default="auto",
+        "--source",
+        choices=("bucket", "upstream", "auto"),
+        default="auto",
         help="bucket: rs-storage-open parquet; upstream: ingest adapter stream; "
         "auto: pick by CHECKSUMS.sha256 (default)",
+    )
+    q.add_argument(
+        "--layout",
+        choices=("auto", "staged"),
+        default="auto",
+        help="bucket source only. auto: _stream parts when present, else staged images/. "
+        "staged: metadata.parquet + loose images/ only, fetching just the eval-split objects "
+        "(use when the eval split is a small slice of the tree)",
     )
     q.add_argument("--bucket", default="rs-storage-open")
     q.add_argument("--remote", default="rs-hel1", help="rclone remote name for bucket credentials")
     q.add_argument("--specs-dir", type=Path, default=_default_specs_dir())
     q.add_argument(
-        "--max-bytes", type=int, default=None,
+        "--max-bytes",
+        type=int,
+        default=None,
         help="Upstream source only: stop once fetched sample bytes reach this cap "
         "(resumable — rerun to continue past it)",
     )

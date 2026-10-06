@@ -1,5 +1,6 @@
 # WP-6l-B (2026-09-25) new source: candidate — WP-6l-B salient: reef marine-animal instance masks
 id: rmas-hf
+access_class: internal-only
 adapter: hf
 params:
   repo: nobg/RMAS

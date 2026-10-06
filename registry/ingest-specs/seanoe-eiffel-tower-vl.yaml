@@ -1,5 +1,6 @@
 # WP-6g (2026-09-25) new source: candidate — WP-6g gap 1,5: deep-sea (~1,700 m) ROV imagery with long-term revisits and SfM poses; first deep 3D/relocalisation set
 id: seanoe-eiffel-tower-vl
+access_class: open
 adapter: http
 params:
   version: seanoe-92226

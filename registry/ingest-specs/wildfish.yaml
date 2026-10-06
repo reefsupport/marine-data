@@ -1,5 +1,6 @@
 # wildfish: Zhuang et al. 2018 ACMMM / 2020 TMM
 id: wildfish
+access_class: internal-only
 adapter: hf
 license: research-only (non-commercial, per upstream)
 attribution: Zhuang et al. — WildFish (HF mirror of the official release)

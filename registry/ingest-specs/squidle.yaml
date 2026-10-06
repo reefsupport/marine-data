@@ -1,4 +1,5 @@
 id: squidle
+access_class: unknown
 adapter: needs:squidle-api-auth
 license: per-campaign, mostly CC-BY (stated per collection)
 attribution: Squidle+ / CATAMI consortium (AIMS, UWA, IMOS)

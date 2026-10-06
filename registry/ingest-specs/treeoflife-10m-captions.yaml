@@ -1,5 +1,7 @@
 # WP-6g (2026-09-25) new source: candidate — WP-6g gap 4: image-text pairs for the already-queued treeoflife-10m marine members: join on the ToL key, text only
 id: treeoflife-10m-captions
+access_class: restricted-nc
+licence_per_row: true
 adapter: hf
 params:
   repo: imageomics/TreeOfLife-10M-Captions

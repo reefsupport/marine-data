@@ -129,3 +129,41 @@ def test_generate_stratified_is_byte_identical_and_reports_strata(
     assert json.loads(outs[0].read_text())["stratify"] == "source"
     printed = capsys.readouterr().out
     assert "stratum own:" in printed and "stratum points:" in printed
+
+
+# --- WP-R6: no empty val/test per source ------------------------------------------------
+
+
+def test_source_with_three_groups_gets_a_group_in_every_split() -> None:
+    strata = {"a": {"g1": 90, "g2": 6, "g3": 4}}
+    got = assign_splits_stratified(strata, RATIOS, seed=0, min_groups=3)
+    assert sorted(got.values()) == ["test", "train", "val"]
+
+
+def test_val_is_taken_from_train_never_from_the_upstream_test() -> None:
+    # The R5b case: 14 groups forced to test by the upstream split, 7 left to allocate
+    # (7 train / 14 test / 0 val before WP-R6).
+    groups = {f"g{i:02d}": 10 for i in range(21)}
+    pinned = {f"g{i:02d}": "test" for i in range(14)}
+    got = assign_splits_stratified({"suim": groups}, RATIOS, seed=0, pinned=pinned)
+    assert set(got) == {f"g{i:02d}" for i in range(14, 21)}  # pinned groups are never moved
+    split_of = {**pinned, **got}
+    per = {s: sum(1 for v in split_of.values() if v == s) for s in ("train", "val", "test")}
+    assert per["val"] >= 1 and per["train"] >= 1
+    assert per["test"] == 14  # nothing was taken from the upstream test
+
+
+def test_a_shared_group_is_not_moved_if_it_empties_another_strata_split() -> None:
+    strata = {
+        "a": {"g1": 60, "g2": 20, "g3": 20, "shared": 10},
+        "b": {"shared": 10, "b1": 10, "b2": 10},
+    }
+    got = assign_splits_stratified(strata, RATIOS, seed=3)
+    for name, groups in strata.items():
+        splits = {got[g] for g in groups}
+        assert splits == {"train", "val", "test"}, (name, got)
+
+
+def test_small_strata_stay_train_only() -> None:
+    got = assign_splits_stratified({"a": {"g1": 5, "g2": 5}}, RATIOS, seed=0, min_groups=3)
+    assert set(got.values()) == {"train"}

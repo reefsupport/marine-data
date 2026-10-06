@@ -1,4 +1,5 @@
 id: marinedet
+access_class: unknown
 adapter: needs:unresolved-source
 license: unknown
 attribution: unresolved

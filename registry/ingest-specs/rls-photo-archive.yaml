@@ -1,4 +1,5 @@
 id: rls-photo-archive
+access_class: unknown
 adapter: needs:unresolved-host
 license: unknown (RLS data-sharing policy applies to counts; photo archive terms unclear)
 attribution: Reef Life Survey Foundation
