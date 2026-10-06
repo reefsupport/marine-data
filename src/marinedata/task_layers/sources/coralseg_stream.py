@@ -22,6 +22,7 @@ from pathlib import Path
 from typing import Any
 
 from ... import checksums
+from ...concurrency import head_with_retry
 from . import coralseg as base
 
 
@@ -78,7 +79,7 @@ def verify_heads(
     def bad(item: tuple[str, int]) -> str | None:
         rel, size = item
         try:
-            head = client.head_object(Bucket=bucket, Key=f"{key_prefix}/{rel}")
+            head = head_with_retry(client, bucket, f"{key_prefix}/{rel}")
         except Exception:
             return rel
         return None if int(head["ContentLength"]) == size else rel

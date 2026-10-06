@@ -43,7 +43,7 @@ from typing import Any
 
 from . import checksums
 from .adapters import suffix_of
-from .concurrency import HostLimiter, is_retryable_head, retry_with_backoff, tag_s3_key
+from .concurrency import HostLimiter, head_with_retry, retry_with_backoff, tag_s3_key
 from .ingest_missing import MissingLedger, decode_status, fetch_status
 from .ingest_source import (
     _CONTAINERS,
@@ -198,28 +198,29 @@ class _Putter:
         for fut in pending:
             fut.result()
 
-    def verify(self, files: Mapping[str, tuple[str, int]]) -> int:
-        ok = 0
-        for rel in sorted(files):
-            sha, size = files[rel]
-            head = tag_s3_key(
-                self.key(rel),
-                lambda rel=rel: retry_with_backoff(
-                    lambda: self.client.head_object(Bucket=self.bucket, Key=self.key(rel)),
-                    retries=6,
-                    base=1.0,
-                    cap=30.0,
-                    retryable=is_retryable_head,
-                ),
-            )
-            etag = str(head["ETag"]).strip('"')
-            if int(head["ContentLength"]) != size or (
-                etag != self.ledger.get(rel, {}).get("etag")
-                and (head.get("Metadata") or {}).get("sha256") != sha
-            ):
-                raise RuntimeError(f"verify failed: {rel}")
-            ok += 1
-        return ok
+    def _verify_one(self, rel: str, sha: str, size: int) -> None:
+        head = head_with_retry(self.client, self.bucket, self.key(rel))
+        etag = str(head["ETag"]).strip('"')
+        if int(head["ContentLength"]) != size or (
+            etag != self.ledger.get(rel, {}).get("etag")
+            and (head.get("Metadata") or {}).get("sha256") != sha
+        ):
+            raise RuntimeError(f"verify failed: {rel}")
+
+    def verify(self, files: Mapping[str, tuple[str, int]], *, jobs: int = 1) -> int:
+        """HEAD every file (size, then ETag or sha256 metadata). ``jobs`` > 1 fans the
+        HEADs out (verify-only of a 70k-object version); the first failure stops it."""
+        rels = sorted(files)
+        if jobs <= 1:
+            for rel in rels:
+                self._verify_one(rel, *files[rel])
+            return len(rels)
+        pool = ThreadPoolExecutor(max_workers=jobs)
+        try:
+            list(pool.map(lambda rel: self._verify_one(rel, *files[rel]), rels))
+        finally:
+            pool.shutdown(wait=True, cancel_futures=True)
+        return len(rels)
 
     def close(self, *, wait: bool) -> None:
         self.pool.shutdown(wait=wait, cancel_futures=not wait)

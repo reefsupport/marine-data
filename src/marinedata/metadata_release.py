@@ -35,6 +35,7 @@ from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
 from pathlib import Path
 
+from .concurrency import head_with_retry
 from .geo_backfill import BACKFILL_ROOT, load_backfill
 from .geo_meow import MeowFeature, classify
 from .hf_export import (
@@ -161,6 +162,11 @@ def collect_image_refs(registry: Registry, release_dir: Path, cache: Path) -> li
 STAGING_BUCKET = "rs-storage-open"
 
 
+def _is_absent(exc: BaseException) -> bool:
+    code = str(getattr(exc, "response", {}).get("Error", {}).get("Code", ""))
+    return code in {"404", "NoSuchKey", "NotFound"}
+
+
 def _fetch_staged_metadata_from_s3(source: Source, dest: Path) -> bool:
     """D-D fallback: GET ``sources/<id>/<version>/metadata.parquet`` from the durable
     staging bucket when no local copy exists. Returns ``False`` (dest untouched) if the
@@ -171,9 +177,11 @@ def _fetch_staged_metadata_from_s3(source: Source, dest: Path) -> bool:
     key = f"sources/{source.id}/{source.version}/metadata.parquet"
     client = client_from_rclone()
     try:
-        client.head_object(Bucket=STAGING_BUCKET, Key=key)
-    except Exception:
-        return False
+        head_with_retry(client, STAGING_BUCKET, key)
+    except Exception as exc:
+        if _is_absent(exc):
+            return False
+        raise  # a persistent 405/5xx must not read as "not staged yet"
     dest.parent.mkdir(parents=True, exist_ok=True)
     client.download_file(STAGING_BUCKET, key, str(dest))
     return True

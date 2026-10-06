@@ -86,7 +86,8 @@ def is_retryable_head(exc: BaseException) -> bool:
     run4, after 7.7 h); a HEAD of an existing key is idempotent, so retry it. Verify only."""
     response = getattr(exc, "response", None)
     if isinstance(response, dict) and getattr(exc, "operation_name", None) == "HeadObject":
-        if (response.get("ResponseMetadata") or {}).get("HTTPStatusCode") == 405:
+        status = (response.get("ResponseMetadata") or {}).get("HTTPStatusCode")
+        if status == 405:
             return True
     return is_retryable_exc(exc)
 
@@ -166,6 +167,23 @@ def retry_with_backoff(
                 break
             time.sleep(min(cap, base * (2**attempt)) + random.uniform(0, jitter))
     raise RetriesExhausted(f"failed after {retries} attempts: {last}") from last
+
+
+def head_with_retry(client: Any, bucket: str, key: str) -> Any:
+    """``client.head_object`` for every verify/marker HEAD: retries a 405 (RGW glitch),
+    5xx, throttle and timeout via :func:`is_retryable_head` (6 tries, 1 s base, 30 s cap,
+    about 31 s), and tags ``key`` on whatever escapes. A 404 is not retried and keeps its
+    type, so callers that treat it as "absent" are unchanged."""
+    return tag_s3_key(
+        key,
+        lambda: retry_with_backoff(
+            lambda: client.head_object(Bucket=bucket, Key=key),
+            retries=6,
+            base=1.0,
+            cap=30.0,
+            retryable=is_retryable_head,
+        ),
+    )
 
 
 class HostLimiter:

@@ -76,7 +76,12 @@ def _marker_present(client: Any, spec: Any, version: str) -> bool:
 
 
 def run_one(
-    spec_path: Path, work_root: Path, client: Any, *, stream: bool = False
+    spec_path: Path,
+    work_root: Path,
+    client: Any,
+    *,
+    stream: bool = False,
+    verify_only: bool = False,
 ) -> dict[str, Any]:
     """Run (or skip) a single spec. Never raises for ``AccessRefused``; a real exception
     is caught, reported as ``status: error``, and re-raised by the caller's own check of
@@ -103,7 +108,7 @@ def run_one(
             version, _ = list_source(spec, adapter, listings)  # cached for run_ingest
         else:
             version = spec.version or adapter.resolve_version()
-        if _marker_present(client, spec, version):
+        if _marker_present(client, spec, version) and not verify_only:
             return {
                 "source_id": spec.id,
                 "version": version,
@@ -111,7 +116,14 @@ def run_one(
                 "elapsed_s": elapsed(),
             }
         work.mkdir(parents=True, exist_ok=True)
-        report = run_ingest(spec, work, client=client, listing_cache=listings, stream=use_stream)
+        if verify_only:  # read-only: HEAD every object, write the stub, upload nothing
+            from .ingest_verify import verify_staged
+
+            report = verify_staged(spec, version, work, client)
+        else:
+            report = run_ingest(
+                spec, work, client=client, listing_cache=listings, stream=use_stream
+            )
         return {
             "source_id": report.source_id,
             "version": report.version,
@@ -151,6 +163,7 @@ def _run_one_hf_aware(
     max_cooldowns: int,
     sleep: Callable[[float], None],
     stream: bool = False,
+    verify_only: bool = False,
 ) -> dict[str, Any]:
     """``run_one``, plus D-AA: on an HF 429 cool down and retry in place (keeping HF
     concurrency at 1 via ``hf_semaphore``, regardless of ``--jobs``), up to
@@ -158,7 +171,8 @@ def _run_one_hf_aware(
     from .ingest_source import IngestSpec
 
     spec = IngestSpec.load(spec_path)
-    _mode = {"stream": True} if stream else {}  # disk mode keeps the 3-arg call
+    # disk mode keeps the 3-arg call
+    _mode = {k: True for k, on in (("stream", stream), ("verify_only", verify_only)) if on}
     is_hf = spec.adapter == "hf"
     cooldowns = 0
     while True:
@@ -192,6 +206,7 @@ def run_batch(
     hf_max_cooldowns: int = HF_MAX_COOLDOWNS,
     sleep: Callable[[float], None] = time.sleep,
     stream: bool = False,
+    verify_only: bool = False,
 ) -> list[dict[str, Any]]:
     """Run every spec under ``specs_dir``; return the per-source result dicts in spec
     order. One JSONL line per finished source is written to ``out`` as it completes.
@@ -217,6 +232,7 @@ def run_batch(
                 max_cooldowns=hf_max_cooldowns,
                 sleep=sleep,
                 stream=stream,
+                verify_only=verify_only,
             )
             print(json.dumps(res, sort_keys=True), file=out, flush=True)
             results[str(p)] = res
@@ -233,6 +249,7 @@ def run_batch(
                     max_cooldowns=hf_max_cooldowns,
                     sleep=sleep,
                     stream=stream,
+                    verify_only=verify_only,
                 ): p
                 for p in paths
             }
@@ -253,6 +270,7 @@ def _cmd_ingest_batch(args: argparse.Namespace) -> int:
             jobs=args.jobs,
             remote=args.remote,
             stream=getattr(args, "stream", False),
+            verify_only=getattr(args, "verify_only", False),
         )
     except ValueError as exc:
         print(f"error: {exc}", file=sys.stderr)
@@ -293,5 +311,11 @@ def add_ingest_batch_subparser(sub: argparse._SubParsersAction) -> None:
         "--stream",
         action="store_true",
         help="WP-6h: stage from memory straight to S3 (floor: stream_disk_floor_gib, default 3)",
+    )
+    p.add_argument(
+        "--verify-only",
+        action="store_true",
+        help="HEAD every object of an already-staged version against its CHECKSUMS and write "
+        "registry-stub-<id>.yaml; never uploads (for a run that died in verify or skip-done)",
     )
     p.set_defaults(func=_cmd_ingest_batch)

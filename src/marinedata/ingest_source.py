@@ -33,7 +33,7 @@ from . import checksums, sample_schema
 from .adapters import SPOOLED, make_adapter, suffix_of
 from .adapters._http import HashingReader, TapeRecall
 from .adapters.decode import IMAGE_SUFFIXES
-from .concurrency import HostLimiter, retry_with_backoff
+from .concurrency import HostLimiter, head_with_retry, retry_with_backoff
 from .ingest_deferred import DeferredLedger
 from .ingest_listing import list_source
 from .ingest_missing import MISSING_FILE, MissingLedger, decode_status, fetch_status
@@ -292,7 +292,7 @@ class _Uploader:
         ok = 0
         for rel in rels:
             want = self.ledger[rel]
-            head = self.client.head_object(Bucket=self.spec.bucket, Key=f"{self.key_prefix}/{rel}")
+            head = head_with_retry(self.client, self.spec.bucket, f"{self.key_prefix}/{rel}")
             etag = str(head["ETag"]).strip('"')
             if int(head["ContentLength"]) != want["size"] or (
                 etag != want["etag"]

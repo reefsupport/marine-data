@@ -28,7 +28,7 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
 
-from .concurrency import retry_with_backoff
+from .concurrency import head_with_retry, retry_with_backoff
 
 MiB = 1 << 20
 GiB = 1 << 30
@@ -158,7 +158,7 @@ class UploadResult:
 
 def _head(client: Any, bucket: str, key: str) -> dict | None:
     try:
-        return retry_with_backoff(lambda: client.head_object(Bucket=bucket, Key=key))
+        return head_with_retry(client, bucket, key)
     except Exception as exc:  # botocore ClientError 404/NoSuchKey
         code = str(getattr(exc, "response", {}).get("Error", {}).get("Code", ""))
         if code in {"404", "NoSuchKey", "NotFound"}:
