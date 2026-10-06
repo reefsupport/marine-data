@@ -771,6 +771,11 @@ sources:
     citation: "Lian et al. 2023, WaterMask: Instance Segmentation for Underwater Imagery, ICCV 2023, pp.1305-1315"
     homepage: https://huggingface.co/datasets/LiamLian0727/UIIS
     loader: { layout: staged-tree, schema_id: dataset-native }
+    # One image = one group: UIIS names carry only a partition and a running number (no video, sequence or scene id); the dedup groups merge near-duplicates across and within splits.
+    split_group:
+      pattern: '(.+)'
+      match_field: stem
+      template: "uiis/{group}"
     tags: [instance-seg, usis-uiis]
 
   - id: uiis10k
@@ -807,6 +812,11 @@ sources:
     citation: "Li et al. 2025, Advancing Marine Research: UWSAM Framework and UIIS10K Dataset for Precise Underwater Instance Segmentation, arXiv:2505.15581"
     homepage: https://huggingface.co/datasets/LiamLian0727/UIIS10K
     loader: { layout: staged-tree, schema_id: dataset-native }
+    # One image = one group: UIIS10K names carry only a partition and a running number (no video, sequence or scene id); the dedup groups merge near-duplicates.
+    split_group:
+      pattern: '(.+)'
+      match_field: stem
+      template: "uiis10k/{group}"
     tags: [instance-seg, usis-uiis]
 
   - id: usis10k
@@ -843,6 +853,11 @@ sources:
     citation: "Lian et al. 2024, Diving into Underwater: Segment Anything Model Guided Underwater Salient Instance Segmentation and A Large-scale Dataset, ICML 2024 (PMLR v235:29545-29559)"
     homepage: https://huggingface.co/datasets/LiamLian0727/USIS10K
     loader: { layout: staged-tree, schema_id: dataset-native }
+    # One image = one group: USIS10K names carry only a partition and a running number (no video, sequence or scene id); the dedup groups merge near-duplicates.
+    split_group:
+      pattern: '(.+)'
+      match_field: stem
+      template: "usis10k/{group}"
     tags: [instance-seg, usis-uiis, salient]
 
   - id: roboflow-aquarium
@@ -884,4 +899,9 @@ sources:
     citation: "Roboflow 2020, Aquarium Combined (public.roboflow.ai/object-detection/aquarium)"
     homepage: https://public.roboflow.ai/object-detection/aquarium
     loader: { layout: staged-tree, schema_id: dataset-native }
+    # Camera file id: the Roboflow export suffix (_rf_<hash>) and the _MOV-<n> frame index are dropped, so frames of one video and Roboflow augmentations of one photo share a group.
+    split_group:
+      pattern: '(IMG_[0-9]+)'
+      match_field: stem
+      template: "roboflow-aquarium/{group}"
     tags: [aquarium, captive, yolo]
