@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import io
 from pathlib import Path
 
 import pyarrow as pa
@@ -11,12 +12,14 @@ import pytest
 from marinedata.cli import main
 from marinedata.registry import Registry
 from marinedata.registry_verify import (
+    HOLLOW,
     MISSING,
     NO_MANIFEST,
     OK,
     SKIPPED,
     failed,
     load_listing,
+    summarise,
     verify_live,
     verify_offline,
 )
@@ -107,3 +110,42 @@ def test_live_verify_treats_an_unreachable_bucket_as_missing_not_a_crash(reg: Re
     checks = {k.source_id: k for k in verify_live([reg.source(a), reg.source(b)], FakeClient())}
     assert checks[a].status == OK
     assert checks[b].status == MISSING
+
+
+def test_live_sample_flags_a_tree_whose_manifest_survived_but_whose_data_is_gone(
+    reg: Registry,
+) -> None:
+    """RB-2 deleted the data objects of 4 older trees and left their CHECKSUMS: a bare HEAD of the
+    manifest still said ok. `--sample N` HEADs listed keys, so the hollow tree must fail."""
+    from botocore.exceptions import ClientError
+
+    a, b, _c = _pick(reg)
+    (ba, pa_), (bb, pb) = _prefix(reg, a), _prefix(reg, b)
+    rels = [f"images/{i:03d}.jpg" for i in range(20)]
+    manifest = "".join(f"{'0' * 64}  {r}\n" for r in rels).encode()
+    stored = {(ba, pa_ + r) for r in rels} | {(ba, pa_ + "CHECKSUMS.sha256")}
+    stored |= {(bb, pb + "CHECKSUMS.sha256")}  # b: manifest only, every data key gone
+    gets: list[tuple[str, str]] = []
+
+    class FakeClient:
+        def head_object(self, Bucket: str, Key: str):
+            if (Bucket, Key) in stored:
+                return {}
+            raise ClientError({"Error": {"Code": "404"}}, "HeadObject")
+
+        def get_object(self, Bucket: str, Key: str):
+            gets.append((Bucket, Key))
+            return {"Body": io.BytesIO(manifest)}
+
+        def list_objects_v2(self, **_kw):
+            return {"KeyCount": 0}
+
+    sources = [reg.source(a), reg.source(b)]
+    bare = {k.source_id: k.status for k in verify_live(sources, FakeClient())}
+    assert bare == {a: OK, b: OK} and not gets  # the gap: both pass without --sample
+    checks = {k.source_id: k for k in verify_live(sources, FakeClient(), sample=5)}
+    assert checks[a].status == OK and "5 sampled" in checks[a].detail
+    assert checks[b].status == HOLLOW and "5/5" in checks[b].detail
+    assert [k.source_id for k in failed(checks.values())] == [b]
+    assert "hollow=1" in summarise(list(checks.values()))
+    assert "hollow" not in summarise(list(verify_live(sources, FakeClient())))

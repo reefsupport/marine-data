@@ -15,8 +15,10 @@ def _cmd_registry_verify(args: argparse.Namespace) -> int:
     if args.live:
         from .s3_upload import client_from_rclone  # creds via configparser, never printed
 
-        checks = verify_live(sources, client_from_rclone())
+        checks = verify_live(sources, client_from_rclone(), sample=args.sample)
     else:
+        if args.sample:
+            raise ValueError("--sample needs --live")
         if not args.listing:
             raise ValueError("offline verify needs --listing [BUCKET=]PATH (or use --live)")
         listing: dict[str, set[str]] = {}
@@ -26,7 +28,7 @@ def _cmd_registry_verify(args: argparse.Namespace) -> int:
                 listing.setdefault(b, set()).update(keys)
         checks = verify_offline(sources, listing)
     for c in checks:
-        if args.all or c.status in ("missing", "no-manifest"):
+        if args.all or c.status in ("missing", "no-manifest", "hollow"):
             print(c.line())
     print(f"\n{summarise(checks)}")
     return 1 if failed(checks) and not args.report_only else 0
@@ -47,6 +49,14 @@ def add_registry_subparsers(sub: argparse._SubParsersAction) -> None:
         help="listing snapshot (parquet with a key column, or TSV/CSV); repeatable",
     )
     v.add_argument("--live", action="store_true", help="HEAD each CHECKSUMS.sha256 (needs creds)")
+    v.add_argument(
+        "--sample",
+        type=int,
+        default=0,
+        metavar="N",
+        help="with --live: also GET each ok CHECKSUMS.sha256 and HEAD N evenly spaced listed keys; "
+        "an absent key marks the source hollow (a failure)",
+    )
     v.add_argument("--all", action="store_true", help="also print the ok rows")
     v.add_argument("--report-only", action="store_true", help="always exit 0")
     v.set_defaults(func=_cmd_registry_verify)
