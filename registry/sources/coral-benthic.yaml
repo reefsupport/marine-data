@@ -77,7 +77,7 @@ sources:
         all. Index 0 alone covers ~17.1% of all mask pixels; a consumer that trusted
         the prior (wrong) note trained on "unlabelled" as class 255-that-never-occurs
         and left index 0 uncovered as a real class.
-    items: 2075
+    n_images: 2075
     annotations:
       - kind: dense-mask
         count: 174000
@@ -157,8 +157,8 @@ sources:
       - benthic-classification
       - general-pretraining
       - coral-taxonomy
-    items: 1300000
-    items_note: "11.4M raw; 1.3M deduplicated; 188,688 labelled."
+    n_images: 1300000
+    counts_note: "11.4M raw; 1.3M deduplicated; 188,688 labelled."
     annotations:
       - kind: point-label
         count: 2600000
@@ -214,8 +214,8 @@ sources:
       drain; never ingest this entry directly, never delete it.
     modalities: [image]
     capabilities: [coral-taxonomy, benthic-classification, general-pretraining]
-    items: 181223
-    items_note: "334,162 images total; 181,223 carry hard-coral annotations."
+    n_images: 181223
+    counts_note: "334,162 images total; 181,223 carry hard-coral annotations."
     annotations:
       - kind: point-label
         count: 925000
@@ -299,7 +299,7 @@ sources:
       - benthic-segmentation
       - coral-instance-segmentation
       - coral-taxonomy
-    items: 1411
+    n_images: 1411
     annotations:
       - kind: dense-mask
         schema_id: deolho-21
@@ -369,7 +369,7 @@ sources:
         manifest, then GETs the referenced thumbnails up to the sample limit.
     modalities: [image]
     capabilities: [benthic-classification, general-pretraining]
-    items: 58941
+    n_images: 58941
     annotations:
       - kind: tabular
         count: 108700
@@ -414,7 +414,7 @@ sources:
     name: CoralVQA
     # habitat inferred (WP-2b) from this source's own description/notes, not independently verified
     habitat: [coral_reef]
-    version: "2025"
+    version: "rev-3da50a4429e4"
     description: Large-scale visual question answering dataset for coral reef understanding.
     licence: CC-BY-4.0
     legal_basis: licence
@@ -425,24 +425,26 @@ sources:
       verified_by: "HuggingFace card CoralReefData/CoralVQA states license:cc-by-4.0"
       method: dataset-card
     access:
-      method: huggingface
-      uri: https://huggingface.co/datasets/CoralReefData/CoralVQA
-      size_bytes: 26694403050
+      method: s3
+      uri: s3://rs-storage-open/sources/coralvqa/rev-3da50a4429e4
+      notes: "rs-storage-open copy of the upstream Hugging Face dataset CoralReefData/CoralVQA (pinned rev 3da50a4429e4); upstream: https://huggingface.co/datasets/CoralReefData/CoralVQA"
       params:
-        sample_url: https://huggingface.co/datasets/CoralReefData/CoralVQA/resolve/main/CoralVQA_Image.zip
-      notes: >
-        Re-checked 2026-08-28: the datasets-server rows API no longer errors, but the
-        default parquet's `image` column is null for every row — the repo's auto-built
-        table never actually embedded images. The real 12,805 images live only in
-        CoralVQA_Image.zip, a single 26.7GB archive with no smaller subset (the
-        question/answer pairs are a separate, much smaller structure entirely — see
-        CoralVQA_train.jsonl / CoralVQA_test.jsonl in the same repo, not fetched here).
-        sample_url points at the image zip directly; HF's CDN supports Range requests,
-        so only the layout-verification sample is ever transferred, not the whole 26.7GB.
+        bucket: rs-storage-open
+        endpoint: hel1.your-objectstorage.com
+        region: hel1
+        prefix: sources/coralvqa/rev-3da50a4429e4/
+      size_bytes: 24247939309
 
+    checksums:
+      version: "rev-3da50a4429e4"
+      root_digest: 8c337c4308ebe3fbbd3ca7ce8ed00a29bb88fa6cf92aabb1fed0fde5aa3ef031
+      files: 11809
+      size_bytes: 24247939309
     modalities: [image]
     capabilities: [vqa-captioning, general-pretraining, benthic-classification]
-    items: 9682
+    n_images: 11804
+    n_files: 11809
+    counts_note: "2026-10-06 staged tree (checksums.parquet): 11,804 images (8,688 jpg + 3,116 png) of the 12,805 upstream; digest rebuilt from the 11,809 manifest lines."
     annotations:
       - kind: image-label
         supervises: []
@@ -455,13 +457,11 @@ sources:
       match_field: stem
       template: "seaview/{group}"
     loader:
-      layout: flat-images
-      verified_on: 2026-08-28
+      layout: staged-tree
       verified_note: >
-        Live fetch of CoralVQA_Image.zip (via Range) shows a flat pool of numbered
-        .jpg files at the archive root — no class subdirectories. The previously
-        declared 'image-folder' layout would have raised "found none" on any real
-        attempt to load this source; it had never actually been checked.
+        RE-POINTED 2026-10-06 (RB-3) from the HuggingFace zip (flat-images) to the staged tree
+        `sources/coralvqa/rev-3da50a4429e4/` (8,688 jpg + 3,116 png under `images/`, `labels/files/*.jsonl`,
+        metadata.parquet); layout not re-verified.
     tags: [vqa, language]
 
   - id: noaa-pifsc-bleaching
@@ -521,7 +521,7 @@ sources:
         Roboflow v3i/v6i/v1-yolov8s sources — see those entries' `loader.verified_note`
         for the shape this reproduces (StagedImage `metadata.parquet` +
         `labels/image_labels.parquet`, `partition`="default", `upstream_split` dropped).
-    items: 10419
+    n_images: 10419
     annotations:
       - kind: image-label
         count: 10419
@@ -585,7 +585,7 @@ sources:
       notes: "No batch download. Per-source retrieval only; see CoralNet-Toolbox."
     modalities: [image]
     capabilities: [benthic-classification, general-pretraining, coral-taxonomy]
-    items: 1600000
+    n_images: 1600000
     annotations:
       - kind: point-label
         count: 16500000
@@ -636,8 +636,8 @@ sources:
       size_bytes: 7847491024  # measured 2026-09-18
     modalities: [image]
     capabilities: [benthic-segmentation, general-pretraining, habitat-mapping-satellite]
-    items: 1600000
-    items_note: "14,492 annotated."
+    n_images: 1600000
+    counts_note: "14,492 annotated."
     annotations:
       - kind: instance-mask
         classes: 38
@@ -701,7 +701,7 @@ sources:
         prefix: sources/mermaid-aws/2026-09-19-bc53d5a2c0b6/
     modalities: [image, tabular]
     capabilities: [benthic-classification, coral-taxonomy]
-    items: 18561  # staged image count, S61 2026-09-25
+    n_images: 18561  # staged image count, S61 2026-09-25
     annotations:
       - kind: point-label
         schema_id: mermaid-attributes
@@ -775,7 +775,7 @@ sources:
       uri: https://github.com/zhengziqiang/MarineInst20M
     modalities: [image]
     capabilities: [coral-instance-segmentation, general-pretraining]
-    items: 2420000
+    n_images: 2420000
     annotations:
       - kind: instance-mask
         count: 19200000
@@ -830,8 +830,8 @@ sources:
         entry; use `noaa-pifsc-bleaching` directly.
     modalities: [image]
     capabilities: [bleaching-assessment, general-pretraining]
-    items: 1568
-    items_note: >
+    n_images: 1568
+    counts_note: >
       CORRECTED 2026-09-23 (WS-D step 3). The prior 4,430 counted the checked-out
       repo's own .git internals: the tar-vs-tree cross-check (T1 report, 2026-09-19)
       found 2,862 `.git/` objects under this prefix. 4,430 - 2,862 = 1,568 real
@@ -910,7 +910,7 @@ sources:
       size_bytes: 187269681
     modalities: [image]
     capabilities: [bleaching-assessment, general-pretraining]
-    items: 2551
+    n_images: 2551
     annotations:
       - kind: image-label
         count: 2551
@@ -1006,7 +1006,7 @@ sources:
       size_bytes: 186669980
     modalities: [image]
     capabilities: [bleaching-assessment, general-pretraining]
-    items: 2543
+    n_images: 2543
     annotations:
       - kind: image-label
         count: 2543
@@ -1108,7 +1108,7 @@ sources:
       size_bytes: 185594622
     modalities: [image]
     capabilities: [bleaching-assessment, general-pretraining]
-    items: 2789
+    n_images: 2789
     annotations:
       - kind: image-label
         count: 2789
@@ -1213,7 +1213,7 @@ sources:
       size_bytes: 790558657
     modalities: [image]
     capabilities: [bleaching-assessment, general-pretraining]
-    items: 10781
+    n_images: 10781
     annotations:
       - kind: image-label
         count: 10781
@@ -1304,7 +1304,7 @@ sources:
       size_bytes: 239232782
     modalities: [image]
     capabilities: [bleaching-assessment, general-pretraining]
-    items: 4556
+    n_images: 4556
     annotations:
       - kind: image-label
         count: 4556
@@ -1361,14 +1361,14 @@ sources:
     version: "unversioned"
     description: >
       Coral reef photomosaics from UCSD, associated with the Coralseg segmentation
-      paper. No licence terms found in either the root or benthic_datasets README.
+      paper. No licence terms found in either the root or benthic_datasets README. (legacy: history note)
     licence: NO-LICENCE-STATED
     legal_basis: unknown
     redistribution: unknown
     provenance: public
     verification:
       verified_on: 2026-09-19
-      verified_by: "2026-09-19 boto3 bucket listing (v4s-open-listing.tsv): 9,844 files / 829,917,530 bytes under benthic_datasets/mask_labels/Coralseg/. Root and benthic_datasets READMEs describe it as a UCSD mosaics dataset and link the Coralseg paper; neither states a licence (P1-B proposal)."
+      verified_by: "2026-09-19 boto3 bucket listing (v4s-open-listing.tsv): 9,844 files / 829,917,530 bytes under benthic_datasets/mask_labels/Coralseg/. Root and benthic_datasets READMEs describe it as a UCSD mosaics dataset and link the Coralseg paper; neither states a licence (P1-B proposal). (legacy: history note)"
       method: absent
     checksums:
       version: "unversioned"
@@ -1386,7 +1386,7 @@ sources:
       size_bytes: 831410317
       notes: >
         coralseg-flip-d (2026-09-25, D-AI3): flipped from the original
-        benthic_datasets/mask_labels/Coralseg/ prefix to our own staged copy.
+        benthic_datasets/mask_labels/Coralseg/ prefix to our own staged copy. (legacy: history note)
         metadata.parquet + CHECKSUMS.sha256 rewritten with split_group (one group
         per of the 16 source mosaics)/upstream_split/upstream_path (D-AI2) and
         re-uploaded; the two prior objects were server-side copied first to
@@ -1396,7 +1396,8 @@ sources:
         no image/mask object touched).
     modalities: [image]
     capabilities: [benthic-segmentation, general-pretraining]
-    items: 9844
+    n_images: 4922
+    n_files: 9845
     annotations:
       - kind: none
         supervises: []
@@ -1431,7 +1432,7 @@ sources:
       Live-loader check found the masks carry a 3rd class (R=2) the old
       `coralseg-r-channel` note didn't declare — flip deferred pending D-AI3.
       coralseg-flip-d (2026-09-25, D-AI3): named class 2 from the upstream
-      benthic_datasets/README.md's own "Mask conversion" line — 0 (Other), 1 (Hard
+      benthic_datasets/README.md's own "Mask conversion" line — 0 (Other), 1 (Hard (legacy: history note)
       Coral), 2 (Soft Coral) — a real third class, not an ignore value. Registry
       `loader.params.mask_values` below declares all three. Flipped: see `access`
       above for the new root_digest and the superseded-copy stamp.
@@ -1445,7 +1446,7 @@ sources:
       verified_note: >
         D-AI3: red channel of labels/files/<stem>.png carries 3 values, not 2 -
         0 (Other), 1 (Hard Coral), 2 (Soft Coral), per the
-        "Mask conversion" line of s3://rs-storage-open/benthic_datasets/README.md
+        "Mask conversion" line of s3://rs-storage-open/benthic_datasets/README.md (legacy: history note)
         (the exact upstream fetched here). Corrects the prior
         `coralseg-r-channel` note (2026-09-23, "values 0/1 only"), which predates
         this source's restage to the staged-tree layout and would refuse the
@@ -1464,7 +1465,7 @@ sources:
     name: SEAVIEW raw survey imagery (UQ eSpace)
     # habitat inferred (WP-2b) from this source's own description/notes, not independently verified
     habitat: [coral_reef]
-    version: "unversioned"
+    version: "2026-10-06"
     description: >
       Raw reef-survey photographs mirrored from the University of Queensland eSpace
       record UQ_734799. Excludes labelled_data/labelled_segmentation_data.pickle
@@ -1478,21 +1479,26 @@ sources:
       Classification Dataset. University of Queensland. doi:10.14264/UQL.2019.930
     verification:
       verified_on: 2026-09-24
-      verified_by: "2026-09-19 boto3 bucket listing (v4s-open-listing.tsv): 12,373 files / 19,480,434,205 bytes under benthic_datasets/point_labels/SEAVIEW/, excluding the pickle file. RESOLVED 2026-09-24 (R1 external research, high confidence): researchdata.edu.au record https://researchdata.edu.au/seaview-survey-photo-classification-dataset/3369315 states 'Creative Commons Attribution 3.0' for this UQ eSpace UQ_734799 record."
+      verified_by: "2026-09-19 boto3 bucket listing (v4s-open-listing.tsv): 12,373 files / 19,480,434,205 bytes under benthic_datasets/point_labels/SEAVIEW/, excluding the pickle file. RESOLVED 2026-09-24 (R1 external research, high confidence): researchdata.edu.au record https://researchdata.edu.au/seaview-survey-photo-classification-dataset/3369315 states 'Creative Commons Attribution 3.0' for this UQ eSpace UQ_734799 record. (legacy: history note)"
       method: licence-file
     access:
       method: s3
-      uri: s3://rs-storage-open/benthic_datasets/point_labels/SEAVIEW
+      uri: s3://rs-storage-open/sources/seaview-survey-imagery/2026-10-06
+      notes: "rs-storage-open is a public bucket — anonymously fetchable, no credentials needed"
       params:
         bucket: rs-storage-open
         endpoint: hel1.your-objectstorage.com
         region: hel1
-        prefix: benthic_datasets/point_labels/SEAVIEW/
-        credentials_env: S3
-      size_bytes: 19480434205
+        prefix: sources/seaview-survey-imagery/2026-10-06/
+    checksums:
+      version: "2026-10-06"
+      root_digest: 62cd8f47cae32a420c79954d72f8c2a2bfcd5019eb23fb996670fc8ad2e7ac86
+      files: 12376
+      size_bytes: 19481192006
     modalities: [image]
     capabilities: [general-pretraining]
-    items: 12373
+    n_images: 11870
+    n_files: 12376
     annotations:
       - kind: none
         supervises: []
@@ -1512,7 +1518,7 @@ sources:
       D-Z2-authorized path for the excluded pickle — a static `pickletools.genops`
       opcode scan against an allowlist, then (only if clean) a restricted-Unpickler
       conversion inside a `--network none --read-only` container. A full paginated
-      `list_objects_v2` of `benthic_datasets/point_labels/SEAVIEW/labelled_data/` in
+      `list_objects_v2` of `benthic_datasets/point_labels/SEAVIEW/labelled_data/` in (legacy: history note)
       both `rs-storage-open` and `rs-storage-private` this pass found no
       `labelled_segmentation_data.pickle` object in either bucket: it no longer exists
       (already removed, presumably by the deletion this entry's description already
@@ -1520,11 +1526,22 @@ sources:
       to scan or convert, not because a scan found a disallowed global — the scan/convert
       code path is implemented and unit-tested (accept/reject on synthetic pickles) for
       if a copy resurfaces.
+
+      RE-POINTED 2026-10-06 (RB-1/RB-3): canonical location is `sources/seaview-survey-imagery/2026-10-06/`
+      (11,870 images incl. the 6,695 jpg byte-identical to `coralvqa` — stored again because a
+      StagedTreeLoader cannot join across sources — plus the region CSVs). `checksums` pinned 2026-10-06
+      (RB-3c) from the tree's CHECKSUMS.sha256 (12,376 files = 12,373 objects + metadata.parquet, INGEST.json,
+      LICENSE). Never-staged pickle stays excluded.
     split_group:
       pattern: '^(.{5})'
       match_field: stem
       template: "seaview/{group}"
-    loader: { layout: metadata-only }
+    loader:
+      layout: staged-tree
+      verified_note: >
+        RE-POINTED 2026-10-06 (RB-1/RB-3): `images/<region>/` + `labels/points/<region>/annotations_*.csv`;
+        RB-1 read the staged `metadata.parquet` back through the StagedTreeLoader: 11,870 rows = the expected
+        image count (2026-10-06).
 
   - id: coral-bleaching-detection-v2i-multiclass
     domain: coral
@@ -1569,7 +1586,7 @@ sources:
         noaa-esd-coral-bleaching source).
     modalities: [image]
     capabilities: [bleaching-assessment, general-pretraining]
-    items: 736
+    n_images: 736
     annotations:
       - kind: none
         supervises: []
@@ -1627,7 +1644,7 @@ sources:
         dataset. Extract the archive to reach it.
     modalities: [image]
     capabilities: [bleaching-assessment, general-pretraining]
-    items: 1637
+    n_images: 1637
     annotations:
       - kind: none
         supervises: []
@@ -1691,7 +1708,7 @@ sources:
         name.
     modalities: [image]
     capabilities: [bleaching-assessment, general-pretraining]
-    items: 923
+    n_images: 923
     annotations:
       - kind: none
         supervises: []
@@ -1763,7 +1780,7 @@ sources:
           rs-benthic-v1 by rf100-coral-lwptl (WP-7).
     coverage:
       regions: [unknown]
-    items: 594
+    n_images: 594
     citation: "Ciaglia et al. 2022, Roboflow 100: A Rich, Multi-Domain Object Detection Benchmark, arXiv:2211.13523"
     homepage: https://universe.roboflow.com/roboflow-100/coral-lwptl
     loader: { layout: yolo-txt, schema_id: rf100-coral-lwptl-native, crosswalk_id: rf100-coral-lwptl }

@@ -31,7 +31,7 @@ sources:
       size_bytes: 5286160794  # measured 2026-09-18
     modalities: [satellite]
     capabilities: [habitat-mapping-satellite]
-    items_note: "~147,000 km² mapped (2020 epoch)."
+    counts_note: "~147,000 km² mapped (2020 epoch)."
     annotations: [{ kind: tabular, supervises: [] }]
     coverage: { regions: [global], years: [1996, 2020] }
     domain_shift:
@@ -63,7 +63,7 @@ sources:
       size_bytes: 886793559  # measured 2026-09-18
     modalities: [satellite]
     capabilities: [seagrass-mapping, habitat-mapping-satellite]
-    items_note: "~148,000 km² mapped."
+    counts_note: "~148,000 km² mapped."
     annotations: [{ kind: tabular, supervises: [] }]
     coverage: { regions: [global] }
     loader: { layout: metadata-only }
@@ -224,7 +224,7 @@ sources:
         unrar/unar binary) for exactly one source. Fetch manually, or re-host as .zip.
     modalities: [image]
     capabilities: [marine-debris, general-pretraining]
-    items: 8610
+    n_images: 8610
     annotations: [{ kind: instance-mask, classes: 40, supervises: [taxon] }]
     coverage: { regions: [mediterranean] }
     domain_shift:
@@ -280,8 +280,8 @@ sources:
       params: { upstream: github, git_ref: 427059e47f99 }
     modalities: [satellite]
     capabilities: [marine-debris]
-    items: 60680
-    items_note: "60,680 real labelled pixels plus synthetic (11 image files staged)."
+    # legacy items=60680 (unit unspecified: tabular/satellite records) -> n_* left null
+    counts_note: "60,680 real labelled pixels plus synthetic (11 image files staged)."
     annotations: [{ kind: tabular, classes: 7, supervises: [taxon] }]
     coverage: { regions: [global] }
     loader: { layout: staged-tree, schema_id: dataset-native }
@@ -337,7 +337,7 @@ sources:
     access: { method: api, uri: https://obis.org, params: { client: obis } }
     modalities: [tabular]
     capabilities: [edna-taxonomy, coral-taxonomy]
-    items: 200000000
+    # legacy items=200000000 (unit unspecified: tabular/satellite records) -> n_* left null
     annotations: [{ kind: tabular, supervises: [taxon] }]
     coverage: { regions: [global] }
     notes: >

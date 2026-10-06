@@ -41,8 +41,8 @@ sources:
         a "bounded" sample. Fetch manually for a full corpus build.
     modalities: [audio]
     capabilities: [bioacoustics]
-    items: 57084
-    items_note: "~26 hours of labelled clips."
+    n_files: 57084
+    counts_note: "~26 hours of labelled clips."
     annotations: [{ kind: audio-event, supervises: [taxon] }]
     coverage: { regions: [coral-triangle, gbr-australia] }
     domain_shift:
@@ -99,7 +99,7 @@ sources:
         scope decided yet, so size_bytes stays deliberately unset here.
     modalities: [audio]
     capabilities: [bioacoustics, general-pretraining]
-    items_note: "~2 TB/month, unlabelled."
+    counts_note: "~2 TB/month, unlabelled."
     annotations: [{ kind: audio-event, supervises: [] }]
     coverage: { regions: [eastern-pacific, temperate] }
     domain_shift:
@@ -127,7 +127,7 @@ sources:
     access: { method: http, uri: https://www.ncei.noaa.gov/products/passive-acoustic-data }
     modalities: [audio]
     capabilities: [bioacoustics]
-    items_note: "30 sites, several including reef habitat."
+    counts_note: "30 sites, several including reef habitat."
     annotations: [{ kind: audio-event, supervises: [taxon] }]
     coverage: { regions: [western-atlantic, central-pacific, temperate], years: [2018, 2021] }
     loader: { layout: metadata-only }
@@ -162,8 +162,8 @@ sources:
       size_bytes: 3650000000  # documented upstream, not measured — 2026-09-18
     modalities: [audio, video]
     capabilities: [bioacoustics, fish-classification]
-    items: 156
-    items_note: "156 media items, 46 fish species, 3.65 GB."
+    n_files: 156
+    counts_note: "156 media items, 46 fish species, 3.65 GB."
     annotations: [{ kind: audio-event, classes: 46, supervises: [taxon] }]
     coverage: { regions: [caribbean], ecoregions: ["Southern Caribbean"] }
     notes: >
@@ -218,7 +218,7 @@ sources:
         regardless of profile (see verified_note).
     modalities: [audio]
     capabilities: [bioacoustics, megafauna-id]
-    items: 10000
+    n_files: 10000
     annotations: [{ kind: audio-event, classes: 60, supervises: [taxon] }]
     coverage: { regions: [global] }
     notes: >

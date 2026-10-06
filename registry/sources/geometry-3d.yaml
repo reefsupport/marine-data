@@ -35,8 +35,8 @@ sources:
       - structural-complexity
       - depth-estimation
       - general-pretraining
-    items: 90289
-    items_note: "352 GB raw GoPro imagery across 13 survey patches."
+    n_images: 90289
+    counts_note: "352 GB raw GoPro imagery across 13 survey patches."
     annotations:
       - kind: camera-pose
         supervises: []
@@ -93,8 +93,8 @@ sources:
       size_bytes: 11060000000
     modalities: [video, point-cloud]
     capabilities: [3d-reconstruction, benthic-segmentation, pose-slam, depth-estimation]
-    items: 3
-    items_note: "3 videos plus segmentation_net.pth and sfm_net.pth."
+    n_files: 3
+    counts_note: "3 videos plus segmentation_net.pth and sfm_net.pth."
     annotations:
       - kind: point-cloud-label
         schema_id: coralscapes-39
@@ -196,7 +196,7 @@ sources:
         The licence class is unchanged (restricted-nc, LICV 2026-10-05).
     modalities: [image]
     capabilities: [depth-estimation, image-enhancement]
-    items: 3200
+    n_images: 3200
     annotations:
       - kind: depth-map
         supervises: []

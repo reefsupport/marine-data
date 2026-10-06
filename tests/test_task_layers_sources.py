@@ -13,7 +13,7 @@ import pickle
 import pyarrow.parquet as pq
 import pytest
 
-from marinedata.task_layers.sources import coralvqa, rs_labelled, seaview
+from marinedata.task_layers.sources import coralvqa, labelbox_export, seaview
 from marinedata.task_layers.sources.coralseg import (
     class_counts_from_mask,
 )
@@ -74,7 +74,7 @@ def test_is_allowed_rejects_unknown_module():
     assert seaview._is_allowed("builtins", "eval") is False
 
 
-# -- rs_labelled ndjson rasteriser -------------------------------------------------------
+# -- Labelbox export ndjson rasteriser -------------------------------------------------------
 
 
 def _ndjson_record(objects: list[dict], width=100, height=100, external_id="img1.jpg") -> dict:
@@ -93,7 +93,7 @@ def test_rasterize_record_mask_url_is_unusable():
     record = _ndjson_record(
         [{"name": "Hard Coral", "annotation_kind": "ImageSegmentationMask", "mask": {"url": "x"}}]
     )
-    result = rs_labelled.rasterize_record(record)
+    result = labelbox_export.rasterize_record(record)
     assert result.usable is False
     assert result.class_counts is None
 
@@ -106,7 +106,7 @@ def test_rasterize_record_polygon_fills_pixels():
         {"x": 10, "y": 30},
     ]
     record = _ndjson_record([{"name": "Hard Coral", "polygon": square}])
-    result = rs_labelled.rasterize_record(record)
+    result = labelbox_export.rasterize_record(record)
     assert result.usable is True
     assert result.class_counts is not None
     assert result.class_counts["Hard Coral"] > 0
@@ -114,7 +114,7 @@ def test_rasterize_record_polygon_fills_pixels():
 
 def test_rasterize_record_empty_objects_is_usable_with_no_counts():
     record = _ndjson_record([])
-    result = rs_labelled.rasterize_record(record)
+    result = labelbox_export.rasterize_record(record)
     assert result.usable is True
     assert result.class_counts == {}
 
@@ -123,11 +123,11 @@ def test_build_semseg_rows_keys_by_basename_sha():
     square = [{"x": 0, "y": 0}, {"x": 10, "y": 0}, {"x": 10, "y": 10}, {"x": 0, "y": 10}]
     record = _ndjson_record([{"name": "Soft Coral", "polygon": square}], external_id="a/b/img1.jpg")
     line = json.dumps(record)
-    rows, usable, unusable = rs_labelled.build_semseg_rows([line], {"img1.jpg": "deadbeef"})
+    rows, usable, unusable = labelbox_export.build_semseg_rows([line], {"img1.jpg": "deadbeef"})
     assert usable == 1 and unusable == 0
     assert len(rows) == 1
     assert rows[0]["sha256"] == "deadbeef"
-    assert rows[0]["source_id"] == "rs-labelled-masks"
+    assert rows[0]["source_id"] == "reef-support-seaview-labels"
     counts = json.loads(rows[0]["class_counts"])
     assert counts["Soft Coral"] > 0
 
@@ -135,7 +135,7 @@ def test_build_semseg_rows_keys_by_basename_sha():
 def test_build_semseg_rows_unmatched_sha_is_dropped():
     square = [{"x": 0, "y": 0}, {"x": 10, "y": 0}, {"x": 10, "y": 10}, {"x": 0, "y": 10}]
     record = _ndjson_record([{"name": "Soft Coral", "polygon": square}], external_id="unknown.jpg")
-    rows, usable, unusable = rs_labelled.build_semseg_rows([json.dumps(record)], {})
+    rows, usable, unusable = labelbox_export.build_semseg_rows([json.dumps(record)], {})
     assert usable == 1 and unusable == 0
     assert rows == []
 

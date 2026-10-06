@@ -60,7 +60,7 @@ def test_items_reports_what_was_consumed_not_declared(registry: Registry, one_so
     """⭐ The defect: `items` used to always be the registry's estimate, even when a real
     build read a different (e.g. sampled) number of items."""
     source = one_source[0]
-    declared = source.items
+    declared = source.primary_count
     assert declared and declared > 5, "fixture assumption: this source declares a real count"
 
     consumed = build_lineage(

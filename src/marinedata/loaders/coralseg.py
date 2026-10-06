@@ -2,7 +2,7 @@
 
 The Coralseg mosaics ship one RGB PNG per image where the class lives entirely in the
 red channel (0 Other, 1 Hard Coral, 2 Soft Coral — the ``Mask conversion`` line of
-``s3://rs-storage-open/benthic_datasets/README.md``, D-AI3) and green/blue are always
+``s3://rs-storage-open/benthic_datasets/README.md``, D-AI3) and green/blue are always (legacy:)
 zero — a convention distinct from :mod:`.labelbox`'s fill+outline palette, so it gets
 its own tiny decode rather than overloading the labelbox LUT. Modelled on
 :class:`marinedata.loaders.labelbox.LabelboxRgbMaskLoader`: decode once, cache the

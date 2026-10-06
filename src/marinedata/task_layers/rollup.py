@@ -1,7 +1,7 @@
 """D-Y point/mask -> image rollup rules (WP-8, charter decision D-Y, manager 2026-09-25).
 
 Both points-per-image (SEAVIEW/Reefolution/IBF style CoralNet exports) and pixels-per-
-image (Coralscapes/Coralseg/rs_labelled masks) reduce to the same shape once the raw
+image (Coralscapes/Coralseg/rs_labelled masks) reduce to the same shape once the raw (legacy:)
 labels are counted per coarse class: a `Mapping[str, int]` of class -> count for one
 image. This module implements the one rollup those counts get, so points and masks
 share it rather than each task re-deriving it (D-Y: "the same three fields").

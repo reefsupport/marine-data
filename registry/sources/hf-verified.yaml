@@ -33,7 +33,7 @@ sources:
         hf_id: ReefNet/ReefNet-1.0
     modalities: [tabular]
     capabilities: [coral-taxonomy, benthic-classification]
-    items: 181223
+    # legacy items=181223 (unit unspecified: tabular/satellite records) -> n_* left null
     annotations:
       - kind: point-label
         count: 925000

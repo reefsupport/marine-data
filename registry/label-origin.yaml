@@ -135,5 +135,5 @@ entries:
     origin: human_expert
     confidence: medium
     evidence: >-
-      WP-U3: benthic_datasets/point_labels/SEAVIEW/tabular-data annotations_<REGION>.csv, point
+      WP-U3: benthic_datasets/point_labels/SEAVIEW/tabular-data annotations_<REGION>.csv, point (legacy: history note)
       labels of the University of Queensland Seaview Survey (method column: random).

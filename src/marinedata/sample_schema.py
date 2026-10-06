@@ -170,6 +170,12 @@ FIELD_NAMES: tuple[str, ...] = tuple(f.name for f in fields(SampleRow))
 V2_FIELDS: tuple[str, ...] = ("split_group", "upstream_split", "upstream_path")
 LEGACY_FIELD_NAMES: tuple[str, ...] = tuple(n for n in FIELD_NAMES if n not in V2_FIELDS)
 """Schema-v1 column list: every ``metadata.parquet`` written before D-AI2."""
+OPTIONAL_COLUMNS: tuple[str, ...] = ("partition",)
+"""Columns a staged ``metadata.parquet`` may carry after the schema columns, outside the
+:class:`SampleRow` contract. ``partition`` is the ``images/<partition>/`` segment the D1
+staged-tree layout pairs on (``staged_partition``); the RB-1 restaged trees (bucket reorg,
+2026-10-06) write it as the one trailing column of the 38-column table. A flat table (no
+``partition``) is equally valid. The column is string-typed and never enters :class:`SampleRow`."""
 REQUIRED: frozenset[str] = frozenset(
     {
         "sample_id",
@@ -357,12 +363,25 @@ def validate_table(table) -> None:
     """Check a read-back table: exact column names/types, then every row.
 
     A schema-v1 table (:data:`LEGACY_FIELD_NAMES`, no :data:`V2_FIELDS`) is accepted as
-    written; :func:`row_from_mapping` reads its missing columns back as null."""
+    written; :func:`row_from_mapping` reads its missing columns back as null. Either shape
+    may carry the trailing :data:`OPTIONAL_COLUMNS` (``partition``), which is type-checked
+    but not part of a row."""
+    import pyarrow as pa
+
     expected = arrow_schema()
     names = [f.name for f in table.schema]
-    if names not in (list(FIELD_NAMES), list(LEGACY_FIELD_NAMES)):
+    core = (
+        names[: -len(OPTIONAL_COLUMNS)]
+        if names[-len(OPTIONAL_COLUMNS) :] == list(OPTIONAL_COLUMNS)
+        else names
+    )
+    if core not in (list(FIELD_NAMES), list(LEGACY_FIELD_NAMES)):
         raise SampleSchemaError(f"columns differ from schema v{SCHEMA_VERSION} (or v1)")
     for got in table.schema:
+        if got.name in OPTIONAL_COLUMNS:
+            if not got.type.equals(pa.string()):
+                raise SampleSchemaError(f"{got.name}: type {got.type} != string")
+            continue
         want = expected.field(got.name)
         if not got.type.equals(want.type):
             raise SampleSchemaError(f"{got.name}: type {got.type} != {want.type}")

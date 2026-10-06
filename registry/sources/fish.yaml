@@ -47,8 +47,8 @@ sources:
         listing (Swift `?format=json`) once built.
     modalities: [image]
     capabilities: [fish-detection, fish-classification, fish-biomass]
-    items: 80000
-    items_note: "~80k cropped detections across ~70 families."
+    n_images: 80000
+    counts_note: "~80k cropped detections across ~70 families."
     annotations:
       - kind: bbox
         supervises: [taxon, size]
@@ -123,7 +123,7 @@ sources:
         does produce real pairs — see the loader's own verified_note.
     modalities: [image]
     capabilities: [fish-detection, general-pretraining]
-    items: 40000
+    n_images: 40000
     annotations:
       - kind: dense-mask
         supervises: []
@@ -185,7 +185,7 @@ sources:
     access: { method: request, uri: https://github.com/SEFSC/SEAMAPD21 }
     modalities: [image]
     capabilities: [fish-detection, fish-classification]
-    items: 90000
+    n_images: 90000
     annotations: [{ kind: bbox, classes: 130, supervises: [taxon] }]
     coverage: { regions: [western-atlantic] }
     notes: >
@@ -239,7 +239,7 @@ sources:
         of this source's declared coco-json layout.
     modalities: [image]
     capabilities: [fish-classification, general-pretraining]
-    items: 94532
+    n_images: 94532
     annotations: [{ kind: bbox, classes: 17357, supervises: [taxon] }]
     coverage: { regions: [global] }
     domain_shift:
@@ -292,8 +292,8 @@ sources:
     access: { method: request, uri: https://vranlee.github.io/SU-T/ }
     modalities: [video]
     capabilities: [fish-tracking, fish-detection]
-    items: 48066
-    items_note: "15 sequences, 48,066 frames, 408,578 boxes."
+    n_files: 48066
+    counts_note: "15 sequences, 48,066 frames, 408,578 boxes."
     annotations: [{ kind: track, count: 408578, supervises: [taxon] }]
     coverage: { regions: [unknown] }
     domain_shift:
@@ -326,8 +326,8 @@ sources:
         image_column: image
     modalities: [video]
     capabilities: [fish-tracking, megafauna-id]
-    items: 4
-    items_note: "4 annotated deep-sea sequences."
+    n_files: 4
+    counts_note: "4 annotated deep-sea sequences."
     annotations: [{ kind: track, supervises: [taxon] }]
     coverage: { regions: [deep-sea] }
     domain_shift:
@@ -378,7 +378,7 @@ sources:
         No auth needed for reads.
     modalities: [image]
     capabilities: [fish-detection, megafauna-id, invertebrate-detection, general-pretraining]
-    items: 100000
+    n_images: 100000
     annotations: [{ kind: bbox, count: 6600000, supervises: [taxon] }]
     coverage: { regions: [deep-sea, eastern-pacific] }
     domain_shift:
@@ -424,7 +424,7 @@ sources:
         image_column: image
     modalities: [image]
     capabilities: [fish-detection]
-    items: 1869
+    n_images: 1869
     annotations: [{ kind: bbox, classes: 1, supervises: [] }]
     coverage: { regions: [central-pacific] }
     domain_shift:
@@ -473,8 +473,8 @@ sources:
         by following the broken canonical link. Confirmed live and Range-fetchable.
     modalities: [image]
     capabilities: [fish-detection]
-    items: 578
-    items_note: >
+    n_images: 578
+    counts_note: >
       Corrected 2026-08-29 from the paper's headline "929 positive" figure: the
       delivered archive has 1,326 files under Positive_fish/ but only 578 carry a bbox
       line in the .dat annotation file — the rest are additional crops with no
@@ -534,7 +534,7 @@ sources:
         this project does not hold.
     modalities: [video, image]
     capabilities: [fish-detection, invertebrate-detection]
-    items: 14674
+    n_images: 14674
     annotations: [{ kind: bbox, classes: 6, supervises: [taxon] }]
     coverage: { regions: [temperate] }
     domain_shift:
@@ -582,7 +582,7 @@ sources:
         satisfies the image-folder layout's "one directory per class" requirement).
     modalities: [image]
     capabilities: [fish-classification, fish-detection]
-    items: 27370
+    n_images: 27370
     annotations: [{ kind: image-label, classes: 23, supervises: [taxon] }]
     coverage: { regions: [coral-triangle] }
     domain_shift:
@@ -636,7 +636,7 @@ sources:
         fetchable without a Roboflow account this project does not hold.
     modalities: [image]
     capabilities: [invertebrate-detection]
-    items: 2475
+    n_images: 2475
     annotations: [{ kind: bbox, classes: 9, supervises: [taxon] }]
     coverage: { regions: [coral-triangle] }
     loader:
@@ -678,7 +678,7 @@ sources:
         manual local copy via the `local_dir` adapter (see registry/ingest-specs/large-scale-fish.yaml).
     modalities: [image]
     capabilities: [fish-classification]
-    items: 18429
+    n_images: 18429
     annotations:
     - classes: 9
       kind: image-label
@@ -725,8 +725,8 @@ sources:
       params: { upstream: zenodo, zenodo_record: 14888440 }
     modalities: [image]
     capabilities: [fish-detection, fish-classification]
-    items: 2442
-    items_note: "2442 staged images, 620 YOLO label files (flat tree, no metadata.parquet: boxes are keyed by image stem)."
+    n_images: 2442
+    counts_note: "2442 staged images, 620 YOLO label files (flat tree, no metadata.parquet: boxes are keyed by image stem)."
     annotations:
       - kind: bbox
         classes: 23
@@ -762,7 +762,7 @@ sources:
       params: { upstream: hf, hf_repo: LiamLian0727/UIIS, hf_revision: 44ca5db46599f14faf8e57643014664435823738 }
     modalities: [image]
     capabilities: [fish-detection, megafauna-id]
-    items: 4628
+    n_images: 4628
     annotations:
       - kind: instance-mask
         classes: 7
@@ -802,7 +802,7 @@ sources:
       params: { upstream: hf, hf_repo: LiamLian0727/UIIS10K, hf_revision: 5c4316368a8e420db754d1ab37c205a42985ba47 }
     modalities: [image]
     capabilities: [fish-detection, megafauna-id]
-    items: 10048
+    n_images: 10048
     annotations:
       - kind: instance-mask
         classes: 10
@@ -843,7 +843,7 @@ sources:
       params: { upstream: hf, hf_repo: LiamLian0727/USIS10K, hf_revision: b10f41ab819bcdd78459621aedae8ffb5cab3c59 }
     modalities: [image]
     capabilities: [fish-detection, megafauna-id]
-    items: 10632
+    n_images: 10632
     annotations:
       - kind: instance-mask
         classes: 7
@@ -886,7 +886,7 @@ sources:
       params: { upstream: local_dir }
     modalities: [image]
     capabilities: [fish-detection, megafauna-id]
-    items: 638
+    n_images: 638
     annotations:
       - kind: bbox
         classes: 7

@@ -159,11 +159,14 @@ def test_no_source_claims_own_tier_over_third_party_pixels(registry: Registry) -
     # we relicense only pixels we actually hold outright, never a source we merely mask.
     assert own.licence.tier is Tier.PERMISSIVE
     assert own.legal_basis is LegalBasis.OWN
-    assert own.items == 1250, "the relicensed pixels must be only the ones we actually own"
+    assert own.n_images == 1250, "the relicensed pixels must be only the ones we actually own"
 
     borrowed = registry.source("reef-support-seaview-labels")
+    # Yohan 2026-10-06: the Seaview pixels are CC-BY-3.0-AU (UQ eSpace UQ_734799), our masks
+    # CC-BY-4.0. The pixels' real licence is what the entry carries; it must never be T0_OWN.
     assert borrowed.licence.tier is not Tier.OWN
-    assert borrowed.legal_basis is LegalBasis.UNKNOWN
+    assert borrowed.licence.id == "CC-BY-3.0-AU"
+    assert borrowed.legal_basis is LegalBasis.LICENCE
 
     ids = {s.id for s in registry}
     assert "reef-support-benthic" not in ids, "the conflated entry must not return"
@@ -273,13 +276,19 @@ def test_roboflow_attribution_added_where_confirmed(registry: Registry) -> None:
 
 def test_reef_support_seaview_labels_provenance_is_own(registry: Registry) -> None:
     """S21 (R2 Q8): annotation labour is ours; the mislabeled `partner` provenance is
-    corrected to `own`. `legal_basis` stays `unknown` — the underlying pixels' terms
-    are not independently reconfirmed for these exact site directories."""
+    corrected to `own`. RESOLVED 2026-10-06 (Yohan): images are CC-BY-3.0-AU (González-Rivero
+    et al., UQ eSpace UQ_734799, attribution), masks CC-BY-4.0 Reef Support; the entry is
+    `open` with `legal_basis: licence` (the enum has no `licence+own`; the masks are
+    documented in the citation)."""
     src = registry.source("reef-support-seaview-labels")
     assert src.provenance.value == "own"
-    assert src.legal_basis is LegalBasis.UNKNOWN
+    assert src.access_class == "open"
+    assert src.legal_basis is LegalBasis.LICENCE
+    assert src.redistribution is Redistribution.OK
+    assert src.licence.id == "CC-BY-3.0-AU" and src.licence.flags.attribution_required
     assert src.licence.tier is not Tier.OWN
     assert src.citation and "10.14264/UQL.2019.930" in src.citation
+    assert "CC-BY-4.0" in src.citation and "Reef Support" in src.citation
 
 
 def test_reefolution_legal_basis_stays_gated(registry: Registry) -> None:
@@ -294,6 +303,7 @@ def test_rs_labelled_masks_split_legal_basis_documented(registry: Registry) -> N
     value is kept at the stricter (unknown) end rather than blanket-upgraded to own,
     and the split rationale is recorded in notes."""
     src = registry.source("rs-labelled-masks")
+    assert src.retired and "D7" in src.retired  # RB-3: duplicate set, no read path
     assert src.legal_basis is LegalBasis.UNKNOWN
     assert src.licence.tier is not Tier.OWN
     notes = (src.verification.verified_by or "") + (src.notes or "")

@@ -1,12 +1,13 @@
-"""rs_labelled: rasterise the Labelbox ``export-result.ndjson`` polygons to per-image
-class counts, keyed via ``images_from``'s already-staged sources (D-Z2, WP-8d).
+"""Labelbox export rasteriser: Labelbox ``export-result.ndjson`` polygons to per-image class
+counts, keyed by the already-staged sources' sha256 (D-Z2, WP-8d). Renamed on 2026-10-06 (RB-3)
+from ``rs_labelled`` (legacy: module name); the ``rs-labelled-masks`` id is retired (D7), its
+ndjson exports now live under ``labels/exports/`` of ``reef-support-seaview-labels`` and
+``reef-support-benthic-own``.
 
-``rs-labelled-masks`` (registry `id`) has no pixel-mask copy of its own — its
-``images_from: [reef-support-benthic-own, reef-support-seaview-labels]`` means every
-image it annotates already has a known sha256 in one of those two staged sources'
-``metadata.parquet`` (both D-D ``staged-tree``), so a row here is keyed by looking its
-``data_row.external_id`` filename up in that already-staged metadata — no image bytes of
-rs_labelled's own are read.
+The module has no pixel-mask copy of its own: every image it annotates already has a known sha256
+in one of those two staged sources' ``metadata.parquet`` (both D-D ``staged-tree``), so a row here
+is keyed by looking its ``data_row.external_id`` filename up in that already-staged metadata — no
+image bytes are read.
 
 **Real-data finding (WP-8d, verified 2026-09-25):** every annotation object sampled
 across ``SEAFLOWER_BOLIVAR/export-result.ndjson`` (246 rows, 2,578 objects) has
@@ -32,7 +33,7 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
-SOURCE_ID = "rs-labelled-masks"
+SOURCE_ID = "reef-support-seaview-labels"
 LABEL_ORIGIN = "human"  # no label-origin.yaml exists in this repo yet; see docs note.
 
 

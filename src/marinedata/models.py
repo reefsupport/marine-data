@@ -358,8 +358,29 @@ class Source(_Frozen):
     Referenced ids are validated to exist at registry load (see
     ``Registry._check_references``)."""
 
-    items: int | None = Field(default=None, description="Primary unit count (images/clips)")
-    items_note: str | None = None
+    n_images: int | None = Field(
+        default=None, description="Image (or still-frame) count; ``None`` when unknown"
+    )
+    n_annotations: int | None = Field(
+        default=None,
+        description="Annotation objects (instance masks, boxes, points); ``None`` when unknown",
+    )
+    n_files: int | None = Field(
+        default=None,
+        description="Data objects stored for this source (audio/video clips, or every file of "
+        "a staged tree); ``None`` when unknown",
+    )
+    counts_note: str | None = None
+    """Provenance of the three counts above: what was counted, when, and how."""
+
+    @property
+    def primary_count(self) -> int | None:
+        """Headline unit count for lineage/cards: images when known, else files; never guessed."""
+        return self.n_images if self.n_images is not None else self.n_files
+
+    retired: str | None = None
+    """Why this id has no read path any more (set => nothing may load it; its bytes live
+    under another id). ``registry verify`` skips retired sources."""
     citation: str | None = None
     homepage: str | None = None
     tags: tuple[str, ...] = ()

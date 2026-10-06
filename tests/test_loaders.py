@@ -540,6 +540,11 @@ _INTENTIONALLY_UNWIRED_LAYOUTS = {
         "(WS-D S30, 2026-09-24); loader kept for a future re-export of the raw "
         "masks_bleached/masks_non_bleached pair"
     ),
+    "labelbox-rgb": (
+        "reef-support-seaview-labels moved to staged-tree once its restaged tree was pinned "
+        "(RB-1/RB-3c, 2026-10-06; the stitched masks sit under labels/masks/); decoder kept "
+        "for a future re-export of the raw Labelbox fill+outline LUT PNGs"
+    ),
     "coralseg-r-channel": (
         "coralseg-ucsd-mosaics moved to staged-tree once its own staged copy carried "
         "split_group + declared mask_values (D-AI2/D-AI3, coralseg-flip-d 2026-09-25); "

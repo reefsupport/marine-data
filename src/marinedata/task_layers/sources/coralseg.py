@@ -1,6 +1,6 @@
 """Coralseg (UCSD) restage into D-D + ``data/_tasklabels/coralseg/semseg.parquet`` (WP-8d, D-Z2).
 
-Restages the legacy prefix ``benthic_datasets/mask_labels/Coralseg/<split>/{Image,Mask}/
+Restages the legacy prefix ``benthic_datasets/mask_labels/Coralseg/<split>/{Image,Mask}/ (legacy:)
 <stem>.{jpg,png}`` into the D-D staged-tree layout, ``sources/coralseg/<version>/{images/,
 labels/files/,metadata.parquet,CHECKSUMS.sha256}``, reusing the existing staging primitives
 (:class:`~marinedata.staged_writer.StagedWriter`, :class:`~marinedata.ingest_source._Uploader`,
@@ -10,7 +10,7 @@ restaging Coralseg's images so masks can be keyed by the sha256 the staging step
 computes — see ``docs/task-layers.md``'s WP-8b finding this resolves.
 
 Each mask's class counts come from its red channel: 0 Other, 1 Hard Coral, 2 Soft Coral (D-AI3; the
-``Mask conversion`` line of s3://rs-storage-open/benthic_datasets/README.md).
+``Mask conversion`` line of s3://rs-storage-open/benthic_datasets/README.md). (legacy: history note)
 """
 
 from __future__ import annotations
@@ -39,7 +39,8 @@ SPLIT_GROUP = SplitGroupRule(
 """D-AI2: one group per source mosaic (16) — every tile of a mosaic shares it, so no
 mosaic straddles release splits. Must equal the registry entry's ``split_group``."""
 LEGACY_BUCKET = "rs-storage-open"
-LEGACY_PREFIX = "benthic_datasets/mask_labels/Coralseg/"
+# Staged copy: sources/coralseg-ucsd-mosaics/unversioned/. RB-2 deletes this prefix after the reorg.
+LEGACY_PREFIX = "benthic_datasets/mask_labels/Coralseg/"  # legacy: pre-reorg restage source
 DEST_PREFIX = "sources"
 VERSION = "unversioned"
 LICENSE = "NO-LICENCE-STATED"

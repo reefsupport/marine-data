@@ -1,6 +1,6 @@
 # Hand-authored (WP-U4, 2026-10-05) for taxonomy 2.3.0. Coralseg (UCSD) masks are 3-class:
 # the red channel of each RGB mask PNG is 0 Other, 1 Hard Coral, 2 Soft Coral (D-AI3, the
-# `Mask conversion` line of s3://rs-storage-open/benthic_datasets/README.md; ordering also
+# `Mask conversion` line of s3://rs-storage-open/benthic_datasets/README.md; ordering also (legacy: history note)
 # used by registry/crosswalks/reef-support-labelbox.yaml). Names are the source's own and
 # match registry/taxonomy/vocab/coralseg-ucsd-mosaics.tsv byte-for-byte.
 # Hard/Soft Coral are coral-level calls from mosaic annotators, no genus or growth form.

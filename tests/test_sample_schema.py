@@ -128,6 +128,44 @@ def test_parquet_round_trip_and_licence_filter(tmp_path):
     assert back.label_refs == ("labels/image_labels.parquet",)
 
 
+def _with_partition(table, values, *, typ=None):
+    import pyarrow as pa
+
+    return table.append_column("partition", pa.array(values, type=typ or pa.string()))
+
+
+def test_validate_table_accepts_the_optional_trailing_partition_column():
+    """RB-1 restaged trees: 37 schema columns + a trailing ``partition`` (38 columns). Both
+    the flat shape (no ``partition``) and the partitioned shape validate; ``partition`` is
+    not a SampleRow field."""
+    rows = [_row(), dataclasses.replace(_row(), sample_id="src/b2", stem="b2")]
+    flat = ss.to_table(rows)
+    ss.validate_table(flat)  # shape 1: flat
+    partitioned = _with_partition(flat, ["SEAVIEW_ATL", "SEAVIEW_PAC_AUS"])
+    assert partitioned.column_names[-1] == "partition" and len(partitioned.column_names) == 38
+    ss.validate_table(partitioned)  # shape 2: wide + trailing partition
+    assert "partition" not in ss.FIELD_NAMES
+    assert ss.row_from_mapping(partitioned.to_pylist()[0]) == rows[0]
+    assert ss.staged_partition(partitioned.to_pylist()[1]) == "SEAVIEW_PAC_AUS"
+    # a legacy v1 table may carry it as well
+    legacy = flat.select(list(ss.LEGACY_FIELD_NAMES))
+    ss.validate_table(legacy)
+    ss.validate_table(_with_partition(legacy, ["a", "b"]))
+
+
+def test_validate_table_still_rejects_a_misplaced_or_mistyped_partition():
+    import pyarrow as pa
+
+    flat = ss.to_table([_row()])
+    with pytest.raises(ss.SampleSchemaError, match="type"):
+        ss.validate_table(_with_partition(flat, [1], typ=pa.int64()))
+    leading = _with_partition(flat, ["P"]).select(["partition", *flat.column_names])
+    with pytest.raises(ss.SampleSchemaError, match="columns differ"):
+        ss.validate_table(leading)  # only the TRAILING position is the contract
+    with pytest.raises(ss.SampleSchemaError, match="columns differ"):
+        ss.validate_table(flat.append_column("extra", pa.array(["x"])))  # no other extras
+
+
 def test_every_row_needs_a_licence():
     with pytest.raises(ss.SampleSchemaError, match="license"):
         ss.validate_rows([_row(license=" ")])

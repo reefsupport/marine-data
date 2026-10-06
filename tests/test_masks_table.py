@@ -113,24 +113,19 @@ def test_staged_mask_rows_join_sha_through_checksums(reg):
     assert validate_row("masks", row) == []
 
 
-def test_benthic_collections_duplicate_map_and_pending_rows():
-    assert mt.classify_key("coralscop_masks", "train/images/x.jpg") == (
-        "train",
-        "coralscop-masks-rs",
-    )
-    assert (
-        mt.classify_key("reef_support", "TETES_PROVIDENCIA/masks/a_mask_0.png")[1]
-        == "reef-support-benthic-own"
-    )  # noqa: E501, RUF100
-    assert mt.classify_key("reef_support", "SEAVIEW_ATL/masks/a_mask_0.png")[1] is None
-    base = "benthic_datasets/mask_labels/reef_support/SEAVIEW_ATL/"
+def test_seaview_labels_pending_rows_follow_the_staged_tree():
+    base = mt.SEAVIEW_LABELS_PREFIX
+    assert base == "sources/reef-support-seaview-labels/2026-10-06/"
     keys = [
-        base + "images/a (1).JPG",
-        base + "masks/a (1)_mask_0.png",
-        base + "masks/a (1)_mask_1.png",
+        base + "images/SEAVIEW_ATL/a (1).JPG",
+        base + "labels/instance_masks/SEAVIEW_ATL/masks/a (1)_mask_0.png",
+        base + "labels/instance_masks/SEAVIEW_ATL/masks/a (1)_mask_1.png",
+        base + "labels/masks/SEAVIEW_ATL/a (1).png",  # stitched mask: not an instance row
     ]
     rows = mt.pending_rows(keys, images=mt.image_index(keys))
-    assert len(rows) == 2 and {r["image_key"] for r in rows} == {base + "images/a (1).JPG"}
+    assert len(rows) == 2
+    assert {r["image_key"] for r in rows} == {base + "images/SEAVIEW_ATL/a (1).JPG"}
+    assert all(r["source_id"] == "reef-support-seaview-labels" for r in rows)
     assert mt.validate_pending(rows) == []
     assert all(
         r["match_type"] == "unmapped" and r["label_native"] == mt.PENDING_LABEL for r in rows

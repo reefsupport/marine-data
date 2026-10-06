@@ -134,8 +134,13 @@ def test_scoped_gate_passes_the_registry_and_lists_the_rest(reg):
     unmeasured = {line.split(":", 1)[0] for line in listed if "but no vocab TSV" in line}
     assert {line.split(":", 1)[0] for line in listed} == no_crosswalk | unmeasured
     assert not unmeasured & set(tx.staged_sources(reg))
-    assert {"reefolution", "coralscop-masks-rs"} <= set(tx.staged_sources(reg))
-    assert "ozfish" not in tx.staged_sources(reg)
+    staged = set(tx.staged_sources(reg))
+    assert {"coralscop-masks-rs", "reef-support-seaview-labels"} <= staged
+    # RB-3 (2026-10-06): reefolution moved to rs-storage-private; it is outside the D-D
+    # open-bucket scope, but its vocab TSV still audits in every gate run.
+    assert "reefolution" not in staged
+    assert "reefolution" in {a.source_id for a in tx.audit_all(reg, reg.root)}
+    assert "ozfish" not in staged
 
 
 def _ozfish_uri_line() -> str:

@@ -1,7 +1,7 @@
 # source: ibf
 # crosswalk: ibf-cpce-codes
 # counts: annotations
-# retrieved: 2026-10-05 from rs-storage-open benthic_datasets/point_labels/IBF/**/*.cpc (boto3 GET)
+# retrieved: 2026-10-05 from rs-storage-open benthic_datasets/point_labels/IBF/**/*.cpc (boto3 GET) (legacy: history note)
 label	count	description
 S	564	standard CPCe lifeform code S = sand
 R	370	R = rubble

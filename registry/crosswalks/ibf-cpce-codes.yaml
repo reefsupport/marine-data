@@ -1,5 +1,5 @@
 # Hand-authored (WP-U3, 2026-10-05). Codes are the CPCe label codes of the 75 .cpc files under
-# rs-storage-open benthic_datasets/point_labels/IBF/ (2,250 points). The CPCe code file named in each .cpc
+# rs-storage-open benthic_datasets/point_labels/IBF/ (2,250 points). The CPCe code file named in each .cpc (legacy: history note)
 # (C:\CPCE_4~1\KODEKA~1.TXT) is NOT in the bucket, so meanings are the standard English et al. (1997) / COREMAP
 # lifeform codes. The partner supplied no licence (registry/sources/reef-support-own.yaml ibf).
 crosswalks:

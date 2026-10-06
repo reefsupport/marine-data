@@ -54,7 +54,7 @@ sources:
         path is; the licence gate now blocks it regardless of profile.
     modalities: [image]
     capabilities: [image-enhancement]
-    items: 890
+    n_images: 890
     annotations: [{ kind: none, supervises: [] }]
     coverage: { regions: [global] }
     notes: >
@@ -104,7 +104,7 @@ sources:
         subset is published anywhere. Fetch a site archive manually.
     modalities: [image]
     capabilities: [image-enhancement, depth-estimation]
-    items: 57
+    n_images: 57
     annotations: [{ kind: depth-map, supervises: [] }]
     coverage: { regions: [mediterranean, red-sea] }
     notes: "Tiny but carries in-scene colour charts and distances — one of the few sets with physical ground truth."
@@ -226,7 +226,7 @@ sources:
         unverified.
     modalities: [image]
     capabilities: [benthic-segmentation, fish-detection, general-pretraining]
-    items: 1598
+    n_images: 1598
     annotations: [{ kind: dense-mask, classes: 8, supervises: [taxon] }]
     coverage: { regions: [global] }
     domain_shift:

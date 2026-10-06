@@ -10,10 +10,9 @@ weakest match among the *mapped* classes, ``unmapped`` when none maps. An index 
 source's table is labelled ``__unknown_index_<n>`` and is ``unmapped``: never guessed.
 
 Five staged sources (:data:`MASK_SOURCES`), read through :class:`~.s3_keyed.StagedTree`. The
-``benthic_datasets/mask_labels/`` sub-collections are classified by :data:`BENTHIC_MASK_COLLECTIONS`:
-most duplicate a ``sources/`` id; the SEAVIEW sites of ``reef_support`` / ``rs_labelled`` (per-instance
-Labelbox masks whose classes sit in ``export-result.ndjson``) are not staged, so they get *pending*
-rows (``image_key`` + TODO) the way WP-U3 does.
+per-instance Labelbox masks of ``reef-support-seaview-labels`` (``labels/instance_masks/<partition>/``,
+classes in ``labels/exports/*.ndjson``) get *pending* rows (``image_key`` + TODO) the way WP-U3
+does.
 
 ``attrs.licence_class`` is ``internal-only`` for ``coralscop-masks-rs`` (CC-BY-NC-SA-4.0 masks over
 unlicensed UCSD base images); :func:`drop_internal_only` is the release filter.
@@ -115,7 +114,7 @@ MASK_SOURCES: dict[str, MaskSource] = {
         # the vocab counts by the WP-U4 scan (see the report), unknown indexes stay unmapped.
         MaskSource(
             "reef-support-benthic-own",
-            "2026-09-24",
+            "2026-10-06",
             "reef-support-labelbox",
             {1: "Hard Coral", 2: "Soft Coral"},
             0,
@@ -138,32 +137,10 @@ MASK_SOURCES: dict[str, MaskSource] = {
     )
 }
 
-# benthic_datasets/mask_labels/<sub>: which sources/ id (if any) each one duplicates.
-BENTHIC_MASK_COLLECTIONS: dict[str, dict[str, object]] = {
-    "coralscapes": {
-        "duplicates": "coralscapes",
-        "match": "gtFine/leftImg8bit stems, 2075/2075 images",
-    },
-    "Coralseg": {
-        "duplicates": "coralseg-ucsd-mosaics",
-        "match": "<split>/Image+Mask stems, 4922/4922 pairs",
-    },
-    "coralscop_masks": {"duplicates": "coralscop-masks-rs", "match": "image stems, 38928/38928"},
-    "reef_support": {
-        "duplicates": "reef-support-benthic-own",
-        "sites": (
-            "SEAFLOWER_BOLIVAR",
-            "SEAFLOWER_COURTOWN",
-            "TETES_PROVIDENCIA",
-            "UNAL_BLEACHING_TAYRONA",
-        ),
-        "pending": "SEAVIEW_*",
-    },
-    "rs_labelled": {
-        "duplicates": "reef_support",
-        "pending": "SEAVIEW_* keys not already in reef_support",
-    },
-}
+SEAVIEW_LABELS_SOURCE = "reef-support-seaview-labels"
+SEAVIEW_LABELS_VERSION = "2026-10-06"
+SEAVIEW_LABELS_PREFIX = f"sources/{SEAVIEW_LABELS_SOURCE}/{SEAVIEW_LABELS_VERSION}/"
+"""Canonical tree of our SEAVIEW instance masks (partition = SEAVIEW_ATL / IDN_PHL / PAC_AUS / PAC_USA)."""  # noqa: E501
 
 
 def licence_class(source_id: str) -> str:
@@ -323,30 +300,20 @@ def write_masks(data_dir: Path, source_id: str, source_version: str, rows: list[
     return path
 
 
-# ---- benthic_datasets/mask_labels pending rows -----------------------------------------------
+# ---- labels/instance_masks pending rows ------------------------------------------------------
 
-_MASK_KEY = re.compile(r"^(?P<site>[^/]+)/masks/(?P<stem>.+)_mask_(?P<k>\d+)\.png$")
-
-
-def classify_key(sub: str, rel: str) -> tuple[str, str | None]:
-    """``(site, duplicates)`` of one key under ``mask_labels/<sub>/``: the ``sources/`` id the
-    key duplicates, or ``None`` when it is not staged (pending)."""
-    spec = BENTHIC_MASK_COLLECTIONS[sub]
-    site = rel.split("/", 1)[0]
-    if "sites" in spec:
-        return site, (spec["duplicates"] if site in spec["sites"] else None)  # type: ignore[return-value]
-    return site, spec["duplicates"]  # type: ignore[return-value]
+_MASK_KEY = re.compile(
+    r"^labels/instance_masks/(?P<site>[^/]+)/masks/(?P<stem>.+)_mask_(?P<k>\d+)\.png$"
+)
 
 
-def image_index(
-    keys: Iterable[str], prefix: str = "benthic_datasets/mask_labels/"
-) -> dict[str, str]:
-    """``<sub>/<site>/<stem>`` -> image key for every ``<sub>/<site>/images/<file>`` key."""
+def image_index(keys: Iterable[str], prefix: str = SEAVIEW_LABELS_PREFIX) -> dict[str, str]:
+    """``<partition>/<stem>`` -> image key for every ``images/<partition>/<file>`` key."""
     out: dict[str, str] = {}
     for key in keys:
         parts = key.removeprefix(prefix).split("/")
-        if len(parts) == 4 and parts[2] == "images":
-            out[f"{parts[0]}/{parts[1]}/{PurePosixPath(parts[3]).stem}"] = key
+        if len(parts) == 3 and parts[0] == "images":
+            out[f"{parts[1]}/{PurePosixPath(parts[2]).stem}"] = key
     return out
 
 
@@ -354,23 +321,22 @@ def pending_rows(
     keys: Iterable[str],
     *,
     images: Mapping[str, str] | None = None,
-    source_id: str = "rs-labelled-masks",
-    source_version: str = "benthic-datasets-2026-10-05",
+    source_id: str = SEAVIEW_LABELS_SOURCE,
+    source_version: str = SEAVIEW_LABELS_VERSION,
     ann_license: str = "CC-BY-4.0",
-    prefix: str = "benthic_datasets/mask_labels/",
+    prefix: str = SEAVIEW_LABELS_PREFIX,
 ) -> list[dict]:
-    """Pending instance rows (``mask_ref`` + ``image_key`` + TODO) for non-staged per-instance
-    Labelbox masks. ``label_native`` is a TODO string, ``match_type`` ``unmapped``: no class is
-    guessed until ``export-result.ndjson`` is parsed."""
+    """Pending instance rows (``mask_ref`` + ``image_key`` + TODO) for the per-instance Labelbox
+    masks. ``label_native`` is a TODO string, ``match_type`` ``unmapped``: no class is guessed
+    until the ``labels/exports/*.ndjson`` is parsed."""
     rows: list[dict] = []
     typ, detail = annotator_from_origin("human_expert")
     for key in sorted(keys):
-        sub, rest = key.removeprefix(prefix).split("/", 1)
-        m = _MASK_KEY.match(rest)
+        m = _MASK_KEY.match(key.removeprefix(prefix))
         if m is None:
             continue
-        ref = f"{sub}/{m['site']}/{m['stem']}"
-        image_key = (images or {}).get(ref) or f"{prefix}{sub}/{m['site']}/images/{m['stem']}"
+        ref = f"{m['site']}/{m['stem']}"
+        image_key = (images or {}).get(ref) or f"{prefix}images/{m['site']}/{m['stem']}"
         rows.append(
             {
                 "source_id": source_id, "source_version": source_version,
@@ -378,7 +344,7 @@ def pending_rows(
                 "label_set": "reef-support-labelbox", "match_type": "unmapped",
                 "annotator_type": typ, "annotator_detail": detail, "ann_license": ann_license,
                 "label_status": "ok", "mask_kind": "instance", "mask_ref": key,
-                "attrs": json.dumps({"licence_class": "open", "todo": "label from export-result.ndjson"}),  # noqa: E501
+                "attrs": json.dumps({"licence_class": "open", "todo": "label from labels/exports/*.ndjson"}),  # noqa: E501
                 "image_key": image_key, "image_sha256_todo": TODO_TEXT,
             }
         )  # fmt: skip
@@ -417,10 +383,11 @@ def write_pending_masks(path: Path, rows: list[dict]) -> int:
 
 
 __all__ = [  # noqa: RUF022
-    "BENTHIC_MASK_COLLECTIONS",
+    "SEAVIEW_LABELS_PREFIX",
+    "SEAVIEW_LABELS_SOURCE",
+    "SEAVIEW_LABELS_VERSION",
     "MASK_SOURCES",
     "MaskSource",
-    "classify_key",
     "image_index",
     "drop_internal_only",
     "is_internal_only",

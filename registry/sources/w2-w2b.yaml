@@ -36,8 +36,8 @@ sources:
   capabilities:
   - fish-classification
   - general-pretraining
-  items: 75811
-  items_note: measured via dry-run 2026-09-25 (revision main); parquet is the HF-reported usedStorage
+  n_images: 75811
+  counts_note: measured via dry-run 2026-09-25 (revision main); parquet is the HF-reported usedStorage
     upper bound of 60.48 GB, includes repo history — the pinned revision's actual declared bytes are 11.87
     GB.
   coverage:
@@ -80,8 +80,8 @@ sources:
   - image
   capabilities:
   - fish-classification
-  items: 103000
-  items_note: official release ~103k+; HF mirror measured 14.52 GB / 26 files 2026-09-25.
+  n_images: 103000
+  counts_note: official release ~103k+; HF mirror measured 14.52 GB / 26 files 2026-09-25.
   coverage:
     regions:
     - global
@@ -161,8 +161,8 @@ sources:
   - video
   capabilities:
   - fish-tracking
-  items: 30
-  items_note: 30 MP4/KVA files. The current ingest framework has no video decoder — needs_adapter:video
+  n_files: 30
+  counts_note: 30 MP4/KVA files. The current ingest framework has no video decoder — needs_adapter:video
     (see registry/ingest-specs/salmon-cage.yaml).
   coverage:
     regions:
@@ -276,7 +276,7 @@ sources:
   - image
   capabilities:
   - fish-detection
-  items: 1846
+  n_images: 1846
   coverage:
     regions:
     - central-pacific
@@ -318,7 +318,7 @@ sources:
   capabilities:
   - fish-detection
   - invertebrate-detection
-  items: 6575
+  n_images: 6575
   coverage:
     regions:
     - unknown
@@ -357,8 +357,8 @@ sources:
   capabilities:
   - vqa-captioning
   - general-pretraining
-  items: 4000
-  items_note: HF usedStorage claims <=79.62 GB but the pinned revision's actual parquet content measured
+  n_images: 4000
+  counts_note: HF usedStorage claims <=79.62 GB but the pinned revision's actual parquet content measured
     458 MB / 4,000 rows on 2026-09-25 (viewer previously showed only 500 rows) — inspect before relying
     on this as a large corpus; usedStorage likely counts deleted/superseded revisions.
   coverage:
@@ -399,7 +399,7 @@ sources:
   capabilities:
   - vqa-captioning
   - general-pretraining
-  items: 135595
+  n_images: 135595
   coverage:
     regions:
     - global
@@ -438,7 +438,7 @@ sources:
   capabilities:
   - vqa-captioning
   - megafauna-id
-  items: 24911
+  n_images: 24911
   coverage:
     regions:
     - global
@@ -476,8 +476,8 @@ sources:
   - tabular
   capabilities:
   - vqa-captioning
-  items: 10000
-  items_note: Pure JSON instruction/caption pairs — the ingest framework only stages image/tar/zip/parquet
+  # legacy items=10000 (unit unspecified: tabular/satellite records) -> n_* left null
+  counts_note: Pure JSON instruction/caption pairs — the ingest framework only stages image/tar/zip/parquet
     content, so a dry-run resolves 0 stageable files (needs_adapter:json-captions).
   coverage:
     regions:
@@ -517,7 +517,7 @@ sources:
   capabilities:
   - image-enhancement
   - depth-estimation
-  items: 2421
+  n_images: 2421
   coverage:
     regions:
     - red-sea
@@ -557,8 +557,8 @@ sources:
   - image
   capabilities:
   - image-enhancement
-  items: 1
-  items_note: dry-run measured 1 stageable file / 189 MB on the HF mirror on 2026-09-25 — far below the
+  n_images: 1
+  counts_note: dry-run measured 1 stageable file / 189 MB on the HF mirror on 2026-09-25 — far below the
     ~20k+10k paired/unpaired official count; confirm the mirror's actual content before relying on it.
   coverage:
     regions:
@@ -601,7 +601,7 @@ sources:
   - image
   capabilities:
   - image-enhancement
-  items_note: Payload is .rar archives; the ingest framework has no extractor (needs_adapter:rar, see
+  counts_note: Payload is .rar archives; the ingest framework has no extractor (needs_adapter:rar, see
     registry/ingest-specs/underwater-images-2542305.yaml). Record description is only the title — contents
     unconfirmed.
   coverage:
@@ -640,7 +640,7 @@ sources:
   - image
   capabilities:
   - image-enhancement
-  items: 2
+  n_images: 2
   coverage:
     regions:
     - unknown
@@ -679,7 +679,7 @@ sources:
   - video
   capabilities:
   - image-enhancement
-  items: 1
+  n_images: 1
   coverage:
     regions:
     - unknown
@@ -716,7 +716,7 @@ sources:
   - image
   capabilities:
   - image-enhancement
-  items: 1
+  n_images: 1
   coverage:
     regions:
     - unknown
@@ -750,7 +750,7 @@ sources:
   - image
   capabilities:
   - image-enhancement
-  items: 4279
+  n_images: 4279
   coverage:
     regions:
     - unknown
@@ -791,8 +791,8 @@ sources:
   - image
   capabilities:
   - image-enhancement
-  items: 450
-  items_note: dry-run (github adapter, ref=master) measured 450 files / 51.65 MB on 2026-09-25 — more
+  n_images: 450
+  counts_note: dry-run (github adapter, ref=master) measured 450 files / 51.65 MB on 2026-09-25 — more
     than the ~45-image estimate in the catalog; likely multiple variants in-repo.
   coverage:
     regions:
@@ -829,7 +829,7 @@ sources:
   - image
   capabilities:
   - image-enhancement
-  items: 4000
+  n_images: 4000
   coverage:
     regions:
     - unknown
@@ -864,7 +864,7 @@ sources:
   - image
   capabilities:
   - super-resolution
-  items: 1060
+  n_images: 1060
   coverage:
     regions:
     - unknown
@@ -899,7 +899,7 @@ sources:
   capabilities:
   - image-enhancement
   - super-resolution
-  items: 1620
+  n_images: 1620
   coverage:
     regions:
     - unknown
@@ -936,7 +936,7 @@ sources:
   - image
   capabilities:
   - image-enhancement
-  items: 9676
+  n_images: 9676
   coverage:
     regions:
     - unknown
@@ -971,7 +971,7 @@ sources:
   capabilities:
   - image-enhancement
   - invertebrate-detection
-  items: 10255
+  n_images: 10255
   coverage:
     regions:
     - unknown
@@ -1057,7 +1057,7 @@ sources:
   - image
   capabilities:
   - invertebrate-detection
-  items: 7782
+  n_images: 7782
   coverage:
     regions:
     - unknown

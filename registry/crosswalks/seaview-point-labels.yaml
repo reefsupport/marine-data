@@ -1,5 +1,5 @@
 # Hand-authored (WP-U3, 2026-10-05) for taxonomy 2.2.0. Codes are the `label` column of
-# rs-storage-open benthic_datasets/point_labels/SEAVIEW/tabular-data/annotations_<REGION>.csv (9 regions,
+# rs-storage-open benthic_datasets/point_labels/SEAVIEW/tabular-data/annotations_<REGION>.csv (9 regions, (legacy: history note)
 # 859,870 points, 181 codes). Meanings come from the same rows' `label_name` and `func_group`. Where two
 # regions use different names for one code the edge follows the name common to both. Growth-form and
 # family-level labels are `coarsened` (broader) onto HC/SC/ALGAE/PORIFERA; species labels are `coarsened`

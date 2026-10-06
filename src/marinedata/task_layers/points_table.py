@@ -7,9 +7,10 @@ source pixels), the native label byte-exact, and the taxon columns from
 
 * :func:`staged_points_rows`: the staged ``labels/points.parquet`` of mermaid-aws and reefolution
   (``image_sha256`` from the tree's own ``CHECKSUMS.sha256``);
-* :func:`seaview_rows` / :func:`ibf_rows`: ``benthic_datasets/point_labels/`` (SEAVIEW region CSVs,
-  IBF CPCe files). Those images are not under ``sources/`` so no sha256 exists: rows carry
-  ``image_key`` and ``image_sha256_todo`` (:func:`write_pending_points`) until the images are staged.
+* :func:`seaview_rows` / :func:`ibf_rows`: the SEAVIEW region CSVs
+  (``sources/seaview-survey-imagery/<ver>/labels/points/<region>/``) and the IBF CPCe files
+  (private ``sources/ibf/<ver>/labels/points/<site>/``). Until the staged trees are read for their
+  ``image_sha256``, rows carry ``image_key`` and ``image_sha256_todo`` (:func:`write_pending_points`).
 """  # noqa: E501
 
 from __future__ import annotations

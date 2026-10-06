@@ -93,13 +93,12 @@ def test_unknown_colour_raises(tmp_path: Path) -> None:
         list(build_loader(source, root))
 
 
-def test_registry_sources_resolve_to_labelbox_rgb() -> None:
-    """The remaining Reef Support labelbox-rgb source declares the converter and it
-    actually resolves — `reef-support-benthic-own` moved to `staged-tree` once its
-    staged tree was pinned (WSD S8e), so it is no longer in this list."""
-    registry = Registry.load()
-    for source_id in ("reef-support-seaview-labels",):
-        source = registry.source(source_id)
-        assert source.loader is not None
-        assert source.loader.layout == "labelbox-rgb"
-        assert loader_for(source.loader.layout) is LabelboxRgbMaskLoader
+def test_seaview_labels_staged_tree_keeps_the_labelbox_rgb_converter() -> None:
+    """RB-3 (2026-10-06): `reef-support-seaview-labels` moved from the legacy `labelbox-rgb`
+    mask_labels tree to a staged tree; the stitched masks under `labels/masks/` still use the
+    fixed Labelbox colour LUT, so the converter stays registered and the entry says so."""
+    source = Registry.load().source("reef-support-seaview-labels")
+    assert source.loader is not None
+    assert source.loader.layout == "staged-tree"
+    assert "labelbox" in str(source.loader.params["masks"]).lower()
+    assert loader_for("labelbox-rgb") is LabelboxRgbMaskLoader

@@ -295,7 +295,8 @@ def _mask_records(base_dir: Path, source_id: str) -> list[dict]:
             "taxon_by_label": {
                 k: v["taxon_node_id"] for k, v in _attrs(r).get("class_resolution", {}).items()
             },  # noqa: E501, RUF100
-            "class_map": r.get("class_map"), "ignore_value": r.get("ignore_value"),
+            "class_map": r.get("class_map"),
+            "ignore_value": r.get("ignore_value"),
             "class_resolution": _attrs(r).get("class_resolution", {}),
             "mask_encoding": _attrs(r).get("mask_encoding"),
             "mask_parts": _attrs(r).get("mask_parts"),
