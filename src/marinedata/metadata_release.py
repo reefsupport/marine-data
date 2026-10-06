@@ -54,6 +54,7 @@ from .licence_class import drop_release_excluded, flavour_filter, resolve_row_cl
 from .privacy import policy as privacy_policy
 from .privacy.policy import POSSIBLE_FACE, PrivacyOutcome
 from .registry import Registry, Source
+from .sample_schema import staged_partition
 
 METADATA = "metadata"
 
@@ -279,7 +280,15 @@ def _staged_lookup(
             path = cached
         else:
             return {}
-    wanted = ["stem", "partition", "upstream_path", "license", "split_group", *STAGED_GEO]
+    wanted = [
+        "stem",
+        "partition",
+        "image_path",
+        "upstream_path",
+        "license",
+        "split_group",
+        *STAGED_GEO,
+    ]
     present = set(pq.read_schema(path).names)
     table = pq.read_table(path, columns=[c for c in wanted if c in present])
     own: dict[str, str] = {}
@@ -291,7 +300,7 @@ def _staged_lookup(
     for row in table.to_pylist():
         if own.get(row["stem"]) and not row.get("license"):
             row = {**row, "license": own[row["stem"]]}
-        out[(row["partition"], row["stem"])] = row
+        out[(staged_partition(row), row["stem"])] = row  # flat D-K tree: partition ""
     return out
 
 
@@ -363,7 +372,7 @@ def build_rows(
             )
         staged = staged_cache[ref.source_id]
         partition, stem = ref.file.parent.name, ref.file.stem
-        staged_row = staged.get((partition, stem), {})
+        staged_row = staged.get((partition, stem)) or staged.get(("", stem), {})
         if ref.source_id not in geo_cache:
             geo_cache[ref.source_id] = load_backfill(ref.source_id, backfill_root)
         geo = geo_cache[ref.source_id].get(f"{partition}/{stem}", {})
