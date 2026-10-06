@@ -320,6 +320,24 @@ def test_coverage_is_judged_against_the_registry_eval_count_not_the_manifest():
     assert check_benchmark(entry, _thresholds(), nulls, corp).coverage_fail
 
 
+def test_coverage_numerator_is_unique_non_null_sha256_capped_at_the_eval_count():
+    """WP-R12 (marineeval-like): 2672 rows for 2643 unique images read 100%, never 101%;
+    2483 unique images stay below the gate however many duplicate rows pad the manifest."""
+    entry = _entry(eval_n=2643)
+    corp = [_rec("c0")]
+    dup = [_rec(f"b{i}") for i in range(2643)] + [_rec(f"b{i}") for i in range(29)]
+    assert len(dup) == 2672
+    full = check_benchmark(entry, _thresholds(), dup, corp)
+    assert (full.hashed_n, full.eval_n) == (2643, 2643) and not full.coverage_fail
+    padded = [_rec(f"b{i}") for i in range(2483)] + [_rec(f"b{i % 2483}") for i in range(189)]
+    assert len(padded) == 2672
+    short = check_benchmark(entry, _thresholds(), padded, corp)
+    assert (short.hashed_n, short.eval_n) == (2483, 2643) and short.coverage_fail
+    over = [_rec(f"b{i}") for i in range(2700)]
+    capped = check_benchmark(entry, _thresholds(), over, corp)
+    assert capped.hashed_n == 2643 and not capped.coverage_fail
+
+
 def test_a_staged_benchmark_without_a_registry_eval_count_fails_coverage():
     entry = _entry(eval_n=100)
     entry = entry.model_copy(

@@ -250,9 +250,15 @@ def test_manifest_coverage_at_least_five_or_documented(
 
     expected = _expected_eval_count(entry)
     if expected:
-        ratio = table.num_rows / expected
+        # WP-R12: coverage counts UNIQUE non-null sha256 (as the decon gate does); duplicate
+        # rows never raise it. Manifests without a sha256 column fall back to the row count.
+        if "sha256" in table.schema.names:
+            covered = len({h for h in table.column("sha256").to_pylist() if h})
+        else:
+            covered = table.num_rows
+        ratio = covered / expected
         if ratio < 0.99:
-            msgs.append(f"{path.name}: {table.num_rows} rows / {expected} eval images < 99%")
+            msgs.append(f"{path.name}: {covered} unique images / {expected} eval images < 99%")
         # Skip upper-bound check for trashcan (two annotation versions with separate val splits)
         if entry.id != "trashcan" and table.num_rows > 1.05 * expected:
             msgs.append(f"{path.name}: {table.num_rows} rows > 105% of {expected} eval images")

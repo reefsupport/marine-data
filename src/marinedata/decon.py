@@ -297,7 +297,12 @@ def check_benchmark(
     # judgement (R8c: 8.5k of 28353 deepseagrass images read as "100%"). A staged/w1/w2
     # benchmark whose registry has no such count cannot be verified and fails.
     eval_n = expected_eval_count(entry)
-    hashed_n = sum(1 for r in bench_records if r.sha256)
+    # WP-R12: the numerator is the UNIQUE non-null sha256 in the manifest, capped at the registry
+    # eval count (<= 100%). Duplicate rows (QA rows per image, repeated images) never raise
+    # coverage: marineeval has 2672 rows for 2643 unique images.
+    hashed_n = len({r.sha256 for r in bench_records if r.sha256})
+    if eval_n is not None:
+        hashed_n = min(hashed_n, eval_n)
     coverage_fail = entry.obtain.status in {"staged", "w1", "w2"} and (
         hashed_n == 0
         or (eval_n is None and bool(bench_records))
