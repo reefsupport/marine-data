@@ -25,7 +25,7 @@ decides *what* rows exist; this module decides how they land on disk:
 from __future__ import annotations
 
 import json
-from collections.abc import Sequence
+from collections.abc import Callable, Sequence
 from dataclasses import dataclass, field
 from pathlib import Path
 
@@ -49,24 +49,60 @@ SCALAR_TYPES = ("string", "bool", "int64", "double")
 quality scores) — no config before it needed a floating column."""
 IMAGE = "image"
 
+LIST_STRUCT_KINDS: dict[str, tuple[tuple[str, str], ...]] = {
+    "class_map": (
+        ("id", "int64"),
+        ("label_native", "string"),
+        ("taxon_node", "string"),
+        ("coarse", "string"),
+    ),
+    "instances": (
+        ("id", "int64"),
+        ("label_native", "string"),
+        ("taxon_node", "string"),
+        ("coarse", "string"),
+        ("bbox_xyxy_norm", "list<double>"),
+    ),
+}
+"""MV-1 (masks v1): ``list<struct>`` column kinds. Each field is a scalar type or ``list<double>``;
+the value of such a cell is a list of dicts (or ``None``)."""
+
 
 class HFParquetError(Exception):
     """A shard plan or write that would not produce a valid Hub layout."""
 
 
 @dataclass(frozen=True)
+class EmbeddedBlob:
+    """One embedded image cell whose bytes are produced lazily at write time (MV-1): a config
+    with several image columns (``image`` + ``mask``), or a cell that is computed (a normalised
+    mask PNG) rather than read from a file. ``nbytes`` is only the shard-planning estimate."""
+
+    column: str
+    path: str
+    nbytes: int
+    read: Callable[[], bytes]
+
+
+@dataclass(frozen=True)
 class ExportRow:
-    """One Parquet row: scalar ``values`` plus at most one embedded file."""
+    """One Parquet row: scalar ``values`` plus embedded files: ``file`` (into the config's
+    first image column) and/or lazily-read ``blobs`` (into the named image columns)."""
 
     values: dict[str, object]
     file: Path | None = None
     file_path: str | None = None
     """The ``Image`` struct's ``path`` — a readable name, never used to locate bytes."""
     file_bytes: int = 0
+    blobs: tuple[EmbeddedBlob, ...] = ()
+
+    @property
+    def embedded_bytes(self) -> int:
+        return self.file_bytes + sum(b.nbytes for b in self.blobs)
 
     @property
     def nbytes(self) -> int:
-        return self.file_bytes + ROW_OVERHEAD_BYTES
+        return self.embedded_bytes + ROW_OVERHEAD_BYTES
 
 
 @dataclass(frozen=True)
@@ -79,13 +115,17 @@ class ConfigSpec:
     shard_target_bytes: int = SHARD_TARGET_BYTES
     row_group_target_bytes: int = ROW_GROUP_TARGET_BYTES
     image_column: str | None = field(init=False, default=None)
+    """The first image column (where ``ExportRow.file`` lands)."""
+    image_columns: tuple[str, ...] = field(init=False, default=())
 
     def __post_init__(self) -> None:
         images = [name for name, kind in self.columns if kind == IMAGE]
-        bad = [kind for _, kind in self.columns if kind not in (*SCALAR_TYPES, IMAGE)]
-        if bad or len(images) > 1:
-            raise HFParquetError(f"{self.name}: bad column types {bad} or >1 image column")
+        known = (*SCALAR_TYPES, IMAGE, *LIST_STRUCT_KINDS)
+        bad = [kind for _, kind in self.columns if kind not in known]
+        if bad:
+            raise HFParquetError(f"{self.name}: bad column types {bad}")
         object.__setattr__(self, "image_column", images[0] if images else None)
+        object.__setattr__(self, "image_columns", tuple(images))
 
 
 def greedy_chunks(rows: Sequence[ExportRow], target_bytes: int) -> list[list[ExportRow]]:
@@ -126,8 +166,23 @@ def features_metadata(spec: ConfigSpec) -> dict:
     """The ``datasets`` feature map for ``spec``, as stored under schema key ``huggingface``."""
     features: dict[str, dict] = {}
     for name, kind in spec.columns:
-        features[name] = {"_type": "Image"} if kind == IMAGE else {"dtype": kind, "_type": "Value"}
+        if kind == IMAGE:
+            features[name] = {"_type": "Image"}
+        elif kind in LIST_STRUCT_KINDS:
+            features[name] = {
+                "feature": {f: _feature(t) for f, t in LIST_STRUCT_KINDS[kind]},
+                "_type": "List",
+            }
+        else:
+            features[name] = {"dtype": kind, "_type": "Value"}
     return {"info": {"features": features}}
+
+
+def _feature(kind: str) -> dict:
+    """``datasets`` feature dict of one struct field (``datasets`` >= 4 ``List`` spelling)."""
+    if kind == "list<double>":
+        return {"feature": {"dtype": "float64", "_type": "Value"}, "_type": "List"}
+    return {"dtype": kind, "_type": "Value"}
 
 
 def arrow_schema(spec: ConfigSpec):
@@ -145,10 +200,25 @@ def arrow_schema(spec: ConfigSpec):
             fields.append(
                 pa.field(name, pa.struct([("bytes", pa.binary()), ("path", pa.string())]))
             )
+        elif kind in LIST_STRUCT_KINDS:
+            inner = [
+                (f, pa.list_(pa.float64()) if t == "list<double>" else types[t])
+                for f, t in LIST_STRUCT_KINDS[kind]
+            ]
+            fields.append(pa.field(name, pa.list_(pa.struct(inner))))
         else:
             fields.append(pa.field(name, types[kind]))
     meta = {b"huggingface": json.dumps(features_metadata(spec)).encode("utf-8")}
     return pa.schema(fields, metadata=meta)
+
+
+def _image_cell(row: ExportRow, column: str, first: str | None) -> dict | None:
+    for blob in row.blobs:
+        if blob.column == column:
+            return {"bytes": blob.read(), "path": blob.path}
+    if column == first and row.file is not None:
+        return {"bytes": row.file.read_bytes(), "path": row.file_path}
+    return None
 
 
 def _table(spec: ConfigSpec, rows: Sequence[ExportRow], schema):
@@ -157,10 +227,7 @@ def _table(spec: ConfigSpec, rows: Sequence[ExportRow], schema):
     data: dict[str, list] = {}
     for name, kind in spec.columns:
         if kind == IMAGE:
-            data[name] = [
-                None if r.file is None else {"bytes": r.file.read_bytes(), "path": r.file_path}
-                for r in rows
-            ]
+            data[name] = [_image_cell(r, name, spec.image_column) for r in rows]
         else:
             data[name] = [r.values.get(name) for r in rows]
     return pa.Table.from_pydict(data, schema=schema)
@@ -173,7 +240,7 @@ def write_shard(path: Path, spec: ConfigSpec, rows: Sequence[ExportRow]) -> int:
     if not rows:
         raise HFParquetError(f"{path}: refusing to write an empty shard")
     schema = arrow_schema(spec)
-    scalars = [name for name, kind in spec.columns if kind != IMAGE]
+    scalars = [name for name, kind in spec.columns if kind in SCALAR_TYPES]
     path.parent.mkdir(parents=True, exist_ok=True)
     tmp = path.with_name(path.name + ".tmp")
     with pq.ParquetWriter(

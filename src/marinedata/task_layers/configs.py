@@ -32,6 +32,8 @@ from ..schema import Axis
 from ..tables import _require_pyarrow
 from .boxes_table import BOX_SOURCES
 from .depth_table import DEPTH_PAIR_SOURCES
+from .mask_classmap import coarse_of as _coarse_of
+from .mask_classmap import hf_class_map, json_or_none
 from .masks_table import MASK_SOURCES
 from .rollup import MIXED, UNKNOWN, rollup_counts
 from .sources.masks_instance import INSTANCE_SOURCES
@@ -66,6 +68,15 @@ PAIRS_CONFIG_SOURCES = tuple(s for s, v in DEPTH_PAIR_SOURCES.items() if "pairs"
 # producer (``sources.masks_instance.INSTANCE_SOURCES``: usis10k, uiis, uiis10k). Disjoint from
 # SEMSEG_SOURCES, so no mask row is counted by both configs.
 INSTANCE_CONFIG_SOURCES = tuple(INSTANCE_SOURCES)
+# MV-1 (masks v1): self-contained HF mask configs (image + mask + class_map in one row); the
+# flavour still decides the repo; a source with no producer yet (MV-2) simply yields no rows.
+MASK_EXPORT_CONFIG_IDS = ("coral-masks", "coral-masks-machine", "scene-masks", "instance-masks")
+_CORAL = ("coralscapes", "coralseg-ucsd-mosaics", "reef-support-seaview-labels",
+          "reef-support-benthic-own", "deolhonoscorais")  # fmt: skip
+MASK_CONFIG_BY_SOURCE: dict[str, str] = {
+    **dict.fromkeys(_CORAL, "coral-masks"), "coralscop-masks-rs": "coral-masks-machine",
+    "suim": "scene-masks", **dict.fromkeys(("uiis", "uiis10k", "usis10k"), "instance-masks"),
+}  # fmt: skip
 # WP-8e-resume (manager decision 2): bleaching is a headline reef task with its own config.
 BLEACHING_SOURCES = (
     "noaa-pifsc-bleaching",
@@ -284,6 +295,10 @@ def _mask_records(base_dir: Path, source_id: str) -> list[dict]:
             "taxon_by_label": {
                 k: v["taxon_node_id"] for k, v in _attrs(r).get("class_resolution", {}).items()
             },  # noqa: E501, RUF100
+            "class_map": r.get("class_map"), "ignore_value": r.get("ignore_value"),
+            "class_resolution": _attrs(r).get("class_resolution", {}),
+            "mask_encoding": _attrs(r).get("mask_encoding"),
+            "mask_parts": _attrs(r).get("mask_parts"),
         }
         for r in unified
     ]
@@ -452,6 +467,7 @@ def build_semseg_config(registry: Registry, base_dir: str | Path) -> ConfigResul
     label_status = _load_label_status(base_dir)
     unmapped: dict[str, _SourceUnmapped] = {}
     rows: list[dict] = []
+    coarse = _coarse_of(registry)
 
     for source_id in SEMSEG_SOURCES:
         tally = unmapped.setdefault(source_id, _SourceUnmapped())
@@ -479,6 +495,10 @@ def build_semseg_config(registry: Registry, base_dir: str | Path) -> ConfigResul
                     "class_counts": record["class_counts"],
                     "canonical_class_counts": json.dumps(canonical_counts, sort_keys=True),
                     "label_status": label_status.get(record["sha256"], "ok"),
+                    "hf_class_map": hf_class_map(record, coarse),
+                    "ignore_value": record.get("ignore_value"),
+                    "mask_encoding": record.get("mask_encoding"),
+                    "mask_parts": json_or_none(record.get("mask_parts")),
                     **{
                         k: record[k]  # unified columns, present only on unified rows
                         for k in (
@@ -695,6 +715,7 @@ def build_instance_config(registry: Registry, base_dir: str | Path) -> ConfigRes
     label_status = _load_label_status(base_dir)
     rows: list[dict] = []
     unmapped: dict[str, float] = {}
+    coarse = _coarse_of(registry)
     for source_id in INSTANCE_CONFIG_SOURCES:
         masks = _annotation_masks(base_dir, source_id)
         records = [r for r in masks if r["mask_kind"] == "instance"]
@@ -706,6 +727,7 @@ def build_instance_config(registry: Registry, base_dir: str | Path) -> ConfigRes
                     "sha256": r["image_sha256"],
                     "licence_class": attrs.get("licence_class"),
                     "modality": attrs.get("modality"),
+                    "coarse": coarse(r.get("taxon_node_id")),
                     "label_status": label_status.get(r["image_sha256"], r["label_status"]),
                 }
             )

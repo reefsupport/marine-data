@@ -20,7 +20,7 @@ from __future__ import annotations
 import argparse
 import json
 from collections import Counter, defaultdict
-from collections.abc import Sequence
+from collections.abc import Callable, Mapping, Sequence
 from dataclasses import dataclass
 from pathlib import Path
 
@@ -43,6 +43,7 @@ from .release import (
 )
 from .strata import TRAIN
 from .task_layers import hf_wiring as _tl
+from .task_layers import mask_configs as _mc
 
 HF_SPLITS = {"train": "train", "val": "validation", "probe": "validation", "test": "test"}
 SPLIT_ORDER = ("train", "validation", "test")
@@ -296,10 +297,17 @@ def build_layout(
     pseudo_sources: frozenset[str] = frozenset(),
     task_layers: dict[str, list[dict]] | None = None,
     flavour: str | None = None,
+    *,
+    mask_fetch: Callable[[str], bytes] | None = None,
+    mask_source_meta: Mapping[str, Mapping[str, str | None]] | None = None,
+    mask_geo: Mapping[str, tuple[float | None, float | None]] | None = None,
+    mask_stats: Counter | None = None,
 ) -> dict[str, tuple[ConfigSpec, dict[str, list[ExportRow]]]]:
     """``{config: (spec, {hf_split: rows})}`` — images once, tasks label-only, masks apart.
     ``flavour`` (``open`` | ``nc``, WP-L1a) keeps only the rows that flavour may ship, in the
-    images, masks and task configs alike."""
+    images, masks and task configs alike. The ``mask_*`` keywords feed the MV-1 self-contained
+    mask configs (:mod:`marinedata.task_layers.mask_configs`: image + mask + class map in one
+    row, built from the ``semseg`` / ``instances`` task layers)."""
     require_flavour(flavour, "build_layout")
     keep = (lambda r: flavour_filter(r, flavour)) if flavour else drop_release_excluded
     rows_by_task = {t: keep(r) for t, r in rows_by_task.items()}
@@ -309,6 +317,7 @@ def build_layout(
         for row in rows:
             by_sha[row.image_sha256].append(row)
     image_rows, image_splits = [], []
+    mask_images: dict[str, _mc.ImageInfo] = {}
     for sha in sorted(by_sha):
         members = by_sha[sha]
         splits = {m.split for m in members}
@@ -324,7 +333,9 @@ def build_layout(
         image_rows.append(
             _file_row(values, primary.image, f"{primary.source_id}/{primary.sample_key}")
         )
-        image_splits.append(splits.pop())
+        split = splits.pop()
+        mask_images[sha] = _mc.ImageInfo(primary.image, split, primary.split_group, primary.license)
+        image_splits.append(split)
     layout = {IMAGES: (IMAGE_SPEC, _by_split(image_rows, image_splits))}
 
     for config, wanted in ((MASKS, False), (PSEUDO_MASKS, True)):
@@ -359,6 +370,16 @@ def build_layout(
         export = [ExportRow(values={n: getattr(r, n) for n in names}) for r in rows]
         layout[task_id] = (ConfigSpec(task_id, columns), _by_split(export, [r.split for r in rows]))
     layout.update(_tl.layout_entries(task_layers or {}, {k: v[0].split for k, v in by_sha.items()}))
+    layout.update(
+        _mc.mask_layout_entries(
+            task_layers,
+            mask_images,
+            fetch=mask_fetch,
+            source_meta=mask_source_meta,
+            geo_by_sha=mask_geo,
+            stats=mask_stats,
+        )
+    )
     return layout
 
 
@@ -385,7 +406,7 @@ def export(layout, out_dir: Path, *, sample: bool = False) -> dict:
             entry["splits"][split] = {
                 "rows": len(rows),
                 "shards": sum(1 for p in plans if p.split == split),
-                "embedded_bytes": sum(r.file_bytes for r in rows),
+                "embedded_bytes": sum(r.embedded_bytes for r in rows),
             }
         written = []
         for plan in chosen:
@@ -394,7 +415,7 @@ def export(layout, out_dir: Path, *, sample: bool = False) -> dict:
                 {
                     "name": plan.name,
                     "rows": len(plan.rows),
-                    "embedded_bytes": sum(r.file_bytes for r in plan.rows),
+                    "embedded_bytes": sum(r.embedded_bytes for r in plan.rows),
                     "bytes": size,
                 }
             )
@@ -456,6 +477,13 @@ def main(argv: list[str] | None = None) -> int:
         help="privacy.parquet from `privacy-scan`: apply the release privacy policy (score >= "
         "0.85 excludes the image and lists it in RELEASE.json; 0.60-0.85 flags it in `metadata`)",
     )
+    parser.add_argument(
+        "--mask-root",
+        type=Path,
+        default=None,
+        help="local staged tree holding the mask PNGs at <root>/<bucket key> (MV-1 mask configs); "
+        "a key not found there is fetched with the anonymous small-file GET",
+    )
     args = parser.parse_args(argv)
 
     registry = Registry.load()
@@ -476,8 +504,15 @@ def main(argv: list[str] | None = None) -> int:
     if args.privacy:
         privacy_policy.record_in_release(release_json, privacy)
     pseudo = frozenset(s for s in roots if PSEUDO_TAG in registry.source(s).tags)
+    mask_stats: Counter = Counter()
     layout = build_layout(
-        rows, pseudo, task_layers=_tl.read_task_layers(args.release_dir), flavour=flavour
+        rows,
+        pseudo,
+        task_layers=_tl.read_task_layers(args.release_dir),
+        flavour=flavour,
+        mask_fetch=_mc.make_fetch(args.mask_root),
+        mask_source_meta=_mc.mask_source_meta(registry),
+        mask_stats=mask_stats,
     )
     if not args.no_metadata:  # WP-R2b: licence_class / geo / split_group per image, same flavour
         import pyarrow.parquet as pq
@@ -495,6 +530,8 @@ def main(argv: list[str] | None = None) -> int:
         summary["flavour"] = flavour
         summary["repo_id"] = release["repo_id"]
     summary["per_task_embedding_bytes"] = per_task_embedding_bytes(rows)
+    if mask_stats:
+        summary["mask_rows_dropped"] = dict(sorted(mask_stats.items()))
     args.summary.parent.mkdir(parents=True, exist_ok=True)
     args.summary.write_text(json.dumps(summary, indent=1, sort_keys=True))
     print(
