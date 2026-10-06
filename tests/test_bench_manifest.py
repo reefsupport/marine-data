@@ -15,6 +15,7 @@ from PIL import Image
 from marinedata.bench_manifest import (
     ManifestBuildError,
     RawImage,
+    _build_row_tolerant,
     build_manifest,
     iter_bucket_images,
     iter_upstream_images,
@@ -581,3 +582,25 @@ def test_iter_staged_bucket_split_hint_column_is_split_evidence():
     )
     images = list(iter_bucket_images(client, "rs-storage-open", _entry(eval_split="test")))
     assert [i.stem for i in images] == ["a"]
+
+
+def test_a_truncated_jpeg_still_gets_a_manifest_row_with_its_exact_sha256():
+    """WP-R12: CoralVQA ships 5 truncated JPEGs; they must not drop out of the manifest."""
+    from PIL import ImageFile
+
+    buf = io.BytesIO()
+    rng = __import__("random").Random(0)
+    Image.frombytes("RGB", (96, 96), bytes(rng.randrange(256) for _ in range(96 * 96 * 3))).save(
+        buf, "JPEG", quality=95
+    )
+    whole = buf.getvalue()
+    cut = whole[: int(len(whole) * 0.8)]
+    flag = ImageFile.LOAD_TRUNCATED_IMAGES
+    img = RawImage(upstream_path="images/t.jpg", stem="t", upstream_split="test", data=cut)
+    row = _build_row_tolerant("coralvqa", img)
+    assert row["sha256"] == hashlib.sha256(cut).hexdigest() and row["phash64"] is not None
+    assert flag == ImageFile.LOAD_TRUNCATED_IMAGES  # scoped to the retry
+    junk = RawImage(upstream_path="images/j.jpg", stem="j", upstream_split="test", data=b"nope")
+    with pytest.raises(Exception, match="cannot decode"):
+        _build_row_tolerant("coralvqa", junk)
+    assert flag == ImageFile.LOAD_TRUNCATED_IMAGES

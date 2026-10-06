@@ -110,6 +110,29 @@ class RawImage:
     data: bytes
 
 
+def _build_row_tolerant(benchmark_id: str, img: RawImage) -> dict[str, Any]:
+    """``build_row``, retrying once with Pillow's truncated-image loading.
+
+    WP-R12: 5 of 1274 CoralVQA test images are truncated JPEGs (the bytes are what upstream
+    ships). Dropping them left the manifest short of the registry count; their sha256 is
+    exact either way and the perceptual hashes of the decoded part are a conservative
+    approximation. The flag is scoped to the retry and restored.
+    """
+    try:
+        return build_row(benchmark_id, img)
+    except FeatureError as first:
+        from PIL import ImageFile
+
+        previous = ImageFile.LOAD_TRUNCATED_IMAGES
+        ImageFile.LOAD_TRUNCATED_IMAGES = True
+        try:
+            return build_row(benchmark_id, img)
+        except FeatureError:
+            raise first from None
+        finally:
+            ImageFile.LOAD_TRUNCATED_IMAGES = previous
+
+
 def _log_stderr(msg: str) -> None:
     print(msg, file=sys.stderr, flush=True)
 
@@ -632,7 +655,7 @@ def build_manifest(
                     "from upstream — decoder/adapter bug, not a per-item skip"
                 )
             try:
-                rows.append(build_row(entry.id, img))
+                rows.append(_build_row_tolerant(entry.id, img))
             except FeatureError as exc:
                 log(f"{entry.id}: skip {img.stem}: {exc}")
                 skipped += 1
