@@ -1,8 +1,9 @@
 """Per-flavour pieces of the dataset card (WP-L1b): licence header, gating, tables, recipes.
 
 ``open`` -> ``reefsupport/marine-data`` (ungated, commercial use OK). ``nc`` ->
-``reefsupport/marine-data-nc`` (gated, the restricted-nc DELTA). The open + nc union is
-non-commercial; the nc card says so in its gate prompt and its body.
+``reefsupport/marine-data-nc`` (gated, the restricted-nc DELTA). The NC flavour is the open
+repo and the nc repo used together (composed of both, non-commercial as a whole); the nc card
+says so in its gate prompt, its top notice and its body.
 """
 
 from __future__ import annotations
@@ -66,9 +67,11 @@ def top_notice(flavour: str, repo_id: str) -> list[str]:
         ]
     return [
         "",
-        "> **NON-COMMERCIAL, gated.** This repo holds only the restricted-nc delta; "
-        "alone or combined with `reefsupport/marine-data` it may be used for "
-        "non-commercial purposes only.",
+        "> **NON-COMMERCIAL, gated.** The NC flavour is composed of both the open and the "
+        "restricted options together: `reefsupport/marine-data` (open) + this repo "
+        "(restricted-nc), used together under the non-commercial terms as a whole. This repo "
+        "physically holds only the restricted-nc delta; alone or combined with "
+        "`reefsupport/marine-data` it may be used for non-commercial purposes only.",
         "",
     ]
 
@@ -102,11 +105,19 @@ def tail_sections(flavour: str, repo_id: str, sources: list[dict], takedown_url:
     else:
         out += [
             "",
-            "## Combine with the open repo",
+            "## The NC flavour: open + restricted-nc together",
             "",
-            f"The full corpus is `{other}` + this repo and is **non-commercial** as a whole. "
-            "The two repos share one frozen split and never duplicate an image "
-            "(`image_sha256` is disjoint).",
+            f"The NC flavour is composed of both the open and the restricted options together: "
+            f"`{other}` (open) + `{repo_id}` (restricted-nc, this repo), used together under the "
+            "non-commercial terms as a whole. The two repos share one frozen split and never "
+            "duplicate an image (`image_sha256` is disjoint). Load both and concatenate:",
+            "",
+            "```python",
+            "from datasets import concatenate_datasets, load_dataset",
+            f'open_ = load_dataset("{other}", "images", split="train")',
+            f'restricted = load_dataset("{repo_id}", "images", split="train")  # gated',
+            "nc_flavour = concatenate_datasets([open_, restricted])  # NON-COMMERCIAL use only",
+            "```",
         ]
     out += ["", "## Excluded from both repos", ""]
     out += [f"- **{name}**: {why}" for name, why in EXCLUDED_CLASSES]

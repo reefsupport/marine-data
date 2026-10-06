@@ -165,6 +165,19 @@ def test_nc_card_snapshot() -> None:
     assert "NON-COMMERCIAL, gated" in card
 
 
+def test_nc_card_says_the_nc_flavour_is_open_plus_restricted_together() -> None:
+    """WP-R11 (Yohan): the restricted flavour is composed of both the open and restricted
+    options together; the card names both repos and shows a snippet that loads both."""
+    card = _card("nc")
+    assert "composed of both the open and the restricted options together" in card
+    assert "`reefsupport/marine-data` (open) + this repo (restricted-nc)" in card
+    assert "## The NC flavour: open + restricted-nc together" in card
+    assert 'load_dataset("reefsupport/marine-data", "images", split="train")' in card
+    assert 'load_dataset("reefsupport/marine-data-nc", "images", split="train")  # gated' in card
+    assert "concatenate_datasets([open_, restricted])" in card
+    assert "extra_gated_prompt: " in _header(card)  # gating kept
+
+
 def test_local_only_never_fetches_and_builds_from_local_trees(built, monkeypatch) -> None:
     """WP-R1: --local-only builds (incl. the split-map generation) from the --local trees alone."""
     import marinedata.cli_release as cr
