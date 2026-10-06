@@ -25,7 +25,10 @@ pinned-tree fetch). Nothing here uploads.
    reason is logged under `task_source_exclusions` in `RELEASE.json`. A per-row-licence source
    (fathomnet, inat-marine, planktonzilla, qut-fish) is admitted to both flavours; each row ships in the
    flavour its own licence (the `metadata_norm` per-row normaliser) allows. `--generate-split-map` still
-   works for a single flavour (without `--near-dup` it only warns).
+   works for a single flavour (like `split-map` it fails without `--near-dup` or `--no-near-dup`).
+   Pass `--decon` to run the decon gate inside the build and record it, with its exemptions, in `RELEASE.json`
+   (`decon` block; the card's Limitations section reads it there). The standalone `decon check` of step 5 writes
+   only `decon/overlap.*`, never `RELEASE.json`.
 4. `marinedata dedup gate rel/releases/<id>/<flavour> --groups dedup/groups.parquet` -> 0 spanning
    groups, 0 upstream-test images in train.
 5. `marinedata decon check rel/releases/<id>/<flavour> --manifests-root registry ...` (prerequisite: a
