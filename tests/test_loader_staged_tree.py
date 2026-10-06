@@ -276,16 +276,12 @@ def test_missing_metadata_parquet_raises(tmp_path: Path) -> None:
         list(loader)
 
 
-def test_null_split_group_raises_when_source_declares_a_rule(tmp_path: Path) -> None:
-    """S28: v6i/v1's registry entries declare a source-specific split_group pattern,
-    but the converter that staged them hardcoded ``split_group=None`` — the loader
-    must refuse that tree rather than silently letting shared-stem leakage checks pass
-    on an unproven grouping."""
-    root = _stage(
+def _null_group_tree(tmp_path: Path, stem: str = "img0") -> Path:
+    return _stage(
         tmp_path,
         [
             StagedImage(
-                stem="img0",
+                stem=stem,
                 partition="default",
                 upstream_path="orig/0.jpg",
                 upstream_split=None,
@@ -295,9 +291,45 @@ def test_null_split_group_raises_when_source_declares_a_rule(tmp_path: Path) -> 
             )
         ],
     )
-    rule = SplitGroupRule(pattern=r"^(.+?)_jpg\.rf\.", match_field="stem", template="rf/{group}")
+
+
+def test_null_split_group_derived_when_source_declares_a_rule(tmp_path: Path) -> None:
+    """S28 / HK-4a: a tree staged with ``split_group=None`` (coralscapes) used to be refused,
+    which blocked the release build. A source that declares a registry pattern now gets the
+    group derived from it (the same order as ``release._release_group``)."""
+    root = _null_group_tree(tmp_path, stem="Site3_img0_jpg.rf.abc")
+    rule = SplitGroupRule(pattern=r"(?i)(site[0-9]+)", match_field="stem", template="rf/{group}")
     source = make_source("staged-tree").model_copy(update={"split_group": rule})
-    with pytest.raises(LoaderError, match="null/empty split_group"):
+    (sample,) = list(build_loader(source, root))
+    assert sample.meta["split_group"] == "rf/Site3"
+
+
+def test_staged_split_group_wins_over_the_registry_rule(tmp_path: Path) -> None:
+    root = _stage(
+        tmp_path,
+        [
+            StagedImage(
+                stem="Site3_img0",
+                partition="default",
+                upstream_path="orig/0.jpg",
+                upstream_split=None,
+                width=10,
+                height=10,
+                split_group="pinned/g1",
+            )
+        ],
+    )
+    rule = SplitGroupRule(pattern=r"(?i)(site[0-9]+)", match_field="stem", template="rf/{group}")
+    source = make_source("staged-tree").model_copy(update={"split_group": rule})
+    (sample,) = list(build_loader(source, root))
+    assert sample.meta["split_group"] == "pinned/g1"
+
+
+def test_null_split_group_with_a_missed_pattern_still_raises(tmp_path: Path) -> None:
+    root = _null_group_tree(tmp_path, stem="nomatch")
+    rule = SplitGroupRule(pattern=r"(?i)(site[0-9]+)", match_field="stem", template="rf/{group}")
+    source = make_source("staged-tree").model_copy(update={"split_group": rule})
+    with pytest.raises(LoaderError, match="did not match"):
         list(build_loader(source, root))
 
 

@@ -25,7 +25,6 @@ from __future__ import annotations
 from collections.abc import Iterator
 from pathlib import Path
 
-from ..models import SplitGroupRule
 from ..normalise import _encode_indexed_png
 from ..sample import Sample
 from ..sample_schema import staged_partition
@@ -63,13 +62,13 @@ class StagedTreeLoader(_HarmonizingLoader):
     writers emit it — no params, because the shape is fixed by the writer, not by a
     per-source convention a YAML entry could vary.
 
-    ``split_group`` comes straight from the ``metadata.parquet`` column into
+    ``split_group`` comes from the ``metadata.parquet`` column into
     ``sample.meta["split_group"]`` — the one value
-    :func:`marinedata.scan.group_key` reads for ``by="group"``. It is not re-derived
-    via :meth:`~marinedata.models.Source.split_group_for`: that rule already ran once,
-    at staging time, and its output is pinned into the tree's checksummed bytes. Calling
-    it again here would let a registry rule edited *after* staging silently disagree
-    with the split a training run already used — the staged value must win.
+    :func:`marinedata.scan.group_key` reads for ``by="group"``. A non-empty staged value is
+    never re-derived: that rule already ran once, at staging time, and its output is pinned
+    into the tree's checksummed bytes, so a registry rule edited *after* staging cannot
+    silently disagree with the split a training run already used. Only a null/empty staged
+    value on a source with a registry pattern is derived (:meth:`_split_group`).
     """
 
     layout = "staged-tree"
@@ -91,28 +90,26 @@ class StagedTreeLoader(_HarmonizingLoader):
                 f"{self.source.id}: layout 'staged-tree' expects metadata.parquet at "
                 f"{metadata_path}"
             )
-        # A source that explicitly overrides the default SplitGroupRule (a
-        # source-specific pattern, e.g. Roboflow's `_jpg.rf.` stem prefix) is
-        # declaring that cross-source leakage grouping matters for it — so a
-        # staged row's split_group must never be null/empty (S28: a converter
-        # that hardcoded ``None`` instead of calling ``split_group_for`` produced
-        # exactly that). Sources still on the bare fallback rule are left alone:
-        # many pre-D1 fixtures/trees legitimately have a null split_group column
-        # (see StagedImage.split_group's docstring) and re-deriving one for them
-        # is a separate migration, not this guard's job.
-        if self.source.split_group != SplitGroupRule():
-            null_count = 0
-            for record in _read_parquet(metadata_path).to_pylist():
-                value = record.get("split_group")
-                if value is None or (isinstance(value, str) and value.strip() == ""):
-                    null_count += 1
-            if null_count:
-                raise LoaderError(
-                    f"{self.source.id}: {null_count} row(s) in {metadata_path} have a "
-                    "null/empty split_group, but this source declares an explicit "
-                    "split_group rule — re-stage with a converter that calls "
-                    "Source.split_group_for"
-                )
+
+    def _split_group(self, record: dict, *, partition: str, stem: str) -> str | None:
+        """One row's ``split_group``: the staged column wins; a null/empty one on a source
+        that declares a registry ``split_group`` pattern is derived from that pattern (the
+        same order ``release._release_group`` uses). Before this, such a tree was refused,
+        which blocked every pinned tree staged by a converter that wrote ``None`` (S28:
+        coralscapes). A pattern that misses a stem still raises (``SplitGroupRule.resolve``),
+        so the grouping is never guessed. A source on the bare fallback rule keeps ``None``:
+        the release enumeration derives its group from the ``metadata_norm`` chain."""
+        value = record.get("split_group")
+        if isinstance(value, str) and value.strip():
+            return value
+        if self.source.split_group.pattern is None:
+            return value
+        try:
+            return self.source.split_group_for(
+                stem=stem, upstream_path=str(record.get("upstream_path") or ""), partition=partition
+            )
+        except ValueError as exc:
+            raise LoaderError(f"{self.source.id}: {exc}") from exc
 
     def _mask_values(self) -> dict[str, str]:
         """Pixel value → native label name for a dense mask, from the ``mask_values``
@@ -261,7 +258,7 @@ class StagedTreeLoader(_HarmonizingLoader):
             meta: dict[str, object] = {
                 "partition": partition,
                 "upstream_path": record.get("upstream_path"),
-                "split_group": record.get("split_group"),
+                "split_group": self._split_group(record, partition=partition, stem=stem),
             }
             if record.get("upstream_split"):
                 meta["upstream_split"] = record["upstream_split"]
