@@ -2,6 +2,7 @@
 
 sources:
   - id: sweet-corals
+    domain: coral
     access_class: open
     name: wildflow/sweet-corals
     # habitat inferred (WP-2b) from this source's own description/notes, not independently verified
@@ -68,6 +69,7 @@ sources:
     tags: [3d, scaled, in-modality, gopro]
 
   - id: deepreefmap-data
+    domain: imaging
     release_skip_reason: "non-image-modality: video + point-cloud, no stills"
     access_class: open
     name: DeepReefMap reference data and checkpoints
@@ -109,6 +111,7 @@ sources:
     tags: [3d, reference-pipeline]
 
   - id: noaa-ncrmp-structural-complexity
+    domain: imaging
     release_skip_reason: "no-staged-images: registry lists imagery, nothing staged under sources/ in rs-storage-open (U7/queue follow-up)"
     access_class: open
     name: NOAA NCRMP structural complexity (SfM)
@@ -144,6 +147,7 @@ sources:
     tags: [metric-3d, rugosity, public-domain]
 
   - id: atlantis-synthetic-depth
+    domain: imaging
     access_class: restricted-nc  # LICV 2026-10-05 (was open); same as registry/ingest-specs/atlantis.yaml
     name: Atlantis (synthetic underwater depth)
     # habitat inferred (WP-2b) from this source's own description/notes, not independently verified

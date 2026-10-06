@@ -210,6 +210,22 @@ class Habitat(str, Enum):
     LAB = "lab"
 
 
+class Domain(str, Enum):
+    """HK-4a: the one subject-matter bucket a source belongs to, for picking a hackathon
+    track's sources (``coral`` / ``fish`` / ``seagrass`` / ``mangrove`` / ``plankton`` /
+    ``deep-sea`` / ``fauna`` / ``imaging``). Coarser than ``Habitat`` and than
+    ``Capability``: exactly one value per source, set by hand in the registry."""
+
+    CORAL = "coral"
+    FISH = "fish"
+    SEAGRASS = "seagrass"
+    MANGROVE = "mangrove"
+    PLANKTON = "plankton"
+    DEEP_SEA = "deep-sea"
+    FAUNA = "fauna"
+    IMAGING = "imaging"
+
+
 class Provenance(str, Enum):
     """Who produced the data. Orthogonal to licence: partner data may have no licence."""
 

@@ -7,6 +7,7 @@
 
 sources:
   - id: uieb
+    domain: imaging
     access_class: internal-only
     name: UIEB (Underwater Image Enhancement Benchmark)
     # habitat inferred (WP-2b) from this source's own description/notes, not independently verified
@@ -72,6 +73,7 @@ sources:
     tags: [enhancement, noncommercial]
 
   - id: squid
+    domain: imaging
     access_class: restricted-nc
     name: SQUID (Stereo Quantitative Underwater Image Dataset)
     # habitat inferred (WP-2b) from this source's own description/notes, not independently verified
@@ -111,6 +113,7 @@ sources:
     tags: [stereo, physical-gt]
 
   - id: varos
+    domain: imaging
     release_skip_reason: "no-staged-images: registry lists imagery, nothing staged under sources/ in rs-storage-open (U7/queue follow-up)"
     access_class: open
     name: VAROS synthetic underwater dataset
@@ -142,6 +145,7 @@ sources:
     tags: [synthetic, permissive]
 
   - id: flsea
+    domain: imaging
     access_class: restricted-nc
     name: FLSea (visual-inertial and stereo)
     # habitat inferred (WP-2b) from this source's own description/notes, not independently verified
@@ -167,6 +171,7 @@ sources:
     tags: [depth, benchmark, noncommercial]
 
   - id: suim
+    domain: fish
     access_class: open
     name: SUIM (Semantic Segmentation of Underwater Imagery)
     # habitat inferred (WP-2b) from this source's own description/notes, not independently verified

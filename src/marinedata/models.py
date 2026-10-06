@@ -17,6 +17,7 @@ from .enums import (
     AccessMethod,
     AnnotationKind,
     Capability,
+    Domain,
     Habitat,
     LegalBasis,
     Modality,
@@ -366,6 +367,11 @@ class Source(_Frozen):
     release_skip_reason: str | None = None
     """Why this source is deliberately left out of a release (WP-R2e). Set, the split map skips
     it and ``release build`` records it under ``skipped_sources`` with no ``--allow-skip``."""
+
+    domain: Domain | None = Field(default=None)
+    """HK-4a: one subject-matter bucket (:class:`~marinedata.enums.Domain`) for selecting a
+    hackathon track's sources. ``None`` only on a hand-built ``Source``; every registry entry
+    sets it (``tests/test_registry_domain.py``)."""
 
     habitat: tuple[Habitat, ...] | None = Field(default=None)
     """WP-2b: controlled-vocabulary physical setting(s) this source's imagery was

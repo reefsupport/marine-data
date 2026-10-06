@@ -4,6 +4,7 @@
 
 sources:
 - id: soneva-corals
+  domain: coral
   release_skip_reason: "no-staged-images: registry lists imagery, nothing staged under sources/ in rs-storage-open (U7/queue follow-up)"
   access_class: open
   name: wildflow soneva-corals
@@ -48,6 +49,7 @@ sources:
   items: 22422
   items_note: rows (HF viewer); full 66.68 GB, first-pass subset ~44.6 GB (max_images:15000)
 - id: benthoz15
+  domain: coral
   release_skip_reason: "no-staged-images: registry lists imagery, nothing staged under sources/ in rs-storage-open (U7/queue follow-up)"
   access_class: open
   name: BENTHOZ-2015
@@ -95,6 +97,7 @@ sources:
   items: 9874
   items_note: images (~407k point annotations)
 - id: noaa-coral-icra
+  domain: coral
   release_skip_reason: "no-staged-images: registry lists imagery, nothing staged under sources/ in rs-storage-open (U7/queue follow-up)"
   access_class: open
   name: NOAA PIFSC ESD-ESA coral ICRA
@@ -133,6 +136,7 @@ sources:
     queued for a dry-run ingest via the supported adapter.'
   items_note: <1K (HF viewer)
 - id: coralnet-small
+  domain: coral
   access_class: internal-only
   name: CoralNet small (WHOI mirror)
   version: unversioned
@@ -170,6 +174,7 @@ sources:
   items: 450
   items_note: rows (HF viewer)
 - id: tascpc
+  domain: coral
   access_class: internal-only
   name: Tasmania Coral Point Count
   version: unversioned
@@ -207,6 +212,7 @@ sources:
   items: 1300
   items_note: est. (catalog)
 - id: eilat-rsmas
+  domain: coral
   access_class: internal-only
   name: EILAT / RSMAS coral texture
   version: unversioned
@@ -255,6 +261,7 @@ sources:
     supervises:
     - taxon
 - id: fathomnet-coverage
+  domain: fauna
   access_class: restricted-nd
   licence_per_row: true
   name: FathomNet full-coverage test sets
@@ -293,6 +300,7 @@ sources:
     queued for a dry-run ingest via the supported adapter.'
   items_note: unknown (HF usedStorage ~0)
 - id: fathomnet-megalodon
+  domain: fauna
   access_class: restricted-nd
   licence_per_row: true
   name: FathomNet 2024 Megalodon benchmark
@@ -330,6 +338,7 @@ sources:
     queued for a dry-run ingest via the supported adapter.'
   items_note: unknown
 - id: noaa-dscrtp
+  domain: deep-sea
   release_skip_reason: "no-staged-images: registry lists imagery, nothing staged under sources/ in rs-storage-open (U7/queue follow-up)"
   access_class: open
   name: NOAA Deep-Sea Coral & Sponge database
@@ -377,6 +386,7 @@ sources:
     with a non-empty ImageURL, then fetches each URL individually. Endpoint: https://www.ncei.noaa.gov/erddap/tabledap/deep_sea_corals.csv?ImageURL,CatalogNumber,ScientificName,ObservationYear&ImageURL!=""'
   items_note: '>100k records w/ images (est, catalog)'
 - id: noaa-goa-2019
+  domain: deep-sea
   release_skip_reason: "no-staged-images: registry lists imagery, nothing staged under sources/ in rs-storage-open (U7/queue follow-up)"
   access_class: open
   name: Gulf of Alaska corals/sponges/fishes 2019
@@ -418,6 +428,7 @@ sources:
     archive info/download API, not a flat file list)'
   items_note: unknown
 - id: pangaea-ccz-gsr
+  domain: fauna
   release_skip_reason: "no-staged-images: raw mirror of 40 images only, no INGEST.json/metadata.parquet (U7/queue follow-up)"
   access_class: open
   name: PANGAEA seafloor images GSR mining trial (CCZ)
@@ -464,6 +475,7 @@ sources:
     adapter that follows child datasets'
   items_note: unknown
 - id: pangaea-ofos-msm77
+  domain: fauna
   release_skip_reason: "no-staged-images: registry lists imagery, nothing staged under sources/ in rs-storage-open (U7/queue follow-up)"
   access_class: open
   name: PANGAEA OFOS seabed photos MSM77
@@ -509,6 +521,7 @@ sources:
     sibling OFOS profile datasets under the MSM77 cruise series that a real ingest would need to enumerate'
   items_note: unknown; ~50 linked OFOS profiles
 - id: bodc-smartex
+  domain: fauna
   release_skip_reason: "no-staged-images: registry lists imagery, nothing staged under sources/ in rs-storage-open (U7/queue follow-up)"
   access_class: open
   name: BODC JC241/JC257 ROV/AUV benthic images (CCZ)
@@ -552,6 +565,7 @@ sources:
     resolved catalogue page to find the file access route'
   items_note: unknown
 - id: oceancv-rovtransect
+  domain: imaging
   release_skip_reason: "no-staged-images: registry lists imagery, nothing staged under sources/ in rs-storage-open (U7/queue follow-up)"
   access_class: open
   name: OceanCV ROV transects
@@ -594,6 +608,7 @@ sources:
   items: 2
   items_note: rows (HF viewer)
 - id: deepsea-coral-cornerrise
+  domain: deep-sea
   release_skip_reason: "no-staged-images: registry lists imagery, nothing staged under sources/ in rs-storage-open (U7/queue follow-up)"
   access_class: open
   name: Deep-sea coral+sponge Corner Rise
@@ -635,6 +650,7 @@ sources:
     queued for a dry-run ingest via the supported adapter.'
   items_note: unknown; mostly xlsx count tables, imagery unconfirmed
 - id: oceandark
+  domain: deep-sea
   access_class: internal-only
   name: OceanDark
   version: unversioned
@@ -674,6 +690,7 @@ sources:
   items: 183
   items_note: images
 - id: ntnu-arl-uw
+  domain: imaging
   release_skip_reason: "non-image-modality: video/sequence, pose-slam"
   access_class: open
   name: NTNU ARL underwater datasets
@@ -720,6 +737,7 @@ sources:
     that lands.'
   items_note: 8 rosbags, 148.68 GB total (confirmed via HF tree API)
 - id: subpipe
+  domain: imaging
   release_skip_reason: "no-staged-images: registry lists imagery, nothing staged under sources/ in rs-storage-open (U7/queue follow-up)"
   access_class: open
   name: SubPipe pipeline inspection
@@ -761,6 +779,7 @@ sources:
     queued for a dry-run ingest via the supported adapter.'
   items_note: unknown
 - id: uw-img-imu-sonar
+  domain: imaging
   release_skip_reason: "no-staged-images: registry lists imagery, nothing staged under sources/ in rs-storage-open (U7/queue follow-up)"
   access_class: open
   name: underwater img+IMU+sonar
@@ -801,6 +820,7 @@ sources:
     queued for a dry-run ingest via the supported adapter.'
   items_note: unknown
 - id: galapagos-3d
+  domain: imaging
   release_skip_reason: "no-staged-images: registry lists imagery, nothing staged under sources/ in rs-storage-open (U7/queue follow-up)"
   access_class: open
   name: Galapagos 3D
@@ -842,6 +862,7 @@ sources:
     queued for a dry-run ingest via the supported adapter.'
   items_note: unknown
 - id: port-royal
+  domain: coral
   release_skip_reason: "no-staged-images: registry lists imagery, nothing staged under sources/ in rs-storage-open (U7/queue follow-up)"
   access_class: open
   name: Port Royal Jamaica 2010 (NatGeo)
@@ -882,6 +903,7 @@ sources:
     queued for a dry-run ingest via the supported adapter.'
   items_note: unknown
 - id: aqualoc
+  domain: imaging
   release_skip_reason: "no-staged-images: raw mirror of 16 images only, no INGEST.json/metadata.parquet (U7/queue follow-up)"
   access_class: restricted-nc
   name: AQUALOC
@@ -930,6 +952,7 @@ sources:
   - kind: camera-pose
     supervises: []
 - id: seathru-nerf
+  domain: imaging
   access_class: internal-only
   name: SeaThru-NeRF scenes
   version: unversioned
@@ -974,6 +997,7 @@ sources:
   - kind: camera-pose
     supervises: []
 - id: seagrassfinder
+  domain: seagrass
   access_class: restricted-nd
   name: SeagrassFinder eelgrass
   version: unversioned
@@ -1013,6 +1037,7 @@ sources:
     queued for a dry-run ingest via the supported adapter.'
   items_note: unknown
 - id: posidonia
+  domain: seagrass
   release_skip_reason: "no-staged-images: registry lists imagery, nothing staged under sources/ in rs-storage-open (U7/queue follow-up)"
   access_class: open
   name: Posidonia oceanica images
@@ -1052,6 +1077,7 @@ sources:
     queued for a dry-run ingest via the supported adapter.'
   items_note: unknown
 - id: whoi-plankton
+  domain: plankton
   access_class: internal-only
   name: WHOI plankton (IFCB)
   version: unversioned
@@ -1089,6 +1115,7 @@ sources:
   items: 956867
   items_note: rows (HF viewer)
 - id: openimages-marine
+  domain: fish
   release_skip_reason: "no-staged-images: registry lists imagery, nothing staged under sources/ in rs-storage-open (U7/queue follow-up)"
   access_class: open
   name: Open Images V7 marine classes
@@ -1136,6 +1163,7 @@ sources:
   items: 50000
   items_note: est. (catalog, marine classes only)
 - id: liaci
+  domain: imaging
   access_class: unknown
   name: LIACi ship-hull inspection
   version: unversioned
@@ -1176,6 +1204,7 @@ sources:
   items: 1893
   items_note: images
 - id: smartbay
+  domain: fauna
   release_skip_reason: "no-staged-images: registry lists imagery, nothing staged under sources/ in rs-storage-open (U7/queue follow-up)"
   access_class: open
   name: SmartBay marine types OD
@@ -1217,6 +1246,7 @@ sources:
     queued for a dry-run ingest via the supported adapter.'
   items_note: unknown
 - id: plasticinwater
+  domain: imaging
   release_skip_reason: "no-staged-images: registry lists imagery, nothing staged under sources/ in rs-storage-open (U7/queue follow-up)"
   access_class: open
   name: OceanCV PlasticInWater
@@ -1255,6 +1285,7 @@ sources:
   items: 1032
   items_note: rows (HF viewer)
 - id: caddy
+  domain: imaging
   access_class: restricted-nc
   name: CADDY underwater gestures/diver pose
   version: unversioned
@@ -1300,6 +1331,7 @@ sources:
     notes: diver-gesture classes; verify count
     supervises: []
 - id: vdd-c
+  domain: imaging
   release_skip_reason: "no-staged-images: registry lists imagery, nothing staged under sources/ in rs-storage-open (U7/queue follow-up)"
   access_class: open
   name: VDD-C diver detection
@@ -1342,6 +1374,7 @@ sources:
   items: 105000
   items_note: est. (catalog)
 - id: sodd
+  domain: imaging
   release_skip_reason: "no-staged-images: registry lists imagery, nothing staged under sources/ in rs-storage-open (U7/queue follow-up)"
   access_class: open
   name: SODD subaquatic object detection

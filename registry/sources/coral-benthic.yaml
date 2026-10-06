@@ -2,6 +2,7 @@
 
 sources:
   - id: coralscapes
+    domain: coral
     access_class: open
     name: Coralscapes
     # habitat inferred (WP-2b) from this source's own description/notes, not independently verified
@@ -121,6 +122,7 @@ sources:
     tags: [dense-seg, transfer-base, red-sea]
 
   - id: benthicnet-1m
+    domain: coral
     access_class: open
     name: BenthicNet (curated 1M subset)
     # habitat inferred (WP-2b) from this source's own description/notes, not independently verified
@@ -182,6 +184,7 @@ sources:
     tags: [pretraining, catami, largest]
 
   - id: reefnet
+    domain: coral
     access_class: restricted-nc  # WP-R2: upstream ReefNet-1.0 cardData.license cc-by-nc-sa-4.0 (LICV lic-B)
     name: ReefNet
     # habitat inferred (WP-2b) from this source's own description/notes, not independently verified
@@ -256,6 +259,7 @@ sources:
     tags: [genus, benchmark, domain-shift-testbed]
 
   - id: deolhonoscorais
+    domain: coral
     access_class: open
     name: "#DeOlhoNosCorais"
     # habitat inferred (WP-2b) from this source's own description/notes, not independently verified
@@ -335,6 +339,7 @@ sources:
     tags: [atlantic, dense-seg, rare-region]
 
   - id: heron-reef-benthic
+    domain: coral
     access_class: open
     name: Heron Reef benthic community time series
     # habitat inferred (WP-2b) from this source's own description/notes, not independently verified
@@ -399,6 +404,7 @@ sources:
     tags: [time-series, gbr]
 
   - id: coralvqa
+    domain: coral
     access_class: restricted-nc  # LICV 2026-10-05 (was open)
     notes: >-
       LICV 2026-10-05: access_class -> restricted-nc (was open). Evidence:
@@ -459,6 +465,7 @@ sources:
     tags: [vqa, language]
 
   - id: noaa-pifsc-bleaching
+    domain: coral
     access_class: open
     name: NOAA PIFSC-ESD coral bleaching dataset
     # habitat inferred (WP-2b) from this source's own description/notes, not independently verified
@@ -549,6 +556,7 @@ sources:
     tags: [bleaching, public-domain]
 
   - id: coralnet
+    domain: coral
     access_class: internal-only
     name: CoralNet
     # habitat inferred (WP-2b) from this source's own description/notes, not independently verified
@@ -604,6 +612,7 @@ sources:
     tags: [tdm, unlicensed, incumbent]
 
   - id: seatizen-atlas
+    domain: coral
     release_skip_reason: "no-staged-images: registry lists imagery, nothing staged under sources/ in rs-storage-open (U7/queue follow-up)"
     access_class: open
     name: Seatizen Atlas
@@ -646,6 +655,7 @@ sources:
     tags: [licence-contradiction-resolved]
 
   - id: mermaid-aws
+    domain: coral
     access_class: restricted-nc
     name: MERMAID community coral reef image classification training data
     # habitat inferred (WP-2b) from this source's own description/notes, not independently verified
@@ -743,6 +753,7 @@ sources:
     tags: [crosswalk, noncommercial]
 
   - id: marineinst20m
+    domain: coral
     access_class: internal-only
     name: MarineInst20M
     # habitat inferred (WP-2b) from this source's own description/notes, not independently verified
@@ -784,6 +795,7 @@ sources:
     tags: [prohibited, provenance-risk]
 
   - id: noaa-esd-coral-bleaching
+    domain: coral
     release_skip_reason: "no-staged-images: registry lists imagery, nothing staged under sources/ in rs-storage-open (U7/queue follow-up)"
     access_class: open
     name: NOAA ESD coral bleaching dataset (bucket mirror)
@@ -856,6 +868,7 @@ sources:
     tags: [bleaching, public-domain, incomplete-extraction, retired]
 
   - id: roboflow-coral-bleaching-final-v6i
+    domain: coral
     access_class: open
     name: Coral Bleaching Final (Roboflow v6i)
     # habitat inferred (WP-2b) from this source's own description/notes, not independently verified
@@ -951,6 +964,7 @@ sources:
     tags: [bleaching, roboflow]
 
   - id: roboflow-coral-bleaching-general-v1-yolov8s
+    domain: coral
     access_class: open
     name: Coral Bleaching_General (Roboflow v1, YOLOv8s)
     # habitat inferred (WP-2b) from this source's own description/notes, not independently verified
@@ -1051,6 +1065,7 @@ sources:
     tags: [bleaching, roboflow]
 
   - id: roboflow-coral-classification-copy-changed-v13i
+    domain: coral
     access_class: open
     name: "Coral Classification Copy -Changed- (Roboflow v13i)"
     # habitat inferred (WP-2b) from this source's own description/notes, not independently verified
@@ -1155,6 +1170,7 @@ sources:
     tags: [bleaching, roboflow]
 
   - id: roboflow-coral-reef-bleach-detection-v2i
+    domain: coral
     access_class: open
     name: Coral Reef Bleach Detection (Roboflow v2i)
     # habitat inferred (WP-2b) from this source's own description/notes, not independently verified
@@ -1250,6 +1266,7 @@ sources:
     tags: [bleaching, roboflow]
 
   - id: roboflow-coral-reef-classification-v3i
+    domain: coral
     access_class: open
     name: Coral Reef Classification (Roboflow v3i)
     # habitat inferred (WP-2b) from this source's own description/notes, not independently verified
@@ -1336,6 +1353,7 @@ sources:
     tags: [bleaching, roboflow]
 
   - id: coralseg-ucsd-mosaics
+    domain: coral
     access_class: internal-only
     name: Coralseg (UCSD) coral reef mosaics
     # habitat inferred (WP-2b) from this source's own description/notes, not independently verified
@@ -1440,6 +1458,7 @@ sources:
     tags: [needs-permission]
 
   - id: seaview-survey-imagery
+    domain: coral
     release_skip_reason: "no-staged-images: registry lists imagery, nothing staged under sources/ in rs-storage-open (U7/queue follow-up)"
     access_class: open
     name: SEAVIEW raw survey imagery (UQ eSpace)
@@ -1508,6 +1527,7 @@ sources:
     loader: { layout: metadata-only }
 
   - id: coral-bleaching-detection-v2i-multiclass
+    domain: coral
     access_class: unknown
     name: Coral Bleaching Detection (v2i, multiclass) — tar-only
     # habitat inferred (WP-2b) from this source's own description/notes, not independently verified
@@ -1569,6 +1589,7 @@ sources:
     tags: [needs-permission, tar-only]
 
   - id: coral-health-classification
+    domain: coral
     access_class: unknown
     name: Coral Health Classification — tar-only
     # habitat inferred (WP-2b) from this source's own description/notes, not independently verified
@@ -1627,6 +1648,7 @@ sources:
     tags: [needs-permission, tar-only]
 
   - id: kaggle-healthy-bleached-corals
+    domain: coral
     access_class: internal-only
     name: "Kaggle: healthy and bleached corals — tar-only"
     # habitat inferred (WP-2b) from this source's own description/notes, not independently verified
@@ -1692,6 +1714,7 @@ sources:
     tags: [needs-permission, tar-only]
 
   - id: rf100-coral-lwptl
+    domain: coral
     access_class: unknown  # LICV 2026-10-05 (was open)
     notes: >-
       LICV 2026-10-05: access_class -> unknown (was open). Evidence:

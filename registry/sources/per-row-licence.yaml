@@ -5,6 +5,7 @@
 
 sources:
   - id: inat-marine
+    domain: imaging
     access_class: restricted-nd
     licence_per_row: true
     name: iNaturalist Open Data (marine research-grade)
@@ -30,6 +31,7 @@ sources:
     tags: [per-row-licence, observation]
 
   - id: planktonzilla
+    domain: plankton
     access_class: restricted-nc
     licence_per_row: true
     name: Planktonzilla-17M
@@ -55,6 +57,7 @@ sources:
     tags: [per-row-licence, plankton]
 
   - id: qut-fish
+    domain: fish
     access_class: restricted-nc
     licence_per_row: true
     name: QUT fish dataset

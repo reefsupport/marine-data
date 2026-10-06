@@ -7,6 +7,7 @@
 
 sources:
   - id: reefset-v1
+    domain: coral
     release_skip_reason: "non-image-modality: audio manifest labels: keep out of the v2 image release, candidate for a later audio config"
     access_class: open
     name: ReefSet v1.0
@@ -70,6 +71,7 @@ sources:
     tags: [reef-audio, permissive]
 
   - id: mbari-pacific-sound
+    domain: imaging
     release_skip_reason: "non-image-modality: hydrophone audio"
     access_class: open
     name: MBARI Pacific Sound (MARS hydrophone)
@@ -106,6 +108,7 @@ sources:
     tags: [unlabelled, pretraining]
 
   - id: sanctsound
+    domain: imaging
     release_skip_reason: "non-image-modality: hydrophone audio"
     access_class: open
     name: NOAA SanctSound passive acoustic archive
@@ -131,6 +134,7 @@ sources:
     tags: [public-domain, multi-site]
 
   - id: curacao-reef-soundscape
+    domain: imaging
     release_skip_reason: "non-image-modality: audio/video soundscape"
     access_class: open
     name: Curaçao reef soundscape with 360° video
@@ -169,6 +173,7 @@ sources:
     tags: [caribbean, multimodal, needs-verification]
 
   - id: watkins-marine-mammal
+    domain: fauna
     access_class: internal-only
     name: Watkins Marine Mammal Sound Database
     # habitat inferred (WP-2b) from this source's own description/notes, not independently verified

@@ -1,5 +1,7 @@
 id: obsea-fish
-access_class: open
+# HK-4a 2026-10-06: unknown (was open): the Zenodo record's licence field has not been read; the staged tree
+# carries no LICENSE. Excluded from every flavour until it is. See registry/sources/fish.yaml obsea-fish.
+access_class: unknown
 adapter: zenodo
 params:
   zenodo_record: 14888440

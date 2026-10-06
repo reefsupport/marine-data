@@ -7,6 +7,7 @@
 
 sources:
   - id: global-mangrove-watch-v3
+    domain: mangrove
     release_skip_reason: "context-layer: mangrove extent raster/vector; no imagery to train on"
     access_class: open
     name: Global Mangrove Watch v3.0
@@ -40,6 +41,7 @@ sources:
     tags: [mangrove, extent, context-layer]
 
   - id: global-seagrass-10m
+    domain: seagrass
     release_skip_reason: "context-layer: seagrass extent raster; no imagery to train on"
     access_class: open
     name: Global 10 m Seagrass Maps
@@ -69,6 +71,7 @@ sources:
     tags: [seagrass, extent, context-layer]
 
   - id: allen-coral-atlas
+    domain: coral
     release_skip_reason: "context-layer: satellite reef-habitat product; no imagery to train on"
     access_class: open
     name: Allen Coral Atlas — Reef Habitat v2.0
@@ -104,6 +107,7 @@ sources:
     tags: [satellite, basemap, context-layer]
 
   - id: noaa-nccos-benthic-habitat
+    domain: coral
     release_skip_reason: "context-layer: habitat map polygons; no imagery to train on"
     access_class: open
     name: NOAA NCCOS shallow-water benthic habitat maps
@@ -135,6 +139,7 @@ sources:
     tags: [caribbean, public-domain, habitat]
 
   - id: gebco-2024
+    domain: imaging
     release_skip_reason: "context-layer: bathymetry grid; no imagery to train on"
     access_class: open
     name: GEBCO 2024 Grid
@@ -164,6 +169,7 @@ sources:
     tags: [bathymetry, context-layer]
 
   - id: icesat2-atl24
+    domain: imaging
     release_skip_reason: "context-layer: satellite lidar bathymetry; no imagery to train on"
     access_class: open
     name: ICESat-2 ATL24 coastal bathymetry
@@ -188,6 +194,7 @@ sources:
     tags: [bathymetry, lidar]
 
   - id: seaclear-marine-debris
+    domain: imaging
     access_class: open
     name: SeaCLEAR Marine Debris
     # habitat inferred (WP-2b) from this source's own description/notes, not independently verified
@@ -246,6 +253,7 @@ sources:
     tags: [debris, permissive]
 
   - id: floating-marine-debris
+    domain: imaging
     access_class: open
     name: Floating Marine Debris spectral data
     # habitat inferred (WP-2b) from this source's own description/notes, not independently verified
@@ -281,6 +289,7 @@ sources:
     tags: [debris, spectral]
 
   - id: copernicus-globcolour
+    domain: imaging
     release_skip_reason: "context-layer: satellite ocean-colour covariate; no imagery to train on"
     access_class: open
     name: Copernicus-GlobColour Ocean Colour L4
@@ -309,6 +318,7 @@ sources:
     tags: [environmental, covariate]
 
   - id: obis
+    domain: coral
     release_skip_reason: "context-layer: occurrence database / taxonomic prior; no imagery to train on"
     access_class: open
     name: OBIS — Ocean Biodiversity Information System
