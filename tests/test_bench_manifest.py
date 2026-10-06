@@ -543,3 +543,41 @@ def test_ordered_map_retries_a_hung_call_and_raises_when_it_never_returns():
         assert time.monotonic() - start < 5  # returned without joining the hung thread
     finally:
         release.set()
+
+
+def test_iter_staged_bucket_resolves_split_from_label_files():
+    """WP-R11: staged metadata with no split (CoralVQA) takes the eval split from the staged
+    annotation file named for it; a train image is never promoted to ``test``."""
+    meta = _stream_part_bytes(
+        [
+            {"stem": "a", "upstream_id": "Img.zip#1.jpg"},
+            {"stem": "b", "upstream_id": "Img.zip#2.jpg"},
+        ]
+    )
+    client = FakeS3Client(
+        {
+            "sources/fakebench/metadata.parquet": meta,
+            "sources/fakebench/images/a.jpg": RED,
+            "sources/fakebench/images/b.jpg": BLUE,
+            "sources/fakebench/labels/files/Fake_test.jsonl": b'{"image": "1.jpg", "q": "x"}\n'
+            b'{"image": "1.jpg", "q": "y"}\n',
+            "sources/fakebench/labels/files/Fake_train.jsonl": b'{"image": "2.jpg"}\n',
+        }
+    )
+    images = list(iter_bucket_images(client, "rs-storage-open", _entry(eval_split="test")))
+    assert [(i.stem, i.upstream_split) for i in images] == [("a", "test")]
+
+
+def test_iter_staged_bucket_split_hint_column_is_split_evidence():
+    meta = _stream_part_bytes(
+        [{"stem": "a", "split_hint": "test"}, {"stem": "b", "split_hint": "train"}]
+    )
+    client = FakeS3Client(
+        {
+            "sources/fakebench/metadata.parquet": meta,
+            "sources/fakebench/images/a.jpg": RED,
+            "sources/fakebench/images/b.jpg": BLUE,
+        }
+    )
+    images = list(iter_bucket_images(client, "rs-storage-open", _entry(eval_split="test")))
+    assert [i.stem for i in images] == ["a"]

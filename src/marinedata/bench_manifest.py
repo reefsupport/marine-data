@@ -41,7 +41,9 @@ stream indefinitely.
 from __future__ import annotations
 
 import itertools
+import json
 import os
+import re
 import signal
 import sys
 import time
@@ -349,6 +351,35 @@ def _staged_root(keys: list[str], benchmark_id: str) -> str:
     return revs[-1].rsplit("/", 1)[0] + "/"
 
 
+_LABEL_REF_FIELDS = ("image", "file_name", "image_path")
+
+
+def _label_split_map(
+    client: Any, bucket: str, label_keys: list[str], split: UpstreamSplit
+) -> dict[str, str]:
+    """``image file name -> eval split`` from the upstream annotation files staged under
+    ``labels/files/`` whose name ends in an eval split (``CoralVQA_test.jsonl`` -> ``test``).
+
+    Only consulted for a staged row whose metadata carries no split (CoralVQA's metadata has
+    none; the split lives in the annotation files, where the image is the unit: WP-R11, the
+    ``upstream`` manifest had labelled 1934 *train* images ``test``)."""
+    names = {_norm(s): s for s in split.eval_splits if _norm(s) != "all"}
+    out: dict[str, str] = {}
+    for key in label_keys:
+        match = re.search(r"[_.-]([A-Za-z]+)\.jsonl$", key)
+        name = names.get(_norm(match.group(1))) if match else None
+        if name is None:
+            continue
+        for line in _get_with_retry(client, bucket, key).decode("utf-8").splitlines():
+            if not line.strip():
+                continue
+            row = json.loads(line)
+            ref = next((row[f] for f in _LABEL_REF_FIELDS if row.get(f)), None)
+            if ref:
+                out[Path(str(ref)).name] = name
+    return out
+
+
 def _iter_staged_bucket(
     client: Any,
     bucket: str,
@@ -364,10 +395,19 @@ def _iter_staged_bucket(
     ).to_pylist()
     present = set(keys)
     by_stem = {Path(k).stem: k for k in keys if k.startswith(root + "images/")}
+    label_split = _label_split_map(
+        client,
+        bucket,
+        [k for k in keys if k.startswith(root + "labels/") and k.endswith(".jsonl")],
+        split,
+    )
     jobs: list[tuple[str, str, str, str]] = []
     for row in meta:
         upath = row.get("upstream_path") or row.get("upstream_id") or row.get("stem") or ""
-        row_split = resolve_eval_split(row.get("upstream_split"), upath, split)
+        hint = row.get("upstream_split") or row.get("split_hint")
+        if hint is None:
+            hint = label_split.get(Path(str(upath).rsplit("#", 1)[-1]).name)
+        row_split = resolve_eval_split(hint, upath, split)
         if row_split is None:
             continue
         stem = row["stem"]
