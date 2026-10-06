@@ -339,3 +339,47 @@ def test_expected_eval_count_sums_eval_and_heldout_val_with_aliases():
         update={"heldout_val": "val", "counts": {"TR": 5, "validation": 20, "TE": 100}}
     )
     assert expected_eval_count(entry.model_copy(update={"upstream_split": split})) == 120
+
+
+# -- exempt-with-manifest: partially verified (WP-R11) ------------------------------
+
+
+def _uncounted(entry: BenchmarkEntry) -> BenchmarkEntry:
+    split = entry.upstream_split.model_copy(update={"counts": {"images": 5090}})
+    return entry.model_copy(update={"upstream_split": split})
+
+
+def test_manifest_with_reviewed_reason_runs_hit_detection_and_is_partially_verified():
+    from marinedata.decon import DeconResult, decon_record
+    from marinedata.hf_card import decon_limitations
+
+    reason = "coverage not verifiable: manifest covers 2 of 5090 images from Zenodo"
+    entry = _exempt(_uncounted(_entry("b-plc")), reason)
+    result = check_benchmark(entry, _thresholds(), [_rec("b0"), _rec("b1")], [_rec("c0")])
+    assert not result.coverage_fail and result.ok and result.partial
+    assert result.partial_reason == reason and result.hashed_n == 2
+    record = decon_record(DeconResult((result,), "t", "r"))
+    assert record["partially_verified"] == {"b-plc": reason} and record["exempt"] == {}
+    assert record["benchmarks_checked"] == 1 and record["gate"] == "pass"
+    card = "\n".join(decon_limitations({"decon": record}))
+    assert "partially verified" in card and "`b-plc`" in card
+
+
+def test_manifest_with_reviewed_reason_still_fails_on_a_hit():
+    entry = _exempt(_uncounted(_entry("b-plc")), "coverage not verifiable")
+    shared = _rec("same")
+    corp = [_rec("same", splits=frozenset({"train"}))]
+    result = check_benchmark(entry, _thresholds(), [shared], corp)
+    assert result.status == "contaminated" and not result.ok and result.partial
+
+
+def test_manifest_without_count_and_without_reason_still_fails():
+    entry = _uncounted(_entry("b-plc"))
+    result = check_benchmark(entry, _thresholds(), [_rec("b0")], [_rec("c0")])
+    assert result.coverage_fail and not result.ok and not result.partial
+
+
+def test_a_verified_complete_manifest_with_a_reason_is_not_partial():
+    entry = _exempt(_entry("b-ok", eval_n=2), "stale reason")
+    result = check_benchmark(entry, _thresholds(), [_rec("b0"), _rec("b1")], [_rec("c0")])
+    assert result.ok and not result.partial

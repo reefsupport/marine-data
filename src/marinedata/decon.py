@@ -110,6 +110,14 @@ class BenchmarkOverlap:
     coverage_fail: bool
     review_band_fail: bool
     reason: str = ""
+    # WP-R11: a reviewed ``decon_exempt_reason`` on a benchmark that HAS a manifest the registry
+    # cannot size (no independent eval count, or a short manifest): hit detection ran, the
+    # coverage gate is waived, and the benchmark is reported as partially verified.
+    partial_reason: str = ""
+
+    @property
+    def partial(self) -> bool:
+        return bool(self.partial_reason)
 
     @property
     def ok(self) -> bool:
@@ -133,6 +141,12 @@ class DeconResult:
     def exempt(self) -> dict[str, str]:
         """``benchmark id -> reviewed reason`` for every benchmark decon did not verify."""
         return {o.benchmark_id: o.reason for o in self.overlaps if o.status == "exempt"}
+
+    @property
+    def partial(self) -> dict[str, str]:
+        """``benchmark id -> reviewed reason`` for every benchmark checked on a manifest whose
+        coverage the registry could not verify."""
+        return {o.benchmark_id: o.partial_reason for o in self.overlaps if o.partial}
 
     @property
     def failures(self) -> list[str]:
@@ -290,6 +304,10 @@ def check_benchmark(
         or (eval_n is not None and hashed_n < thresholds.gate_manifest_min_coverage * eval_n)
     )
     eval_n = eval_n or 0
+    # A reviewed reason waives the coverage gate for a benchmark that has a manifest (hit
+    # detection below still runs); one with neither a count nor a reason fails as before.
+    partial_reason = (entry.decon_exempt_reason or "") if coverage_fail else ""
+    coverage_fail = coverage_fail and not partial_reason
 
     candidates: set[tuple[int, int]] = set()
     candidates.update(_exact_hits(bench_records, corpus_records, "upstream_id"))
@@ -377,6 +395,7 @@ def check_benchmark(
         review=tuple(review),
         coverage_fail=coverage_fail,
         review_band_fail=review_band_fail,
+        partial_reason=partial_reason,
     )
 
 
@@ -608,6 +627,13 @@ def overlap_table_md(result: DeconResult, registry: BenchmarkRegistry) -> str:
         lines.append("\nNot checked (exempt = reviewed reason; uncovered = gate failure):")
         for o in not_checked:
             lines.append(f"- {o.benchmark_id} [{o.status}]: {o.reason}")
+    partial = [o for o in result.overlaps if o.partial]
+    if partial:
+        lines.append("\nPartially verified (hit detection ran; coverage not verifiable):")
+        for o in partial:
+            lines.append(
+                f"- {o.benchmark_id} [{o.status}, {o.hashed_n} hashed]: {o.partial_reason}"
+            )
     return "\n".join(lines) + "\n"
 
 
@@ -650,6 +676,7 @@ def decon_record(result: DeconResult) -> dict[str, Any]:
         "gate": "pass" if result.ok else "fail",
         "benchmarks_checked": sum(1 for o in result.overlaps if o.status not in {"exempt"}),
         "exempt": dict(sorted(exempt.items())),
+        "partially_verified": dict(sorted(result.partial.items())),
     }
 
 

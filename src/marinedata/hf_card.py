@@ -38,19 +38,31 @@ CONFIG_BLURB = {
 
 
 def decon_limitations(release: dict) -> list[str]:
-    """The card's limitations lines for benchmarks decon could not verify (from
-    ``RELEASE.json``'s ``decon.exempt``); empty when every benchmark was checked."""
-    exempt = (release.get("decon") or {}).get("exempt") or {}
-    if not exempt:
+    """The card's limitations lines for benchmarks decon could not fully verify (from
+    ``RELEASE.json``'s ``decon.exempt`` and ``decon.partially_verified``); empty when every
+    benchmark was checked against a verified-complete manifest."""
+    decon = release.get("decon") or {}
+    exempt = decon.get("exempt") or {}
+    partial = decon.get("partially_verified") or {}
+    if not exempt and not partial:
         return []
-    return [
-        "",
-        "## Limitations",
-        "",
-        "Decontamination not verified against: "
-        + "; ".join(f"`{bid}` ({reason})" for bid, reason in sorted(exempt.items()))
-        + ".",
-    ]
+    out = ["", "## Limitations", ""]
+    if exempt:
+        out.append(
+            "Decontamination not verified against: "
+            + "; ".join(f"`{bid}` ({reason})" for bid, reason in sorted(exempt.items()))
+            + "."
+        )
+    if partial:
+        if exempt:
+            out.append("")
+        out.append(
+            "Decontamination partially verified (hit detection ran on a manifest whose coverage "
+            "could not be confirmed): "
+            + "; ".join(f"`{bid}` ({reason})" for bid, reason in sorted(partial.items()))
+            + "."
+        )
+    return out
 
 
 def _yaml_configs(summary: dict) -> list[str]:
