@@ -132,3 +132,57 @@ industry default and it is exactly how the provenance problems in MarineInst20M 
 by the time anyone audits, the corpus is load-bearing and nobody wants the answer.
 
 Every copy here passes a gate, carries attribution, and records why it was allowed.
+
+## `metadata.parquet` in a staged tree: the optional `partition` column
+
+A staged `sources/<id>/<version>/metadata.parquet` is the wide `sample_schema` table (37 columns,
+schema v2; the older 34-column v1 shape is also accepted). Trees restaged from the legacy layout
+(bucket reorganisation RB-1, 2026-10-06) carry **one extra trailing `partition` column** (38
+columns): the `images/<partition>/` segment (`SEAVIEW_ATL`, a site, a legacy sub-directory) that
+`StagedTreeLoader` pairs images, masks and labels on. `sample_schema.validate_table` accepts the
+table with or without that trailing column (`OPTIONAL_COLUMNS`); it is string-typed, must come last,
+and is not a `SampleRow` field. A flat table (no `partition`, `image_path` set) stays valid and
+resolves to `images/<stem>.<ext>`; a row with neither raises (`staged_partition`).
+
+Sample ids are `<source_id>/<stem>`. Where a stem repeats across partitions (for example the 483
+`labelled_data/segments` images of `seaview-survey-imagery`) the id is
+`<source_id>/<partition>/<stem>`, because `validate_rows` rejects duplicate ids. The licence string of
+an unlicensed source is written verbatim as `NO-LICENCE-STATED`; the schema's own null form is
+`NOASSERTION`.
+
+<!-- BEGIN GENERATED: storage-map -->
+### Canonical storage map (generated from `registry/sources/*.yaml`)
+
+One location per id: `sources/<id>/<version>/` (images under `images/<partition>/`, labels under
+`labels/{masks,instance_masks,exports,points}/`, then `metadata.parquet`, `CHECKSUMS.sha256`,
+`INGEST.json`). Non-open sources live in `rs-storage-private`. `—` means unknown, never zero.
+Regenerate with `python scripts/gen_storage_docs.py`; check offline with
+`marinedata registry verify --listing <bucket listing>`.
+
+| id | canonical location | version | access class | n_images | n_annotations | n_files | checksums |
+|---|---|---|---|---:|---:|---:|---|
+| `benthoz15` | `s3://imos-data/IMOS/AUV/` | unversioned | open | 9,874 | — | — | unpinned |
+| `coral-bleaching-detection-v2i-multiclass` | `s3://rs-storage-private/coral_bleaching/others.tar.gz` | unversioned | unknown | 736 | — | — | unpinned |
+| `coral-health-classification` | `s3://rs-storage-private/coral_bleaching/others.tar.gz` | unversioned | unknown | 1,637 | — | — | unpinned |
+| `coralscapes` | `s3://rs-storage-open/sources/coralscapes/1.0/` | 1.0 | open | 2,075 | — | — | pinned |
+| `coralscop-masks-rs` | `s3://rs-storage-open/sources/coralscop-masks-rs/2026-09-23-3e8612678469/` | 2026-09-23-3e8612678469 | internal-only | 38,928 | — | — | pinned |
+| `coralseg-ucsd-mosaics` | `s3://rs-storage-open/sources/coralseg-ucsd-mosaics/unversioned/` | unversioned | internal-only | 4,922 | — | 9,845 | pinned |
+| `coralvqa` | `s3://rs-storage-open/sources/coralvqa/rev-3da50a4429e4/` | rev-3da50a4429e4 | restricted-nc | 11,804 | — | 11,809 | pinned |
+| `ibf` | `s3://rs-storage-private/sources/ibf/2026-10-06/` | 2026-10-06 | internal-only | 496 | — | 579 | pinned |
+| `kaggle-healthy-bleached-corals` | `s3://rs-storage-private/coral_bleaching/others.tar.gz` | unversioned | internal-only | 923 | — | — | unpinned |
+| `mermaid-aws` | `s3://rs-storage-open/sources/mermaid-aws/2026-09-19-bc53d5a2c0b6/` | 2026-09-19-bc53d5a2c0b6 | restricted-nc | 18,561 | — | — | pinned |
+| `noaa-esd-coral-bleaching` | `s3://rs-storage-open/sources/noaa-pifsc-bleaching/1-image-labels/` | v1 | open | 1,568 | — | — | unpinned |
+| `noaa-pifsc-bleaching` | `s3://rs-storage-open/sources/noaa-pifsc-bleaching/1-image-labels/` | 1-image-labels | open | 10,419 | — | — | pinned |
+| `reef-support-benthic-own` | `s3://rs-storage-open/sources/reef-support-benthic-own/2026-10-06/` | 2026-10-06 | open | 1,250 | 14,517 | 18,276 | pinned |
+| `reef-support-bleaching` | `s3://rs-storage-open/sources/reef-support-bleaching/2026-09-24/` | 2026-09-24 | open | 658 | — | — | pinned |
+| `reef-support-seaview-labels` | `s3://rs-storage-open/sources/reef-support-seaview-labels/2026-10-06/` | 2026-10-06 | open | 2,707 | 50,603 | 56,025 | pinned |
+| `reefolution` | `s3://rs-storage-private/sources/reefolution/2026-09-23-2c84cb0c9cda/` | 2026-09-23-2c84cb0c9cda | internal-only | 870 | — | 872 | pinned |
+| `roboflow-coral-bleaching-final-v6i` | `s3://rs-storage-open/sources/roboflow-coral-bleaching-final-v6i/v6i-image-labels-r2/` | v6i-image-labels-r2 | open | 2,551 | — | — | pinned |
+| `roboflow-coral-bleaching-general-v1-yolov8s` | `s3://rs-storage-open/sources/roboflow-coral-bleaching-general-v1-yolov8s/v1-yolov8s-image-labels-r2/` | v1-yolov8s-image-labels-r2 | open | 2,543 | — | — | pinned |
+| `roboflow-coral-classification-copy-changed-v13i` | `s3://rs-storage-open/sources/roboflow-coral-classification-copy-changed-v13i/v13i-image-labels/` | v13i-image-labels | open | 2,789 | — | — | pinned |
+| `roboflow-coral-reef-bleach-detection-v2i` | `s3://rs-storage-open/sources/roboflow-coral-reef-bleach-detection-v2i/v2i-image-labels/` | v2i-image-labels | open | 10,781 | — | — | pinned |
+| `roboflow-coral-reef-classification-v3i` | `s3://rs-storage-open/sources/roboflow-coral-reef-classification-v3i/v3i-image-labels/` | v3i-image-labels | open | 4,556 | — | — | pinned |
+| `rs-labelled-masks` | retired (no read path) | unversioned | internal-only | 63,167 | — | — | unpinned |
+| `seaview-survey-imagery` | `s3://rs-storage-open/sources/seaview-survey-imagery/2026-10-06/` | 2026-10-06 | open | 11,870 | — | 12,376 | pinned |
+| `suim` | `s3://rs-storage-open/sources/suim/2020/` | 2020 | open | 1,598 | — | — | pinned |
+<!-- END GENERATED: storage-map -->

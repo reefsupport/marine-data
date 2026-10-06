@@ -66,6 +66,28 @@ paths are `coral-benthic.yaml` and `reef-support-own.yaml` unless noted.
 
 ## Inventory (per source)
 
+<!-- BEGIN GENERATED: task-layer-sources -->
+### Canonical locations (generated from the registry)
+
+Counts and pointers below come from `registry/sources/*.yaml` via `scripts/gen_storage_docs.py`;
+the hand-written findings that follow are WP-8b history and may cite the pre-reorg layout.
+
+| id | `loader.layout` | canonical location | version | access class | n_images | n_annotations | n_files | checksums |
+|---|---|---|---|---|---:|---:|---:|---|
+| `seaview-survey-imagery` | `staged-tree` | `s3://rs-storage-open/sources/seaview-survey-imagery/2026-10-06/` | 2026-10-06 | open | 11,870 | — | 12,376 | pinned |
+| `reef-support-seaview-labels` | `staged-tree` | `s3://rs-storage-open/sources/reef-support-seaview-labels/2026-10-06/` | 2026-10-06 | open | 2,707 | 50,603 | 56,025 | pinned |
+| `reef-support-benthic-own` | `staged-tree` | `s3://rs-storage-open/sources/reef-support-benthic-own/2026-10-06/` | 2026-10-06 | open | 1,250 | 14,517 | 18,276 | pinned |
+| `reefolution` | `staged-tree` | `s3://rs-storage-private/sources/reefolution/2026-09-23-2c84cb0c9cda/` | 2026-09-23-2c84cb0c9cda | internal-only | 870 | — | 872 | pinned |
+| `ibf` | `staged-tree` | `s3://rs-storage-private/sources/ibf/2026-10-06/` | 2026-10-06 | internal-only | 496 | — | 579 | pinned |
+| `coralvqa` | `staged-tree` | `s3://rs-storage-open/sources/coralvqa/rev-3da50a4429e4/` | rev-3da50a4429e4 | restricted-nc | 11,804 | — | 11,809 | pinned |
+| `coralscapes` | `staged-tree` | `s3://rs-storage-open/sources/coralscapes/1.0/` | 1.0 | open | 2,075 | — | — | pinned |
+| `coralseg-ucsd-mosaics` | `staged-tree` | `s3://rs-storage-open/sources/coralseg-ucsd-mosaics/unversioned/` | unversioned | internal-only | 4,922 | — | 9,845 | pinned |
+| `coralscop-masks-rs` | `staged-tree` | `s3://rs-storage-open/sources/coralscop-masks-rs/2026-09-23-3e8612678469/` | 2026-09-23-3e8612678469 | internal-only | 38,928 | — | — | pinned |
+| `rs-labelled-masks` | `metadata-only` | retired (no read path) | unversioned | internal-only | 63,167 | — | — | unpinned |
+| `mermaid-aws` | `staged-tree` | `s3://rs-storage-open/sources/mermaid-aws/2026-09-19-bc53d5a2c0b6/` | 2026-09-19-bc53d5a2c0b6 | restricted-nc | 18,561 | — | — | pinned |
+<!-- END GENERATED: task-layer-sources -->
+
+
 | Source | `id` | `loader.layout` | Staged (D-D)? | Local cache (`~/.cache/marinedata/`) | Label reality |
 |---|---|---|---|---|---|
 | SEAVIEW raw imagery | `seaview-survey-imagery` | `metadata-only` | No | empty (not fetched) | `annotations: [{kind: none}]`. The one label artifact, `labelled_data/labelled_segmentation_data.pickle`, is explicitly excluded from this entry (unsafe pickle format, "slated for deletion"). No CSV/parquet point-label export exists in the bucket prefix. |
@@ -75,7 +97,7 @@ paths are `coral-benthic.yaml` and `reef-support-own.yaml` unless noted.
 | CoralVQA | `coralvqa` | `flat-images` | No | images cached (`~/.cache/marinedata/coralvqa/*.jpg`) | The registry's own note: the real Q/A pairs live in `CoralVQA_train.jsonl`/`CoralVQA_test.jsonl`, "not fetched here" by the source's own `access` block. Found in-repo at `data/_stage/samples/benthic_datasets/point_labels/coralvqa/CoralVQA_test.jsonl` — **test split only**, no train split anywhere under the repo's data tree. |
 | Coralscapes | `coralscapes` | `image-mask-pairs` | No (image-mask-pairs, not staged-tree) | populated: `images/`, `masks/`, `_shards/` | Real: 39-class schema (`coralscapes-39`), crosswalk registered, loadable today via the existing `ImageMaskPairLoader`. |
 | Coralseg (UCSD) | `coralseg-ucsd-mosaics` | `coralseg-r-channel` | No | empty (not fetched) | Loader exists (`CoralsegRMaskLoader`) but nothing is cached locally to read; tagged `needs-permission` (D-C: licence is not a blocker for this build, but the data still is not on disk). |
-| rs_labelled masks | `rs-labelled-masks` | `metadata-only` | No | empty (not fetched) | `annotations: [{kind: none}]`, and the registry entry itself says "Mask/label structure not verified this pass." There is no existing loader for its raw layout — `metadata-only` is a placeholder, not a decodable format. |
+| rs-labelled masks (RETIRED 2026-10-06, D7: duplicate annotation set, no read path) | `rs-labelled-masks` | `metadata-only` | No | empty (not fetched) | `annotations: [{kind: none}]`, and the registry entry itself says "Mask/label structure not verified this pass." There is no existing loader for its raw layout — `metadata-only` is a placeholder, not a decodable format. |
 
 ## The D-Y rollup (done)
 

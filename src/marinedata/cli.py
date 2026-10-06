@@ -21,6 +21,7 @@ from .cli_labelquality import add_labelquality_subparser
 from .cli_metadata import add_metadata_subparser
 from .cli_privacy import add_privacy_subparser
 from .cli_quality import add_quality_subparser
+from .cli_registry import add_registry_subparsers
 from .cli_release import add_release_subparser
 from .cli_splitmap import add_splitmap_subparser
 from .cli_splits import add_splits_subparser  # WP-11/12 P3: split v2 pools/OOD/allocator
@@ -383,6 +384,7 @@ def build_parser() -> argparse.ArgumentParser:
     add_splits_subparser(sub)
     add_decon_subparser(sub)
     add_captions_subparser(sub)  # WP-13; never run by `release build --v2`
+    add_registry_subparsers(sub)  # RB-3: `registry verify`
 
     p_verify = sub.add_parser("verify", help="Check declared layouts against real fetched samples")
     p_verify.add_argument("source_id", nargs="*")
