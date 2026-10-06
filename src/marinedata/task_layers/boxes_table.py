@@ -143,6 +143,13 @@ BOX_SOURCES: dict[str, BoxSource] = {
         BoxSource("roboflow-aquarium", "zip-5d30fed3dd5a", "yolo", "human_crowd", "CC-BY-4.0",
                   OPEN, crosswalk_id="roboflow-aquarium", label_set="aquarium-combined",
                   names_rel="docs/aquarium_pretrain/data.yaml"),
+        # HK-4c: instance-mask sets, one box per COCO instance (documents/stems: masks_instance)
+        BoxSource("uiis", "rev-44ca5db46599", "coco-instances", "human", "Apache-2.0", OPEN,
+                  crosswalk_id="usis-uiis", label_set="usis-uiis-categories"),
+        BoxSource("uiis10k", "rev-5c4316368a8e", "coco-instances", "human", "Apache-2.0", OPEN,
+                  crosswalk_id="usis-uiis", label_set="usis-uiis-categories"),
+        BoxSource("usis10k", "rev-b10f41ab819b", "coco-instances", "human", "Apache-2.0", OPEN,
+                  crosswalk_id="usis-uiis", label_set="usis-uiis-categories"),
         BoxSource("ruod", "rev-c22094e45b7f", "coco-docs", "human", "NOASSERTION",
                   INTERNAL_ONLY, crosswalk_id="ruod", label_set="ruod-categories"),
         BoxSource("brackishmot", "zip-e717dc1438aa", "mot", "human", "NOASSERTION",
@@ -612,6 +619,10 @@ def staged_boxes(
     if spec.reader == "yolo-flat":
         return _yolo_flat(spec, registry, limit, fetch, lister or bucket_lister())
     tree = tree or StagedTree(spec.tree, fetch)
+    if spec.reader == "coco-instances":
+        from .boxes_instance import staged_instances  # HK-4c; imports this module, so lazy
+
+        return staged_instances(spec, registry, tree, limit)
     if spec.reader in ("yolo-parquet", "coco-doc-frames", "synthetic-json"):
         from .boxes_sonar import staged_sonar  # WP-U6c; imports this module, so lazy
 
