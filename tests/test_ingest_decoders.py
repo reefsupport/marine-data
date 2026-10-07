@@ -198,6 +198,8 @@ def test_video_frames_sampled_and_deduped(server, tmp_path):
 
 
 def _make_bag(path: Path) -> None:
+    # `rosbags` is in the `decoders` extra, not in `dev` (what CI installs).
+    pytest.importorskip("rosbags")
     import numpy as np
     from rosbags.rosbag1 import Writer
     from rosbags.typesys import Stores, get_typestore

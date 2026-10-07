@@ -1,6 +1,11 @@
 """Probe determinism on synthetic features (design §4.4.A: "deterministic")."""
 
 import numpy as np
+import pytest
+
+# scikit-learn ships in the `eval`/`baselines` extras, not in `dev` (what CI installs),
+# and `probe` imports it at module level.
+pytest.importorskip("sklearn")
 
 from marinedata.eval.baselines.probe import fit_probe, score_probe
 
