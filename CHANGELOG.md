@@ -4,6 +4,10 @@ Release notes for `marine-data`: the registry and tooling in this repository, an
 [`reefsupport/marine-data`](https://huggingface.co/datasets/reefsupport/marine-data) on Hugging Face. Code history is in
 git. The format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [Unreleased]
+
+- Docs: install requirements, standalone snippets, fish-boxes statistics.
+
 ## [1.0.0] - 2026-10-07
 
 First public release.

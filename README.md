@@ -42,15 +42,20 @@ row = next(iter(stream))
 print(row["licence"], row["attribution"])
 ```
 
-Scripts and training: download the config once, cached afterwards (all splits are fetched; the full `coral-masks` config is about 12 GB).
+Scripts and training: download the config once, cached afterwards. `coral-masks` is 12.6 GB (all splits are fetched);
+to try the pipeline first, use `scene-masks` (0.2 GB) or the one-source form below.
 
 ```python
+from datasets import load_dataset
+
 ds = load_dataset("reefsupport/marine-data", "coral-masks", split="train")
 ```
 
 One source only: download just that source's shards (file names are `<split>-<source>-<n>-of-<total>.parquet`).
 
 ```python
+from datasets import load_dataset
+
 ds = load_dataset(
     "reefsupport/marine-data",
     "coral-masks",
@@ -67,7 +72,7 @@ Licences differ per source. Keep the `attribution` column when you share or publ
 
 ## Install
 
-The package is not published on PyPI. Install from source:
+Requires Python 3.10 or newer and git. The package is not on PyPI; install from source:
 
 ```bash
 git clone https://github.com/reefsupport/marine-data
@@ -75,7 +80,7 @@ cd marine-data
 uv venv && uv pip install -e ".[dev]"
 ```
 
-Python 3.10 or newer is required. Optional extras pull in heavier dependencies only when needed: `pandas`, `torch`,
+Optional extras pull in heavier dependencies only when needed: `pandas`, `torch`,
 `tf`, `hf`, `croissant`, `geo`, `eval` and `quality`.
 
 ## Quick start
@@ -125,11 +130,17 @@ In a script, download the config or one source as described under [Published dat
 rows to `remap_row` the same way:
 
 ```python
+from datasets import load_dataset
+from marinedata import labels
+
 ds = load_dataset("reefsupport/marine-data", "scene-masks", split="train")
 row = labels.remap_row(ds[0], "scene")
 ```
 
 ```python
+from datasets import load_dataset
+from marinedata import labels
+
 ds = load_dataset(
     "reefsupport/marine-data",
     "coral-masks",
@@ -142,6 +153,9 @@ row = labels.remap_row(ds[0], "benthic-coarse")
 The other configs use the `scene` scheme. `scene-masks` rows work with `remap_row` as above:
 
 ```python
+from datasets import load_dataset
+from marinedata import labels
+
 stream = load_dataset("reefsupport/marine-data", "scene-masks", split="train", streaming=True)
 row = labels.remap_row(next(iter(stream)), "scene")
 names = labels.class_names("scene")
@@ -153,6 +167,9 @@ print(row["source"], [names[i] for i in present])
 `labels.map_label` (it returns `None` for a label the scheme does not cover):
 
 ```python
+from datasets import load_dataset
+from marinedata import labels
+
 stream = load_dataset("reefsupport/marine-data", "instance-masks", split="train", streaming=True)
 row = next(iter(stream))
 ids = [labels.map_label(row["source"], inst["label_native"], "scene") for inst in row["instances"]]
@@ -162,6 +179,9 @@ print(row["source"], ids)
 `fish-boxes` rows have `boxes` and name their source in `source_id`:
 
 ```python
+from datasets import load_dataset
+from marinedata import labels
+
 stream = load_dataset("reefsupport/marine-data", "fish-boxes", split="train", streaming=True)
 row = next(iter(stream))
 ids = [labels.map_label(row["source_id"], box["label"], "scene") for box in row["boxes"]]
@@ -288,6 +308,10 @@ Every build can emit a record of which sources contributed, under which tier and
 why, and which obligations carry forward:
 
 ```python
+import marinedata as md
+
+registry = md.Registry.load()
+result = md.find(task="benthic-segmentation", profile="ship-commercial")
 lineage = md.build_lineage(
     list(result.sources),
     registry.profile("ship-commercial"),
