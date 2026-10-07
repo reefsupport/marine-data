@@ -104,7 +104,7 @@ so nothing downstream pins the old target. Everything else in this release is ad
   `coarsened`, not `exact`: a binary bleached/not-bleached split only asserts "not
   bleached". NOAA CORAL, Roboflow Healthy (hb, hu) and RS non_bleached share one rule,
   and a test asserts it.
-- **The 9 unmeasured staged sources now have vocab TSVs** (D-S1): noaa-pifsc-bleaching,
+- **The 9 unmeasured staged sources now have vocab TSVs**: noaa-pifsc-bleaching,
   5 Roboflow bleaching sets, reef-support-benthic-own, reef-support-bleaching (mask pixel
   values streamed, not stored) and coralscop-masks-rs (one annotation per mask file). All 9
   are at 100% mapped. v13i `Non-Corals` (a presence tag) -> UNKNOWN, approximate.
@@ -127,7 +127,7 @@ nodes that already existed (no node removed or re-parented).
 
 - **Reefolution 62.23% -> 100.00% of 43,500 points** (64 observed codes, 0 unmappable). The
   codes were resolved from the source's `labelset.csv` (CoralNet label id -> code;
-  rs-storage-private) joined to the public CoralNet label pages. Its `coverage_exceptions`
+  <private-bucket>) joined to the public CoralNet label pages. Its `coverage_exceptions`
   entry is removed. New vocabulary `vocab/reefolution.tsv` (point-weighted), so the gate now
   measures it. Before, a crosswalked source without a vocab TSV was never measured.
 - 16 rs-benthic-v1 nodes: HC_DIPSASTRAEA, HC_FUNGIIDAE, HC_GARDINEROSERIS, HC_GONIOPORA,
@@ -137,7 +137,7 @@ nodes that already existed (no node removed or re-parented).
 - Snapshot +21 rows (12 names + ancestors), retrieved_at 2026-09-25, via
   `scripts/taxonomy_snapshot_add.py` (snapshot first, cached WoRMS REST at <= 2 req/s).
 - Fixed 5 Reefolution edges (Mil, Hal, Urchins, Anemone, GA); see the D-I audit (+30 rows).
-- Scoped gate (D-Q): `taxonomy check` fails only for staged sources (rs-storage-open
+- Scoped gate (D-Q): `taxonomy check` fails only for staged sources (<open-bucket>
   `sources/`) and sources named in a `--release RELEASE.json`; `--strict` lists the rest.
   `source_crosswalks` declares coralvqa and marineinst20m `crosswalk: open_vocabulary`
   (removed from `no_crosswalk_yet`, 19 -> 17). `make taxonomy-check`.
@@ -164,7 +164,7 @@ MINOR bump from WP-7's 1.0.0 — nodes and crosswalks added, nothing removed or 
   `source_ids` (e.g. `assert_release_gate(..., ["ruod", "noaa-benthic-t1"])`) are
   unaffected and still pass, because releases only ever name sources that are staged.
 - **19 sources remain in `no_crosswalk_yet`,** unresolved: only 2 of the original 23
-  (`reefolution`, `coralscop-masks-rs`) turned out to be staged in `rs-storage-open` —
+  (`reefolution`, `coralscop-masks-rs`) turned out to be staged in `<open-bucket>` —
   confirmed by a `list_objects_v2` scan of `sources/` 2026-09-25. The rest are
   prospective registry entries with no ingested label data (many blocked by a Kaggle,
   Roboflow or Google Drive login wall per D-E, or genuinely open-vocabulary/text —

@@ -83,7 +83,7 @@ or the small `read_shard()` here.
 Three tiers, three lifecycles, one bucket:
 
 ```
-rs-storage-private/
+<private-bucket>/
   cache/<source_id>/…            durable · faithful copies · gate-checked
   releases/<release_id>.json     immutable · tiny · the audit record
   shards/<release_id>/…          derived · rebuildable · expires
@@ -153,7 +153,7 @@ constraint for us for a long time.
 
 ```bash
 # ── stage (staging partition, has network) ───────────────────────────────
-rclone copy hz:rs-storage-private/shards/2026-08-benthic-v1/ \
+rclone copy hz:<private-bucket>/shards/2026-08-benthic-v1/ \
             /scratch-shared/$USER/reef/2026-08-benthic-v1/ --transfers 16
 
 # ── train (gpu_h100, no network needed) ──────────────────────────────────
@@ -193,7 +193,7 @@ so this needs no format change — just `--shards` split by `$SLURM_PROCID`.
 The training code does not change. Only the staging verb does:
 
 ```bash
-rclone copy hz:rs-storage-private/shards/<release>/ /workspace/shards/   # RunPod
+rclone copy hz:<private-bucket>/shards/<release>/ /workspace/shards/   # RunPod
 aws s3 sync  s3://…/shards/<release>/              /data/shards/         # AWS
 gsutil -m cp -r gs://…/shards/<release>/           /data/shards/         # GCP
 ```

@@ -1,4 +1,4 @@
-# WP-6c: run `marinedata ingest-batch` next to the bucket. Yohan applies this — see
+# WP-6c: run `marinedata ingest-batch` next to the bucket. A maintainer applies this — see
 # ../README.md for the exact build/push/apply/watch/resume/stop commands.
 #
 # Namespace/priorityClass/imagePullSecrets style follow the existing rs-backend-jobs
@@ -17,7 +17,7 @@ metadata:
     marinedata.reef.support/run: "1"
 spec:
   backoffLimit: 3
-  ttlSecondsAfterFinished: 604800 # 7 days — long enough for Yohan to read the final log
+  ttlSecondsAfterFinished: 604800 # 7 days — long enough for a maintainer to read the final log
   template:
     metadata:
       labels:
@@ -52,7 +52,7 @@ spec:
             - name: AWS_ACCESS_KEY_ID
               valueFrom:
                 secretKeyRef:
-                  # Secret NOT created by this manifest — Yohan creates it once (README).
+                  # Secret NOT created by this manifest — a maintainer creates it once (README).
                   # Key names match the [rs-hel1] section of ~/.config/rclone/rclone.conf.
                   name: marinedata-ingest-s3-creds
                   key: access_key_id

@@ -13,7 +13,7 @@ attribution: "Kaggle: healthy and bleached corals (vencerlanz09)"
 citation: "Kaggle dataset: vencerlanz09/healthy-and-bleached-corals-image-classification"
 homepage: https://www.kaggle.com/datasets/vencerlanz09/healthy-and-bleached-corals-image-classification
 notes: >-
-  LOCAL-ingest 2026-10-02: Yohan downloaded `archive (4).zip` by hand — a standalone
+  LOCAL-ingest 2026-10-02: A maintainer downloaded `archive (4).zip` by hand — a standalone
   copy of the same Kaggle dataset the registry/sources/coral-benthic.yaml source entry
   describes as locked inside an unextracted tar member (`coral_bleaching/others.tar.gz`).
   Switched to local_dir over this directly-unzipped copy: `bleached_corals/` +

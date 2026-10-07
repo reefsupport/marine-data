@@ -36,7 +36,7 @@ Exit 0/1, one-line summary on stdout.
 
 ```
 marinedata verify-release ~/dev/reefsupport/data/_hf/v1
-marinedata verify-release s3://rs-storage-open/releases/marine-data/v1/hf/ \
+marinedata verify-release s3://<open-bucket>/releases/marine-data/v1/hf/ \
   --manifest ~/dev/reefsupport/data/_hf/v1/MANIFEST.tsv --deep 3
 ```
 

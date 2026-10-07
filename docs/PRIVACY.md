@@ -5,7 +5,7 @@ code done, real-data tuning/dry-run not.** The full 69,600-image scan ran to
 completion (WP-5c), and the D-I manual audit (350 images, seed=42) ran against
 it (WP-5d) — `docs/privacy-audit-2026-09-25.tsv`, results below and in
 `docs/ETHICS_FACE_AUDIT.md`. `privacy.parquet` + the audit TSV are uploaded to
-`s3://rs-storage-open/releases/marine-data/v1/privacy/`. See "D-I2:
+`s3://<open-bucket>/releases/marine-data/v1/privacy/`. See "D-I2:
 second-stage verifier + v2 blur" below for what WP-5e added and what is still
 open.
 
@@ -86,7 +86,7 @@ replacement by a real classifier if mask detection becomes a hard requirement.
 - `docs/DATASHEET.md` and `docs/ETHICS_FACE_AUDIT.md` rewritten with the audited
   numbers, citing the TSV.
 - `privacy.parquet` + the audit TSV uploaded to
-  `s3://rs-storage-open/releases/marine-data/v1/privacy/`, size+ETag
+  `s3://<open-bucket>/releases/marine-data/v1/privacy/`, size+ETag
   verified; `CHECKSUMS.sha256` regenerated.
 
 ## D-I2: second-stage verifier + v2 blur (WP-5e)

@@ -22,9 +22,9 @@ sources:
       url: https://creativecommons.org/licenses/by/4.0/
       flags: { attribution_required: true }
       notes: >
-        D-B (Yohan 2026-09-25, by delegation): Reef Support's own imagery relicensed
+        D-B (a maintainer 2026-09-25, by delegation): Reef Support's own imagery relicensed
         from PROPRIETARY-OWN to CC-BY-4.0 for the open dataset. set 2026-09-25 by
-        delegation; confirmed 2026-10-02 (Yohan).
+        delegation; confirmed 2026-10-02 (a maintainer).
     legal_basis: own
     redistribution: ok
     provenance: own
@@ -143,7 +143,7 @@ sources:
       `sources/reef-support-benthic-own/2026-10-06/` (images + semantic masks of the 2026-09-24 tree,
       plus instance masks, stitched masks and Labelbox exports of the four Colombian sites under
       `labels/instance_masks/`, `labels/exports/`). `2026-09-24` and `2026-08` are SUPERSEDED (kept
-      until RB-2 deletes byte-identical copies). `checksums` re-pinned 2026-10-06 (RB-3c) from the tree's
+      until RB-2 deletes byte-identical copies). `checksums` re-pinned 2026-10-06 from the tree's
       CHECKSUMS.sha256 (RB-1 FINALIZED: 18,276 files = 18,273 objects + metadata.parquet, INGEST.json, LICENSE;
       1,250 image rows read back by the StagedTreeLoader).
       `n_annotations` = 14,517 instance masks (RB-A lineage count, 2026-10-06).
@@ -173,7 +173,7 @@ sources:
       Masks and labels: Reef Support annotations (CC-BY-4.0).
     verification:
       verified_on: 2026-10-06
-      verified_by: "APPROVED 2026-10-06 (Yohan): images CC-BY-3.0 - the researchdata.edu.au record of UQ eSpace UQ_734799 states Creative Commons Attribution 3.0 (the same record `seaview-survey-imagery` cites; R1 external research 2026-09-24, high confidence); masks and labels CC-BY-4.0, Reef Support (own annotations). Supersedes the 2026-09-24 entry: no Seaview pixel terms confirmed, method absent. Corrected 2026-10-07: the UQ eSpace record states CC BY 3.0 International, not the Australia port."
+      verified_by: "APPROVED 2026-10-06 (a maintainer): images CC-BY-3.0 - the researchdata.edu.au record of UQ eSpace UQ_734799 states Creative Commons Attribution 3.0 (the same record `seaview-survey-imagery` cites; R1 external research 2026-09-24, high confidence); masks and labels CC-BY-4.0, Reef Support (own annotations). Supersedes the 2026-09-24 entry: no Seaview pixel terms confirmed, method absent. Corrected 2026-10-07: the UQ eSpace record states CC BY 3.0 International, not the Australia port."
       method: licence-file
     access:
       method: s3
@@ -234,7 +234,7 @@ sources:
       clean T0_OWN certificate over imagery we do not own - precisely the false-provenance
       failure this registry exists to prevent, in our own data.
 
-      Rights (RESOLVED 2026-10-06, Yohan approved): the PIXELS are XL Catlin Seaview's, licensed
+      Rights (RESOLVED 2026-10-06, a maintainer approved): the PIXELS are XL Catlin Seaview's, licensed
       CC-BY-3.0 (González-Rivero et al., UQ eSpace UQ_734799, attribution required); our MASKS and
       labels are CC-BY-4.0, Reef Support. `licence` carries the pixel licence (the binding one),
       `legal_basis` is `licence` for the pixels and `own` for the masks (the enum has no combined
@@ -261,7 +261,7 @@ sources:
       `sources/reef-support-seaview-labels/2026-10-06/` (`images/<partition>/`, `labels/masks/`,
       `labels/instance_masks/`, `labels/exports/`, partition = SEAVIEW_ATL / SEAVIEW_IDN_PHL /
       SEAVIEW_PAC_AUS / SEAVIEW_PAC_USA). Version `2026-08` (the legacy reef_support SEAVIEW_* dirs) is
-      superseded. `checksums` pinned 2026-10-06 (RB-3c) from the tree's CHECKSUMS.sha256. The former
+      superseded. `checksums` pinned 2026-10-06 from the tree's CHECKSUMS.sha256. The former
       `rs-labelled-masks` set is a duplicate annotation set over these images and is retired (D7).
     tags: [annotation-ip, octocoral]
 
@@ -283,9 +283,9 @@ sources:
       url: https://creativecommons.org/licenses/by/4.0/
       flags: { attribution_required: true }
       notes: >
-        D-B (Yohan 2026-09-25, by delegation): Reef Support's own imagery relicensed
+        D-B (a maintainer 2026-09-25, by delegation): Reef Support's own imagery relicensed
         from PROPRIETARY-OWN to CC-BY-4.0 for the open dataset. set 2026-09-25 by
-        delegation; confirmed 2026-10-02 (Yohan).
+        delegation; confirmed 2026-10-02 (a maintainer).
     legal_basis: own
     redistribution: ok
     provenance: own
@@ -374,7 +374,7 @@ sources:
     notes: >
       2026-10-06 (RB-A): all 658 images are byte-identical to the Tayrona (UNAL) images of
       `reef-support-benthic-own` (its masks are not byte-identical). Unchanged otherwise; the entry is
-      kept until Yohan confirms the fold into benthic-own.
+      kept until a maintainer confirms the fold into benthic-own.
     tags: [multi-task, caribbean]
 
   - id: reefolution
@@ -526,7 +526,7 @@ sources:
 
       RE-POINTED 2026-10-06 (RB-1/RB-3): canonical location is `s3://rs-storage-private/sources/ibf/2026-10-06/`
       (496 images + 75 CPCe/CSV label files + 5 extra files; 579 files with metadata.parquet, INGEST.json,
-      LICENSE); internal-only data belongs in the private bucket. `checksums` pinned 2026-10-06 (RB-3c)
+      LICENSE); internal-only data belongs in the private bucket. `checksums` pinned 2026-10-06
       from the tree's CHECKSUMS.sha256.
     split_group:
       pattern: 'IBF/([^/]+)/'
@@ -642,7 +642,7 @@ sources:
     access:
       method: request
       uri: "retired:rs-labelled-masks"
-      notes: "Retired 2026-10-06 (D7): no read path. Bytes stay in rs-storage-private under the cache prefix until Yohan decides."
+      notes: "Retired 2026-10-06 (D7): no read path. Bytes stay in rs-storage-private under the cache prefix until a maintainer decides."
     modalities: [image]
     capabilities: [benthic-segmentation, general-pretraining]
     n_images: 63167
@@ -660,7 +660,7 @@ sources:
       RESOLVED 2026-09-23 (WS-D decision): folded in as a SECOND annotation set over the
       images already registered under `reef-support-benthic-own` and
       `reef-support-seaview-labels` (see `images_from`) - no pixel copy of its own. The
-      prior "distinct asset vs. earlier export" ownership question (P1-B "Needs Yohan"
+      prior "distinct asset vs. earlier export" ownership question (P1-B "Needs a maintainer"
       #1) is superseded by this: whatever the origin, its masks sit on existing reef_support
       imagery, not a new image pool. Licence/origin of the mask labour itself is still
       not stated either way.
@@ -718,8 +718,8 @@ sources:
     coverage:
       regions: [unknown]
     notes: >
-      RETIRED 2026-09-24 (WS-D S38, Yohan decision D6): the ownership question below
-      was never resolved, and Yohan decided outright deletion of
+      RETIRED 2026-09-24 (WS-D S38, a maintainer decision D6): the ownership question below
+      was never resolved, and a maintainer decided outright deletion of
       `s3://rs-storage-open/data/mussel_ai/` rather than pursuing permission — D6
       deleted it. `access.uri`/`params` dropped (no copy remains at that prefix or
       anywhere else). The trained weights (`models/mussel_ai/`) are unaffected and
@@ -727,7 +727,7 @@ sources:
       copy, kept for record.
 
       BLOCKED PENDING PERMISSION (superseded context). Ownership question open with
-      Yohan - no README, licence, or origin document anywhere in the bucket or
+      A maintainer - no README, licence, or origin document anywhere in the bucket or
       registry. `data/mussel_ai/lobster_demo.tif` (512,790,898 B, counted in this
       entry) was byte-identical (size + multipart ETag) to
       `s3://rs-storage-open/data/lobster_demo.tif` at the bucket root, which sat

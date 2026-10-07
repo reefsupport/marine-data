@@ -46,7 +46,7 @@ Everything else (needs_adapter with unresolved size, needs_yohan, unreachable) i
 - `kaggle-ndsb-2015`: no anonymous public mirror of the exact 2015 competition split was found;
   `planktonset-1-0` is the nearest open equivalent from the same lineage.
 - `marinedet`: no canonical public repository was identified (GitHub search inconclusive) — needs
-  Yohan to name the exact source before it can be specced for real.
+  a maintainer to name the exact source before it can be specced for real.
 - `pangaea-ofos-msm77`: this is the *baseline* the brief said to search "beyond" — it lacked an
   ingest-spec, so it is specced here for completeness, not counted as a new discovery.
 - 6 PANGAEA "dataset publication series" (`pangaea-ccz-gsr`, `pangaea-ofos-msm77`,

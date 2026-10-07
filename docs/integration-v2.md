@@ -170,7 +170,7 @@ live result cannot move.
 all 254,867 rows — the WP-8d producer wrote `None` literally because the images (one
 26.7 GB zip) were never staged. It stays `invalid` in `data/_tasklabels/MANIFEST.json`,
 so `task_layers.configs` skips it. INT-core3c found no staged
-`sources/coralvqa/**/CHECKSUMS.sha256` in `rs-storage-open`: anonymous HEAD → 403. The
+`sources/coralvqa/**/CHECKSUMS.sha256` in `<open-bucket>`: anonymous HEAD → 403. The
 source is queued for the ingest line; regenerate once it is staged.
 
 **Tasklabels root (INT-core3c):** `build_release(tasks="v2")` read `Path(".")/_tasklabels`,

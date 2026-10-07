@@ -655,7 +655,7 @@ sources:
       Market/countertop photos of whole fish and shrimp laid out for sale (9 species:
       Sea Bass, Red Mullet, Gilt Head Bream, Red Sea Bream, Shrimp, Black Sea Sprat,
       Horse Mackerel, Striped Red Mullet, Trout), not underwater or in-situ imagery.
-      LOCAL-ingest 2026-10-02 (archive (1).zip, Yohan manual download): tagged
+      LOCAL-ingest 2026-10-02 (archive (1).zip, a maintainer manual download): tagged
       `out-of-water` so the release builder can exclude it from underwater/in-situ
       outputs; kept as a general-pretraining fish-classification source otherwise.
     licence: NO-LICENCE-STATED

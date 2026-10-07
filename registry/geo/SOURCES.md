@@ -55,7 +55,7 @@
   release or S3 imagery bundles** — that would be exactly the "distribution... in whole
   or in part" the licence prohibits without the MEOW Working Group's approval. It is
   vendored here for internal, non-commercial ecoregion classification only. Flagging for
-  Yohan: if MEOW-derived per-sample labels are later published, credit the citation above
+  Maintainers: if MEOW-derived per-sample labels are later published, credit the citation above
   alongside them (the licence's one attribution requirement that *is* compatible with
   publishing derived labels).
 - **Vendored file:** `registry/geo/meow-2026-09-25.parquet` — columns `eco_code` (int),

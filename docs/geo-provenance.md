@@ -22,7 +22,7 @@ place, only if ≤ 500 km across) > `none`. Location-sensitive 0.1° rounding ap
 | coralscapes (1.0) | 35 numbered dive sites (`site10_…`) in Djibouti, Eritrea, Sudan, Jordan and Israel (arXiv 2503.20000 §3: "All imagery was collected during scuba dives at 35 sites… using GoPro Hero 10 cameras… **the location of the sites is withheld and instead replaced by an ID**" — an explicit anti-poaching/overtourism redaction, not a missing-metadata gap). Neither the HF card nor the paper/appendix publishes a site→country map or coordinates, so even a country-level centroid can't be assigned; the 5 countries' Red Sea coastline spans Djibouti (~11.5°N) to the Gulf of Aqaba (~29.5°N), ≈ 2,200 km ≫ 500 km, so a centroid would fail D-W even if the mapping were known | none (site id known, coords withheld by design) | site number | [HF card](https://huggingface.co/datasets/EPFL-ECEO/coralscapes) · [arXiv 2503.20000 §3](https://arxiv.org/abs/2503.20000) |
 | reef-support-seaview-labels (legacy prefix, not staged) | SEAVIEW quadrat ids (`10001001601.jpg`) join Zenodo 3839924 quadrat CSVs (lat/lng per quadrat) → `image` via `table_join` once staged | image (when staged) | quadrat id | [Zenodo 3839924](https://zenodo.org/records/3839924) |
 
-## Needs Yohan / external
+## Needs a maintainer decision / external
 - NCEI accessions 0269246 / 0259266 (NOAA ESD site coordinates) — resolved 2026-09-25. WP-2d's bounded
   retry (up to 3×, 10 min apart, `perl alarm 700`) found NCEI down on attempt 1 and back up on attempt 2;
   `registry/geo/sites/noaa-esd.csv` + `registry/geo/backfill/noaa-pifsc-bleaching.parquet` now carry the

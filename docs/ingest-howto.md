@@ -1,4 +1,4 @@
-# Ingest one open source to `rs-storage-open` (recipe)
+# Ingest one open source to `<open-bucket>` (recipe)
 
 Use this for any catalog row. Design and failure modes: `docs/design/ingestion.md`.
 
@@ -6,7 +6,7 @@ Use this for any catalog row. Design and failure modes: `docs/design/ingestion.m
 
 1. The source is **open**: open HF (not gated), Zenodo `access_right: open`, anonymous
    bucket, public GitHub. If you would need a login, terms click-through, or a gated HF repo,
-   **do not ingest**. Add it to the "needs Yohan" list with the exact URL and what has to be
+   **do not ingest**. Add it to the "needs decision" list with the exact URL and what has to be
    accepted (D-E).
 2. You know its licence (SPDX, e.g. `CC-BY-4.0`) and attribution from the upstream card or
    README. A missing licence gets `NOASSERTION`; never guess one.
@@ -54,7 +54,7 @@ PYTHONPATH=src .venv/bin/python -m marinedata.cli ingest-source hf $SP/<n>/<id>.
 
 Check the output:
 - `plan.items` and `plan.declared_bytes` are what you expect.
-- `plan.target` is `s3://rs-storage-open/sources/<id>/<version>/`.
+- `plan.target` is `s3://<open-bucket>/sources/<id>/<version>/`.
 - `layout` is `objects` at 200k images or fewer, `shards` above that.
 
 Exit code 3 plus a `NEEDS-YOHAN` line means the source is gated: record it and stop.
@@ -138,7 +138,7 @@ next time free disk is back above the floor.
 
 ## Never
 
-- Delete bucket objects, even a half-run prefix: re-run instead (Yohan runs deletions).
+- Delete bucket objects, even a half-run prefix: re-run instead (maintainers run deletions).
 - Print credentials. The client reads the `[rs-hel1]` section of `~/.config/rclone/rclone.conf` itself.
 - Push to HF.
 - Edit `hf_card.py`, `hf_export.py`, or `hf_parquet.py` (D-M).

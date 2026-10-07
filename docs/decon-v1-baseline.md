@@ -60,5 +60,4 @@ is a real, disclosed result for the scope above — it does **not** cover S4, S5
 the v1 `train` split's image bytes, so it is a partial clearance, not a full
 zero-contamination proof for v1 end-to-end.
 
-Run script (scratch, not part of this repo):
-`/private/tmp/claude-501/.../scratchpad/p2/real_run2.py`. Wall time: 11s.
+Wall time: 11s.

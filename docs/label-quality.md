@@ -198,7 +198,7 @@ is a different concept (§1, D-U (1)) and is confirmed excluded from the bleachi
 crosswalk (`registry/crosswalks/roboflow-bleaching-condition-hb.yaml`), while remaining in
 the health-binary crosswalk.
 
-## 6. Expert-audit protocol (500 samples; to be run by Yohan's team)
+## 6. Expert-audit protocol (500 samples; to be run by the Reef Support team)
 
 - **Files.**
   - `expert-audit-sheet.tsv` is **blind**: audit_id, sha, sample_key, split and blank expert columns.

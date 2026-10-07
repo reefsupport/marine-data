@@ -12,7 +12,7 @@ notes: >-
   LOCAL-ingest 2026-10-02: previous `adapter: http` had no working params (`{}`) —
   sole distribution is Kaggle (login-gated, D-E), per registry/sources/geometry-3d.yaml
   `atlantis-synthetic-depth` (licence MIT, verified 2026-08-17 by reading the repo's
-  own LICENSE file at github.com/zkawfanx/Atlantis). Yohan downloaded `archive (6).zip`
+  own LICENSE file at github.com/zkawfanx/Atlantis). A maintainer downloaded `archive (6).zip`
   by hand; switched to local_dir over the unzipped copy (`Atlantis/{depth,underwater}`,
   3,200 depth maps + multiple water-type variants per depth map — see geometry-3d.yaml
   for the one-to-many pairing note). `license: NOASSERTION` on the old http spec

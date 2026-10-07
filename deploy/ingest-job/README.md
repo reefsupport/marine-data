@@ -1,12 +1,12 @@
 # WP-6c: server-side ingest Job
 
-Runs `marinedata ingest-batch <specs_dir>` on a Hetzner node next to `rs-storage-open`
+Runs `marinedata ingest-batch <specs_dir>` on a Hetzner node next to `<open-bucket>`
 (hel1), instead of over the Mac's ~10 MB/s uplink. Everything here is for **you** to run —
 no agent touches the cluster, pushes an image, or reads a secret value.
 
 ## What this touches
 
-- Writes only to `s3://rs-storage-open/sources/<id>/<version>/…` for the specs you give it.
+- Writes only to `s3://<open-bucket>/sources/<id>/<version>/…` for the specs you give it.
 - Never deletes a bucket object (that's `delete_step.py`, run by you separately).
 - The Job's own footprint is one `emptyDir` (`/work`, cleared when the pod is removed).
 

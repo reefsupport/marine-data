@@ -34,7 +34,7 @@ paths are `coral-benthic.yaml` and `reef-support-own.yaml` unless noted.
   ships images-only, matching the registry's existing `annotations: [{kind: none}]` —
   no code or registry change needed.
 - **Coralseg (UCSD) — masks are real, but not sha256-keyable without the images.**
-  Anonymous `ListObjectsV2` on `rs-storage-open` for
+  Anonymous `ListObjectsV2` on `<open-bucket>` for
   `benthic_datasets/mask_labels/Coralseg/` returned `AccessDenied` (bucket policy allows
   anonymous `GetObject` on known keys, not anonymous listing). Listing via boto3 +
   rclone-conf creds (per the creds rule) is not blocked. The real blocker is
@@ -47,7 +47,7 @@ paths are `coral-benthic.yaml` and `reef-support-own.yaml` unless noted.
   contradiction between "keyed by sha256" and "never touch Coralseg's images", not a
   fetch failure — flagged for the manager in `## Open` equivalent below (see report).
 - **rs_labelled masks — real format is different from the registry's placeholder.**
-  Listed `rs-storage-private/cache/rs-labelled-masks/2026-09-23-07d6247cea85/` via
+  Listed `<private-bucket>/cache/rs-labelled-masks/2026-09-23-07d6247cea85/` via
   boto3 (creds rule). The registry says `loader: {layout: metadata-only}` with "Mask/label
   structure not verified this pass" — verified this pass: each site directory (e.g.
   `SEAFLOWER_BOLIVAR/`) holds one `export-result.ndjson` (a Labelbox-style annotation
@@ -74,17 +74,17 @@ the hand-written findings that follow are WP-8b history and may cite the pre-reo
 
 | id | `loader.layout` | canonical location | version | access class | n_images | n_annotations | n_files | checksums |
 |---|---|---|---|---|---:|---:|---:|---|
-| `seaview-survey-imagery` | `staged-tree` | `s3://rs-storage-open/sources/seaview-survey-imagery/2026-10-06/` | 2026-10-06 | open | 11,870 | — | 12,376 | pinned |
-| `reef-support-seaview-labels` | `staged-tree` | `s3://rs-storage-open/sources/reef-support-seaview-labels/2026-10-06/` | 2026-10-06 | open | 2,707 | 50,603 | 56,025 | pinned |
-| `reef-support-benthic-own` | `staged-tree` | `s3://rs-storage-open/sources/reef-support-benthic-own/2026-10-06/` | 2026-10-06 | open | 1,250 | 14,517 | 18,276 | pinned |
-| `reefolution` | `staged-tree` | `s3://rs-storage-private/sources/reefolution/2026-09-23-2c84cb0c9cda/` | 2026-09-23-2c84cb0c9cda | internal-only | 870 | — | 872 | pinned |
-| `ibf` | `staged-tree` | `s3://rs-storage-private/sources/ibf/2026-10-06/` | 2026-10-06 | internal-only | 496 | — | 579 | pinned |
-| `coralvqa` | `staged-tree` | `s3://rs-storage-open/sources/coralvqa/rev-3da50a4429e4/` | rev-3da50a4429e4 | restricted-nc | 11,804 | — | 11,809 | pinned |
-| `coralscapes` | `staged-tree` | `s3://rs-storage-open/sources/coralscapes/1.0/` | 1.0 | open | 2,075 | — | — | pinned |
-| `coralseg-ucsd-mosaics` | `staged-tree` | `s3://rs-storage-open/sources/coralseg-ucsd-mosaics/unversioned/` | unversioned | internal-only | 4,922 | — | 9,845 | pinned |
-| `coralscop-masks-rs` | `staged-tree` | `s3://rs-storage-open/sources/coralscop-masks-rs/2026-09-23-3e8612678469/` | 2026-09-23-3e8612678469 | internal-only | 38,928 | — | — | pinned |
+| `seaview-survey-imagery` | `staged-tree` | `s3://<open-bucket>/sources/seaview-survey-imagery/2026-10-06/` | 2026-10-06 | open | 11,870 | — | 12,376 | pinned |
+| `reef-support-seaview-labels` | `staged-tree` | `s3://<open-bucket>/sources/reef-support-seaview-labels/2026-10-06/` | 2026-10-06 | open | 2,707 | 50,603 | 56,025 | pinned |
+| `reef-support-benthic-own` | `staged-tree` | `s3://<open-bucket>/sources/reef-support-benthic-own/2026-10-06/` | 2026-10-06 | open | 1,250 | 14,517 | 18,276 | pinned |
+| `reefolution` | `staged-tree` | `s3://<private-bucket>/sources/reefolution/2026-09-23-2c84cb0c9cda/` | 2026-09-23-2c84cb0c9cda | internal-only | 870 | — | 872 | pinned |
+| `ibf` | `staged-tree` | `s3://<private-bucket>/sources/ibf/2026-10-06/` | 2026-10-06 | internal-only | 496 | — | 579 | pinned |
+| `coralvqa` | `staged-tree` | `s3://<open-bucket>/sources/coralvqa/rev-3da50a4429e4/` | rev-3da50a4429e4 | restricted-nc | 11,804 | — | 11,809 | pinned |
+| `coralscapes` | `staged-tree` | `s3://<open-bucket>/sources/coralscapes/1.0/` | 1.0 | open | 2,075 | — | — | pinned |
+| `coralseg-ucsd-mosaics` | `staged-tree` | `s3://<open-bucket>/sources/coralseg-ucsd-mosaics/unversioned/` | unversioned | internal-only | 4,922 | — | 9,845 | pinned |
+| `coralscop-masks-rs` | `staged-tree` | `s3://<open-bucket>/sources/coralscop-masks-rs/2026-09-23-3e8612678469/` | 2026-09-23-3e8612678469 | internal-only | 38,928 | — | — | pinned |
 | `rs-labelled-masks` | `metadata-only` | retired (no read path) | unversioned | internal-only | 63,167 | — | — | unpinned |
-| `mermaid-aws` | `staged-tree` | `s3://rs-storage-open/sources/mermaid-aws/2026-09-19-bc53d5a2c0b6/` | 2026-09-19-bc53d5a2c0b6 | restricted-nc | 18,561 | — | — | pinned |
+| `mermaid-aws` | `staged-tree` | `s3://<open-bucket>/sources/mermaid-aws/2026-09-19-bc53d5a2c0b6/` | 2026-09-19-bc53d5a2c0b6 | restricted-nc | 18,561 | — | — | pinned |
 <!-- END GENERATED: task-layer-sources -->
 
 

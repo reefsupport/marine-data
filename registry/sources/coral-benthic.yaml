@@ -459,7 +459,7 @@ sources:
     loader:
       layout: staged-tree
       verified_note: >
-        RE-POINTED 2026-10-06 (RB-3) from the HuggingFace zip (flat-images) to the staged tree
+        RE-POINTED 2026-10-06 from the HuggingFace zip (flat-images) to the staged tree
         `sources/coralvqa/rev-3da50a4429e4/` (8,688 jpg + 3,116 png under `images/`, `labels/files/*.jsonl`,
         metadata.parquet); layout not re-verified.
     tags: [vqa, language]
@@ -1530,7 +1530,7 @@ sources:
       RE-POINTED 2026-10-06 (RB-1/RB-3): canonical location is `sources/seaview-survey-imagery/2026-10-06/`
       (11,870 images incl. the 6,695 jpg byte-identical to `coralvqa` — stored again because a
       StagedTreeLoader cannot join across sources — plus the region CSVs). `checksums` pinned 2026-10-06
-      (RB-3c) from the tree's CHECKSUMS.sha256 (12,376 files = 12,373 objects + metadata.parquet, INGEST.json,
+      from the tree's CHECKSUMS.sha256 (12,376 files = 12,373 objects + metadata.parquet, INGEST.json,
       LICENSE). Never-staged pickle stays excluded.
     split_group:
       pattern: '^(.{5})'

@@ -67,6 +67,7 @@ import marinedata as md
 
 # Which sources may train a closed-weights benthic segmenter?
 result = md.find(task="benthic-segmentation", profile="ship-commercial")
+print(result.summary())  # matched sources with tier and image count, then each exclusion
 for source in result.sources:
     print(source.id, source.licence.id)
 

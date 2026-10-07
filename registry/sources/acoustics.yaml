@@ -200,7 +200,7 @@ sources:
         title than the reposter had. Corrected from CC-BY-NC-4.0 to
         provenance-defective for AS CONFIGURED. If direct WHOI access is restored or
         obtained by other means, that channel would be RESEARCH-ONLY-NO-REDIST
-        (personal/academic use, no further redistribution) — a Yohan call once a
+        (personal/academic use, no further redistribution) — a maintainer decision once a
         legitimate path exists, not a code change.
       method: site-terms
     access:

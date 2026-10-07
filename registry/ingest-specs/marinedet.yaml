@@ -7,7 +7,7 @@ citation: unresolved
 homepage: unresolved
 why_not_supported: A GitHub search for 'MarineDet' returned no clearly canonical,
   matching repository (candidates found were unrelated or low-confidence). Not enough
-  evidence to write a real spec; flagged for Yohan to name the exact source.
+  evidence to write a real spec; flagged for a maintainer to name the exact source.
 measured:
   method: GitHub search inconclusive, no verified canonical source found
   items: null

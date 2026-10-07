@@ -1,7 +1,7 @@
 # Contributing
 
-The most valuable contribution is **a verified licence**, not a large upload. We do not
-host data — see the README on why.
+The most valuable contribution is **a verified licence**, not a large upload. The registry records where each
+source lives and what it may be used for. The datasets Reef Support publishes are listed in the README.
 
 ## Adding a source
 
@@ -21,10 +21,9 @@ the date you read it.
 
 Not: "the paper says", "it's on HuggingFace so it's open", "everyone uses it".
 
-This rule exists because we got it wrong ourselves. Our internal catalog recorded
-MarineInst20M as "Mixed / Open" on the strength of a paper's phrasing. The `LICENSE.txt`
-in the repository said CC-BY-NC-SA — over an image pool including Getty and Shutterstock.
-Secondary sources are how that happens.
+This rule exists because secondary sources mislead. MarineInst20M was described as
+"Mixed / Open" on the strength of a paper's phrasing, while the `LICENSE.txt` in its repository
+said CC-BY-NC-SA, over an image pool including Getty and Shutterstock.
 
 **2. Tier changes require a second reviewer.**
 
@@ -38,7 +37,7 @@ An honest gap is more useful than a confident guess:
 - Unsure of the licence → `NO-LICENCE-STATED` and `legal_basis: unknown`.
 - Two sources disagree → set `disputed: true` with a `dispute_note`. The gate will block
   it on shipping profiles until resolved, which is the correct outcome.
-- Unknown item counts → leave `items` unset rather than estimating.
+- Unknown counts → leave `n_images`, `n_annotations` and `n_files` unset rather than estimating.
 
 ### Worked example: a source with scalar labels
 
@@ -57,7 +56,7 @@ which the label index never sees, so `marinedata check` never asks for a crosswa
    This probes the Hub API and the datasets-server for a licence tag and column
    schema, and infers a layout — but every value it prints is a starting point, not a
    fact. In particular the licence is a dataset-card *claim*: rule #1 above still
-   applies, and the draft's `verified_by` says so explicitly. Fill in the `TODO`s
+   applies, and the draft's `verified_by` says so explicitly. Fill in the placeholder fields
    (description, capabilities, coverage, annotations — a probe cannot know what the
    labels mean scientifically), then paste the result under `registry/sources/<file>.yaml`:
 
@@ -138,7 +137,7 @@ source's own test set will never reveal. This field is the one thing in the regi
 no other catalog carries, and it is the most common cause of deployment failure in marine
 CV.
 
-Measured drops (`known_drops`) need a real citation — a paper, or reproducible internal
+Measured drops (`known_drops`) need a real citation — a paper, or a reproducible
 measurement described specifically enough to check.
 
 ## Code
@@ -154,8 +153,8 @@ measurement described specifically enough to check.
 In scope: marine and aquatic datasets of any modality — imagery, video, geometry, audio,
 molecular, remote sensing.
 
-Out of scope: hosting data, model weights (a separate registry may come later), and
-anything requiring us to redistribute restrictively-licensed material.
+Out of scope: model weights, and anything that requires redistributing restrictively licensed
+material.
 
 ## Conduct
 

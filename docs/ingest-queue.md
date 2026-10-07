@@ -16,8 +16,8 @@ the D-R4 zero-item-to-`needs_adapter` downgrade.
 |---|---:|---|
 | `ok` | 81 | dry-run resolved, ≥1 item enumerated — ready for ingest |
 | `needs_adapter:<kind>` | 46 | access confirmed, no adapter/decoder for the container/host yet |
-| `needs_yohan:<reason>` | 16 | needs an account, key, or a human access decision (D-E: no new accounts) |
-| `dead` | 5 | `reefnet` — no resolvable download URL; superseded by `reefnet-hf` (D-R1) |
+| `needs_yohan:<reason>` | 16 | needs an account, key, or a human access decision (no new accounts) |
+| `dead` | 5 | `reefnet` — no resolvable download URL; superseded by `reefnet-hf` |
 
 **GB still to ingest (the `ok` rows):** ~1165.9 GB declared across 65 sources
 with a known size; 15 `ok` rows (mostly the WP-6d-A `http-index`/`gdrive-public`
@@ -122,7 +122,7 @@ Net: `ok` 60→72 (+899.8→1044.0 GB declared), `needs_adapter` 34→22.
 | fishnet-2023 | project page only, no anonymous download; request access |
 | flsea | Kaggle login required |
 | mft25 | project page is request-based, no anonymous download link |
-| sea-urchin-detection | Roboflow export requires a free API key (D-E: no new accounts) |
+| sea-urchin-detection | Roboflow export requires a free API key (no new accounts) |
 
 `coralnet-public` and `marineinst20m` moved out of this table at INT-ingest3
 (see below): SPEC-w3 found both are partially fetchable anonymously.

@@ -35,8 +35,8 @@ below). Only if the scan is clean does `convert_in_container()` run a restricted
 pickle (read-only) and one output dir mounted.
 
 **Real result:** a full paginated `list_objects_v2` of
-`benthic_datasets/point_labels/SEAVIEW/labelled_data/` in both `rs-storage-open` and
-`rs-storage-private` found no such object in either bucket — it no longer exists.
+`benthic_datasets/point_labels/SEAVIEW/labelled_data/` in both `<open-bucket>` and
+`<private-bucket>` found no such object in either bucket — it no longer exists.
 SEAVIEW stays images-only because there is nothing left to scan or convert, not because
 a scan found a disallowed global. The scan/convert code path itself is real and
 unit-tested against both a genuine pandas pickle and a malicious

@@ -182,7 +182,7 @@ the parent, and the parent, side by side. Verdicts: `docs/dedup-crop-audit-2026-
 **`--dedup-v2` is not ready to flip** while the crop channel is on. The fix is to verify the box, not to tighten NCC: re-embed
 `parent[box]` with SSCD and require a high cos to the patch. Until then, either keep v2 off or flip it with the crop channel off.
 
-## WP-10c — the crop channel fix (D-T2)
+## WP-10c — the crop channel fix
 
 The WP-10b false-merge mechanism was fixed with a box re-embed, gated behind a new `--dedup-crop`/
 `--no-dedup-crop` switch (**default OFF**): `match_patch` is restricted to `scale >= crop_scale_min`

@@ -48,7 +48,7 @@ entries:
     lineage_id: bleaching-family-v1
     evidence: >-
       Our own UNAL_BLEACHING_TAYRONA tree over the same 658 Tayrona images as the expert
-      benthic masks. The annotators are not named in the registry — Yohan to confirm.
+      benthic masks. The annotators are not named in the registry — a maintainer to confirm.
 
   - source: roboflow-coral-bleaching-final-v6i
     label_set: image_labels (Healthy, Bleached, Non-Corals)

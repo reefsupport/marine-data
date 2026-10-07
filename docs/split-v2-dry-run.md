@@ -12,7 +12,7 @@ at the v2 build. `registry/SPLIT_MAP.json` (v1) was not read or written by this 
 |---|---|---|
 | v1 eligible (7 sources) | 32,327 | **not re-derived** — carried from design §0/§3.6, itself measured on the v1 HF `metadata` config. No per-image v1 table with `source_id`/`split_group_id` is available in this worktree; `registry/SPLIT_MAP.json` has only 43,331 `split_group_id -> split` pairs, no group->source or group->image-count join. |
 | `coralscop-masks-rs` (never-eval) | 37,273 | same as above; excluded from the ID ratio pool per §0 point 1 (train-only). |
-| `coralscapes` 1.0 | 2,075 | **real**: `sources/coralscapes/1.0/metadata.parquet` pulled from `rs-storage-open` (rclone, `rs-hel1` remote, per the charter creds rule). `upstream_split` column gives the actual train/validation/test membership. |
+| `coralscapes` 1.0 | 2,075 | **real**: `sources/coralscapes/1.0/metadata.parquet` pulled from `<open-bucket>` (rclone, `rs-hel1` remote, per the charter creds rule). `upstream_split` column gives the actual train/validation/test membership. |
 | `mermaid-aws` 2026-09-19 | 18,561 | **real**: `sources/mermaid-aws/2026-09-19-bc53d5a2c0b6/metadata.parquet`, same remote. |
 
 Neither staged metadata file carries `meow_realm`/`meow_province`/`depth_m`/`platform`/
@@ -101,7 +101,7 @@ ships `registry/geo/meow-2026-09-25.parquet` (MEOW realm/province polygons) and 
 point-in-polygon classifier (`src/marinedata/geo_meow.py`), but no precomputed
 per-source-per-province labelled-image count — producing one means running
 `geo_meow.classify` against every staged source's per-image lat/lon in
-`rs-storage-open`, which this brief's budget does not cover. There is no
+`<open-bucket>`, which this brief's budget does not cover. There is no
 locally-readable "MEOW output" table of counts to read instead, so only the
 synthetic proof below is shown, per this brief's explicit fallback.
 

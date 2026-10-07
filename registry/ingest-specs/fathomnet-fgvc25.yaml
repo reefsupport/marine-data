@@ -22,7 +22,7 @@ notes: >-
   competition labels) -- category_names/annotations_json reflect that (empty list / null category per
   box). key = file_name (UUID-based, globally unique across both splits, verified no collisions); url =
   each image's own coco_url (public, anonymous GET, no login). manifest built by
-  ~/.claude-state/sessions/2026-09-30-open-dataset/fgvc25/build_manifest.py from the Kaggle zip's
+  fgvc25/build_manifest.py from the Kaggle zip's
   dataset_{train,test}.json (sha256 in ~/Downloads/marine-manual/_inventory.tsv).
 disk_floor_gib: 34.0
 measured:

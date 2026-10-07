@@ -86,7 +86,7 @@ those 26 audited-true faces:
 | Precision (of 280 audited face-kind rows) | **12.3%** | 8.4–17.5% |
 
 Precision is below the 20% floor a fully-fit threshold should clear; kept
-anyway per `docs/PRIVACY.md` (D-I2) because raising it would drop recall
+anyway per `docs/PRIVACY.md` because raising it would drop recall
 below 95% on real faces. Applying this threshold to every scored candidate
 (not an extrapolation — every one of the 3,387 face-flagged images was
 scored) gives **2,274 images (3.27% of the full 69,600-image corpus)** that

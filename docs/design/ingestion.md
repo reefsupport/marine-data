@@ -1,7 +1,7 @@
 # Generic source ingestion (WP-6)
 
 `marinedata ingest-source <adapter> <spec.yaml>` takes any open dataset to
-`s3://rs-storage-open/sources/<id>/<version>/`, verified, with bounded local temp.
+`s3://<open-bucket>/sources/<id>/<version>/`, verified, with bounded local temp.
 A new catalog source is a spec yaml, not code. Recipe: `docs/ingest-howto.md`.
 
 ## Protocol
@@ -101,7 +101,7 @@ Staging is deterministic, so resuming means **re-running the same command**:
 The HTTP layer is anonymous-only. It never reads `HF_TOKEN`/`GITHUB_TOKEN` and refuses
 `Authorization`/`Cookie` headers. A gated, private, or restricted source, or an HTTP
 401/403, raises `AccessRefused`. The CLI then exits with code 3 and prints
-`NEEDS-YOHAN<TAB><url><TAB><needs>` for the "needs Yohan" list.
+`NEEDS-YOHAN<TAB><url><TAB><needs>` for the "needs decision" list.
 
 ## Failure modes
 

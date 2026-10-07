@@ -14,7 +14,7 @@ source is resumable via its `CHECKSUMS.sha256` marker (skip-done) and every
 partial upload resumes via its multipart checkpoint:
 
 ```sh
-SP=/private/tmp/claude-501/-Users-yohanrunhaar-dev-reefsupport/0ca12ad3-aada-4ede-ab99-14fec1fa7cc2/scratchpad
+SP=/path/to/scratch
 nohup sh "$SP/queue/run.sh" > "$SP/queue/run.log" 2>&1 &
 echo $! > "$SP/queue/pid"
 ```
@@ -51,7 +51,7 @@ viame-public`) plus the 4 rows that hit an HF 429 in runner 1's `run.log`
 (`ruod, marineeval, uiis10k, uiis`) — 21 ids total, `--jobs 2`.
 
 ```sh
-SP=/private/tmp/claude-501/-Users-yohanrunhaar-dev-reefsupport/0ca12ad3-aada-4ede-ab99-14fec1fa7cc2/scratchpad
+SP=/path/to/scratch
 nohup sh "$SP/queue2/run.sh" > "$SP/queue2/run.log" 2>"$SP/queue2/run.err" &
 echo $! > "$SP/queue2/pid"
 ```
@@ -107,7 +107,7 @@ per-row subset filter yet, so its queue row was flipped to
 `needs_adapter:subset-filter` instead of being fetched in full.
 
 ```sh
-SP=/private/tmp/claude-501/-Users-yohanrunhaar-dev-reefsupport/0ca12ad3-aada-4ede-ab99-14fec1fa7cc2/scratchpad
+SP=/path/to/scratch
 nohup perl -e 'alarm 259200; exec @ARGV' sh "$SP/queue3/wrapper.sh" \
   > "$SP/queue3/wrapper.out" 2>"$SP/queue3/wrapper.err" &
 echo $! > "$SP/queue3/pid"
@@ -138,7 +138,7 @@ echo $! > "$SP/queue3/pid"
 ## Checking progress
 
 ```sh
-SP=/private/tmp/claude-501/-Users-yohanrunhaar-dev-reefsupport/0ca12ad3-aada-4ede-ab99-14fec1fa7cc2/scratchpad
+SP=/path/to/scratch
 tail -5 "$SP/queue/run.log"                      # latest JSONL results
 .venv/bin/python "$SP/queue/ledger_from_log.py" "$SP/queue/run.log" "$SP/queue/ledger.tsv" \
   && column -t -s$'\t' "$SP/queue/ledger.tsv"    # rebuild + view the ledger
@@ -148,13 +148,13 @@ ps -p "$(cat "$SP/queue/pid")"                   # confirm the runner is alive
 ## Stopping
 
 ```sh
-SP=/private/tmp/claude-501/-Users-yohanrunhaar-dev-reefsupport/0ca12ad3-aada-4ede-ab99-14fec1fa7cc2/scratchpad
+SP=/path/to/scratch
 kill "$(cat "$SP/queue/pid")"   # kills run.sh; its current ingest-batch child exits with it
 ```
 
 Killing mid-source is safe (resumable, see above) — never `kill -9` a source
 mid multipart-complete, since that could leave an orphaned incomplete
-upload (harmless, but `S3_ENDPOINT` storage costs accrue until Yohan runs a
+upload (harmless, but `S3_ENDPOINT` storage costs accrue until a maintainer runs a
 multipart-abort sweep).
 
 ## `usis10k` (separate process, do not touch)
@@ -173,8 +173,8 @@ of `sources/` (top-level staged ids). `$SP/queue/verify_source.py <id>
 <version>` — lists one source's full prefix, confirms object count, and
 confirms `CHECKSUMS.sha256` has the latest `LastModified` (uploaded last, the
 version-complete marker). Anonymous GETs are
-`https://rs-storage-open.hel1.your-objectstorage.com/<key>` (virtual-hosted
-style — the path-style `hel1.../rs-storage-open/<key>` 403s).
+`https://<open-bucket>.hel1.your-objectstorage.com/<key>` (virtual-hosted
+style — the path-style `hel1.../<open-bucket>/<key>` 403s).
 
 ## Runner 4 (INT-ingest4, 2026-09-25)
 

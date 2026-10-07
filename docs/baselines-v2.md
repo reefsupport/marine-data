@@ -26,7 +26,7 @@ replaying a cache hit.
 The manager decision named three probe tasks — `bleaching-condition`
 (`bleaching-family-v1` lineage, `label_status in {ok}`, D-U2), `benthic-coarse`
 (single-label view, D-Z) and a `source-id-domain` leakage sanity check — plus a real
-≤6k-image v1 subset from `rs-storage-open`, stratified by source, split with the
+≤6k-image v1 subset from `<open-bucket>`, stratified by source, split with the
 split-v2 allocator, ID vs OOD reported separately.
 
 That data does not exist yet on this integration line. D-Z2 fixes the task-label

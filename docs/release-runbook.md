@@ -1,8 +1,8 @@
-# Release runbook: the D5 command list (per flavour)
+# Release runbook: the command list (per flavour)
 
 Group near-duplicates first, then generate ONE global split map from those groups, then build each flavour from it (`open` ->
-`reefsupport/marine-data`, `nc` -> `reefsupport/marine-data-nc`). "Full" = open + nc, so an image or
-near-dup group must have the same split in both repos. Dry runs always pass `--local-only` (no
+`reefsupport/marine-data`). Where several flavours are built, an image or
+near-dup group must have the same split in every flavour. Dry runs always pass `--local-only` (no
 pinned-tree fetch). Nothing here uploads.
 
 1. `marinedata dedup run --staged LABEL=DIR [...] --out dedup/` (once per release)
@@ -10,7 +10,7 @@ pinned-tree fetch). Nothing here uploads.
    `group_upstream_splits`). Near-duplicates never straddle splits, so this runs BEFORE the split map.
 2. `marinedata release split-map --release <id> --split-map SPLIT_MAP.json --near-dup dedup/groups.parquet
    --local-only [--local=ID=PATH ...]` (once per release; refuses to overwrite)
-   Enumerates every open + restricted-nc source (never-released sources excluded), merges shared images
+   Enumerates every open and restricted-licence source (never-released sources excluded), merges shared images
    and the dedup near-dup groups into one component, honours an upstream test set, and writes the frozen
    map. It FAILS without a near-dup input; `--no-near-dup` is the explicit opt-out (recorded in the map
    header). Pass the `--local` trees of BOTH flavours. Every source with >= 3 groups gets at least one
