@@ -84,6 +84,31 @@ marinedata list --profile research --task benthic-segmentation
 marinedata show coralscapes
 ```
 
+## Label mapping
+
+The masks on Hugging Face keep each source's native ids, and those ids differ between sources. `marinedata.labels` maps
+them onto three fixed schemes, `benthic-coarse`, `coral-binary` and `scene`, with 255 as the ignore value. The example
+needs the `hf` extra (`uv pip install -e ".[hf]"`), which adds `datasets`, numpy and Pillow:
+
+```python
+from datasets import load_dataset
+from marinedata import labels
+
+stream = load_dataset("reefsupport/marine-data", "coral-masks", split="train", streaming=True)
+row = labels.remap_row(next(iter(stream)), "benthic-coarse")  # adds `label`, an HxW uint8 array
+names = labels.class_names("benthic-coarse")
+present = sorted({int(v) for v in row["label"].ravel()} - {labels.IGNORE_INDEX})
+print(row["source"], [names[i] for i in present])
+```
+
+Use `scene` for the `scene-masks` and `instance-masks` configs, and `labels.map_label(source, label, "scene")` for the
+labels of `fish-boxes`. For a dataset built with `marinedata.builder`,
+`to_torch_dataset(dataset, decode_masks=True, scheme="benthic-coarse")` remaps each decoded mask to the scheme ids.
+
+Some sources annotate only a subset of the classes, and for them 255 means "not annotated" rather than background.
+[`docs/LABELS.md`](docs/LABELS.md) lists the class ids per scheme, how every source maps, and the rules for training with
+partial sources, dead and bleached coral, and the Coralscapes classes.
+
 ## How the registry works
 
 Each source is described along three facets that can be queried together.

@@ -1,6 +1,6 @@
 [project]
 name = "marinedata"
-version = "0.1.0"
+version = "1.0.0"
 description = "Licence-aware registry and dataloaders for marine and coral-reef datasets"
 readme = "README.md"
 requires-python = ">=3.10"
@@ -18,7 +18,7 @@ dependencies = [
 pandas = ["pandas>=2.0"]
 torch = ["torch>=2.2", "numpy>=1.24", "pillow>=10.0"]
 tf = ["tensorflow>=2.15"]
-hf = ["datasets>=2.18"]
+hf = ["datasets>=2.18", "numpy>=1.24", "pillow>=10.0"]  # + marinedata.labels, image decoding
 ingest = ["pyarrow>=15", "pillow==12.3.0", "boto3>=1.34"]
 # WP-6d-B payload decoders: video/rosbag frame extraction, rar/multipart-tar archives,
 # caption/VQA JSON. ffmpeg and bsdtar are shelled out to (system binaries, not pip

@@ -8,6 +8,13 @@ git. The format loosely follows [Keep a Changelog](https://keepachangelog.com/en
 
 First public release.
 
+### Added
+
+- Training label mapping, `marinedata.labels`: fixed class ids for every published source in three schemes
+  (`benthic-coarse`, `coral-binary`, `scene`), with 255 as the ignore value. It provides `lut`, `remap_mask`,
+  `remap_row`, `map_label` and `supervised_classes`, options to ignore dead or bleached coral and chosen labels, and an
+  optional `scheme=` argument for `to_torch_dataset`. See `docs/LABELS.md`.
+
 ### Published datasets (v1.0, October 2026)
 
 - Four Parquet configurations with images and masks embedded, 58,803 rows in total: `coral-masks` (5,997),
