@@ -1,4 +1,4 @@
-# WP-6c: server-side ingest Job
+# Server-side ingest Job
 
 Runs `marinedata ingest-batch <specs_dir>` on a Hetzner node next to `<open-bucket>`
 (hel1), instead of over the Mac's ~10 MB/s uplink. Everything here is for **you** to run —

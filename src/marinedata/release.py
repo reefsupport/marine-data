@@ -796,8 +796,8 @@ def build_release(
     only changes decon's S5 patch/crop stage when ``decon=True`` (INT-core2, D-T2).
     ``split_v2`` (WP-11/12 P3, INT-core2) validates the split-v2 config — ``registry/
     splits/v2.yaml`` plus ``registry/benchmarks.yaml`` load and hash cleanly — and records
-    the hashes in ``RELEASE.json``. The full per-sample split-v2 gate needs WP-2's
-    per-sample geo columns, not yet in ``metadata.parquet`` (``docs/split-v2-dry-run.md``),
+    the hashes in ``RELEASE.json``. The full per-sample split-v2 gate needs
+    per-sample geo columns, not yet in ``metadata.parquet``,
     so it is deferred to the v2 build; this switch is a config-only smoke check, off by
     default, that changes nothing when off (D-X).
 

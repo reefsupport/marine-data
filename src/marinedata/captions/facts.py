@@ -28,7 +28,7 @@ import pandas as pd
 
 # WP-13 Tier-A depth bands. Not a registry-authoritative vocabulary (there is no
 # `registry/schemas` entry for depth bands) — a human-readable bucketing local to
-# captioning. depth_m is 0% populated in v1 (docs/metadata-coverage-v1.md), so this
+# captioning. depth_m is 0% populated in v1, so this
 # path is exercised by unit tests, not yet by any real v1 row.
 _DEPTH_BANDS: tuple[tuple[float, float, str], ...] = (
     (0.0, 5.0, "very shallow (under 5 m)"),

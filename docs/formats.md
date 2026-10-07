@@ -1,4 +1,4 @@
-# Format hardening: MANIFEST, verify, streaming, WebDataset (WP-3)
+# Format hardening: MANIFEST, verify, streaming, WebDataset
 
 Three checks and one extra export shape sit on top of the Hub Parquet build
 (`marinedata.hf_export`, `hf_parquet`, `hf_card`) once it is frozen and durably staged on
@@ -64,7 +64,7 @@ order, then validation, then test) — **disk rule: on real data, run with `--li
 only.** The unbounded full export happens server-side later, not on this machine.
 
 ```
-marinedata export-wds ~/dev/reefsupport/data/_hf/v1 $SP/wp3/wds --limit-shards 1
+marinedata export-wds ~/dev/reefsupport/data/_hf/v1 <out>/wds --limit-shards 1
 ```
 
 Verified with `tarfile` (member names, JSON sidecar content) always, and with `webdataset`

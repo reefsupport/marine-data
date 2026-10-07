@@ -1,7 +1,7 @@
 """Face / person privacy scan for the open-imagery release (WP-5b).
 
-Replaces the Haar-cascade proxy from :mod:`marinedata` WP-5 (documented in
-``docs/ETHICS_FACE_AUDIT.md``) with two real, open-weight, no-login detectors:
+Replaces an earlier Haar-cascade proxy (too many coral-texture false positives) with two
+real, open-weight, no-login detectors:
 
 - **Faces**: OpenCV Zoo YuNet (``cv2.FaceDetectorYN``), ONNX weights
   ``face_detection_yunet_2023mar.onnx``.

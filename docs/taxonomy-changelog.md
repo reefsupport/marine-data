@@ -91,7 +91,7 @@ MINOR: new crosswalk + vocab, no nodes/edges retargeted.
 - **Fixed `registry/sources/coral-benthic.yaml` `classes: 16` → `14`**: the pinned rev's
   `data.yaml` (byte-identical from bucket and HF mirror) lists 14 classes; 16 was stale.
 
-## 2.0.0 — 2026-09-25 (WP-7d)
+## 2.0.0 — 2026-09-25
 
 MAJOR: one edge retargeted (`coralscop-masks-rs` `coral`: HC -> CNIDARIA). v2 is unreleased,
 so nothing downstream pins the old target. Everything else in this release is additive.
@@ -117,10 +117,10 @@ so nothing downstream pins the old target. Everything else in this release is ad
   tier-3, 0 conflicts) + `CoralNetLabelIdResolver`, which falls back through the label's
   functional group via `coralnet-labelset` (+2 group edges: Hard Substrate -> HS,
   Soft Substrate -> ABIOTIC). Reefolution re-derived through it: 43,500/43,500 points, same
-  targets as WP-7c. 6 NOAA "NO RULE" ids get their coarsest true node here.
-- D-I audit +20 (2 fixed, 3 uncertain); see `docs/taxonomy-audit-2026-09-25.tsv`.
+  targets as 1.2.0. 6 NOAA "NO RULE" ids get their coarsest true node here.
+- Audit +20 (2 fixed, 3 uncertain); see `docs/taxonomy-audit-2026-09-25.tsv`.
 
-## 1.2.0 — 2026-09-25 (WP-7c)
+## 1.2.0 — 2026-09-25
 
 MINOR: nodes, edges, snapshot rows and one vocabulary added; five edges retargeted to finer
 nodes that already existed (no node removed or re-parented).
@@ -136,15 +136,15 @@ nodes that already existed (no node removed or re-parented).
   (hard substrate, cover unspecified) and BIOFILM.
 - Snapshot +21 rows (12 names + ancestors), retrieved_at 2026-09-25, via
   `scripts/taxonomy_snapshot_add.py` (snapshot first, cached WoRMS REST at <= 2 req/s).
-- Fixed 5 Reefolution edges (Mil, Hal, Urchins, Anemone, GA); see the D-I audit (+30 rows).
-- Scoped gate (D-Q): `taxonomy check` fails only for staged sources (<open-bucket>
+- Fixed 5 Reefolution edges (Mil, Hal, Urchins, Anemone, GA); see the audit (+30 rows).
+- Scoped gate: `taxonomy check` fails only for staged sources (<open-bucket>
   `sources/`) and sources named in a `--release RELEASE.json`; `--strict` lists the rest.
   `source_crosswalks` declares coralvqa and marineinst20m `crosswalk: open_vocabulary`
   (removed from `no_crosswalk_yet`, 19 -> 17). `make taxonomy-check`.
 
-## 1.1.0 (2026-09-25, WP-7b)
+## 1.1.0 (2026-09-25)
 
-MINOR bump from WP-7's 1.0.0 — nodes and crosswalks added, nothing removed or retargeted.
+MINOR bump from 1.0.0 — nodes and crosswalks added, nothing removed or retargeted.
 
 - **1 node added:** `rs-benthic-v1:SG_BG` ("Background (no seagrass)"), `non_taxon`
   category `background` (new category — see `schema.NON_TAXON_CATEGORIES`).
@@ -160,14 +160,14 @@ MINOR bump from WP-7's 1.0.0 — nodes and crosswalks added, nothing removed or 
 - **Gate flipped:** `no_crosswalk_yet` is no longer a release-gate exemption
   (`taxonomy.gate`). `marinedata taxonomy check` (the full-registry check, no
   `source_ids`) now FAILS on the 19 sources still listed in `no_crosswalk_yet` — see
-  `## Open` in the WP-7b report. Per-release gates scoped to a release's actual
+  the release notes. Per-release gates scoped to a release's actual
   `source_ids` (e.g. `assert_release_gate(..., ["ruod", "noaa-benthic-t1"])`) are
   unaffected and still pass, because releases only ever name sources that are staged.
 - **19 sources remain in `no_crosswalk_yet`,** unresolved: only 2 of the original 23
   (`reefolution`, `coralscop-masks-rs`) turned out to be staged in `<open-bucket>` —
   confirmed by a `list_objects_v2` scan of `sources/` 2026-09-25. The rest are
   prospective registry entries with no ingested label data (many blocked by a Kaggle,
-  Roboflow or Google Drive login wall per D-E, or genuinely open-vocabulary/text —
+  Roboflow or Google Drive login wall, or genuinely open-vocabulary/text —
   `coralvqa`, `marineinst20m`, the `coralnet` catch-all). Real crosswalks for those need
   ingestion (or, for `coralnet`/`fathomnet`, a per-source-at-ingest step by design —
   their entries already say so) — writing edges now would mean inventing label names.

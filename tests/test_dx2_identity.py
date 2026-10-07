@@ -2,8 +2,8 @@
 columns may differ only as enrichment (null -> value), and the ``upstream_id`` duplicate
 tie-break reproduces v1's ``hf_export.build_layout`` choice.
 
-The live run against the real v1 release is recorded in ``docs/integration-v2.md``
-(INT-core3); these tests pin the mechanism on fixtures, no network, no image bytes.
+The live run against the real v1 release was done once by hand; these tests pin the
+mechanism on fixtures, no network, no image bytes.
 """
 
 from __future__ import annotations

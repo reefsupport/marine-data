@@ -7,13 +7,13 @@ Use this for any catalog row. Design and failure modes: `docs/design/ingestion.m
 1. The source is **open**: open HF (not gated), Zenodo `access_right: open`, anonymous
    bucket, public GitHub. If you would need a login, terms click-through, or a gated HF repo,
    **do not ingest**. Add it to the "needs decision" list with the exact URL and what has to be
-   accepted (D-E).
+   accepted.
 2. You know its licence (SPDX, e.g. `CC-BY-4.0`) and attribution from the upstream card or
    README. A missing licence gets `NOASSERTION`; never guess one.
-3. Run `df -g /System/Volumes/Data`: at least 40 GiB must be free (D-F). If not, pause
+3. Run `df -g /System/Volumes/Data`: at least 40 GiB must be free . If not, pause
    and report.
 
-## 1. Write the spec (`$SP/<n>/<id>.yaml`)
+## 1. Write the spec (`<work-dir>/<id>.yaml`)
 
 ```yaml
 id: rf100-coral-lwptl              # kebab-case; becomes sources/<id>/<version>/
@@ -48,8 +48,8 @@ Never invent lat/lon/depth.
 
 ```bash
 cd ~/dev/.wt/marine-data/<your-worktree>
-PYTHONPATH=src .venv/bin/python -m marinedata.cli ingest-source hf $SP/<n>/<id>.yaml \
-  --dry-run --work $SP/<n>/work
+PYTHONPATH=src .venv/bin/python -m marinedata.cli ingest-source hf <work-dir>/<id>.yaml \
+  --dry-run --work <work-dir>/work
 ```
 
 Check the output:
@@ -62,10 +62,10 @@ Exit code 3 plus a `NEEDS-YOHAN` line means the source is gated: record it and s
 ## 3. Real run (under nohup, bounded wait)
 
 ```bash
-PYTHONPATH=src nohup .venv/bin/python -m marinedata.cli ingest-source hf $SP/<n>/<id>.yaml \
-  --work $SP/<n>/work > $SP/<n>/<id>.log 2>&1 &
+PYTHONPATH=src nohup .venv/bin/python -m marinedata.cli ingest-source hf <work-dir>/<id>.yaml \
+  --work <work-dir>/work > <work-dir>/<id>.log 2>&1 &
 PID=$!; perl -e 'alarm 1800; exec @ARGV' sh -c "while kill -0 $PID 2>/dev/null; do sleep 15; done"
-tail -30 $SP/<n>/<id>.log
+tail -30 <work-dir>/<id>.log
 ```
 
 - Temp stays at or below `temp_cap_gb` (default 6). Local copies of uploaded files are
@@ -73,7 +73,7 @@ tail -30 $SP/<n>/<id>.log
 - **Killed or failed?** Re-run the exact same command. Finished files are skipped and
   multipart uploads resume.
 
-### 3a. Bounded concurrency (`--jobs`, WP-6b)
+### 3a. Bounded concurrency (`--jobs`)
 
 Fetch and PUT are network-bound, so both are pooled behind a bounded thread pool.
 Output is byte-identical to `--jobs 1` regardless of `N`: only fetch (network) and PUT
@@ -82,8 +82,8 @@ enumeration order, so shard layout, `metadata.parquet`/`index.parquet` row order
 `CHECKSUMS.sha256` — and therefore `root_digest` — never depend on `N`.
 
 ```bash
-PYTHONPATH=src nohup .venv/bin/python -m marinedata.cli ingest-source hf $SP/<n>/<id>.yaml \
-  --work $SP/<n>/work --jobs 8 > $SP/<n>/<id>.log 2>&1 &
+PYTHONPATH=src nohup .venv/bin/python -m marinedata.cli ingest-source hf <work-dir>/<id>.yaml \
+  --work <work-dir>/work --jobs 8 > <work-dir>/<id>.log 2>&1 &
 ```
 
 - `--jobs N` (default 8, max 32): in-flight fetch prefetch depth and PUT pool size.
@@ -94,7 +94,7 @@ PYTHONPATH=src nohup .venv/bin/python -m marinedata.cli ingest-source hf $SP/<n>
   matters for files large enough to need more than one part.
 - 429/5xx/connection-reset errors (HTTP or S3) retry with capped exponential backoff
   + jitter; a 4xx auth/validation error, or a real interrupt (Ctrl-C/kill), never retries.
-- The D-L temp-disk cap (`temp_cap_gb`) stays authoritative under concurrency: fetches
+- The temp-disk cap (`temp_cap_gb`) stays authoritative under concurrency: fetches
   that spool to disk block on the cap via a bounded wait, they don't bypass it. Loose
   in-memory items (the common case `--jobs` speeds up) never touch disk during fetch,
   so they don't count against the cap at all.
@@ -106,7 +106,7 @@ PYTHONPATH=src nohup .venv/bin/python -m marinedata.cli ingest-source hf $SP/<n>
 `--jobs` with no staging and no S3 — useful before committing to a full run:
 
 ```bash
-PYTHONPATH=src .venv/bin/python -m marinedata.cli ingest-source hf $SP/<n>/<id>.yaml \
+PYTHONPATH=src .venv/bin/python -m marinedata.cli ingest-source hf <work-dir>/<id>.yaml \
   --fetch-only --jobs 8 --limit 500
 ```
 
@@ -116,7 +116,7 @@ PYTHONPATH=src .venv/bin/python -m marinedata.cli ingest-source hf $SP/<n>/<id>.
 | `fathomnet-vme` COCO, 500 image URLs, fetch-only | not yet measured live | not yet measured live | not yet measured live |
 
 The table above is intentionally unfilled: the runner this change landed on had less
-than the D-F 40 GiB free-disk floor at verification time (`DiskGuard` correctly refused
+than the 40 GiB free-disk floor at verification time (`DiskGuard` correctly refused
 non-dry-run work), so the real-network smoke re-run and the fathomnet-vme throughput
 probe were not run live. `--fetch-only` and `--jobs` are implemented and covered by
 `tests/test_ingest_source.py` (`test_jobs_n_matches_jobs_1_root_digest`,
@@ -141,5 +141,5 @@ next time free disk is back above the floor.
 - Delete bucket objects, even a half-run prefix: re-run instead (maintainers run deletions).
 - Print credentials. The client reads the `[rs-hel1]` section of `~/.config/rclone/rclone.conf` itself.
 - Push to HF.
-- Edit `hf_card.py`, `hf_export.py`, or `hf_parquet.py` (D-M).
+- Edit `hf_card.py`, `hf_export.py`, or `hf_parquet.py` .
 - `rm` files you did not create.

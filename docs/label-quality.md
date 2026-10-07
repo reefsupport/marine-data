@@ -1,4 +1,4 @@
-# Label quality — v1 release (WP-9, 2026-09-25)
+# Label quality — v1 release (2026-09-25)
 
 This is a read-only audit of the v1 HF build (`data/_hf/v1`). No label in the release was changed.
 
@@ -36,7 +36,7 @@ They are **not** all cross-source. Only 4,421 sha pairs have differing source se
 
 ## 2. The 14 conflicting identical images
 
-These are files whose identical bytes carry different labels. The category was assigned by rule and checked against the contact sheet (`$SP/wp9/sheets/conflicts.jpg`).
+These are files whose identical bytes carry different labels. The category was assigned by rule and checked against the contact sheet.
 
 | # | sha | task | split | source=label | category |
 |---|---|---|---|---|---|
@@ -71,7 +71,7 @@ These are files whose identical bytes carry different labels. The category was a
 ## 4. Confident learning
 
 - **Probe.** An L2 logistic probe on standardised features (numpy IRLS). C is chosen from {0.001, 0.01, 0.1, 1} by out-of-fold log-loss, and 0.01 was an interior pick.
-- **Folds.** Out-of-fold predictions use 5 folds **grouped by WP-10 `split_group_id`**, so no near-duplicate group straddles train and held-out.
+- **Folds.** Out-of-fold predictions use 5 folds **grouped by dedup `split_group_id`**, so no near-duplicate group straddles train and held-out.
 - **Cleanlab (Northcutt et al. 2021).**
   - The per-class threshold is the mean p_j over samples labelled j.
   - The confident joint is calibrated to the given counts.
@@ -100,11 +100,11 @@ These are files whose identical bytes carry different labels. The category was a
 
 `label_issues.parquet` has 2,732 flagged rows over 1,797 distinct images. Its columns are `image_sha256, task, source_id, sample_key, split, given, suggested, self_confidence, suggested_prob, fold`.
 
-## 5. Model audit of the flags (D-I: a model rater, not an expert)
+## 5. Model audit of the flags (a model rater, not an expert)
 
 - **Sample.** 235 flagged images were drawn stratified by task × source (seeded) and shuffled into `M001–M235`.
 - **Blinding.** Each was judged from a 256-px thumbnail **without** seeing the given or suggested label. The verdicts are H (healthy), U (bleached/unhealthy), N (not coral) and ? (cannot tell).
-- **What was scored.** All 235 verdicts are recorded in `docs/label-quality/model-audit.tsv` (M001–M235; M001–M120 were re-judged from the retained contact sheets, `$SP/wp9/sheets/audit-00..05.jpg`, after the first pass was lost in a session compaction). The audited images span all six sources and both tasks.
+- **What was scored.** All 235 verdicts are recorded in `docs/label-quality/model-audit.tsv` (M001–M235; M001–M120 were re-judged from the retained contact sheets, after the first pass was lost in a session compaction). The audited images span all six sources and both tasks.
 
 | | value |
 |---|---|
@@ -122,7 +122,7 @@ These are files whose identical bytes carry different labels. The category was a
 - Several images labelled for coral health show no coral (anemones, a sponge, a nudibranch, other reef fauna).
 - Rough corrected noise = CL noise × flag precision ≈ 7.4% × 0.578 ≈ **4.3% (health)** and 6.1% × 0.578 ≈ **3.5% (bleaching)**, using the pooled decided-precision as a single point estimate across both tasks. Both are wide; the expert audit (§6) replaces this estimate.
 
-## 5b. Bleach-direction quality gate (Task 2, WP-9b)
+## 5b. Bleach-direction quality gate
 
 The bleach-direction flags (given HEALTHY, suggested BLEACHED/UNHEALTHY) are the unreliable
 half of the audit (36.5%). `src/marinedata/labelquality/quality.py` computes four cheap,
@@ -145,7 +145,7 @@ flag only if every quality threshold passes **and** the probe margin
   turn it on without re-tuning on a larger audited set; `BleachGate.passes` and
   `TUNED_GATE.enabled` are covered by fixture tests in `tests/test_labelquality.py`.
 
-## 5c. `label_status` (Task 3, WP-9 D-U / D-U2)
+## 5c. `label_status`
 
 `run_label_status` (`pipeline.py`) writes one `label_status` per `sha256` to
 `data/_labelquality/2026-09-25/label_status.parquet`, over every sha256 labelled on either
@@ -156,14 +156,14 @@ task:
 | `conflict` | one of the 14 identical-sha conflicts (§2), categories a and c: a within-source duplicate, or v13i relabelling v1-yolov8s alone | 6 |
 | `ambiguous` | category d: v1-yolov8s against v6i+v13i together on pale soft coral, an expert call | 2 |
 | `flagged_hard` | a confident-learning flag (`label_issues.parquet`), direction toward-HEALTHY (precision ≥ `HARD_FLAG_MIN_PRECISION`), not already `conflict`/`ambiguous` | 973 |
-| `ok` | none of the above; also every toward-BLEACHED/UNHEALTHY CL flag (D-U2, below the floor) and category b (v3i against the bleaching family: a concept mismatch, not an error, D-U (1)) | 27,753 |
+| `ok` | none of the above; also every toward-BLEACHED/UNHEALTHY CL flag (below the floor) and category b (v3i against the bleaching family: a concept mismatch, not an error) | 27,753 |
 
 Precedence is `conflict` > `ambiguous` > `flagged_hard` > `ok` (`classify_conflict`,
 `_STATUS_RANK`). **Non-`ok` rows are excluded from val/test scoring** (kept in
-train/pretrain); this module only labels the rows — the INT/WP-8 merge wires the filter into
+train/pretrain); this module only labels the rows — the INT/merge wires the filter into
 `metadata` and the eval harness, and `hf_*`/`release.py`/`models.py` are not touched here.
 
-**D-U2 (WP-9c): only the reliable flag direction becomes `flagged_hard`.** §5b showed the
+**only the reliable flag direction becomes `flagged_hard`.** §5b showed the
 CL probe's two directions have very different audited precision — 87.1% toward HEALTHY,
 36.5% toward BLEACHED/UNHEALTHY (§5). `run_label_status` now reads
 `audited_direction_precision(model_audit_tsv)` and only promotes a CL flag to
@@ -194,7 +194,7 @@ automatic exclusion — keeps the eval honest while still surfacing the flag for
 `roboflow-coral-classification-copy-changed-v13i`: these four share one annotation lineage
 (§1), so their 99.4%/κ0.988 cross-source agreement must never be read as independent-rater
 agreement. `roboflow-coral-reef-classification-v3i` carries no `lineage_id` — its "Unhealthy"
-is a different concept (§1, D-U (1)) and is confirmed excluded from the bleaching-binary
+is a different concept (§1) and is confirmed excluded from the bleaching-binary
 crosswalk (`registry/crosswalks/roboflow-bleaching-condition-hb.yaml`), while remaining in
 the health-binary crosswalk.
 
@@ -204,7 +204,7 @@ the health-binary crosswalk.
   - `expert-audit-sheet.tsv` is **blind**: audit_id, sha, sample_key, split and blank expert columns.
   - `expert-audit-key.tsv` holds source, given label, CL flag, stratum and weight. **Do not give it to the annotators.**
 - **Strata.** Source × given health label × CL flag, 24 strata over 29,766 (sha, source) units. Half the budget is spread equally across strata and half proportionally, and small strata are taken whole. 135 of the 500 rows are CL-flagged.
-- **Re-prioritised (Task 4, WP-9b).** The CL-flag stratum now counts a flag only if it is
+- **Re-prioritised.** The CL-flag stratum now counts a flag only if it is
   toward-HEALTHY (always reliable, §5) or toward-UNHEALTHY with probe margin ≥
   `TUNED_GATE.margin_min` (§5b) — a flag failing that margin competes as an ordinary,
   unflagged row instead of being over-sampled. 16 rows (8 distinct sha256, the `conflict`/
@@ -226,7 +226,7 @@ the health-binary crosswalk.
   - The flag stratum gives the CL flag's precision and recall.
 - **Effort.** At about 20 s per image per annotator, the job is roughly 6 h of annotation in total.
 
-## 7. Residuals (human-only, D-I)
+## 7. Residuals (human-only)
 
 1. The expert sheet (§6) is unfilled. Until it is filled, all noise figures are model-estimated.
 2. NOAA annotator training and the `reef-support-bleaching` annotators need confirming (see `label-origin.yaml`).
@@ -239,5 +239,5 @@ the health-binary crosswalk.
 ```
 marinedata labelquality features  --hf data/_hf/v1 --out data/_features/dinov2-small/v1 --revision ed25f3a31f01632728cabb09d1542f84ab7b0056
 marinedata labelquality agreement --hf data/_hf/v1 --dhash-db ~/.cache/marinedata/_dhash/dhash-pillow-12.3.0.sqlite --out data/_labelquality/<date>
-marinedata labelquality confident --hf data/_hf/v1 --groups <WP-10 groups.parquet> --features data/_features/dinov2-small/v1 --out data/_labelquality/<date>
+marinedata labelquality confident --hf data/_hf/v1 --groups <dedup groups.parquet> --features data/_features/dinov2-small/v1 --out data/_labelquality/<date>
 ```

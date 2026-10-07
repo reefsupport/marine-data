@@ -1,6 +1,6 @@
-"""D-X v1 byte-identity, proved at MANIFEST level with no image bytes (INT-core2b).
+"""v1 byte-identity, proved at MANIFEST level with no image bytes.
 
-The original D-X check (``docs/integration-v2.md``, INT-core round) ran a real
+The original check ran a real
 ``marinedata release build`` — resolving every admitted source's root via
 :func:`marinedata.cli_release._resolve_roots`, which calls ``fetch_sample`` and
 downloads the *whole* pinned staged tree (images included) for anything not passed as

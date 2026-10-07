@@ -12,7 +12,7 @@
      HTTP 500 on the anonymous export endpoint; the FeatureServer query guess returned 400.
      No working anonymous URL found without going through the ArcGIS Hub UI.
   2. `marineregions.org` / VLIZ geoserver WFS `Ecoregions:ecoregions` — not tried directly
-     this pass; `docs/TAXONOMY.md` (WP-2, Phase 4) already recorded these endpoints as
+     this pass; `docs/TAXONOMY.md`  already recorded these endpoints as
      dead/404 from an earlier check.
   3. **GitHub mirror (used):** `seananderson/paleobaselines` vendors the canonical
      `meow_ecos.shp` shapefile (with its original Esri XML metadata) verbatim at
