@@ -31,6 +31,11 @@ for decision in result.excluded:
 > primary sources, cited per entry. They are a starting point for your own review, not a
 > substitute for counsel. See [`docs/LEGAL.md`](docs/LEGAL.md).
 
+> 🌊 **Looking for the data itself?** The hackathon release is on Hugging Face:
+> [`reefsupport/marine-data`](https://huggingface.co/datasets/reefsupport/marine-data) (open licences) and
+> [`reefsupport/marine-data-nc`](https://huggingface.co/datasets/reefsupport/marine-data-nc) (restricted terms).
+> See [Datasets on Hugging Face](#datasets-on-hugging-face).
+
 ### Relationship to `rs-ai`
 
 [`reefsupport/rs-ai`](https://github.com/reefsupport/rs-ai) is the inference side —
@@ -310,6 +315,31 @@ print(lineage.attribution_text())  # for the model card / NOTICE file
 
 Attach it to your model card. It is the answer to *"prove you had the right to train on
 this"* — and, because the registry is public, a claim a stranger can check.
+
+## Datasets on Hugging Face
+
+The hackathon release v1 (built 2026-10-06) is published as two public Hugging Face datasets. Each is a set of
+Parquet configs (images and masks embedded) with per-row `licence` and `attribution` columns, a dataset card with
+previews, and the per-config `LICENSE`, `NOTICE` and `CHECKSUMS.sha256` under `docs/<config>/`.
+
+| Repo | Configs (images) | Terms |
+|---|---|---|
+| [`reefsupport/marine-data`](https://huggingface.co/datasets/reefsupport/marine-data) | `coral-masks` 5,997, `scene-masks` 1,598, `instance-masks` 25,296, `fish-boxes` 25,912 (58,803 in all) | **Open, per source:** Apache-2.0, MIT, CC-BY-4.0, and CC-BY-3.0-AU for the Seaview images (masks CC-BY-4.0, Reef Support) |
+| [`reefsupport/marine-data-nc`](https://huggingface.co/datasets/reefsupport/marine-data-nc) | `coral-masks` (CoralSeg) 4,922, `coral-masks-machine` (CoralSCOP, machine-generated) 38,928 (43,850 in all) | **Restricted:** CoralSeg states no data licence; CoralSCOP data is used under the authors' request-form terms (masks recorded as CC-BY-NC-SA-4.0). Our release notes say do not redistribute |
+
+```python
+from datasets import load_dataset
+
+ds = load_dataset("reefsupport/marine-data", "coral-masks")        # train / validation / test
+stream = load_dataset("reefsupport/marine-data", "fish-boxes", split="train", streaming=True)
+```
+
+> ⚠️ **`marine-data-nc` is not open data.** Being public on the Hub is not a licence; read the notice at the top of
+> its card before you use it. Everything in `marine-data` carries an open licence that needs attribution.
+
+Known gaps, documented on the cards: 35 `coral-masks` images and 12 `instance-masks` rows were dropped (no class map),
+`coral-masks-machine` is model output and has no validation split, and the mask configs were not near-duplicate
+checked. The code that builds these releases is this repository (`src/marinedata`, release builder `hf_export.py`).
 
 ## Install
 
