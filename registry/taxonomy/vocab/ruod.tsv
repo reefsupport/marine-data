@@ -1,0 +1,15 @@
+# source: ruod
+# crosswalk: ruod
+# counts: annotations
+# retrieved: 2026-09-25 from https://huggingface.co/datasets/Mortallll/RUOD coco/annotations/instances_{train,val}.json
+label	count	description
+fish	13091	
+echinus	11292	
+corals	8883	
+starfish	8118	
+holothurian	7626	
+scallop	7411	
+diver	6390	
+cuttlefish	5328	
+turtle	4120	
+jellyfish	2645	

@@ -1,0 +1,25 @@
+# WP-6g (2026-09-25) new source: candidate — WP-6g gap 7,6: in-situ holographic plankton imagery (Baltic, 2024): a new modality
+id: aqqua-baltic-holo
+access_class: open
+adapter: zenodo
+params:
+  zenodo_record: 18405776
+license: cc-by-4.0
+attribution: Nayak, Ruchti (2026), Zenodo
+citation: doi:10.5281/zenodo.18405776 — In situ marine plankton holographic image dataset - Baltic Sea 2024
+homepage: https://zenodo.org/records/18405776
+notes: 'candidate — WP-6g gap 7,6: in-situ holographic plankton imagery (Baltic, 2024): a new modality'
+disk_floor_gib: 36.0
+measured:
+  items: 19217
+  bytes: 1227964548
+  method: 'remote zip CD: St15 19,217 tif (St7 not counted); Zenodo API bytes'
+  date: '2026-09-25'
+  per_item_license: cc-by-4.0
+  by_depth_band_m: {}
+  label_type: none (unlabelled holographic plankton crops; per-station csv holds date and location)
+  wp6g_gaps:
+  - 7
+  - 6
+# WP-U14c: title 'In situ marine plankton holographic image dataset' (digital in-line holography)
+default_instrument: holographic-imager

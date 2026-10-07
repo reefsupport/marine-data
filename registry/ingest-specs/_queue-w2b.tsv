@@ -1,0 +1,30 @@
+id	adapter	version	items	bytes	licence	format	dry_run	est_hours_at_100mbps	priority
+duo	needs:gdrive	-	0	0	research (non-commercial, per upstream)	COCO	needs_adapter:gdrive	-	?
+euvp	hf	rev-e3c6d08a8b07	1	189288867	research (non-commercial, per upstream)	JPEG pairs	ok	0.001	21.132
+fish-length-stereo	zenodo	record-19408363	1	25180242944	CC-BY-4.0 (Zenodo API)	images	ok	0.067	0.119
+fish-vista	hf	rev-2ad04be108c9	75811	11868010411	CC-BY-4.0 / CC-BY-NC-4.0 mix (per-image, HF card)	PNG+CSV	ok	0.031	0.169
+hicrd	needs:gdrive	-	0	0	MIT (code only) / research (data, per upstream)	PNG	needs_adapter:gdrive	-	?
+lsui	needs:gdrive	-	0	0	research (non-commercial, per upstream)	PNG pairs	needs_adapter:gdrive	-	?
+luderick-seagrass	zenodo	record-7659203	1	1170972899	CC-BY-4.0 (Zenodo API)	images+json	ok	0.003	2.562
+marine-animals-mm	hf	rev-a3b5ba3ff9a3	96	2534775497	CC-BY-4.0 (HF card)	parquet	ok	0.007	0.789
+marine-snow	zenodo	record-6424752	2	14213316419	CC-BY-4.0 (Zenodo API)	PNG	ok	0.038	0.141
+marinelife16k	hf	rev-a0e2bd2852c7	4000	458129645	CC-BY-4.0 (HF card)	parquet	ok	0.001	6.548
+med-fish	zenodo	record-7534425	1	638492593	CC-BY-4.0 (Zenodo API)	JPEG+labels	ok	0.002	4.699
+mouss-seg	hf	rev-5d9d33e1794a	1846	30380649	NOASSERTION (not stated on HF card; confirm with NOAA PIFSC MOUSS project)	YOLO-seg	ok	0.000	98.747
+ocean-r1	hf	rev-2b28d68647c5	42	20606311334	Apache-2.0 (HF card)	parquet	ok	0.055	0.194
+oceaninstruct	hf	rev-9f5558a8c8f1	0	0	MIT (HF card)	JSON	needs_adapter:json-captions	-	66.667
+ozfish	needs:pawsey	-	0	0	CC-BY-3.0-AU (README)	CSV+JPEG+MP4	needs_adapter:pawsey	-	?
+rcaustic	zenodo	2	1	10566641604	CC-BY-4.0 (Zenodo API)	video/imgs	ok	0.028	0.189
+ruie	needs:baidu	-	0	0	research (non-commercial, per upstream)	JPEG	needs_adapter:baidu	-	?
+salmon-cage	zenodo	record-4931418	0	0	CC0-1.0 (Zenodo API)	MP4	needs_adapter:video	-	0.357
+sea-undistort	zenodo	v.1.0.0	1	2267334496	CC-BY-NC-SA-4.0 (Zenodo API)	PNG	ok	0.006	0.441
+seamapd21	needs:multipart-tar	-	0	0	public domain (US federal government work)	YOLO	needs_adapter:multipart-tar	-	?
+seathru	hf	rev-528fa622018c	2421	38439305674	CC-BY-NC-SA-4.0 (HF card)	RAW+TIFF depth	ok	0.102	0.104
+u45	github	git-58142a16017a	450	51651008	NOASSERTION (no licence stated)	PNG	ok	0.000	19.361
+ufo120	needs:gdrive	-	0	0	research (non-commercial, per upstream)	PNG pairs	needs_adapter:gdrive	-	?
+underwater-images-2542305	zenodo	record-2542305	0	0	CC-BY-4.0 (Zenodo API)	?	needs_adapter:rar	-	0.059
+urpc	hf	rev-c12202f7e4a7	6575	1827915303	Apache-2.0 (HF card)	VOC/YOLO	ok	0.005	1.094
+usod10k	needs:gdrive	-	0	0	research (non-commercial, per upstream)	PNG	needs_adapter:gdrive	-	?
+usr248	needs:gdrive	-	0	0	research (non-commercial, per upstream)	PNG	needs_adapter:gdrive	-	?
+viame-public	needs:girder	-	0	0	per-dataset (mostly NOAA public domain)	mixed	needs_adapter:girder	-	?
+wildfish	hf	rev-5212c80f4d98	26	14517292127	research-only (non-commercial, per upstream)	JPEG	ok	0.038	0.207

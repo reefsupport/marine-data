@@ -7,17 +7,22 @@ with the lineage report it emitted five minutes earlier.
 
 from __future__ import annotations
 
+import re
 from datetime import date
 
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 from .enums import (
+    AccessClass,
     AccessMethod,
     AnnotationKind,
     Capability,
+    Domain,
+    Habitat,
     LegalBasis,
     Modality,
     Provenance,
+    Redistribution,
     Region,
     Tier,
 )
@@ -232,6 +237,78 @@ class DomainShift(_Frozen):
     caveats: tuple[str, ...] = ()
 
 
+class Checksums(_Frozen):
+    """What a stored version's ``CHECKSUMS.sha256`` covers, pinned by one digest.
+
+    Set only once a version has actually been ingested into our storage — it records a
+    fact about bytes we hold, not a claim about upstream, so it stays ``None`` for every
+    source until then. ``root_digest`` is the sha256 of the ``CHECKSUMS.sha256`` file
+    itself (see :mod:`marinedata.checksums`): one short value that transitively pins
+    every file in the version, cheap to compare and cheap to store here.
+    """
+
+    version: str
+    """The version this covers. Carried explicitly so that bumping ``Source.version``
+    without re-ingesting fails loudly instead of leaving a digest that silently
+    describes the previous version's bytes."""
+
+    root_digest: str = Field(pattern=r"^[0-9a-f]{64}$")
+    files: int = Field(gt=0)
+    size_bytes: int = Field(gt=0)
+
+
+class SplitGroupRule(_Frozen):
+    """How to derive an image's ``split_group`` for ``resolve_splits(by="group")``.
+
+    Required on every :class:`Source` — a source with no source-specific pattern
+    still resolves to the explicit fallback ``<source_id>/<partition>``, the same
+    grouping ``by="site"`` already uses, so ``by="group"`` never raises for a source
+    nobody has written a rule for yet.
+
+    ``pattern`` is a regex tested against ``stem`` or ``upstream_path`` (per
+    ``match_field``) with exactly one capturing group; the captured text fills
+    ``{group}`` in ``template``. ``pattern=None`` means "no source-specific
+    extraction" and ``template`` is filled from ``{source_id}``/``{partition}``
+    instead.
+    """
+
+    pattern: str | None = None
+    match_field: str = "stem"
+    template: str = "{source_id}/{partition}"
+
+    @model_validator(mode="after")
+    def _pattern_is_well_formed(self) -> SplitGroupRule:
+        if self.match_field not in ("stem", "upstream_path"):
+            raise ValueError(
+                f"split_group match_field must be 'stem' or 'upstream_path', "
+                f"got {self.match_field!r}"
+            )
+        if self.pattern is not None:
+            try:
+                compiled = re.compile(self.pattern)
+            except re.error as exc:
+                raise ValueError(f"split_group pattern {self.pattern!r} is invalid: {exc}") from exc
+            if compiled.groups < 1:
+                raise ValueError(
+                    f"split_group pattern {self.pattern!r} needs exactly one capturing group"
+                )
+        return self
+
+    def resolve(self, *, source_id: str, stem: str, upstream_path: str, partition: str) -> str:
+        """Derive the split_group for one image. Raises if a declared pattern misses —
+        a silent fallback would let one malformed stem quietly leak across splits."""
+        if self.pattern is None:
+            return self.template.format(source_id=source_id, partition=partition)
+        value = stem if self.match_field == "stem" else upstream_path
+        match = re.search(self.pattern, value)
+        if not match:
+            raise ValueError(
+                f"{source_id}: split_group pattern {self.pattern!r} did not match "
+                f"{self.match_field} {value!r}"
+            )
+        return self.template.format(group=match.group(1), source_id=source_id, partition=partition)
+
+
 class Source(_Frozen):
     """A single dataset entry."""
 
@@ -243,7 +320,17 @@ class Source(_Frozen):
     licence: Licence
     verification: Verification
     legal_basis: LegalBasis
+    redistribution: Redistribution = Redistribution.UNKNOWN
+    """Recorded position on redistributing a verbatim copy. Never a storage filter —
+    see :class:`~marinedata.enums.Redistribution`."""
     provenance: Provenance
+
+    access_class: AccessClass = AccessClass.UNKNOWN
+    """WP-L1a: what this source may be released as (open / restricted-nc / restricted-nd /
+    internal-only / unknown). Orthogonal to ``licence.tier``; the flavour filter reads this."""
+    licence_per_row: bool = False
+    """Every item carries its own licence string (FathomNet, iNat, ...): the row class wins
+    over ``access_class``, which is then only the strictest-member bound."""
 
     access: Access
     modalities: tuple[Modality, ...]
@@ -253,12 +340,79 @@ class Source(_Frozen):
     domain_shift: DomainShift | None = None
     loader: LoaderSpec | None = None
 
-    items: int | None = Field(default=None, description="Primary unit count (images/clips)")
-    items_note: str | None = None
+    checksums: Checksums | None = None
+    """Set once this source's declared version is stored. ``None`` means not ingested
+    yet, which is every source today — never "ingested but unverified"."""
+
+    default_platform: str | None = None
+    default_habitat: str | None = None
+    default_instrument: str | None = None
+    split_group: SplitGroupRule = Field(default_factory=SplitGroupRule)
+    """Required per-source rule for ``resolve_splits(by="group")``. Defaults to the
+    explicit fallback (``<source_id>/<partition>``) so every source has one without
+    needing a per-entry YAML edit."""
+
+    images_from: tuple[str, ...] = ()
+    """Other source ids whose images this source's annotations sit on top of, with no
+    pixel copy of its own — a second label layer over an image pool it does not own.
+    Referenced ids are validated to exist at registry load (see
+    ``Registry._check_references``)."""
+
+    n_images: int | None = Field(
+        default=None, description="Image (or still-frame) count; ``None`` when unknown"
+    )
+    n_annotations: int | None = Field(
+        default=None,
+        description="Annotation objects (instance masks, boxes, points); ``None`` when unknown",
+    )
+    n_files: int | None = Field(
+        default=None,
+        description="Data objects stored for this source (audio/video clips, or every file of "
+        "a staged tree); ``None`` when unknown",
+    )
+    counts_note: str | None = None
+    """Provenance of the three counts above: what was counted, when, and how."""
+
+    @property
+    def primary_count(self) -> int | None:
+        """Headline unit count for lineage/cards: images when known, else files; never guessed."""
+        return self.n_images if self.n_images is not None else self.n_files
+
+    retired: str | None = None
+    """Why this id has no read path any more (set => nothing may load it; its bytes live
+    under another id). ``registry verify`` skips retired sources."""
     citation: str | None = None
     homepage: str | None = None
     tags: tuple[str, ...] = ()
     notes: str | None = None
+    release_skip_reason: str | None = None
+    """Why this source is deliberately left out of a release (WP-R2e). Set, the split map skips
+    it and ``release build`` records it under ``skipped_sources`` with no ``--allow-skip``."""
+
+    domain: Domain | None = Field(default=None)
+    """HK-4a: one subject-matter bucket (:class:`~marinedata.enums.Domain`) for selecting a
+    hackathon track's sources. ``None`` only on a hand-built ``Source``; every registry entry
+    sets it (``tests/test_registry_domain.py``)."""
+
+    habitat: tuple[Habitat, ...] | None = Field(default=None)
+    """WP-2b: controlled-vocabulary physical setting(s) this source's imagery was
+    captured in. ``None`` means not yet classified (never "no habitat") — most v1
+    sources are backfilled by inference from their own description/notes; see the
+    ``# habitat inferred from ...`` comment above each entry in ``registry/sources/*.yaml``.
+    A tuple (not a single value) because some sources genuinely mix habitats."""
+
+    location_sensitive: bool = False
+    """WP-2b: first-class flag for a source whose true coordinates must never be
+    published at full precision (e.g. a poaching-risk species site) — ``is_location_sensitive()``
+    treats this as authoritative. Defaults to ``False``; the historical
+    ``"location-sensitive"`` tag is still honoured as a fallback for sources that predate
+    this field, so no existing YAML needs an edit to keep working."""
+
+    def split_group_for(self, *, stem: str, upstream_path: str, partition: str) -> str:
+        """Apply this source's :class:`SplitGroupRule` to one staged image."""
+        return self.split_group.resolve(
+            source_id=self.id, stem=stem, upstream_path=upstream_path, partition=partition
+        )
 
     def declared_supervision(self) -> frozenset[Axis]:
         """Axes this source's registry entry actually claims, across all annotations.
@@ -278,6 +432,18 @@ class Source(_Frozen):
                 except ValueError:
                     continue
         return frozenset(axes)
+
+    @model_validator(mode="after")
+    def _checksums_pin_the_declared_version(self) -> Source:
+        """A digest that names a different version is worse than no digest at all: it
+        would pass every automated check while describing bytes nobody is serving."""
+        if self.checksums is not None and self.checksums.version != self.version:
+            raise ValueError(
+                f"{self.id}: checksums cover version {self.checksums.version!r} but the "
+                f"source declares {self.version!r} — re-ingest and re-checksum, or drop "
+                "the stale checksums block."
+            )
+        return self
 
     @model_validator(mode="after")
     def _prohibited_needs_reason(self) -> Source:
@@ -309,6 +475,14 @@ class Profile(_Frozen):
     deny_flags: tuple[str, ...] = ()
     require_legal_opinion: bool = False
     """TDM-based profiles cannot be instantiated without a counsel opinion reference."""
+
+    allow_access_classes: tuple[str, ...] = ()
+    """WP-L1b: the ``access_class`` values this profile admits (empty = no class bar). A
+    shipping profile sets it so the tier gate and the release flavour never disagree."""
+
+    public_release: bool = False
+    """WP-L1b: the output is published even though ``T3_NONCOMMERCIAL`` is allowed (the NC
+    flavour), so the disputed / secondary-verification bars apply as on any shipping profile."""
 
     retention_days: int | None = None
     weights_licence: str | None = None

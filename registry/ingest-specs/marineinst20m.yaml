@@ -1,0 +1,24 @@
+# MarineInst20M (Zheng et al., ECCV 2024): annotations released on GitHub as 28 zips (COCO-RLE instance masks + instance captions).
+# Images are NOT redistributed: they come from ~50 public datasets (many already in our catalog) + public websites (scrape scripts) + private data (not released).
+id: marineinst20m
+access_class: internal-only
+adapter: needs:annotation-overlay
+license: 'annotations: repo LICENSE.txt; images: per upstream dataset/website'
+attribution: Zheng et al., HKUST VGD — MarineInst20M
+citation: Zheng et al. 2024, ECCV, MarineInst
+homepage: https://github.com/zhengziqiang/MarineInst20M
+candidate_endpoints:
+- https://github.com/zhengziqiang/MarineInst20M (Public_Datasets/*.zip x14, Public_Websites/*.zip x14)
+why_not_supported: 'Labels-only release: masks/captions must be joined to images fetched from each upstream source
+  (overlay adapter keyed by upstream image id). Private_Data / Flickr / Gettyimages folders ship README only.'
+overlay: 'WP-6e-B: registry/overlays/marineinst20m.parquet (161,025 images, 680,200 COCO-RLE instances, 0 caption
+  fields in the released JSONs; 204 MB, gitignored, summary in marineinst20m.summary.json). Join key = upstream path,
+  then basename (overlay_marineinst.match_rates). None of the 8 matching sources is staged yet, so the match rate is
+  pending; the open website subset is the marineinst20m-web spec.'
+measured:
+  items: null
+  bytes: 418674832
+  method: GitHub git tree (121 entries, not truncated)
+  date: '2026-09-25'
+  bytes_basis: annotation zips only; image bytes live upstream
+  label_type: instance masks (COCO RLE) + instance captions

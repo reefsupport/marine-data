@@ -1,0 +1,1416 @@
+# W2 sources — Benthic, Deep sea, Stereo/3D/nav, Seagrass/other groups (S57 catalog).
+# All entries are pending-ingest: checksums unset, access.method records the intended
+# fetch route, and registry/ingest-specs/<id>.yaml carries the pinned ingest plan.
+
+sources:
+- id: soneva-corals
+  domain: coral
+  release_skip_reason: "no-staged-images: registry lists imagery, nothing staged under sources/ in rs-storage-open (U7/queue follow-up)"
+  access_class: open
+  name: wildflow soneva-corals
+  version: unversioned
+  description: Coral-reef imagery + 3D reconstructions from Soneva resort reefs (Maldives), from the wildflow
+    project.
+  licence:
+    id: cc-by-4.0
+    name: cc-by-4.0
+    tier: T1_PERMISSIVE
+    flags:
+      attribution_required: true
+  verification:
+    verified_on: '2026-09-25'
+    verified_by: S57 catalog reports/data/2026-09-25-5star-catalog.tsv row (HF/Zenodo API or DataCite,
+      checked 2026-09-25)
+    method: secondary
+  legal_basis: licence
+  redistribution: ok
+  provenance: public
+  access:
+    method: huggingface
+    uri: https://huggingface.co/datasets/wildflow/soneva-corals
+    params:
+      repo: wildflow/soneva-corals
+  loader:
+    layout: metadata-only
+  modalities:
+  - image
+  capabilities:
+  - benthic-classification
+  - general-pretraining
+  coverage:
+    regions:
+    - western-indian
+  citation: wildflow/soneva-corals (HF)
+  homepage: https://huggingface.co/datasets/wildflow/soneva-corals
+  notes: 'Not yet ingested (access: pending-ingest per S57 catalog planning; checksums unset
+    until staged). Full repo (pinned rev 200aaf30cda9) is 22422 items / 66.68 GB, over the
+    50 GB first-pass cap; the ingest spec sets max_images:15000 (~44.6 GB estimated at the
+    repo''s ~2.97 MB/item average) for the first pass.'
+  n_images: 22422
+  counts_note: rows (HF viewer); full 66.68 GB, first-pass subset ~44.6 GB (max_images:15000)
+- id: benthoz15
+  domain: coral
+  release_skip_reason: "no-staged-images: registry lists imagery, nothing staged under sources/ in rs-storage-open (U7/queue follow-up)"
+  access_class: open
+  name: BENTHOZ-2015
+  version: unversioned
+  description: AUV benthic imagery + point annotations across Australian AUV survey campaigns (Bewley
+    et al. 2015).
+  licence:
+    id: cc-by-4.0
+    name: cc-by-4.0
+    tier: T1_PERMISSIVE
+    flags:
+      attribution_required: true
+  verification:
+    verified_on: '2026-09-25'
+    verified_by: S57 catalog reports/data/2026-09-25-5star-catalog.tsv row (HF/Zenodo API or DataCite,
+      checked 2026-09-25)
+    method: secondary
+  legal_basis: licence
+  redistribution: ok
+  provenance: public
+  access:
+    method: s3
+    uri: s3://imos-data/IMOS/AUV/
+    params:
+      endpoint: s3-ap-southeast-2.amazonaws.com
+      bucket: imos-data
+      prefix: IMOS/AUV/
+  loader:
+    layout: metadata-only
+  modalities:
+  - image
+  capabilities:
+  - benthic-classification
+  - general-pretraining
+  coverage:
+    regions:
+    - gbr-australia
+    - temperate
+  citation: Bewley et al., Sci Data 2015, doi:10.1038/sdata.2015.57
+  homepage: https://www.nature.com/articles/sdata201557
+  notes: 'Not yet ingested (access: pending-ingest per S57 catalog planning; checksums unset until staged).
+    needs_yohan:the bucket prefix IMOS/AUV/ holds ~30 AUV campaigns 2007-2023 (confirmed via delimiter
+    listing); the exact per-dive subset that makes up the published BENTHOZ-2015 9,874-image set (Bewley
+    et al. 2015 supplementary) is not identifiable from the bucket alone'
+  n_images: 9874
+  counts_note: images (~407k point annotations)
+- id: noaa-coral-icra
+  domain: coral
+  release_skip_reason: "no-staged-images: registry lists imagery, nothing staged under sources/ in rs-storage-open (U7/queue follow-up)"
+  access_class: open
+  name: NOAA PIFSC ESD-ESA coral ICRA
+  version: unversioned
+  description: NOAA PIFSC coral image classification/detection assessment (ICRA) dataset.
+  licence:
+    id: other-hf
+    name: other-hf
+    tier: T4_TDM_ONLY
+  verification:
+    verified_on: '2026-09-25'
+    verified_by: S57 catalog reports/data/2026-09-25-5star-catalog.tsv row (HF/Zenodo API or DataCite,
+      checked 2026-09-25)
+    method: secondary
+  legal_basis: unknown
+  redistribution: unknown
+  provenance: public
+  access:
+    method: huggingface
+    uri: https://huggingface.co/datasets/NMFS-OSI/NOAA-PIFSC-ESD-ESA-CORAL-ICRA-Dataset
+    params:
+      repo: NMFS-OSI/NOAA-PIFSC-ESD-ESA-CORAL-ICRA-Dataset
+  loader:
+    layout: metadata-only
+  modalities:
+  - image
+  capabilities:
+  - coral-taxonomy
+  - bleaching-assessment
+  coverage:
+    regions:
+    - central-pacific
+  citation: NOAA PIFSC ESD-ESA CORAL-ICRA
+  homepage: https://huggingface.co/datasets/NMFS-OSI/NOAA-PIFSC-ESD-ESA-CORAL-ICRA-Dataset
+  notes: 'Not yet ingested (access: pending-ingest per S57 catalog planning; checksums unset until staged).
+    queued for a dry-run ingest via the supported adapter.'
+  counts_note: <1K (HF viewer)
+- id: coralnet-small
+  domain: coral
+  access_class: internal-only
+  name: CoralNet small (WHOI mirror)
+  version: unversioned
+  description: Small CoralNet point-annotation mirror re-packed by WHOI on HuggingFace.
+  licence:
+    id: unknown
+    name: unknown
+    tier: T4_TDM_ONLY
+  verification:
+    verified_on: '2026-09-25'
+    verified_by: S57 catalog reports/data/2026-09-25-5star-catalog.tsv row (HF/Zenodo API or DataCite,
+      checked 2026-09-25)
+    method: secondary
+  legal_basis: unknown
+  redistribution: unknown
+  provenance: public
+  access:
+    method: huggingface
+    uri: https://huggingface.co/datasets/nf-whoi/coralnet-small
+    params:
+      repo: nf-whoi/coralnet-small
+  loader:
+    layout: metadata-only
+  modalities:
+  - image
+  capabilities:
+  - benthic-classification
+  coverage:
+    regions:
+    - unknown
+  citation: nf-whoi/coralnet-small (HF)
+  homepage: https://huggingface.co/datasets/nf-whoi/coralnet-small
+  notes: 'Not yet ingested (access: pending-ingest per S57 catalog planning; checksums unset until staged).
+    queued for a dry-run ingest via the supported adapter.'
+  n_images: 450
+  counts_note: rows (HF viewer)
+- id: tascpc
+  domain: coral
+  access_class: internal-only
+  name: Tasmania Coral Point Count
+  version: unversioned
+  description: Tasmania AUV benthic imagery with coral point-count annotations (Sydney ACFR marine dataset
+    archive).
+  licence:
+    id: unknown
+    name: unknown
+    tier: T4_TDM_ONLY
+  verification:
+    verified_on: '2026-09-25'
+    verified_by: S57 catalog reports/data/2026-09-25-5star-catalog.tsv row (HF/Zenodo API or DataCite,
+      checked 2026-09-25)
+    method: secondary
+  legal_basis: unknown
+  redistribution: unknown
+  provenance: public
+  access:
+    method: http
+    uri: http://marine.acfr.usyd.edu.au/datasets/data/TasCPC/
+    params: {}
+  loader:
+    layout: metadata-only
+  modalities:
+  - image
+  capabilities:
+  - benthic-classification
+  coverage:
+    regions:
+    - temperate
+  citation: Bewley et al. 2012
+  homepage: http://marine.acfr.usyd.edu.au/datasets/
+  notes: 'Not yet ingested (access: pending-ingest per S57 catalog planning; checksums unset until staged).
+    queued for a dry-run ingest via the supported adapter.'
+  n_images: 1300
+  counts_note: est. (catalog)
+- id: eilat-rsmas
+  domain: coral
+  access_class: internal-only
+  name: EILAT / RSMAS coral texture
+  version: unversioned
+  description: Coral texture-patch classification benchmark (Eilat + RSMAS collections).
+  licence:
+    id: research-use
+    name: research-use
+    tier: T3_NONCOMMERCIAL
+    flags:
+      attribution_required: true
+  verification:
+    verified_on: '2026-09-25'
+    verified_by: S57 catalog reports/data/2026-09-25-5star-catalog.tsv row (HF/Zenodo API or DataCite,
+      checked 2026-09-25)
+    method: secondary
+  legal_basis: licence
+  redistribution: unknown
+  provenance: public
+  access:
+    method: http
+    uri: https://sci2s.ugr.es/CNN-coral-image-classification
+    params:
+      landing: https://sci2s.ugr.es/CNN-coral-image-classification
+  loader:
+    layout: metadata-only
+  modalities:
+  - image
+  capabilities:
+  - coral-taxonomy
+  coverage:
+    regions:
+    - red-sea
+    - caribbean
+  citation: Shihavuddin et al. 2013; Gomez-Rios et al. 2019
+  homepage: https://sci2s.ugr.es/CNN-coral-image-classification
+  notes: 'Not yet ingested (access: pending-ingest per S57 catalog planning; checksums unset until staged).
+    needs_adapter:site-scrape — page https://sci2s.ugr.es/CNN-coral-image-classification only linked StructureRSMAS.zip
+    on this pass (host needed -k/-L, plain http 301s to https); the EILAT+RSMAS image archive itself is
+    referenced from a same-page ''dataset'' anchor that needs a follow-up fetch to resolve to an exact
+    file URL'
+  n_images: 1889
+  counts_note: patches
+  annotations:
+  - classes: 14
+    kind: image-label
+    supervises:
+    - taxon
+- id: fathomnet-coverage
+  domain: fauna
+  access_class: restricted-nd
+  licence_per_row: true
+  name: FathomNet full-coverage test sets
+  version: unversioned
+  description: FathomNet exhaustively-boxed test sets for full-coverage detector evaluation.
+  licence:
+    id: unknown
+    name: unknown
+    tier: T4_TDM_ONLY
+  verification:
+    verified_on: '2026-09-25'
+    verified_by: S57 catalog reports/data/2026-09-25-5star-catalog.tsv row (HF/Zenodo API or DataCite,
+      checked 2026-09-25)
+    method: secondary
+  legal_basis: unknown
+  redistribution: unknown
+  provenance: public
+  access:
+    method: huggingface
+    uri: https://huggingface.co/datasets/FathomNet/full-coverage-test-sets
+    params:
+      repo: FathomNet/full-coverage-test-sets
+  loader:
+    layout: metadata-only
+  modalities:
+  - image
+  capabilities:
+  - megafauna-id
+  - general-pretraining
+  coverage:
+    regions:
+    - deep-sea
+  citation: FathomNet 2024
+  homepage: https://huggingface.co/datasets/FathomNet/full-coverage-test-sets
+  notes: 'Not yet ingested (access: pending-ingest per S57 catalog planning; checksums unset until staged).
+    queued for a dry-run ingest via the supported adapter.'
+  counts_note: unknown (HF usedStorage ~0)
+- id: fathomnet-megalodon
+  domain: fauna
+  access_class: restricted-nd
+  licence_per_row: true
+  name: FathomNet 2024 Megalodon benchmark
+  version: unversioned
+  description: FathomNet single-class object-detection benchmark (2024 Megalodon challenge).
+  licence:
+    id: other-hf
+    name: other-hf
+    tier: T4_TDM_ONLY
+  verification:
+    verified_on: '2026-09-25'
+    verified_by: S57 catalog reports/data/2026-09-25-5star-catalog.tsv row (HF/Zenodo API or DataCite,
+      checked 2026-09-25)
+    method: secondary
+  legal_basis: unknown
+  redistribution: unknown
+  provenance: public
+  access:
+    method: huggingface
+    uri: https://huggingface.co/datasets/FathomNet/2024-megalodon-benchmark
+    params:
+      repo: FathomNet/2024-megalodon-benchmark
+  loader:
+    layout: metadata-only
+  modalities:
+  - image
+  capabilities:
+  - megafauna-id
+  coverage:
+    regions:
+    - deep-sea
+  citation: FathomNet 2024
+  homepage: https://huggingface.co/datasets/FathomNet/2024-megalodon-benchmark
+  notes: 'Not yet ingested (access: pending-ingest per S57 catalog planning; checksums unset until staged).
+    queued for a dry-run ingest via the supported adapter.'
+  counts_note: unknown
+- id: noaa-dscrtp
+  domain: deep-sea
+  release_skip_reason: "no-staged-images: registry lists imagery, nothing staged under sources/ in rs-storage-open (U7/queue follow-up)"
+  access_class: open
+  name: NOAA Deep-Sea Coral & Sponge database
+  version: unversioned
+  description: 'NOAA DSCRTP national database: taxon-labelled deep-sea coral/sponge image records with
+    per-record ImageURL.'
+  licence:
+    id: public-domain-us-gov
+    name: public-domain-us-gov
+    tier: T1_PERMISSIVE
+    flags:
+      attribution_required: false
+  verification:
+    verified_on: '2026-09-25'
+    verified_by: S57 catalog reports/data/2026-09-25-5star-catalog.tsv row (HF/Zenodo API or DataCite,
+      checked 2026-09-25)
+    method: secondary
+  legal_basis: licence
+  redistribution: ok
+  provenance: public
+  access:
+    method: request
+    uri: https://www.ncei.noaa.gov/erddap/tabledap/deep_sea_corals.csv
+    notes: 'INT-ingest (2026-09-25): downgraded from method:api -- an ERDDAP tabledap CSV
+      endpoint exists (see params) but no dispatch client exists in _API_CLIENTS (fetch.py),
+      and one is out of this brief''s scope.'
+    params:
+      endpoint: https://www.ncei.noaa.gov/erddap/tabledap/deep_sea_corals.csv
+      image_url_column: ImageURL
+  loader:
+    layout: metadata-only
+  modalities:
+  - image
+  capabilities:
+  - megafauna-id
+  - general-pretraining
+  coverage:
+    regions:
+    - deep-sea
+  citation: NOAA Deep Sea Coral Research & Technology Program
+  homepage: https://www.ncei.noaa.gov/erddap/tabledap/deep_sea_corals.html
+  notes: 'Not yet ingested (access: pending-ingest per S57 catalog planning; checksums unset until staged).
+    needs_adapter:erddap-csv-imagelist — the ERDDAP tabledap CSV lists one row per specimen record with
+    an ImageURL column (no bulk archive); needs an adapter that streams the CSV, dedupes/filters to rows
+    with a non-empty ImageURL, then fetches each URL individually. Endpoint: https://www.ncei.noaa.gov/erddap/tabledap/deep_sea_corals.csv?ImageURL,CatalogNumber,ScientificName,ObservationYear&ImageURL!=""'
+  counts_note: '>100k records w/ images (est, catalog)'
+- id: noaa-goa-2019
+  domain: deep-sea
+  release_skip_reason: "no-staged-images: registry lists imagery, nothing staged under sources/ in rs-storage-open (U7/queue follow-up)"
+  access_class: open
+  name: Gulf of Alaska corals/sponges/fishes 2019
+  version: unversioned
+  description: NOAA/NCEI 2019 Gulf of Alaska deep-sea coral, sponge and fish imagery (accession 0305766).
+  licence:
+    id: cc0-1.0
+    name: cc0-1.0
+    tier: T1_PERMISSIVE
+  verification:
+    verified_on: '2026-09-25'
+    verified_by: S57 catalog reports/data/2026-09-25-5star-catalog.tsv row (HF/Zenodo API or DataCite,
+      checked 2026-09-25)
+    method: secondary
+  legal_basis: licence
+  redistribution: ok
+  provenance: public
+  access:
+    method: http
+    uri: https://doi.org/10.25921/022n-nd48
+    params:
+      accession: '0305766'
+      doi: 10.25921/022n-nd48
+  loader:
+    layout: metadata-only
+  modalities:
+  - image
+  capabilities:
+  - megafauna-id
+  coverage:
+    regions:
+    - deep-sea
+    - temperate
+  citation: NCEI accession 0305766, doi:10.25921/022n-nd48
+  homepage: https://doi.org/10.25921/022n-nd48
+  notes: 'Not yet ingested (access: pending-ingest per S57 catalog planning; checksums unset until staged).
+    needs_adapter:ncei-accession — doi.org/10.25921/022n-nd48 302-redirects to an NCEI accession/archive
+    landing page; needs a follow-up fetch of the resolved URL to find the file manifest (likely an NCEI
+    archive info/download API, not a flat file list)'
+  counts_note: unknown
+- id: pangaea-ccz-gsr
+  domain: fauna
+  release_skip_reason: "no-staged-images: raw mirror of 40 images only, no INGEST.json/metadata.parquet (U7/queue follow-up)"
+  access_class: open
+  name: PANGAEA seafloor images GSR mining trial (CCZ)
+  version: unversioned
+  description: Seafloor photo images from a Global Sea Mineral Resources (GSR) mining trial in the Clarion-Clipperton
+    Zone.
+  licence:
+    id: cc-by-4.0
+    name: cc-by-4.0
+    tier: T1_PERMISSIVE
+    flags:
+      attribution_required: true
+  verification:
+    verified_on: '2026-09-25'
+    verified_by: S57 catalog reports/data/2026-09-25-5star-catalog.tsv row (HF/Zenodo API or DataCite,
+      checked 2026-09-25)
+    method: secondary
+  legal_basis: licence
+  redistribution: ok
+  provenance: public
+  access:
+    method: request
+    uri: https://doi.pangaea.de/10.1594/PANGAEA.987009
+    notes: 'INT-ingest (2026-09-25): downgraded from method:api -- PANGAEA''s DOI resolves
+      to a real dataset page but no dispatch client exists in _API_CLIENTS (fetch.py), and
+      one is out of this brief''s scope.'
+    params:
+      doi: 10.1594/PANGAEA.987009
+  loader:
+    layout: metadata-only
+  modalities:
+  - image
+  capabilities:
+  - megafauna-id
+  - general-pretraining
+  coverage:
+    regions:
+    - deep-sea
+  citation: doi:10.1594/PANGAEA.987009
+  homepage: https://doi.org/10.1594/PANGAEA.987009
+  notes: 'Not yet ingested (access: pending-ingest per S57 catalog planning; checksums unset until staged).
+    needs_adapter:pangaea — PANGAEA serves data via its own OAI/REST API (https://doi.pangaea.de/10.1594/PANGAEA.987009
+    resolves to a dataset page listing linked image files/collections, not a flat archive); needs a PANGAEA-dataset
+    adapter that follows child datasets'
+  counts_note: unknown
+- id: pangaea-ofos-msm77
+  domain: fauna
+  release_skip_reason: "no-staged-images: registry lists imagery, nothing staged under sources/ in rs-storage-open (U7/queue follow-up)"
+  access_class: open
+  name: PANGAEA OFOS seabed photos MSM77
+  version: unversioned
+  description: Ocean Floor Observation System (OFOS) seabed photo profiles from RV Maria S. Merian cruise
+    MSM77.
+  licence:
+    id: cc-by-4.0
+    name: cc-by-4.0
+    tier: T1_PERMISSIVE
+    flags:
+      attribution_required: true
+  verification:
+    verified_on: '2026-09-25'
+    verified_by: S57 catalog reports/data/2026-09-25-5star-catalog.tsv row (HF/Zenodo API or DataCite,
+      checked 2026-09-25)
+    method: secondary
+  legal_basis: licence
+  redistribution: ok
+  provenance: public
+  access:
+    method: request
+    uri: https://doi.pangaea.de/10.1594/PANGAEA.989732
+    notes: 'INT-ingest (2026-09-25): downgraded from method:api -- PANGAEA''s DOI resolves
+      to a real dataset page but no dispatch client exists in _API_CLIENTS (fetch.py), and
+      one is out of this brief''s scope.'
+    params:
+      doi: 10.1594/PANGAEA.989732
+  loader:
+    layout: metadata-only
+  modalities:
+  - image
+  capabilities:
+  - megafauna-id
+  - general-pretraining
+  coverage:
+    regions:
+    - deep-sea
+  citation: doi:10.1594/PANGAEA.989732 (one of ~50 linked profiles)
+  homepage: https://doi.org/10.1594/PANGAEA.989732
+  notes: 'Not yet ingested (access: pending-ingest per S57 catalog planning; checksums unset until staged).
+    needs_adapter:pangaea — same PANGAEA-dataset adapter need as pangaea-ccz-gsr; this DOI is one of ~50
+    sibling OFOS profile datasets under the MSM77 cruise series that a real ingest would need to enumerate'
+  counts_note: unknown; ~50 linked OFOS profiles
+- id: bodc-smartex
+  domain: fauna
+  release_skip_reason: "no-staged-images: registry lists imagery, nothing staged under sources/ in rs-storage-open (U7/queue follow-up)"
+  access_class: open
+  name: BODC JC241/JC257 ROV/AUV benthic images (CCZ)
+  version: unversioned
+  description: ROV/AUV benthic seafloor images from SMARTEX cruises JC241/JC257 in the Clarion-Clipperton
+    Zone.
+  licence:
+    id: ogl-uk
+    name: ogl-uk
+    tier: T1_PERMISSIVE
+    flags:
+      attribution_required: true
+  verification:
+    verified_on: '2026-09-25'
+    verified_by: S57 catalog reports/data/2026-09-25-5star-catalog.tsv row (HF/Zenodo API or DataCite,
+      checked 2026-09-25)
+    method: secondary
+  legal_basis: licence
+  redistribution: ok
+  provenance: public
+  access:
+    method: http
+    uri: https://doi.org/10.5285/298e66b2-d9d1-2f58-e063-7086abc085bf
+    params:
+      doi: 10.5285/298e66b2-d9d1-2f58-e063-7086abc085bf
+  loader:
+    layout: metadata-only
+  modalities:
+  - image
+  capabilities:
+  - megafauna-id
+  - general-pretraining
+  coverage:
+    regions:
+    - deep-sea
+  citation: BODC doi:10.5285/298e66b2-d9d1-2f58-e063-7086abc085bf
+  homepage: https://doi.org/10.5285/298e66b2-d9d1-2f58-e063-7086abc085bf
+  notes: 'Not yet ingested (access: pending-ingest per S57 catalog planning; checksums unset until staged).
+    needs_adapter:bodc-catalogue — the DOI 302-redirects to a BODC catalogue record; BODC typically serves
+    bulk files via its own download-manager/FTP rather than flat HTTP, needs a follow-up fetch of the
+    resolved catalogue page to find the file access route'
+  counts_note: unknown
+- id: oceancv-rovtransect
+  domain: imaging
+  release_skip_reason: "no-staged-images: registry lists imagery, nothing staged under sources/ in rs-storage-open (U7/queue follow-up)"
+  access_class: open
+  name: OceanCV ROV transects
+  version: unversioned
+  description: Compressed ROV transect imagery from the OceanCV project.
+  licence:
+    id: mit
+    name: mit
+    tier: T1_PERMISSIVE
+    flags:
+      attribution_required: true
+  verification:
+    verified_on: '2026-09-25'
+    verified_by: S57 catalog reports/data/2026-09-25-5star-catalog.tsv row (HF/Zenodo API or DataCite,
+      checked 2026-09-25)
+    method: secondary
+  legal_basis: licence
+  redistribution: ok
+  provenance: public
+  access:
+    method: huggingface
+    uri: https://huggingface.co/datasets/OceanCV/ROVTransectCompressed
+    params:
+      repo: OceanCV/ROVTransectCompressed
+  loader:
+    layout: metadata-only
+  modalities:
+  - video
+  - image
+  capabilities:
+  - general-pretraining
+  coverage:
+    regions:
+    - deep-sea
+    - unknown
+  citation: OceanCV/ROVTransectCompressed (HF)
+  homepage: https://huggingface.co/datasets/OceanCV/ROVTransectCompressed
+  notes: 'Not yet ingested (access: pending-ingest per S57 catalog planning; checksums unset until staged).
+    queued for a dry-run ingest via the supported adapter.'
+  n_images: 2
+  counts_note: rows (HF viewer)
+- id: deepsea-coral-cornerrise
+  domain: deep-sea
+  release_skip_reason: "no-staged-images: registry lists imagery, nothing staged under sources/ in rs-storage-open (U7/queue follow-up)"
+  access_class: open
+  name: Deep-sea coral+sponge Corner Rise
+  version: unversioned
+  description: Deep-sea coral and sponge count/classification records (with imagery) from the Corner Rise
+    Seamounts.
+  licence:
+    id: cc-by-4.0
+    name: cc-by-4.0
+    tier: T1_PERMISSIVE
+    flags:
+      attribution_required: true
+  verification:
+    verified_on: '2026-09-25'
+    verified_by: S57 catalog reports/data/2026-09-25-5star-catalog.tsv row (HF/Zenodo API or DataCite,
+      checked 2026-09-25)
+    method: secondary
+  legal_basis: licence
+  redistribution: ok
+  provenance: public
+  access:
+    method: zenodo
+    uri: https://zenodo.org/records/18171047
+    params:
+      zenodo_record: '18171047'
+  loader:
+    layout: metadata-only
+  modalities:
+  - image
+  - tabular
+  capabilities:
+  - megafauna-id
+  coverage:
+    regions:
+    - deep-sea
+  citation: Zenodo doi:10.5281/zenodo.18171047
+  homepage: https://zenodo.org/records/18171047
+  notes: 'Not yet ingested (access: pending-ingest per S57 catalog planning; checksums unset until staged).
+    queued for a dry-run ingest via the supported adapter.'
+  counts_note: unknown; mostly xlsx count tables, imagery unconfirmed
+- id: oceandark
+  domain: deep-sea
+  access_class: internal-only
+  name: OceanDark
+  version: unversioned
+  description: Low-light deep-sea benthic imagery for visibility/enhancement research.
+  licence:
+    id: unknown
+    name: unknown
+    tier: T4_TDM_ONLY
+  verification:
+    verified_on: '2026-09-25'
+    verified_by: S57 catalog reports/data/2026-09-25-5star-catalog.tsv row (HF/Zenodo API or DataCite,
+      checked 2026-09-25)
+    method: secondary
+  legal_basis: unknown
+  redistribution: unknown
+  provenance: public
+  access:
+    method: http
+    uri: https://sites.google.com/view/oceandark/home
+    params:
+      landing: https://sites.google.com/view/oceandark/home
+  loader:
+    layout: metadata-only
+  modalities:
+  - image
+  capabilities:
+  - image-enhancement
+  - megafauna-id
+  coverage:
+    regions:
+    - deep-sea
+  citation: Porto Marques et al. 2019
+  homepage: https://sites.google.com/view/oceandark/home
+  notes: 'Not yet ingested (access: pending-ingest per S57 catalog planning; checksums unset until staged).
+    needs_adapter:gdrive — the Google Sites page links to a Google Drive folder/viewer, not a direct file
+    URL; needs a Drive-aware fetcher (or a human export to a direct zip link)'
+  n_images: 183
+  counts_note: images
+- id: ntnu-arl-uw
+  domain: imaging
+  release_skip_reason: "non-image-modality: video/sequence, pose-slam"
+  access_class: open
+  name: NTNU ARL underwater datasets
+  version: unversioned
+  description: Multi-sensor (camera/IMU/sonar) underwater SLAM rosbag datasets from NTNU's Autonomous
+    Robotics Lab.
+  licence:
+    id: bsd-3-clause
+    name: bsd-3-clause
+    tier: T1_PERMISSIVE
+    flags:
+      attribution_required: true
+  verification:
+    verified_on: '2026-09-25'
+    verified_by: S57 catalog reports/data/2026-09-25-5star-catalog.tsv row (HF/Zenodo API or DataCite,
+      checked 2026-09-25)
+    method: secondary
+  legal_basis: licence
+  redistribution: ok
+  provenance: public
+  access:
+    method: huggingface
+    uri: https://huggingface.co/datasets/ntnu-arl/underwater-datasets
+    params:
+      repo: ntnu-arl/underwater-datasets
+  loader:
+    layout: metadata-only
+  modalities:
+  - video
+  - sequence
+  capabilities:
+  - pose-slam
+  - general-pretraining
+  coverage:
+    regions:
+    - unknown
+  citation: NTNU Autonomous Robotics Lab
+  homepage: https://huggingface.co/datasets/ntnu-arl/underwater-datasets
+  notes: 'Not yet ingested (access: pending-ingest per S57 catalog planning; checksums unset
+    until staged). needs_adapter:rosbag-decoder — hf enumeration confirms 8 .bag files at
+    pinned rev d79489fc4742 (148.68 GB total: 6 subset-fjord + 2 subset-mclab), but .bag is
+    not a format the fetch/decode pipeline reads; needs a rosbag-to-frames extractor. A
+    ~49 GB first-pass subset (mclab_1+mclab_2+fjord_5) is scoped in the ingest spec for when
+    that lands.'
+  counts_note: 8 rosbags, 148.68 GB total (confirmed via HF tree API)
+- id: subpipe
+  domain: imaging
+  release_skip_reason: "no-staged-images: registry lists imagery, nothing staged under sources/ in rs-storage-open (U7/queue follow-up)"
+  access_class: open
+  name: SubPipe pipeline inspection
+  version: unversioned
+  description: Underwater pipeline-inspection dataset with semantic labels, SLAM ground truth and sonar.
+  licence:
+    id: cc-by-4.0
+    name: cc-by-4.0
+    tier: T1_PERMISSIVE
+    flags:
+      attribution_required: true
+  verification:
+    verified_on: '2026-09-25'
+    verified_by: S57 catalog reports/data/2026-09-25-5star-catalog.tsv row (HF/Zenodo API or DataCite,
+      checked 2026-09-25)
+    method: secondary
+  legal_basis: licence
+  redistribution: ok
+  provenance: public
+  access:
+    method: zenodo
+    uri: https://zenodo.org/records/12666132
+    params:
+      zenodo_record: '12666132'
+  loader:
+    layout: metadata-only
+  modalities:
+  - image
+  - sequence
+  capabilities:
+  - pose-slam
+  - structural-complexity
+  coverage:
+    regions:
+    - unknown
+  citation: Alvarez-Tunon et al. 2024
+  homepage: https://zenodo.org/records/12666132
+  notes: 'Not yet ingested (access: pending-ingest per S57 catalog planning; checksums unset until staged).
+    queued for a dry-run ingest via the supported adapter.'
+  counts_note: unknown
+- id: uw-img-imu-sonar
+  domain: imaging
+  release_skip_reason: "no-staged-images: registry lists imagery, nothing staged under sources/ in rs-storage-open (U7/queue follow-up)"
+  access_class: open
+  name: underwater img+IMU+sonar
+  version: unversioned
+  description: Multi-sensor underwater dataset combining imagery, IMU and sonar streams.
+  licence:
+    id: apache-2.0
+    name: apache-2.0
+    tier: T1_PERMISSIVE
+    flags:
+      attribution_required: true
+  verification:
+    verified_on: '2026-09-25'
+    verified_by: S57 catalog reports/data/2026-09-25-5star-catalog.tsv row (HF/Zenodo API or DataCite,
+      checked 2026-09-25)
+    method: secondary
+  legal_basis: licence
+  redistribution: ok
+  provenance: public
+  access:
+    method: huggingface
+    uri: https://huggingface.co/datasets/jclboeng/underwater-img-imu-sonar-datasets
+    params:
+      repo: jclboeng/underwater-img-imu-sonar-datasets
+  loader:
+    layout: metadata-only
+  modalities:
+  - image
+  - sequence
+  capabilities:
+  - pose-slam
+  coverage:
+    regions:
+    - unknown
+  citation: jclboeng/underwater-img-imu-sonar-datasets (HF)
+  homepage: https://huggingface.co/datasets/jclboeng/underwater-img-imu-sonar-datasets
+  notes: 'Not yet ingested (access: pending-ingest per S57 catalog planning; checksums unset until staged).
+    queued for a dry-run ingest via the supported adapter.'
+  counts_note: unknown
+- id: galapagos-3d
+  domain: imaging
+  release_skip_reason: "no-staged-images: registry lists imagery, nothing staged under sources/ in rs-storage-open (U7/queue follow-up)"
+  access_class: open
+  name: Galapagos 3D
+  version: unversioned
+  description: 3D photogrammetry / geodesic-walk reef structure captures from the Galapagos.
+  licence:
+    id: cc-by-4.0
+    name: cc-by-4.0
+    tier: T1_PERMISSIVE
+    flags:
+      attribution_required: true
+  verification:
+    verified_on: '2026-09-25'
+    verified_by: S57 catalog reports/data/2026-09-25-5star-catalog.tsv row (HF/Zenodo API or DataCite,
+      checked 2026-09-25)
+    method: secondary
+  legal_basis: licence
+  redistribution: ok
+  provenance: public
+  access:
+    method: zenodo
+    uri: https://zenodo.org/records/14914807
+    params:
+      zenodo_record: '14914807'
+  loader:
+    layout: metadata-only
+  modalities:
+  - image
+  - mesh
+  capabilities:
+  - 3d-reconstruction
+  - structural-complexity
+  coverage:
+    regions:
+    - eastern-pacific
+  citation: Zenodo doi:10.5281/zenodo.14914807
+  homepage: https://zenodo.org/records/14914807
+  notes: 'Not yet ingested (access: pending-ingest per S57 catalog planning; checksums unset until staged).
+    queued for a dry-run ingest via the supported adapter.'
+  counts_note: unknown
+- id: port-royal
+  domain: coral
+  release_skip_reason: "no-staged-images: registry lists imagery, nothing staged under sources/ in rs-storage-open (U7/queue follow-up)"
+  access_class: open
+  name: Port Royal Jamaica 2010 (NatGeo)
+  version: unversioned
+  description: Stereo/3D underwater archaeology imagery from the sunken city of Port Royal, Jamaica (2010
+    NatGeo survey).
+  licence:
+    id: cc-by-4.0
+    name: cc-by-4.0
+    tier: T1_PERMISSIVE
+    flags:
+      attribution_required: true
+  verification:
+    verified_on: '2026-09-25'
+    verified_by: S57 catalog reports/data/2026-09-25-5star-catalog.tsv row (HF/Zenodo API or DataCite,
+      checked 2026-09-25)
+    method: secondary
+  legal_basis: licence
+  redistribution: ok
+  provenance: public
+  access:
+    method: zenodo
+    uri: https://zenodo.org/records/10271767
+    params:
+      zenodo_record: '10271767'
+  loader:
+    layout: metadata-only
+  modalities:
+  - image
+  capabilities:
+  - 3d-reconstruction
+  coverage:
+    regions:
+    - caribbean
+  citation: Zenodo doi:10.5281/zenodo.10271767
+  homepage: https://zenodo.org/records/10271767
+  notes: 'Not yet ingested (access: pending-ingest per S57 catalog planning; checksums unset until staged).
+    queued for a dry-run ingest via the supported adapter.'
+  counts_note: unknown
+- id: aqualoc
+  domain: imaging
+  release_skip_reason: "no-staged-images: raw mirror of 16 images only, no INGEST.json/metadata.parquet (U7/queue follow-up)"
+  access_class: restricted-nc
+  name: AQUALOC
+  version: unversioned
+  description: Visual-inertial SLAM sequences (harbor + underwater archaeology) with ground-truth trajectories.
+  licence:
+    id: cc-by-nc-sa
+    name: cc-by-nc-sa
+    tier: T3_NONCOMMERCIAL
+    flags:
+      attribution_required: true
+      share_alike: true
+  verification:
+    verified_on: '2026-09-25'
+    verified_by: S57 catalog reports/data/2026-09-25-5star-catalog.tsv row (HF/Zenodo API or DataCite,
+      checked 2026-09-25)
+    method: secondary
+  legal_basis: licence
+  redistribution: ok
+  provenance: public
+  access:
+    method: http
+    uri: https://seafile.lirmm.fr/d/79b03788f29148ca84e5/
+    params:
+      landing: https://www.lirmm.fr/aqualoc/
+      share: https://seafile.lirmm.fr/d/79b03788f29148ca84e5/
+  loader:
+    layout: metadata-only
+  modalities:
+  - image
+  - sequence
+  capabilities:
+  - pose-slam
+  coverage:
+    regions:
+    - mediterranean
+  citation: Ferrera et al., IJRR 2019
+  homepage: https://www.lirmm.fr/aqualoc/
+  notes: 'Not yet ingested (access: pending-ingest per S57 catalog planning; checksums unset until staged).
+    needs_adapter:seafile-share — the real download host is a Seafile share link (https://seafile.lirmm.fr/d/79b03788f29148ca84e5/),
+    not a flat file list; needs a Seafile-share adapter (its API lists folder contents as JSON under /api/v2.1
+    given the share token)'
+  n_images: 17
+  counts_note: sequences
+  annotations:
+  - kind: camera-pose
+    supervises: []
+- id: seathru-nerf
+  domain: imaging
+  access_class: internal-only
+  name: SeaThru-NeRF scenes
+  version: unversioned
+  description: Posed underwater image sets (COLMAP) for NeRF reconstruction with backscatter removal.
+  licence:
+    id: unknown
+    name: unknown
+    tier: T4_TDM_ONLY
+  verification:
+    verified_on: '2026-09-25'
+    verified_by: S57 catalog reports/data/2026-09-25-5star-catalog.tsv row (HF/Zenodo API or DataCite,
+      checked 2026-09-25)
+    method: secondary
+  legal_basis: unknown
+  redistribution: unknown
+  provenance: public
+  access:
+    method: http
+    uri: https://drive.google.com/uc?export=download&id=1RzojBFvBWjUUhuJb95xJPSNP3nJwZWaT
+    params:
+      landing: https://sea-thru-nerf.github.io/
+      drive_link: https://drive.google.com/uc?export=download&id=1RzojBFvBWjUUhuJb95xJPSNP3nJwZWaT
+  loader:
+    layout: metadata-only
+  modalities:
+  - image
+  capabilities:
+  - 3d-reconstruction
+  - image-enhancement
+  coverage:
+    regions:
+    - red-sea
+    - caribbean
+  citation: Levy et al., CVPR 2023
+  homepage: https://sea-thru-nerf.github.io/
+  notes: 'Not yet ingested (access: pending-ingest per S57 catalog planning; checksums unset until staged).
+    needs_adapter:gdrive — project page links a Google Drive file id (1RzojBFvBWjUUhuJb95xJPSNP3nJwZWaT);
+    needs a Drive-aware fetcher (large-file confirm-token handshake)'
+  n_images: 4
+  counts_note: scenes
+  annotations:
+  - kind: camera-pose
+    supervises: []
+- id: seagrassfinder
+  domain: seagrass
+  access_class: restricted-nd
+  name: SeagrassFinder eelgrass
+  version: unversioned
+  description: Eelgrass (seagrass) classification imagery for the SeagrassFinder project.
+  licence:
+    id: cc-by-nc-nd-4.0
+    name: cc-by-nc-nd-4.0
+    tier: T3_NONCOMMERCIAL
+    flags:
+      attribution_required: true
+      no_derivatives: true
+  verification:
+    verified_on: '2026-09-25'
+    verified_by: S57 catalog reports/data/2026-09-25-5star-catalog.tsv row (HF/Zenodo API or DataCite,
+      checked 2026-09-25)
+    method: secondary
+  legal_basis: licence
+  redistribution: ok
+  provenance: public
+  access:
+    method: zenodo
+    uri: https://zenodo.org/records/13904604
+    params:
+      zenodo_record: '13904604'
+  loader:
+    layout: metadata-only
+  modalities:
+  - image
+  capabilities:
+  - seagrass-mapping
+  coverage:
+    regions:
+    - temperate
+  citation: Zenodo doi:10.5281/zenodo.13904604
+  homepage: https://zenodo.org/records/13904604
+  notes: 'Not yet ingested (access: pending-ingest per S57 catalog planning; checksums unset until staged).
+    queued for a dry-run ingest via the supported adapter.'
+  counts_note: unknown
+- id: posidonia
+  domain: seagrass
+  release_skip_reason: "no-staged-images: registry lists imagery, nothing staged under sources/ in rs-storage-open (U7/queue follow-up)"
+  access_class: open
+  name: Posidonia oceanica images
+  version: unversioned
+  description: Posidonia oceanica (Mediterranean seagrass) imagery for segmentation/classification.
+  licence:
+    id: cc-by-4.0
+    name: cc-by-4.0
+    tier: T1_PERMISSIVE
+    flags:
+      attribution_required: true
+  verification:
+    verified_on: '2026-09-25'
+    verified_by: S57 catalog reports/data/2026-09-25-5star-catalog.tsv row (HF/Zenodo API or DataCite,
+      checked 2026-09-25)
+    method: secondary
+  legal_basis: licence
+  redistribution: ok
+  provenance: public
+  access:
+    method: zenodo
+    uri: https://zenodo.org/records/4526867
+    params:
+      zenodo_record: '4526867'
+  loader:
+    layout: metadata-only
+  modalities:
+  - image
+  capabilities:
+  - seagrass-mapping
+  coverage:
+    regions:
+    - mediterranean
+  citation: Zenodo doi:10.5281/zenodo.4526867
+  homepage: https://zenodo.org/records/4526867
+  notes: 'Not yet ingested (access: pending-ingest per S57 catalog planning; checksums unset until staged).
+    queued for a dry-run ingest via the supported adapter.'
+  counts_note: unknown
+- id: whoi-plankton
+  domain: plankton
+  access_class: internal-only
+  name: WHOI plankton (IFCB)
+  version: unversioned
+  description: Imaging FlowCytobot (IFCB) plankton image classification dataset from WHOI.
+  licence:
+    id: unknown
+    name: unknown
+    tier: T4_TDM_ONLY
+  verification:
+    verified_on: '2026-09-25'
+    verified_by: S57 catalog reports/data/2026-09-25-5star-catalog.tsv row (HF/Zenodo API or DataCite,
+      checked 2026-09-25)
+    method: secondary
+  legal_basis: unknown
+  redistribution: unknown
+  provenance: public
+  access:
+    method: huggingface
+    uri: https://huggingface.co/datasets/nf-whoi/whoi-plankton
+    params:
+      repo: nf-whoi/whoi-plankton
+  loader:
+    layout: metadata-only
+  modalities:
+  - image
+  capabilities:
+  - general-pretraining
+  coverage:
+    regions:
+    - western-atlantic
+  citation: Sosik et al., WHOI-Plankton
+  homepage: https://huggingface.co/datasets/nf-whoi/whoi-plankton
+  notes: 'Not yet ingested (access: pending-ingest per S57 catalog planning; checksums unset until staged).
+    queued for a dry-run ingest via the supported adapter.'
+  n_images: 956867
+  counts_note: rows (HF viewer)
+- id: openimages-marine
+  domain: fish
+  release_skip_reason: "no-staged-images: registry lists imagery, nothing staged under sources/ in rs-storage-open (U7/queue follow-up)"
+  access_class: open
+  name: Open Images V7 marine classes
+  version: unversioned
+  description: Curated marine-class subset (Fish, Jellyfish, Starfish, Sea turtle, Shark, ...) of Open
+    Images V7.
+  licence:
+    id: cc-by-4.0
+    name: cc-by-4.0
+    tier: T1_PERMISSIVE
+    flags:
+      attribution_required: true
+  verification:
+    verified_on: '2026-09-25'
+    verified_by: S57 catalog reports/data/2026-09-25-5star-catalog.tsv row (HF/Zenodo API or DataCite,
+      checked 2026-09-25)
+    method: secondary
+  legal_basis: licence
+  redistribution: ok
+  provenance: public
+  access:
+    method: s3
+    uri: s3://open-images-dataset/
+    params:
+      bucket: s3://open-images-dataset/
+      annotation_csv: https://storage.googleapis.com/openimages/v7/oidv7-train-annotations-bbox.csv
+  loader:
+    layout: metadata-only
+  modalities:
+  - image
+  capabilities:
+  - fish-detection
+  - megafauna-id
+  - vqa-captioning
+  coverage:
+    regions:
+    - global
+  citation: Kuznetsova et al., IJCV 2020
+  homepage: https://storage.googleapis.com/openimages/web/index.html
+  notes: 'Not yet ingested (access: pending-ingest per S57 catalog planning; checksums unset until staged).
+    needs_adapter:csv-url-index — s3://open-images-dataset/ is anonymously listable (confirmed 200 on
+    ListObjectsV2) but is a flat <split>/<image_id>.jpg layout with no class prefix; a marine-only subset
+    needs the class-filtered image-id list from the OIDv7 bbox/label CSVs first, then per-id fetch from
+    the flat bucket — the bucket adapter alone would pull the whole ~1.9M-image corpus'
+  n_images: 50000
+  counts_note: est. (catalog, marine classes only)
+- id: liaci
+  domain: imaging
+  access_class: unknown
+  name: LIACi ship-hull inspection
+  version: unversioned
+  description: Ship-hull underwater inspection imagery with semantic segmentation masks (LIACi project,
+    SINTEF).
+  licence:
+    id: unknown
+    name: unknown
+    tier: T4_TDM_ONLY
+  verification:
+    verified_on: '2026-09-25'
+    verified_by: S57 catalog reports/data/2026-09-25-5star-catalog.tsv row (HF/Zenodo API or DataCite,
+      checked 2026-09-25)
+    method: secondary
+  legal_basis: unknown
+  redistribution: unknown
+  provenance: public
+  access:
+    method: http
+    uri: https://liaci.sintef.cloud/
+    params:
+      landing: https://liaci.sintef.cloud/
+  loader:
+    layout: metadata-only
+  modalities:
+  - image
+  capabilities:
+  - structural-complexity
+  coverage:
+    regions:
+    - unknown
+  citation: Waszak et al., OCEANS 2022
+  homepage: https://liaci.sintef.cloud/
+  notes: 'Not yet ingested (access: pending-ingest per S57 catalog planning; checksums unset until staged).
+    needs_adapter:js-rendered-site — liaci.sintef.cloud serves a JS app shell with no data links in the
+    raw HTML; needs either the app''s underlying API endpoint (undiscovered on this pass) or a headless-browser
+    fetch'
+  n_images: 1893
+  counts_note: images
+- id: smartbay
+  domain: fauna
+  release_skip_reason: "no-staged-images: registry lists imagery, nothing staged under sources/ in rs-storage-open (U7/queue follow-up)"
+  access_class: open
+  name: SmartBay marine types OD
+  version: unversioned
+  description: Object-detection dataset of marine organism types from SmartBay (Galway Bay, Ireland) camera
+    imagery.
+  licence:
+    id: cc-by-4.0
+    name: cc-by-4.0
+    tier: T1_PERMISSIVE
+    flags:
+      attribution_required: true
+  verification:
+    verified_on: '2026-09-25'
+    verified_by: S57 catalog reports/data/2026-09-25-5star-catalog.tsv row (HF/Zenodo API or DataCite,
+      checked 2026-09-25)
+    method: secondary
+  legal_basis: licence
+  redistribution: ok
+  provenance: public
+  access:
+    method: zenodo
+    uri: https://zenodo.org/records/17018426
+    params:
+      zenodo_record: '17018426'
+  loader:
+    layout: metadata-only
+  modalities:
+  - image
+  capabilities:
+  - megafauna-id
+  - invertebrate-detection
+  coverage:
+    regions:
+    - eastern-atlantic
+  citation: Zenodo doi:10.5281/zenodo.17018426
+  homepage: https://zenodo.org/records/17018426
+  notes: 'Not yet ingested (access: pending-ingest per S57 catalog planning; checksums unset until staged).
+    queued for a dry-run ingest via the supported adapter.'
+  counts_note: unknown
+- id: plasticinwater
+  domain: imaging
+  release_skip_reason: "no-staged-images: registry lists imagery, nothing staged under sources/ in rs-storage-open (U7/queue follow-up)"
+  access_class: open
+  name: OceanCV PlasticInWater
+  version: unversioned
+  description: Underwater marine-debris (plastic) detection imagery from the OceanCV project.
+  licence:
+    id: unknown
+    name: unknown
+    tier: T4_TDM_ONLY
+  verification:
+    verified_on: '2026-09-25'
+    verified_by: S57 catalog reports/data/2026-09-25-5star-catalog.tsv row (HF/Zenodo API or DataCite,
+      checked 2026-09-25)
+    method: secondary
+  legal_basis: unknown
+  redistribution: unknown
+  provenance: public
+  access:
+    method: huggingface
+    uri: https://huggingface.co/datasets/OceanCV/PlasticInWater
+    params:
+      repo: OceanCV/PlasticInWater
+  loader:
+    layout: metadata-only
+  modalities:
+  - image
+  capabilities:
+  - marine-debris
+  coverage:
+    regions:
+    - unknown
+  citation: OceanCV/PlasticInWater (HF)
+  homepage: https://huggingface.co/datasets/OceanCV/PlasticInWater
+  notes: 'Not yet ingested (access: pending-ingest per S57 catalog planning; checksums unset until staged).
+    queued for a dry-run ingest via the supported adapter.'
+  n_images: 1032
+  counts_note: rows (HF viewer)
+- id: caddy
+  domain: imaging
+  access_class: restricted-nc
+  name: CADDY underwater gestures/diver pose
+  version: unversioned
+  description: Stereo underwater imagery of diver gestures/pose for human-robot interaction.
+  licence:
+    id: cc-by-nc-sa
+    name: cc-by-nc-sa
+    tier: T3_NONCOMMERCIAL
+    flags:
+      attribution_required: true
+      share_alike: true
+  verification:
+    verified_on: '2026-09-25'
+    verified_by: S57 catalog reports/data/2026-09-25-5star-catalog.tsv row (HF/Zenodo API or DataCite,
+      checked 2026-09-25)
+    method: secondary
+  legal_basis: licence
+  redistribution: ok
+  provenance: public
+  access:
+    method: http
+    uri: http://www.caddian.eu/
+    params:
+      landing: http://www.caddian.eu/
+  loader:
+    layout: staged-tree
+  modalities:
+  - image
+  capabilities:
+  - general-pretraining
+  coverage:
+    regions:
+    - mediterranean
+  citation: Gomez Chavez et al., JMSE 2019
+  homepage: http://www.caddian.eu/
+  notes: 'Not yet ingested (access: pending-ingest per S57 catalog planning; checksums unset until staged).
+    needs_adapter:site-scrape — caddian.eu root and a guessed /index.php/downloads path (404) exposed
+    no direct zip links on this pass; the catalog''s ''zip links'' note implies a subpage not yet located. access_class restricted-nc is held until the authors confirm the licence (lic-A evidence says CC-BY-4.0, unconfirmed; WP-L1b decision 2026-10-05)'
+  n_images: 10000
+  counts_note: stereo pairs (est, catalog)
+  annotations:
+  - kind: image-label
+    notes: diver-gesture classes; verify count
+    supervises: []
+- id: vdd-c
+  domain: imaging
+  release_skip_reason: "no-staged-images: registry lists imagery, nothing staged under sources/ in rs-storage-open (U7/queue follow-up)"
+  access_class: open
+  name: VDD-C diver detection
+  version: unversioned
+  description: Large diver-detection bounding-box dataset (Virtual Diver Dataset - Combined).
+  licence:
+    id: cc-by-4.0
+    name: cc-by-4.0
+    tier: T1_PERMISSIVE
+    flags:
+      attribution_required: true
+  verification:
+    verified_on: '2026-09-25'
+    verified_by: S57 catalog reports/data/2026-09-25-5star-catalog.tsv row (HF/Zenodo API or DataCite,
+      checked 2026-09-25)
+    method: secondary
+  legal_basis: licence
+  redistribution: ok
+  provenance: public
+  access:
+    method: http
+    uri: https://conservancy.umn.edu/handle/11299/219383
+    params:
+      landing: https://conservancy.umn.edu/handle/11299/219383
+  loader:
+    layout: metadata-only
+  modalities:
+  - image
+  capabilities:
+  - general-pretraining
+  coverage:
+    regions:
+    - unknown
+  citation: de Langis et al. 2021
+  homepage: https://conservancy.umn.edu/handle/11299/219383
+  notes: 'Not yet ingested (access: pending-ingest per S57 catalog planning; checksums unset until staged).
+    needs_adapter:drum — DRUM (Univ. of Minnesota''s DSpace repository) 403s plain curl (bot-blocked);
+    needs the DRUM/DSpace REST API (same family as trashcan/trash-icra19 in W1) rather than scraping the
+    HTML landing page'
+  n_images: 105000
+  counts_note: est. (catalog)
+- id: sodd
+  domain: imaging
+  release_skip_reason: "no-staged-images: registry lists imagery, nothing staged under sources/ in rs-storage-open (U7/queue follow-up)"
+  access_class: open
+  name: SODD subaquatic object detection
+  version: unversioned
+  description: Subaquatic object-detection dataset (YOLO format).
+  licence:
+    id: cc-by-4.0
+    name: cc-by-4.0
+    tier: T1_PERMISSIVE
+    flags:
+      attribution_required: true
+  verification:
+    verified_on: '2026-09-25'
+    verified_by: S57 catalog reports/data/2026-09-25-5star-catalog.tsv row (HF/Zenodo API or DataCite,
+      checked 2026-09-25)
+    method: secondary
+  legal_basis: licence
+  redistribution: ok
+  provenance: public
+  access:
+    method: zenodo
+    uri: https://zenodo.org/records/10230328
+    params:
+      zenodo_record: '10230328'
+  loader:
+    layout: metadata-only
+  modalities:
+  - image
+  capabilities:
+  - marine-debris
+  - general-pretraining
+  coverage:
+    regions:
+    - unknown
+  citation: Zenodo doi:10.5281/zenodo.10230328
+  homepage: https://zenodo.org/records/10230328
+  notes: 'Not yet ingested (access: pending-ingest per S57 catalog planning; checksums unset until staged).
+    queued for a dry-run ingest via the supported adapter.'
+  counts_note: unknown

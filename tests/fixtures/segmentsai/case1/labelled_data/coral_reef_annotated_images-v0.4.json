@@ -1,0 +1,153 @@
+{
+  "dataset": {
+    "task_attributes": {
+      "categories": [
+        {
+          "name": "Hard Coral",
+          "id": 0,
+          "color": [
+            208,
+            2,
+            27
+          ],
+          "attributes": []
+        },
+        {
+          "name": "Algae",
+          "id": 1,
+          "color": [
+            65,
+            117,
+            5
+          ],
+          "attributes": []
+        },
+        {
+          "name": "Sponge",
+          "id": 2,
+          "color": [
+            236,
+            176,
+            31,
+            255
+          ],
+          "attributes": []
+        },
+        {
+          "name": "Soft Coral",
+          "id": 3,
+          "color": [
+            74,
+            144,
+            226
+          ],
+          "attributes": []
+        },
+        {
+          "name": "Other Invertebrates",
+          "id": 4,
+          "color": [
+            189,
+            16,
+            224
+          ],
+          "attributes": []
+        },
+        {
+          "name": "Other",
+          "id": 5,
+          "color": [
+            155,
+            155,
+            155
+          ],
+          "attributes": []
+        }
+      ]
+    },
+    "samples": [
+      {
+        "uuid": "ab60fb18-8086-4b30-b3f8-77c445110a10",
+        "name": "17002369001.jpg",
+        "attributes": {
+          "image": {
+            "url": "https://segmentsai-prod.s3.eu-west-2.amazonaws.com/assets/joppe/0ea47486-40c6-4e13-aa31-8c0e47bdeada.jpg"
+          }
+        },
+        "metadata": {},
+        "labels": {
+          "ground-truth": {
+            "label_status": "LABELED",
+            "attributes": {
+              "format_version": "0.1",
+              "annotations": [
+                {
+                  "id": 1,
+                  "category_id": 0
+                },
+                {
+                  "id": 2,
+                  "category_id": 0
+                },
+                {
+                  "id": 3,
+                  "category_id": 0
+                },
+                {
+                  "id": 4,
+                  "category_id": 0
+                },
+                {
+                  "id": 5,
+                  "category_id": 3
+                }
+              ],
+              "segmentation_bitmap": {
+                "url": "https://segmentsai-prod.s3.eu-west-2.amazonaws.com/assets/nid/8943a757-1faf-4155-9897-358ccec02548.png"
+              }
+            }
+          }
+        }
+      },
+      {
+        "uuid": "72cc209d-aa3b-4284-965b-117b323a0135",
+        "name": "17001738002.jpg",
+        "attributes": {
+          "image": {
+            "url": "https://segmentsai-prod.s3.eu-west-2.amazonaws.com/assets/joppe/2561c42f-ce0a-4c10-8f1c-821ccbd94391.jpg"
+          }
+        },
+        "metadata": {},
+        "labels": {
+          "ground-truth": {
+            "label_status": "REVIEWED",
+            "attributes": {
+              "format_version": "0.1",
+              "annotations": [
+                {
+                  "id": 1,
+                  "category_id": 0
+                },
+                {
+                  "id": 2,
+                  "category_id": 0
+                },
+                {
+                  "id": 3,
+                  "category_id": 3
+                },
+                {
+                  "id": 4,
+                  "category_id": 3
+                }
+              ],
+              "segmentation_bitmap": {
+                "url": "https://segmentsai-prod.s3.eu-west-2.amazonaws.com/assets/joppe/f8095647-9b2d-44ff-bc44-6846377b8751.png"
+              }
+            }
+          }
+        }
+      }
+    ]
+  }
+}

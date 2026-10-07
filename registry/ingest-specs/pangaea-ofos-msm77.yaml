@@ -1,0 +1,21 @@
+id: pangaea-ofos-msm77
+access_class: open
+adapter: pangaea-series
+params:
+  doi: 10.1594/PANGAEA.989682
+license: cc-by-4.0
+attribution: PANGAEA contributors
+citation: doi:10.1594/PANGAEA.989732 (one of ~50 linked profiles)
+homepage: https://doi.org/10.1594/PANGAEA.989732
+notes: 'candidate — WP-6j pangaea-series: parent PANGAEA.989682 -> 3 child datasets -> 2,114 images (listed 2026-09-25, no
+  fetch)'
+disk_floor_gib: 34.0
+measured:
+  method: 'WP-6j: PANGAEA search incollection:989682 (count == totalCount) + every child''s tab export, distinct image keys;
+    bytes not declared by PANGAEA'
+  date: '2026-09-25'
+  per_item_license: CC-BY-4.0
+  by_depth_band_m: {}
+  items: 2114
+  bytes_basis: 'not measured: PANGAEA child tab exports list image names/URLs but no file sizes (WP-6j listing only, no fetch)'
+  child_datasets: 3

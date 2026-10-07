@@ -118,7 +118,7 @@ class Registry:
 
         licences = cls._load_licences(base / "licences.yaml")
         profiles = cls._load_profiles(base / "profiles.yaml")
-        sources = cls._load_sources(base / "sources", licences)
+        sources = cls._apply_spec_truth(cls._load_sources(base / "sources", licences), base)
         schemas = cls._load_collection(base / "schemas", "schemas", LabelSchema)
         tasks = cls._load_collection(base / "tasks", "tasks", TaskSpec)
         crosswalks = cls._load_collection(base / "crosswalks", "crosswalks", Crosswalk)
@@ -129,7 +129,9 @@ class Registry:
             if task.schema_id not in schemas:
                 raise RegistryError(f"task '{task.id}' targets unknown schema '{task.schema_id}'")
             task.validate_against(schemas[task.schema_id])
-        return cls(sources, licences, profiles, schemas, crosswalks, tasks, _git_commit(base))
+        registry = cls(sources, licences, profiles, schemas, crosswalks, tasks, _git_commit(base))
+        registry.root = base  # lets release find registry/taxonomy/ (WP-7 label gate)
+        return registry
 
     @staticmethod
     def _load_collection(base: Path, key: str, model: type) -> dict[str, object]:
@@ -156,17 +158,28 @@ class Registry:
     ) -> None:
         """A loader pointing at a missing schema should fail at load, not at epoch 1."""
         for src in sources.values():
+            for images_source_id in src.images_from:
+                if images_source_id not in sources:
+                    raise RegistryError(
+                        f"source '{src.id}' images_from references unknown source "
+                        f"'{images_source_id}'"
+                    )
             spec = src.loader
-            if spec is None:
-                continue
-            if spec.schema_id and spec.schema_id not in schemas:
-                raise RegistryError(
-                    f"source '{src.id}' references unknown schema '{spec.schema_id}'"
-                )
-            if spec.crosswalk_id and spec.crosswalk_id not in crosswalks:
-                raise RegistryError(
-                    f"source '{src.id}' references unknown crosswalk '{spec.crosswalk_id}'"
-                )
+            if spec is not None:
+                if spec.schema_id and spec.schema_id not in schemas:
+                    raise RegistryError(
+                        f"source '{src.id}' references unknown schema '{spec.schema_id}'"
+                    )
+                if spec.crosswalk_id and spec.crosswalk_id not in crosswalks:
+                    raise RegistryError(
+                        f"source '{src.id}' references unknown crosswalk '{spec.crosswalk_id}'"
+                    )
+            for ann in src.annotations:
+                if ann.schema_id and ann.schema_id not in schemas:
+                    raise RegistryError(
+                        f"source '{src.id}' annotations.schema_id references unknown "
+                        f"schema '{ann.schema_id}'"
+                    )
         for walk in crosswalks.values():
             if walk.target_schema not in schemas:
                 raise RegistryError(
@@ -219,6 +232,25 @@ class Registry:
 
         if not out:
             raise RegistryError(f"No sources found under {base}")
+        return out
+
+    @staticmethod
+    def _apply_spec_truth(sources: dict[str, Source], base: Path) -> dict[str, Source]:
+        """WP-R2, one licence truth: where an ingest spec governs a source (same id or a
+        ``SPEC_ALIASES`` alias), its ``access_class`` / ``licence_per_row`` win, so the release
+        path (``registry.source(id)``) never reads a staler copy than the ingest path."""
+        from .enums import AccessClass
+        from .licence_class import coerce_class, spec_for
+
+        out: dict[str, Source] = {}
+        for sid, src in sources.items():
+            spec = spec_for(sid, base)
+            update: dict[str, Any] = {}
+            if spec and "access_class" in spec:
+                update["access_class"] = AccessClass(coerce_class(spec["access_class"]))
+            if spec and "licence_per_row" in spec:
+                update["licence_per_row"] = bool(spec["licence_per_row"])
+            out[sid] = src.model_copy(update=update) if update else src
         return out
 
     @staticmethod

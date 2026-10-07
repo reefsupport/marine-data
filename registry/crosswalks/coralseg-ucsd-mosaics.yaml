@@ -1,0 +1,26 @@
+# Hand-authored (WP-U4, 2026-10-05) for taxonomy 2.3.0. Coralseg (UCSD) masks are 3-class:
+# the red channel of each RGB mask PNG is 0 Other, 1 Hard Coral, 2 Soft Coral (D-AI3, the
+# `Mask conversion` line of s3://rs-storage-open/benthic_datasets/README.md; ordering also (legacy: history note)
+# used by registry/crosswalks/reef-support-labelbox.yaml). Names are the source's own and
+# match registry/taxonomy/vocab/coralseg-ucsd-mosaics.tsv byte-for-byte.
+# Hard/Soft Coral are coral-level calls from mosaic annotators, no genus or growth form.
+# "Other" is the residual bucket for every non-coral pixel (sand, algae, sponge, water...),
+# so it is an explicit unmappable edge (the pixel is unsupervised on the taxon axis), the same
+# treatment as plc-beijbom2015's "All other". It is a coverage exception in taxonomy.yaml.
+crosswalks:
+  - id: coralseg-ucsd-mosaics
+    source_schema: dataset-native
+    target_schema: rs-benthic-v1
+    description: Coralseg's 3-class mosaic masks (Other / Hard Coral / Soft Coral) onto the taxon axis.
+    edges:
+      - source_label: "Hard Coral"
+        targets: { taxon: HC }
+        fidelity: exact
+        note: "Scleractinia: the vocab's own HC definition. Growth form and condition were not annotated."
+      - source_label: "Soft Coral"
+        targets: { taxon: SC }
+        fidelity: exact
+        note: "Octocorallia: the vocab's own SC definition. Growth form and condition were not annotated."
+      - source_label: "Other"
+        fidelity: unmappable
+        note: "residual bucket for every non-coral pixel (substrate, algae, other fauna, water): biotic or abiotic, no taxonomic content"

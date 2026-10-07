@@ -1,0 +1,19 @@
+id: floating-marine-debris
+access_class: open
+adapter: github
+params:
+  repo: miguelmendesduarte/Floating-Marine-Debris-Data
+  ref: 427059e47f998d7e5e1fa82ee1fd0f576fec525b
+license: CC-BY-4.0
+attribution: Floating Marine Debris Data (Duarte et al.)
+citation: GitHub miguelmendesduarte/Floating-Marine-Debris-Data
+homepage: https://github.com/miguelmendesduarte/Floating-Marine-Debris-Data
+
+disk_floor_gib: 36.0
+
+measured:
+  label_type: tabular pixel spectra, 7 categories (Sentinel-2); no image labels
+  release_excluded: true
+  release_exclusion_reason: tabular Sentinel-2 pixel spectra, no imagery
+  method: u15-label-kind-triage (registry-patch.yaml)
+  date: '2026-10-05'

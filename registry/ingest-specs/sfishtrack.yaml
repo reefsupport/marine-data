@@ -1,0 +1,25 @@
+# WP-6g (2026-09-25) new source: candidate — WP-6g gap 2,3: fish segmentation AND tracking in underwater video: dense masks through time
+id: sfishtrack
+access_class: open
+adapter: zenodo
+params:
+  zenodo_record: 20617668
+license: cc-by-4.0
+attribution: Sánchez, Lisani, Catalán (2026), Zenodo
+citation: 'doi:10.5281/zenodo.20617668 — SFISHTRACK: A Dataset for Fish Segmentation and Tracking in Underwater
+  Videos'
+homepage: https://zenodo.org/records/20617668
+notes: 'candidate — WP-6g gap 2,3: fish segmentation AND tracking in underwater video: dense masks through time'
+temp_cap_gb: 29.0
+disk_floor_gib: 60.0
+measured:
+  items: 24115
+  bytes: 27487705333
+  method: 'remote zip CD: 24,115 frames, 23,532 masks, 54 mp4, 54 annotation json; Zenodo API bytes'
+  date: '2026-09-25'
+  per_item_license: cc-by-4.0
+  by_depth_band_m: {}
+  label_type: per-frame instance masks + track annotations (54 videos)
+  wp6g_gaps:
+  - 2
+  - 3

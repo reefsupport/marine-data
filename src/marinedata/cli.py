@@ -11,6 +11,43 @@ from __future__ import annotations
 import argparse
 import sys
 
+from .cli_bench import add_bench_subparser  # WP-11 P1: registry/benchmarks.yaml validate+hash
+from .cli_decon import add_decon_subparser  # WP-12 P2: benchmark decontamination gate
+from .cli_dedup import add_dedup_subparser
+from .cli_ingest import _cmd_ingest, add_ingest_subparser  # noqa: F401 — re-exported
+from .cli_ingest_batch import add_ingest_batch_subparser
+from .cli_ingest_source import add_ingest_source_subparser
+from .cli_labelquality import add_labelquality_subparser
+from .cli_metadata import add_metadata_subparser
+from .cli_privacy import add_privacy_subparser
+from .cli_quality import add_quality_subparser
+from .cli_registry import add_registry_subparsers
+from .cli_release import add_release_subparser
+from .cli_splitmap import add_splitmap_subparser
+from .cli_splits import add_splits_subparser  # WP-11/12 P3: split v2 pools/OOD/allocator
+from .cli_verify import add_verify_subparsers
+from .eval.cli import add_eval_subparser
+
+try:  # WP-13 captions: captions/cli.py imports pandas at top level (optional extra)
+    from .captions.cli import add_captions_subparser
+except ImportError as _captions_import_error:  # pragma: no cover — depends on extras
+    _CAPTIONS_MISSING = str(_captions_import_error)
+
+    def add_captions_subparser(subparsers: argparse._SubParsersAction) -> None:
+        p = subparsers.add_parser(
+            "captions", help="WP-13 captions (needs the pandas extra: marinedata[pandas])"
+        )
+
+        def _missing(_args: argparse.Namespace) -> int:
+            print(
+                f"captions: unavailable ({_CAPTIONS_MISSING}); install marinedata[pandas]",
+                file=sys.stderr,
+            )
+            return 2
+
+        p.set_defaults(func=_missing)
+
+
 from .gate import evaluate
 from .lineage import build_lineage
 from .query import find
@@ -39,7 +76,7 @@ def _cmd_show(args: argparse.Namespace) -> int:
     print(f"               {src.verification.verified_by}")
     if src.verification.disputed:
         print(f"  ⚠ DISPUTED   {' '.join((src.verification.dispute_note or '').split())}")
-    print(f"  items        {src.items or '—'}  {src.items_note or ''}")
+    print(f"  items        {src.primary_count or '—'}  {src.counts_note or ''}")
     print(f"  capabilities {', '.join(c.value for c in src.capabilities)}")
     print(f"  regions      {', '.join(r.value for r in src.coverage.regions)}")
     print(f"  access       {src.access.method.value}  {src.access.uri or ''}")
@@ -221,8 +258,54 @@ def _cmd_doctor(args: argparse.Namespace) -> int:
     return 0
 
 
+def _cmd_taxonomy(args: argparse.Namespace) -> int:
+    import json as _json
+
+    from .registry import _default_root
+    from .taxonomy import audit_all, diff, load_manifest, manifest, node_counts, scoped_gate
+
+    root = _default_root()
+    registry = Registry.load(root)
+    if args.action == "diff":
+        a, b = (
+            load_manifest(r, root) if r != "HEAD" else manifest(registry, root) for r in args.refs
+        )
+        print(_json.dumps(diff(a, b), indent=1, default=str))
+        return 0
+    if args.action == "export":
+        m = manifest(registry, root)
+        out = root / "taxonomy" / "releases" / f"{m['taxonomy_version']}.json"
+        out.parent.mkdir(parents=True, exist_ok=True)
+        out.write_text(_json.dumps(m, indent=1, sort_keys=True, default=str) + "\n")
+        print(out)
+        return 0
+    counts = node_counts(registry)
+    print(
+        f"taxon nodes {counts['nodes']} (aphia {counts['aphia']}, non_taxon {counts['non_taxon']})"
+    )
+    for audit in audit_all(registry, root):
+        print(audit.line())
+    fails, listed = scoped_gate(registry, root, releases=args.release or [])
+    for line in fails:
+        print(f"  FAIL {line}")
+    if args.strict:
+        for line in listed:
+            print(f"  LIST {line}")
+    elif listed:
+        print(f"  {len(listed)} not-staged source issue(s) listed by --strict (not failing)")
+    return 1 if fails else 0
+
+
 def _cmd_labels(args: argparse.Namespace) -> int:
-    """Audit crosswalk labels against the labels the data actually contains."""
+    """Audit crosswalk labels against the labels the data actually contains.
+
+    ``labels check`` (first positional) is the offline coverage gate over every source id
+    in the registry and the ingest specs (:mod:`marinedata.labels_check`).
+    """
+    if args.source_id[:1] == ["check"]:
+        from .labels_check import run as run_labels_check
+
+        return run_labels_check(args)
     from .fetch import FetchError, fetch_sample
     from .labelcheck import audit_source, summarise
 
@@ -285,6 +368,24 @@ def build_parser() -> argparse.ArgumentParser:
     p_fetch.add_argument("--force", action="store_true")
     p_fetch.set_defaults(func=_cmd_fetch)
 
+    add_ingest_subparser(sub)
+    add_ingest_source_subparser(sub)
+    add_ingest_batch_subparser(sub)
+    add_splitmap_subparser(sub)
+    add_metadata_subparser(sub)
+    add_release_subparser(sub)
+    add_privacy_subparser(sub)
+    add_quality_subparser(sub)
+    add_dedup_subparser(sub)
+    add_verify_subparsers(sub)
+    add_eval_subparser(sub)
+    add_labelquality_subparser(sub)
+    add_bench_subparser(sub)
+    add_splits_subparser(sub)
+    add_decon_subparser(sub)
+    add_captions_subparser(sub)  # WP-13; never run by `release build --v2`
+    add_registry_subparsers(sub)  # RB-3: `registry verify`
+
     p_verify = sub.add_parser("verify", help="Check declared layouts against real fetched samples")
     p_verify.add_argument("source_id", nargs="*")
     p_verify.add_argument("--limit", type=int, default=100)
@@ -339,9 +440,45 @@ def build_parser() -> argparse.ArgumentParser:
     )
     p_labels.add_argument("source_id", nargs="*")
     p_labels.add_argument("--limit", type=int, default=50)
-    p_labels.add_argument("--strict", action="store_true", help="Exit 1 on any silent drop")
+    p_labels.add_argument(
+        "--strict",
+        action="store_true",
+        help="Exit 1 on any silent drop; with `check`, gate every source id",
+    )
     p_labels.add_argument("-v", "--verbose", action="store_true")
+    check = p_labels.add_argument_group("labels check", "first positional `check`, then ids")
+    check.add_argument("--json", metavar="PATH", help="check: write the machine-readable report")
+    check.add_argument("--tsv", metavar="PATH", help="check: write the per-source TSV")
+    check.add_argument(
+        "--release-sources",
+        metavar="FILE",
+        help="check: ids (one per line, or a RELEASE.json) that must meet the floor",
+    )
+    check.add_argument(
+        "--audit-cache", metavar="TSV", help="check: audit.tsv-style cache (offline, no bucket)"
+    )
+    check.add_argument(
+        "--bucket",
+        action="store_true",
+        help="check: also list rs-storage-open sources/ (read-only)",
+    )
     p_labels.set_defaults(func=_cmd_labels)
+
+    p_tax = sub.add_parser(
+        "taxonomy", help="Check the taxonomy gate, export a manifest, or diff two versions"
+    )
+    p_tax.add_argument("action", choices=["check", "export", "diff"])
+    p_tax.add_argument("refs", nargs="*", help="diff: two versions/paths (HEAD = working tree)")
+    p_tax.add_argument(
+        "--strict", action="store_true", help="check: also list not-staged sources (never fails)"
+    )
+    p_tax.add_argument(
+        "--release",
+        action="append",
+        metavar="RELEASE_JSON",
+        help="check: also gate the sources named in this release manifest (repeatable)",
+    )
+    p_tax.set_defaults(func=_cmd_taxonomy)
 
     return parser
 

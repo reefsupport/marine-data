@@ -1,0 +1,9 @@
+# source: fathomnet-vme
+# crosswalk: fathomnet-concepts
+# counts: annotations
+# retrieved: 2026-09-25 from https://huggingface.co/datasets/FathomNet/2024-vme-benchmark coco_{train,val,test}.json
+label	count	description
+fish	35032	
+sponge	17324	
+coral	11484	
+crinoid	3872	

@@ -39,6 +39,19 @@ class Tier(str, Enum):
     """Provenance-defective or contract-blocked. Never usable, on any profile."""
 
 
+class AccessClass(str, Enum):
+    """What a source may be released as (WP-L1a); see :mod:`marinedata.licence_class`.
+
+    ``unknown`` is treated exactly like ``internal-only``: never released."""
+
+    OPEN = "open"
+    """Commercial use and redistribution are fine."""
+    RESTRICTED_NC = "restricted-nc"
+    RESTRICTED_ND = "restricted-nd"
+    INTERNAL_ONLY = "internal-only"
+    UNKNOWN = "unknown"
+
+
 class LegalBasis(str, Enum):
     """*Why* we are allowed to use this item. Recorded per source, surfaced in lineage."""
 
@@ -50,6 +63,24 @@ class LegalBasis(str, Enum):
     """Statutory TDM exception. Requires a counsel opinion reference on the profile."""
     UNKNOWN = "unknown"
     """Unresolved. Never usable — present so gaps are explicit rather than absent."""
+
+
+class Redistribution(str, Enum):
+    """Whether we may redistribute a verbatim copy of this source. Recorded per source,
+    surfaced in lineage.
+
+    Orthogonal to :class:`LegalBasis` and to ``LicenceFlags.no_derivatives`` — a source
+    can permit reading data in place while forbidding redistribution, or permit
+    redistributing an unmodified copy while forbidding derivative works from it. This
+    field is a recorded position, never a storage or mirror filter.
+    """
+
+    OK = "ok"
+    """The licence or an explicit grant permits redistributing an unmodified copy."""
+    PROHIBITED = "prohibited"
+    """Redistribution is barred outright — provenance-defective or contract-blocked."""
+    UNKNOWN = "unknown"
+    """Unresolved, or the basis does not establish a redistribution right. Default."""
 
 
 class Capability(str, Enum):
@@ -156,6 +187,43 @@ class Region(str, Enum):
     GLOBAL = "global"
     SYNTHETIC = "synthetic"
     UNKNOWN = "unknown"
+
+
+class Habitat(str, Enum):
+    """Controlled vocabulary for the physical setting a source's imagery was captured
+    in (WP-2b). Coarser than MEOW ecoregion — orthogonal to geography, since the same
+    habitat recurs across realms. A source may declare more than one (see
+    ``Source.habitat``); each entry is inferred from the source's own description/notes
+    unless the registry comment says otherwise.
+    """
+
+    CORAL_REEF = "coral_reef"
+    SEAGRASS = "seagrass"
+    MANGROVE = "mangrove"
+    KELP_FOREST = "kelp_forest"
+    ROCKY_REEF = "rocky_reef"
+    SOFT_SEDIMENT = "soft_sediment"
+    DEEP_SEA_BENTHIC = "deep_sea_benthic"
+    PELAGIC = "pelagic"
+    MIXED = "mixed"
+    ARTIFICIAL = "artificial"
+    LAB = "lab"
+
+
+class Domain(str, Enum):
+    """HK-4a: the one subject-matter bucket a source belongs to, for picking a hackathon
+    track's sources (``coral`` / ``fish`` / ``seagrass`` / ``mangrove`` / ``plankton`` /
+    ``deep-sea`` / ``fauna`` / ``imaging``). Coarser than ``Habitat`` and than
+    ``Capability``: exactly one value per source, set by hand in the registry."""
+
+    CORAL = "coral"
+    FISH = "fish"
+    SEAGRASS = "seagrass"
+    MANGROVE = "mangrove"
+    PLANKTON = "plankton"
+    DEEP_SEA = "deep-sea"
+    FAUNA = "fauna"
+    IMAGING = "imaging"
 
 
 class Provenance(str, Enum):

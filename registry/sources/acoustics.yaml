@@ -7,13 +7,19 @@
 
 sources:
   - id: reefset-v1
+    domain: coral
+    release_skip_reason: "non-image-modality: audio manifest labels: keep out of the v2 image release, candidate for a later audio config"
+    access_class: open
     name: ReefSet v1.0
+    # habitat inferred (WP-2b) from this source's own description/notes, not independently verified
+    habitat: [coral_reef]
     version: "1.0"
     description: >
       The reef-bioacoustics training set behind SurfPerch — labelled reef sound clips
       from Indonesia, Australia and the "Calling in Our Corals" citizen-science project.
     licence: CC-BY-4.0
     legal_basis: licence
+    redistribution: ok
     provenance: public
     verification:
       verified_on: 2026-08-17
@@ -35,8 +41,8 @@ sources:
         a "bounded" sample. Fetch manually for a full corpus build.
     modalities: [audio]
     capabilities: [bioacoustics]
-    items: 57084
-    items_note: "~26 hours of labelled clips."
+    n_files: 57084
+    counts_note: "~26 hours of labelled clips."
     annotations: [{ kind: audio-event, supervises: [taxon] }]
     coverage: { regions: [coral-triangle, gbr-australia] }
     domain_shift:
@@ -61,23 +67,39 @@ sources:
         but the manifest is the dataset's own documented source of truth, so the new
         json-manifest-labels loader reads that rather than re-deriving it from
         filename parsing.
+    citation: "Williams, B. (2024). Leveraging tropical reef, bird and unrelated sounds for superior transfer learning in marine bioacoustics. Zenodo. https://doi.org/10.5281/ZENODO.11071202"
     tags: [reef-audio, permissive]
 
   - id: mbari-pacific-sound
+    domain: imaging
+    release_skip_reason: "non-image-modality: hydrophone audio"
+    access_class: open
     name: MBARI Pacific Sound (MARS hydrophone)
+    # habitat inferred (WP-2b) from this source's own description/notes, not independently verified
+    habitat: [pelagic]
     version: "live"
     description: Petabyte-scale continuous hydrophone archive from Monterey Bay.
     licence: CC-BY-4.0
     legal_basis: licence
+    redistribution: ok
     provenance: public
     verification:
       verified_on: 2026-08-17
       verified_by: "AWS Open Data registry 'pacific-sound' — CC-BY 4.0"
       method: dataset-card
-    access: { method: s3, uri: s3://pacific-sound }
+    access:
+      method: s3
+      uri: s3://pacific-sound
+      notes: >
+        Checked 2026-09-18: uri s3://pacific-sound does not exist (NoSuchBucket). Real
+        buckets in us-west-2 (anonymous, no-sign-request) are pacific-sound-2khz
+        (1,941,304,337,791 bytes / 3,745 files, measured 2026-09-18), pacific-sound-16khz
+        (exists, not sized) and pacific-sound-256khz (unresolved, HTTP 301 — likely
+        wrong-region endpoint). Open-ended continuous recording with no bounded mirror
+        scope decided yet, so size_bytes stays deliberately unset here.
     modalities: [audio]
     capabilities: [bioacoustics, general-pretraining]
-    items_note: "~2 TB/month, unlabelled."
+    counts_note: "~2 TB/month, unlabelled."
     annotations: [{ kind: audio-event, supervises: [] }]
     coverage: { regions: [eastern-pacific, temperate] }
     domain_shift:
@@ -86,11 +108,17 @@ sources:
     tags: [unlabelled, pretraining]
 
   - id: sanctsound
+    domain: imaging
+    release_skip_reason: "non-image-modality: hydrophone audio"
+    access_class: open
     name: NOAA SanctSound passive acoustic archive
+    # habitat inferred (WP-2b) from this source's own description/notes, not independently verified
+    habitat: [mixed]
     version: "2018-2021"
     description: Multi-site US sanctuary passive acoustic monitoring with daily species detections.
     licence: CC0-1.0
     legal_basis: licence
+    redistribution: ok
     provenance: public
     verification:
       verified_on: 2026-08-17
@@ -99,20 +127,26 @@ sources:
     access: { method: http, uri: https://www.ncei.noaa.gov/products/passive-acoustic-data }
     modalities: [audio]
     capabilities: [bioacoustics]
-    items_note: "30 sites, several including reef habitat."
+    counts_note: "30 sites, several including reef habitat."
     annotations: [{ kind: audio-event, supervises: [taxon] }]
     coverage: { regions: [western-atlantic, central-pacific, temperate], years: [2018, 2021] }
     loader: { layout: metadata-only }
     tags: [public-domain, multi-site]
 
   - id: curacao-reef-soundscape
+    domain: imaging
+    release_skip_reason: "non-image-modality: audio/video soundscape"
+    access_class: open
     name: Curaçao reef soundscape with 360° video
+    # habitat inferred (WP-2b) from this source's own description/notes, not independently verified
+    habitat: [coral_reef]
     version: "2025"
     description: >
       Spatially-resolved reef sound with paired 360° video linking fish sounds to source
       species — rare Caribbean acoustic data, and rare multimodal grounding.
     licence: CC0-1.0
     legal_basis: licence
+    redistribution: ok
     provenance: public
     verification:
       verified_on: 2026-08-29
@@ -122,11 +156,14 @@ sources:
         Collaborative approves using these videos, including this watermark, under
         the CC0 license waiver."
       method: dataset-card
-    access: { method: http, uri: https://datadryad.org/dataset/doi:10.5061/dryad.mcvdnckcp }
+    access:
+      method: http
+      uri: https://datadryad.org/dataset/doi:10.5061/dryad.mcvdnckcp
+      size_bytes: 3650000000  # documented upstream, not measured — 2026-09-18
     modalities: [audio, video]
     capabilities: [bioacoustics, fish-classification]
-    items: 156
-    items_note: "156 media items, 46 fish species, 3.65 GB."
+    n_files: 156
+    counts_note: "156 media items, 46 fish species, 3.65 GB."
     annotations: [{ kind: audio-event, classes: 46, supervises: [taxon] }]
     coverage: { regions: [caribbean], ecoregions: ["Southern Caribbean"] }
     notes: >
@@ -136,11 +173,16 @@ sources:
     tags: [caribbean, multimodal, needs-verification]
 
   - id: watkins-marine-mammal
+    domain: fauna
+    access_class: internal-only
     name: Watkins Marine Mammal Sound Database
+    # habitat inferred (WP-2b) from this source's own description/notes, not independently verified
+    habitat: [pelagic]
     version: "2016"
     description: The canonical marine-mammal reference sound library, 60+ species.
     licence: PROVENANCE-DEFECTIVE
     legal_basis: unknown
+    redistribution: prohibited
     provenance: public
     verification:
       verified_on: 2026-08-29
@@ -158,7 +200,7 @@ sources:
         title than the reposter had. Corrected from CC-BY-NC-4.0 to
         provenance-defective for AS CONFIGURED. If direct WHOI access is restored or
         obtained by other means, that channel would be RESEARCH-ONLY-NO-REDIST
-        (personal/academic use, no further redistribution) — a Yohan call once a
+        (personal/academic use, no further redistribution) — a maintainer decision once a
         legitimate path exists, not a code change.
       method: site-terms
     access:
@@ -176,7 +218,7 @@ sources:
         regardless of profile (see verified_note).
     modalities: [audio]
     capabilities: [bioacoustics, megafauna-id]
-    items: 10000
+    n_files: 10000
     annotations: [{ kind: audio-event, classes: 60, supervises: [taxon] }]
     coverage: { regions: [global] }
     notes: >

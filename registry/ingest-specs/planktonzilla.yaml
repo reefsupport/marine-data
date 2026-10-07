@@ -1,0 +1,46 @@
+# Planktonzilla-17M: 15 plankton imaging instruments pooled (UVP5/6, ZooScan, IFCB, FlowCam, ISIIS...). Stage ALL (91 GB, cheap);
+# WP-6e-B: the D-AB subset is ENFORCED at ingest (subset.enforce) -- the full 91 GB is streamed, only the subset is staged.
+id: planktonzilla
+access_class: restricted-nc
+licence_per_row: true
+adapter: hf
+license: other (HF card); per-sample licence = the originating instrument dataset (column `dataset`)
+attribution: project-oceania — Planktonzilla-17M
+citation: project-oceania/planktonzilla-17M (HF)
+homepage: https://huggingface.co/datasets/project-oceania/planktonzilla-17M
+params:
+  repo: project-oceania/planktonzilla-17M
+  revision: 7fd542ef9fc99e6e850bed06bbd8884f43192347
+  include: ['data/*.parquet']
+  image_column: image
+  label_columns: [dataset, root_class, proposed_label, original_label, qualifier, Species, aphia_ID, original_path, timestamp]
+  columns: {lat: Latitude, lon: Longitude}
+measured:
+  items: 17404047
+  bytes: 91176524886
+  method: parquet footers + `dataset`/`root_class`/`proposed_label` columns of all 189 files via HTTP range reads
+  date: '2026-09-25'
+  bytes_basis: hf-tree
+  by_root_class:
+    living: 3825388
+    non_living(detritus/artefact/inert): 13578659
+  n_source_datasets: 15
+  n_dataset_label_pairs: 1096
+  label_type: cls (proposed_label; taxonomic + WoRMS aphia_ID where resolved)
+subset:
+  enforce: true
+  target_items: 710548
+  stratify:
+  - dataset
+  - proposed_label
+  cap_per_stratum: 2000
+  filters:
+  - {field: root_class, op: eq, value: living}
+  - {field: proposed_label, op: not_in, value: [other, unknown]}
+  group_counts: registry/subsets/planktonzilla-group-counts.json
+  seed: marinedata-subset-v1
+  oversample: 1.1
+  rule: root_class == living and proposed_label not in (other, unknown); at most 2,000 per (instrument dataset, label)
+    by a blake2b hash draw over upstream_id (group counts from a metadata pass of all 189 parquet files, WP-6e-B);
+    1009 groups, 3,792,567 living rows -> 710,548
+disk_floor_gib: 34.0  # INT-ingest5b: runner floor like runner 4 (D-AE)

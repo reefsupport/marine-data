@@ -1,0 +1,23 @@
+# Kaggle: healthy and bleached corals (classification). A source entry for a DIFFERENT
+# copy of this dataset (tar member of coral_bleaching/others.tar.gz, never extracted)
+# already exists at registry/sources/coral-benthic.yaml `kaggle-healthy-bleached-corals`.
+id: kaggle-healthy-bleached-corals
+access_class: internal-only
+adapter: local_dir
+params:
+  path: ~/Downloads/marine-manual/kaggle-healthy-bleached-corals/data
+  format: imagefolder
+  version: zip-5e15452254a9
+license: NO-LICENCE-STATED
+attribution: "Kaggle: healthy and bleached corals (vencerlanz09)"
+citation: "Kaggle dataset: vencerlanz09/healthy-and-bleached-corals-image-classification"
+homepage: https://www.kaggle.com/datasets/vencerlanz09/healthy-and-bleached-corals-image-classification
+notes: >-
+  LOCAL-ingest 2026-10-02: A maintainer downloaded `archive (4).zip` by hand — a standalone
+  copy of the same Kaggle dataset the registry/sources/coral-benthic.yaml source entry
+  describes as locked inside an unextracted tar member (`coral_bleaching/others.tar.gz`).
+  Switched to local_dir over this directly-unzipped copy: `bleached_corals/` +
+  `healthy_corals/` (format: imagefolder — parent dir becomes the class label).
+  Licence/attribution copied from that source entry (`NO-LICENCE-STATED`, licence
+  JS-rendered and unretrievable on the Kaggle page per that entry's notes).
+disk_floor_gib: 1.0

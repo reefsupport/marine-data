@@ -52,7 +52,16 @@ def group_key(sample: Sample, by: str) -> str:
         return f"{sample.source_id}/{sample.meta.get('partition', '')}"
     if by == "random":
         return f"{sample.source_id}/{sample.key}"
-    raise ValueError(f"unknown split strategy '{by}' (site | source | random)")
+    if by == "group":
+        group = sample.meta.get("split_group")
+        if not group:
+            raise ValueError(
+                f"group_key(by='group') requires sample.meta['split_group'] "
+                f"(source={sample.source_id!r} key={sample.key!r} has none) — the "
+                "registry's per-source split_group rule must run before scanning."
+            )
+        return group
+    raise ValueError(f"unknown split strategy '{by}' (site | source | random | group)")
 
 
 @dataclass(frozen=True)
@@ -110,6 +119,8 @@ def assign_splits(
     ratios: dict[SplitName, float],
     *,
     seed: int = 0,
+    total: int | None = None,
+    filled: dict[SplitName, int] | None = None,
 ) -> dict[str, SplitName]:
     """Pack whole groups into splits, weighted by sample count.
 
@@ -123,14 +134,20 @@ def assign_splits(
     Groups are never divided. That is the entire point of grouping: consecutive transect
     frames overlap heavily, so splitting one across train and test leaks near-duplicates
     and inflates every metric.
+
+    ``total`` and ``filled`` let a caller assign only the groups *not yet* pinned by a
+    persisted map, against the quota the pinned groups already used, without resorting
+    them: pass the corpus-wide total and each split's already-filled count, and only the
+    still-unassigned ``counts`` here. Omit both for the original, whole-corpus behaviour.
     """
     ordered = sorted(
         counts,
         key=lambda k: (-counts[k], hashlib.sha256(f"{seed}:{k}".encode()).hexdigest()),
     )
-    total = sum(counts.values())
+    if total is None:
+        total = sum(counts.values())
     targets = {name: fraction * total for name, fraction in ratios.items()}
-    filled: dict[str, int] = dict.fromkeys(ratios, 0)
+    filled = {name: (filled or {}).get(name, 0) for name in ratios}
 
     assignment: dict[str, SplitName] = {}
     for key in ordered:
@@ -169,7 +186,8 @@ def check_ratios(
     want = "  ".join(f"{n}={ratios[n]:.1%}" for n in sorted(skewed))
     raise ValueError(
         f"split(by={by!r}) could not hit the requested ratios within {tolerance:.0%}: "
-        f"wanted {want}, got {got}. Group sizes are too uneven to divide this way — the "
-        f"largest group holds {largest_group:,} of {total:,} samples. Rebalance the "
+        f"wanted {want}. The closest achievable split for these group sizes is {got} — "
+        f"no re-run needed to see it. Group sizes are too uneven to divide this way — "
+        f"the largest group holds {largest_group:,} of {total:,} samples. Rebalance the "
         f"corpus, relax `tolerance`, or split by a finer unit."
     )

@@ -1,0 +1,15 @@
+# seathru: Akkaynak & Treibitz 2019, CVPR
+# full <=38.44 GB (HF usedStorage); RAW+TIFF depth pairs, capped for a smaller first pass
+id: seathru
+access_class: restricted-nc
+adapter: hf
+license: CC-BY-NC-SA-4.0 (HF card)
+attribution: Akkaynak & Treibitz — Sea-thru (HF mirror)
+citation: Akkaynak & Treibitz 2019, CVPR
+homepage: https://huggingface.co/datasets/bhowmikabhimanyu/seathru-dataset
+params:
+  repo: bhowmikabhimanyu/seathru-dataset
+  revision: main
+max_images: 15000
+
+disk_floor_gib: 36.0

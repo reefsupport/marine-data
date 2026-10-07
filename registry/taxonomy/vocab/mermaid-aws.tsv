@@ -1,0 +1,265 @@
+# source: mermaid-aws
+# crosswalk: mermaid-attributes
+# counts: annotations
+# retrieved: 2026-09-25 from rs-storage-open sources/mermaid-aws/2026-09-19-bc53d5a2c0b6/labels/points.parquet (anonymous GET)
+# note: one annotation = one labelled point (points.parquet row)
+label	count	description
+Macroalgae	89705	
+Sand	52864	
+Rubble	51151	
+Turf algae	38987	
+Bare substrate	37417	
+Crustose coralline algae	35216	
+Hard coral	22123	
+Porites	21532	
+Soft coral	17881	
+Acropora	11387	
+Dead coral	8710	
+Sargassum	8092	
+Tape	5559	
+Galaxea	4864	
+Rock	4573	
+Pocillopora	3451	
+Cyanobacteria	3316	
+Montipora	3030	
+Dead coral with algae	2857	
+Sponge	2788	
+Porites lutea	2777	
+Millepora	2662	
+Isopora	2366	
+Xenia	1901	
+Seagrass	1520	
+Other	1263	
+Echinopora	1254	
+Porites lobata	1214	
+Goniastrea	1175	
+Platygyra	1041	
+Goniopora	1031	
+Diploastrea	1009	
+Acropora cervicornis	1001	
+Stypopodium	762	
+Coralline algae	724	
+Obscured	705	
+Heliopora	634	
+Favites	629	
+Pavona	531	
+Lobophyllia	489	
+Dictyota	444	
+Turbinaria-algae	436	
+Astreopora	428	
+Halimeda	396	
+Turbinaria-coral	390	
+Turbinaria mesenterina	375	
+Sarcophyton	365	
+Dipsastraea	364	
+Sinularia	362	
+Fimbriaphyllia	339	
+Fungia	324	
+Merulinidae	297	
+Pocillopora damicornis	285	
+Seriatopora	271	
+Porites rus	270	
+Lobophora	265	
+Favia	260	
+Other invertebrates	251	
+Caulerpa racemosa	232	
+Microdictyon	226	
+Palythoa	224	
+Stylophora	223	
+Algal assemblage	222	
+Symphyllia	214	
+Silt	205	
+Rhytisma	204	
+Psammocora	194	
+Unknown	184	
+Ascidian	183	
+Zoanthid	182	
+Padina	174	
+Porites astreoides	169	
+Corallimorpharia	158	
+Bleached coral	157	
+Blastomussa	155	
+Leptastrea	150	
+Merulina	137	
+Porites cylindrica	127	
+Anemone	125	
+Tubipora	120	
+Pachyseris	102	
+Acropora millepora	98	
+Plerogyra	97	
+Epilithic algal matrix	91	
+Crinoid	90	
+Xeniidae	89	
+Alveopora	88	
+Echinophyllia	81	
+Acanthastrea	78	
+Dendronephthya	75	
+Peyssonnelid algae	73	
+Lobophytum	72	
+Coscinaraea	70	
+Diploastrea heliopora	70	
+Discosoma	70	
+Plesiastrea	70	
+Hydroid	69	
+Sea urchin	67	
+Diadema	65	
+Tubastraea	65	
+Leptoria	59	
+Goniastrea retiformis	57	
+Seriatopora hystrix	56	
+Hydnophora	54	
+Cliona	53	
+Porites annae	52	
+Gorgonian	50	
+Asparagopsis	48	
+Fungiidae	47	
+Cladophora	45	
+Cyphastrea	45	
+Ramicrusta	45	
+Sandalolitha	45	
+Sea cucumber	45	
+Coralimorph	43	
+Acropora palmata	39	
+Gorgonia ventalina	36	
+Montipora capricornis	36	
+Caulerpa	35	
+Cespitularia	35	
+Linkia sea star	35	
+Porites porites	34	
+Acropora pharaonis	33	
+Euphyllia	33	
+Ctenactis	32	
+Junceella	32	
+Cycloseris	29	
+Jania	29	
+Herpolitha	28	
+Oxypora	28	
+Acropora hyacinthus	26	
+Bivalvia	26	
+Acropora cytherea	24	
+Rhodophyta	24	
+Amphiroa	23	
+Goniopora lobata	23	
+Invertebrate	23	
+Tunicate	23	
+Millepora complanata	22	
+Porites furcata	22	
+Montipora stellata	21	
+Halomitra	20	
+Montipora digitata	20	
+Tubipora musica	19	
+Oulophyllia	18	
+Turbinaria reniformis	18	
+Pectinia	16	
+Porifera	16	
+Gorgoniidae	15	
+Leptoseris	15	
+Montastraea	15	
+Paramontastraea peresi	15	
+Cladiella	14	
+Coeloseris	14	
+Diploria labyrinthiformis	14	
+Hydnophora rigida	14	
+Orbicella faveolata	14	
+Physogyra	13	
+Turbinaria stellulata	13	
+Aglaophenia	12	
+Astrea	12	
+Clavularia	12	
+Galaxea fascicularis	12	
+Gardineroseris	12	
+Meandrina meandrites	12	
+Tridacna giant clam	12	
+Coelastrea	10	
+Colpophyllia	10	
+Green algae	10	
+Peyssonnelia	10	
+Siderastrea	10	
+Gorgonia	9	
+Anacropora	8	
+Liagora	8	
+Litophyton	8	
+Acropora humilis	7	
+Podabacia	7	
+Acropora muricata	6	
+Diploria	6	
+Holothuria	6	
+Merulina scabricula	6	
+Oculina varicosa	6	
+Pavona venosa	6	
+Plesiastrea versipora	6	
+Porites lichen	6	
+Siderastrea siderea	6	
+Tridacna	6	
+Cycloseris costulata	5	
+Mycedium	5	
+Stylophora pistillata	5	
+Acropora tenuis	4	
+Bleached soft coral	4	
+Fishing net	4	
+Leptoria phrygia	4	
+Oulastrea	4	
+Pavona varians	4	
+Pocillopora meandrina	4	
+Stephanocoenia intersepta	4	
+plastic	4	
+Acanthaster planci	3	
+Acropora abrolhosensis	3	
+Agaricia	3	
+Chrysocystis fragilis	3	
+Favia fragum	3	
+Lobophyllia hemprichii	3	
+Madracis	3	
+Millepora alcicornis	3	
+Orbicella annularis	3	
+Porites monticulosa	3	
+Recently dead coral	3	
+Siderastrea radians	3	
+Trachyphyllia	3	
+Acropora samoensis	2	
+Callyspongia	2	
+Cyphastrea serailia	2	
+Dipsastraea favus	2	
+Distichopora	2	
+Faviidae	2	
+Gracilaria	2	
+Linckia laevigata	2	
+Pleuractis	2	
+Porites densa	2	
+Trash	2	
+Agaricia agaricites	1	
+Aplysina cauliformis	1	
+Astreopora expansa	1	
+Barabattoia	1	
+Caulastraea	1	
+Clam	1	
+Cliona delitrix	1	
+Corallina	1	
+Danafungia	1	
+Echinomorpha	1	
+Echinophyllia aspera	1	
+Echinopora lamellosa	1	
+Favites abdita	1	
+Foraminifera	1	
+Halimeda opuntia	1	
+Heliofungia	1	
+Isophyllia rigida	1	
+Lithophyllon	1	
+Lobophora variegata	1	
+Lobophyllia flabelliformis	1	
+Montipora spumosa	1	
+Palauastrea	1	
+Palythoa caribaeorum	1	
+Palythoa tuberculosa	1	
+Phaeophyceae	1	
+Platygyra lamellina	1	
+Plexauridae	1	
+Polyphyllia	1	
+Porites colonensis	1	
+Pseudodiploria strigosa	1	
+Pseudosiderastrea	1	
+Stylocoeniella	1	
+Tridacna maxima	1	
+Tridacna squamosa	1	
+Turbinaria turbinata	1	
+Zoanthidae	1	

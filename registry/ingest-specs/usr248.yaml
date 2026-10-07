@@ -1,0 +1,14 @@
+# usr248: NOT loadable by marinedata.cli today (needs:gdrive). Documentation-only spec for WP-6d.
+id: usr248
+access_class: internal-only
+adapter: needs:gdrive
+license: research (non-commercial, per upstream)
+attribution: Islam et al. — USR-248
+citation: Islam et al. 2020, ICRA
+homepage: https://irvlab.cs.umn.edu/resources/usr-248-dataset
+candidate_endpoints:
+- https://irvlab.cs.umn.edu/resources/usr-248-dataset (403 Cloudflare bot-block to
+  scripts; Drive link only reachable from the rendered page)
+why_not_supported: 1,060 HR images; IRVLab site 403s scripted requests (Cloudflare),
+  true payload is a Google Drive folder whose id isn't exposed without rendering the
+  page.

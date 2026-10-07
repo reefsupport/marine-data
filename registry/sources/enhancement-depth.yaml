@@ -7,11 +7,16 @@
 
 sources:
   - id: uieb
+    domain: imaging
+    access_class: internal-only
     name: UIEB (Underwater Image Enhancement Benchmark)
+    # habitat inferred (WP-2b) from this source's own description/notes, not independently verified
+    habitat: [mixed]
     version: "2019"
     description: Reference-paired real underwater images — the standard enhancement benchmark.
     licence: PROVENANCE-DEFECTIVE
     legal_basis: unknown
+    redistribution: prohibited
     provenance: public
     verification:
       verified_on: 2026-08-29
@@ -34,6 +39,7 @@ sources:
     access:
       method: huggingface
       uri: https://huggingface.co/datasets/Hikari0608/UIEB
+      size_bytes: 1487878112  # measured 2026-09-18
       params:
         hf_id: Hikari0608/UIEB
         image_column: raw
@@ -48,7 +54,7 @@ sources:
         path is; the licence gate now blocks it regardless of profile.
     modalities: [image]
     capabilities: [image-enhancement]
-    items: 890
+    n_images: 890
     annotations: [{ kind: none, supervises: [] }]
     coverage: { regions: [global] }
     notes: >
@@ -67,11 +73,16 @@ sources:
     tags: [enhancement, noncommercial]
 
   - id: squid
+    domain: imaging
+    access_class: restricted-nc
     name: SQUID (Stereo Quantitative Underwater Image Dataset)
+    # habitat inferred (WP-2b) from this source's own description/notes, not independently verified
+    habitat: [mixed]
     version: "2019"
     description: Stereo underwater images with distance information and colour charts.
     licence: CC-BY-NC-SA-4.0
     legal_basis: licence
+    redistribution: ok
     provenance: public
     verification:
       verified_on: 2026-08-29
@@ -85,6 +96,7 @@ sources:
     access:
       method: http
       uri: https://csms.haifa.ac.il/profiles/tTreibitz/datasets/ambient_forwardlooking/index.html
+      size_bytes: 45817907950  # measured 2026-09-18
       notes: >
         Checked 2026-08-28: the original Haifa page's Dropbox links are flaky; the
         dataset is more reliably hosted on Zenodo (record 5744037), one .zip per site
@@ -92,25 +104,35 @@ sources:
         subset is published anywhere. Fetch a site archive manually.
     modalities: [image]
     capabilities: [image-enhancement, depth-estimation]
-    items: 57
+    n_images: 57
     annotations: [{ kind: depth-map, supervises: [] }]
     coverage: { regions: [mediterranean, red-sea] }
     notes: "Tiny but carries in-scene colour charts and distances — one of the few sets with physical ground truth."
     loader: { layout: image-mask-pairs, params: { images_dir: images, masks_dir: depth } }
+    citation: 'Berman, Dana, Deborah Levy, Shai Avidan, and Tali Treibitz. "Underwater Single Image Color Restoration Using Haze-Lines and a New Quantitative Dataset." IEEE Transactions on Pattern Analysis and Machine Intelligence (2020).'
     tags: [stereo, physical-gt]
 
   - id: varos
+    domain: imaging
+    release_skip_reason: "no-staged-images: registry lists imagery, nothing staged under sources/ in rs-storage-open (U7/queue follow-up)"
+    access_class: open
     name: VAROS synthetic underwater dataset
+    # habitat inferred (WP-2b) from this source's own description/notes, not independently verified
+    habitat: [mixed]
     version: "2021"
     description: Physically-rendered synthetic sequences with depth, normals, poses and IMU.
     licence: CC-BY-4.0
     legal_basis: licence
+    redistribution: ok
     provenance: public
     verification:
       verified_on: 2026-08-17
       verified_by: "Zenodo record 5567209 — CC-BY 4.0"
       method: dataset-card
-    access: { method: zenodo, uri: https://zenodo.org/records/5567209 }
+    access:
+      method: zenodo
+      uri: https://zenodo.org/records/5567209
+      size_bytes: 17961673075  # measured 2026-09-18
     modalities: [image, video]
     capabilities: [depth-estimation, pose-slam]
     annotations: [{ kind: depth-map, supervises: [] }]
@@ -119,35 +141,52 @@ sources:
       trained_regions: [synthetic]
       caveats: ["Synthetic. Useful for pipeline validation with perfect ground truth; the sim-to-real gap underwater is large."]
     loader: { layout: metadata-only }
+    citation: "Peder Georg Olofsson Zwilgmeyer, Mauhing Yip, Andreas Langeland Teigen, Rudolf Mester, & Annette Stahl. (2021). The VAROS Synthetic Underwater Data Set: Towards realistic multi-sensor underwater data with ground truth (Version Varos - version 1 (currently only downloadable from windows systems)) [Dataset]. Zenodo. https://doi.org/10.5281/ZENODO.5567209"
     tags: [synthetic, permissive]
 
   - id: flsea
+    domain: imaging
+    access_class: restricted-nc
     name: FLSea (visual-inertial and stereo)
+    # habitat inferred (WP-2b) from this source's own description/notes, not independently verified
+    habitat: [mixed]
     version: "2022"
     description: Forward-looking underwater depth ground truth with IMU and poses.
     licence: CC-BY-NC-SA-4.0
     legal_basis: licence
+    redistribution: ok
     provenance: public
     verification:
       verified_on: 2026-08-17
       verified_by: "Kaggle viseaonlab/flsea-vi — CC BY-NC-SA 4.0"
       method: dataset-card
-    access: { method: http, uri: https://www.kaggle.com/datasets/viseaonlab/flsea-vi }
+    access: { method: request, uri: https://www.kaggle.com/datasets/viseaonlab/flsea-vi }
     modalities: [image, video]
     capabilities: [depth-estimation, pose-slam]
     annotations: [{ kind: depth-map, supervises: [] }]
     coverage: { regions: [mediterranean, red-sea] }
     notes: "The reference benchmark for underwater monocular metric depth papers. NC blocks shipping use."
-    loader: { layout: metadata-only }
+    loader: { layout: staged-tree }
+    citation: "Yelena Randall, Ori Lifschitz, Tali Treibitz. FLSea: Underwater Visual-Inertial and Stereo-Vision Forward-Looking Datasets. Authorea. DOI: 10.22541/au.175434035.54074686/v1. August 04, 2025. https://www.authorea.com/users/952772/articles/1322072-flsea-underwater-visual-inertial-and-stereo-vision-forward-looking-datasets"
     tags: [depth, benchmark, noncommercial]
 
   - id: suim
+    domain: fish
+    access_class: open
     name: SUIM (Semantic Segmentation of Underwater Imagery)
+    # habitat inferred (WP-2b) from this source's own description/notes, not independently verified
+    habitat: [mixed]
     version: "2020"
     description: 8-class underwater semantic segmentation — fish, reef, diver, wrecks, seafloor.
     licence: MIT
     legal_basis: licence
+    redistribution: ok
     provenance: public
+    checksums:
+      version: "2020"
+      root_digest: f7a9ea260f37ead52c20990bfc88b11c10b20dce96faa84a8f477e6f259aba95
+      files: 3200
+      size_bytes: 178204379
     verification:
       verified_on: 2026-08-29
       verified_by: >
@@ -158,32 +197,55 @@ sources:
         Corrected from CC-BY-4.0, which had no supporting primary source.
       method: licence-file
     access:
-      method: http
-      uri: https://irvlab.cs.umn.edu/resources/suim-dataset
-      size_bytes: 173794160
+      method: s3
+      uri: s3://rs-storage-open/sources/suim/2020/
+      size_bytes: 178515331  # verified S62 2026-09-25, size+md5==ETag every object, CHECKSUMS.sha256 uploaded last
       params:
+        bucket: rs-storage-open
+        endpoint: hel1.your-objectstorage.com
+        region: hel1
+        prefix: sources/suim/2020/
         sample_url: https://huggingface.co/datasets/SatwikKambham/suim/resolve/main/SUIM.zip
       notes: >
-        The official host only offers a 2.85GB Google Drive link. sample_url is a
-        third-party HuggingFace re-host of the same archive (166MB) — the full
-        train_val split, not a trimmed sample, but small enough to fetch whole.
+        S62 (2026-09-25): staged the local suim/2020 tree (already in the
+        StagedImage/staged-tree convention — images/, labels/masks/,
+        metadata.parquet, CHECKSUMS.sha256) and uploaded it to our own durable copy
+        on rs-storage-open, verified object-by-object (size + md5 == ETag),
+        CHECKSUMS.sha256 uploaded only after every other object verified clean.
+        `loader.layout` moved to `staged-tree` accordingly — no anonymous
+        `ListBucket` needed for a live `fetch`/`verify`, only `GetObject` on known
+        keys. The original upstream re-host (sample_url below) is kept as
+        provenance, not the current read path. The official host only offers a
+        2.85GB Google Drive link; sample_url is a third-party HuggingFace re-host of
+        the same archive (166MB) — the full train_val split, not a trimmed sample.
+        2026-09-18 (brief D2c): staged bytes came from this re-host
+        (huggingface.co/datasets/SatwikKambham/suim), not the authors' own release
+        (irvlab.cs.umn.edu → Google Drive) — SOURCE.json records this as
+        fetched_uri. The re-host converted the authors' RGB masks to the 0-7 class
+        indices this pipeline consumes; its jpg re-encoding of the images is
+        unverified.
     modalities: [image]
     capabilities: [benthic-segmentation, fish-detection, general-pretraining]
-    items: 1525
+    n_images: 1598
     annotations: [{ kind: dense-mask, classes: 8, supervises: [taxon] }]
     coverage: { regions: [global] }
     domain_shift:
       caveats: ["Coarse 8-class scheme — a scene-understanding baseline, not a benthic-cover asset."]
     loader:
-      layout: image-mask-pairs
-      params: { images_dir: SUIM/train_val/images, masks_dir: SUIM/train_val/masks }
+      layout: staged-tree
       schema_id: dataset-native
       crosswalk_id: suim-8class
-      verified_on: 2026-08-28
+      verified_on: 2026-09-25
       verified_note: >
-        Live fetch confirms SUIM/train_val/{images,masks}/ (1488 pairs; a handful of
-        images have no matching mask in the re-host, consistent with the original
-        dataset's own known gaps) and a separate SUIM/TEST/ split. Masks are
-        single-channel index images (mode 'L', values 0-7), not RGB-encoded in this
-        distribution — see registry/crosswalks/suim-8class.yaml for the index table.
-    tags: [scene-understanding, baseline]
+        S62 (2026-09-25): layout moved from `image-mask-pairs` (raw
+        SUIM/train_val/{images,masks}/ dirs) to `staged-tree` (own bucket copy) —
+        the staged tree's metadata.parquet marks each row's `upstream_split`
+        (`train_val`: 1488, `TEST`: 110), so the upstream benchmark split survives
+        the move; see the source-level `tags: [..., benchmark-test]` below, which
+        flags the TEST rows for WP-11 routing. Real ingest confirmed
+        SUIM/train_val/{images,masks}/ (1488 pairs) plus a separate SUIM/TEST/
+        split (110 pairs) — 1598 items total, image↔mask pairing exact, no
+        unpaired files. Masks are palette-indexed .bmp files (not .png) in the
+        upstream distribution, values 0-7 — see registry/crosswalks/suim-8class.yaml
+        for the index table.
+    tags: [scene-understanding, baseline, benchmark-test]

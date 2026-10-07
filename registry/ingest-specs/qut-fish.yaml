@@ -1,0 +1,25 @@
+# QUT fish dataset (fine-grained fish species recognition, WACV14).
+id: qut-fish
+access_class: restricted-nc
+licence_per_row: true
+adapter: local_dir
+params:
+  path: ~/Downloads/marine-manual/qut-fish/data
+  exclude: ['*.pdf']
+  label_patterns: ['*final_all_index.txt']
+  version: zip-ce6985436f9b
+license: unknown (see homepage); LicenceAndAuthors.pdf ships with the zip
+attribution: Anantharajah, Ge, McCool, Denman, Fookes, Corke, Tjondronegoro, Sridharan — QUT fish
+citation: Anantharajah et al. 2014, WACV
+homepage: https://www.kaggle.com/datasets/giannisgeorgiou/fish-species
+notes: >-
+  LOCAL-ingest 2026-10-02: new id (archive (2).zip). `Fish_Data/images/{raw_images,
+  numbered,cropped}` + `final_all_index.txt` (per-image species index, carried as a
+  label file) + the paper (`WACV14.pdf`) and `LicenceAndAuthors.pdf` (excluded — not
+  data; the licence pdf itself was not parsed this pass, hence `license: unknown`).
+disk_floor_gib: 1.5
+
+measured:
+  label_type: image-level species class labels (483 species, '=' delimited index)
+  method: u15-label-kind-triage (registry-patch.yaml)
+  date: '2026-10-05'

@@ -19,3 +19,27 @@ schemas:
       - { id: "SCALE",                        name: Scale reference,              axis: taxon,
           notes: "Geometry, not biota — a drawn line on an in-frame scale object." }
 
+  - id: rf100-coral-lwptl-native
+    name: RF100 coral-lwptl native growth-form labelset
+    description: >
+      The 14 YOLO growth-form classes from the pinned rev's `data.yaml` (rev-83f0a33679b0).
+      Dataset-native, unmapped to any finer form/taxon distinction — this only makes
+      `schema_id: rf100-coral-lwptl-native` resolve and records the vocabulary honestly.
+      See the `rf100-coral-lwptl` crosswalk for how each maps onto `rs-benthic-v1`.
+    axes: [form]
+    nodes:
+      - { id: "Arborescent",         name: Arborescent,         axis: form }
+      - { id: "Caespitose-a",        name: Caespitose-a,        axis: form }
+      - { id: "Caespitose-b",        name: Caespitose-b,        axis: form }
+      - { id: "Columnar",            name: Columnar,            axis: form }
+      - { id: "Corymbose",           name: Corymbose,           axis: form }
+      - { id: "Digitate",            name: Digitate,            axis: form }
+      - { id: "Encrusting",          name: Encrusting,          axis: form }
+      - { id: "Foliose",             name: Foliose,             axis: form }
+      - { id: "Massive-Faviidae",    name: Massive-Faviidae,    axis: form }
+      - { id: "Massive-Merulinidae", name: Massive-Merulinidae, axis: form }
+      - { id: "Massive-Mussidae",    name: Massive-Mussidae,    axis: form }
+      - { id: "Massive-Poritidae",   name: Massive-Poritidae,   axis: form }
+      - { id: "Solitary",            name: Solitary,            axis: form }
+      - { id: "Tabular",             name: Tabular,             axis: form }
+

@@ -1,0 +1,606 @@
+"""Unit tests for the generic benchmark eval-image manifest builder (P1)."""
+
+from __future__ import annotations
+
+import hashlib
+import io
+import re
+from pathlib import Path
+
+import pyarrow as pa
+import pyarrow.parquet as pq
+import pytest
+from PIL import Image
+
+from marinedata.bench_manifest import (
+    ManifestBuildError,
+    RawImage,
+    _build_row_tolerant,
+    build_manifest,
+    iter_bucket_images,
+    iter_upstream_images,
+    resolve_source,
+    spec_resolves,
+    write_manifest,
+)
+from marinedata.benchmarks import BenchmarkEntry, Obtain, UpstreamSplit
+
+
+def _entry(
+    benchmark_id: str = "fakebench",
+    eval_split: str = "test",
+    heldout_val: str | None = None,
+) -> BenchmarkEntry:
+    counts = {eval_split: 2}
+    if heldout_val is not None:
+        counts[heldout_val] = 2
+    return BenchmarkEntry(
+        id=benchmark_id,
+        name="Fake Bench",
+        task="cls",
+        catalog_id=benchmark_id,
+        registry_id=None,
+        upstream_split=UpstreamSplit(
+            rule="test only",
+            eval_split=eval_split,
+            heldout_val=heldout_val,
+            counts=counts,
+            definition_url="https://example.org",
+        ),
+        split_verified=True,
+        verified_by="unit test fixture",
+        obtain=Obtain(status="staged", via="unit test"),
+        policy="exclude",
+        policy_reason="unit test fixture",
+    )
+
+
+def _png_bytes(color: tuple[int, int, int]) -> bytes:
+    buf = io.BytesIO()
+    Image.new("RGB", (8, 8), color).save(buf, format="PNG")
+    return buf.getvalue()
+
+
+RED = _png_bytes((255, 0, 0))
+BLUE = _png_bytes((0, 0, 255))
+
+
+class FakeS3Client:
+    """Minimal ``list_objects_v2``/``get_object`` double — no network, no pagination."""
+
+    def __init__(self, objects: dict[str, bytes]) -> None:
+        self.objects = objects
+
+    def list_objects_v2(self, Bucket: str, Prefix: str, ContinuationToken: str | None = None):
+        keys = sorted(k for k in self.objects if k.startswith(Prefix))
+        return {"Contents": [{"Key": k} for k in keys], "IsTruncated": False}
+
+    def get_object(self, Bucket: str, Key: str):
+        return {"Body": io.BytesIO(self.objects[Key])}
+
+
+def _stream_part_bytes(rows: list[dict]) -> bytes:
+    table = pa.Table.from_pylist(rows)
+    sink = io.BytesIO()
+    pq.write_table(table, sink)
+    return sink.getvalue()
+
+
+def test_iter_bucket_images_stream_parts_filters_eval_split():
+    part = _stream_part_bytes(
+        [
+            {"stem": "a", "upstream_split": "test", "image": RED},
+            {"stem": "b", "upstream_split": "train", "image": BLUE},
+        ]
+    )
+    client = FakeS3Client({"sources/fakebench/_stream/rev-1/part-0.parquet": part})
+    entry = _entry(eval_split="test")
+    images = list(iter_bucket_images(client, "rs-storage-open", entry))
+    assert [i.stem for i in images] == ["a"]
+    assert images[0].data == RED
+
+
+def test_iter_bucket_images_multi_split_includes_heldout_val():
+    """usis10k-style entries pin ``eval_split: test`` + ``heldout_val: val`` —
+    both must be pulled into the manifest, ``train`` must not (BENCH-evalsplit)."""
+    part = _stream_part_bytes(
+        [
+            {"stem": "a", "upstream_split": "test", "image": RED},
+            {"stem": "b", "upstream_split": "val", "image": BLUE},
+            {"stem": "c", "upstream_split": "train", "image": RED},
+        ]
+    )
+    client = FakeS3Client({"sources/fakebench/_stream/rev-1/part-0.parquet": part})
+    entry = _entry(eval_split="test", heldout_val="val")
+    images = list(iter_bucket_images(client, "rs-storage-open", entry))
+    assert sorted(i.stem for i in images) == ["a", "b"]
+
+
+def test_iter_bucket_images_hf_style_bytes_struct_column():
+    rows = [{"stem": "a", "upstream_split": "test", "image": {"bytes": RED, "path": "a.png"}}]
+    table = pa.Table.from_pylist(rows)
+    sink = io.BytesIO()
+    pq.write_table(table, sink)
+    client = FakeS3Client({"sources/fakebench/_stream/rev-1/part-0.parquet": sink.getvalue()})
+    images = list(iter_bucket_images(client, "rs-storage-open", _entry(eval_split="test")))
+    assert images[0].data == RED
+
+
+def test_iter_bucket_images_sample_schema_metadata_only_part():
+    # Real marineeval shape (verified 2026-09-30): the _stream/ part carries only
+    # metadata (stem, image_path, split_hint) — no embedded bytes column — and the
+    # actual object lives in the sibling rev-dir (without the _stream/ segment).
+    part = _stream_part_bytes(
+        [
+            {"stem": "a", "image_path": "images/a.jpg", "split_hint": "test"},
+            {"stem": "b", "image_path": "images/b.jpg", "split_hint": "train"},
+        ]
+    )
+    client = FakeS3Client(
+        {
+            "sources/fakebench/_stream/rev-1/part-0.parquet": part,
+            "sources/fakebench/rev-1/images/a.jpg": RED,
+            "sources/fakebench/rev-1/images/b.jpg": BLUE,
+        }
+    )
+    images = list(iter_bucket_images(client, "rs-storage-open", _entry(eval_split="test")))
+    assert [i.stem for i in images] == ["a"]
+    assert images[0].data == RED
+    assert images[0].upstream_path == "images/a.jpg"
+
+
+def test_bucket_has_no_stream_prefix_raises_no_embedded_bytes():
+    # staged-layout fallback with no metadata.parquet present -> a named build error
+    client = FakeS3Client({})
+    with pytest.raises(ManifestBuildError, match=r"no metadata\.parquet"):
+        list(iter_bucket_images(client, "rs-storage-open", _entry()))
+
+
+def test_iter_stream_parts_excludes_rows_with_no_split_evidence():
+    """BENCH-trashsplit (bucket-path variant): a stream-part row with no split
+    column value at all must be excluded, not defaulted into ``eval_split``."""
+    part = _stream_part_bytes(
+        [
+            {"stem": "a", "upstream_split": "test", "image": RED},
+            {"stem": "b", "upstream_split": None, "image": BLUE},
+        ]
+    )
+    client = FakeS3Client({"sources/fakebench/_stream/rev-1/part-0.parquet": part})
+    images = list(iter_bucket_images(client, "rs-storage-open", _entry(eval_split="test")))
+    assert [i.stem for i in images] == ["a"]
+
+
+def test_iter_stream_parts_eval_split_all_keeps_rows_with_no_split_evidence():
+    """``eval_split: all`` entries (marineeval, u45) have no split structure to read
+    at all, so a row with no split evidence must still be kept, labeled ``all``."""
+    part = _stream_part_bytes([{"stem": "a", "image": RED}])
+    client = FakeS3Client({"sources/fakebench/_stream/rev-1/part-0.parquet": part})
+    images = list(iter_bucket_images(client, "rs-storage-open", _entry(eval_split="all")))
+    assert [i.stem for i in images] == ["a"]
+    assert images[0].upstream_split == "all"
+
+
+def test_iter_staged_bucket_excludes_rows_with_no_split_evidence():
+    """Same rule for the staged-bucket (metadata.parquet + images/) layout."""
+    meta = _stream_part_bytes(
+        [
+            {"stem": "a", "upstream_split": "test"},
+            {"stem": "b", "upstream_split": None},
+        ]
+    )
+    client = FakeS3Client(
+        {
+            "sources/fakebench/metadata.parquet": meta,
+            "sources/fakebench/images/a.jpg": RED,
+            "sources/fakebench/images/b.jpg": BLUE,
+        }
+    )
+    images = list(iter_bucket_images(client, "rs-storage-open", _entry(eval_split="test")))
+    assert [i.stem for i in images] == ["a"]
+
+
+def test_iter_staged_bucket_eval_split_all_keeps_rows_with_no_split_evidence():
+    meta = _stream_part_bytes([{"stem": "a"}])
+    client = FakeS3Client(
+        {
+            "sources/fakebench/metadata.parquet": meta,
+            "sources/fakebench/images/a.jpg": RED,
+        }
+    )
+    images = list(iter_bucket_images(client, "rs-storage-open", _entry(eval_split="all")))
+    assert [i.stem for i in images] == ["a"]
+    assert images[0].upstream_split == "all"
+
+
+class FakeDecoded:
+    def __init__(self, upstream_id: str, data: bytes, split_hint: str | None) -> None:
+        self.upstream_id = upstream_id
+        self.data = data
+        self.split_hint = split_hint
+
+
+class FakeAdapter:
+    def __init__(self, decoded: list[FakeDecoded]) -> None:
+        self._decoded = decoded
+
+    def samples(self, tmp_dir: Path):
+        for d in self._decoded:
+            yield None, None, d
+
+
+def test_iter_upstream_images_filters_eval_split(tmp_path: Path):
+    adapter = FakeAdapter(
+        [
+            FakeDecoded("test/a.png", RED, "test"),
+            FakeDecoded("train/b.png", BLUE, "train"),
+        ]
+    )
+    entry = _entry(eval_split="test")
+    images = list(iter_upstream_images(entry, tmp_path, tmp_path, adapter=adapter))
+    assert [i.stem for i in images] == ["a"]
+
+
+def test_iter_upstream_images_multi_split_includes_heldout_val(tmp_path: Path):
+    """fathomnet-vme-style entries pin ``eval_split: test`` + ``heldout_val: val`` —
+    decontamination must cover both held-out sets, not just ``eval_split`` (BENCH-evalsplits)."""
+    adapter = FakeAdapter(
+        [
+            FakeDecoded("test/a.png", RED, "test"),
+            FakeDecoded("val/b.png", BLUE, "val"),
+            FakeDecoded("train/c.png", RED, "train"),
+        ]
+    )
+    entry = _entry(eval_split="test", heldout_val="val")
+    images = list(iter_upstream_images(entry, tmp_path, tmp_path, adapter=adapter))
+    assert sorted(i.stem for i in images) == ["a", "b"]
+
+
+def test_iter_upstream_images_eval_split_all_keeps_everything(tmp_path: Path):
+    adapter = FakeAdapter([FakeDecoded("1.png", RED, None), FakeDecoded("2.png", BLUE, None)])
+    entry = _entry(eval_split="all")
+    images = list(iter_upstream_images(entry, tmp_path, tmp_path, adapter=adapter))
+    assert len(images) == 2
+
+
+def test_iter_upstream_images_max_bytes_stops_stream(tmp_path: Path):
+    # RED/BLUE fixtures are small PNGs; three of them exceed a 2x-one-image cap.
+    adapter = FakeAdapter(
+        [
+            FakeDecoded("1.png", RED, "all"),
+            FakeDecoded("2.png", BLUE, "all"),
+            FakeDecoded("3.png", RED, "all"),
+        ]
+    )
+    entry = _entry(eval_split="all")
+    images = list(
+        iter_upstream_images(entry, tmp_path, tmp_path, adapter=adapter, max_bytes=len(RED) - 1)
+    )
+    assert [i.stem for i in images] == ["1"]
+
+
+def test_iter_upstream_images_zip_fixture_excludes_unreferenced_original_data(
+    tmp_path: Path,
+):
+    """BENCH-trashsplit: a tiny fixture zip reproduces ``ebd814a``'s defect. TrashCan's
+    ``original_data/*`` has no train/val dir component, so ``decode._group`` correctly
+    leaves ``split_hint=None`` — but ``iter_upstream_images`` used to default that to
+    ``eval_split`` and let it straight through, which is how 7212 non-eval images ended
+    up in ``trashcan.parquet`` all stamped ``upstream_split == "val"``. Only the real
+    ``val`` row may survive."""
+    import zipfile
+
+    from marinedata.adapters import Fetched, RemoteItem
+    from marinedata.adapters.decode import _group
+
+    zpath = tmp_path / "trashcan.zip"
+    with zipfile.ZipFile(zpath, "w") as zf:
+        zf.writestr("instance_version/train/a.jpg", RED)
+        zf.writestr("instance_version/val/b.jpg", BLUE)
+        zf.writestr("original_data/c.jpg", RED)
+
+    fetched = Fetched(item=RemoteItem(key="trashcan.zip", url="file://trashcan.zip"))
+    with zipfile.ZipFile(zpath) as zf:
+        members = [(name, (lambda n=name: zf.read(n))) for name in zf.namelist()]
+        decoded = list(_group(members, fetched, {}))
+
+    hints = {d.upstream_id.rsplit("#", 1)[-1]: d.split_hint for d in decoded}
+    assert hints["instance_version/train/a.jpg"] == "train"
+    assert hints["instance_version/val/b.jpg"] == "val"
+    assert hints["original_data/c.jpg"] is None
+
+    adapter = FakeAdapter(decoded)
+    entry = _entry(eval_split="val")
+    images = list(iter_upstream_images(entry, tmp_path, tmp_path, adapter=adapter))
+    assert [i.upstream_path.rsplit("#", 1)[-1] for i in images] == ["instance_version/val/b.jpg"]
+
+
+def test_spec_resolves(tmp_path: Path):
+    (tmp_path / "u45.yaml").write_text("id: u45\n")
+    assert spec_resolves(_entry("u45"), tmp_path) is True
+    assert spec_resolves(_entry("nope"), tmp_path) is False
+
+
+def test_build_manifest_computes_hash_columns():
+    entry = _entry()
+    images = iter([RawImage("a.png", "a", "test", RED)])
+    table, n_before = build_manifest(entry, images, Path("/nonexistent/does-not-exist.parquet"))
+    assert n_before == 0
+    row = table.to_pylist()[0]
+    assert row["sha256"] == hashlib.sha256(RED).hexdigest()
+    assert row["embedding_ref"] == row["sha256"]
+    assert row["embedding_model"] == "sscd_disc_mixup"
+    assert set(row) == {
+        "benchmark_id",
+        "upstream_path",
+        "stem",
+        "upstream_split",
+        "sha256",
+        "pixel_sha256",
+        "width",
+        "height",
+        "dhash",
+        "phash",
+        "phash64",
+        "margin",
+        "embedding_ref",
+        "embedding_model",
+    }
+
+
+def test_build_manifest_is_resumable(tmp_path: Path):
+    entry = _entry()
+    existing = tmp_path / "fakebench.parquet"
+    table1, _ = build_manifest(entry, iter([RawImage("a.png", "a", "test", RED)]), existing)
+    write_manifest(table1, existing)
+    # second run re-offers "a" (already present, must be skipped) plus a new "b"
+    table2, n_before = build_manifest(
+        entry,
+        iter([RawImage("a.png", "a", "test", RED), RawImage("b.png", "b", "test", BLUE)]),
+        existing,
+    )
+    assert n_before == 1
+    assert sorted(r["stem"] for r in table2.to_pylist()) == ["a", "b"]
+
+
+def test_build_manifest_no_rows_raises():
+    entry = _entry()
+    with pytest.raises(ManifestBuildError):
+        build_manifest(entry, iter([]), Path("/nonexistent/does-not-exist.parquet"))
+
+
+def test_build_manifest_raises_loud_on_empty_bytes_not_a_silent_skip():
+    """BENCH-fix3 B guardrail: zero-length image bytes is a decoder/adapter bug (the
+    empty-bytes sha256 ``e3b0c442...``), never an ordinary per-item skip — it must
+    raise immediately rather than let `build_manifest` log-and-continue through every
+    row and surface only as a misleading "0 rows found"."""
+    entry = _entry()
+    images = iter([RawImage("a.png", "a", "test", b"")])
+    with pytest.raises(ManifestBuildError, match="zero-length image bytes"):
+        build_manifest(entry, images, Path("/nonexistent/does-not-exist.parquet"))
+
+
+def test_iter_upstream_images_skips_label_only_empty_data(tmp_path: Path):
+    """A label-only Decoded (annotation JSON paired by label_files, or an unresolved
+    caption-json ref) always carries ``data == b""`` and must never be treated as an
+    eval image — this is the fathomnet-vme/uiis root cause."""
+    adapter = FakeAdapter(
+        [
+            FakeDecoded("annotations/train.json", b"", "train"),
+            FakeDecoded("train/b.png", BLUE, "train"),
+        ]
+    )
+    entry = _entry(eval_split="train")
+    images = list(iter_upstream_images(entry, tmp_path, tmp_path, adapter=adapter))
+    assert [i.stem for i in images] == ["b"]
+
+
+def test_iter_upstream_images_stem_unique_across_hash_fragment(tmp_path: Path):
+    """Two synthetic ``key#i`` ids sharing the same base file (e.g. one caption-json
+    record per image) must not collapse to the same stem via naive ``Path(...).stem``
+    truncation — that silently drops every record but the first in build_manifest's
+    dedup-by-stem."""
+    adapter = FakeAdapter(
+        [
+            FakeDecoded("coco_test.json#0", RED, "test"),
+            FakeDecoded("coco_test.json#1", BLUE, "test"),
+        ]
+    )
+    entry = _entry(eval_split="test")
+    images = list(iter_upstream_images(entry, tmp_path, tmp_path, adapter=adapter))
+    assert len({i.stem for i in images}) == 2
+
+
+def test_resolve_source_auto_picks_bucket_when_checksums_present():
+    client = FakeS3Client({"sources/fakebench/_stream/rev-1/CHECKSUMS.sha256": b""})
+    assert resolve_source("auto", _entry(), client, "rs-storage-open") == "bucket"
+
+
+def test_resolve_source_auto_picks_upstream_when_no_checksums():
+    client = FakeS3Client({})
+    assert resolve_source("auto", _entry(), client, "rs-storage-open") == "upstream"
+
+
+def test_resolve_source_explicit_bypasses_bucket_check():
+    assert resolve_source("upstream", _entry(), None, "rs-storage-open") == "upstream"
+
+
+# --------------------------------------------------------------------- BENCH-checkpoint
+
+
+def test_build_manifest_checkpoints_at_row_threshold(tmp_path: Path):
+    entry = _entry()
+    ckpt = tmp_path / "fakebench.parquet"
+    mid_run: dict[str, object] = {}
+
+    def images():
+        yield RawImage("a.png", "a", "test", RED)
+        yield RawImage("b.png", "b", "test", BLUE)
+        # a checkpoint must already exist once the tiny 2-row threshold is crossed,
+        # well before the generator (and build_manifest) finishes
+        mid_run["exists"] = ckpt.is_file()
+        if ckpt.is_file():
+            mid_run["rows"] = len(pq.read_table(ckpt).to_pylist())
+        yield RawImage("c.png", "c", "test", RED)
+
+    build_manifest(entry, images(), ckpt, checkpoint_every_rows=2, checkpoint_every_s=10_000)
+    assert mid_run["exists"] is True
+    assert mid_run["rows"] == 2
+
+
+def test_build_manifest_checkpoints_on_interrupt_and_resumes(tmp_path: Path):
+    entry = _entry()
+    ckpt = tmp_path / "fakebench.parquet"
+
+    def images_then_interrupt():
+        yield RawImage("a.png", "a", "test", RED)
+        raise KeyboardInterrupt()
+
+    with pytest.raises(KeyboardInterrupt):
+        build_manifest(entry, images_then_interrupt(), ckpt, checkpoint_every_rows=1)
+
+    assert ckpt.is_file()
+    assert [r["stem"] for r in pq.read_table(ckpt).to_pylist()] == ["a"]
+
+    # simulated rerun: resumes from the checkpoint, re-offers "a" (skipped) plus "b"
+    table2, n_before = build_manifest(
+        entry,
+        iter([RawImage("a.png", "a", "test", RED), RawImage("b.png", "b", "test", BLUE)]),
+        ckpt,
+    )
+    assert n_before == 1
+    assert sorted(r["stem"] for r in table2.to_pylist()) == ["a", "b"]
+
+
+def test_build_manifest_progress_line_format(capsys: pytest.CaptureFixture[str]):
+    entry = _entry()
+    images = iter([RawImage("a.png", "a", "test", RED)])
+    build_manifest(
+        entry,
+        images,
+        Path("/nonexistent/does-not-exist.parquet"),
+        progress_every=1,
+        progress_every_s=10_000,
+    )
+    err = capsys.readouterr().err
+    # BENCH-vmfix: the progress block now fires right after bytes_total is updated,
+    # before this image's own row is appended — so rows= reflects the count BEFORE
+    # the current image (0 here, the only image in the stream).
+    assert re.search(
+        r"^fakebench rows=0 bytes=[\d.]+MB rate=[\d.]+img/min skipped=0$", err, re.MULTILINE
+    )
+
+
+def test_build_manifest_progress_fires_on_already_seen_rows(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+):
+    """BENCH-vmfix: a resumed run where every image is already ``seen`` must still
+    print progress lines — the progress block must fire on count/interval whether or
+    not a row was added, not only when a new row is appended."""
+    entry = _entry()
+    existing = tmp_path / "fakebench.parquet"
+    table1, _ = build_manifest(entry, iter([RawImage("a.png", "a", "test", RED)]), existing)
+    write_manifest(table1, existing)
+    capsys.readouterr()  # discard the first run's progress output
+    build_manifest(
+        entry,
+        iter([RawImage("a.png", "a", "test", RED)]),
+        existing,
+        progress_every=1,
+        progress_every_s=10_000,
+    )
+    err = capsys.readouterr().err
+    assert re.search(
+        r"^fakebench rows=1 bytes=[\d.]+MB rate=[\d.]+img/min skipped=0$", err, re.MULTILINE
+    )
+
+
+def test_ordered_map_retries_a_hung_call_and_raises_when_it_never_returns():
+    """WP-R9: one GET that never returns must not block the stream (R8b: 0% CPU > 10 min)."""
+    import threading
+    import time
+
+    from marinedata.bench_manifest import _ordered_map
+
+    release = threading.Event()
+    calls: dict[int, int] = {}
+
+    def flaky(x):
+        calls[x] = calls.get(x, 0) + 1
+        if x == 2 and calls[x] == 1:
+            release.wait(30)  # first attempt hangs; the retry answers at once
+        return x * 10
+
+    def hung(x):
+        if x == 1:
+            release.wait(30)
+        return x
+
+    try:
+        got = list(_ordered_map(flaky, range(5), workers=2, timeout=0.3, retries=1))
+        assert got == [(i, i * 10) for i in range(5)] and calls[2] == 2
+        start = time.monotonic()
+        with pytest.raises(TimeoutError, match="after 2 attempts"):
+            list(_ordered_map(hung, range(3), workers=3, timeout=0.2, retries=1))
+        assert time.monotonic() - start < 5  # returned without joining the hung thread
+    finally:
+        release.set()
+
+
+def test_iter_staged_bucket_resolves_split_from_label_files():
+    """WP-R11: staged metadata with no split (CoralVQA) takes the eval split from the staged
+    annotation file named for it; a train image is never promoted to ``test``."""
+    meta = _stream_part_bytes(
+        [
+            {"stem": "a", "upstream_id": "Img.zip#1.jpg"},
+            {"stem": "b", "upstream_id": "Img.zip#2.jpg"},
+        ]
+    )
+    client = FakeS3Client(
+        {
+            "sources/fakebench/metadata.parquet": meta,
+            "sources/fakebench/images/a.jpg": RED,
+            "sources/fakebench/images/b.jpg": BLUE,
+            "sources/fakebench/labels/files/Fake_test.jsonl": b'{"image": "1.jpg", "q": "x"}\n'
+            b'{"image": "1.jpg", "q": "y"}\n',
+            "sources/fakebench/labels/files/Fake_train.jsonl": b'{"image": "2.jpg"}\n',
+        }
+    )
+    images = list(iter_bucket_images(client, "rs-storage-open", _entry(eval_split="test")))
+    assert [(i.stem, i.upstream_split) for i in images] == [("a", "test")]
+
+
+def test_iter_staged_bucket_split_hint_column_is_split_evidence():
+    meta = _stream_part_bytes(
+        [{"stem": "a", "split_hint": "test"}, {"stem": "b", "split_hint": "train"}]
+    )
+    client = FakeS3Client(
+        {
+            "sources/fakebench/metadata.parquet": meta,
+            "sources/fakebench/images/a.jpg": RED,
+            "sources/fakebench/images/b.jpg": BLUE,
+        }
+    )
+    images = list(iter_bucket_images(client, "rs-storage-open", _entry(eval_split="test")))
+    assert [i.stem for i in images] == ["a"]
+
+
+def test_a_truncated_jpeg_still_gets_a_manifest_row_with_its_exact_sha256():
+    """WP-R12: CoralVQA ships 5 truncated JPEGs; they must not drop out of the manifest."""
+    from PIL import ImageFile
+
+    buf = io.BytesIO()
+    rng = __import__("random").Random(0)
+    Image.frombytes("RGB", (96, 96), bytes(rng.randrange(256) for _ in range(96 * 96 * 3))).save(
+        buf, "JPEG", quality=95
+    )
+    whole = buf.getvalue()
+    cut = whole[: int(len(whole) * 0.8)]
+    flag = ImageFile.LOAD_TRUNCATED_IMAGES
+    img = RawImage(upstream_path="images/t.jpg", stem="t", upstream_split="test", data=cut)
+    row = _build_row_tolerant("coralvqa", img)
+    assert row["sha256"] == hashlib.sha256(cut).hexdigest() and row["phash64"] is not None
+    assert flag == ImageFile.LOAD_TRUNCATED_IMAGES  # scoped to the retry
+    junk = RawImage(upstream_path="images/j.jpg", stem="j", upstream_split="test", data=b"nope")
+    with pytest.raises(Exception, match="cannot decode"):
+        _build_row_tolerant("coralvqa", junk)
+    assert flag == ImageFile.LOAD_TRUNCATED_IMAGES

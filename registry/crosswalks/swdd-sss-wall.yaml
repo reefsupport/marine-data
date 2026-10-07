@@ -1,0 +1,11 @@
+# Hand-written (WP-U6c): additive, non-taxon targets only; the labels are objects, not organisms.
+crosswalks:
+- id: swdd-sss-wall
+  source_schema: dataset-native
+  target_schema: rs-taxa-v1
+  description: 'WP-U6c crosswalk for swdd-sss-wall (SWDD sonar wall detection): the single unnamed class 0.0 is a wall / structure.'
+  edges:
+  - source_label: '0.0'
+    targets: {taxon: NT_WRECK}
+    fidelity: approximate
+    note: 'single detector class of the Sonar Wall Detection Dataset (harbour / quay walls, structures); artificial structure, not a wreck'

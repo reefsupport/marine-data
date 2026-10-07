@@ -1,0 +1,108 @@
+# Reefolution's own CoralNet-style point-label vocabulary.
+#
+# Reefolution exports its own labelset (`labelset.csv`: CoralNet `Label ID` + `Short
+# Code`) alongside its point annotations (`annotations.csv`: image, row, column,
+# `Short Code`). The staged `labels/points.parquet` (S7b) stores the Short Code as
+# each point's label, so this schema is keyed on Short Code to match the data on disk.
+#
+# Unlike `coralnet-labelset` (the small, stable CoralNet functional-group layer), this
+# is Reefolution's full, source-specific vocabulary — 85 codes mixing coral genera
+# (Acr, Poc, Pav, ...), other biota (Bivalve, Tunicate, Zoanthid, ...), substrate
+# (Sand, Rubble, Rock) and equipment/quality flags (Frame, Unknown, dead). No crosswalk
+# to a canonical scheme exists yet; this file only makes `schema_id:
+# reefolution-coralnet-native` resolve and records the vocabulary honestly.
+
+schemas:
+  - id: reefolution-coralnet-native
+    name: Reefolution CoralNet-style native labelset
+    description: >
+      Reefolution's partner-supplied CoralNet-style point-label vocabulary (85 short
+      codes from its own `labelset.csv`). Dataset-native and unmapped — no crosswalk to
+      a canonical scheme exists yet.
+    axes: [taxon]
+    nodes:
+      - { id: "Aca", name: Aca, axis: taxon }
+      - { id: "Acr", name: Acr, axis: taxon }
+      - { id: "Agl", name: Agl, axis: taxon }
+      - { id: "Alveopora", name: Alveopora, axis: taxon }
+      - { id: "Anemone", name: Anemone, axis: taxon }
+      - { id: "Astreo", name: Astreo, axis: taxon }
+      - { id: "BA", name: BA, axis: taxon }
+      - { id: "biofilm", name: biofilm, axis: taxon }
+      - { id: "Bivalve", name: Bivalve, axis: taxon }
+      - { id: "Bla", name: Bla, axis: taxon }
+      - { id: "Bryo", name: Bryo, axis: taxon }
+      - { id: "Cau", name: Cau, axis: taxon }
+      - { id: "Caula", name: Caula, axis: taxon }
+      - { id: "CCA", name: CCA, axis: taxon }
+      - { id: "Coralli", name: Coralli, axis: taxon }
+      - { id: "Cos", name: Cos, axis: taxon }
+      - { id: "Cyano", name: Cyano, axis: taxon }
+      - { id: "Cyp", name: Cyp, axis: taxon }
+      - { id: "dead", name: dead, axis: taxon }
+      - { id: "Dic", name: Dic, axis: taxon }
+      - { id: "Didae", name: Didae, axis: taxon }
+      - { id: "Diplo", name: Diplo, axis: taxon }
+      - { id: "Dipsa", name: Dipsa, axis: taxon }
+      - { id: "Echphy", name: Echphy, axis: taxon }
+      - { id: "Echpo", name: Echpo, axis: taxon }
+      - { id: "Favit", name: Favit, axis: taxon }
+      - { id: "Fila", name: Fila, axis: taxon }
+      - { id: "Frame", name: Frame, axis: taxon }
+      - { id: "Fungii", name: Fungii, axis: taxon }
+      - { id: "GA", name: GA, axis: taxon }
+      - { id: "Gal", name: Gal, axis: taxon }
+      - { id: "Gardineros", name: Gardineros, axis: taxon }
+      - { id: "Gonia", name: Gonia, axis: taxon }
+      - { id: "Gonio", name: Gonio, axis: taxon }
+      - { id: "Hal", name: Hal, axis: taxon }
+      - { id: "HC", name: HC, axis: taxon }
+      - { id: "HS_AR", name: HS_AR, axis: taxon }
+      - { id: "Hydno", name: Hydno, axis: taxon }
+      - { id: "Hydroid", name: Hydroid, axis: taxon }
+      - { id: "Iso", name: Iso, axis: taxon }
+      - { id: "Lepta", name: Lepta, axis: taxon }
+      - { id: "Leptor", name: Leptor, axis: taxon }
+      - { id: "Leptos", name: Leptos, axis: taxon }
+      - { id: "Lobo", name: Lobo, axis: taxon }
+      - { id: "Lobvar", name: Lobvar, axis: taxon }
+      - { id: "MA", name: MA, axis: taxon }
+      - { id: "Merulina", name: Merulina, axis: taxon }
+      - { id: "Mil", name: Mil, axis: taxon }
+      - { id: "Monta", name: Monta, axis: taxon }
+      - { id: "Monti", name: Monti, axis: taxon }
+      - { id: "Myc", name: Myc, axis: taxon }
+      - { id: "Oul", name: Oul, axis: taxon }
+      - { id: "Oxyp", name: Oxyp, axis: taxon }
+      - { id: "Pachy", name: Pachy, axis: taxon }
+      - { id: "Pad", name: Pad, axis: taxon }
+      - { id: "Pav", name: Pav, axis: taxon }
+      - { id: "Phy", name: Phy, axis: taxon }
+      - { id: "Platy", name: Platy, axis: taxon }
+      - { id: "Plero", name: Plero, axis: taxon }
+      - { id: "Poc", name: Poc, axis: taxon }
+      - { id: "PorB", name: PorB, axis: taxon }
+      - { id: "PorM", name: PorM, axis: taxon }
+      - { id: "Psa", name: Psa, axis: taxon }
+      - { id: "RA", name: RA, axis: taxon }
+      - { id: "Rhy", name: Rhy, axis: taxon }
+      - { id: "Rock", name: Rock, axis: taxon }
+      - { id: "Rubble", name: Rubble, axis: taxon }
+      - { id: "Sand", name: Sand, axis: taxon }
+      - { id: "Sar", name: Sar, axis: taxon }
+      - { id: "SC", name: SC, axis: taxon }
+      - { id: "Ser", name: Ser, axis: taxon }
+      - { id: "SG", name: SG, axis: taxon }
+      - { id: "SP", name: SP, axis: taxon }
+      - { id: "Styl", name: Styl, axis: taxon }
+      - { id: "Sym", name: Sym, axis: taxon }
+      - { id: "TA", name: TA, axis: taxon }
+      - { id: "Tubmus", name: Tubmus, axis: taxon }
+      - { id: "Tunicate", name: Tunicate, axis: taxon }
+      - { id: "Turb_HC", name: Turb_HC, axis: taxon }
+      - { id: "Turb_MA", name: Turb_MA, axis: taxon }
+      - { id: "Unknown", name: Unknown, axis: taxon }
+      - { id: "Urchins", name: Urchins, axis: taxon }
+      - { id: "Val", name: Val, axis: taxon }
+      - { id: "Xendae", name: Xendae, axis: taxon }
+      - { id: "Zoanthid", name: Zoanthid, axis: taxon }

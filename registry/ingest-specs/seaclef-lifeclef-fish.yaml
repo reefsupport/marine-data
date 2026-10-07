@@ -1,0 +1,17 @@
+id: seaclef-lifeclef-fish
+access_class: internal-only
+adapter: needs:aicrowd-login
+license: unknown (challenge terms)
+attribution: LifeCLEF / ImageCLEF organizers
+citation: imageclef.org/LifeCLEF2024
+homepage: https://www.imageclef.org/LifeCLEF2024
+why_not_supported: Site resolves (HTTP 200) but LifeCLEF/SeaCLEF data has been distributed
+  via AICrowd challenge pages requiring account registration in recent years; no anonymous
+  bulk download found within budget.
+measured:
+  method: site reachable; data access gated per challenge norms (not independently
+    confirmed this year)
+  items: null
+  bytes: null
+  date: '2026-09-25'
+  bytes_basis: 'unmeasured: access-gated'

@@ -34,6 +34,12 @@ from marinedata.models import (
     Verification,
 )
 
+# D3a2: shares the ``s3_server`` fixture with tests/test_ingest_s3.py without an
+# explicit import (which ruff flags as F811 — a parameter of the same name
+# shadowing it in every test function). This is pytest's own sanctioned
+# mechanism for cross-module fixtures.
+pytest_plugins = ["_ingest_s3_helpers"]
+
 
 @pytest.fixture(scope="session")
 def registry() -> Registry:
@@ -46,6 +52,7 @@ def make_source(
     source_id: str = "fixture",
     annotations: tuple[Annotation, ...] = (),
     modalities: tuple[Modality, ...] = (Modality.IMAGE,),
+    images_from: tuple[str, ...] = (),
 ) -> Source:
     """A minimal source declaring a given layout."""
     return Source(
@@ -66,6 +73,7 @@ def make_source(
         coverage=Coverage(regions=(Region.GLOBAL,)),
         loader=LoaderSpec(layout=layout, params=params or {}),
         annotations=annotations,
+        images_from=images_from,
     )
 
 
@@ -205,3 +213,26 @@ def json_manifest_audio_root(tmp_path: Path) -> Path:
         encoding="utf-8",
     )
     return root
+
+
+@pytest.fixture
+def ample_disk(monkeypatch):
+    """INT-ingest5c: make ``DiskGuard``'s free-space probe report 1 PiB, so tests that
+    exercise the runner (default 40 GiB floor) do not depend on this machine's free disk."""
+    from marinedata.s3_upload import DiskGuard
+
+    def _free(self):
+        self.temp_root.mkdir(parents=True, exist_ok=True)
+        return 1 << 50
+
+    monkeypatch.setattr(DiskGuard, "free_bytes", _free)
+
+
+@pytest.fixture(autouse=True)
+def _legacy_unflavoured_fixtures():
+    """Legacy fixtures build releases without a flavour; production refuses that
+    (``require_flavour``). Tests of the guard itself use ``flavour_guard_on``."""
+    from marinedata.licence_class import unflavoured_for_tests
+
+    with unflavoured_for_tests():
+        yield

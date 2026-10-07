@@ -1,0 +1,101 @@
+# source: noaa-benthic-t3
+# crosswalk: coralnet-noaa-pifsc
+# counts: annotations
+# retrieved: 2026-09-25 from https://huggingface.co/datasets/NMFS-OSI/noaa-pacific-benthic-cover-t3-all data/all.parquet + coralnet.ucsd.edu/label/list/
+label	count	description
+TURFH	318206	CRED-Turf growing on hard substrate | Hard Substrate | coralnet:1348
+CCAH	91773	CRED-CCA growing on hard substrate | Hard Substrate | coralnet:1340
+SAND	45168	CRED-Sand | Soft Substrate | coralnet:1347
+PESP	43227	CRED-Peyssonnelia spp | Algae | coralnet:1336
+MOEN	28911	CRED-Montipora spp_encrusting | Hard coral | coralnet:1294
+POMA	25908	CRED-Porites spp_massive | Hard coral | coralnet:1306
+SHAD	23017	CRED-Shadow | Other | coralnet:1353
+EMA	21930	CRED-Encrusting macroalgae | Algae | coralnet:1337
+HALI	20411	CRED-Halimeda spp | Algae | coralnet:1331
+TURFR	15409	CRED-Turf growing on rubble | Hard Substrate | coralnet:1349
+POCS	12539	CRED-Pocillopora spp | Hard coral | coralnet:1304
+ACBR	12518	CRED-Acropora spp_branching | Hard coral | coralnet:1269
+POEN	10994	CRED-Porites spp_encrusting | Hard coral | coralnet:1307
+BGMA	9420	CRED-Blue-green macroalga | Algae | coralnet:1327
+MICR	8476	CRED-Microdictyon spp | Algae | coralnet:1333
+POBR	7056	CRED-Porites spp_branching | Hard coral | coralnet:1305
+ASSP	6419	CRED-Astreopora spp | Hard coral | coralnet:1271
+GONS	5883	CRED-Goniastrea spp | Hard coral | coralnet:1283
+OCTO	5085	CRED-Octocoral | Other Invertebrates | coralnet:1342
+ACTA	4635	CRED-Acropora spp_tabulate | Hard coral | coralnet:1270
+MOFO	4349	CRED-Montipora spp_foliose | Hard coral | coralnet:1295
+FASP	4214	CRED-Favia spp | Hard coral | coralnet:1278
+POFO	3900	CRED-Porites spp_foliose | Hard coral | coralnet:1308
+LOBO	3499	CRED-Lobophora spp | Algae | coralnet:1332
+CCAR	3468	CRED-CCA growing on rubble | Hard Substrate | coralnet:1341
+RDMA	3314	CRED-Red macroalgae | Algae | coralnet:1325
+UNK	3019	CRED-Unclassified/Unknown | Other | coralnet:1354
+PADI	2688	CRED-Padina spp | Algae | coralnet:1335
+HARD	2603	CRED-Hard substrate | Hard Substrate | coralnet:1345
+PAEN	2414	CRED-Pavona spp_encrusting | Hard coral | coralnet:1300
+UPMA	1963	CRED-Upright macroalgae | Algae | coralnet:1338
+CMOR	1936	CRED-Corallimorph | Other Invertebrates | coralnet:1317
+LEPT	1855	CRED-Leptastrea spp | Hard coral | coralnet:1287
+ENC	1742	CRED-Encrusting hard coral | Hard coral | coralnet:1264
+MOBR	1623	CRED-Montipora spp_branching | Hard coral | coralnet:1293
+ISSP	1577	CRED-Isopora spp | Hard coral | coralnet:1286
+LPHY	1551	CRED-Leptoria spp | Hard coral | coralnet:1290
+SP	1536	CRED-Sponge | Other Invertebrates | coralnet:1319
+ASPP	1260	CRED-Asparagopsis spp | Algae | coralnet:1355
+RUB	1197	CRED-Rubble substrate | Hard Substrate | coralnet:1346
+GASP	1183	CRED-Galaxea spp | Hard coral | coralnet:1281
+ZO	1147	CRED-Zoanthid | Other Invertebrates | coralnet:1322
+MOBF	1133	CRED-Mobile fauna | Other | coralnet:1350
+CYPS	1117	CRED-Cyphastrea spp | Hard coral | coralnet:1273
+PAMA	1106	CRED-Pavona spp_massive | Hard coral | coralnet:1299
+TURS	1105	CRED-Turbinaria spp | Hard coral | coralnet:1312
+ASTS	1081	CRED-Astrea spp | Hard coral | coralnet:3499
+MISP	962	CRED-Millepora spp | Hard coral | coralnet:1292
+FAVS	950	CRED-Favites spp | Hard coral | coralnet:1279
+DICO	913	CRED-Dictyopteris/Dictyota spp | Algae | coralnet:1329
+PLSP	836	CRED-Platygyra spp | Hard coral | coralnet:1302
+BRMA	825	CRED-Brown macroalgae | Algae | coralnet:1324
+LOBS	781	CRED-Lobophyllia spp | Hard coral | coralnet:1289
+WAND	775	CRED-Wand | Other | coralnet:1352
+DICT	770	CRED-Dictyosphaeria spp | Algae | coralnet:1330
+FINE	703	CRED-Fine sediment | Soft Substrate | coralnet:1344
+GRMA	679	CRED-Green macroalgae | Algae | coralnet:1323
+GOAL	584	CRED-Goniopora/Alveopora spp | Hard coral | coralnet:1282
+CAUL	545	CRED-Caulerpa spp | Algae | coralnet:1328
+PSSP	535	CRED-Psammocora spp | Hard coral | coralnet:1309
+PHSP	532	CRED-Phymastrea spp | Hard coral | coralnet:3500
+FUSP	475	CRED-Fungia spp | Hard coral | coralnet:1280
+HYSP	469	CRED-Hydnophora spp | Hard coral | coralnet:1285
+DISP	425	CRED-Diploastrea spp | Hard coral | coralnet:1274
+HCOE	407	CRED-Heliopora spp | Hard coral | coralnet:1284
+FOL	393	CRED-Foliose hard coral | Hard coral | coralnet:1265
+STYS	364	CRED-Stylophora spp | Hard coral | coralnet:1310
+TUN	357	CRED-Tunicate | Other Invertebrates | coralnet:1320
+ACAS	343	CRED-Acanthastrea spp | Hard coral | coralnet:1268
+TAPE	302	CRED-Tape | Other | coralnet:1351
+COSP	266	CRED-Coscinaraea spp | Hard coral | coralnet:1272
+ECHP	249	CRED-Echinopora spp | Hard coral | coralnet:1276
+FREE	198	CRED-Free-living hard coral | Hard coral | coralnet:1267
+MASS	137	CRED-Massive hard coral | Hard coral | coralnet:1263
+MESP	119	CRED-Merulina spp | Hard coral | coralnet:1291
+ECHL	115	CRED-Echinophyllia spp | Hard coral | coralnet:1275
+SG	98	CRED-Seagrass | Algae | coralnet:1339
+GC	95	CRED-Giant clam | Other Invertebrates | coralnet:1318
+NEOM	83	CRED-Neomeris spp | Algae | coralnet:1334
+PACS	74	CRED-Pachyseris spp | Hard coral | coralnet:1298
+AVSP	73	CRED-Avrainvillea spp | Algae | coralnet:1326
+PLER	61	CRED-Plerogyra spp | Hard coral | coralnet:1303
+BR	49	CRED-Branching hard coral | Hard coral | coralnet:1262
+UI	49	CRED-Unclassified sessile invertebrate | Other Invertebrates | coralnet:1321
+LESP	38	CRED-Leptoseris spp | Hard coral | coralnet:1288
+OUSP	37	CRED-Oulophyllia spp | Hard coral | coralnet:1297
+SYSP	33	CRED-Symphyllia spp | Hard coral | coralnet:1311
+AMNE	29	CRED-Anemone | Other Invertebrates | coralnet:1314
+BRY	19	CRED-Bryozoan | Other Invertebrates | coralnet:1316
+COTS_PRED	16	ESD-COTS predation | Hard Substrate | coralnet:7011
+HYCO	16	CRED-Hydrocoral | Other Invertebrates | coralnet:1313
+BI	9	CRED-Bivalve | Other Invertebrates | coralnet:1315
+COL	5	CRED-Columnar hard coral | Hard coral | coralnet:1266
+PAFO	5	CRED-Pavona spp_foliose | Hard coral | coralnet:1301
+ANTI	4	CRED-Wire and black coral | Other Invertebrates | coralnet:3507
+EUSP	1	CRED-Euphyllia spp | Hard coral | coralnet:1277

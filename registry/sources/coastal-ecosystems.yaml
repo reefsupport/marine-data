@@ -7,63 +7,89 @@
 
 sources:
   - id: global-mangrove-watch-v3
+    domain: mangrove
+    release_skip_reason: "context-layer: mangrove extent raster/vector; no imagery to train on"
+    access_class: open
     name: Global Mangrove Watch v3.0
+    # habitat inferred (WP-2b) from this source's own description/notes, not independently verified
+    habitat: [mangrove]
     version: "3.0"
     description: >
       Definitive global mangrove extent and change, 11 epochs 1996–2020 at 25 m from
       ALOS/JERS SAR classification.
     licence: CC-BY-4.0
     legal_basis: licence
+    redistribution: ok
     provenance: public
     verification:
       verified_on: 2026-08-17
       verified_by: "Zenodo record 6894273 — CC-BY-4.0"
       method: dataset-card
-    access: { method: zenodo, uri: https://zenodo.org/records/6894273 }
+    access:
+      method: zenodo
+      uri: https://zenodo.org/records/6894273
+      size_bytes: 5286160794  # measured 2026-09-18
     modalities: [satellite]
     capabilities: [habitat-mapping-satellite]
-    items_note: "~147,000 km² mapped (2020 epoch)."
+    counts_note: "~147,000 km² mapped (2020 epoch)."
     annotations: [{ kind: tabular, supervises: [] }]
     coverage: { regions: [global], years: [1996, 2020] }
     domain_shift:
       caveats: ["25 m pixels give extent, not condition. Cannot resolve individual trees or canopy health."]
     loader: { layout: metadata-only }
+    citation: "Bunting, P., Rosenqvist, A., Hilarides, L., Lucas, R., Thomas, N., Tadono, T., Worthington, T., Spalding, M., Murray, N., & Rebelo, L.-M. (2022). Global Mangrove Watch (1996 - 2020) Version 3.0 Dataset (Version 3.0) [Dataset]. Zenodo. https://doi.org/10.5281/ZENODO.6894273"
     tags: [mangrove, extent, context-layer]
 
   - id: global-seagrass-10m
+    domain: seagrass
+    release_skip_reason: "context-layer: seagrass extent raster; no imagery to train on"
+    access_class: open
     name: Global 10 m Seagrass Maps
+    # habitat inferred (WP-2b) from this source's own description/notes, not independently verified
+    habitat: [seagrass]
     version: "2026"
     description: First high-resolution global seagrass extent map from Sentinel-2 deep learning.
     licence: CC-BY-4.0
     legal_basis: licence
+    redistribution: ok
     provenance: public
     verification:
       verified_on: 2026-08-17
       verified_by: "Zenodo record 18612239 — CC-BY-4.0 (Nature 2026)"
       method: dataset-card
-    access: { method: zenodo, uri: https://zenodo.org/records/18612239 }
+    access:
+      method: zenodo
+      uri: https://zenodo.org/records/18612239
+      size_bytes: 886793559  # measured 2026-09-18
     modalities: [satellite]
     capabilities: [seagrass-mapping, habitat-mapping-satellite]
-    items_note: "~148,000 km² mapped."
+    counts_note: "~148,000 km² mapped."
     annotations: [{ kind: tabular, supervises: [] }]
     coverage: { regions: [global] }
     loader: { layout: metadata-only }
+    citation: "Peng, J., Li, J., Krause, J., Lyons, M., Murray, N., Schill, S., Roelfsema, C., & Asner, G. (2026). Global 10-meter seagrass maps [Dataset]. Zenodo. https://doi.org/10.5281/ZENODO.18612240"
     tags: [seagrass, extent, context-layer]
 
   - id: allen-coral-atlas
+    domain: coral
+    release_skip_reason: "context-layer: satellite reef-habitat product; no imagery to train on"
+    access_class: open
     name: Allen Coral Atlas — Reef Habitat v2.0
+    # habitat inferred (WP-2b) from this source's own description/notes, not independently verified
+    habitat: [coral_reef]
     version: "2.0"
     description: >
       Global shallow-reef benthic and geomorphic thematic maps at 5 m — the standard
       satellite basemap for reef extent.
     licence: CC-BY-4.0
     legal_basis: licence
+    redistribution: ok
     provenance: public
     verification:
       verified_on: 2026-08-17
       verified_by: "allencoralatlas.org terms — CC-BY 4.0; GEE asset ACA/reef_habitat/v2_0"
       method: site-terms
-    access: { method: api, uri: https://allencoralatlas.org }
+    access: { method: api, uri: https://allencoralatlas.org, params: { client: allen-coral-atlas } }
     modalities: [satellite]
     capabilities: [habitat-mapping-satellite]
     annotations:
@@ -77,16 +103,23 @@ sources:
         - "5 m pixels map habitat extent, not colony condition. Pair with in-water data; never use alone for cover."
         - "Funding-fragile — mirror anything you depend on."
     loader: { layout: metadata-only }
+    citation: "Allen Coral Atlas (2022). Imagery, maps and monitoring of the world's tropical coral reefs. https://doi.org/10.5281/zenodo.3833242"
     tags: [satellite, basemap, context-layer]
 
   - id: noaa-nccos-benthic-habitat
+    domain: coral
+    release_skip_reason: "context-layer: habitat map polygons; no imagery to train on"
+    access_class: open
     name: NOAA NCCOS shallow-water benthic habitat maps
+    # habitat inferred (WP-2b) from this source's own description/notes, not independently verified
+    habitat: [mixed]
     version: "live"
     description: >
       High-resolution photo-interpreted benthic habitat maps for US reefs including
       Florida, Puerto Rico and the US Virgin Islands.
     licence: US-GOV-PD
     legal_basis: licence
+    redistribution: ok
     provenance: public
     verification:
       verified_on: 2026-08-17
@@ -106,17 +139,26 @@ sources:
     tags: [caribbean, public-domain, habitat]
 
   - id: gebco-2024
+    domain: imaging
+    release_skip_reason: "context-layer: bathymetry grid; no imagery to train on"
+    access_class: open
     name: GEBCO 2024 Grid
+    # habitat inferred (WP-2b) from this source's own description/notes, not independently verified
+    habitat: [mixed]
     version: "2024"
     description: Global bathymetry and topography at 15 arc-seconds.
     licence: CC0-1.0
     legal_basis: licence
+    redistribution: ok
     provenance: public
     verification:
       verified_on: 2026-08-17
       verified_by: "gebco.net terms — public domain, attribution requested"
       method: site-terms
-    access: { method: http, uri: https://www.gebco.net/data-products-gridded-bathymetry-data/gebco2024-grid }
+    access:
+      method: http
+      uri: https://www.gebco.net/data-products-gridded-bathymetry-data/gebco2024-grid
+      size_bytes: 7500000000  # documented upstream, not measured — 2026-09-18
     modalities: [satellite]
     capabilities: [bathymetry]
     coverage: { regions: [global] }
@@ -127,11 +169,17 @@ sources:
     tags: [bathymetry, context-layer]
 
   - id: icesat2-atl24
+    domain: imaging
+    release_skip_reason: "context-layer: satellite lidar bathymetry; no imagery to train on"
+    access_class: open
     name: ICESat-2 ATL24 coastal bathymetry
+    # habitat inferred (WP-2b) from this source's own description/notes, not independently verified
+    habitat: [soft_sediment]
     version: "2"
     description: Photon-classified nearshore bathymetry — reference depths and SDB training labels.
     licence: US-GOV-PD
     legal_basis: licence
+    redistribution: ok
     provenance: public
     verification:
       verified_on: 2026-08-17
@@ -146,11 +194,16 @@ sources:
     tags: [bathymetry, lidar]
 
   - id: seaclear-marine-debris
+    domain: imaging
+    access_class: open
     name: SeaCLEAR Marine Debris
+    # habitat inferred (WP-2b) from this source's own description/notes, not independently verified
+    habitat: [mixed]
     version: "2024"
     description: Underwater debris and marine-life instance segmentation, 40 categories.
     licence: CC-BY-4.0
     legal_basis: licence
+    redistribution: ok
     provenance: public
     verification:
       verified_on: 2026-08-17
@@ -171,7 +224,7 @@ sources:
         unrar/unar binary) for exactly one source. Fetch manually, or re-host as .zip.
     modalities: [image]
     capabilities: [marine-debris, general-pretraining]
-    items: 8610
+    n_images: 8610
     annotations: [{ kind: instance-mask, classes: 40, supervises: [taxon] }]
     coverage: { regions: [mediterranean] }
     domain_shift:
@@ -196,41 +249,66 @@ sources:
         site's same-named file or found nothing. 40 categories, 31,555 bbox+polygon
         annotations confirmed in the JSON, matching this entry's declared
         instance-mask/40-class annotation.
+    citation: "Đuraš, A., Wolf, B. J., Ilioudi, A., Palunko, I., & De Schutter, B. (2024). A Dataset for Detection and Segmentation of Underwater Marine Debris in Shallow Waters. Scientific Data, 11(1). https://doi.org/10.1038/s41597-024-03759-2"
     tags: [debris, permissive]
 
   - id: floating-marine-debris
+    domain: imaging
+    access_class: open
     name: Floating Marine Debris spectral data
-    version: "2023"
+    # habitat inferred (WP-2b) from this source's own description/notes, not independently verified
+    habitat: [pelagic]
+    version: "git-427059e47f99"
     description: Pixel-level spectral labels for floating debris detection from Sentinel-2.
     licence: CC-BY-4.0
     legal_basis: licence
+    redistribution: ok
     provenance: public
     verification:
-      verified_on: 2026-08-17
+      verified_on: 2026-09-25
       verified_by: "github.com/miguelmendesduarte/Floating-Marine-Debris-Data — CC-BY 4.0"
       method: licence-file
-    access: { method: http, uri: https://github.com/miguelmendesduarte/Floating-Marine-Debris-Data }
+    checksums:
+      version: "git-427059e47f99"
+      root_digest: 5f1dbef348ff69107de08e9b767df5a9b25388d9b8da579c1c30b6434656d1a8
+      files: 15
+      size_bytes: 5847793
+    access:
+      method: s3
+      uri: s3://rs-storage-open/sources/floating-marine-debris/git-427059e47f99/
+      size_bytes: 5847793
+      params: { upstream: github, git_ref: 427059e47f99 }
     modalities: [satellite]
     capabilities: [marine-debris]
-    items: 60680
-    items_note: "60,680 real labelled pixels plus synthetic."
+    # legacy items=60680 (unit unspecified: tabular/satellite records) -> n_* left null
+    counts_note: "60,680 real labelled pixels plus synthetic (11 image files staged)."
     annotations: [{ kind: tabular, classes: 7, supervises: [taxon] }]
     coverage: { regions: [global] }
-    loader: { layout: metadata-only }
+    loader: { layout: staged-tree, schema_id: dataset-native }
+    citation: 'M. M. Duarte and L. Azevedo, "Automatic Detection and Identification of Floating Marine Debris Using Multispectral Satellite Imagery," in IEEE Transactions on Geoscience and Remote Sensing, vol. 61, pp. 1-15, 2023, Art no. 2002315, doi: 10.1109/TGRS.2023.3283607.'
     tags: [debris, spectral]
 
   - id: copernicus-globcolour
+    domain: imaging
+    release_skip_reason: "context-layer: satellite ocean-colour covariate; no imagery to train on"
+    access_class: open
     name: Copernicus-GlobColour Ocean Colour L4
+    # habitat inferred (WP-2b) from this source's own description/notes, not independently verified
+    habitat: [pelagic]
     version: "live"
     description: Chlorophyll-a, turbidity and water-quality retrievals — reef stress context.
     licence: CC-BY-4.0
     legal_basis: licence
+    redistribution: ok
     provenance: public
     verification:
       verified_on: 2026-08-17
       verified_by: "Copernicus Marine Service data licence — free and open with attribution"
       method: site-terms
-    access: { method: api, uri: https://data.marine.copernicus.eu/product/OCEANCOLOUR_GLO_BGC_L4_MY_009_104 }
+    access:
+      method: api
+      uri: https://data.marine.copernicus.eu/product/OCEANCOLOUR_GLO_BGC_L4_MY_009_104
+      params: { client: copernicus-marine }
     modalities: [satellite, tabular]
     capabilities: [habitat-mapping-satellite]
     coverage: { regions: [global], years: [1997, 2026] }
@@ -240,20 +318,26 @@ sources:
     tags: [environmental, covariate]
 
   - id: obis
+    domain: coral
+    release_skip_reason: "context-layer: occurrence database / taxonomic prior; no imagery to train on"
+    access_class: open
     name: OBIS — Ocean Biodiversity Information System
+    # habitat inferred (WP-2b) from this source's own description/notes, not independently verified
+    habitat: [mixed]
     version: "live"
     description: ~200M marine species occurrence records with taxonomy and coordinates.
     licence: CC-BY-4.0
     legal_basis: licence
+    redistribution: ok
     provenance: public
     verification:
       verified_on: 2026-08-17
       verified_by: "obis.org terms — CC-BY 4.0 for the standardised aggregate"
       method: site-terms
-    access: { method: api, uri: https://obis.org }
+    access: { method: api, uri: https://obis.org, params: { client: obis } }
     modalities: [tabular]
     capabilities: [edna-taxonomy, coral-taxonomy]
-    items: 200000000
+    # legacy items=200000000 (unit unspecified: tabular/satellite records) -> n_* left null
     annotations: [{ kind: tabular, supervises: [taxon] }]
     coverage: { regions: [global] }
     notes: >

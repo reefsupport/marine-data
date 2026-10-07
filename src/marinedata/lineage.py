@@ -141,7 +141,7 @@ def build_lineage(
             licence=s.licence.id,
             legal_basis=s.legal_basis.value,
             provenance=s.provenance.value,
-            items=items_consumed.get(s.id, s.items),
+            items=items_consumed.get(s.id, s.primary_count),
             items_source="consumed" if s.id in items_consumed else "declared",
             licence_flags=s.licence.flags.model_dump(),
             attribution=s.citation,

@@ -10,3 +10,4 @@ build/
 .cache/
 LINEAGE.json
 .DS_Store
+registry/overlays/*.parquet

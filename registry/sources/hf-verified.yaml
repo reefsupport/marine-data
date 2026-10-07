@@ -6,14 +6,20 @@
 
 sources:
   - id: reefnet-hf
+    domain: coral
+    release_skip_reason: "non-image-modality: tabular benchmark features"
+    access_class: restricted-nc  # WP-R2: upstream ReefNet-1.0 cardData.license cc-by-nc-sa-4.0 (LICV lic-B)
     name: ReefNet 1.0 (HuggingFace release)
+    # habitat inferred (WP-2b) from this source's own description/notes, not independently verified
+    habitat: [coral_reef]
     version: "1.0"
     description: >
       The ReefNet fine-grained coral benchmark, published openly on HuggingFace as
       tabular point annotations: CoralNet source, image name, row/column, CoralNet
       label and a harmonised ReefNet label.
-    licence: CC-BY-4.0
+    licence: CC-BY-NC-SA-4.0
     legal_basis: licence
+    redistribution: ok
     provenance: public
     verification:
       verified_on: 2026-08-17
@@ -22,11 +28,12 @@ sources:
     access:
       method: huggingface
       uri: https://huggingface.co/datasets/ReefNet/ReefNet-1.0
+      size_bytes: 4161666984  # measured 2026-09-18
       params:
         hf_id: ReefNet/ReefNet-1.0
     modalities: [tabular]
     capabilities: [coral-taxonomy, benthic-classification]
-    items: 181223
+    # legacy items=181223 (unit unspecified: tabular/satellite records) -> n_* left null
     annotations:
       - kind: point-label
         count: 925000
@@ -50,11 +57,16 @@ sources:
     tags: [genus, benchmark, tabular]
 
   - id: reefnet-species-images
+    domain: coral
+    access_class: open
     name: ReefNet species images
+    # habitat inferred (WP-2b) from this source's own description/notes, not independently verified
+    habitat: [coral_reef]
     version: "unversioned"
     description: Coral species image classification set derived from the ReefNet corpus.
     licence: CC-BY-4.0
     legal_basis: licence
+    redistribution: ok
     provenance: public
     verification:
       verified_on: 2026-08-17
@@ -63,6 +75,7 @@ sources:
     access:
       method: huggingface
       uri: https://huggingface.co/datasets/BobDerBaum/reefnet_species_images
+      size_bytes: 283236711706  # measured 2026-09-18
       params: { hf_id: BobDerBaum/reefnet_species_images, image_column: image, label_column: label }
     modalities: [image]
     capabilities: [general-pretraining]
@@ -88,10 +101,15 @@ sources:
         A label audit then showed the ClassLabel carries collection names, not species -
         see the annotations note.
       schema_id: dataset-native
+    citation: "@article{reefnet2024, title={ReefNet: A Large-Scale Coral Reef Annotation Dataset}, year={2024}, note={https://huggingface.co/datasets/ReefNet/ReefNet-1.0}}"
     tags: [pretraining, mis-registered-corrected]
 
   - id: reef-guidance-system
+    domain: coral
+    access_class: open
     name: QUT reef guidance system imagery
+    # habitat inferred (WP-2b) from this source's own description/notes, not independently verified
+    habitat: [mixed]
     version: "unversioned"
     description: >
       Underwater reef imagery from the QUT Centre for Robotics underwater-perception
@@ -99,6 +117,7 @@ sources:
       superpixel line of work.
     licence: CC-BY-4.0
     legal_basis: licence
+    redistribution: ok
     provenance: public
     verification:
       verified_on: 2026-08-17
@@ -107,6 +126,7 @@ sources:
     access:
       method: huggingface
       uri: https://huggingface.co/datasets/QCR-Underwater-Perception/reef-guidance-system
+      size_bytes: 31982049423  # measured 2026-09-18
       params: { hf_id: QCR-Underwater-Perception/reef-guidance-system, image_column: image }
     modalities: [image]
     capabilities: [general-pretraining, benthic-segmentation]
@@ -118,16 +138,23 @@ sources:
       layout: flat-images
       verified_on: 2026-08-17
       verified_note: "15 live rows fetched from HF; images only"
+    citation: "Raine, S., Olivastri, E., Moshirian, B., & Fischer, T. (2026). AI-driven dispensing of coral reseeding devices for broad-scale restoration of the Great Barrier Reef. IEEE/RSJ International Conference on Intelligent Robots and Systems."
     tags: [robotics, pretraining, qut]
 
   - id: marrs-reef-soundscapes
+    domain: imaging
+    release_skip_reason: "non-image-modality: audio clips: keep out of the v2 image release, candidate for a later audio config"
+    access_class: open
     name: MARRS global coral reef soundscapes
+    # habitat inferred (WP-2b) from this source's own description/notes, not independently verified
+    habitat: [coral_reef]
     version: "unversioned"
     description: >
       Global reef soundscape detections with sonotype, country and confidence - the
       largest openly available reef bioacoustics corpus we have found.
     licence: CC-BY-4.0
     legal_basis: licence
+    redistribution: ok
     provenance: public
     verification:
       verified_on: 2026-08-17
@@ -136,11 +163,15 @@ sources:
     access:
       method: huggingface
       uri: https://huggingface.co/datasets/bens-bots/marrs-global-coral-reef-soundscapes
+      size_bytes: 10128808016  # measured 2026-09-18
       params:
         hf_id: bens-bots/marrs-global-coral-reef-soundscapes
         config: detections_australia
         audio_column: audio
         label_column: sonotype
+      notes: >
+        Measured 2026-09-18: 10,128,808,016 bytes is for config `detections_australia`
+        only. The whole HF repo (all configs, all countries) is approximately 975 GB.
     modalities: [audio]
     capabilities: [bioacoustics]
     annotations: [{ kind: audio-event, supervises: [taxon] }]
@@ -154,14 +185,20 @@ sources:
       verified_on: 2026-08-17
       verified_note: "15 live audio clips fetched from HF config detections_australia; sonotype as class dir"
       schema_id: sonotype
+    citation: "Williams et al. (2025) Evidence of ecosystem process recovery across a large-scale coral reef restoration programme using AI accelerated soundscape analysis, https://doi.org/10.1101/2025.09.24.678197 || Williams, Ben; Jones, Kate (2025). Coral Reef Soundscapes from a Global Restoration Programme. University College London. Dataset. https://doi.org/10.5522/04/29958062.v2"
     tags: [bioacoustics, reef-audio, multi-region]
 
   - id: whoi-plankton-small
+    domain: plankton
+    access_class: open
     name: WHOI-Plankton (small)
+    # habitat inferred (WP-2b) from this source's own description/notes, not independently verified
+    habitat: [pelagic]
     version: "unversioned"
     description: IFCB plankton imagery with expert class labels - the canonical plankton benchmark.
     licence: MIT
     legal_basis: licence
+    redistribution: ok
     provenance: public
     verification:
       verified_on: 2026-08-17
@@ -170,6 +207,7 @@ sources:
     access:
       method: huggingface
       uri: https://huggingface.co/datasets/nf-whoi/whoi-plankton-small
+      size_bytes: 1107683776  # measured 2026-09-18
       params: { hf_id: nf-whoi/whoi-plankton-small, image_column: image, label_column: label }
     modalities: [image]
     capabilities: [general-pretraining]
@@ -184,11 +222,16 @@ sources:
     tags: [plankton, microscopy, permissive]
 
   - id: underwater-image-enhancement
+    domain: imaging
+    access_class: open
     name: Underwater image enhancement set
+    # habitat inferred (WP-2b) from this source's own description/notes, not independently verified
+    habitat: [mixed]
     version: "unversioned"
     description: Paired/labelled underwater imagery for enhancement and restoration work.
     licence: CC-BY-4.0
     legal_basis: licence
+    redistribution: ok
     provenance: public
     verification:
       verified_on: 2026-08-17
@@ -197,6 +240,7 @@ sources:
     access:
       method: huggingface
       uri: https://huggingface.co/datasets/iamvastava/underwater_image_enhancement
+      size_bytes: 449116892  # measured 2026-09-18
       params: { hf_id: iamvastava/underwater_image_enhancement, image_column: image, label_column: label }
     modalities: [image]
     capabilities: [image-enhancement, general-pretraining]
@@ -212,13 +256,18 @@ sources:
     tags: [enhancement]
 
   - id: satellite-coral-mapping
+    domain: coral
+    access_class: open
     name: AIMS satellite coral mapping
+    # habitat inferred (WP-2b) from this source's own description/notes, not independently verified
+    habitat: [coral_reef]
     version: "unversioned"
     description: >
       Paired Sentinel-2 / Landsat-8 reef scenes with label rasters, from AIMS - a rare
       satellite reef set published with ground-truth labels rather than as a product.
     licence: CC-BY-4.0
     legal_basis: licence
+    redistribution: ok
     provenance: public
     verification:
       verified_on: 2026-08-17
@@ -227,6 +276,7 @@ sources:
     access:
       method: huggingface
       uri: https://huggingface.co/datasets/aimsks/satellite-coral-mapping
+      size_bytes: 30434265  # measured 2026-09-18
       params:
         hf_id: aimsks/satellite-coral-mapping
         split: test

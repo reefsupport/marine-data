@@ -1,0 +1,24 @@
+# WP-6c. Apply with: kubectl apply -k deploy/ingest-job/  (a maintainer runs this — see README.md)
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+namespace: rs-prod-jobs # existing batch/cron namespace (infra/gitops), reused read-only
+
+resources:
+  - job.yaml
+
+# One key per file under registry/ingest-specs/ (populate that dir with real ingest specs
+# — docs/ingest-howto.md — before applying; an empty match here is a kustomize build error,
+# which is deliberate: it stops an empty batch from silently running).
+configMapGenerator:
+  - name: marinedata-ingest-specs
+    files:
+      - ../../registry/ingest-specs/*.yaml
+
+# Set the real, pushed image before applying:
+#   kustomize edit set image marinedata-ingest=<registry>/<path>/marinedata-ingest:<tag>
+# or edit this list directly. See README.md for the build/push commands.
+images:
+  - name: marinedata-ingest
+    newName: REPLACE_ME_REGISTRY/marinedata-ingest
+    newTag: REPLACE_ME_TAG

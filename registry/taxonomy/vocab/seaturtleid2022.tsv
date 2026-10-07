@@ -1,0 +1,6 @@
+# source: seaturtleid2022
+# crosswalk: seaturtleid2022
+# counts: images
+# retrieved: 2026-10-05 from the SeaTurtleID2022 paper (Adam et al., arXiv:2311.05524): the dataset is loggerhead sea turtles (Caretta caretta), a dataset-level species; the staged tree has no per-image species label
+label	count	description
+Caretta caretta	8729	dataset-level species label (every image)

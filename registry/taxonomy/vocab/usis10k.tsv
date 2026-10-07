@@ -1,0 +1,13 @@
+# source: usis10k
+# crosswalk: usis-uiis
+# counts: annotations
+# retrieved: 2026-09-25 from https://huggingface.co/datasets/LiamLian0727/USIS10K
+# note: excluded foreground_annotations/* (18873 class-agnostic masks duplicating the multi-class set)
+label	count	description
+fish	9663	
+reefs	5483	
+human divers	1209	
+wrecks/ruins	1080	
+aquatic plants	623	
+sea-floor	518	
+robots	297	

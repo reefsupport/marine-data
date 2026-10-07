@@ -1,0 +1,33 @@
+# WP-6l-B (2026-09-25) new source: candidate — WP-6l-B sonar+depth-3d: co-registered RGB and sonar of live fish at 3 ranges
+id: koi-rgb-sonar
+access_class: open
+adapter: hf
+params:
+  repo: perona-lab/Huntington_and_Caltech_Koi_RGB_and_Sonar
+  revision: 4120e0f1b59d21174a34dfa040e185f87a3a2a44
+license: mit
+attribution: perona-lab (HF)
+citation: HF dataset perona-lab/Huntington_and_Caltech_Koi_RGB_and_Sonar
+homepage: https://huggingface.co/datasets/perona-lab/Huntington_and_Caltech_Koi_RGB_and_Sonar
+notes: 'candidate — WP-6l-B sonar+depth-3d: co-registered RGB and sonar of live fish at 3 ranges'
+disk_floor_gib: 36.0
+measured:
+  items: 99986
+  bytes: 239653675408
+  bytes_basis: HF usedStorage (all revisions' LFS objects)
+  method: 'HF siblings listing (capped at 100,000 files): >= 99,986 png across 15ft/100ft runs (40ft, vertical_plane
+    beyond the cap)'
+  date: '2026-09-25'
+  per_item_license: mit
+  by_depth_band_m: {}
+  label_type: paired RGB / imaging-sonar frames with homography calibration and per-run metadata
+  habitat_region: freshwater koi ponds (Huntington, Caltech), California
+  dedup_chain: new; no registry/ingest-spec/WP-6g/S57 match on title, DOI or record id
+  wp6l_gap: sonar+depth-3d
+subset:
+  target_items: 80000
+  stratify:
+  - run
+  - range_ft
+  rule: 'D-AB2: ~240 GB > 200 GB; keep every paired RGB+sonar frame, cap per run in sha256(key) order until <= 190
+    GB'

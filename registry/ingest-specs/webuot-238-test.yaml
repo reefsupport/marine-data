@@ -1,0 +1,24 @@
+# WP-6g (2026-09-25) new source: candidate — WP-6g gap 2: WebUOT-1M test split: 238 in-the-wild underwater tracking videos across many taxa
+id: webuot-238-test
+access_class: internal-only
+adapter: hf
+params:
+  repo: Voxel51/WebUOT-238-Test
+  revision: 334b7d5353db89fa3804515afefad63b7041a9ba
+license: unstated
+attribution: Zhang et al. WebUOT-1M (NeurIPS 2024), Voxel51 mirror
+citation: WebUOT-1M, NeurIPS 2024
+homepage: https://huggingface.co/datasets/Voxel51/WebUOT-238-Test
+notes: 'candidate — WP-6g gap 2: WebUOT-1M test split: 238 in-the-wild underwater tracking videos across many taxa'
+disk_floor_gib: 36.0
+measured:
+  items: 238
+  bytes: 3594637612
+  method: 'HF API: 238 mp4 + 3 json, usedStorage'
+  date: '2026-09-25'
+  per_item_license: unstated
+  by_depth_band_m: {}
+  label_type: single-object tracking bbox per frame (FiftyOne json)
+  wp6g_gaps:
+  - 2
+  unit: videos

@@ -1,0 +1,8 @@
+# source: reef-support-seaview-labels
+# crosswalk: reef-support-labelbox
+# counts: annotations
+# retrieved: 2026-10-06 from rs-storage-open sources/reef-support-seaview-labels/2026-10-06/labels/exports/<partition>/ (SEAVIEW_ATL export-result-old.ndjson, the complete ATL export; export-result.ndjson for IDN_PHL, PAC_AUS, PAC_USA; anonymous GET, streamed, not stored)
+# note: one annotation = one Labelbox ImageSegmentationMask object (50,614 objects over 2,707 images); the tree holds 50,603 labels/instance_masks files (SEAVIEW_ATL: 10,211 objects vs 10,200 files, the other three partitions match exactly)
+label	count	description
+Hard Coral	44540	
+Soft Coral	6074	

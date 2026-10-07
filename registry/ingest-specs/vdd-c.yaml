@@ -1,0 +1,12 @@
+id: vdd-c
+access_class: open
+adapter: drum
+params:
+  landing: https://conservancy.umn.edu/handle/11299/219383
+license: cc-by-4.0
+attribution: de Langis et al. (Univ. of Minnesota DRUM)
+citation: de Langis et al. 2021
+homepage: https://conservancy.umn.edu/handle/11299/219383
+notes: needs_adapter:drum — DRUM (Univ. of Minnesota's DSpace repository) 403s plain
+  curl (bot-blocked); needs the DRUM/DSpace REST API (same family as trashcan/trash-icra19
+  in W1) rather than scraping the HTML landing page

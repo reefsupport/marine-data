@@ -1,0 +1,526 @@
+# MERMAID benthic attributes -> RS-Benthic v1.
+#
+# MERMAID's vocabulary is not a labelset, it is a taxonomy: 259 attribute names, mostly
+# genus and species, over one live corpus. Almost every edge here is therefore a roll-up,
+# and `coarsened` is the normal case rather than a warning sign - the source is strictly
+# more specific than the canonical schema below L3.
+#
+# Group membership was taken from WoRMS (AphiaRecordsByName, 2026-09-18), not from the
+# name, because this vocabulary is full of homonyms that a reader would get wrong:
+# `Turbinaria-algae` is a brown alga and `Turbinaria-coral` a scleractinian (MERMAID
+# disambiguates them; `Turbinaria turbinata` is the alga and does NOT); `Lithophyllon` is
+# a fungiid coral, not the coralline alga `Lithophyllum`; the species epithet in
+# `Diploastrea heliopora` is not the octocoral genus `Heliopora`.
+#
+# Three groups have no L2 home and roll up to CNIDARIA rather than being forced:
+# corallimorphs (Corallimorpharia, Discosoma, Coralimorph), hydroids (Hydroid,
+# Aglaophenia) and the stylasterid hydrocoral Distichopora - MIL is Millepora-only.
+#
+# The `form` column of the staged points is NOT crossed into these labels. It stays
+# native; see the source notes for why.
+
+crosswalks:
+  - id: mermaid-attributes
+    source_schema: mermaid-attributes
+    target_schema: rs-benthic-v1
+    description: >
+      All 259 MERMAID benthic attribute names in the live corpus onto the canonical
+      axes. Genus and species labels roll up to their group node; two labels are
+      explicitly unmappable. Taxon placement verified against WoRMS 2026-09-18.
+    edges:
+      - { source_label: "Macroalgae", targets: { taxon: SW }, fidelity: exact,
+          note: "MERMAID's fleshy-macroalgae attribute is exactly RS-Benthic SW." }
+      - { source_label: "Sand", targets: { taxon: SD }, fidelity: exact }
+      - { source_label: "Rubble", targets: { taxon: RB }, fidelity: exact }
+      - { source_label: "Turf algae", targets: { taxon: TA }, fidelity: exact }
+      - { source_label: "Bare substrate", targets: { taxon: RK }, fidelity: exact,
+          note: "RETARGETED 2026-09-24 (R3 Q12a): in the MERMAID API, Bare substrate is the parent of Rock + Dead coral, while Sand/Silt/Rubble are separate top-level categories - the prior premise ('does not exclude unconsolidated cover') was false, and the CoralNet precedent doesn't transfer (CoralNet lumps sand/rubble/pavement together). RK's own aliases are 'unknown hard substrate' and 'hard substrate', matching this attribute exactly; 37,417 rows move from coarsened/ABIOTIC to exact/RK. Kept `exact` rather than `approximate` because `is_reliable` = exact|coarsened, and `approximate` would drop all 37,417 rows from supervision." }
+      - { source_label: "Crustose coralline algae", targets: { taxon: CCA }, fidelity: exact }
+      - { source_label: "Hard coral", targets: { taxon: HC }, fidelity: exact }
+      - { source_label: "Porites", targets: { taxon: HC_PORITES }, fidelity: exact,
+          note: "genus of Scleractinia (Poritidae) -> the Porites L3 node." }
+      - { source_label: "Soft coral", targets: { taxon: SC }, fidelity: exact }
+      - { source_label: "Acropora", targets: { taxon: HC_ACROPORA }, fidelity: exact,
+          note: "genus of Scleractinia (Acroporidae) -> the Acropora L3 node." }
+      - { source_label: "Dead coral", targets: { taxon: TRANSITION }, fidelity: coarsened,
+          note: "RETARGETED 2026-09-24 (R3 Q12b): DC asserts recency, which this attribute does not - MERMAID scores 'Dead coral with algae' separately, so this is dead coral without algal cover, but the attribute alone can't confirm it is recently dead. TRANSITION is the parent of both dead-coral taxon nodes (DC, DCA) in rs-benthic-v1, so it is a strict ancestor - the definition of `coarsened`, not a guess. 8,710 rows move from excluded/unreliable (approximate) to supervised at TRANSITION." }
+      - { source_label: "Sargassum", targets: { taxon: SW }, fidelity: coarsened,
+          note: "Ochrophyta macroalga (Fucales) -> SW." }
+      - { source_label: "Tape", targets: { taxon: TWS }, fidelity: coarsened,
+          note: "Transect tape - survey artefact, not benthos." }
+      - { source_label: "Galaxea", targets: { taxon: HC }, fidelity: coarsened,
+          note: "genus of Scleractinia (Euphylliidae) -> HC." }
+      - { source_label: "Rock", targets: { taxon: RK }, fidelity: exact }
+      - { source_label: "Pocillopora", targets: { taxon: HC_POCILLOPORA }, fidelity: exact,
+          note: "genus of Scleractinia (Pocilloporidae) -> the Pocillopora L3 node." }
+      - { source_label: "Cyanobacteria", targets: { taxon: NIA }, fidelity: approximate,
+          note: "Cyanobacteria are bacteria, not algae; NIA is itself a functional (nutrient-indicator) node, so this is a functional match. Same call as AGRRA's CYAN." }
+      - { source_label: "Montipora", targets: { taxon: HC }, fidelity: coarsened,
+          note: "genus of Scleractinia (Acroporidae) -> HC." }
+      - { source_label: "Dead coral with algae", targets: { taxon: DCA }, fidelity: exact }
+      - { source_label: "Sponge", targets: { taxon: SP }, fidelity: exact }
+      - { source_label: "Porites lutea", targets: { taxon: HC_PORITES }, fidelity: coarsened,
+          note: "species of Scleractinia (Poritidae) -> the Porites L3 node." }
+      - { source_label: "Millepora", targets: { taxon: MIL }, fidelity: exact,
+          note: "Millepora (genus, WoRMS: Hydrozoa/Milleporidae) - fire coral." }
+      - { source_label: "Isopora", targets: { taxon: HC }, fidelity: coarsened,
+          note: "genus of Scleractinia (Acroporidae) -> HC." }
+      - { source_label: "Xenia", targets: { taxon: SC }, fidelity: coarsened,
+          note: "octocoral genus (WoRMS: Octocorallia/Xeniidae) -> SC." }
+      - { source_label: "Seagrass", targets: { taxon: SG }, fidelity: exact }
+      - { source_label: "Other", fidelity: unmappable,
+          note: "Genuine catch-all with no canonical equivalent - dropped, leaving the point unsupervised, rather than forced into OT." }
+      - { source_label: "Echinopora", targets: { taxon: HC }, fidelity: coarsened,
+          note: "genus of Scleractinia (Merulinidae) -> HC." }
+      - { source_label: "Porites lobata", targets: { taxon: HC_PORITES }, fidelity: coarsened,
+          note: "species of Scleractinia (Poritidae) -> the Porites L3 node." }
+      - { source_label: "Goniastrea", targets: { taxon: HC }, fidelity: coarsened,
+          note: "genus of Scleractinia (Merulinidae) -> HC." }
+      - { source_label: "Platygyra", targets: { taxon: HC }, fidelity: coarsened,
+          note: "genus of Scleractinia (Merulinidae) -> HC." }
+      - { source_label: "Goniopora", targets: { taxon: HC }, fidelity: coarsened,
+          note: "genus of Scleractinia (Poritidae) -> HC." }
+      - { source_label: "Diploastrea", targets: { taxon: HC }, fidelity: coarsened,
+          note: "genus of Scleractinia (Diploastraeidae) -> HC." }
+      - { source_label: "Acropora cervicornis", targets: { taxon: HC_ACROPORA }, fidelity: coarsened,
+          note: "species of Scleractinia (Acroporidae) -> the Acropora L3 node." }
+      - { source_label: "Stypopodium", targets: { taxon: SW }, fidelity: coarsened,
+          note: "Ochrophyta macroalga (Dictyotales) -> SW." }
+      - { source_label: "Coralline algae", targets: { taxon: CA }, fidelity: exact }
+      - { source_label: "Obscured", targets: { taxon: DRK }, fidelity: approximate,
+          note: "Point not readable. DRK (dark / unreadable) is the nearest non-benthic node, though MERMAID does not say the cause was darkness." }
+      - { source_label: "Heliopora", targets: { taxon: SC }, fidelity: coarsened,
+          note: "Blue coral - an octocoral (WoRMS: Octocorallia/Scleralcyonacea) whose massive calcareous skeleton field protocols score as hard coral. Taxonomy wins here; the schema's SC note records the divergence." }
+      - { source_label: "Favites", targets: { taxon: HC }, fidelity: coarsened,
+          note: "genus of Scleractinia (Merulinidae) -> HC." }
+      - { source_label: "Pavona", targets: { taxon: HC }, fidelity: coarsened,
+          note: "genus of Scleractinia (Agariciidae) -> HC." }
+      - { source_label: "Lobophyllia", targets: { taxon: HC }, fidelity: coarsened,
+          note: "genus of Scleractinia (Lobophylliidae) -> HC." }
+      - { source_label: "Dictyota", targets: { taxon: SW }, fidelity: coarsened,
+          note: "Ochrophyta macroalga (Dictyotales) -> SW." }
+      - { source_label: "Turbinaria-algae", targets: { taxon: SW }, fidelity: coarsened,
+          note: "MERMAID disambiguates the homonym: the brown alga Turbinaria (WoRMS: Phaeophyceae/Fucales/Sargassaceae), NOT the scleractinian." }
+      - { source_label: "Astreopora", targets: { taxon: HC }, fidelity: coarsened,
+          note: "genus of Scleractinia (Acroporidae) -> HC." }
+      - { source_label: "Halimeda", targets: { taxon: HA }, fidelity: exact,
+          note: "Halimeda genus (Bryopsidales) -> HA." }
+      - { source_label: "Turbinaria-coral", targets: { taxon: HC_TURBINARIA }, fidelity: exact,
+          note: "The scleractinian Turbinaria (Dendrophylliidae)." }
+      - { source_label: "Turbinaria mesenterina", targets: { taxon: HC_TURBINARIA }, fidelity: coarsened,
+          note: "species of Scleractinia (Dendrophylliidae) -> the Turbinaria L3 node." }
+      - { source_label: "Sarcophyton", targets: { taxon: SC }, fidelity: coarsened,
+          note: "octocoral genus (WoRMS: Octocorallia/Sarcophytidae) -> SC." }
+      - { source_label: "Dipsastraea", targets: { taxon: HC }, fidelity: coarsened,
+          note: "genus of Scleractinia (Merulinidae) -> HC." }
+      - { source_label: "Sinularia", targets: { taxon: SC }, fidelity: coarsened,
+          note: "octocoral genus (WoRMS: Octocorallia/Sinulariidae) -> SC." }
+      - { source_label: "Fimbriaphyllia", targets: { taxon: HC }, fidelity: coarsened,
+          note: "genus of Scleractinia (Euphylliidae) -> HC." }
+      - { source_label: "Fungia", targets: { taxon: HC }, fidelity: coarsened,
+          note: "genus of Scleractinia (Fungiidae) -> HC." }
+      - { source_label: "Merulinidae", targets: { taxon: HC }, fidelity: coarsened,
+          note: "family of Scleractinia (Merulinidae) -> HC." }
+      - { source_label: "Pocillopora damicornis", targets: { taxon: HC_POCILLOPORA }, fidelity: coarsened,
+          note: "species of Scleractinia (Pocilloporidae) -> the Pocillopora L3 node." }
+      - { source_label: "Seriatopora", targets: { taxon: HC }, fidelity: coarsened,
+          note: "genus of Scleractinia (Pocilloporidae) -> HC." }
+      - { source_label: "Porites rus", targets: { taxon: HC_PORITES }, fidelity: coarsened,
+          note: "species of Scleractinia (Poritidae) -> the Porites L3 node." }
+      - { source_label: "Lobophora", targets: { taxon: SW }, fidelity: coarsened,
+          note: "Ochrophyta macroalga (Dictyotales) -> SW." }
+      - { source_label: "Favia", targets: { taxon: HC }, fidelity: coarsened,
+          note: "genus of Scleractinia (Faviidae) -> HC." }
+      - { source_label: "Other invertebrates", targets: { taxon: OT }, fidelity: coarsened }
+      - { source_label: "Caulerpa racemosa", targets: { taxon: SW }, fidelity: coarsened,
+          note: "Chlorophyta macroalga (Bryopsidales) -> SW." }
+      - { source_label: "Microdictyon", targets: { taxon: SW }, fidelity: coarsened,
+          note: "Chlorophyta macroalga (Cladophorales) -> SW." }
+      - { source_label: "Palythoa", targets: { taxon: ZO }, fidelity: coarsened,
+          note: "zoanthid genus (Sphenopidae) -> ZO." }
+      - { source_label: "Stylophora", targets: { taxon: HC_STYLOPHORA }, fidelity: exact,
+          note: "genus of Scleractinia (Pocilloporidae) -> the Stylophora L3 node." }
+      - { source_label: "Algal assemblage", targets: { taxon: ALGAE }, fidelity: coarsened,
+          note: "Mixed algal cover spanning turf, macroalgae and corallines - rolls up to the L1 ALGAE group." }
+      - { source_label: "Symphyllia", targets: { taxon: HC }, fidelity: coarsened,
+          note: "genus of Scleractinia (Lobophylliidae) -> HC." }
+      - { source_label: "Silt", targets: { taxon: SI }, fidelity: exact }
+      - { source_label: "Rhytisma", targets: { taxon: SC }, fidelity: coarsened,
+          note: "octocoral genus (WoRMS: Octocorallia/Lemnaliidae) -> SC." }
+      - { source_label: "Psammocora", targets: { taxon: HC }, fidelity: coarsened,
+          note: "genus of Scleractinia (Psammocoridae) -> HC." }
+      - { source_label: "Unknown", fidelity: unmappable,
+          note: "The annotator could not identify the point. No canonical unknown node exists; DRK asserts unreadable-because-dark, which is a different claim." }
+      - { source_label: "Ascidian", targets: { taxon: OT }, fidelity: coarsened,
+          note: "Ascidiacea - no tunicate node exists; OT is the biotic catch-all." }
+      - { source_label: "Zoanthid", targets: { taxon: ZO }, fidelity: exact }
+      - { source_label: "Padina", targets: { taxon: SW }, fidelity: coarsened,
+          note: "Ochrophyta macroalga (Dictyotales) -> SW." }
+      - { source_label: "Porites astreoides", targets: { taxon: HC_PORITES }, fidelity: coarsened,
+          note: "species of Scleractinia (Poritidae) -> the Porites L3 node." }
+      - { source_label: "Corallimorpharia", targets: { taxon: CNIDARIA }, fidelity: coarsened,
+          note: "Corallimorphs have no L2 node; rolls to CNIDARIA rather than being forced into ANEM or ZO." }
+      - { source_label: "Bleached coral", targets: { taxon: HC, condition: BLEACHED }, fidelity: exact,
+          note: "MERMAID scores 'Bleached soft coral' separately, so the unqualified label is hard coral. One label, two axes." }
+      - { source_label: "Blastomussa", targets: { taxon: HC }, fidelity: coarsened,
+          note: "genus of Scleractinia (Plerogyridae) -> HC." }
+      - { source_label: "Leptastrea", targets: { taxon: HC }, fidelity: coarsened,
+          note: "genus of Scleractinia (Leptastreidae) -> HC." }
+      - { source_label: "Merulina", targets: { taxon: HC }, fidelity: coarsened,
+          note: "genus of Scleractinia (Merulinidae) -> HC." }
+      - { source_label: "Porites cylindrica", targets: { taxon: HC_PORITES }, fidelity: coarsened,
+          note: "species of Scleractinia (Poritidae) -> the Porites L3 node." }
+      - { source_label: "Anemone", targets: { taxon: ANEM }, fidelity: exact }
+      - { source_label: "Tubipora", targets: { taxon: SC }, fidelity: coarsened,
+          note: "Organ-pipe coral - an octocoral with a calcareous skeleton that protocols often score as hard coral; see the SC node note." }
+      - { source_label: "Pachyseris", targets: { taxon: HC }, fidelity: coarsened,
+          note: "genus of Scleractinia (Pachyseridae) -> HC." }
+      - { source_label: "Acropora millepora", targets: { taxon: HC_ACROPORA }, fidelity: coarsened,
+          note: "species of Scleractinia (Acroporidae) -> the Acropora L3 node." }
+      - { source_label: "Plerogyra", targets: { taxon: HC }, fidelity: coarsened,
+          note: "genus of Scleractinia (Plerogyridae) -> HC." }
+      - { source_label: "Epilithic algal matrix", targets: { taxon: TA }, fidelity: approximate,
+          note: "EAM is turf plus sediment and detritus; TA is the nearest node and under-states the sediment fraction." }
+      - { source_label: "Crinoid", targets: { taxon: OT }, fidelity: coarsened,
+          note: "Crinoidea - echinoderm with no dedicated node." }
+      - { source_label: "Xeniidae", targets: { taxon: SC }, fidelity: coarsened,
+          note: "octocoral family (WoRMS: Octocorallia/Xeniidae) -> SC." }
+      - { source_label: "Alveopora", targets: { taxon: HC }, fidelity: coarsened,
+          note: "genus of Scleractinia (Acroporidae) -> HC." }
+      - { source_label: "Echinophyllia", targets: { taxon: HC }, fidelity: coarsened,
+          note: "genus of Scleractinia (Lobophylliidae) -> HC." }
+      - { source_label: "Acanthastrea", targets: { taxon: HC }, fidelity: coarsened,
+          note: "genus of Scleractinia (Lobophylliidae) -> HC." }
+      - { source_label: "Dendronephthya", targets: { taxon: SC }, fidelity: coarsened,
+          note: "octocoral genus (WoRMS: Octocorallia/Nephtheidae) -> SC." }
+      - { source_label: "Peyssonnelid algae", targets: { taxon: CA }, fidelity: approximate,
+          note: "Peyssonneliales are crustose red algae but not corallines. CA is the closest node and the distinction is lost. Same call as AGRRA's PEY." }
+      - { source_label: "Lobophytum", targets: { taxon: SC }, fidelity: coarsened,
+          note: "octocoral genus (WoRMS: Octocorallia/Sarcophytidae) -> SC." }
+      - { source_label: "Coscinaraea", targets: { taxon: HC }, fidelity: coarsened,
+          note: "genus of Scleractinia (Coscinaraeidae) -> HC." }
+      - { source_label: "Diploastrea heliopora", targets: { taxon: HC }, fidelity: coarsened,
+          note: "Scleractinian (Diploastreidae). The epithet heliopora is not the octocoral genus Heliopora." }
+      - { source_label: "Discosoma", targets: { taxon: CNIDARIA }, fidelity: coarsened,
+          note: "Corallimorph genus (WoRMS: Hexacorallia/Corallimorpharia) - no L2 node." }
+      - { source_label: "Plesiastrea", targets: { taxon: HC }, fidelity: coarsened,
+          note: "genus of Scleractinia (Plesiastreidae) -> HC." }
+      - { source_label: "Hydroid", targets: { taxon: CNIDARIA }, fidelity: coarsened,
+          note: "Hydrozoa. MIL is Millepora-specific and HC/SC/ZO/ANEM are all anthozoan, so the phylum node is the most specific one certainly true." }
+      - { source_label: "Sea urchin", targets: { taxon: URCH }, fidelity: exact }
+      - { source_label: "Diadema", targets: { taxon: URCH }, fidelity: coarsened,
+          note: "sea urchin genus (Diadematidae) -> URCH." }
+      - { source_label: "Tubastraea", targets: { taxon: HC }, fidelity: coarsened,
+          note: "genus of Scleractinia (Dendrophylliidae) -> HC." }
+      - { source_label: "Leptoria", targets: { taxon: HC }, fidelity: coarsened,
+          note: "genus of Scleractinia (Merulinidae) -> HC." }
+      - { source_label: "Goniastrea retiformis", targets: { taxon: HC }, fidelity: coarsened,
+          note: "species of Scleractinia (Merulinidae) -> HC." }
+      - { source_label: "Seriatopora hystrix", targets: { taxon: HC }, fidelity: coarsened,
+          note: "species of Scleractinia (Pocilloporidae) -> HC." }
+      - { source_label: "Hydnophora", targets: { taxon: HC }, fidelity: coarsened,
+          note: "genus of Scleractinia (Merulinidae) -> HC." }
+      - { source_label: "Cliona", targets: { taxon: SP }, fidelity: coarsened,
+          note: "sponge genus (WoRMS: Demospongiae/Clionaidae) -> SP." }
+      - { source_label: "Porites annae", targets: { taxon: HC_PORITES }, fidelity: coarsened,
+          note: "species of Scleractinia (Poritidae) -> the Porites L3 node." }
+      - { source_label: "Gorgonian", targets: { taxon: SC }, fidelity: coarsened,
+          note: "Gorgonian octocorals as a group; SC_SEA_FAN/ROD/PLUME/WHIP are each anchored to one genus, so the group node is the honest target." }
+      - { source_label: "Asparagopsis", targets: { taxon: SW }, fidelity: coarsened,
+          note: "Rhodophyta macroalga (Bonnemaisoniales) -> SW." }
+      - { source_label: "Fungiidae", targets: { taxon: HC }, fidelity: coarsened,
+          note: "family of Scleractinia (Fungiidae) -> HC." }
+      - { source_label: "Cladophora", targets: { taxon: SW }, fidelity: coarsened,
+          note: "Filamentous green macroalga (Cladophorales); dense stands are scored as turf by some protocols." }
+      - { source_label: "Cyphastrea", targets: { taxon: HC }, fidelity: coarsened,
+          note: "genus of Scleractinia (Merulinidae) -> HC." }
+      - { source_label: "Ramicrusta", targets: { taxon: CA }, fidelity: approximate,
+          note: "Peyssonneliales crustose red alga, not a coralline - as Peyssonnelia." }
+      - { source_label: "Sandalolitha", targets: { taxon: HC }, fidelity: coarsened,
+          note: "genus of Scleractinia (Fungiidae) -> HC." }
+      - { source_label: "Sea cucumber", targets: { taxon: CUKE }, fidelity: exact }
+      - { source_label: "Coralimorph", targets: { taxon: CNIDARIA }, fidelity: coarsened,
+          note: "Spelling variant of Corallimorpharia; same treatment." }
+      - { source_label: "Acropora palmata", targets: { taxon: HC_ACROPORA }, fidelity: coarsened,
+          note: "species of Scleractinia (Acroporidae) -> the Acropora L3 node." }
+      - { source_label: "Gorgonia ventalina", targets: { taxon: SC_SEA_FAN }, fidelity: coarsened,
+          note: "octocoral species (WoRMS: Octocorallia/Gorgoniidae) -> the Gorgonia L3 node." }
+      - { source_label: "Montipora capricornis", targets: { taxon: HC }, fidelity: coarsened,
+          note: "species of Scleractinia (Acroporidae) -> HC." }
+      - { source_label: "Caulerpa", targets: { taxon: SW }, fidelity: coarsened,
+          note: "Chlorophyta macroalga (Bryopsidales) -> SW." }
+      - { source_label: "Cespitularia", targets: { taxon: SC }, fidelity: coarsened,
+          note: "octocoral genus (WoRMS: Octocorallia/Xeniidae) -> SC." }
+      - { source_label: "Linkia sea star", targets: { taxon: OT }, fidelity: coarsened,
+          note: "Linckia sea star (the label misspells the genus); asteroid with no dedicated node - only Acanthaster has one." }
+      - { source_label: "Porites porites", targets: { taxon: HC_PORITES }, fidelity: coarsened,
+          note: "species of Scleractinia (Poritidae) -> the Porites L3 node." }
+      - { source_label: "Acropora pharaonis", targets: { taxon: HC_ACROPORA }, fidelity: coarsened,
+          note: "species of Scleractinia (Acroporidae) -> the Acropora L3 node." }
+      - { source_label: "Euphyllia", targets: { taxon: HC }, fidelity: coarsened,
+          note: "genus of Scleractinia (Euphylliidae) -> HC." }
+      - { source_label: "Ctenactis", targets: { taxon: HC }, fidelity: coarsened,
+          note: "genus of Scleractinia (Fungiidae) -> HC." }
+      - { source_label: "Junceella", targets: { taxon: SC }, fidelity: coarsened,
+          note: "Ellisellid sea whip (WoRMS: Octocorallia/Ellisellidae); SC_SEA_WHIP is anchored to Ellisella specifically." }
+      - { source_label: "Cycloseris", targets: { taxon: HC }, fidelity: coarsened,
+          note: "genus of Scleractinia (Fungiidae) -> HC." }
+      - { source_label: "Jania", targets: { taxon: CA }, fidelity: coarsened,
+          note: "articulated coralline alga (Corallinaceae) -> CA; not CCA, which is crustose." }
+      - { source_label: "Herpolitha", targets: { taxon: HC }, fidelity: coarsened,
+          note: "genus of Scleractinia (Fungiidae) -> HC." }
+      - { source_label: "Oxypora", targets: { taxon: HC }, fidelity: coarsened,
+          note: "genus of Scleractinia (Lobophylliidae) -> HC." }
+      - { source_label: "Acropora hyacinthus", targets: { taxon: HC_ACROPORA }, fidelity: coarsened,
+          note: "species of Scleractinia (Acroporidae) -> the Acropora L3 node." }
+      - { source_label: "Bivalvia", targets: { taxon: CLAM }, fidelity: exact,
+          note: "bivalve class (Bivalvia) -> CLAM." }
+      - { source_label: "Acropora cytherea", targets: { taxon: HC_ACROPORA }, fidelity: coarsened,
+          note: "species of Scleractinia (Acroporidae) -> the Acropora L3 node." }
+      - { source_label: "Rhodophyta", targets: { taxon: ALGAE }, fidelity: coarsened,
+          note: "Red algae span CCA, CA and fleshy SW - L1 ALGAE is the only node certainly true." }
+      - { source_label: "Amphiroa", targets: { taxon: CA }, fidelity: coarsened,
+          note: "articulated coralline alga (Lithophyllaceae) -> CA; not CCA, which is crustose." }
+      - { source_label: "Goniopora lobata", targets: { taxon: HC }, fidelity: coarsened,
+          note: "species of Scleractinia (Poritidae) -> HC." }
+      - { source_label: "Invertebrate", targets: { taxon: OT }, fidelity: approximate,
+          note: "Generic invertebrate. MERMAID scores corals and sponges under their own attributes so in practice this is the non-coral catch-all, but the label itself does not exclude them." }
+      - { source_label: "Tunicate", targets: { taxon: OT }, fidelity: coarsened,
+          note: "As Ascidian." }
+      - { source_label: "Millepora complanata", targets: { taxon: MIL }, fidelity: coarsened,
+          note: "Millepora (species, WoRMS: Hydrozoa/Milleporidae) - fire coral." }
+      - { source_label: "Porites furcata", targets: { taxon: HC_PORITES }, fidelity: coarsened,
+          note: "species of Scleractinia (Poritidae) -> the Porites L3 node." }
+      - { source_label: "Montipora stellata", targets: { taxon: HC }, fidelity: coarsened,
+          note: "species of Scleractinia (Acroporidae) -> HC." }
+      - { source_label: "Halomitra", targets: { taxon: HC }, fidelity: coarsened,
+          note: "genus of Scleractinia (Fungiidae) -> HC." }
+      - { source_label: "Montipora digitata", targets: { taxon: HC }, fidelity: coarsened,
+          note: "species of Scleractinia (Acroporidae) -> HC." }
+      - { source_label: "Tubipora musica", targets: { taxon: SC }, fidelity: coarsened,
+          note: "Organ-pipe coral (Octocorallia/Tubiporidae); see the SC node note on calcified octocorals." }
+      - { source_label: "Oulophyllia", targets: { taxon: HC }, fidelity: coarsened,
+          note: "genus of Scleractinia (Merulinidae) -> HC." }
+      - { source_label: "Turbinaria reniformis", targets: { taxon: HC_TURBINARIA }, fidelity: coarsened,
+          note: "species of Scleractinia (Dendrophylliidae) -> the Turbinaria L3 node." }
+      - { source_label: "Pectinia", targets: { taxon: HC }, fidelity: coarsened,
+          note: "genus of Scleractinia (Merulinidae) -> HC." }
+      - { source_label: "Porifera", targets: { taxon: SP }, fidelity: exact }
+      - { source_label: "Gorgoniidae", targets: { taxon: SC }, fidelity: coarsened,
+          note: "Family - broader than SC_SEA_FAN, which is anchored to the genus Gorgonia." }
+      - { source_label: "Leptoseris", targets: { taxon: HC }, fidelity: coarsened,
+          note: "genus of Scleractinia (Agariciidae) -> HC." }
+      - { source_label: "Montastraea", targets: { taxon: HC_MONTASTRAEA }, fidelity: exact,
+          note: "genus of Scleractinia (Montastraeidae) -> the Montastraea L3 node." }
+      - { source_label: "Paramontastraea peresi", targets: { taxon: HC }, fidelity: coarsened,
+          note: "species of Scleractinia (Merulinidae) -> HC." }
+      - { source_label: "Cladiella", targets: { taxon: SC }, fidelity: coarsened,
+          note: "octocoral genus (WoRMS: Octocorallia/Cladiellidae) -> SC." }
+      - { source_label: "Coeloseris", targets: { taxon: HC }, fidelity: coarsened,
+          note: "genus of Scleractinia (Euphylliidae) -> HC." }
+      - { source_label: "Diploria labyrinthiformis", targets: { taxon: HC }, fidelity: coarsened,
+          note: "species of Scleractinia (Faviidae) -> HC." }
+      - { source_label: "Hydnophora rigida", targets: { taxon: HC }, fidelity: coarsened,
+          note: "species of Scleractinia (Merulinidae) -> HC." }
+      - { source_label: "Orbicella faveolata", targets: { taxon: HC_ORBICELLA }, fidelity: coarsened,
+          note: "species of Scleractinia (Merulinidae) -> the Orbicella L3 node." }
+      - { source_label: "Physogyra", targets: { taxon: HC }, fidelity: coarsened,
+          note: "genus of Scleractinia (Plerogyridae) -> HC." }
+      - { source_label: "Turbinaria stellulata", targets: { taxon: HC_TURBINARIA }, fidelity: coarsened,
+          note: "species of Scleractinia (Dendrophylliidae) -> the Turbinaria L3 node." }
+      - { source_label: "Aglaophenia", targets: { taxon: CNIDARIA }, fidelity: coarsened,
+          note: "Leptothecate hydroid (WoRMS: Hydrozoa/Aglaopheniidae)." }
+      - { source_label: "Astrea", targets: { taxon: HC }, fidelity: coarsened,
+          note: "genus of Scleractinia (Merulinidae) -> HC." }
+      - { source_label: "Clavularia", targets: { taxon: SC }, fidelity: coarsened,
+          note: "octocoral genus (WoRMS: Octocorallia/Clavulariidae) -> SC." }
+      - { source_label: "Galaxea fascicularis", targets: { taxon: HC }, fidelity: coarsened,
+          note: "species of Scleractinia (Euphylliidae) -> HC." }
+      - { source_label: "Gardineroseris", targets: { taxon: HC }, fidelity: coarsened,
+          note: "genus of Scleractinia (Agariciidae) -> HC." }
+      - { source_label: "Meandrina meandrites", targets: { taxon: HC_MEANDRINA }, fidelity: coarsened,
+          note: "species of Scleractinia (Meandrinidae) -> the Meandrina L3 node." }
+      - { source_label: "Tridacna giant clam", targets: { taxon: CLAM }, fidelity: coarsened,
+          note: "Giant clam (WoRMS: Bivalvia/Cardiidae) -> the Bivalvia node." }
+      - { source_label: "Coelastrea", targets: { taxon: HC }, fidelity: coarsened,
+          note: "genus of Scleractinia (Merulinidae) -> HC." }
+      - { source_label: "Colpophyllia", targets: { taxon: HC_COLPOPHYLLIA }, fidelity: exact,
+          note: "genus of Scleractinia (Faviidae) -> the Colpophyllia L3 node." }
+      - { source_label: "Green algae", targets: { taxon: ALGAE }, fidelity: coarsened,
+          note: "Chlorophyta spans Halimeda (HA) and fleshy greens (SW); L1 ALGAE is the only node certainly true." }
+      - { source_label: "Peyssonnelia", targets: { taxon: CA }, fidelity: approximate,
+          note: "Crustose red alga, not a coralline (WoRMS: Peyssonneliales). CA is the closest node." }
+      - { source_label: "Siderastrea", targets: { taxon: HC_SIDERASTREA }, fidelity: exact,
+          note: "genus of Scleractinia (Rhizangiidae) -> the Siderastrea L3 node." }
+      - { source_label: "Gorgonia", targets: { taxon: SC_SEA_FAN }, fidelity: exact,
+          note: "octocoral genus (WoRMS: Octocorallia/Gorgoniidae) -> the Gorgonia L3 node." }
+      - { source_label: "Anacropora", targets: { taxon: HC }, fidelity: coarsened,
+          note: "genus of Scleractinia (Acroporidae) -> HC." }
+      - { source_label: "Liagora", targets: { taxon: SW }, fidelity: coarsened,
+          note: "Rhodophyta macroalga (Nemaliales) -> SW." }
+      - { source_label: "Litophyton", targets: { taxon: SC }, fidelity: coarsened,
+          note: "octocoral genus (WoRMS: Octocorallia/Nephtheidae) -> SC." }
+      - { source_label: "Acropora humilis", targets: { taxon: HC_ACROPORA }, fidelity: coarsened,
+          note: "species of Scleractinia (Acroporidae) -> the Acropora L3 node." }
+      - { source_label: "Podabacia", targets: { taxon: HC }, fidelity: coarsened,
+          note: "genus of Scleractinia (Fungiidae) -> HC." }
+      - { source_label: "Acropora muricata", targets: { taxon: HC_ACROPORA }, fidelity: coarsened,
+          note: "species of Scleractinia (Acroporidae) -> the Acropora L3 node." }
+      - { source_label: "Diploria", targets: { taxon: HC }, fidelity: coarsened,
+          note: "genus of Scleractinia (Faviidae) -> HC." }
+      - { source_label: "Holothuria", targets: { taxon: CUKE }, fidelity: coarsened,
+          note: "sea cucumber genus (Holothuriidae) -> CUKE." }
+      - { source_label: "Merulina scabricula", targets: { taxon: HC }, fidelity: coarsened,
+          note: "species of Scleractinia (Merulinidae) -> HC." }
+      - { source_label: "Oculina varicosa", targets: { taxon: HC }, fidelity: coarsened,
+          note: "species of Scleractinia (Oculinidae) -> HC." }
+      - { source_label: "Pavona venosa", targets: { taxon: HC }, fidelity: coarsened,
+          note: "species of Scleractinia (Agariciidae) -> HC." }
+      - { source_label: "Plesiastrea versipora", targets: { taxon: HC }, fidelity: coarsened,
+          note: "species of Scleractinia (Plesiastreidae) -> HC." }
+      - { source_label: "Porites lichen", targets: { taxon: HC_PORITES }, fidelity: coarsened,
+          note: "species of Scleractinia (Poritidae) -> the Porites L3 node." }
+      - { source_label: "Siderastrea siderea", targets: { taxon: HC_SIDERASTREA }, fidelity: coarsened,
+          note: "species of Scleractinia (Rhizangiidae) -> the Siderastrea L3 node." }
+      - { source_label: "Tridacna", targets: { taxon: CLAM }, fidelity: coarsened,
+          note: "bivalve genus (Cardiidae) -> CLAM." }
+      - { source_label: "Cycloseris costulata", targets: { taxon: HC }, fidelity: coarsened,
+          note: "species of Scleractinia (Fungiidae) -> HC." }
+      - { source_label: "Mycedium", targets: { taxon: HC }, fidelity: coarsened,
+          note: "genus of Scleractinia (Merulinidae) -> HC." }
+      - { source_label: "Stylophora pistillata", targets: { taxon: HC_STYLOPHORA }, fidelity: coarsened,
+          note: "species of Scleractinia (Pocilloporidae) -> the Stylophora L3 node." }
+      - { source_label: "Acropora tenuis", targets: { taxon: HC_ACROPORA }, fidelity: coarsened,
+          note: "species of Scleractinia (Acroporidae) -> the Acropora L3 node." }
+      - { source_label: "Bleached soft coral", targets: { taxon: SC, condition: BLEACHED }, fidelity: exact,
+          note: "One label, two axes." }
+      - { source_label: "Fishing net", targets: { taxon: TRASH }, fidelity: coarsened,
+          note: "Derelict gear - a specific debris type under the generic TRASH node." }
+      - { source_label: "Leptoria phrygia", targets: { taxon: HC }, fidelity: coarsened,
+          note: "species of Scleractinia (Merulinidae) -> HC." }
+      - { source_label: "Oulastrea", targets: { taxon: HC }, fidelity: coarsened,
+          note: "genus of Scleractinia (Oulastreidae) -> HC." }
+      - { source_label: "Pavona varians", targets: { taxon: HC }, fidelity: coarsened,
+          note: "species of Scleractinia (Agariciidae) -> HC." }
+      - { source_label: "Pocillopora meandrina", targets: { taxon: HC_POCILLOPORA }, fidelity: coarsened,
+          note: "species of Scleractinia (Pocilloporidae) -> the Pocillopora L3 node." }
+      - { source_label: "Stephanocoenia intersepta", targets: { taxon: HC }, fidelity: coarsened,
+          note: "species of Scleractinia (Astrocoeniidae) -> HC." }
+      - { source_label: "plastic", targets: { taxon: TRASH }, fidelity: coarsened }
+      - { source_label: "Acanthaster planci", targets: { taxon: COTS }, fidelity: coarsened,
+          note: "crown-of-thorns (species) -> COTS." }
+      - { source_label: "Acropora abrolhosensis", targets: { taxon: HC_ACROPORA }, fidelity: coarsened,
+          note: "species of Scleractinia (Acroporidae) -> the Acropora L3 node." }
+      - { source_label: "Agaricia", targets: { taxon: HC_AGARICIA }, fidelity: exact,
+          note: "genus of Scleractinia (Agariciidae) -> the Agaricia L3 node." }
+      - { source_label: "Chrysocystis fragilis", targets: { taxon: ALGAE }, fidelity: coarsened,
+          note: "Pelagophyte forming golden reef mats (WoRMS: Ochrophyta/Pelagophyceae) - an alga, but neither turf nor fleshy macroalga." }
+      - { source_label: "Favia fragum", targets: { taxon: HC }, fidelity: coarsened,
+          note: "species of Scleractinia (Faviidae) -> HC." }
+      - { source_label: "Lobophyllia hemprichii", targets: { taxon: HC }, fidelity: coarsened,
+          note: "species of Scleractinia (Lobophylliidae) -> HC." }
+      - { source_label: "Madracis", targets: { taxon: HC }, fidelity: coarsened,
+          note: "genus of Scleractinia (Pocilloporidae) -> HC." }
+      - { source_label: "Millepora alcicornis", targets: { taxon: MIL }, fidelity: coarsened,
+          note: "Millepora (species, WoRMS: Hydrozoa/Milleporidae) - fire coral." }
+      - { source_label: "Orbicella annularis", targets: { taxon: HC_ORBICELLA }, fidelity: coarsened,
+          note: "species of Scleractinia (Merulinidae) -> the Orbicella L3 node." }
+      - { source_label: "Porites monticulosa", targets: { taxon: HC_PORITES }, fidelity: coarsened,
+          note: "species of Scleractinia (Poritidae) -> the Porites L3 node." }
+      - { source_label: "Recently dead coral", targets: { taxon: DC }, fidelity: exact }
+      - { source_label: "Siderastrea radians", targets: { taxon: HC_SIDERASTREA }, fidelity: coarsened,
+          note: "species of Scleractinia (Rhizangiidae) -> the Siderastrea L3 node." }
+      - { source_label: "Trachyphyllia", targets: { taxon: HC }, fidelity: coarsened,
+          note: "genus of Scleractinia (Merulinidae) -> HC." }
+      - { source_label: "Acropora samoensis", targets: { taxon: HC_ACROPORA }, fidelity: coarsened,
+          note: "species of Scleractinia (Acroporidae) -> the Acropora L3 node." }
+      - { source_label: "Callyspongia", targets: { taxon: SP }, fidelity: coarsened,
+          note: "sponge genus (WoRMS: Demospongiae/Callyspongiidae) -> SP." }
+      - { source_label: "Cyphastrea serailia", targets: { taxon: HC }, fidelity: coarsened,
+          note: "species of Scleractinia (Merulinidae) -> HC." }
+      - { source_label: "Dipsastraea favus", targets: { taxon: HC }, fidelity: coarsened,
+          note: "species of Scleractinia (Merulinidae) -> HC." }
+      - { source_label: "Distichopora", targets: { taxon: CNIDARIA }, fidelity: coarsened,
+          note: "Stylasterid hydrocoral (WoRMS: Hydrozoa/Stylasteridae). MIL covers Millepora only, so this rolls to the phylum node." }
+      - { source_label: "Faviidae", targets: { taxon: HC }, fidelity: coarsened,
+          note: "family of Scleractinia (Faviidae) -> HC." }
+      - { source_label: "Gracilaria", targets: { taxon: SW }, fidelity: coarsened,
+          note: "Rhodophyta macroalga (Gracilariales) -> SW." }
+      - { source_label: "Linckia laevigata", targets: { taxon: OT }, fidelity: coarsened,
+          note: "Asteroid - OT; only Acanthaster has its own node (COTS)." }
+      - { source_label: "Pleuractis", targets: { taxon: HC }, fidelity: coarsened,
+          note: "genus of Scleractinia (Fungiidae) -> HC." }
+      - { source_label: "Porites densa", targets: { taxon: HC_PORITES }, fidelity: coarsened,
+          note: "species of Scleractinia (Poritidae) -> the Porites L3 node." }
+      - { source_label: "Trash", targets: { taxon: TRASH }, fidelity: exact }
+      - { source_label: "Agaricia agaricites", targets: { taxon: HC_AGARICIA }, fidelity: coarsened,
+          note: "species of Scleractinia (Agariciidae) -> the Agaricia L3 node." }
+      - { source_label: "Aplysina cauliformis", targets: { taxon: SP }, fidelity: coarsened,
+          note: "sponge species (WoRMS: Demospongiae/Aplysinidae) -> SP." }
+      - { source_label: "Astreopora expansa", targets: { taxon: HC }, fidelity: coarsened,
+          note: "species of Scleractinia (Acroporidae) -> HC." }
+      - { source_label: "Barabattoia", targets: { taxon: HC }, fidelity: coarsened,
+          note: "genus of Scleractinia (Merulinidae) -> HC." }
+      - { source_label: "Caulastraea", targets: { taxon: HC }, fidelity: coarsened,
+          note: "genus of Scleractinia (Merulinidae) -> HC." }
+      - { source_label: "Clam", targets: { taxon: CLAM }, fidelity: exact }
+      - { source_label: "Cliona delitrix", targets: { taxon: SP }, fidelity: coarsened,
+          note: "sponge species (WoRMS: Demospongiae/Clionaidae) -> SP." }
+      - { source_label: "Corallina", targets: { taxon: CA }, fidelity: coarsened,
+          note: "articulated coralline alga (Corallinaceae) -> CA; not CCA, which is crustose." }
+      - { source_label: "Danafungia", targets: { taxon: HC }, fidelity: coarsened,
+          note: "genus of Scleractinia (Fungiidae) -> HC." }
+      - { source_label: "Echinomorpha", targets: { taxon: HC }, fidelity: coarsened,
+          note: "genus of Scleractinia (Lobophylliidae) -> HC." }
+      - { source_label: "Echinophyllia aspera", targets: { taxon: HC }, fidelity: coarsened,
+          note: "species of Scleractinia (Lobophylliidae) -> HC." }
+      - { source_label: "Echinopora lamellosa", targets: { taxon: HC }, fidelity: coarsened,
+          note: "species of Scleractinia (Merulinidae) -> HC." }
+      - { source_label: "Favites abdita", targets: { taxon: HC }, fidelity: coarsened,
+          note: "species of Scleractinia (Merulinidae) -> HC." }
+      - { source_label: "Foraminifera", targets: { taxon: OT }, fidelity: approximate,
+          note: "A protist, not an animal. OT (other biota) is the only biotic node that can hold it; nothing under OTHER_FAUNA is taxonomically right." }
+      - { source_label: "Halimeda opuntia", targets: { taxon: HA }, fidelity: coarsened,
+          note: "Halimeda taxon (Bryopsidales) -> HA." }
+      - { source_label: "Heliofungia", targets: { taxon: HC }, fidelity: coarsened,
+          note: "genus of Scleractinia (Fungiidae) -> HC." }
+      - { source_label: "Isophyllia rigida", targets: { taxon: HC }, fidelity: coarsened,
+          note: "species of Scleractinia (Faviidae) -> HC." }
+      - { source_label: "Lithophyllon", targets: { taxon: HC }, fidelity: coarsened,
+          note: "Fungiid scleractinian - NOT the coralline alga genus Lithophyllum." }
+      - { source_label: "Lobophora variegata", targets: { taxon: SW }, fidelity: coarsened,
+          note: "Ochrophyta macroalga (Dictyotales) -> SW." }
+      - { source_label: "Lobophyllia flabelliformis", targets: { taxon: HC }, fidelity: coarsened,
+          note: "species of Scleractinia (Lobophylliidae) -> HC." }
+      - { source_label: "Montipora spumosa", targets: { taxon: HC }, fidelity: coarsened,
+          note: "species of Scleractinia (Acroporidae) -> HC." }
+      - { source_label: "Palauastrea", targets: { taxon: HC }, fidelity: coarsened,
+          note: "genus of Scleractinia (Astrocoeniidae) -> HC." }
+      - { source_label: "Palythoa caribaeorum", targets: { taxon: ZO }, fidelity: coarsened,
+          note: "zoanthid species (Sphenopidae) -> ZO." }
+      - { source_label: "Palythoa tuberculosa", targets: { taxon: ZO }, fidelity: coarsened,
+          note: "zoanthid species (Sphenopidae) -> ZO." }
+      - { source_label: "Phaeophyceae", targets: { taxon: SW }, fidelity: coarsened,
+          note: "Brown-algae class; every Phaeophyceae genus in this vocabulary (Sargassum, Dictyota, Padina, Lobophora, Stypopodium, Turbinaria) is a fleshy macroalga." }
+      - { source_label: "Platygyra lamellina", targets: { taxon: HC }, fidelity: coarsened,
+          note: "species of Scleractinia (Merulinidae) -> HC." }
+      - { source_label: "Plexauridae", targets: { taxon: SC }, fidelity: coarsened,
+          note: "Family - broader than SC_SEA_ROD, which is anchored to Plexaurella." }
+      - { source_label: "Polyphyllia", targets: { taxon: HC }, fidelity: coarsened,
+          note: "genus of Scleractinia (Fungiidae) -> HC." }
+      - { source_label: "Porites colonensis", targets: { taxon: HC_PORITES }, fidelity: coarsened,
+          note: "species of Scleractinia (Poritidae) -> the Porites L3 node." }
+      - { source_label: "Pseudodiploria strigosa", targets: { taxon: HC_PSEUDODIPLORIA }, fidelity: coarsened,
+          note: "species of Scleractinia (Faviidae) -> the Pseudodiploria L3 node." }
+      - { source_label: "Pseudosiderastrea", targets: { taxon: HC }, fidelity: coarsened,
+          note: "genus of Scleractinia (Rhizangiidae) -> HC." }
+      - { source_label: "Stylocoeniella", targets: { taxon: HC }, fidelity: coarsened,
+          note: "genus of Scleractinia (Astrocoeniidae) -> HC." }
+      - { source_label: "Tridacna maxima", targets: { taxon: CLAM }, fidelity: coarsened,
+          note: "bivalve species (Cardiidae) -> CLAM." }
+      - { source_label: "Tridacna squamosa", targets: { taxon: CLAM }, fidelity: coarsened,
+          note: "bivalve species (Cardiidae) -> CLAM." }
+      - { source_label: "Turbinaria turbinata", targets: { taxon: SW }, fidelity: coarsened,
+          note: "WoRMS: Ochrophyta/Phaeophyceae/Fucales - the Caribbean brown ALGA, not the coral. The other three Turbinaria species here (mesenterina, reniformis, stellulata) are corals." }
+      - { source_label: "Zoanthidae", targets: { taxon: ZO }, fidelity: coarsened,
+          note: "zoanthid family (Zoanthidae) -> ZO." }

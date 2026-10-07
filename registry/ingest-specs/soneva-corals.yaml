@@ -1,0 +1,17 @@
+id: soneva-corals
+access_class: open
+adapter: hf
+params:
+  repo: wildflow/soneva-corals
+  revision: 200aaf30cda9
+license: cc-by-4.0
+attribution: wildflow
+citation: wildflow/soneva-corals (HF)
+homepage: https://huggingface.co/datasets/wildflow/soneva-corals
+# Full repo (pinned rev) enumerates 22422 items / 66.68 GB, over the 50 GB first-pass
+# cap. max_images only truncates the real (non-dry-run) fetch loop, at ~2.97 MB/item
+# average -> ~15000 items estimates ~44.6 GB. A real run stays at or under 50 GB;
+# the dry-run plan above will still report the full 66.68 GB (uncapped enumeration).
+max_images: 15000
+
+disk_floor_gib: 36.0

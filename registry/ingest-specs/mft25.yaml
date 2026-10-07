@@ -1,0 +1,8 @@
+id: mft25
+access_class: open
+adapter: http
+params: {}
+license: Apache-2.0
+attribution: MFT25 / SU-T (Vranlee et al. 2025)
+citation: '-'
+homepage: https://vranlee.github.io/SU-T/

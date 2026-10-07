@@ -1,0 +1,29 @@
+# A Large Scale Fish Dataset (Ulucan et al.) — market/countertop photos, OUT OF WATER.
+# Tagged out-of-water on the registry/sources/fish.yaml `large-scale-fish` entry so the
+# release builder can exclude it from underwater/in-situ outputs.
+id: large-scale-fish
+access_class: open
+adapter: local_dir
+params:
+  path: ~/Downloads/marine-manual/large-scale-fish/data
+  exclude: ['*.m']
+  version: zip-ffec025d7f5a
+license: unknown (see homepage); NO-LICENCE-STATED per registry/sources/fish.yaml
+attribution: Ulucan, Karakaya, Turkan — A Large Scale Fish Dataset
+citation: Ulucan, Karakaya, Turkan 2020, IEEE INISTA
+homepage: https://www.kaggle.com/datasets/crowww/a-large-scale-fish-dataset
+notes: >-
+  LOCAL-ingest 2026-10-02: new id (archive (1).zip). OUT OF WATER (market/countertop
+  fish/shrimp photos, 9 species, `Fish_Dataset/Fish_Dataset/<class>/{<class>,<class> GT}`
+  + `NA_Fish_Dataset/<class>/*.png`); Segmentation_example_script.m excluded (MATLAB
+  code, not data). See registry/sources/fish.yaml `large-scale-fish` entry
+  (`tags: [out-of-water, ...]`) for the release-builder exclusion tag.
+disk_floor_gib: 4.0
+
+measured:
+  label_type: image-level class labels (9 classes via folder name) plus binary segmentation masks (GT png)
+  release_excluded: true
+  quarantined: true
+  release_exclusion_reason: out-of-water market photos and no licence stated
+  method: u15-label-kind-triage (registry-patch.yaml)
+  date: '2026-10-05'

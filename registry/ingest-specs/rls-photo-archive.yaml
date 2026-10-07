@@ -1,0 +1,17 @@
+id: rls-photo-archive
+access_class: unknown
+adapter: needs:unresolved-host
+license: unknown (RLS data-sharing policy applies to counts; photo archive terms unclear)
+attribution: Reef Life Survey Foundation
+citation: reeflifesurvey.com
+homepage: https://reeflifesurvey.com/
+why_not_supported: Site resolves (HTTP 200) but no public bulk-image API or download
+  page was found; RLS's open data offering (via IMOS/AODN) is the transect COUNT database,
+  not the underlying photos, which appear to be used for internal ID reference and
+  are not confirmed publicly downloadable.
+measured:
+  method: site reachable; no bulk image endpoint located
+  items: null
+  bytes: null
+  date: '2026-09-25'
+  bytes_basis: 'unmeasured: no bulk endpoint found'

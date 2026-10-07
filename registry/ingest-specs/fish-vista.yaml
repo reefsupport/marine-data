@@ -1,0 +1,15 @@
+# fish-vista: Mehrab et al. 2025, CVPR
+# full <=60.48 GB (HF usedStorage); first pass capped ~45k images to land <=50 GB
+id: fish-vista
+access_class: restricted-nc
+adapter: hf
+license: CC-BY-4.0 / CC-BY-NC-4.0 mix (per-image, HF card)
+attribution: Mehrab et al., Imageomics Institute — Fish-Vista
+citation: Mehrab et al. 2025, CVPR
+homepage: https://huggingface.co/datasets/imageomics/fish-vista
+params:
+  repo: imageomics/fish-vista
+  revision: main
+max_images: 45000
+
+disk_floor_gib: 36.0

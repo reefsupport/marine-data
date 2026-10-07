@@ -1,0 +1,17 @@
+# underwater-images-2542305: Zenodo 2542305
+# record description is only the title; contents unknown (rar parts) — inspect after dry-run.
+id: underwater-images-2542305
+access_class: open
+adapter: zenodo
+license: CC-BY-4.0 (Zenodo API)
+attribution: Zenodo record 2542305 authors
+citation: Zenodo 2542305
+homepage: https://zenodo.org/records/2542305
+params:
+  zenodo_record: 2542305
+disk_floor_gib: 34.0
+
+measured:
+  label_type: none stated (README only; GT folder contents unverified)
+  method: u15-label-kind-triage (registry-patch.yaml)
+  date: '2026-10-05'

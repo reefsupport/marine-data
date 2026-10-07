@@ -1,0 +1,11 @@
+id: lfitw
+access_class: unknown
+adapter: http-index
+params:
+  index_url: https://swfsc-fisheries.github.io/labeled-fishes-in-the-wild/
+  version: lfitw-idx1
+  depth: 2
+license: NOASSERTION
+attribution: Labeled Fishes in the Wild (Cutter et al., WACVW 2015)
+citation: Cutter+ WACVW2015
+homepage: https://swfsc-fisheries.github.io/labeled-fishes-in-the-wild/

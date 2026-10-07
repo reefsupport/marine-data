@@ -3,9 +3,15 @@ on:
   push:
     branches: [main]
   pull_request:
+  schedule:
+    # 03:00 UTC nightly — the only trigger that runs verify-layouts below.
+    - cron: "0 3 * * *"
 
 jobs:
   lint-and-test:
+    # Runs on every push/PR and also on the nightly schedule, so `make ci` (lint,
+    # registry check, full pytest incl. the D12 e2e fixture) still runs nightly
+    # alongside the network-touching verify-layouts job.
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -17,15 +23,11 @@ jobs:
       - name: Sync
         run: |
           export PATH="$HOME/.local/bin:$PATH"
-          uv venv && uv pip install -e ".[dev]"
-      - name: Lint
-        run: |
-          export PATH="$HOME/.local/bin:$PATH"
-          uv run ruff check . && uv run ruff format --check .
+          uv venv && uv pip install -e ".[all,ingest,hf,dev]"
       - name: Test
         run: |
           export PATH="$HOME/.local/bin:$PATH"
-          uv run pytest -q
+          make ci
 
   # Layout verification hits the network, so it runs nightly rather than per-commit.
   # It is what catches a declared layout drifting from the real dataset.

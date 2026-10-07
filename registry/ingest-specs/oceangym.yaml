@@ -1,0 +1,25 @@
+# WP-6l-B (2026-09-25) new source: candidate — WP-6l-B diver-robot: underwater embodied-agent (AUV) perception/decision benchmark
+id: oceangym
+access_class: open
+adapter: hf
+params:
+  repo: zjunlp/OceanGym
+  revision: ca7a8b677cdb0fb2f9a50048d56fc290552da9df
+license: mit
+attribution: zjunlp (HF)
+citation: HF dataset zjunlp/OceanGym
+homepage: https://huggingface.co/datasets/zjunlp/OceanGym
+notes: 'candidate — WP-6l-B diver-robot: underwater embodied-agent (AUV) perception/decision benchmark'
+disk_floor_gib: 36.0
+measured:
+  items: 1219
+  bytes: 996789118
+  bytes_basis: HF usedStorage (all revisions' LFS objects)
+  method: 'HF siblings: 1,219 png, 216 json'
+  date: '2026-09-25'
+  per_item_license: mit
+  by_depth_band_m: {}
+  label_type: 'none (embodied-agent episodes: action and position json; simulated)'
+  habitat_region: simulated underwater scenes (UE5)
+  dedup_chain: new; no registry/ingest-spec/WP-6g/S57 match on title, DOI or record id
+  wp6l_gap: diver-robot

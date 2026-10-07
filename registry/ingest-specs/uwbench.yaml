@@ -1,0 +1,13 @@
+# SPEC-w3 discovery: underwater vision-language benchmark (UWBench, 2025).
+id: uwbench
+access_class: internal-only
+adapter: hf
+license: '?'
+attribution: da1018
+citation: da1018/UWBench (HF)
+homepage: https://huggingface.co/datasets/da1018/UWBench
+params:
+  repo: da1018/UWBench
+  revision: 84af945003086821245a67ceba0bcc57aa93cbde
+
+disk_floor_gib: 34.0

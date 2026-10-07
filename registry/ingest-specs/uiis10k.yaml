@@ -1,0 +1,14 @@
+id: uiis10k
+access_class: open
+adapter: hf
+params:
+  repo: LiamLian0727/UIIS10K
+  revision: 5c4316368a8e420db754d1ab37c205a42985ba47
+  include: ["*.zip"]
+  label_patterns: ["*annotations*.json"]
+license: Apache-2.0
+attribution: "Hua Li, Shijie Lian, Zhiyuan Li, Runmin Cong, Chongyi Li — UIIS10K dataset (UWSAM); HF mirror LiamLian0727/UIIS10K"
+citation: "Li et al. 2025, Advancing Marine Research: UWSAM Framework and UIIS10K Dataset for Precise Underwater Instance Segmentation, arXiv:2505.15581"
+homepage: https://huggingface.co/datasets/LiamLian0727/UIIS10K
+
+disk_floor_gib: 34.0

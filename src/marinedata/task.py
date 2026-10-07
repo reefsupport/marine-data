@@ -331,6 +331,13 @@ class SourceFit:
     abstaining: tuple[str, ...]
     """Native labels that project to nothing — coarser than the target, or outside it."""
 
+    coarser: tuple[str, ...] = ()
+    """The subset of ``abstaining`` that DID land on the task's axis but was too coarse
+    to resolve — as opposed to a label describing something the axis has no opinion on.
+    A source with both ``reachable`` and ``coarser`` entries is internally inconsistent
+    for this task: some of its rows resolve, some abstain, on the very axis the task
+    trains. See ``partial_abstain``."""
+
     unsupervised: bool = False
     """Set for a self-supervised task: there is no vocabulary to reach, so the source
     contributes its images with no labels rather than some of ``reachable``."""
@@ -338,6 +345,19 @@ class SourceFit:
     @property
     def contributes(self) -> bool:
         return bool(self.reachable) or self.unsupervised
+
+    @property
+    def partial_abstain(self) -> bool:
+        """The confound this exists to catch: a source whose native labels on this axis
+        are a MIX of resolved and coarser-abstaining.
+
+        Naively training on only the resolved subset would make the label near-
+        deterministic from the source itself — e.g. a Roboflow set whose "Unhealthy"
+        rows abstain (too coarse for a 6-way condition task) while its "Healthy" rows
+        are kept teaches the model "looks like Roboflow" rather than "looks healthy".
+        The fix is not to keep the resolved rows — it is to contribute none of them.
+        """
+        return bool(self.reachable) and bool(self.coarser)
 
     def line(self) -> str:
         if self.unsupervised:
@@ -358,6 +378,7 @@ def fit_source(projector: TaskProjector, crosswalk, source_id: str) -> SourceFit
     """
     reachable: set[str] = set()
     abstaining: list[str] = []
+    coarser: list[str] = []
     axis = projector.task.axis
 
     for edge in crosswalk.edges:
@@ -365,14 +386,17 @@ def fit_source(projector: TaskProjector, crosswalk, source_id: str) -> SourceFit
         if node_id is None:
             abstaining.append(edge.source_label)
             continue
-        target = projector.project(node_id).target_class
-        if target is None:
+        projection = projector.project(node_id)
+        if projection.target_class is None:
             abstaining.append(edge.source_label)
+            if "coarser" in projection.reason:
+                coarser.append(edge.source_label)
         else:
-            reachable.add(target)
+            reachable.add(projection.target_class)
 
     return SourceFit(
         source_id=source_id,
         reachable=tuple(sorted(reachable)),
         abstaining=tuple(sorted(abstaining)),
+        coarser=tuple(sorted(coarser)),
     )

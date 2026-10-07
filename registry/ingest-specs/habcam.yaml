@@ -1,0 +1,19 @@
+# HabCam towed stereo-camera scallop/benthic survey imagery (NOAA NEFSC, Georges Bank / Mid-Atlantic).
+id: habcam
+access_class: internal-only
+adapter: needs:nefsc-request
+license: public domain (US government work, per NOAA norm), request-based access
+attribution: NOAA NEFSC / WHOI HabCam group
+citation: fisheries.noaa.gov InPort item 22560
+homepage: https://www.fisheries.noaa.gov/inport/item/22560
+why_not_supported: habcam.whoi.edu and habcam.us do not resolve (DNS failure, curl
+  6) from this host. The InPort catalog record resolves but names a data request process,
+  not a public bulk endpoint.
+measured:
+  method: DNS failure on habcam.whoi.edu/habcam.us; InPort record (200) names request-based
+    access, no anonymous bulk URL found
+  date: '2026-09-25'
+  per_item_license: public domain
+  by_depth_band_m: {}
+  note: operating depth is shelf (40-120 m), NOT >200 m — do not count toward the
+    deep-sea >200m target despite being catalogued deep-sea-adjacent

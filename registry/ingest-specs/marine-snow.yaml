@@ -1,0 +1,12 @@
+# marine-snow: Cardaillac & Ludvigsen 2022
+id: marine-snow
+access_class: open
+adapter: zenodo
+license: CC-BY-4.0 (Zenodo API)
+attribution: Cardaillac & Ludvigsen — synthetic marine-snow overlay dataset
+citation: Cardaillac & Ludvigsen 2022
+homepage: https://zenodo.org/records/6424752
+params:
+  zenodo_record: 6424752
+
+disk_floor_gib: 36.0

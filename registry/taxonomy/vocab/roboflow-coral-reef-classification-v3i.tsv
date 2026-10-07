@@ -1,0 +1,8 @@
+# source: roboflow-coral-reef-classification-v3i
+# crosswalk: roboflow-bleaching-condition-hu
+# counts: annotations
+# retrieved: 2026-09-25 from rs-storage-open sources/roboflow-coral-reef-classification-v3i/v3i-image-labels/labels/image_labels.parquet (anonymous GET)
+# note: one annotation = one image_labels.parquet row (whole-image label)
+label	count	description
+Unhealthy	2450	
+Healthy	2106	

@@ -1,0 +1,26 @@
+# WP-6l-B (2026-09-25) new source: candidate — WP-6l-B sonar+depth-3d: time-aligned optical/sonar pairs from an AUV: cross-modal training
+id: auv-flc-fls-sunboat
+access_class: open
+adapter: zenodo
+params:
+  zenodo_record: 10544811
+license: cc-by-4.0
+attribution: Treibitz, Gutnik, Fabian (2024), Zenodo
+citation: 'doi:10.5281/zenodo.10544811 — AUV-Based Multi-Sensor Dataset: Forward-Looking Camera (FLC) and Forward-Looking
+  Sonar (FLS) Observations in t'
+homepage: https://zenodo.org/records/10544811
+notes: 'candidate — WP-6l-B sonar+depth-3d: time-aligned optical/sonar pairs from an AUV: cross-modal training'
+disk_floor_gib: 36.0
+measured:
+  items: 17676
+  bytes: 37633430505
+  bytes_basis: Zenodo API file sizes (sum)
+  method: 'remote zip CD: 17,676 png, 6 csv, 2 json'
+  date: '2026-09-25'
+  per_item_license: cc-by-4.0
+  by_depth_band_m: {}
+  label_type: paired forward-looking camera + forward-looking sonar frames with vehicle logs (csv)
+  habitat_region: coastal field trials 2021-2023, 2 vehicles; part 1 of a multi-part collection (no other part found
+    on Zenodo 2026-09-25)
+  dedup_chain: new; no registry/ingest-spec/WP-6g/S57 match on title, DOI or record id
+  wp6l_gap: sonar+depth-3d

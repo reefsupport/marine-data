@@ -1,0 +1,12 @@
+id: seatizen-atlas
+access_class: open
+adapter: zenodo
+params:
+  zenodo_record: 12819157
+license: CC-BY-4.0
+attribution: Seatizen Atlas (Contini et al., Sci Data 2025)
+citation: doi:10.5281/zenodo.12819157
+homepage: https://zenodo.org/records/12819157
+max_images: 20000
+
+disk_floor_gib: 36.0

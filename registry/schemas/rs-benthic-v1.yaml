@@ -20,16 +20,16 @@ schemas:
     axes: [taxon, form, condition]
     nodes:
       # ── L1 ────────────────────────────────────────────────────────────
-      - { id: BIOTIC,       name: Biotic,        axis: taxon }
-      - { id: ABIOTIC,      name: Abiotic,       axis: taxon }
-      - { id: TRANSITION,   name: Transition,    axis: taxon }
-      - { id: NON_BENTHIC,  name: Non-benthic,   axis: taxon }
+      - { id: BIOTIC,       name: Biotic,        axis: taxon, worms_aphia_id: 1, worms_scientificname: Biota, worms_rank: Superdomain, worms_status: accepted, worms_checked_on: 2026-09-25 }
+      - { id: ABIOTIC,      name: Abiotic,       axis: taxon, non_taxon: true, non_taxon_reason: "grouping: all non-living substrate" }
+      - { id: TRANSITION,   name: Transition,    axis: taxon, non_taxon: true, non_taxon_reason: "state: dead-coral transition states" }
+      - { id: NON_BENTHIC,  name: Non-benthic,   axis: taxon, non_taxon: true, non_taxon_reason: "grouping: imaging artefacts, equipment and non-benthic content" }
 
       - { id: CNIDARIA,   name: Cnidaria,   parent: BIOTIC, axis: taxon, worms_aphia_id: 1267, worms_scientificname: Cnidaria, worms_rank: Phylum, worms_status: accepted, worms_checked_on: 2026-08-17 }
       - { id: PORIFERA,   name: Porifera,   parent: BIOTIC, axis: taxon, worms_aphia_id: 558, worms_scientificname: Porifera, worms_rank: Phylum, worms_status: accepted, worms_checked_on: 2026-08-17 }
-      - { id: ALGAE,      name: Algae,      parent: BIOTIC, axis: taxon }
+      - { id: ALGAE,      name: Algae,      parent: BIOTIC, axis: taxon, non_taxon: true, non_taxon_reason: "functional-group: algae are polyphyletic (Rhodophyta, Chlorophyta, Ochrophyta)" }
       - { id: PLANTAE,    name: Plantae,    parent: BIOTIC, axis: taxon, worms_aphia_id: 3, worms_scientificname: Plantae, worms_rank: Kingdom, worms_status: accepted, worms_checked_on: 2026-08-17 }
-      - { id: OTHER_FAUNA, name: Other fauna, parent: BIOTIC, axis: taxon }
+      - { id: OTHER_FAUNA, name: Other fauna, parent: BIOTIC, axis: taxon, non_taxon: true, non_taxon_reason: "grouping: residual animals outside Cnidaria and Porifera; roll up via children" }
 
       # ── L2 — MariMap CoralLabelCode ───────────────────────────────────
       - { id: HC,  name: Hard coral,      parent: CNIDARIA, axis: taxon, aliases: ["hard coral", "scleractinian", "stony coral"], worms_aphia_id: 1363, worms_scientificname: Scleractinia, worms_rank: Order, worms_status: accepted, worms_checked_on: 2026-08-17 }
@@ -44,35 +44,35 @@ schemas:
       - { id: SP,  name: Sponge,          parent: PORIFERA, axis: taxon, aliases: ["sponge", "porifera"], worms_aphia_id: 558, worms_scientificname: Porifera, worms_rank: Phylum, worms_status: accepted, worms_checked_on: 2026-08-17 }
       - { id: CCA, name: Crustose coralline algae, parent: ALGAE, axis: taxon, aliases: ["cca", "crustose coralline"], worms_aphia_id: 15308, worms_scientificname: Corallinales, worms_rank: Order, worms_status: accepted, worms_checked_on: 2026-08-17 }
       - { id: CA,  name: Coralline algae, parent: ALGAE, axis: taxon, worms_aphia_id: 368687, worms_scientificname: Corallinophycidae, worms_rank: Subclass, worms_status: accepted, worms_checked_on: 2026-08-17 }
-      - { id: TA,  name: Turf algae,      parent: ALGAE, axis: taxon, aliases: ["turf", "turf algae"] }
+      - { id: TA,  name: Turf algae,      parent: ALGAE, axis: taxon, aliases: ["turf", "turf algae"], non_taxon: true, non_taxon_reason: "functional-group: turf is a multi-phylum algal assemblage" }
       - { id: HA,  name: Halimeda,        parent: ALGAE, axis: taxon, aliases: ["halimeda"], worms_aphia_id: 143820, worms_scientificname: Halimeda, worms_rank: Genus, worms_status: accepted, worms_checked_on: 2026-08-17 }
-      - { id: SW,  name: Seaweed / macroalgae, parent: ALGAE, axis: taxon, aliases: ["macroalgae", "seaweed", "fleshy algae"] }
-      - { id: NIA, name: Nutrient indicator algae, parent: ALGAE, axis: taxon }
+      - { id: SW,  name: Seaweed / macroalgae, parent: ALGAE, axis: taxon, aliases: ["macroalgae", "seaweed", "fleshy algae"], non_taxon: true, non_taxon_reason: "functional-group: macroalgae span three phyla" }
+      - { id: NIA, name: Nutrient indicator algae, parent: ALGAE, axis: taxon, non_taxon: true, non_taxon_reason: "functional-group: nutrient-indicator algae" }
       - { id: SG,  name: Seagrass,        parent: PLANTAE, axis: taxon, aliases: ["seagrass"], worms_aphia_id: 182757, worms_scientificname: Magnoliopsida, worms_rank: Class, worms_status: accepted, worms_checked_on: 2026-08-17 }
-      - { id: OT,  name: Other biota,     parent: OTHER_FAUNA, axis: taxon, aliases: ["other biota", "other animal"] }
+      - { id: OT,  name: Other biota,     parent: OTHER_FAUNA, axis: taxon, aliases: ["other biota", "other animal"], non_taxon: true, non_taxon_reason: "unknown: other biota not identified further" }
       - { id: URCH, name: Urchin,         parent: OTHER_FAUNA, axis: taxon, aliases: ["sea urchin", "diadema"], worms_aphia_id: 123082, worms_scientificname: Echinoidea, worms_rank: Class, worms_status: accepted, worms_checked_on: 2026-08-17 }
       - { id: CLAM, name: Clam,           parent: OTHER_FAUNA, axis: taxon, aliases: ["clam", "tridacna"], worms_aphia_id: 105, worms_scientificname: Bivalvia, worms_rank: Class, worms_status: accepted, worms_checked_on: 2026-08-17 }
       - { id: CUKE, name: Sea cucumber,   parent: OTHER_FAUNA, axis: taxon, aliases: ["sea cucumber", "holothurian"], worms_aphia_id: 123083, worms_scientificname: Holothuroidea, worms_rank: Class, worms_status: accepted, worms_checked_on: 2026-08-17 }
       - { id: COTS, name: Crown-of-thorns, parent: OTHER_FAUNA, axis: taxon, aliases: ["crown of thorn", "acanthaster"], worms_aphia_id: 205212, worms_scientificname: Acanthaster, worms_rank: Genus, worms_status: accepted, worms_checked_on: 2026-08-17 }
       - { id: FISH, name: Fish,           parent: OTHER_FAUNA, axis: taxon, aliases: ["fish"], worms_aphia_id: 10194, worms_scientificname: Actinopterygii, worms_rank: Gigaclass, worms_status: accepted, worms_checked_on: 2026-08-17 }
 
-      - { id: RB, name: Rubble,          parent: ABIOTIC, axis: taxon, aliases: ["rubble"] }
-      - { id: SD, name: Sand,            parent: ABIOTIC, axis: taxon, aliases: ["sand"] }
-      - { id: SI, name: Silt,            parent: ABIOTIC, axis: taxon, aliases: ["silt", "mud"] }
-      - { id: RK, name: Rock / pavement, parent: ABIOTIC, axis: taxon, aliases: ["rock", "pavement", "unknown hard substrate", "hard substrate"] }
-      - { id: NL, name: Non-living other, parent: ABIOTIC, axis: taxon, aliases: ["non-living"] }
-      - { id: TRASH, name: Trash / debris, parent: ABIOTIC, axis: taxon, aliases: ["trash", "debris", "litter"] }
+      - { id: RB, name: Rubble,          parent: ABIOTIC, axis: taxon, aliases: ["rubble"], non_taxon: true, non_taxon_reason: "substrate: rubble" }
+      - { id: SD, name: Sand,            parent: ABIOTIC, axis: taxon, aliases: ["sand"], non_taxon: true, non_taxon_reason: "substrate: sand" }
+      - { id: SI, name: Silt,            parent: ABIOTIC, axis: taxon, aliases: ["silt", "mud"], non_taxon: true, non_taxon_reason: "substrate: silt / mud" }
+      - { id: RK, name: Rock / pavement, parent: ABIOTIC, axis: taxon, aliases: ["rock", "pavement", "unknown hard substrate", "hard substrate"], non_taxon: true, non_taxon_reason: "substrate: rock / pavement" }
+      - { id: NL, name: Non-living other, parent: ABIOTIC, axis: taxon, aliases: ["non-living"], non_taxon: true, non_taxon_reason: "substrate: other non-living" }
+      - { id: TRASH, name: Trash / debris, parent: ABIOTIC, axis: taxon, aliases: ["trash", "debris", "litter"], non_taxon: true, non_taxon_reason: "debris: anthropogenic litter" }
 
-      - { id: DC,  name: Recently dead coral,   parent: TRANSITION, axis: taxon, aliases: ["recently dead coral"] }
-      - { id: DCA, name: Dead coral with algae, parent: TRANSITION, axis: taxon, aliases: ["dead coral with algae", "algae covered substrate"] }
+      - { id: DC,  name: Recently dead coral,   parent: TRANSITION, axis: taxon, aliases: ["recently dead coral"], non_taxon: true, non_taxon_reason: "state: recently dead coral skeleton" }
+      - { id: DCA, name: Dead coral with algae, parent: TRANSITION, axis: taxon, aliases: ["dead coral with algae", "algae covered substrate"], non_taxon: true, non_taxon_reason: "state: dead coral colonised by algae" }
 
-      - { id: TWS, name: Tape / wand / shadow, parent: NON_BENTHIC, axis: taxon, aliases: ["transect tools", "quadrat"] }
-      - { id: TL,  name: Transect line,        parent: NON_BENTHIC, axis: taxon, aliases: ["transect line"] }
-      - { id: DIV, name: Diver / human,        parent: NON_BENTHIC, axis: taxon, aliases: ["human", "diver"] }
-      - { id: WC,  name: Water column / background, parent: NON_BENTHIC, axis: taxon, aliases: ["background", "water column"] }
-      - { id: DRK, name: Dark / unreadable,    parent: NON_BENTHIC, axis: taxon, aliases: ["dark", "shadow"] }
+      - { id: TWS, name: Tape / wand / shadow, parent: NON_BENTHIC, axis: taxon, aliases: ["transect tools", "quadrat"], non_taxon: true, non_taxon_reason: "equipment: tape, wand or shadow" }
+      - { id: TL,  name: Transect line,        parent: NON_BENTHIC, axis: taxon, aliases: ["transect line"], non_taxon: true, non_taxon_reason: "equipment: transect line" }
+      - { id: DIV, name: Diver / human,        parent: NON_BENTHIC, axis: taxon, aliases: ["human", "diver"], non_taxon: true, non_taxon_reason: "human: divers are outside WoRMS scope" }
+      - { id: WC,  name: Water column / background, parent: NON_BENTHIC, axis: taxon, aliases: ["background", "water column"], non_taxon: true, non_taxon_reason: "water: water column / background" }
+      - { id: DRK, name: Dark / unreadable,    parent: NON_BENTHIC, axis: taxon, aliases: ["dark", "shadow"], non_taxon: true, non_taxon_reason: "unknown: dark or unreadable" }
       - { id: SCL, name: Scale reference,      parent: NON_BENTHIC, axis: taxon, aliases: ["scale", "scale bar"],
-          notes: "In-frame scale object. Detecting it is what recovers pixel_size_m and unlocks area, rugosity and growth rate." }
+          notes: "In-frame scale object. Detecting it is what recovers pixel_size_m and unlocks area, rugosity and growth rate.", non_taxon: true, non_taxon_reason: "equipment: scale reference" }
 
       # ── L3 — Caribbean genera (region-scoped; extend per region) ───────
       - { id: HC_ORBICELLA,     name: Orbicella,      parent: HC, axis: taxon, worms_aphia_id: 758259, worms_scientificname: Orbicella, worms_rank: Genus, worms_status: accepted, worms_checked_on: 2026-08-17 }
@@ -112,8 +112,82 @@ schemas:
 
       # ── CONDITION axis ────────────────────────────────────────────────
       - { id: HEALTHY,       name: Healthy,        axis: condition, aliases: ["alive", "healthy"] }
-      - { id: PALE,          name: Pale,           axis: condition, aliases: ["pale", "paling"] }
-      - { id: BLEACHED,      name: Bleached,       axis: condition, aliases: ["bleached"] }
-      - { id: DISEASED,      name: Diseased,       axis: condition, aliases: ["diseased"] }
-      - { id: RECENTLY_DEAD, name: Recently dead,  axis: condition, aliases: ["recently dead"] }
-      - { id: OLD_DEAD,      name: Old dead,       axis: condition, aliases: ["dead", "old dead"] }
+      - { id: UNHEALTHY,     name: Unhealthy,      axis: condition,
+          notes: "Coarsening parent for a source that only ever recorded a binary healthy/not-healthy call — never assert PALE/BLEACHED/DISEASED/RECENTLY_DEAD/OLD_DEAD from it." }
+      - { id: PALE,          name: Pale,           parent: UNHEALTHY, axis: condition, aliases: ["pale", "paling"] }
+      - { id: BLEACHED,      name: Bleached,       parent: UNHEALTHY, axis: condition, aliases: ["bleached"] }
+      - { id: DISEASED,      name: Diseased,       parent: UNHEALTHY, axis: condition, aliases: ["diseased"] }
+      - { id: RECENTLY_DEAD, name: Recently dead,  parent: UNHEALTHY, axis: condition, aliases: ["recently dead"] }
+      - { id: OLD_DEAD,      name: Old dead,       parent: UNHEALTHY, axis: condition, aliases: ["dead", "old dead"] }
+
+      # ── WP-7 additions (scripts/taxonomy_codegen.py, WoRMS snapshot 2026-09-25) ──
+      - { id: HC_ACANTHASTREA, name: Acanthastrea, parent: HC, axis: taxon, worms_aphia_id: 206405, worms_scientificname: Acanthastrea, worms_rank: Genus, worms_status: accepted, worms_checked_on: 2026-09-25 }
+      - { id: CN_ANEMONIA, name: Anemonia, parent: CNIDARIA, axis: taxon, worms_aphia_id: 100695, worms_scientificname: Anemonia, worms_rank: Genus, worms_status: accepted, worms_checked_on: 2026-09-25 }
+      - { id: INV_ASCIDIACEA, name: Ascidiacea, parent: OTHER_FAUNA, axis: taxon, worms_aphia_id: 1839, worms_scientificname: Ascidiacea, worms_rank: Class, worms_status: accepted, worms_checked_on: 2026-09-25 }
+      - { id: ALG_ASPARAGOPSIS, name: Asparagopsis, parent: SW, axis: taxon, worms_aphia_id: 143809, worms_scientificname: Asparagopsis, worms_rank: Genus, worms_status: accepted, worms_checked_on: 2026-09-25 }
+      - { id: HC_ASTREA, name: Astrea, parent: HC, axis: taxon, worms_aphia_id: 517592, worms_scientificname: Astrea, worms_rank: Genus, worms_status: accepted, worms_checked_on: 2026-09-25 }
+      - { id: HC_ASTREOPORA, name: Astreopora, parent: HC, axis: taxon, worms_aphia_id: 204599, worms_scientificname: Astreopora, worms_rank: Genus, worms_status: accepted, worms_checked_on: 2026-09-25 }
+      - { id: ALG_AVRAINVILLEA, name: Avrainvillea, parent: SW, axis: taxon, worms_aphia_id: 143819, worms_scientificname: Avrainvillea, worms_rank: Genus, worms_status: accepted, worms_checked_on: 2026-09-25 }
+      - { id: INV_BRYOZOA, name: Bryozoa, parent: OTHER_FAUNA, axis: taxon, worms_aphia_id: 146142, worms_scientificname: Bryozoa, worms_rank: Phylum, worms_status: accepted, worms_checked_on: 2026-09-25 }
+      - { id: ALG_CAULERPA, name: Caulerpa, parent: SW, axis: taxon, worms_aphia_id: 143816, worms_scientificname: Caulerpa, worms_rank: Genus, worms_status: accepted, worms_checked_on: 2026-09-25 }
+      - { id: CN_CORALLIMORPHARIA, name: Corallimorpharia, parent: CNIDARIA, axis: taxon, worms_aphia_id: 1362, worms_scientificname: Corallimorpharia, worms_rank: Order, worms_status: accepted, worms_checked_on: 2026-09-25 }
+      - { id: HC_COSCINARAEA, name: Coscinaraea, parent: HC, axis: taxon, worms_aphia_id: 204591, worms_scientificname: Coscinaraea, worms_rank: Genus, worms_status: accepted, worms_checked_on: 2026-09-25 }
+      - { id: CYANOBACTERIA, name: Cyanobacteria, parent: BIOTIC, axis: taxon, worms_aphia_id: 146537, worms_scientificname: Cyanobacteria, worms_rank: Phylum, worms_status: accepted, worms_checked_on: 2026-09-25 }
+      - { id: HC_CYPHASTREA, name: Cyphastrea, parent: HC, axis: taxon, worms_aphia_id: 206488, worms_scientificname: Cyphastrea, worms_rank: Genus, worms_status: accepted, worms_checked_on: 2026-09-25 }
+      - { id: ALG_DICTYOSPHAERIA, name: Dictyosphaeria, parent: SW, axis: taxon, worms_aphia_id: 144265, worms_scientificname: Dictyosphaeria, worms_rank: Genus, worms_status: accepted, worms_checked_on: 2026-09-25 }
+      - { id: ALG_DICTYOTACEAE, name: Dictyotaceae, parent: SW, axis: taxon, worms_aphia_id: 143716, worms_scientificname: Dictyotaceae, worms_rank: Family, worms_status: accepted, worms_checked_on: 2026-09-25 }
+      - { id: HC_DIPLOASTREA, name: Diploastrea, parent: HC, axis: taxon, worms_aphia_id: 204221, worms_scientificname: Diploastrea, worms_rank: Genus, worms_status: accepted, worms_checked_on: 2026-09-25 }
+      - { id: HC_ECHINOPHYLLIA, name: Echinophyllia, parent: HC, axis: taxon, worms_aphia_id: 204799, worms_scientificname: Echinophyllia, worms_rank: Genus, worms_status: accepted, worms_checked_on: 2026-09-25 }
+      - { id: HC_ECHINOPORA, name: Echinopora, parent: HC, axis: taxon, worms_aphia_id: 205519, worms_scientificname: Echinopora, worms_rank: Genus, worms_status: accepted, worms_checked_on: 2026-09-25 }
+      - { id: HC_EUPHYLLIA, name: Euphyllia, parent: HC, axis: taxon, worms_aphia_id: 206703, worms_scientificname: Euphyllia, worms_rank: Genus, worms_status: accepted, worms_checked_on: 2026-09-25 }
+      - { id: HC_FAVIA, name: Favia, parent: HC, axis: taxon, worms_aphia_id: 718691, worms_scientificname: Favia, worms_rank: Genus, worms_status: accepted, worms_checked_on: 2026-09-25 }
+      - { id: HC_FAVITES, name: Favites, parent: HC, axis: taxon, worms_aphia_id: 206158, worms_scientificname: Favites, worms_rank: Genus, worms_status: accepted, worms_checked_on: 2026-09-25 }
+      - { id: HC_FUNGIA, name: Fungia, parent: HC, axis: taxon, worms_aphia_id: 206375, worms_scientificname: Fungia, worms_rank: Genus, worms_status: accepted, worms_checked_on: 2026-09-25 }
+      - { id: HC_GALAXEA, name: Galaxea, parent: HC, axis: taxon, worms_aphia_id: 205332, worms_scientificname: Galaxea, worms_rank: Genus, worms_status: accepted, worms_checked_on: 2026-09-25 }
+      - { id: HC_GONIASTREA, name: Goniastrea, parent: HC, axis: taxon, worms_aphia_id: 205082, worms_scientificname: Goniastrea, worms_rank: Genus, worms_status: accepted, worms_checked_on: 2026-09-25 }
+      - { id: SG_HALOPHILA, name: Halophila, parent: SG, axis: taxon, worms_aphia_id: 144192, worms_scientificname: Halophila, worms_rank: Genus, worms_status: accepted, worms_checked_on: 2026-09-25 }
+      - { id: SC_HELIOPORA, name: Heliopora, parent: SC, axis: taxon, worms_aphia_id: 206210, worms_scientificname: Heliopora, worms_rank: Genus, worms_status: accepted, worms_checked_on: 2026-09-25 }
+      - { id: HC_HYDNOPHORA, name: Hydnophora, parent: HC, axis: taxon, worms_aphia_id: 204976, worms_scientificname: Hydnophora, worms_rank: Genus, worms_status: accepted, worms_checked_on: 2026-09-25 }
+      - { id: CN_HYDROZOA, name: Hydrozoa, parent: CNIDARIA, axis: taxon, worms_aphia_id: 1337, worms_scientificname: Hydrozoa, worms_rank: Class, worms_status: accepted, worms_checked_on: 2026-09-25 }
+      - { id: HC_ISOPORA, name: Isopora, parent: HC, axis: taxon, worms_aphia_id: 730685, worms_scientificname: Isopora, worms_rank: Genus, worms_status: accepted, worms_checked_on: 2026-09-25 }
+      - { id: HC_LEPTASTREA, name: Leptastrea, parent: HC, axis: taxon, worms_aphia_id: 204278, worms_scientificname: Leptastrea, worms_rank: Genus, worms_status: accepted, worms_checked_on: 2026-09-25 }
+      - { id: HC_LEPTORIA, name: Leptoria, parent: HC, axis: taxon, worms_aphia_id: 204155, worms_scientificname: Leptoria, worms_rank: Genus, worms_status: accepted, worms_checked_on: 2026-09-25 }
+      - { id: HC_LEPTOSERIS, name: Leptoseris, parent: HC, axis: taxon, worms_aphia_id: 206048, worms_scientificname: Leptoseris, worms_rank: Genus, worms_status: accepted, worms_checked_on: 2026-09-25 }
+      - { id: ALG_LOBOPHORA, name: Lobophora, parent: SW, axis: taxon, worms_aphia_id: 144087, worms_scientificname: Lobophora, worms_rank: Genus, worms_status: accepted, worms_checked_on: 2026-09-25 }
+      - { id: HC_LOBOPHYLLIA, name: Lobophyllia, parent: HC, axis: taxon, worms_aphia_id: 205310, worms_scientificname: Lobophyllia, worms_rank: Genus, worms_status: accepted, worms_checked_on: 2026-09-25 }
+      - { id: HC_MERULINA, name: Merulina, parent: HC, axis: taxon, worms_aphia_id: 206610, worms_scientificname: Merulina, worms_rank: Genus, worms_status: accepted, worms_checked_on: 2026-09-25 }
+      - { id: ALG_MICRODICTYON, name: Microdictyon, parent: SW, axis: taxon, worms_aphia_id: 143993, worms_scientificname: Microdictyon, worms_rank: Genus, worms_status: accepted, worms_checked_on: 2026-09-25 }
+      - { id: HC_MONTIPORA, name: Montipora, parent: HC, axis: taxon, worms_aphia_id: 203834, worms_scientificname: Montipora, worms_rank: Genus, worms_status: accepted, worms_checked_on: 2026-09-25 }
+      - { id: ALG_NEOMERIS, name: Neomeris, parent: SW, axis: taxon, worms_aphia_id: 205280, worms_scientificname: Neomeris, worms_rank: Genus, worms_status: accepted, worms_checked_on: 2026-09-25 }
+      - { id: HC_OULOPHYLLIA, name: Oulophyllia, parent: HC, axis: taxon, worms_aphia_id: 205663, worms_scientificname: Oulophyllia, worms_rank: Genus, worms_status: accepted, worms_checked_on: 2026-09-25 }
+      - { id: HC_PACHYSERIS, name: Pachyseris, parent: HC, axis: taxon, worms_aphia_id: 206073, worms_scientificname: Pachyseris, worms_rank: Genus, worms_status: accepted, worms_checked_on: 2026-09-25 }
+      - { id: ALG_PADINA, name: Padina, parent: SW, axis: taxon, worms_aphia_id: 144088, worms_scientificname: Padina, worms_rank: Genus, worms_status: accepted, worms_checked_on: 2026-09-25 }
+      - { id: HC_PAVONA, name: Pavona, parent: HC, axis: taxon, worms_aphia_id: 206614, worms_scientificname: Pavona, worms_rank: Genus, worms_status: accepted, worms_checked_on: 2026-09-25 }
+      - { id: ALG_PEYSSONNELIA, name: Peyssonnelia, parent: ALGAE, axis: taxon, worms_aphia_id: 144051, worms_scientificname: Peyssonnelia, worms_rank: Genus, worms_status: accepted, worms_checked_on: 2026-09-25 }
+      - { id: HC_PLATYGYRA, name: Platygyra, parent: HC, axis: taxon, worms_aphia_id: 206621, worms_scientificname: Platygyra, worms_rank: Genus, worms_status: accepted, worms_checked_on: 2026-09-25 }
+      - { id: HC_PLEROGYRA, name: Plerogyra, parent: HC, axis: taxon, worms_aphia_id: 204353, worms_scientificname: Plerogyra, worms_rank: Genus, worms_status: accepted, worms_checked_on: 2026-09-25 }
+      - { id: HC_PORITIDAE, name: Poritidae, parent: HC, axis: taxon, worms_aphia_id: 196105, worms_scientificname: Poritidae, worms_rank: Family, worms_status: accepted, worms_checked_on: 2026-09-25 }
+      - { id: HC_PSAMMOCORA, name: Psammocora, parent: HC, axis: taxon, worms_aphia_id: 204148, worms_scientificname: Psammocora, worms_rank: Genus, worms_status: accepted, worms_checked_on: 2026-09-25 }
+      # WP-7c (taxonomy 1.2.0): Reefolution's CoralNet labels, each resolved from the CoralNet label page
+      # (coralnet.ucsd.edu/label/<id>/) and then the pinned WoRMS snapshot.
+      - { id: HC_DIPSASTRAEA, name: Dipsastraea, parent: HC, axis: taxon, worms_aphia_id: 718746, worms_scientificname: Dipsastraea, worms_rank: Genus, worms_status: accepted, worms_checked_on: 2026-09-25 }
+      - { id: HC_FUNGIIDAE, name: Fungiidae, parent: HC, axis: taxon, worms_aphia_id: 196100, worms_scientificname: Fungiidae, worms_rank: Family, worms_status: accepted, worms_checked_on: 2026-09-25 }
+      - { id: HC_GARDINEROSERIS, name: Gardineroseris, parent: HC, axis: taxon, worms_aphia_id: 204594, worms_scientificname: Gardineroseris, worms_rank: Genus, worms_status: accepted, worms_checked_on: 2026-09-25 }
+      - { id: HC_GONIOPORA, name: Goniopora, parent: HC, axis: taxon, worms_aphia_id: 205476, worms_scientificname: Goniopora, worms_rank: Genus, worms_status: accepted, worms_checked_on: 2026-09-25 }
+      - { id: HC_MYCEDIUM, name: Mycedium, parent: HC, axis: taxon, worms_aphia_id: 203844, worms_scientificname: Mycedium, worms_rank: Genus, worms_status: accepted, worms_checked_on: 2026-09-25 }
+      - { id: SC_XENIIDAE, name: Xeniidae, parent: SC, axis: taxon, aliases: ["xeniid", "pulse coral"], worms_aphia_id: 125271, worms_scientificname: Xeniidae, worms_rank: Family, worms_status: accepted, worms_checked_on: 2026-09-25 }
+      - { id: SC_RHYTISMA, name: Rhytisma, parent: SC, axis: taxon, worms_aphia_id: 267812, worms_scientificname: Rhytisma, worms_rank: Genus, worms_status: accepted, worms_checked_on: 2026-09-25, notes: "Octocorallia: Lemnaliidae (Animalia; not the plant-pathogen fungus genus)" }
+      - { id: SC_TUBIPORA, name: Tubipora, parent: SC, axis: taxon, aliases: ["organ pipe coral"], worms_aphia_id: 205676, worms_scientificname: Tubipora, worms_rank: Genus, worms_status: accepted, worms_checked_on: 2026-09-25 }
+      - { id: CN_AGLAOPHENIA, name: Aglaophenia, parent: CN_HYDROZOA, axis: taxon, aliases: ["ostrich-plume hydroid"], worms_aphia_id: 116999, worms_scientificname: Aglaophenia, worms_rank: Genus, worms_status: accepted, worms_checked_on: 2026-09-25 }
+      - { id: INV_DIDEMNIDAE, name: Didemnidae, parent: INV_ASCIDIACEA, axis: taxon, worms_aphia_id: 103439, worms_scientificname: Didemnidae, worms_rank: Family, worms_status: accepted, worms_checked_on: 2026-09-25 }
+      - { id: ALG_RHODOPHYTA, name: Red algae (Rhodophyta), parent: ALGAE, axis: taxon, aliases: ["red algae"], worms_aphia_id: 852, worms_scientificname: Rhodophyta, worms_rank: Phylum (Division), worms_status: accepted, worms_checked_on: 2026-09-25 }
+      - { id: ALG_CHLOROPHYTA, name: Green algae (Chlorophyta), parent: ALGAE, axis: taxon, aliases: ["green algae"], worms_aphia_id: 801, worms_scientificname: Chlorophyta, worms_rank: Phylum (Division), worms_status: accepted, worms_checked_on: 2026-09-25 }
+      - { id: ALG_OCHROPHYTA, name: Brown algae (Ochrophyta), parent: ALGAE, axis: taxon, aliases: ["brown algae"], worms_aphia_id: 345465, worms_scientificname: Ochrophyta, worms_rank: Phylum, worms_status: accepted, worms_checked_on: 2026-09-25 }
+      - { id: ALG_SARGASSUM, name: Sargassum, parent: SW, axis: taxon, worms_aphia_id: 144132, worms_scientificname: Sargassum, worms_rank: Genus, worms_status: accepted, worms_checked_on: 2026-09-25 }
+      - { id: HS, name: Hard substrate (cover unspecified), axis: taxon, non_taxon: true, non_taxon_reason: "grouping: hard substrate whose cover is unspecified (pavement, dead coral or turf), so it spans ABIOTIC, TRANSITION and ALGAE" }
+      - { id: BIOFILM, name: Biofilm / microbial mat, parent: BIOTIC, axis: taxon, aliases: ["biofilm", "microbial mat"], non_taxon: true, non_taxon_reason: "functional-group: microbial mat of unspecified bacteria and microalgae over sediment" }
+      - { id: UNKNOWN, name: Unknown / unclassified, axis: taxon, non_taxon: true, non_taxon_reason: "unknown: annotator could not identify" }
+      - { id: SG_BG, name: Background (no seagrass), axis: taxon, non_taxon: true, non_taxon_reason: "background: no seagrass present; substrate unspecified", notes: "DeepSeagrass negative class; substrate may or may not be visible in frame" }
+      - { id: SG_STRAP, name: Strap-like leaves, axis: form, notes: "Seagrass leaf morphology (DeepSeagrass superclasses)" }
+      - { id: SG_FERN, name: Fern-like leaves, axis: form, notes: "Seagrass leaf morphology (DeepSeagrass superclasses)" }
+      - { id: SG_ROUND, name: Rounded leaves, axis: form, notes: "Seagrass leaf morphology (DeepSeagrass superclasses)" }

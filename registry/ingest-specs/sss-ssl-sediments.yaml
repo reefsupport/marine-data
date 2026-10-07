@@ -1,0 +1,25 @@
+# WP-6l-B (2026-09-25) new source: needs_adapter:split-zip — WP-6l-B sonar: large-scale side-scan sonar SSL pre-training corpus
+id: sss-ssl-sediments
+access_class: open
+adapter: zenodo
+params:
+  zenodo_record: 10209445
+license: cc-by-4.0
+attribution: Martinez-Clavel Valles, Rajani, Gracias (2023), Zenodo
+citation: doi:10.5281/zenodo.10209445 — A Large Scale Side-Scan Sonar Dataset of Seafloor Sediments for Self-Supervised
+  Pretraining
+homepage: https://zenodo.org/records/10209445
+notes: 'needs_adapter:split-zip — WP-6l-B sonar: large-scale side-scan sonar SSL pre-training corpus'
+temp_cap_gb: 23.0
+disk_floor_gib: 54.0
+measured:
+  bytes: 52252096535
+  bytes_basis: Zenodo API file sizes (sum)
+  method: split zip (.z01,.z02,.zip); zip64 EOCD reports >= 65,535 entries on disk 2; CD not walked
+  date: '2026-09-25'
+  per_item_license: cc-by-4.0
+  by_depth_band_m: {}
+  label_type: unlabelled side-scan patches for self-supervised pre-training (sediment classes in the companion paper)
+  habitat_region: seafloor sediments, North/Baltic Sea (per paper)
+  dedup_chain: new; no registry/ingest-spec/WP-6g/S57 match on title, DOI or record id
+  wp6l_gap: sonar

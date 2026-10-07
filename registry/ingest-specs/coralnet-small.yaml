@@ -1,0 +1,18 @@
+id: coralnet-small
+access_class: internal-only
+adapter: hf
+params:
+  repo: nf-whoi/coralnet-small
+  revision: df2570887c1a
+license: unknown
+attribution: CoralNet / WHOI mirror
+citation: nf-whoi/coralnet-small (HF)
+homepage: https://huggingface.co/datasets/nf-whoi/coralnet-small
+
+disk_floor_gib: 36.0
+measured:
+  items: 450
+  bytes: 6947647488
+  method: 'catalog measurement (S57): 450 rows (HF viewer), <=6.47 GB usedStorage'
+  date: '2026-09-25'
+  per_item_license: unknown

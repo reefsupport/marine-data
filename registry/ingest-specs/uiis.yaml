@@ -1,0 +1,14 @@
+id: uiis
+access_class: open
+adapter: hf
+params:
+  repo: LiamLian0727/UIIS
+  revision: 44ca5db46599f14faf8e57643014664435823738
+  include: ["*.jpg", "*.jpeg", "*.json"]
+  label_patterns: ["annotations/*.json"]
+license: Apache-2.0
+attribution: "Shijie Lian, Hua Li, Runmin Cong, Suqi Li, Wei Zhang, Sam Kwong — UIIS (WaterMask) dataset; HF mirror LiamLian0727/UIIS"
+citation: "Lian et al. 2023, WaterMask: Instance Segmentation for Underwater Imagery, ICCV 2023, pp.1305-1315"
+homepage: https://huggingface.co/datasets/LiamLian0727/UIIS
+
+disk_floor_gib: 34.0

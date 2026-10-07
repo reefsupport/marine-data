@@ -1,0 +1,186 @@
+# source: seaview-survey-imagery
+# crosswalk: seaview-point-labels
+# counts: annotations
+# retrieved: 2026-10-05 from rs-storage-open benthic_datasets/point_labels/SEAVIEW/tabular-data/annotations_*.csv (boto3 GET) (legacy: history note)
+label	count	description
+EAM_DHC	229716	EAM: Dead Hard Coral | Epilithic Algal Matrix
+Unc	52983	Epilithic Algal Matrix | Epillithic Algal Matrix
+DSUB	49146	Epilithic Algal Matrix
+LSUB_SAND	31545	Loose Substrate: Sand | Sand
+AMAT	27669	Algae matrix
+EAM_RB	22047	Epilithic algal matirx smotheting rubble
+MASE_SMO_P	18002	MASE: Porites
+Turf	17794	Turf | Turf algae
+CAL_CCA_DC	17004	Calcifying calcareous crustose algae: DHC
+MASE_SML_O	16362	MASE: Small or Invis Polyps
+MASE_LRG_O	16249	MASE: Large Rounded Polyps
+TFP_RDG_Al	15603	TFP: Visible Relief Structures
+BRA_TAB-Ac	15416	Acropora corymbose/tabular/plate
+SINV_SFC_O	15159	Other soft-corals no common Alcyoniidae and erects | Other soft-corals no common Alcyoniidae and erects/ Xeniidae/Neptht
+SINV_SFC_A	14280	Common LRG Alcyoniide
+CCA	13439	CCA | Crustose Coralline Algae
+ACR-TCD	12682	Acroporidae table/corymbose/digitate
+POR-MASS	12547	Porites lobata/lutea | Poritidae massive
+POCI	11465	Pocilloporidae
+MACR_Cal_H	11280	Calcifying algae: Halimeda
+FAV-MUS	11197	Favidae-Mussidae massive/meandroid
+MLAG	11166	Macroalgae 1
+BRA_ARB_Ac	9392	BRA: Acropora Branching
+SINV_SPO_M	8830	Massive or encrusting sponges | Sponge
+ALC-SF	8570	Alcyoniidae
+Sand	8480	Sand
+ACR-PE	7634	Acroporidae plate/encrusting
+ACR-OTH	7531	Acroporidae Other | Other Acroporidae
+ACR-BRA	7024	Acroporidae branching
+TFP_RND_Al	6281	TFP: Visible Round Corallites
+OTH-SF	6178	Other soft coral
+POR_Com_fi	5562	Porties compressa fingres
+BRA_VER_Po	5206	Pocillopora species
+OTH-SINV	5135	Other sessile invertebrates
+MASE_MEA_O	4944	MASE: Meandering Other
+BRA_SMO_Po	4889	Branching Porites
+LSUB_SEDI	4859	Loose Substrate: Sediment | Terrigenous sediment with turf
+MALG	4825	Macroalgae
+POR-BRA	4648	Poritidae branching
+OTH-HC	4627	Other Hard corals | Other hard corals
+SCplu	4289	Soft Coral plumes
+MON_Cap_br	4232	Montipora capitata branching
+NON_MIL	4206	Non Hermatypic: Millepora
+BRA_OTH	3669	BRA: Other | Other branching genus: Anacropora/Echinopora/Monti | Other branching genus: Anacropora/Echinopora/Montipora
+POR-ENC	3309	Porites lichen | Poritidae encrusting
+MPATU	3240	Montipora patula
+ERGR	3140	Erect gorgonians
+OCOM	2528	Ocomplex
+MACR_Fol_B	2485	Foliose Strap/ Branched algae
+NON_FREE	2466	Non hermatypic: Free living (Fungia etc)
+MACR_Fil_A	2421	Filamentous Macroalgae
+Turfsa	2294	Turf algae and sand | Turf sand
+TFP_SMO_Po	2177	TFP: Porites
+BRA_DIG_Ac	2007	Acropora digitate
+MASE_MEA_L	1985	MASE: Lobophyllia
+MON_Cap_pl	1951	Montipora capitata plate
+BRA_RND_St	1769	Branching Stylophora
+SINV_HYD	1684	Hydroids feathery types
+SpMass	1499	Massive Sponge
+GORG	1487	Sea fans and plumes | Sea fans/plumes
+POCI_CAU	1404	Pocillopora meandrina/ligulata
+Dict	1376	Dictyota
+BRA_FIN_Se	1364	Fine branching nonAcroporids Seriatopora
+MASE_LRG_I	1363	MASE: Isopora
+Lvar	1213	Lvariegata
+CVIR	1184	Cvirdis_complex
+MINV_CRI	1183	Crinoids
+CYANO_DHC	1147	Cyanobacteria smothering dead coral
+CYAN	1139	Cyanobacteria films
+AGAR	1122	Agaricia/Undaria
+SINV_SPO_V	1092	Sponges: Hollow sponge forms/cups/barrels/tubes/et al
+MACR_Cal_P	1068	Calcifying algae: Padina | Calcifying macroalgae: Padina | Foliose Feathery algae
+B_Monti	1060	Bleached Montipora
+SINV_TUN	1028	Individual Tunicates
+ACR-HIP	945	Acroporidae hispidose
+SINV_HEX_O	940	Other sesile invertebrates soft hexacorrallia
+BRA_BLC	912	Branching bleached
+PSEU	881	Pseudodiploria
+SINV_SFC_E	859	Sea fans/plumes/branching whipes
+SINV_SPO_E	857	Sponges: Branching/rope forms
+Mille	850	Millepora
+XMUT	850	Xmuta
+CAL_CCA_RB	842	Calcifying Calcareous Crustose Algae: Rubble
+FISH	805	Fish
+SINV_SPO_C	801	Encrusting Cliona spp.
+MADR	752	Madracis
+Seagrass	744	Seagrass
+POR_OTH_EP	741	Porites rus/monticulosa
+BRA_BOT_Ac	739	BRA: Acropora Bottlebrush
+IRCI	690	Ircinia_massive
+MINV_COTS	689	Crown of Thorns Sea Star
+ROSP	665	Rope sponge
+MCAV	653	Montastrea cavernosa
+ERHD	638	Erect Rhodphyta
+NN_HEL	620	Non hermatypic: Heliopora
+PASTR	618	Pastreoides
+SINV_OTH	607	Other sesile invertebrates Bryozoa clams
+CNAT	543	Cnatans
+ENGR1	521	Encrusting gorgonian
+PPOR	520	Pporites
+SSID	491	Siderastrea siderea
+MALGAE	491	Macrolagae all genera
+ApFuCa	478	Aplysina fulva_cauliformis
+SGRASS	452	Seagrass
+MACR_GLOB	440	Algae: Large Visible Globules
+MAENR	435	Macroalgae Encrusting red
+Sediment	434	Sediment
+ENSP	410	Encrusting sponge
+DLAB	401	Dlabyrinthiformis
+POR-MASS-B	395	Porites lobata/lutea bleached
+UTEN	373	Utenuifolia
+EAM_Sub	372	Epilithic algal matrix on rock or other substrates
+MACR_Fol_F	370	Foliose Fan shaped algae
+LSUB_RUB	352	Loose Substrate: Rubble
+Sponge	343	Sponges
+Hali	320	Halimeda
+ACER	317	Acervicornis
+MFLAB	306	Montipora flabellata
+SINV_SPO_F	297	Sponges: Fan shaped forms
+NON_HEL	296	Non hermatypic: Heliopora
+Gnep	261	Gneptuni
+ZOAN	241	Zoanthid
+Unk	225	Unknown
+CYANO_RB	222	Cyanobacteria smothering rubble
+LSUB_VOL	220	Volcanic sediment
+POR_NOD	214	Porites nodular branches
+CPLI	210	Cplicifera
+Acra	202	Aiolochroia crassa
+OCOM-BL	193	Ocomplex bleached
+Ndig	189	Niphates digitalis
+CVAG	186	Cvaginalis
+MACR_Fol_O	179	Foliose Algae: Other
+ATUB	172	Atubulata
+AFIS	172	Afistularis
+Blpocill	159	Bleached Pocillopora
+MACR_Fol_P	157	Calcifying algae: Padina | Calcifying macroalgae: Padina | Foliose Feathery algae
+MTUN	155	Mat tunicate
+MEAN	143	Meandrina
+MINV_OTH	136	Mobile invertebrates | Sea cucumbers/sea urchins/sea stars/lobster
+PLAK	132	Plakortis
+ALGAE_OTH	126	Other algae
+PSEU-BL	121	Pseudodiploria bleached
+SPvase	119	Vase sponge
+APAL	116	Apalmata
+DLAB-BL	115	Bleached Diploria labyrinthiformis
+AARC	110	Aarcheri
+MINV_Dia	107	Diadema/Ehinothix
+ERSP	95	Erect sponge
+CDEL	94	Cdelitrix
+TSH	93	Trash: Human Origin
+EFAS	87	Eusmilia fastigiata
+MINV_Ech	86	Echinometra
+Trans	78	Transect hardware
+MSE-HC	73	Coral: massive sub-massive encrusting
+GEAR	66	Fishing gear
+MASE_BLC	65	Massive/Submassive/Encrusting bleached
+MINV_Tri	64	Tripneustes
+ACOM	53	Acompresa
+Other	50	Other
+PEYDO	45	Pocillopora eydouxi
+CAL_CCA_S	39	Calcifying Calcareous Crustose Algae: Sustrates | Cyanobacteria smothering rubble
+MOB-INV	38	Mobile invertebrates | Mobile invertebrates 1
+POR_Com_fu	37	Porites compressa fused branches
+Mille-BL	25	Millepora bleached
+H20	25	Water
+CYANO_Sub	24	Cyanobacteria on rock or other substrates
+WATER	22	Water
+Lepto	22	Leptoseris
+MEA-HC	17	Coral: meandroid
+MLAE	15	Mycale laevis
+PVAR	15	Pavona varians
+POR_EP_B	15	Bleached Plate-encrusting Porites
+MACR_Cal_O	13	Calcifying algae: Other | Foliose Algae: Other
+PAV_Due	8	Pavona duerdeni
+TFP_BLC	5	TFP bleached | Thin/Foliose  and Plating bleached
+CYANO	5	Cyanobacteria
+PDAM	4	Pocillopora damicornis
+MACR_Fol_S	3	Foliose sheeting macroalage: (e.g Ulva)
+PMal	2	Pavona maldivensis
+FAV_SID	2	Faviidae Siderastreidae
+MACR_LTH_O	1	Leathery Macrophyte: Other

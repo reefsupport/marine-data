@@ -1,0 +1,12 @@
+# med-fish: Zenodo 7534425
+id: med-fish
+access_class: open
+adapter: zenodo
+license: CC-BY-4.0 (Zenodo API)
+attribution: DEEPECOMAR project — Mediterranean fish YOLO dataset
+citation: Zenodo 7534425
+homepage: https://zenodo.org/records/7534425
+params:
+  zenodo_record: 7534425
+
+disk_floor_gib: 36.0

@@ -22,10 +22,28 @@ from marinedata.builder import Dataset
 from marinedata.labelindex import LabelIndex
 from marinedata.lineage import build_lineage
 from marinedata.sample import LabelValue, Sample
-from marinedata.scan import assign_splits, group_key, scan
+from marinedata.scan import assign_splits, check_ratios, group_key, scan
 from marinedata.schema import Axis
 
 RATIOS = {"train": 0.7, "val": 0.15, "test": 0.15}
+
+REEF_SUPPORT_GROUP_SIZES = {
+    "reef_support/a": 658,
+    "reef_support/b": 246,
+    "reef_support/c": 241,
+    "reef_support/d": 105,
+}
+"""Real `reef_support` site sizes, seed 0 (measured Phase 0). Packed against 70/15/15
+these land at 72.3/19.3/8.4 — close enough to be a *regression* guard at the default
+10% tolerance (test 1 below), but far enough from exact that a tight tolerance makes
+the request genuinely unreachable (tests 2-3)."""
+
+
+def _achieved(counts: dict[str, int], assignment: dict[str, str]) -> dict[str, int]:
+    totals: dict[str, int] = {name: 0 for name in RATIOS}
+    for key, name in assignment.items():
+        totals[name] += counts[key]
+    return totals
 
 
 _SYNTH_IMAGE = Path("/data/big/placeholder.jpg")
@@ -132,6 +150,21 @@ def test_group_key_rejects_unknown_strategy() -> None:
         group_key(sample, "by-vibes")
 
 
+def test_group_key_group_uses_split_group() -> None:
+    """`by="group"` reads the registry-assigned unit, not source/partition — it is the
+    only strategy that can make a cross-source duplicate converge on one key."""
+    sample = Sample(source_id="coralvqa", key="img1", meta={"split_group": "seaview/12345"})
+    assert group_key(sample, "group") == "seaview/12345"
+
+
+def test_group_key_group_raises_when_missing() -> None:
+    """A sample with no `split_group` in `meta` must fail loudly — silently falling back
+    to another key would defeat the whole point of a registry-assigned group."""
+    sample = Sample(source_id="coralvqa", key="img1")
+    with pytest.raises(ValueError, match="split_group"):
+        group_key(sample, "group")
+
+
 def test_assign_splits_never_divides_a_group() -> None:
     counts = {f"site{i}": 100 * (i + 1) for i in range(20)}
     assignment = assign_splits(counts, RATIOS)
@@ -157,3 +190,44 @@ def test_seed_only_matters_when_group_sizes_tie() -> None:
 
     tied = {f"site{i}": 100 for i in range(20)}
     assert assign_splits(tied, RATIOS, seed=7) != assign_splits(tied, RATIOS, seed=8)
+
+
+def test_assign_splits_reef_support_shape() -> None:
+    """Regression guard: the real reef_support corpus must not reproduce the old
+    23.5/76.4/0.1 imbalance SCALE.md warned about (stale against today's allocator —
+    confirmed it now lands within 10% of every requested ratio).
+    """
+    total = sum(REEF_SUPPORT_GROUP_SIZES.values())
+    achieved = _achieved(REEF_SUPPORT_GROUP_SIZES, assign_splits(REEF_SUPPORT_GROUP_SIZES, RATIOS))
+
+    for name, want in RATIOS.items():
+        got = achieved[name] / total
+        assert abs(got - want) < 0.10, f"{name}: wanted {want:.0%}, got {got:.1%}"
+
+    check_ratios(achieved, RATIOS, total, tolerance=0.10, by="site", largest_group=658)
+
+
+def test_assign_splits_degenerate_group_raises() -> None:
+    """No packing of these four groups reaches 70/15/15 within a tight tolerance —
+    `check_ratios` must raise, naming the offending splits and the largest group.
+    """
+    total = sum(REEF_SUPPORT_GROUP_SIZES.values())
+    achieved = _achieved(REEF_SUPPORT_GROUP_SIZES, assign_splits(REEF_SUPPORT_GROUP_SIZES, RATIOS))
+
+    with pytest.raises(ValueError, match="train") as excinfo:
+        check_ratios(achieved, RATIOS, total, tolerance=0.02, by="site", largest_group=658)
+    assert "658" in str(excinfo.value)
+
+
+def test_assign_splits_degenerate_group_message_states_achievable_bound() -> None:
+    """The raised message must state the split this grouping can actually achieve, not
+    just the request — so an operator doesn't have to relax `tolerance` and re-run to
+    see the number.
+    """
+    total = sum(REEF_SUPPORT_GROUP_SIZES.values())
+    achieved = _achieved(REEF_SUPPORT_GROUP_SIZES, assign_splits(REEF_SUPPORT_GROUP_SIZES, RATIOS))
+
+    with pytest.raises(ValueError, match="achievable") as excinfo:
+        check_ratios(achieved, RATIOS, total, tolerance=0.02, by="site", largest_group=658)
+    message = str(excinfo.value)
+    assert "72.3%" in message  # train — the achieved figure, not just what was wanted

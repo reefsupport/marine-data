@@ -1,0 +1,21 @@
+id: eilat-rsmas
+access_class: internal-only
+adapter: http-index
+params:
+  index_url: https://sci2s.ugr.es/CNN-coral-image-classification
+  version: eilat-rsmas-idx1
+  depth: 2
+license: research-use
+attribution: Shihavuddin et al.; Gomez-Rios et al.
+citation: Shihavuddin et al. 2013; Gomez-Rios et al. 2019
+homepage: https://sci2s.ugr.es/CNN-coral-image-classification
+notes: needs_adapter:site-scrape — page https://sci2s.ugr.es/CNN-coral-image-classification
+  only linked StructureRSMAS.zip on this pass (host needed -k/-L, plain http 301s
+  to https); the EILAT+RSMAS image archive itself is referenced from a same-page 'dataset'
+  anchor that needs a follow-up fetch to resolve to an exact file URL
+disk_floor_gib: 34.0
+
+measured:
+  label_type: image-level coral class (14 classes; class code in filename)
+  method: u15-label-kind-triage (registry-patch.yaml)
+  date: '2026-10-05'

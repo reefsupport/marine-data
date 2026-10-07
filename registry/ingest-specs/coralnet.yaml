@@ -1,0 +1,8 @@
+id: coralnet
+access_class: internal-only
+adapter: http
+params: {}
+license: NOASSERTION
+attribution: CoralNet API
+citation: '-'
+homepage: https://coralnet.ucsd.edu/

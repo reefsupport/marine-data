@@ -1,0 +1,31 @@
+# euvp: Islam et al. 2020, RA-L (FUnIE-GAN) — original IRVLab distribution.
+# IRVLab origin returns 403 to scripted requests (bot-blocked); the full set (incl.
+# test_samples) is distributed via a Google Drive folder requiring a
+# browser-confirmed fetch, not a direct HTTP GET — never automated here.
+# MIRRORS2 2026-10-02: verdict=partial. HF mirror Ken1053/EUVP (gated=false, no
+# login) confirmed via tree listing to carry only the edit-pairs train parquet
+# (data/train-00000-of-00001.parquet, 5,550 rows, 189,288,867 bytes) — no
+# test_samples (515 images) eval split. This is a partial mirror, but it adds
+# data we currently have none of (adapter was needs:gdrive, 0 rows), so it
+# replaces the blocked IRVLab/Drive source as the primary fetch path.
+# mirror_of: Ken1053/EUVP (HF, revision e3c6d08a8b07ed806e61977ffbcefd9d5ba60933)
+id: euvp
+access_class: internal-only
+adapter: hf
+license: research (non-commercial, per upstream)
+attribution: Islam et al. — EUVP / FUnIE-GAN (IRVLab original)
+citation: Islam et al. 2020, RA-L (FUnIE-GAN)
+homepage: https://irvlab.cs.umn.edu/resources/euvp-dataset
+notes: 'mirror_of: Ken1053/EUVP (HF, no-login, verdict=partial — train parquet
+  only, 5550 rows; test_samples eval split (515 images) still absent; official
+  IRVLab/Google Drive source remains blocked (403 / browser-confirmed fetch)).'
+params:
+  repo: Ken1053/EUVP
+  revision: e3c6d08a8b07ed806e61977ffbcefd9d5ba60933
+  image_column: input_image
+disk_floor_gib: 36.0
+
+measured:
+  label_type: paired underwater image enhancement (input and enhanced reference)
+  method: u15-label-kind-triage (registry-patch.yaml)
+  date: '2026-10-05'

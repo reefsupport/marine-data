@@ -71,8 +71,9 @@ def evaluate(source: Source, profile: Profile, *, legal_opinion_ref: str | None 
         )
 
     # 2. Disputed verification blocks anything that ships.
-    ships = any(t in profile.allow_tiers for t in (Tier.PERMISSIVE, Tier.COPYLEFT)) and (
-        Tier.NONCOMMERCIAL not in profile.allow_tiers
+    ships = profile.public_release or (
+        any(t in profile.allow_tiers for t in (Tier.PERMISSIVE, Tier.COPYLEFT))
+        and Tier.NONCOMMERCIAL not in profile.allow_tiers
     )
     if source.verification.disputed and ships:
         note = " ".join((source.verification.dispute_note or "").split())
@@ -94,13 +95,27 @@ def evaluate(source: Source, profile: Profile, *, legal_opinion_ref: str | None 
         )
 
     # 3. Tier must be allowed by the profile.
-    if lic.tier not in profile.allow_tiers:
+    # A per-row-licence source's tier is only a bound; on a shipping profile (one that names
+    # its access classes) each row is classified instead (WP-R2, flavours.sample_ships).
+    per_row_shipping = bool(source.licence_per_row and profile.allow_access_classes)
+    if lic.tier not in profile.allow_tiers and not per_row_shipping:
         allowed = ", ".join(t.value for t in profile.allow_tiers)
         return Decision(
             source.id,
             False,
             f"{source.id}: tier {lic.tier.value} not permitted by profile "
             f"'{profile.id}' (allows: {allowed}).",
+        )
+
+    # 3b. Access class (WP-L1b): a shipping profile admits only the classes its flavour ships.
+    allowed_classes = profile.allow_access_classes
+    class_ok = per_row_shipping or source.access_class.value in allowed_classes
+    if allowed_classes and not class_ok:
+        return Decision(
+            source.id,
+            False,
+            f"{source.id}: access_class {source.access_class.value} not permitted by profile "
+            f"'{profile.id}' (allows: {', '.join(profile.allow_access_classes)}).",
         )
 
     # 4. Flags denied by the profile.

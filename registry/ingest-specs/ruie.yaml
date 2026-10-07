@@ -1,0 +1,14 @@
+# ruie: NOT loadable by marinedata.cli today (needs:baidu). Documentation-only spec for WP-6d.
+id: ruie
+access_class: internal-only
+adapter: needs:baidu
+license: research (non-commercial, per upstream)
+attribution: Liu et al. — RUIE benchmark
+citation: Liu et al. 2020, TCSVT
+homepage: https://github.com/dlut-dimt/Realworld-Underwater-Image-Enhancement-RUIE-Benchmark
+candidate_endpoints:
+- https://github.com/dlut-dimt/Realworld-Underwater-Image-Enhancement-RUIE-Benchmark
+  (README points to a Baidu netdisk share, no URL captured by the catalog sweep)
+why_not_supported: ~4k images; no anonymous HTTP/GitHub-hosted payload found, data
+  is behind a Baidu netdisk share that needs a Baidu-netdisk adapter (or a manual
+  browser fetch).

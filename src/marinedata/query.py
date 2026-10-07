@@ -36,7 +36,7 @@ class QueryResult:
 
     @property
     def total_items(self) -> int:
-        return sum(s.items or 0 for s in self.sources)
+        return sum(s.primary_count or 0 for s in self.sources)
 
     def ids(self) -> tuple[str, ...]:
         return tuple(s.id for s in self.sources)
@@ -47,7 +47,7 @@ class QueryResult:
             f"excluded={len(self.excluded)}  items≈{self.total_items:,}",
         ]
         for s in self.sources:
-            lines.append(f"  ✓ {s.id:<28} {s.licence.tier.value:<18} {s.items or '—':>10}")
+            lines.append(f"  ✓ {s.id:<28} {s.licence.tier.value:<18} {s.primary_count or '—':>10}")
         for d in self.excluded:
             lines.append(f"  ✗ {d.source_id:<28} {d.reason}")
         return "\n".join(lines)
@@ -85,7 +85,7 @@ def _matches(
         # Global-coverage sources satisfy any regional filter.
         if Region.GLOBAL not in covered and not (set(regions) & covered):
             return False
-    return min_items is None or (source.items or 0) >= min_items
+    return min_items is None or (source.primary_count or 0) >= min_items
 
 
 def find(

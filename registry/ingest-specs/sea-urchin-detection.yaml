@@ -1,0 +1,8 @@
+id: sea-urchin-detection
+access_class: open
+adapter: http
+params: {}
+license: CC-BY-4.0
+attribution: Sea Urchin Detection (Roboflow Universe)
+citation: '-'
+homepage: https://universe.roboflow.com/thesis-ztpwb/sea-urchin-10r8i

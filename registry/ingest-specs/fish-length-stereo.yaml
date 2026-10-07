@@ -1,0 +1,12 @@
+# fish-length-stereo: Zenodo 19408363 (dataset also splits into parts 4, 6)
+id: fish-length-stereo
+access_class: open
+adapter: zenodo
+license: CC-BY-4.0 (Zenodo API)
+attribution: Zenodo record 19408363 authors
+citation: Zenodo 19408363 (dataset also splits into parts 4, 6)
+homepage: https://zenodo.org/records/19408363
+params:
+  zenodo_record: 19408363
+
+disk_floor_gib: 36.0

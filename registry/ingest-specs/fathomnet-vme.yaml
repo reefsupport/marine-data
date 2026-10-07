@@ -1,0 +1,24 @@
+# FathomNet 2024 Vulnerable Marine Ecosystem (VME) indicator-taxa benchmark (HF).
+id: fathomnet-vme
+access_class: restricted-nd
+licence_per_row: true
+adapter: hf
+license: other (HF card)
+attribution: FathomNet / MBARI
+citation: FathomNet/2024-vme-benchmark (HF)
+homepage: https://huggingface.co/datasets/FathomNet/2024-vme-benchmark
+params:
+  repo: FathomNet/2024-vme-benchmark
+  # BENCH-fix3 B: this repo ships only coco_{train,val,test}.json — standard COCO
+  # detection format (images/annotations/categories), no embedded/staged image bytes.
+  # Each images[] entry names its own MBARI database image via source_url and its own
+  # split; caption_image_field points the generic caption/VQA JSON decoder at it.
+  caption_image_field: source_url
+measured:
+  bytes: 64000000
+  method: HF usedStorage (<=0.06 GB)
+  date: '2026-09-25'
+  per_item_license: other
+  label_type: bbox
+  n_concepts_note: VME indicator taxa (corals, sponges) — depth >200 m by definition
+    of habitat

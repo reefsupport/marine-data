@@ -5,48 +5,90 @@
 
 sources:
   - id: reef-support-benthic-own
+    domain: coral
+    access_class: open
     name: Reef Support benthic instance masks — own imagery (Colombia)
-    version: "2026-08"
+    # habitat inferred (WP-2b) from this source's own description/notes, not independently verified
+    habitat: [coral_reef]
+    version: "2026-10-06"
     description: >
       Expert Labelbox instance masks over four Colombian sites where BOTH the imagery and
       the annotations are ours: Tayrona (658), Seaflower Bolivar (246), Seaflower Courtown
       (241), Tetes Providencia (105).
-    licence: PROPRIETARY-OWN
+    licence:
+      id: CC-BY-4.0
+      name: Creative Commons Attribution 4.0
+      tier: T1_PERMISSIVE
+      url: https://creativecommons.org/licenses/by/4.0/
+      flags: { attribution_required: true }
+      notes: >
+        D-B (a maintainer 2026-09-25, by delegation): Reef Support's own imagery relicensed
+        from PROPRIETARY-OWN to CC-BY-4.0 for the open dataset. set 2026-09-25 by
+        delegation; confirmed 2026-10-02 (a maintainer).
     legal_basis: own
+    redistribution: ok
     provenance: own
     verification:
       verified_on: 2026-08-17
-      verified_by: "Live rclone scan of s3://rs-storage-open/benthic_datasets/mask_labels/reef_support; per-site image counts parsed from the object manifest"
+      verified_by: "Live rclone scan of s3://rs-storage-open/benthic_datasets/mask_labels/reef_support; per-site image counts parsed from the object manifest (legacy: history note)"
       method: licence-file
     access:
       method: s3
-      uri: s3://rs-storage-open/benthic_datasets/mask_labels/reef_support
+      uri: s3://rs-storage-open/sources/reef-support-benthic-own/2026-10-06
+      notes: "rs-storage-open is a public bucket — anonymously fetchable, no credentials needed"
       params:
         bucket: rs-storage-open
         endpoint: hel1.your-objectstorage.com
         region: hel1
-        prefix: benthic_datasets/mask_labels/reef_support/SEAFLOWER_BOLIVAR/
-        credentials_env: S3
+        prefix: sources/reef-support-benthic-own/2026-10-06/
+    checksums:
+      version: "2026-10-06"
+      root_digest: 70f0b4516510f565320910477204faadf44bce68251b66d070821db1864e7a74
+      files: 18276
+      size_bytes: 4846131071
     modalities: [image]
     capabilities:
       - benthic-segmentation
       - coral-instance-segmentation
       - general-pretraining
     loader:
-      layout: labelbox-ndjson
+      layout: staged-tree
       schema_id: reef-support-labelbox
       crosswalk_id: reef-support-labelbox
-      verified_on: 2026-08-17
-      verified_note: >
-        Verified against the live Hetzner bucket. Site-partitioned - each site directory
-        holds images/ + masks/ + masks_stitched/ + one export-result.ndjson.
       params:
-        annotations: export-result.ndjson
-        images_dir: images
-        geometry_labels: "SCALE"
-    items: 1250
-    items_note: >
-      The only imagery whose pixels we own. THE moat, and it is small.
+        # WS-D S31: the dense mask under labels/masks/ is 0=unlabelled/1=Hard Coral/
+        # 2=Soft Coral (verified against real pixels — every sampled mask is {0},
+        # {0,1} or {0,1,2}, never a third value). Nothing resolved this before —
+        # StagedTreeLoader only ever set mask_is_dense, never what the pixels mean —
+        # so labels/taxon here are keyed on the sparse point annotations only; this
+        # declares the mask's own pixel semantics for a consumer that wants them,
+        # using the same native label strings ("Hard Coral"/"Soft Coral") the
+        # crosswalk above already resolves from the point annotations.
+        mask_values: "0=unlabelled,1=Hard Coral,2=Soft Coral"
+      verified_on: 2026-09-24
+      verified_note: >
+        PINNED 2026-08-17 (S8e), RE-PINNED 2026-09-24 (WS-D S22): `access.uri`/`version`
+        now point at the re-staged tree `sources/reef-support-benthic-own/2026-09-24/`
+        (2,502 objects, 4,092,140,695 B), pinned by `checksums.root_digest` (2,501
+        files, 4,091,820,490 B). Images/masks are byte-identical to the prior
+        `2026-08/` pin (moved by server-side `copy_object`, no pixel re-upload,
+        reused digests); only `metadata.parquet`'s `split_group` column and
+        `CHECKSUMS.sha256` changed, for the station/bay `split_group` rule below.
+        The old `2026-08/` prefix (2,502 objects, 4,092,140,433 B) is left in the
+        open bucket pending a separate delete step. `access.params.credentials_env`
+        dropped: `rs-storage-open` allows anonymous `GetObject` on a known key.
+        Layout is staged-tree — this tree was produced by this repo's own staging
+        writers (`images/<site>/`, `metadata.parquet`, `labels/masks/`,
+        `CHECKSUMS.sha256`), the shape `StagedTreeLoader` reads. `loader.params.
+        mask_values` added (WS-D S31): declares the dense mask's own pixel→native-
+        label meaning (0=unlabelled/1=Hard Coral/2=Soft Coral), which nothing read
+        before — `StagedTreeLoader` only ever set `mask_is_dense`.
+        VERIFIED 2026-09-24: `.venv/bin/marinedata verify reef-support-benthic-own`
+        passes via the manifest-driven fetch path (`fetchers_remote._fetch_s3_manifest`),
+        which never lists the bucket.
+    n_images: 1250
+    n_annotations: 14517
+    n_files: 18276
     annotations:
       - kind: instance-mask
         schema_id: reef-support-labelbox
@@ -76,48 +118,106 @@ sources:
       caveats:
         - "CRITICAL SUPERVISION HOLE: this corpus labels BIOTA only. It contains no Caribbean substrate ground truth of any kind - no sand, rubble, pavement, turf or CCA. Fixing the ontology makes soft coral EXPRESSIBLE but supplies no substrate examples, so it cannot on its own repair the ~32% rubble / ~50% unknown-hard-substrate collapse. That needs funded substrate annotation."
         - "Soft coral is ~24% of all our Caribbean/Atlantic annotations and absent from every major public reef schema."
+    split_group:
+      pattern: '(CB\d+|E\d+|BC|Gy|PB|Gr|P9150|G)'
+      match_field: stem
+      template: "rs-colombia/{partition}/{group}"
+    notes: >
+      OWNERSHIP CONFIRMED 2026-09-23 (WS-D decision): this entry owns all four
+      Colombian `mask_labels/reef_support/` directories (Tayrona, Seaflower Bolivar,
+      Seaflower Courtown, Tetes Providencia) outright — both pixels and annotations
+      are ours. `reef-support-seaview-labels` no longer claims any of these four; it
+      is scoped to the SEAVIEW_* directories only.
+      RE-STAGED 2026-09-24 (WS-D S22, R3 Q9 + 7l): `split_group` moved from site-level
+      (`rs-colombia/<site>`, 4 groups) to station/bay (`rs-colombia/<site>/<station>`,
+      31 groups: Bolivar 7 — CB8/CB9/CB10/CB11/CB12/CB14 + one `P9150*` pair grouped
+      together (no station code in those two stems) — Courtown 19 (E0..E21, 19 of 22
+      present), Tayrona 4 (bays BC/Gy/PB/Gr), Tetes 1
+      (one GoPro run, no station code in the stem). Site-level held out one Tetes
+      GoPro run as `test` (52% of all SC pixels, 4% of HC); station/bay flattens the
+      HC share across splits (22.9/22.1/21.5%) at the cost of Bolivar/Courtown
+      stations straddling all 3 splits. `reef-support-seaview-labels`'s bleaching set
+      and `rs_labelled` (via `images_from`) share this rule and pick it up unstaged. (legacy: history note)
+
+      RE-POINTED 2026-10-06 (bucket reorganisation, RB-1/RB-3): canonical location is
+      `sources/reef-support-benthic-own/2026-10-06/` (images + semantic masks of the 2026-09-24 tree,
+      plus instance masks, stitched masks and Labelbox exports of the four Colombian sites under
+      `labels/instance_masks/`, `labels/exports/`). `2026-09-24` and `2026-08` are SUPERSEDED (kept
+      until RB-2 deletes byte-identical copies). `checksums` re-pinned 2026-10-06 from the tree's
+      CHECKSUMS.sha256 (RB-1 FINALIZED: 18,276 files = 18,273 objects + metadata.parquet, INGEST.json, LICENSE;
+      1,250 image rows read back by the StagedTreeLoader).
+      `n_annotations` = 14,517 instance masks (RB-A lineage count, 2026-10-06).
+      The 658 Tayrona (UNAL) images are byte-identical to `reef-support-bleaching`'s 658 images.
     tags: [moat, caribbean, octocoral, biota-only]
 
   - id: reef-support-seaview-labels
+    domain: coral
+    access_class: open
     name: Reef Support annotations on XL Catlin Seaview imagery
-    version: "2026-08"
+    # habitat inferred (WP-2b) from this source's own description/notes, not independently verified
+    habitat: [coral_reef]
+    version: "2026-10-06"
     description: >
-      Our expert instance masks drawn on PUBLIC XL Catlin Seaview photographs -
-      SEAVIEW_PAC_AUS (808), SEAVIEW_PAC_USA (728), SEAVIEW_ATL (705), SEAVIEW_IDN_PHL
-      (466). The annotation labour and the resulting masks are ours; the underlying pixels
-      are not.
-    licence: NO-LICENCE-STATED
-    legal_basis: unknown
-    provenance: partner
+      Our expert instance masks drawn on reef photographs, across the four SEAVIEW_*
+      site directories: SEAVIEW_ATL, SEAVIEW_IDN_PHL, SEAVIEW_PAC_AUS, SEAVIEW_PAC_USA.
+      These are PUBLIC XL Catlin Seaview photographs (CC-BY-3.0, González-Rivero et al.,
+      UQ eSpace UQ_734799). The annotation labour and the resulting masks are ours
+      (CC-BY-4.0, Reef Support).
+    licence: CC-BY-3.0
+    legal_basis: licence  # images: CC-BY-3.0; masks/labels: own (CC-BY-4.0). The enum has no combined value.
+    redistribution: ok
+    provenance: own
+    citation: >
+      González-Rivero et al. (2019). Seaview Survey Photo-quadrat and Image
+      Classification Dataset. University of Queensland. doi:10.14264/UQL.2019.930
+      Masks and labels: Reef Support annotations (CC-BY-4.0).
     verification:
-      verified_on: 2026-08-17
-      verified_by: "Live bucket manifest: 2,707 images across four SEAVIEW_* site directories. No XL Catlin Seaview licence or permission document located in the repo or bucket."
-      method: absent
+      verified_on: 2026-10-06
+      verified_by: "APPROVED 2026-10-06 (a maintainer): images CC-BY-3.0 - the researchdata.edu.au record of UQ eSpace UQ_734799 states Creative Commons Attribution 3.0 (the same record `seaview-survey-imagery` cites; R1 external research 2026-09-24, high confidence); masks and labels CC-BY-4.0, Reef Support (own annotations). Supersedes the 2026-09-24 entry: no Seaview pixel terms confirmed, method absent. Corrected 2026-10-07: the UQ eSpace record states CC BY 3.0 International, not the Australia port."
+      method: licence-file
     access:
       method: s3
-      uri: s3://rs-storage-open/benthic_datasets/mask_labels/reef_support
+      uri: s3://rs-storage-open/sources/reef-support-seaview-labels/2026-10-06
+      notes: "rs-storage-open is a public bucket — anonymously fetchable, no credentials needed"
       params:
         bucket: rs-storage-open
         endpoint: hel1.your-objectstorage.com
         region: hel1
-        prefix: benthic_datasets/mask_labels/reef_support/SEAVIEW_ATL/
-        credentials_env: S3
+        prefix: sources/reef-support-seaview-labels/2026-10-06/
+    checksums:
+      version: "2026-10-06"
+      root_digest: 7c97e309ae21b913d920606e461e9a663c97c9b660c45accd8c13a3ab4d2d011
+      files: 56025
+      size_bytes: 3326403454
     modalities: [image]
     capabilities:
       - benthic-segmentation
       - coral-instance-segmentation
       - general-pretraining
     loader:
-      layout: labelbox-ndjson
+      layout: staged-tree
       schema_id: reef-support-labelbox
       crosswalk_id: reef-support-labelbox
       params:
-        annotations: export-result.ndjson
-        images_dir: images
-        geometry_labels: "SCALE"
-      verified_on: 2026-08-29
-      verified_note: "Live S3 fetch confirms images/ and export-result.ndjson at the declared prefix, matching the layout."
-    items: 2707
+        masks: "labels/masks/<partition>/<stem>.png (stitched fill+outline LUT, one per image; decode with the labelbox-rgb colour LUT)"
+        instance_masks: "labels/instance_masks/<partition>/masks/<stem>_mask_<k>.png"
+        exports: "labels/exports/<partition>/export-result*.ndjson; export-result-old.ndjson is the complete one"
+      verified_note: >
+        RE-POINTED 2026-10-06 (RB-1/RB-3) from the pre-reorg labelbox-rgb mask_labels tree to the
+        staged tree. RB-1 read the staged `metadata.parquet` back through the StagedTreeLoader: 2,707
+        rows = the expected image count (checked against CHECKSUMS.sha256, 2026-10-06).
+    n_images: 2707
+    n_annotations: 50603
+    n_files: 56025
+    counts_note: >
+      2026-10-06: 2,707 Seaview images (re-encoded; not byte-identical to point_labels/SEAVIEW or coralvqa),
+      50,603 instance masks (labels/instance_masks). Replaces the STALE 73,045 total of all eight legacy
+      directories (the four Colombian ones belong to `reef-support-benthic-own`). n_files 56,025 =
+      2,707 images + 2,707 stitched masks + 50,603 instance masks + 5 exports + metadata.parquet, INGEST.json, LICENSE.
+    split_group:
+      pattern: '^(.{5})'
+      match_field: stem
+      template: "seaview/{group}"
     annotations:
       - kind: instance-mask
         schema_id: reef-support-labelbox
@@ -126,7 +226,7 @@ sources:
         depth: L2
         notes: "Hard Coral / Soft Coral. SEAVIEW_ATL is 46.9% Soft Coral - our strongest octocoral evidence."
     coverage:
-      regions: [western-atlantic, caribbean, coral-triangle, central-pacific, gbr-australia]
+      regions: [western-atlantic, coral-triangle, central-pacific, gbr-australia]
       sites: 4
     notes: >
       SPLIT OUT 2026-08-17 after review. Previously these 2,707 images sat inside a single
@@ -134,119 +234,260 @@ sources:
       clean T0_OWN certificate over imagery we do not own - precisely the false-provenance
       failure this registry exists to prevent, in our own data.
 
-      Rights are now split at the partition level. Our MASKS are ours; the PIXELS are XL
-      Catlin Seaview's and their terms are unconfirmed, so legal_basis is `unknown` and the
-      gate blocks this everywhere until resolved. Resolve by confirming Seaview's terms in
-      writing; if permissive, retier and record the primary source.
-    tags: [needs-permission, annotation-ip, octocoral]
+      Rights (RESOLVED 2026-10-06, a maintainer approved): the PIXELS are XL Catlin Seaview's, licensed
+      CC-BY-3.0 (González-Rivero et al., UQ eSpace UQ_734799, attribution required); our MASKS and
+      labels are CC-BY-4.0, Reef Support. `licence` carries the pixel licence (the binding one),
+      `legal_basis` is `licence` for the pixels and `own` for the masks (the enum has no combined
+      value), `access_class: open`. History: until 2026-10-06 the pixel terms were unconfirmed
+      (`legal_basis: unknown`, `internal-only`), so the gate blocked this source everywhere.
+
+      Re-checked 2026-09-18 (s3://rs-storage-open/benthic_datasets/mask_labels/reef_support): (legacy: history note)
+      no separate Seaview-imagery registry record exists to confirm terms from; still
+      unresolved.
+
+      Re-checked 2026-09-19 (boto3 listing): live prefix has grown from four SEAVIEW_* dirs
+      / 2,707 images (recorded 2026-08-17) to eight dirs / 73,045 images - added
+      SEAFLOWER_BOLIVAR, SEAFLOWER_COURTOWN, TETES_PROVIDENCIA, UNAL_BLEACHING_TAYRONA.
+
+      RESOLVED 2026-09-23 (WS-D decision): the four added directories are Reef Support's
+      OWN imagery, not XL Catlin Seaview's — ownership moved to `reef-support-benthic-own`,
+      which already covered them (Tayrona, Seaflower Bolivar, Seaflower Courtown, Tetes
+      Providencia) and keeps its existing PROPRIETARY-OWN/ok licence fields. This entry now
+      covers only the four SEAVIEW_* directories (XL Catlin Seaview pixels, terms resolved
+      2026-10-06 above); the "pixel origin not confirmed" language previously applied to the
+      Colombian four is removed as no longer applicable to them.
+
+      RE-POINTED 2026-10-06 (RB-1/RB-3): canonical location is
+      `sources/reef-support-seaview-labels/2026-10-06/` (`images/<partition>/`, `labels/masks/`,
+      `labels/instance_masks/`, `labels/exports/`, partition = SEAVIEW_ATL / SEAVIEW_IDN_PHL /
+      SEAVIEW_PAC_AUS / SEAVIEW_PAC_USA). Version `2026-08` (the legacy reef_support SEAVIEW_* dirs) is
+      superseded. `checksums` pinned 2026-10-06 from the tree's CHECKSUMS.sha256. The former
+      `rs-labelled-masks` set is a duplicate annotation set over these images and is retired (D7).
+    tags: [annotation-ip, octocoral]
 
   - id: reef-support-bleaching
+    domain: coral
+    access_class: open
     name: Reef Support bleaching masks (Tayrona)
-    version: "2026-08"
+    # habitat inferred (WP-2b) from this source's own description/notes, not independently verified
+    habitat: [coral_reef]
+    version: "2026-09-24"
     description: >
-      Paired bleached / non-bleached masks over the same 658 Tayrona images that carry
-      benthic instance masks. The same pixels labelled on two axes — rare, and directly
-      usable for a multi-task condition head.
-    licence: PROPRIETARY-OWN
+      One condition raster per image (0 unlabelled / 1 bleached / 2 non-bleached) over
+      the same 658 Tayrona images that carry benthic instance masks. The same pixels
+      labelled on two axes — rare, and directly usable for a multi-task condition head.
+    licence:
+      id: CC-BY-4.0
+      name: Creative Commons Attribution 4.0
+      tier: T1_PERMISSIVE
+      url: https://creativecommons.org/licenses/by/4.0/
+      flags: { attribution_required: true }
+      notes: >
+        D-B (a maintainer 2026-09-25, by delegation): Reef Support's own imagery relicensed
+        from PROPRIETARY-OWN to CC-BY-4.0 for the open dataset. set 2026-09-25 by
+        delegation; confirmed 2026-10-02 (a maintainer).
     legal_basis: own
+    redistribution: ok
     provenance: own
     verification:
       verified_on: 2026-08-17
-      verified_by: "Live rclone scan of s3://rs-storage-open/coral_bleaching/reef_support/UNAL_BLEACHING_TAYRONA"
+      verified_by: "Live rclone scan of s3://rs-storage-open/coral_bleaching/reef_support/UNAL_BLEACHING_TAYRONA (legacy: history note)"
       method: licence-file
     access:
       method: s3
-      uri: s3://rs-storage-open/coral_bleaching/reef_support/UNAL_BLEACHING_TAYRONA
-      size_bytes: 1996000000
+      uri: s3://rs-storage-open/sources/reef-support-bleaching/2026-09-24
+      notes: "rs-storage-open is a public bucket — anonymously fetchable, no credentials needed"
+      size_bytes: 1982677210
       params:
         bucket: rs-storage-open
         endpoint: hel1.your-objectstorage.com
         region: hel1
-        prefix: coral_bleaching/reef_support/UNAL_BLEACHING_TAYRONA/
-        credentials_env: S3
+        prefix: sources/reef-support-bleaching/2026-09-24/
+    checksums:
+      version: "2026-09-24"
+      root_digest: 2d22bbe938f4a69d9cd2ca13ef123b88195dc7722cad39a4a940b147717ae04a
+      files: 1317
+      size_bytes: 1982497341
     modalities: [image]
     capabilities: [bleaching-assessment, benthic-segmentation]
     loader:
-      layout: dual-condition-masks
-      verified_on: 2026-08-28
-      verified_note: >
-        RESOLVED. The stems DO align (e.g. images/C10_..._corr.jpg pairs with
-        masks_bleached/C10..._corr_bleached.png and masks_non_bleached/
-        C10..._corr_non_bleached.png) — the previous "no stems aligned" failure was
-        the single-masks_dir 'image-mask-pairs' layout looking for a plain "masks/"
-        directory that has never existed, not a real misalignment. Pixel check
-        against a live sample: masks_bleached and masks_non_bleached never mark the
-        same pixel (verified on the fetched sample), so the two combine into one
-        condition raster (0=unlabelled, 1=bleached, 2=non-bleached) with no
-        information lost or invented. See DualConditionMaskLoader.
-      params:
-        positive_dir: masks_bleached
-        negative_dir: masks_non_bleached
-        positive_label: bleached
-        negative_label: non_bleached
+      layout: staged-tree
       schema_id: dataset-native
       crosswalk_id: reef-support-bleaching-condition
-    items: 658
+      params:
+        # WS-D S31: mirrors reef-support-benthic-own's `mask_values` param below —
+        # StagedTreeLoader had no path resolving a dense mask's own pixel values
+        # (only DualConditionMaskLoader, which this tree's masks were combined by at
+        # stage time, ever emitted this). Same native label strings the crosswalk's
+        # source_label edges above already key on ("bleached"/"non_bleached").
+        mask_values: "0=unlabelled,1=bleached,2=non_bleached"
+      verified_on: 2026-09-24
+      verified_note: >
+        RESTAGED (WS-D S30): the raw two-mask-directory layout (images/,
+        masks_bleached/, masks_non_bleached/) is merged once, offline, into a single
+        condition raster per image (0=unlabelled, 1=bleached, 2=non-bleached — the
+        same combine DualConditionMaskLoader performs on read, done here at stage
+        time instead) and written as this repo's own staged-tree shape
+        (`images/UNAL_BLEACHING_TAYRONA/`, `metadata.parquet`,
+        `labels/masks/UNAL_BLEACHING_TAYRONA/`, `CHECKSUMS.sha256`), which
+        `StagedTreeLoader` reads. All 658 images paired cleanly with
+        both masks (0 orphans) and 0 pairs overlapped (0 raises). Cross-checked
+        against `reef-support-benthic-own`'s Tayrona partition: all 658 images match
+        by sha256 digest (byte-identical, as expected — see Q11) and every matched
+        pair's `split_group` agrees between the two sources (0 mismatches), because
+        this source's `split_group` rule below is the same station/bay rule as
+        `reef-support-benthic-own`'s. `access.params.credentials_env` dropped:
+        `rs-storage-open` allows anonymous `GetObject` on a known key. The prior raw
+        `coral_bleaching/reef_support/UNAL_BLEACHING_TAYRONA/` prefix is left in the (legacy: history note)
+        open bucket pending a separate delete step.
+        UPLOADED 2026-09-24 (WS-D S31): 1,318 objects, 1,982,677,210 B live under
+        `sources/reef-support-bleaching/2026-09-24/` — 658 images moved by
+        server-side `copy_object` from `reef-support-benthic-own`'s already-uploaded
+        Tayrona partition (matched by sha256 digest across both sources' CHECKSUMS
+        files, not by relpath), 660 objects (658 masks + `metadata.parquet` +
+        `CHECKSUMS.sha256`) uploaded fresh. Flat-list count+bytes, authenticated
+        per-object HEAD, and an anonymous GET of `CHECKSUMS.sha256` (sha256
+        `2d22bbe9…7ae04a`, matches the local staged tree) all verified; `.venv/bin/
+        marinedata verify reef-support-bleaching --limit 5` passes.
+        `loader.params.mask_values` added: declares the combined condition raster's
+        pixel→native-label meaning, the same shape `DualConditionMaskLoader` builds
+        from `positive_label`/`negative_label` at read time — nothing resolved this
+        for a staged dense mask before.
+    n_images: 658
     annotations:
       - kind: dense-mask
-        count: 1316
+        count: 658
         supervises: [condition]
-        notes: "Two mask sets per image: masks_bleached and masks_non_bleached."
+        notes: "One combined condition raster per image (0/1/2), merged from the source's masks_bleached/masks_non_bleached pair at stage time."
     coverage:
       regions: [caribbean]
       ecoregions: ["Southern Caribbean"]
       years: [2024, 2024]
       sites: 1
+    split_group:
+      # Same station/bay rule as reef-support-benthic-own (WS-D S30, Q11): these
+      # 658 images are byte-identical to benthic-own's Tayrona partition, so an
+      # image shared between the two sources must land in the same split_group.
+      pattern: '(CB\d+|E\d+|BC|Gy|PB|Gr|P9150|G)'
+      match_field: stem
+      template: "rs-colombia/{partition}/{group}"
+    notes: >
+      2026-10-06 (RB-A): all 658 images are byte-identical to the Tayrona (UNAL) images of
+      `reef-support-benthic-own` (its masks are not byte-identical). Unchanged otherwise; the entry is
+      kept until a maintainer confirms the fold into benthic-own.
     tags: [multi-task, caribbean]
 
   - id: reefolution
+    domain: coral
+    access_class: internal-only
     name: Reefolution partner imagery (Kenya)
-    version: "unversioned"
+    # habitat inferred (WP-2b) from this source's own description/notes, not independently verified
+    habitat: [coral_reef]
+    version: "2026-09-23-2c84cb0c9cda"
     description: Partner point-labelled reef imagery from Reefolution, Kenya.
     licence: NO-LICENCE-STATED
     legal_basis: unknown
+    redistribution: unknown
     provenance: partner
     verification:
-      verified_on: 2026-08-17
+      verified_on: 2026-09-24
       verified_by: "Bucket scan; no permission document located in the repo or bucket"
       method: absent
     access:
       method: s3
-      uri: s3://rs-storage-open/benthic_datasets/point_labels/Reefolution
+      uri: s3://rs-storage-private/sources/reefolution/2026-09-23-2c84cb0c9cda
+      notes: "rs-storage-private: credentials required (configparser, rs-hel1 profile). Canonical copy (rule 2: non-open source lives in the private bucket)."
       params:
-        bucket: rs-storage-open
+        bucket: rs-storage-private
         endpoint: hel1.your-objectstorage.com
         region: hel1
-        prefix: benthic_datasets/point_labels/Reefolution/
+        prefix: sources/reefolution/2026-09-23-2c84cb0c9cda/
         credentials_env: S3
-      size_bytes: 3617000000
+      size_bytes: 3616150247
+    checksums:
+      version: "2026-09-23-2c84cb0c9cda"
+      root_digest: 60443dd966feee06538ed585496b3fa3d5687fcfef9e5604f9335c19bafdaa7b
+      files: 872
+      size_bytes: 3616064902
     modalities: [image]
     capabilities: [benthic-classification, general-pretraining]
-    items: 872
+    n_images: 870
+    n_files: 872
     annotations:
-      - kind: none
-        supervises: []
+      - kind: point-label
+        count: 43500
+        schema_id: reefolution-coralnet-native
+        supervises: [taxon]
         notes: >
-          CORRECTED 2026-08-17: no point-label files exist in the bucket. The prefix
-          holds images only, grouped into site directories.
+          CORRECTED 2026-09-23 (S7g): superseded the 2026-08-17 "no point-label files
+          exist" note — Reefolution's own CoralNet-style export (`annotations.csv` +
+          `labelset.csv`) was located and staged (S7b) as `labels/points.parquet`:
+          870 images x 50 points/image = 43,500 rows, native vocabulary of 85 short
+          codes, no crosswalk to a canonical scheme yet.
+
+          RE-POINTED 2026-09-23 (S7h): `access.uri`/`version` now point at this staged
+          tree (873 objects / 3,616,150,247 B), pinned by `checksums.root_digest`. No
+          archive/originals pointer field exists on the model, so the private-cache
+          prefix for the label originals is not recorded here.
     coverage:
       regions: [western-indian]
     notes: >
       BLOCKED PENDING PERMISSION. We hold the imagery but no written grant was found.
       Partner data without a documented grant is the same class of problem as
       unlicensed public data. Obtain a written licence before any training use.
+
+      Re-checked 2026-09-18 (s3://rs-storage-open/benthic_datasets/point_labels/Reefolution): (legacy: history note)
+      still no written grant on record.
+
+      RE-CHECKED 2026-09-24 (R2 internal provenance, Q6): partnership documented, no
+      written grant found (R2, 2 checks) — `legal_basis` stays `unknown`.
+
+      2026-10-06 (reorg rule 2): the canonical copy is the rs-storage-private one; the byte-identical
+      rs-storage-open copy (same CHECKSUMS, 872 files) is the duplicate and is removed by RB-2.
+      `n_images` 870 + LICENSE-style files = `n_files` 872.
+    split_group:
+      pattern: '(DSCN\d+)'
+      match_field: stem
+      template: "reefolution/{group}"
     loader:
-      layout: flat-images
-      verified_on: 2026-08-17
-      verified_note: "Verified against the live bucket: images only, no annotation files."
+      layout: staged-tree
+      schema_id: reefolution-coralnet-native
+      crosswalk_id: reefolution
+      verified_on: 2026-09-23
+      verified_note: >
+        WIRED 2026-09-23 (S7i): layout switched from flat-images to staged-tree, the
+        loader that actually reads this tree's `metadata.parquet` sample index +
+        `labels/points.parquet` join (synthetic-fixture coverage in
+        `tests/test_loader_staged_tree.py`, built with the repo's own writers).
+        `access.params.credentials_env` dropped: confirmed by direct HTTPS GET and by
+        unsigned boto3 that `rs-storage-open` allows anonymous `GetObject` on a known
+        key, so a credential requirement here only ever produced a false
+        `unfetchable`.
+
+        VERIFIED 2026-09-23 (S7j): `.venv/bin/marinedata verify reefolution --limit 5`
+        now passes. The 7i blocker (every source on this bucket fetched by first
+        listing its prefix, and anonymous `ListBucket` is `AccessDenied` even though
+        `GetObject` is public) is closed by a manifest-driven fetch path
+        (`marinedata.fetchers_remote._fetch_s3_manifest`, gated by
+        `_is_pinned_staged_tree`): for a source pinned by `checksums.root_digest` with
+        `layout: staged-tree`, the fetcher GETs `CHECKSUMS.sha256` by its known key,
+        checks its sha256 against `root_digest`, then GETs and per-file-verifies only
+        the files named in that manifest — no listing call at all. Bucket policy is
+        unchanged (still no anonymous `ListBucket`); unpinned and credentialed sources
+        still list as before.
     tags: [needs-permission]
 
   - id: ibf
+    domain: coral
+    access_class: internal-only
     name: IBF partner imagery
-    version: "unversioned"
+    # habitat inferred (WP-2b) from this source's own description/notes, not independently verified
+    habitat: [coral_reef]
+    version: "2026-10-06"
     description: Partner point-labelled reef imagery.
     licence: NO-LICENCE-STATED
     legal_basis: unknown
+    redistribution: unknown
     provenance: partner
     verification:
       verified_on: 2026-08-17
@@ -254,17 +495,23 @@ sources:
       method: absent
     access:
       method: s3
-      uri: s3://rs-storage-open/benthic_datasets/point_labels/IBF
+      uri: s3://rs-storage-private/sources/ibf/2026-10-06
+      notes: "rs-storage-private: credentials required (configparser, rs-hel1 profile). Canonical copy (rule 2: non-open source lives in the private bucket)."
       params:
-        bucket: rs-storage-open
+        bucket: rs-storage-private
         endpoint: hel1.your-objectstorage.com
         region: hel1
-        prefix: benthic_datasets/point_labels/IBF/
+        prefix: sources/ibf/2026-10-06/
         credentials_env: S3
-      size_bytes: 2082000000
+    checksums:
+      version: "2026-10-06"
+      root_digest: b42773b6bdea01d33be23b05d70e8d821ffe1f2c9abec2c7a6312d515e7ce059
+      files: 579
+      size_bytes: 2084898913
     modalities: [image]
     capabilities: [benthic-classification, general-pretraining]
-    items: 576
+    n_images: 496
+    n_files: 579
     annotations:
       - kind: none
         supervises: []
@@ -273,20 +520,40 @@ sources:
       regions: [unknown]
     notes: >
       BLOCKED PENDING PERMISSION. As with reefolution — imagery held, no written grant found.
+
+      Re-checked 2026-09-18 (s3://rs-storage-open/benthic_datasets/point_labels/IBF): (legacy: history note)
+      still no written grant on record.
+
+      RE-POINTED 2026-10-06 (RB-1/RB-3): canonical location is `s3://rs-storage-private/sources/ibf/2026-10-06/`
+      (496 images + 75 CPCe/CSV label files + 5 extra files; 579 files with metadata.parquet, INGEST.json,
+      LICENSE); internal-only data belongs in the private bucket. `checksums` pinned 2026-10-06
+      from the tree's CHECKSUMS.sha256.
+    split_group:
+      pattern: 'IBF/([^/]+)/'
+      match_field: upstream_path
+      template: "ibf/{group}"
     loader:
-      layout: flat-images
-      verified_on: 2026-08-17
-      verified_note: "Verified against the live bucket: images only, no annotation files."
+      layout: staged-tree
+      verified_note: >
+        RE-POINTED 2026-10-06 (RB-1/RB-3) from the pre-reorg point_labels tree to the private staged
+        tree (`images/<site>/`, `labels/points/<site>/*.cpc|csv`). RB-1 read the staged `metadata.parquet`
+        back through the StagedTreeLoader on a shadow tree: 496 rows = the expected image count (2026-10-06).
     tags: [needs-permission]
 
   - id: coralscop-masks-rs
+    domain: coral
+    access_class: internal-only
+    default_habitat: coral_reef  # WP-U14b: evidence table marks the setting known
     name: CoralSCOP pseudo-masks (our generation)
-    version: "unversioned"
+    # habitat inferred (WP-2b) from this source's own description/notes, not independently verified
+    habitat: [coral_reef]
+    version: "2026-09-23-3e8612678469"
     description: >
       Masks generated by the CoralSCOP model over an image pool. Model output, not
       ground truth. Useful for weak supervision and pretraining only.
     licence: CC-BY-NC-SA-4.0
     legal_basis: licence
+    redistribution: unknown  # NOTICE on HF marine-data-nc: obtained via the authors' request form, "Do not redistribute"
     provenance: auto
     verification:
       verified_on: 2026-08-17
@@ -294,17 +561,22 @@ sources:
       method: licence-file
     access:
       method: s3
-      uri: s3://rs-storage-open/benthic_datasets/mask_labels/coralscop_masks
-      size_bytes: 7871000000
+      uri: s3://rs-storage-open/sources/coralscop-masks-rs/2026-09-23-3e8612678469
+      notes: "rs-storage-open is a public bucket — anonymously fetchable, no credentials needed"
       params:
         bucket: rs-storage-open
         endpoint: hel1.your-objectstorage.com
         region: hel1
-        prefix: benthic_datasets/mask_labels/coralscop_masks/
-        credentials_env: S3
+        prefix: sources/coralscop-masks-rs/2026-09-23-3e8612678469/
+      size_bytes: 7967807944
+    checksums:
+      version: "2026-09-23-3e8612678469"
+      root_digest: 9fbc5d88502fc7e67f8358c25416084a2c4efb18a34183f91f30e37ada3de716
+      files: 77857
+      size_bytes: 7959632981
     modalities: [image]
     capabilities: [coral-instance-segmentation, general-pretraining]
-    items: 38928
+    n_images: 38928
     annotations:
       - kind: instance-mask
         count: 38928
@@ -315,5 +587,150 @@ sources:
     notes: >
       Derived from an NC-SA model, so the output inherits the restriction. Retained for
       research and weak supervision; never in shipped weights.
-    loader: { layout: metadata-only }
+    split_group:
+      pattern: '^(.+)$'
+      match_field: stem
+      template: "{group}"
+    loader:
+      layout: staged-tree
+      crosswalk_id: coralscop-masks-rs
+      verified_on: 2026-09-24
+      verified_note: >
+        PINNED 2026-09-24 (S15b): `access.uri`/`version` now point at the uploaded
+        staged tree `sources/coralscop-masks-rs/2026-09-23-3e8612678469/` (77,858
+        objects, 7,967,807,944 B), pinned by `checksums.root_digest` (77,857 files,
+        7,959,632,981 B). `access.params.credentials_env` dropped: `rs-storage-open`
+        allows anonymous `GetObject` on a known key. Layout switched from
+        coco-rle-binary to staged-tree — the staged `metadata.parquet` has the same
+        columns as `reef-support-benthic-own`'s (StagedImage-shaped: stem, partition,
+        upstream_path, upstream_split, width, height, split_group), the shape
+        `StagedTreeLoader` reads with no params. `split_group` above is the
+        per-image stem (`^(.+)$` on `stem`, no namespace prefix) so a from-scratch
+        rebuild via `Source.split_group_for` reproduces the exact 38,928 groups
+        already frozen in the staged `metadata.parquet` (and pinned by
+        `checksums.root_digest`) — `StagedTreeLoader` itself reads `split_group`
+        straight from that column, never re-deriving it, so this rule only matters
+        for a rebuild-from-raw, not for normal loading.
+        VERIFIED 2026-09-24: `.venv/bin/marinedata verify coralscop-masks-rs`
+        passes via the manifest-driven fetch path (`fetchers_remote._fetch_s3_manifest`),
+        which never lists the bucket.
     tags: [pseudo-label, never-eval]
+
+  - id: rs-labelled-masks
+    domain: coral
+    access_class: internal-only
+    name: rs-labelled segmentation masks (RETIRED duplicate annotation set over reef_support images)
+    # habitat inferred (WP-2b) from this source's own description/notes, not independently verified
+    habitat: [coral_reef]
+    version: "unversioned"
+    description: >
+      Segmentation mask labelling effort over reef site imagery, per root README.md
+      ("rs_labelled (Reef Support): Segmentation mask labeling effort of various (legacy: history note)
+      datasets"). Shares site-name conventions with `reef-support-seaview-labels` and
+      lacks its Labelbox ndjson / contour-colour layout - reads as an earlier or
+      alternate export of the same labelling work.
+    retired: "2026-10-06 D7: duplicate of reef-support-benthic-own + reef-support-seaview-labels; no read path"
+    images_from: [reef-support-benthic-own, reef-support-seaview-labels]
+    licence: NO-LICENCE-STATED
+    legal_basis: unknown
+    redistribution: unknown
+    provenance: own
+    verification:
+      verified_on: 2026-09-24
+      verified_by: "2026-09-19 boto3 bucket listing (v4s-open-listing.tsv): 63,167 files / 5,725,787,671 bytes under benthic_datasets/mask_labels/rs_labelled/. No licence or origin document located in the repo or bucket (P1-B proposal). ASSESSED 2026-09-24 (R2 internal provenance, Q7): the label labour itself is ours — a PROPRIETARY-OWN licence would be correct for that labour alone — but `legal_basis` is split by which image pool each sub-image sits on: `own` for the `reef-support-benthic-own`-sourced images, `unknown` (inherited) for the `reef-support-seaview-labels`-sourced images (XL Catlin pixel terms still unresolved). This schema has no per-partition legal_basis, so both `licence` and `legal_basis` are kept at their stricter, whole-entry value (NO-LICENCE-STATED / unknown) rather than blanket-upgrading to PROPRIETARY-OWN/own over imagery this entry does not itself hold pixel rights to — see `test_no_source_claims_own_tier_over_third_party_pixels` for the regression this guards against. (legacy: history note)"
+      method: absent
+    access:
+      method: request
+      uri: "retired:rs-labelled-masks"
+      notes: "Retired 2026-10-06 (D7): no read path. Bytes stay in rs-storage-private under the cache prefix until a maintainer decides."
+    modalities: [image]
+    capabilities: [benthic-segmentation, general-pretraining]
+    n_images: 63167
+    annotations:
+      - kind: none
+        supervises: []
+        notes: "Mask/label structure not verified this pass."
+    coverage:
+      regions: [unknown]
+    split_group:
+      pattern: '^(.{5})'
+      match_field: stem
+      template: "rs-labelled/{group}"
+    notes: >
+      RESOLVED 2026-09-23 (WS-D decision): folded in as a SECOND annotation set over the
+      images already registered under `reef-support-benthic-own` and
+      `reef-support-seaview-labels` (see `images_from`) - no pixel copy of its own. The
+      prior "distinct asset vs. earlier export" ownership question (P1-B "Needs a maintainer"
+      #1) is superseded by this: whatever the origin, its masks sit on existing reef_support
+      imagery, not a new image pool. Licence/origin of the mask labour itself is still
+      not stated either way.
+      WP-8d (2026-09-25): fixed `split_group.template` above from a copy-pasted
+      "seaview/{group}" (WP-8b's placeholder, wrong source) to "rs_labelled/{group}". (legacy: history note)
+      `src/marinedata/task_layers/sources/rs_labelled.py` parses the real Labelbox (legacy: history note)
+      `export-result.ndjson` export and keys rows by `images_from`'s already-staged
+      sha256 (no image bytes of its own are read). Real-data finding: every one of the
+      2,578 annotation objects sampled across 246 records in
+      `SEAFLOWER_BOLIVAR/export-result.ndjson` is `annotation_kind:
+      "ImageSegmentationMask"` with only a Labelbox-hosted `mask.url` - zero inline
+      `polygon` geometry. The rasteriser is implemented and unit-tested for the
+      inline-polygon case the export schema supports, but the live export has none to
+      rasterise, and the Do-Not-list forbids fetching that mask URL, so this pass
+      produced 0 real semseg rows. Resume path: either a future Labelbox export with
+      polygon (not mask) annotations, or a revisit of D-Z2 to permit fetching
+      Labelbox-hosted masks under a different rule.
+
+      RETIRED 2026-10-06 (decision D7, RB-3): this set is a duplicate annotation set over the same images as
+      `reef-support-benthic-own` and `reef-support-seaview-labels` (3,299 jpg all ETag-equal to reef_support;
+      only 390 of 56,557 masks byte-identical, older/lossy ATL export). It has no read path: `access` is a
+      `request` stub and nothing in the registry loads it. Its private cache objects are not deleted.
+    loader: { layout: metadata-only }
+    tags: [needs-permission]
+
+  - id: mussel-ai-data
+    domain: fauna
+    access_class: unknown
+    name: Mussel AI detector data (origin unconfirmed)
+    # habitat inferred (WP-2b) from this source's own description/notes, not independently verified
+    habitat: [rocky_reef]
+    version: "unversioned"
+    description: >
+      Single-class mussel detector dataset - data/mussel_ai/semantic_drone_dataset/
+      data.yaml declares `names: [mussels]`, `nc: 1`. The `semantic_drone_dataset`
+      folder name is misleading: this is not the public Graz drone dataset.
+    licence: NO-LICENCE-STATED
+    legal_basis: unknown
+    redistribution: unknown
+    provenance: own
+    verification:
+      verified_on: 2026-09-19
+      verified_by: "2026-09-19 boto3 bucket listing (v4s-open-listing.tsv): 1,041 files / 834,506,951 bytes under data/mussel_ai/. No licence or origin document located in the repo or bucket (P1-B proposal)."
+      method: absent
+    access:
+      method: s3
+      size_bytes: 834506951
+    modalities: [image]
+    capabilities: [invertebrate-detection]
+    n_images: 1041
+    annotations:
+      - kind: none
+        supervises: []
+        notes: "YOLO-style data.yaml declares nc:1 names:[mussels]; label files not verified this pass."
+    coverage:
+      regions: [unknown]
+    notes: >
+      RETIRED 2026-09-24 (WS-D S38, a maintainer decision D6): the ownership question below
+      was never resolved, and a maintainer decided outright deletion of
+      `s3://rs-storage-open/data/mussel_ai/` rather than pursuing permission — D6
+      deleted it. `access.uri`/`params` dropped (no copy remains at that prefix or
+      anywhere else). The trained weights (`models/mussel_ai/`) are unaffected and
+      kept in `rs-storage-private`. `size_bytes`/`items` above describe the deleted
+      copy, kept for record.
+
+      BLOCKED PENDING PERMISSION (superseded context). Ownership question open with
+      A maintainer - no README, licence, or origin document anywhere in the bucket or
+      registry. `data/mussel_ai/lobster_demo.tif` (512,790,898 B, counted in this
+      entry) was byte-identical (size + multipart ETag) to
+      `s3://rs-storage-open/data/lobster_demo.tif` at the bucket root, which sat
+      outside this prefix and was not otherwise registered — both are gone with D6.
+    loader: { layout: metadata-only }
+    tags: [retired]

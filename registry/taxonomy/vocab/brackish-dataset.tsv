@@ -1,0 +1,12 @@
+# source: brackish-dataset
+# crosswalk: brackish-dataset
+# counts: types
+# retrieved: 2026-10-05 (WP-R3) from the paper (Pedersen et al. 2019, "Detection of Marine Animals in a New Underwater Dataset with Varying Visibility", CVPRW; the same six classes as vocab/brackishmot.tsv) and registry/sources/fish.yaml (annotations: bbox, classes: 6); NOT harvested from a staged tree (none is in rs-storage-open; the Kaggle host needs an account)
+# note: class names and spelling follow the paper; the YOLO class-id order of the Kaggle export is unverified (no classes.txt staged), so edges are keyed by name, not id; counts are unknown (types)
+label	count	description
+fish		big fish
+small fish		small fish (a school-forming size class)
+crab		
+shrimp		
+jellyfish		
+starfish		

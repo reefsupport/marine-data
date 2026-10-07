@@ -24,6 +24,16 @@ licences:
     url: https://creativecommons.org/licenses/by/4.0/
     flags: { attribution_required: true }
 
+  - id: CC-BY-3.0
+    name: Creative Commons Attribution 3.0 Unported
+    tier: T1_PERMISSIVE
+    url: https://creativecommons.org/licenses/by/3.0/
+    flags: { attribution_required: true }
+    notes: >
+      Same permissions as CC-BY-4.0 for this registry's purposes (attribution only,
+      no other restriction). Used for the Seaview survey photographs, whose UQ eSpace
+      record (UQ:734799) states "Creative Commons Attribution 3.0 International (CC BY 3.0)".
+
   - id: CC-BY-3.0-AU
     name: Creative Commons Attribution 3.0 Australia
     tier: T1_PERMISSIVE

@@ -1,0 +1,21 @@
+# source: trashcan-material
+# crosswalk: trashcan
+# counts: annotations
+# retrieved: 2026-09-25 from DRUM hdl:11299/214865 dataset.zip dataset/material_version/instances_*_trashcan.json
+label	count	description
+rov	3317	
+trash_etc	2039	
+trash_plastic	1864	
+trash_metal	1126	
+animal_fish	764	
+plant	507	
+animal_starfish	398	
+animal_eel	343	
+trash_wood	340	
+trash_fabric	314	
+animal_crab	309	
+animal_shells	249	
+animal_etc	235	
+trash_fishing_gear	196	
+trash_paper	193	
+trash_rubber	142	

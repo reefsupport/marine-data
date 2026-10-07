@@ -1,0 +1,43 @@
+# TreeOfLife-10M (Imageomics): 63 tar.gz shards; only ~5% marine, so stream every shard and keep matching members (member-filter).
+# bioscan (insects) contributes 0 marine rows; inat21 rows duplicate iNat photos -> dedupe against inat-marine.
+id: treeoflife-10m
+access_class: restricted-nc
+licence_per_row: true
+adapter: hf-member-filter
+params:
+  repo: imageomics/TreeOfLife-10M
+  revision: 91debffb7146c32c89d76feb1eb575b555e2ecc7
+  include:
+  - dataset/*.tar.gz
+  cap_per_species: 500
+notes: 'member filter keyed by metadata/catalog.csv (marine clades or iNat/WoRMS-marine binomial, no BIOSCAN, <=500 per data_source x species by sha256(treeoflife_id)); streams all 63 shards (1.98 TB read) to keep ~5%; repo not gated (HF API gated=false 2026-09-25); WP-6f live smoke 2026-09-25: 50/50 kept members decoded from shard 1, 0 errors, 300 MB streamed, keep-set 521,541, 77 s, anonymous. WP-6i: INT-ingest6 smoke ReadError "unexpected end of data" = HF CDN drops a connection idle ~30 s (the shard was opened, then sat idle during the ~60 s catalog pass); keep-set now built before the shard opens and shard/catalog streams resume via Range; smoke 10/10, 4.1 MB, 81 s, 0 resumes'
+license: HF card licence null; per image per upstream (EOL media licence, iNat21 photo licence) — not in the catalog.csv
+  columns read
+attribution: Imageomics Institute — TreeOfLife-10M (EOL, iNat21, BIOSCAN-1M)
+citation: Stevens et al. 2024, CVPR, BioCLIP
+homepage: https://huggingface.co/datasets/imageomics/TreeOfLife-10M
+disk_floor_gib: 34.0  # INT-ingest6: runner-5 floor (D-AE), like its queue5 siblings
+measured:
+  items: 10988032
+  bytes: 1984907071025
+  method: metadata/catalog.csv full pass (10,988,032 rows) + HF tree @91debff (63 dataset/*.tar.gz)
+  date: '2026-09-25'
+  bytes_basis: hf-tree
+  by_data_source:
+    eol: 6810437
+    bioscan: 1235502
+    inat21: 2942093
+  marine_by_source_and_rule:
+    eol|worms-species: 334348
+    eol|clade: 131302
+    inat21|clade: 32058
+    inat21|worms-species: 79412
+  label_type: cls (7-rank taxonomy)
+subset:
+  target_items: 571962
+  stratify:
+  - data_source
+  - species
+  cap_per_stratum: 500
+  rule: catalog.csv rows in 34 wholly-marine clades or whose binomial is an iNat/WoRMS-marine species (577,120 rows),
+    <= 500 per (data_source, species); mixed-clade rows without a marine binomial are excluded (lower bound)

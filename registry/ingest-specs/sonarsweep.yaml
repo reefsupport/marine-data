@@ -1,0 +1,27 @@
+# WP-6l-B (2026-09-25) new source: candidate — WP-6l-B sonar: sonar + visually-degraded optical pairs across FOV settings
+id: sonarsweep
+access_class: internal-only
+adapter: hf
+params:
+  repo: Lingpenghaha/Sonarsweep_dataset
+  revision: 350b20a9acaf382b3063b1e4d3669ddf4e1fc3e4
+license: unstated
+attribution: Lingpenghaha (HF)
+citation: HF dataset Lingpenghaha/Sonarsweep_dataset
+homepage: https://huggingface.co/datasets/Lingpenghaha/Sonarsweep_dataset
+notes: 'candidate — WP-6l-B sonar: sonar + visually-degraded optical pairs across FOV settings'
+disk_floor_gib: 36.0
+measured:
+  items: 63982
+  bytes: 32504006794
+  bytes_basis: HF usedStorage (all revisions' LFS objects)
+  method: 'HF siblings listing (capped at 100,000 files): >= 63,982 png, 19,990 txt, 15,991 npy'
+  date: '2026-09-25'
+  per_item_license: unstated
+  by_depth_band_m: {}
+  label_type: simulated sonar sweeps with degraded-visual counterparts, per-frame txt/npy ground truth
+  habitat_region: synthetic (LIAS_OCEAN / blue-water scenes)
+  dedup_chain: new; no registry/ingest-spec/WP-6g/S57 match on title, DOI or record id
+  wp6l_gap: sonar
+# WP-U14c: no default_instrument. Rows mix simulated sonar sweeps, degraded optical frames and USD
+# texture assets (LIAS_OCEAN); nothing staged says side-scan, and a source-level value would mislabel them.

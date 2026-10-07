@@ -1,0 +1,17 @@
+# TrashCan 1.0: instance-segmentation labeled dataset of underwater trash observations
+id: trashcan
+access_class: open
+adapter: http
+license: cc-by-4.0
+attribution: Hong, Fulton, Sattar (Univ. of Minnesota DRUM)
+citation: Hong et al. 2020, TrashCan 1.0
+homepage: https://conservancy.umn.edu/handle/11299/214865
+params:
+  version: "1.0"
+  label_patterns: ["instances_*.json"]
+  # BENCH-httpstall2: DRUM stalls the small per-member Range GET on this host; the full
+  # container GET is fine (30 MB/s) and disk has room (0.53 GB) -- spool it whole instead.
+  expand_zip_members: false
+  urls:
+    - {url: "https://conservancy.umn.edu/server/api/core/bitstreams/fffa78cc-3abf-42b9-b019-bc15a953a8e9/content",
+       key: dataset.zip, size: 553029970, md5: ef12cb7ec2fe1ae2f909c2345127bfe0}

@@ -1,0 +1,173 @@
+# Taxonomy changelog
+
+## 2.9.0 — 2026-10-05
+
+MINOR: 0 nodes and 6 edges added, nothing removed, re-parented or retargeted
+(`marinedata taxonomy diff 2.8.0 HEAD`: nodes added 0 / removed 0 / changed 0; edges added 6 / removed 0 / changed 0).
+
+- **WP-R3 (bbox release label gate):** new `brackish-dataset` crosswalk (6 edges, all to existing nodes, same targets and
+  fidelities as `brackishmot-class-id`: fish and small fish -> `A146419` Vertebrata, crab -> `A106673`, shrimp -> `A1130`,
+  jellyfish -> `A1740301`, starfish -> `A123080`) with `vocab/brackish-dataset.tsv`; the loader gains `crosswalk_id` and the
+  `no_crosswalk_yet` entry is dropped. The vocabulary is the paper's (no tree is staged), so edges are keyed by name.
+- `vocab/mouss-detection.tsv` and `vocab/labeled-fishes-in-the-wild.tsv` added for the existing single-class `fish` crosswalks
+  (their coverage was unmeasured, so the release gate failed them); no edge changes.
+- Still open: `ozfish` and `sea-urchin-detection` have no crosswalk (vocabulary not obtainable offline).
+
+## 2.8.0 — 2026-10-05
+
+MINOR: 0 nodes and 23 edges added, nothing removed, re-parented or retargeted
+(`marinedata taxonomy diff 2.7.0 HEAD`: nodes added 0 / removed 0 / changed 0; edges removed 0 / changed 0).
+
+- **WP-U6c:** three new crosswalks for the sonar box readers, each with its `vocab/<source>.tsv`, all pointing at existing nodes
+  (no new nodes): `sss-mine-detection` (2 edges, both classes -> `NT_UNKNOWN`), `swdd-sss-wall` (1 edge -> `NT_WRECK`, an existing node) and
+  `synthetic-seabed-debris` (20 edges: 19 debris classes -> `NT_DEBRIS`, generic `Fauna` -> `A2` Animalia).
+
+## 2.7.0 — 2026-10-05
+
+MINOR: 2 nodes and 2 edges added, nothing removed, re-parented or retargeted
+(`marinedata taxonomy diff 2.6.0 HEAD`: nodes removed 0 / changed 0; edges removed 0 / changed 0).
+
+- **WP-U9 step 0:** `brackishmot-class-id` gains class 6 = jellyfish -> Medusozoa (`coarsened`, as in `roboflow-aquarium`).
+  Class 6 is documented by the BrackishMOT paper (arXiv:2302.10645) and occurs in the staged gt.txt files (the WP-U8a smoke
+  had missed it); `vocab/brackishmot.tsv` and its header note are corrected.
+- **WP-U13:** new `seaturtleid2022` crosswalk + `vocab/seaturtleid2022.tsv`: the dataset-level species `Caretta caretta`
+  (WoRMS 137205, accepted; loggerhead sea turtles per arXiv:2311.05524) -> `A137205` (`exact`), with the genus node `A137066`.
+
+## 2.6.0 — 2026-10-05
+
+MINOR: 6 nodes and 5 edges added, nothing removed or re-parented, no existing target changed
+(`marinedata taxonomy diff 2.5.0 HEAD`: nodes removed 0 / changed 0; 81 edges changed = 80 `unmappable` -> mapped
+(they had no target) and `bony fish` fidelity coarsened -> approximate on the same target).
+
+- **WP-U8b:** `fathomnet-concepts` long tail: every unmapped label with >= 10 boxes (echinoderm, ctenophore, chaetognath,
+  hermit crab, sea spider, isopod, ...) decided in `vocab/fathomnet-common-names.tsv` with WoRMS-confirmed ids
+  (box-weighted mapped 0.9637 -> 0.9835). `bony fish` -> Actinopterygii is now `related` (note: Osteichthyes not a node;
+  adding it would re-parent, i.e. MAJOR). Non-taxon axis: equipment / litter / unknown labels map `exact` to
+  `NT_EQUIPMENT` / `NT_DEBRIS` / `NT_UNKNOWN` (new `target` column of the table). New `brackishmot-class-id` crosswalk +
+  `vocab/brackishmot.tsv` (class ids 1-5 = fish, crab, shrimp, starfish, small fish; BrackishMOT paper arXiv:2302.10645).
+
+## 2.5.0 — 2026-10-05
+
+MINOR: 1,776 nodes and 1,702 edges added, nothing removed, re-parented or retargeted
+(`marinedata taxonomy diff 2.4.0 HEAD`: removed 0, changed 0).
+
+- **WP-U8a:** fauna crosswalks through the pinned WoRMS snapshot. `fathomnet-concepts` 294 -> 1,989 edges
+  (1,950 observed concepts, 150,458 boxes; box-weighted 0.964 mapped), new `roboflow-aquarium` (7 edges),
+  `vocab/fathomnet{,-fgvc25}.tsv`, `vocab/roboflow-aquarium.tsv`. 52 lowercase common names (>= 100 boxes) are
+  decided by hand in `vocab/fathomnet-common-names.tsv` (WoRMS-confirmed ids; sea fan -> Octocorallia,
+  bony fish -> Actinopterygii, marine organism -> Biota, non-taxa unmapped). Snapshot +2,029 rows, never rewritten.
+
+## 2.4.0 — 2026-10-05
+
+MINOR: two new crosswalks + vocabs, no nodes added and no existing edge retargeted.
+
+- **WP-U5:** `kaggle-healthy-bleached-corals` (bleached_corals -> BLEACHED exact, healthy_corals ->
+  HEALTHY coarsened, the shared not-bleached rule) and `noaa-pifsc-esa-coral-icra` (ICRA ->
+  HC_ISOPORA coarsened), with `vocab/*.tsv` (923 image labels, 470 label files).
+
+## 2.3.0 — 2026-10-05
+
+MINOR: new crosswalk + vocab, no nodes added and no existing edge retargeted.
+
+- **WP-U4:** `coralseg-ucsd-mosaics` crosswalk (Hard Coral -> HC, Soft Coral -> SC exact; "Other"
+  unmappable, listed under `coverage_exceptions`) and `vocab/coralseg-ucsd-mosaics.tsv`
+  (4,922 masks scanned).
+
+## 2.2.1 — 2026-10-05
+
+PATCH-sized cut for already-landed work: crosswalk edges added after 2.2.0 was frozen. The
+frozen 2.2.0 manifest is untouched; this release freezes the working tree as it stands.
+
+- **WP-U3:** `seaview-point-labels` and `ibf-cpce-codes` crosswalks (+ vocab TSVs), no
+  nodes added and no existing edge retargeted.
+
+## 2.2.0 — 2026-09-30
+
+MINOR: new crosswalk + vocab, no nodes/edges retargeted.
+
+- **`rf100-coral-lwptl` crosswalk** (14 growth-form classes onto rs-benthic-v1's form/taxon
+  axes) closes the source's `no_crosswalk_yet` gap; `vocab/rf100-coral-lwptl.tsv` (6,483
+  bbox annotations, 594 label files) measures 100% mapped.
+- **Fixed `registry/sources/coral-benthic.yaml` `classes: 16` → `14`**: the pinned rev's
+  `data.yaml` (byte-identical from bucket and HF mirror) lists 14 classes; 16 was stale.
+
+## 2.0.0 — 2026-09-25 (WP-7d)
+
+MAJOR: one edge retargeted (`coralscop-masks-rs` `coral`: HC -> CNIDARIA). v2 is unreleased,
+so nothing downstream pins the old target. Everything else in this release is additive.
+
+- **Retarget (manager decision 1).** CoralSCOP masks are class-agnostic coral (hard and
+  soft), so HC (Scleractinia) asserted a taxon the source never distinguished. The edge now
+  targets the lowest node holding both HC and SC. rs-benthic-v1 has no Anthozoa/"coral"
+  node, so that node is CNIDARIA. Task fits that need HC vs SC now see CoralSCOP as coarser.
+- **Fidelity (manager decision 2).** `noaa-pifsc-bleaching-condition` `CORAL -> HEALTHY` is
+  `coarsened`, not `exact`: a binary bleached/not-bleached split only asserts "not
+  bleached". NOAA CORAL, Roboflow Healthy (hb, hu) and RS non_bleached share one rule,
+  and a test asserts it.
+- **The 9 unmeasured staged sources now have vocab TSVs**: noaa-pifsc-bleaching,
+  5 Roboflow bleaching sets, reef-support-benthic-own, reef-support-bleaching (mask pixel
+  values streamed, not stored) and coralscop-masks-rs (one annotation per mask file). All 9
+  are at 100% mapped. v13i `Non-Corals` (a presence tag) -> UNKNOWN, approximate.
+- **Scoped gate:** a staged or released source with a crosswalk but no vocab TSV FAILS.
+- **CoralNet label table** `taxonomy/coralnet-labels-2026-09-25.parquet`: all 12,644 public
+  labels (id, name, short code, functional group, verified/duplicate/calcification flags)
+  from `/label/list/`; descriptions for 2,013 of them (per-label pages,
+  <= 2 req/s, cached, no login; a later brief refreshes the rest).
+- **`coralnet-label-id` crosswalk** (generated, 160 curated ids: 64 Reefolution + 96 NOAA
+  tier-3, 0 conflicts) + `CoralNetLabelIdResolver`, which falls back through the label's
+  functional group via `coralnet-labelset` (+2 group edges: Hard Substrate -> HS,
+  Soft Substrate -> ABIOTIC). Reefolution re-derived through it: 43,500/43,500 points, same
+  targets as WP-7c. 6 NOAA "NO RULE" ids get their coarsest true node here.
+- D-I audit +20 (2 fixed, 3 uncertain); see `docs/taxonomy-audit-2026-09-25.tsv`.
+
+## 1.2.0 — 2026-09-25 (WP-7c)
+
+MINOR: nodes, edges, snapshot rows and one vocabulary added; five edges retargeted to finer
+nodes that already existed (no node removed or re-parented).
+
+- **Reefolution 62.23% -> 100.00% of 43,500 points** (64 observed codes, 0 unmappable). The
+  codes were resolved from the source's `labelset.csv` (CoralNet label id -> code;
+  <private-bucket>) joined to the public CoralNet label pages. Its `coverage_exceptions`
+  entry is removed. New vocabulary `vocab/reefolution.tsv` (point-weighted), so the gate now
+  measures it. Before, a crosswalked source without a vocab TSV was never measured.
+- 16 rs-benthic-v1 nodes: HC_DIPSASTRAEA, HC_FUNGIIDAE, HC_GARDINEROSERIS, HC_GONIOPORA,
+  HC_MYCEDIUM, SC_XENIIDAE, SC_RHYTISMA, SC_TUBIPORA, CN_AGLAOPHENIA, INV_DIDEMNIDAE,
+  ALG_RHODOPHYTA, ALG_CHLOROPHYTA, ALG_OCHROPHYTA, ALG_SARGASSUM, plus non_taxon HS
+  (hard substrate, cover unspecified) and BIOFILM.
+- Snapshot +21 rows (12 names + ancestors), retrieved_at 2026-09-25, via
+  `scripts/taxonomy_snapshot_add.py` (snapshot first, cached WoRMS REST at <= 2 req/s).
+- Fixed 5 Reefolution edges (Mil, Hal, Urchins, Anemone, GA); see the D-I audit (+30 rows).
+- Scoped gate (D-Q): `taxonomy check` fails only for staged sources (<open-bucket>
+  `sources/`) and sources named in a `--release RELEASE.json`; `--strict` lists the rest.
+  `source_crosswalks` declares coralvqa and marineinst20m `crosswalk: open_vocabulary`
+  (removed from `no_crosswalk_yet`, 19 -> 17). `make taxonomy-check`.
+
+## 1.1.0 (2026-09-25, WP-7b)
+
+MINOR bump from WP-7's 1.0.0 — nodes and crosswalks added, nothing removed or retargeted.
+
+- **1 node added:** `rs-benthic-v1:SG_BG` ("Background (no seagrass)"), `non_taxon`
+  category `background` (new category — see `schema.NON_TAXON_CATEGORIES`).
+- **1 edge changed:** `deepseagrass:Background` now targets `SG_BG` (`exact`) instead of
+  `ABIOTIC` (`approximate`). The manager's correction: Background is not "non-living
+  substrate" (ABIOTIC's own reason) — the frame may show water, and substrate is
+  unspecified either way.
+- **43 edges added** across 4 new crosswalks, closing 4 of the 23 `no_crosswalk_yet`
+  sources: `reefolution` (39 edges, real CoralNet-native points data, ~62% coverage —
+  see the `coverage_exceptions` entry for the other 24 codes), `coralscop-masks-rs` (1
+  edge, class-agnostic model masks), `labeled-fishes-in-the-wild` and `mouss-detection`
+  (1 edge each, single implicit "fish" class per the registry's own loader notes).
+- **Gate flipped:** `no_crosswalk_yet` is no longer a release-gate exemption
+  (`taxonomy.gate`). `marinedata taxonomy check` (the full-registry check, no
+  `source_ids`) now FAILS on the 19 sources still listed in `no_crosswalk_yet` — see
+  `## Open` in the WP-7b report. Per-release gates scoped to a release's actual
+  `source_ids` (e.g. `assert_release_gate(..., ["ruod", "noaa-benthic-t1"])`) are
+  unaffected and still pass, because releases only ever name sources that are staged.
+- **19 sources remain in `no_crosswalk_yet`,** unresolved: only 2 of the original 23
+  (`reefolution`, `coralscop-masks-rs`) turned out to be staged in `<open-bucket>` —
+  confirmed by a `list_objects_v2` scan of `sources/` 2026-09-25. The rest are
+  prospective registry entries with no ingested label data (many blocked by a Kaggle,
+  Roboflow or Google Drive login wall per D-E, or genuinely open-vocabulary/text —
+  `coralvqa`, `marineinst20m`, the `coralnet` catch-all). Real crosswalks for those need
+  ingestion (or, for `coralnet`/`fathomnet`, a per-source-at-ingest step by design —
+  their entries already say so) — writing edges now would mean inventing label names.

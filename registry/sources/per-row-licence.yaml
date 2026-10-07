@@ -1,0 +1,83 @@
+# Per-row-licence sources that had an ingest spec but no registry/sources entry (WP-R2b): without one
+# they could not reach the release path. access_class / licence_per_row / licence text mirror
+# registry/ingest-specs/<id>.yaml (tests/test_registry_one_licence_truth.py keeps the two equal).
+# The class here is only a BOUND: each row's own licence (metadata_norm per-row normaliser) decides.
+
+sources:
+  - id: inat-marine
+    domain: imaging
+    access_class: restricted-nd
+    licence_per_row: true
+    name: iNaturalist Open Data (marine research-grade)
+    version: "2026-09"
+    description: Research-grade iNaturalist observations of marine taxa, one photo per observation.
+    licence: PER-SOURCE-VARIES
+    legal_basis: unknown
+    redistribution: unknown
+    provenance: public
+    verification:
+      verified_on: 2026-10-05
+      verified_by: "registry/ingest-specs/inat-marine.yaml (photos.csv `license`: CC0 / CC-BY / CC-BY-NC / -SA / -ND variants per photo)"
+      method: site-terms
+    access:
+      method: s3
+      uri: s3://rs-storage-open/sources/inat-marine/2026-09/
+    modalities: [image]
+    capabilities: [general-pretraining]
+    coverage: { regions: [global] }
+    loader: { layout: staged-tree, schema_id: worms-species }
+    citation: iNaturalist Open Data, AWS Open Data Registry, metadata 2026-09
+    homepage: https://registry.opendata.aws/inaturalist-open-data/
+    tags: [per-row-licence, observation]
+
+  - id: planktonzilla
+    domain: plankton
+    access_class: restricted-nc
+    licence_per_row: true
+    name: Planktonzilla-17M
+    version: "7fd542ef9fc9"
+    description: 15 plankton imaging instruments pooled (UVP, ZooScan, IFCB, FlowCam, ISIIS); stratified subset staged.
+    licence: PER-SOURCE-VARIES
+    legal_basis: unknown
+    redistribution: unknown
+    provenance: public
+    verification:
+      verified_on: 2026-10-05
+      verified_by: "registry/ingest-specs/planktonzilla.yaml: HF card licence `other`; per-sample licence = the originating instrument dataset (not staged, so rows stay unknown)"
+      method: site-terms
+    access:
+      method: s3
+      uri: s3://rs-storage-open/sources/planktonzilla/7fd542ef9fc9/
+    modalities: [image]
+    capabilities: [general-pretraining]
+    coverage: { regions: [global] }
+    loader: { layout: staged-tree, schema_id: dataset-native }
+    citation: project-oceania/planktonzilla-17M (HF)
+    homepage: https://huggingface.co/datasets/project-oceania/planktonzilla-17M
+    tags: [per-row-licence, plankton]
+
+  - id: qut-fish
+    domain: fish
+    access_class: restricted-nc
+    licence_per_row: true
+    name: QUT fish dataset
+    version: "zip-ce6985436f9b"
+    description: Fine-grained fish species recognition images (WACV14), 483 species.
+    licence: PER-SOURCE-VARIES
+    legal_basis: unknown
+    redistribution: unknown
+    provenance: public
+    verification:
+      verified_on: 2026-10-05
+      verified_by: "registry/ingest-specs/qut-fish.yaml: licence unknown (LicenceAndAuthors.pdf ships with the zip, not parsed)"
+      method: site-terms
+    access:
+      method: s3
+      uri: s3://rs-storage-open/sources/qut-fish/zip-ce6985436f9b/
+    modalities: [image]
+    capabilities: [fish-classification]
+    coverage: { regions: [global] }
+    loader: { layout: staged-tree, schema_id: worms-species }
+    citation: Anantharajah et al. 2014, WACV
+    homepage: https://www.kaggle.com/datasets/giannisgeorgiou/fish-species
+    tags: [per-row-licence, fish]

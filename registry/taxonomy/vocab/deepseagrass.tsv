@@ -1,0 +1,11 @@
+# source: deepseagrass
+# crosswalk: deepseagrass
+# counts: annotations
+# retrieved: 2026-09-25 from CSIRO DAP csiro:47653 file listing (patch counts by class folder)
+label	count	description
+Rounded	18593	
+Strappy	17107	
+Background	16463	
+Ferny	14783	
+Substrate	3722	
+Water	1335	

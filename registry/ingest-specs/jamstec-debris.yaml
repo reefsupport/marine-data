@@ -1,0 +1,20 @@
+id: jamstec-debris
+access_class: unknown
+adapter: needs:jamstec-scrape
+license: JAMSTEC terms
+attribution: JAMSTEC GODAC
+citation: godac.jamstec.go.jp/catalog/dsdebris/e/
+homepage: http://www.godac.jamstec.go.jp/catalog/dsdebris/e/
+why_not_supported: Same GODAC host as J-EDI; DNS did not resolve from this host. Catalog
+  lists it open-direct but per-record HTML pages (no bulk API) would need a scraper
+  adapter even if reachable.
+measured:
+  items: 3400
+  method: catalog estimate (S57), unverified here (DNS failure)
+  date: '2026-09-25'
+  per_item_license: JAMSTEC terms
+  by_depth_band_m:
+    0-10900: 3400
+  label_type: cls (debris types)
+  bytes: null
+  bytes_basis: 'unmeasured: unreachable'

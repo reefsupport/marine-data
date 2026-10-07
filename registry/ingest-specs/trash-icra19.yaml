@@ -1,0 +1,16 @@
+# Trash-ICRA19: bounding-box labeled dataset of underwater trash (Fulton et al., ICRA 2019)
+id: trash-icra19
+access_class: open
+adapter: http
+license: cc-by-4.0
+attribution: Fulton, Hong, Islam, Sattar (Univ. of Minnesota DRUM)
+citation: Fulton et al. 2019, ICRA (Trash-ICRA19)
+homepage: https://conservancy.umn.edu/handle/11299/214366
+params:
+  version: "2019"
+  label_patterns: ["*.txt", "*.xml"]
+  # BENCH-httpstall2: same DRUM host, same per-member Range stall -- spool whole (0.98 GB).
+  expand_zip_members: false
+  urls:
+    - {url: "https://conservancy.umn.edu/server/api/core/bitstreams/0239b06a-512e-49c3-80aa-ba33371e11de/content",
+       key: trash_ICRA19.zip, size: 1027746495, md5: 7c070de2d654497941776f32a1c2c687}

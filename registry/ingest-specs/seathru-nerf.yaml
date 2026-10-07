@@ -1,0 +1,24 @@
+id: seathru-nerf
+access_class: internal-only
+adapter: local_dir
+params:
+  path: ~/Downloads/marine-manual/seathru-nerf/data
+  label_patterns: ['*.txt', '*transforms*.json', '*poses*.npy']
+  version: zip-ff97f52d5472
+license: unknown (see homepage)
+attribution: Levy et al. — SeaThru-NeRF
+citation: Levy, Peleg, Pearl, Rosenbaum, Akkaynak, Korman, Treibitz 2023, CVPR
+homepage: https://sea-thru-nerf.github.io/
+notes: >-
+  LOCAL-ingest 2026-10-02: new id, not the same dataset as the existing `seathru`
+  spec (that one is the Akkaynak/Treibitz 2019 Sea-thru HF mirror). SeathruNeRF_dataset.zip
+  is the NeRF scene-reconstruction set (4 underwater scenes: Curasao, IUI3-RedSea,
+  JapaneseGradens-RedSea, Panama), downloaded by hand; no distribution licence stated
+  in the zip's own README.txt — left `unknown (see homepage)` pending a read of the
+  project page/paper terms.
+disk_floor_gib: 1.0
+
+measured:
+  label_type: 'none (camera poses: COLMAP and LLFF poses_bounds)'
+  method: u15-label-kind-triage (registry-patch.yaml)
+  date: '2026-10-05'

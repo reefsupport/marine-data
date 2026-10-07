@@ -1,0 +1,25 @@
+# Hand-authored (WP-U3, 2026-10-05). Codes are the CPCe label codes of the 75 .cpc files under
+# rs-storage-open benthic_datasets/point_labels/IBF/ (2,250 points). The CPCe code file named in each .cpc (legacy: history note)
+# (C:\CPCE_4~1\KODEKA~1.TXT) is NOT in the bucket, so meanings are the standard English et al. (1997) / COREMAP
+# lifeform codes. The partner supplied no licence (registry/sources/reef-support-own.yaml ibf).
+crosswalks:
+  - id: ibf-cpce-codes
+    source_schema: dataset-native
+    target_schema: rs-benthic-v1
+    description: IBF (Indonesia Biru) CPCe point-label codes onto RS-Benthic v1, taxon axis.
+    edges:
+      - { source_label: "S", targets: { taxon: SD }, fidelity: exact, note: "standard CPCe lifeform code S = sand" }
+      - { source_label: "R", targets: { taxon: RB }, fidelity: exact, note: "R = rubble" }
+      - { source_label: "SC", targets: { taxon: SC }, fidelity: exact, note: "SC = soft coral" }
+      - { source_label: "SP", targets: { taxon: PORIFERA }, fidelity: exact, note: "SP = sponge" }
+      - { source_label: "CB", targets: { taxon: HC, form: CB }, fidelity: exact, note: "CB = coral branching" }
+      - { source_label: "CHL", targets: { taxon: SC_HELIOPORA }, fidelity: approximate, note: "English et al. 1997 CHL = Coral Heliopora; the CPCe code file KODEKA~1.TXT is not in the bucket, so unverified" }
+      - { source_label: "ACB", targets: { taxon: HC_ACROPORA }, fidelity: exact, note: "ACB = Acropora branching" }
+      - { source_label: "DCA", targets: { taxon: DCA }, fidelity: exact, note: "DCA = dead coral with algae" }
+      - { source_label: "CMR", targets: { taxon: HC, form: CMR }, fidelity: exact, note: "CMR = coral mushroom" }
+      - { source_label: "MA", targets: { taxon: ALGAE }, fidelity: coarsened, note: "MA = macroalgae" }
+      - { source_label: "HA", targets: { taxon: HA }, fidelity: exact, note: "HA = Halimeda" }
+      - { source_label: "CM", targets: { taxon: HC, form: CM }, fidelity: exact, note: "CM = coral massive" }
+      - { source_label: "CF", targets: { taxon: HC, form: CF }, fidelity: exact, note: "CF = coral foliose" }
+      - { source_label: "OT", targets: {}, fidelity: unmappable, note: "OT = other biota; no canonical node" }
+      - { source_label: "CE", targets: { taxon: HC, form: CE }, fidelity: exact, note: "CE = coral encrusting" }

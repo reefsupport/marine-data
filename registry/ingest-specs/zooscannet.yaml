@@ -1,0 +1,15 @@
+# ZooScanNet plankton imagery (ZooScan instrument), named explicitly in the brief; almost certainly one of the ~15 instrument feeds already pooled into planktonzilla-17M (W3, staged in full).
+id: zooscannet
+access_class: internal-only
+adapter: hf
+license: cc-by-nc-4.0
+attribution: project-oceania
+citation: project-oceania/zooscannet (HF)
+homepage: https://huggingface.co/datasets/project-oceania/zooscannet
+params:
+  repo: project-oceania/zooscannet
+measured:
+  bytes: 8568636919
+  method: HF API usedStorage; item count not queried (budget)
+  date: '2026-09-25'
+  per_item_license: cc-by-nc-4.0

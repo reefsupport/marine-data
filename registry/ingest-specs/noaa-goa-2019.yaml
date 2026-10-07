@@ -1,0 +1,20 @@
+id: noaa-goa-2019
+access_class: open
+adapter: ncei-accession
+params:
+  accession: '0305766'
+  doi: 10.25921/022n-nd48
+license: cc0-1.0
+attribution: NOAA/NCEI
+citation: NCEI accession 0305766, doi:10.25921/022n-nd48
+homepage: https://doi.org/10.25921/022n-nd48
+notes: needs_adapter:ncei-accession — doi.org/10.25921/022n-nd48 302-redirects to
+  an NCEI accession/archive landing page; needs a follow-up fetch of the resolved
+  URL to find the file manifest (likely an NCEI archive info/download API, not a flat
+  file list)
+measured:
+  method: DOI resolves (DataCite); accession file listing not enumerated
+  date: '2026-09-25'
+  per_item_license: CC0-1.0
+  by_depth_band_m: {}
+  label_type: cls

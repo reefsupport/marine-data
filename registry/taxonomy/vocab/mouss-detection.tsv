@@ -1,0 +1,7 @@
+# source: mouss-detection
+# crosswalk: mouss-detection
+# counts: types
+# retrieved: 2026-10-05 (WP-R3) from registry/sources/fish.yaml (annotations: bbox, classes: 1) and crosswalks/mouss-detection.yaml; no tree is staged in rs-storage-open and the HF mirror ships images only, so no native label string exists
+# note: one implicit detection class, named fish by the source description ("Grayscale stationary-camera fish detection"); counts are unknown (types)
+label	count	description
+fish		the single detection class (implicit; MOUSS BFISH stationary-camera fish)

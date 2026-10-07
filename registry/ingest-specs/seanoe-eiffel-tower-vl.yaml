@@ -1,0 +1,42 @@
+# WP-6g (2026-09-25) new source: candidate — WP-6g gap 1,5: deep-sea (~1,700 m) ROV imagery with long-term revisits and SfM poses; first deep 3D/relocalisation set
+id: seanoe-eiffel-tower-vl
+access_class: open
+adapter: http
+params:
+  version: seanoe-92226
+  urls:
+  - url: https://www.seanoe.org/data/00810/92226/data/98240.zip
+    key: 98240.zip
+    size: 16093706425
+  - url: https://www.seanoe.org/data/00810/92226/data/98289.zip
+    key: 98289.zip
+    size: 10950334765
+  - url: https://www.seanoe.org/data/00810/92226/data/98314.zip
+    key: 98314.zip
+    size: 16508670958
+  - url: https://www.seanoe.org/data/00810/92226/data/98356.zip
+    key: 98356.zip
+    size: 10634840625
+  - url: https://www.seanoe.org/data/00810/92226/data/98357.zip
+    key: 98357.zip
+    size: 269314892
+license: CC-BY-4.0 (SEANOE)
+attribution: Boittiaux et al., Ifremer (SEANOE)
+citation: doi:10.17882/92226
+homepage: https://doi.org/10.17882/92226
+notes: 'candidate — WP-6g gap 1,5: deep-sea (~1,700 m) ROV imagery with long-term revisits and SfM poses; first
+  deep 3D/relocalisation set'
+temp_cap_gb: 18.0
+disk_floor_gib: 50.0
+measured:
+  items: 18082
+  bytes: 54456867665
+  method: HEAD sizes + remote zip central-directory png count over 5 zips
+  date: '2026-09-25'
+  per_item_license: CC-BY-4.0 (SEANOE)
+  by_depth_band_m:
+    1000-2000: 18082
+  label_type: camera poses (SfM) + navigation, 4 revisits of one vent edifice
+  wp6g_gaps:
+  - 1
+  - 5

@@ -1,0 +1,18 @@
+# ufo120: NOT loadable by marinedata.cli today (needs:gdrive). Documentation-only spec for WP-6d.
+id: ufo120
+access_class: internal-only
+adapter: needs:gdrive
+license: research (non-commercial, per upstream)
+attribution: Islam et al. — UFO-120
+citation: Islam et al. 2020, RSS
+homepage: https://irvlab.cs.umn.edu/resources/ufo-120-dataset
+candidate_endpoints:
+- https://irvlab.cs.umn.edu/resources/ufo-120-dataset (403 Cloudflare bot-block to
+  scripts; Drive link only reachable from the rendered page)
+why_not_supported: >-
+  1,620 paired images; same IRVLab Cloudflare block as usr248.
+  MIRRORS2 2026-10-02 — searched HF datasets-search (ufo-120/ufo120/UFO-120 — no
+  hits) and gh api search/code + search/repositories (no UFO-120-specific repo;
+  the official code release xahidbuffon/Deep_SESR's README only re-links the
+  blocked irvlab.cs.umn.edu page, no alternate mirror). No no-login mirror found;
+  still blocked, no spec change.

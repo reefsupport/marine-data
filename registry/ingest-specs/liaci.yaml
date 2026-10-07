@@ -1,0 +1,12 @@
+id: liaci
+access_class: unknown
+adapter: js-rendered-site
+params:
+  landing: https://liaci.sintef.cloud/
+license: unknown
+attribution: Waszak et al. (SINTEF)
+citation: Waszak et al., OCEANS 2022
+homepage: https://liaci.sintef.cloud/
+notes: needs_adapter:js-rendered-site — liaci.sintef.cloud serves a JS app shell with
+  no data links in the raw HTML; needs either the app's underlying API endpoint (undiscovered
+  on this pass) or a headless-browser fetch

@@ -1,0 +1,21 @@
+# Analysis-ready (colour-corrected, mosaic-tiled) OFOS images along SO268/1+2 CCZ profiles — Mbani & Greinert 2023, a processed companion to pangaea-ccz-gsr's raw Purser 2021 series.
+id: so268-ofos-analysis-ready
+access_class: open
+adapter: pangaea-series
+params:
+  doi: 10.1594/PANGAEA.957274
+license: CC-BY (PANGAEA, per series convention)
+attribution: Mbani, Greinert — GEOMAR
+citation: doi:10.1594/PANGAEA.957274 (bundle) + 10 profile DOIs (957262/264/265/266/267/269/270/272/273)
+homepage: https://doi.org/10.1594/PANGAEA.957274
+measured:
+  method: 'WP-6j: PANGAEA search incollection:957274 (count == totalCount) + every child''s tab export, distinct image keys;
+    bytes not declared by PANGAEA'
+  date: '2026-09-25'
+  per_item_license: CC-BY (unconfirmed)
+  by_depth_band_m: {}
+  items: 40476
+  bytes_basis: 'not measured: PANGAEA child tab exports list image names/URLs but no file sizes (WP-6j listing only, no fetch)'
+  child_datasets: 12
+notes: 'candidate — WP-6j pangaea-series: parent PANGAEA.957274 -> 12 child datasets -> 40,476 images (listed 2026-09-25,
+  no fetch)'

@@ -1,0 +1,30 @@
+id: coralvqa
+access_class: restricted-nc  # LICV 2026-10-05 (was open)
+adapter: hf
+license: CC-BY-4.0 (HF card CoralReefData/CoralVQA)
+attribution: CoralVQA authors (CoralReefData)
+citation: CoralVQA (2025), HF CoralReefData/CoralVQA
+homepage: https://huggingface.co/datasets/CoralReefData/CoralVQA
+params:
+  repo: CoralReefData/CoralVQA
+  revision: 3da50a4429e474f75e887d63ffa99e348b6677e7
+  include: ['CoralVQA_Image.zip', 'CoralVQA_train.jsonl', 'CoralVQA_test.jsonl']
+  label_patterns: ['*.jsonl']
+  remote_zip: true  # WP-6i: members read by HTTP Range from the remote central directory
+  zip_manifest: ['*.jsonl']  # only the members a VQA record names (field `image`)
+notes: >-
+  INT-ingest6: full image set (the 12k images the WP-8d/INT-core3b vqa.parquet needs keyed by
+  staged sha256). ONE 26,694,403,050 B zip (12,805 entries, zip64, central directory 1.44 MB).
+  WP-6i: never spooled — the central directory and each needed member are read with HTTP
+  Range requests (one per member), so the default temp cap and the runner floor apply.
+  LICV 2026-10-05: access_class -> restricted-nc (was open). Evidence:
+  https://huggingface.co/datasets/CoralReefData/CoralVQA/blob/main/README.md . TRAP: HF
+  card field says cc-by-4.0 but the README Licensing Information section says BY-NC 4.0.
+  Take the stricter text until authors clarify.
+disk_floor_gib: 34.0  # WP-6i: runner-5 floor (D-AE); was 60 while the zip was spooled whole
+measured:
+  items: 3
+  bytes: 26764286845
+  method: HF tree @3da50a4 (CoralVQA_Image.zip 26694403050 + train.jsonl 62809221 + test.jsonl 7074574)
+  date: '2026-09-25'
+  bytes_basis: hf-tree

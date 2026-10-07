@@ -1,0 +1,13 @@
+# ocean-r1: Ocean-R1 2025
+id: ocean-r1
+access_class: open
+adapter: hf
+license: Apache-2.0 (HF card)
+attribution: Ocean-R1 project
+citation: Ocean-R1 2025
+homepage: https://huggingface.co/datasets/minglingfeng/Ocean_R1_collected_visual_data
+params:
+  repo: minglingfeng/Ocean_R1_collected_visual_data
+  revision: main
+
+disk_floor_gib: 36.0

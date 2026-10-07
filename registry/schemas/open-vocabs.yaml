@@ -40,3 +40,28 @@ schemas:
       Sources here load and train fine on their own; they simply cannot be pooled with
       others until someone authors the crosswalk.
     axes: [taxon]
+
+  - id: mermaid-attributes
+    name: MERMAID benthic attribute + growth form
+    description: >
+      MERMAID's own point-label vocabulary: ``benthic_attribute_name`` — 259 distinct
+      names measured in the live corpus (D3a2) — plus a separate nullable
+      ``growth_form_name`` carried natively on ~11% of rows. OPEN and still not
+      enumerated here, because partners add attributes as they annotate; the closed
+      artefact is the crosswalk. ``mermaid-attributes`` (X1) maps every one of those 259
+      names onto rs-benthic-v1, 99.7% of rows, replacing the borrowed
+      ``coralnet-labelset`` mapping that reached 24.9%. The ``form`` half of this
+      vocabulary is deliberately unmapped — see the crosswalk header.
+    axes: [taxon, form]
+
+  - id: deolho-21
+    name: "#DeOlhoNosCorais 21-class polygon vocabulary"
+    description: >
+      Dataset-native vocabulary of #DeOlhoNosCorais (``deolhonoscorais``), 21 classes
+      per the source entry's ``annotations`` block. A CLOSED set — not open by nature —
+      whose label list is NOT enumerated here yet; it is registered only so
+      ``annotations.schema_id: deolho-21`` resolves. The source's loader speaks
+      ``worms-species`` binomials directly (real per-image labels are Brazilian
+      scleractinian species names), so this id is not on the load path today.
+      Enumerating the 21 labels from the upstream LabelMe release is follow-up work.
+    axes: [taxon]

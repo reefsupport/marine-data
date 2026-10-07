@@ -1,0 +1,26 @@
+# WP-6g (2026-09-25) new source: needs_adapter:pangaea-binary-column — WP-6g gap 1: abyssal (4,163 m) baited-lander stills with taxon boxes, Cabo Verde Abyssal Plain; fix = accept `Bi
+id: pangaea-cvap-lander-bbox
+access_class: open
+adapter: pangaea
+params:
+  doi: 10.1594/PANGAEA.961314
+license: CC-BY-4.0
+attribution: de Jonge, Smith, Sweetman (2023), PANGAEA
+citation: doi:10.1594/PANGAEA.961314
+homepage: https://doi.pangaea.de/10.1594/PANGAEA.961314
+notes: 'candidate — WP-6j: pangaea adapter reads the Binary column; 2,509 distinct images over 38,185 annotation rows (deduped
+  by key); WP-6g gap 1 abyssal (4,163 m) lander stills with taxon boxes'
+disk_floor_gib: 36.0
+measured:
+  items: 2509
+  method: 'PANGAEA textfile: 7,565 rows, 2,510 unique `File name`; images under a `Binary` column, not `IMAGE`, so the current
+    adapter enumerates 0'
+  date: '2026-09-25'
+  per_item_license: CC-BY-4.0
+  by_depth_band_m:
+    4000-5000: 2510
+  label_type: bbox (4-corner) + taxon, 7,565 boxes
+  wp6g_gaps:
+  - 1
+  bytes_basis: 'not measured: no allfiles.zip size header read; the Binary (Size) column states ~14 MB per JPEG, so ~35 GB
+    for 2,510 images (estimate)'

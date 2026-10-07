@@ -1,0 +1,25 @@
+# Seattle Aquarium ROV benthic survey stills (Puget Sound). JPG only: every image is also a TIF (425 GB) and 'reject/' is QC-rejected.
+id: seattle-aquarium
+access_class: restricted-nc
+adapter: hf
+license: CC-BY-NC-4.0 (HF card)
+attribution: Seattle Aquarium
+citation: Seattle Aquarium ROV benthic imagery (HF)
+homepage: https://huggingface.co/datasets/Seattle-Aquarium/Seattle_Aquarium_benthic_imagery
+params:
+  repo: Seattle-Aquarium/Seattle_Aquarium_benthic_imagery
+  revision: 78701c4efe73265eff437afe8ceac9e1996c04a6
+  include:
+  - set01/*.jpg
+  - set02/*.jpg
+measured:
+  items: 6522
+  bytes: 59049737152
+  method: HF tree @78701c4 (set01+set02 *.jpg); repo head 15,265 files / 494.93 GB, usedStorage 1,216.19 GB incl.
+    history; reject/ 1,107 jpg not staged
+  date: '2026-09-25'
+  bytes_basis: hf-tree
+  per_item_license: none per image; card licence CC-BY-NC-4.0
+  label_type: per-image survey metadata (metadata.jsonl); catalog 'points/cls' not confirmed in the tree
+
+disk_floor_gib: 34.0

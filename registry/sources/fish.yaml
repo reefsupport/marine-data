@@ -7,13 +7,19 @@
 
 sources:
   - id: ozfish
+    domain: imaging
+    release_skip_reason: "no-staged-images: nothing staged under sources/ozfish/ in rs-storage-open (Pawsey portal is unlistable; WP-R3 listing = 0 keys)"
+    access_class: open
     name: OzFish
+    # habitat inferred (WP-2b) from this source's own description/notes, not independently verified
+    habitat: [coral_reef]
     version: "2020"
     description: >
       Stereo-BRUV reef fish dataset with bounding boxes and millimetre length
       measurements — the most relevant public asset for length-based biomass.
     licence: CC-BY-3.0-AU
     legal_basis: licence
+    redistribution: ok
     provenance: public
     verification:
       verified_on: 2026-08-29
@@ -27,19 +33,22 @@ sources:
       method: licence-file
     access:
       method: http
-      uri: https://github.com/open-AIMS/ozfish
+      uri: https://storage.pawsey.org.au/public/m/FDFML/
       notes: >
-        Checked 2026-08-28: the repo's README points at two AIMS-operated data
-        portals (storage.pawsey.org.au, data.pawsey.org.au), both single-page apps
-        that return only a JS shell on a plain GET — no data without executing the
-        page's JS, which this project deliberately does not do. A GitHub issue
-        (open-AIMS/ozfish#1) confirms other users hit the same wall. No Kaggle/HF/
-        Zenodo mirror with matching annotations was found. Needs a human to
-        download via browser and re-host, or an AIMS-provided static mirror.
+        D-R5 (2026-09-25 charter): the Pawsey URLs are live — corrected from
+        "request" (stale per the 2026-09-25 catalog sweep, see the ozfish ingest
+        spec's why_not_supported). storage.pawsey.org.au/public/m/FDFML/{frames,
+        crops,labelled} are open, anonymous-GET, HTTP-206-verified prefixes (a
+        Pawsey/Nectar Swift object-storage container, not a plain S3 API — the
+        bucket adapter's path-style listing 404s and a plain HTML GET returns the
+        portal's JS-shell front end, not a file list). marinedata has no adapter
+        for the Swift container-listing convention yet (registry/ingest-specs/
+        ozfish.yaml: needs:pawsey, WP-6d) — per-file URLs need a portal-specific
+        listing (Swift `?format=json`) once built.
     modalities: [image]
     capabilities: [fish-detection, fish-classification, fish-biomass]
-    items: 80000
-    items_note: "~80k cropped detections across ~70 families."
+    n_images: 80000
+    counts_note: "~80k cropped detections across ~70 families."
     annotations:
       - kind: bbox
         supervises: [taxon, size]
@@ -52,14 +61,20 @@ sources:
         - "Australian species assemblage. Caribbean fish ID will need its own labels."
         - "Length→weight conversion requires per-species a,b coefficients (FishBase); the dataset does not supply them."
     loader: { layout: coco-json, params: { annotations: annotations.json, images_dir: images }, schema_id: worms-species }
+    citation: "Australian Institute of Marine Science (AIMS), University of Western Australia (UWA) and Curtin University. (2019), OzFish Dataset - Machine learning dataset for Baited Remote Underwater Video Stations, https://doi.org/10.25845/5e28f062c5097"
     tags: [stereo, biomass, length]
 
   - id: deepfish
+    domain: imaging
+    access_class: open
     name: DeepFish
+    # habitat inferred (WP-2b) from this source's own description/notes, not independently verified
+    habitat: [mixed]
     version: "2020"
     description: Habitat-diverse fish imagery from turbid Australian waters, with segmentation and counts.
     licence: CC-BY-4.0
     legal_basis: licence
+    redistribution: ok
     provenance: public
     verification:
       verified_on: 2026-08-29
@@ -108,7 +123,7 @@ sources:
         does produce real pairs — see the loader's own verified_note.
     modalities: [image]
     capabilities: [fish-detection, general-pretraining]
-    items: 40000
+    n_images: 40000
     annotations:
       - kind: dense-mask
         supervises: []
@@ -138,14 +153,20 @@ sources:
         annotation types (image-level labels and point/bbox detections
         respectively) and are not what this entry's declared dense-mask annotation
         describes.
+    citation: "Saleh, A., Laradji, I. H., Konovalov, D. A., Bradley, M., Vazquez, D., & Sheaves, M. (2020). A realistic fish-habitat dataset to evaluate algorithms for underwater visual analysis. Scientific Reports, 10(1). https://doi.org/10.1038/s41598-020-71639-x"
     tags: [turbid, weak-labels]
 
   - id: seamapd21
+    domain: fish
+    access_class: internal-only
     name: SEAMAPD21
+    # habitat inferred (WP-2b) from this source's own description/notes, not independently verified
+    habitat: [mixed]
     version: "2021"
     description: Reef fish detection from Gulf of Mexico BRUV footage, 130 species.
     licence: NO-LICENCE-STATED
     legal_basis: unknown
+    redistribution: unknown
     provenance: public
     verification:
       verified_on: 2026-08-29
@@ -164,21 +185,34 @@ sources:
     access: { method: request, uri: https://github.com/SEFSC/SEAMAPD21 }
     modalities: [image]
     capabilities: [fish-detection, fish-classification]
-    items: 90000
+    n_images: 90000
     annotations: [{ kind: bbox, classes: 130, supervises: [taxon] }]
     coverage: { regions: [western-atlantic] }
-    notes: "Gulf of Mexico — the closest large fish-detection set to Caribbean assemblages. Worth chasing the terms."
+    notes: >
+      Gulf of Mexico — the closest large fish-detection set to Caribbean assemblages.
+      Worth chasing the terms.
+
+      Legal-basis check 2026-09-18: github.com/SEFSC/SEAMAPD21/blob/master/License.txt
+      grants rights to "Software" only and never mentions the dataset itself, matching
+      verification.verified_by above — legal_basis stays `unknown`. Resolving needs a
+      counsel-opinion reference on whether 17 U.S.C. §105 extends to the data, the step
+      tdm requires before shipping use.
     loader:
       layout: coco-json
       schema_id: worms-species
     tags: [caribbean-adjacent, needs-verification]
 
   - id: fishnet-2023
+    domain: fish
+    access_class: internal-only
     name: FishNet (ICCV 2023)
+    # habitat inferred (WP-2b) from this source's own description/notes, not independently verified
+    habitat: [mixed]
     version: "2023"
     description: Largest species-labelled fish taxonomy benchmark — 17,357 species with traits.
     licence: NO-LICENCE-STATED
     legal_basis: unknown
+    redistribution: unknown
     provenance: public
     verification:
       verified_on: 2026-08-29
@@ -192,7 +226,7 @@ sources:
         statement exists anywhere for the actual images/annotations.
       method: absent
     access:
-      method: http
+      method: request
       uri: https://fishnet-2023.github.io/
       notes: >
         Checked 2026-08-28: the only image source is a Google Drive file
@@ -205,24 +239,37 @@ sources:
         of this source's declared coco-json layout.
     modalities: [image]
     capabilities: [fish-classification, general-pretraining]
-    items: 94532
+    n_images: 94532
     annotations: [{ kind: bbox, classes: 17357, supervises: [taxon] }]
     coverage: { regions: [global] }
     domain_shift:
       caveats: ["Aggregated from many sources — not in-situ reef survey imagery, so appearance differs from transect footage."]
+    notes: >
+      Legal-basis re-check 2026-09-18: fishnet-2023.github.io's CC-BY-SA-4.0 footer is
+      the Academic Project Page Template's boilerplate licensing the WEBSITE, not the
+      dataset (github.com/faixan-khan/FishNet API: `license: null`), matching
+      verification.verified_by above. legal_basis stays `unknown`; resolving needs
+      either written permission from the authors or a counsel-opinion reference for a
+      tdm basis — moot until the Google-Drive access block is also fixed.
     loader:
       layout: coco-json
       schema_id: worms-species
     tags: [taxonomy, copyleft]
 
   - id: mft25
+    domain: fish
+    release_skip_reason: "non-image-modality: video tracking benchmark, frames not extracted"
+    access_class: open
     name: MFT25 (Multiple Fish Tracking 2025)
+    # habitat inferred (WP-2b) from this source's own description/notes, not independently verified
+    habitat: [mixed]
     version: "2025"
     description: >
       The first proper underwater fish multi-object-tracking benchmark, released with
       the SU-T tracker (AAAI 2026 Oral).
     licence: Apache-2.0
     legal_basis: licence
+    redistribution: ok
     provenance: public
     verification:
       verified_on: 2026-08-29
@@ -242,11 +289,11 @@ sources:
         licence statement for the data at all. Apache-2.0 is written for software,
         not imagery/annotations — plausibly a placeholder default rather than a
         considered choice. Confirm with the authors before shipping on this basis.
-    access: { method: http, uri: https://vranlee.github.io/SU-T/ }
+    access: { method: request, uri: https://vranlee.github.io/SU-T/ }
     modalities: [video]
     capabilities: [fish-tracking, fish-detection]
-    items: 48066
-    items_note: "15 sequences, 48,066 frames, 408,578 boxes."
+    n_files: 48066
+    counts_note: "15 sequences, 48,066 frames, 408,578 boxes."
     annotations: [{ kind: track, count: 408578, supervises: [taxon] }]
     coverage: { regions: [unknown] }
     domain_shift:
@@ -255,11 +302,16 @@ sources:
     tags: [tracking, benchmark]
 
   - id: deepsea-mot
+    domain: deep-sea
+    access_class: open
     name: DeepSea MOT (MBARI)
+    # habitat inferred (WP-2b) from this source's own description/notes, not independently verified
+    habitat: [deep_sea_benthic]
     version: "2025"
     description: First public deep-sea multi-object-tracking benchmark.
     licence: CC-BY-SA-4.0
     legal_basis: licence
+    redistribution: ok
     provenance: public
     verification:
       verified_on: 2026-08-17
@@ -268,13 +320,14 @@ sources:
     access:
       method: huggingface
       uri: https://huggingface.co/datasets/MBARI-org/DeepSea-MOT
+      size_bytes: 18464323583  # measured 2026-09-18
       params:
         hf_id: MBARI-org/DeepSea-MOT
         image_column: image
     modalities: [video]
     capabilities: [fish-tracking, megafauna-id]
-    items: 4
-    items_note: "4 annotated deep-sea sequences."
+    n_files: 4
+    counts_note: "4 annotated deep-sea sequences."
     annotations: [{ kind: track, supervises: [taxon] }]
     coverage: { regions: [deep-sea] }
     domain_shift:
@@ -284,14 +337,21 @@ sources:
       schema_id: worms-species
       verified_on: 2026-08-29
       verified_note: "Live HF fetch confirms flat image files under the image column, no directory structure to break."
+    citation: "Barnard, K., Liu, E., Walz, K., Schlining, B., Stout, N. J., & Lundsten, L. (2025). DeepSea MOT: A benchmark dataset for multi-object tracking on deep-sea video (Version 1). arXiv. https://doi.org/10.48550/ARXIV.2509.03499"
     tags: [tracking, tooling]
 
   - id: fathomnet
+    domain: deep-sea
+    access_class: restricted-nd
+    licence_per_row: true
     name: FathomNet
+    # habitat inferred (WP-2b) from this source's own description/notes, not independently verified
+    habitat: [deep_sea_benthic]
     version: "live"
     description: Large deep-sea annotation ecosystem with a mature API and taxonomy backbone.
     licence: PER-SOURCE-VARIES
     legal_basis: unknown
+    redistribution: unknown
     provenance: public
     verification:
       verified_on: 2026-08-29
@@ -310,6 +370,7 @@ sources:
     access:
       method: api
       uri: https://database.fathomnet.org/api
+      params: { client: fathomnet }
       notes: >
         fathomnet.org itself is now a Wix marketing site (redirects away from any API
         path, checked 2026-08-28). The real API — confirmed live and matching the
@@ -317,11 +378,18 @@ sources:
         No auth needed for reads.
     modalities: [image]
     capabilities: [fish-detection, megafauna-id, invertebrate-detection, general-pretraining]
-    items: 100000
+    n_images: 100000
     annotations: [{ kind: bbox, count: 6600000, supervises: [taxon] }]
     coverage: { regions: [deep-sea, eastern-pacific] }
     domain_shift:
       caveats: ["Excellent infrastructure, weak reef overlap."]
+    notes: >
+      Legal-basis re-check 2026-09-18: fathomnet.org/terms (JS-rendered Wix page, HTTP
+      200) could not be quoted cleanly via anonymous curl, but verification.verified_by
+      above already confirms the same four-licence (CC0/CC-BY/CC-BY-NC/CC-BY-NC-ND)
+      per-image split with no machine-readable per-image field. legal_basis stays
+      `unknown`; resolving needs a per-image licence lookup or written permission
+      covering the NC/ND-tagged images before shipping use.
     loader:
       layout: coco-json
       schema_id: worms-species
@@ -332,11 +400,16 @@ sources:
     tags: [deep-sea, api]
 
   - id: mouss-detection
+    domain: deep-sea
+    access_class: open
     name: MOUSS fish imagery (NOAA PIFSC)
+    # habitat inferred (WP-2b) from this source's own description/notes, not independently verified
+    habitat: [deep_sea_benthic]
     version: "2024"
     description: Grayscale stationary-camera fish detection from Hawaiian BFISH surveys.
     licence: US-GOV-PD
     legal_basis: licence
+    redistribution: ok
     provenance: public
     verification:
       verified_on: 2026-08-17
@@ -345,12 +418,13 @@ sources:
     access:
       method: huggingface
       uri: https://huggingface.co/datasets/akridge/MOUSS_fish_imagery_dataset_grayscale_small
+      size_bytes: 60910307  # measured 2026-09-18
       params:
         hf_id: akridge/MOUSS_fish_imagery_dataset_grayscale_small
         image_column: image
     modalities: [image]
     capabilities: [fish-detection]
-    items: 1869
+    n_images: 1869
     annotations: [{ kind: bbox, classes: 1, supervises: [] }]
     coverage: { regions: [central-pacific] }
     domain_shift:
@@ -359,16 +433,22 @@ sources:
         - "The HuggingFace mirror ships IMAGES ONLY — the bounding boxes are in a separate release. Verified 2026-08-17."
     loader:
       layout: flat-images
+      crosswalk_id: mouss-detection
       verified_on: 2026-08-17
       verified_note: "30 live rows fetched from HF; images only, no annotation file — coco-json was a wrong guess, corrected to flat-images"
     tags: [public-domain, baseline]
 
   - id: labeled-fishes-in-the-wild
+    domain: fish
+    access_class: open
     name: Labeled Fishes in the Wild (NOAA SWFSC)
+    # habitat inferred (WP-2b) from this source's own description/notes, not independently verified
+    habitat: [rocky_reef]
     version: "2014"
     description: Canonical NOAA benchmark for fish detection in cluttered rocky habitat.
     licence: US-GOV-PD
     legal_basis: licence
+    redistribution: ok
     provenance: public
     verification:
       verified_on: 2026-08-29
@@ -393,8 +473,8 @@ sources:
         by following the broken canonical link. Confirmed live and Range-fetchable.
     modalities: [image]
     capabilities: [fish-detection]
-    items: 578
-    items_note: >
+    n_images: 578
+    counts_note: >
       Corrected 2026-08-29 from the paper's headline "929 positive" figure: the
       delivered archive has 1,326 files under Positive_fish/ but only 578 carry a bbox
       line in the .dat annotation file — the rest are additional crops with no
@@ -404,6 +484,7 @@ sources:
     coverage: { regions: [eastern-pacific, temperate] }
     loader:
       layout: opencv-cascade-dat
+      crosswalk_id: labeled-fishes-in-the-wild
       params:
         images_dir: "_LABELED-FISHES-IN-THE-WILD/Training_and_validation/Positive_fish"
         annotations: "_LABELED-FISHES-IN-THE-WILD/Training_and_validation/Positive_fish/Positive_fish_(ALL)-MARKS_DATA.dat"
@@ -420,11 +501,16 @@ sources:
     tags: [public-domain, small]
 
   - id: brackish-dataset
+    domain: imaging
+    access_class: open
     name: Brackish Dataset (AAU)
+    # habitat inferred (WP-2b) from this source's own description/notes, not independently verified
+    habitat: [soft_sediment]
     version: "2019"
     description: The only major temperate/brackish underwater detection set — fish and crustaceans.
     licence: CC-BY-SA-4.0
     legal_basis: licence
+    redistribution: ok
     provenance: public
     verification:
       verified_on: 2026-08-29
@@ -437,6 +523,7 @@ sources:
     access:
       method: http
       uri: https://vap.aau.dk/the-brackish-dataset/
+      size_bytes: 173000000  # documented upstream, not measured — 2026-09-18
       notes: >
         Checked 2026-08-28: the AAU page's only real data host is Kaggle
         (aalborguniversity/brackish-dataset, ~173MB per its public listing API,
@@ -447,7 +534,7 @@ sources:
         this project does not hold.
     modalities: [video, image]
     capabilities: [fish-detection, invertebrate-detection]
-    items: 14674
+    n_images: 14674
     annotations: [{ kind: bbox, classes: 6, supervises: [taxon] }]
     coverage: { regions: [temperate] }
     domain_shift:
@@ -455,14 +542,21 @@ sources:
     loader:
       layout: yolo-txt
       schema_id: dataset-native
+      crosswalk_id: brackish-dataset
+    citation: "@InProceedings{pedersen2019brackish, title={Detection of Marine Animals in a New Underwater Dataset with Varying Visibility}, author={Pedersen, Malte and Haurum, Joakim Bruslund and Gade, Rikke and Moeslund, Thomas B. and Madsen, Niels}, booktitle = {The IEEE Conference on Computer Vision and Pattern Recognition (CVPR) Workshops}, month = {June}, year = {2019}}"
     tags: [temperate, turbidity]
 
   - id: fish4knowledge
+    domain: fish
+    access_class: internal-only
     name: Fish4Knowledge
+    # habitat inferred (WP-2b) from this source's own description/notes, not independently verified
+    habitat: [coral_reef]
     version: "2013"
     description: Classic imbalanced live-reef-fish recognition set with segmentation masks.
     licence: NO-LICENCE-STATED
     legal_basis: unknown
+    redistribution: unknown
     provenance: public
     verification:
       verified_on: 2026-08-29
@@ -488,11 +582,18 @@ sources:
         satisfies the image-folder layout's "one directory per class" requirement).
     modalities: [image]
     capabilities: [fish-classification, fish-detection]
-    items: 27370
+    n_images: 27370
     annotations: [{ kind: image-label, classes: 23, supervises: [taxon] }]
     coverage: { regions: [coral-triangle] }
     domain_shift:
       caveats: ["Severe class imbalance — the long tail is the point of the benchmark."]
+    notes: >
+      Legal-basis re-check 2026-09-18: homepages.inf.ed.ac.uk/rbf/Fish4Knowledge/ (HTTP
+      200) still carries zero mentions of licence, copyright or terms anywhere on the
+      site — confirmed absence, not silence, matching verification.verified_by above.
+      legal_basis stays `unknown`; NO-LICENCE-STATED's tdm exception (EU Art. 15o
+      Auteurswet / DSM Art. 4) is the proposed basis, pending a robots.txt /
+      machine-readable-reservation check and counsel sign-off before shipping use.
     loader:
       layout: image-folder
       schema_id: worms-species
@@ -505,11 +606,17 @@ sources:
     tags: [classic, imbalanced]
 
   - id: sea-urchin-detection
+    domain: coral
+    release_skip_reason: "no-staged-images: nothing staged under sources/sea-urchin-detection/ in rs-storage-open (WP-R3 listing = 0 keys)"
+    access_class: open
     name: Sea Urchin detection (Roboflow)
+    # habitat inferred (WP-2b) from this source's own description/notes, not independently verified
+    habitat: [rocky_reef]
     version: "unversioned"
     description: Multi-class urchin detection — relevant to herbivory and reef-state indicators.
     licence: CC-BY-4.0
     legal_basis: licence
+    redistribution: ok
     provenance: public
     verification:
       verified_on: 2026-08-29
@@ -519,7 +626,7 @@ sources:
         "LICENSE: CC BY 4.0" directly, shown twice including in its citation block.
       method: dataset-card
     access:
-      method: http
+      method: request
       uri: https://universe.roboflow.com/thesis-ztpwb/sea-urchin-10r8i
       notes: >
         Checked 2026-08-28: confirmed via direct interaction with the live project
@@ -529,10 +636,272 @@ sources:
         fetchable without a Roboflow account this project does not hold.
     modalities: [image]
     capabilities: [invertebrate-detection]
-    items: 2475
+    n_images: 2475
     annotations: [{ kind: bbox, classes: 9, supervises: [taxon] }]
     coverage: { regions: [coral-triangle] }
     loader:
       layout: yolo-txt
       schema_id: dataset-native
     tags: [urchin, herbivory]
+
+  - id: large-scale-fish
+    domain: fish
+    access_class: open
+    name: "A Large Scale Fish Dataset (Ulucan et al.) — market/out-of-water"
+    # habitat inferred (WP-2b): OUT OF WATER (market/countertop fish photos), never in situ
+    habitat: [artificial]
+    version: "unversioned"
+    description: >
+      Market/countertop photos of whole fish and shrimp laid out for sale (9 species:
+      Sea Bass, Red Mullet, Gilt Head Bream, Red Sea Bream, Shrimp, Black Sea Sprat,
+      Horse Mackerel, Striped Red Mullet, Trout), not underwater or in-situ imagery.
+      LOCAL-ingest 2026-10-02 (archive (1).zip, a maintainer manual download): tagged
+      `out-of-water` so the release builder can exclude it from underwater/in-situ
+      outputs; kept as a general-pretraining fish-classification source otherwise.
+    licence: NO-LICENCE-STATED
+    legal_basis: unknown
+    redistribution: unknown
+    provenance: public
+    verification:
+      verified_on: 2026-10-02
+      verified_by: >
+        Local extraction of the manually-downloaded Kaggle zip: 18,429 jpg/png files
+        under `Fish_Dataset/Fish_Dataset/<class>/{<class>,<class> GT}` and
+        `NA_Fish_Dataset/<class>/*.png` (9 species directories each). No licence
+        sidecar found in the archive; Kaggle's licence field not re-checked this pass.
+      method: absent
+    access:
+      method: http
+      uri: https://www.kaggle.com/datasets/crowww/a-large-scale-fish-dataset
+      gated: true
+      notes: Kaggle login required for the upstream download; ingested from Yohan's
+        manual local copy via the `local_dir` adapter (see registry/ingest-specs/large-scale-fish.yaml).
+    modalities: [image]
+    capabilities: [fish-classification]
+    n_images: 18429
+    annotations:
+    - classes: 9
+      kind: image-label
+      supervises:
+      - taxon
+    - kind: dense-mask
+      notes: binary fish GT png
+      supervises: []
+    coverage: { regions: [unknown] }
+    loader: { layout: metadata-only }
+    tags: [out-of-water, market, general-pretraining, release-excluded, quarantined]
+
+  # ---- HK-4a (2026-10-06): the five staged fish/fauna box sources that had no entry ("Unknown source"). ----
+  - id: obsea-fish
+    access_class: unknown
+    notes: >-
+      HK-4a 2026-10-06: access_class unknown, so excluded from every flavour. The claimed licence
+      (CC-BY-4.0, Zenodo record 14888440, from the ingest spec / 2026-07 catalog sweep) is NOT
+      confirmed by any object in the staged tree: sources/obsea-fish/v1/ has no LICENSE,
+      INGEST.json, metadata.parquet or CHECKSUMS.sha256, and the record page was not re-fetched
+      (no downloads outside PyPI/weights in this session). Flip to `open` once the Zenodo record's
+      licence field is read; the BoxSource binding in task_layers/boxes_table.py already declares OPEN.
+    name: OBSEA fish detection (Mediterranean seafloor observatory)
+    version: v1
+    domain: fish
+    habitat: [rocky_reef]
+    description: >
+      YOLO bounding boxes for 23 Mediterranean fish taxa plus divers, from the OBSEA cabled
+      seafloor observatory camera (Zenodo record 14888440; the duplicate record 14888328 is excluded).
+    licence: CC-BY-4.0
+    legal_basis: licence
+    redistribution: unknown
+    provenance: public
+    verification:
+      verified_on: 2026-10-06
+      verified_by: >
+        registry/ingest-specs/obsea-fish.yaml (`license: CC-BY-4.0`, Zenodo record 14888440),
+        transcribed from the 2026-07 catalog sweep; no licence object in the staged tree and the
+        record page was not opened this session.
+      method: secondary
+    access:
+      method: s3
+      uri: s3://rs-storage-open/sources/obsea-fish/v1/
+      params: { upstream: zenodo, zenodo_record: 14888440 }
+    modalities: [image]
+    capabilities: [fish-detection, fish-classification]
+    n_images: 2442
+    counts_note: "2442 staged images, 620 YOLO label files (flat tree, no metadata.parquet: boxes are keyed by image stem)."
+    annotations:
+      - kind: bbox
+        classes: 23
+        supervises: [taxon]
+    coverage: { regions: [mediterranean] }
+    citation: "OBSEA fish detection training dataset (YOLO), Zenodo, doi:10.5281/zenodo.14888440"
+    homepage: https://zenodo.org/records/14888440
+    loader: { layout: flat-images, params: { images_dir: images }, schema_id: dataset-native, crosswalk_id: obsea-fish }
+    tags: [fish, mediterranean, yolo, fixed-camera]
+
+  - id: uiis
+    access_class: open
+    name: UIIS (WaterMask) underwater instance segmentation
+    version: "rev-44ca5db46599"
+    domain: fauna
+    description: >
+      Underwater instance segmentation (7 classes: fish, reefs, aquatic plants, wrecks, human divers,
+      robots, sea floor), COCO JSON; the WaterMask dataset of ICCV 2023.
+    licence: Apache-2.0
+    legal_basis: licence
+    redistribution: ok
+    provenance: public
+    verification:
+      verified_on: 2026-10-06
+      verified_by: >
+        Staged sources/uiis/rev-44ca5db46599/LICENSE ("License: Apache-2.0"), written at ingest from
+        the authors' own HF dataset repo LiamLian0727/UIIS (pinned revision 44ca5db4); matches
+        registry/ingest-specs/uiis.yaml.
+      method: dataset-card
+    access:
+      method: s3
+      uri: s3://rs-storage-open/sources/uiis/rev-44ca5db46599/
+      params: { upstream: hf, hf_repo: LiamLian0727/UIIS, hf_revision: 44ca5db46599f14faf8e57643014664435823738 }
+    modalities: [image]
+    capabilities: [fish-detection, megafauna-id]
+    n_images: 4628
+    annotations:
+      - kind: instance-mask
+        classes: 7
+        supervises: []
+    coverage: { regions: [unknown] }
+    citation: "Lian et al. 2023, WaterMask: Instance Segmentation for Underwater Imagery, ICCV 2023, pp.1305-1315"
+    homepage: https://huggingface.co/datasets/LiamLian0727/UIIS
+    loader: { layout: staged-tree, schema_id: dataset-native }
+    # One image = one group: UIIS names carry only a partition and a running number (no video, sequence or scene id); the dedup groups merge near-duplicates across and within splits.
+    split_group:
+      pattern: '(.+)'
+      match_field: stem
+      template: "uiis/{group}"
+    tags: [instance-seg, usis-uiis]
+
+  - id: uiis10k
+    access_class: open
+    name: UIIS10K underwater instance segmentation (UWSAM)
+    version: "rev-5c4316368a8e"
+    domain: fauna
+    description: >
+      Underwater instance segmentation, 10 classes, COCO JSON (UWSAM framework, 2025).
+    licence: Apache-2.0
+    legal_basis: licence
+    redistribution: ok
+    provenance: public
+    verification:
+      verified_on: 2026-10-06
+      verified_by: >
+        Staged sources/uiis10k/rev-5c4316368a8e/LICENSE ("License: Apache-2.0"), written at ingest from the
+        authors' own HF dataset repo LiamLian0727/UIIS10K (pinned revision 5c431636); matches
+        registry/ingest-specs/uiis10k.yaml.
+      method: dataset-card
+    access:
+      method: s3
+      uri: s3://rs-storage-open/sources/uiis10k/rev-5c4316368a8e/
+      params: { upstream: hf, hf_repo: LiamLian0727/UIIS10K, hf_revision: 5c4316368a8e420db754d1ab37c205a42985ba47 }
+    modalities: [image]
+    capabilities: [fish-detection, megafauna-id]
+    n_images: 10048
+    annotations:
+      - kind: instance-mask
+        classes: 10
+        supervises: []
+        notes: "COCO instance masks; boxes derive from the COCO bbox field"
+    coverage: { regions: [unknown] }
+    citation: "Li et al. 2025, Advancing Marine Research: UWSAM Framework and UIIS10K Dataset for Precise Underwater Instance Segmentation, arXiv:2505.15581"
+    homepage: https://huggingface.co/datasets/LiamLian0727/UIIS10K
+    loader: { layout: staged-tree, schema_id: dataset-native }
+    # One image = one group: UIIS10K names carry only a partition and a running number (no video, sequence or scene id); the dedup groups merge near-duplicates.
+    split_group:
+      pattern: '(.+)'
+      match_field: stem
+      template: "uiis10k/{group}"
+    tags: [instance-seg, usis-uiis]
+
+  - id: usis10k
+    access_class: open
+    name: USIS10K underwater salient instance segmentation
+    version: "rev-b10f41ab819b"
+    domain: fauna
+    description: >
+      Underwater salient instance segmentation, 7 classes plus a class-agnostic foreground set, COCO JSON (ICML 2024).
+    licence: Apache-2.0
+    legal_basis: licence
+    redistribution: ok
+    provenance: public
+    verification:
+      verified_on: 2026-10-06
+      verified_by: >
+        Staged sources/usis10k/rev-b10f41ab819b/LICENSE ("License: Apache-2.0"), written at ingest from the
+        authors' own HF dataset repo LiamLian0727/USIS10K (pinned revision b10f41ab); matches
+        registry/ingest-specs/usis10k.yaml.
+      method: dataset-card
+    access:
+      method: s3
+      uri: s3://rs-storage-open/sources/usis10k/rev-b10f41ab819b/
+      params: { upstream: hf, hf_repo: LiamLian0727/USIS10K, hf_revision: b10f41ab819bcdd78459621aedae8ffb5cab3c59 }
+    modalities: [image]
+    capabilities: [fish-detection, megafauna-id]
+    n_images: 10632
+    annotations:
+      - kind: instance-mask
+        classes: 7
+        supervises: []
+        notes: "COCO instance masks, multi-class and foreground variants"
+    coverage: { regions: [unknown] }
+    citation: "Lian et al. 2024, Diving into Underwater: Segment Anything Model Guided Underwater Salient Instance Segmentation and A Large-scale Dataset, ICML 2024 (PMLR v235:29545-29559)"
+    homepage: https://huggingface.co/datasets/LiamLian0727/USIS10K
+    loader: { layout: staged-tree, schema_id: dataset-native }
+    # One image = one group: USIS10K names carry only a partition and a running number (no video, sequence or scene id); the dedup groups merge near-duplicates.
+    split_group:
+      pattern: '(.+)'
+      match_field: stem
+      template: "usis10k/{group}"
+    tags: [instance-seg, usis-uiis, salient]
+
+  - id: roboflow-aquarium
+    access_class: open
+    name: Roboflow Aquarium Combined
+    version: "zip-5d30fed3dd5a"
+    domain: fauna
+    habitat: [lab]
+    description: >
+      Object detection across 7 captive-animal classes (fish, jellyfish, penguin, puffin, shark,
+      starfish, stingray) from two US aquariums (Henry Doorly Zoo, National Aquarium Baltimore);
+      638 images with YOLO boxes. Aquarium tanks, not wild reef.
+    licence: CC-BY-4.0
+    legal_basis: licence
+    redistribution: ok
+    provenance: public
+    verification:
+      verified_on: 2026-10-06
+      verified_by: >
+        Staged sources/roboflow-aquarium/zip-5d30fed3dd5a/docs/aquarium_pretrain/README.dataset.txt
+        states "License: CC BY 4.0" (Roboflow); the staged LICENSE repeats it.
+      method: licence-file
+    access:
+      method: s3
+      uri: s3://rs-storage-open/sources/roboflow-aquarium/zip-5d30fed3dd5a/
+      params: { upstream: local_dir }
+    modalities: [image]
+    capabilities: [fish-detection, megafauna-id]
+    n_images: 638
+    annotations:
+      - kind: bbox
+        classes: 7
+        supervises: []
+        notes: "YOLO txt + data.yaml; bound in task_layers/boxes_table.py (BOX_SOURCES)."
+    coverage: { regions: [unknown] }
+    domain_shift:
+      trained_regions: [unknown]
+      caveats: ["Captive animals in aquarium tanks: not a wild-reef distribution."]
+    citation: "Roboflow 2020, Aquarium Combined (public.roboflow.ai/object-detection/aquarium)"
+    homepage: https://public.roboflow.ai/object-detection/aquarium
+    loader: { layout: staged-tree, schema_id: dataset-native }
+    # Camera file id: the Roboflow export suffix (_rf_<hash>) and the _MOV-<n> frame index are dropped, so frames of one video and Roboflow augmentations of one photo share a group.
+    split_group:
+      pattern: '(IMG_[0-9]+)'
+      match_field: stem
+      template: "roboflow-aquarium/{group}"
+    tags: [aquarium, captive, yolo]

@@ -1,0 +1,8 @@
+id: heron-reef-benthic
+access_class: open
+adapter: http
+params: {}
+license: CC-BY-4.0
+attribution: Heron Reef benthic imagery (Sci Data 2021)
+citation: doi:10.1038/s41597-021-00871-5
+homepage: https://www.nature.com/articles/s41597-021-00871-5

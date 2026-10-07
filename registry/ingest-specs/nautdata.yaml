@@ -1,0 +1,11 @@
+# SPEC-w3 discovery: deep-sea/underwater VQA + caption (NautData, 2025).
+id: nautdata
+access_class: open
+adapter: hf
+license: apache-2.0
+attribution: H-EmbodVis
+citation: H-EmbodVis/NautData (HF)
+homepage: https://huggingface.co/datasets/H-EmbodVis/NautData
+params:
+  repo: H-EmbodVis/NautData
+  revision: 3cf1dbd245dc931539a49643789fb14526b2c846

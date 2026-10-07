@@ -35,7 +35,8 @@ from .scan import (
     scan,
 )
 from .schema import Axis
-from .task import TaskKind
+from .splitmap import load_split_map, resolve_splits
+from .task import SourceFit, TaskKind, fit_source
 
 SUPERVISED_DEFAULT_RATIOS = {"train": 0.7, "val": 0.15, "test": 0.15}
 
@@ -50,6 +51,58 @@ evaluation of a self-supervised encoder happens on a separate, labelled downstre
 
 SplitName = str
 
+
+def _default_ratios(
+    ratios: dict[SplitName, float] | None,
+    *,
+    self_supervised: bool,
+    split_map: str | Path | None,
+) -> dict[SplitName, float]:
+    """Fill in the default split ratios, adopting a persisted map's ratios first.
+
+    A self-supervised task defaults to ``SELF_SUPERVISED_DEFAULT_RATIOS`` (95/5), but a
+    shared ``split_map`` may already have been generated at 70/15/15 for the whole
+    corpus (see :mod:`marinedata.splitmap`). Without this, pretraining would raise on
+    every release build purely because its own default disagrees with the map it was
+    told to use. An explicit ``ratios=`` from the caller always wins — this only fills
+    in the *default*.
+    """
+    if ratios is not None:
+        return ratios
+    if split_map is not None:
+        existing = load_split_map(split_map)
+        if existing is not None:
+            return dict(existing.ratios)
+    return SELF_SUPERVISED_DEFAULT_RATIOS if self_supervised else SUPERVISED_DEFAULT_RATIOS
+
+
+def _to_pretrain_vocabulary(
+    assignment: dict[str, SplitName], ratios: dict[SplitName, float]
+) -> tuple[dict[str, SplitName], dict[SplitName, float]]:
+    """Translate a shared map's train/val/test assignment into the pretrain vocabulary.
+
+    ``train`` stays ``train``. ``val`` demotes to ``probe`` — the self-supervised
+    representation-quality check, not a task metric (see
+    ``SELF_SUPERVISED_DEFAULT_RATIOS``). ``test`` is dropped from the returned
+    ``assignment`` entirely: a labelled task's held-out evaluation images must never
+    enter a pretraining corpus, so a group the map assigned ``test`` gets no entry here
+    and ``Dataset.split()`` excludes its samples rather than assigning them a split.
+    A map already speaking the pretrain vocabulary directly (no ``val``/``test`` key)
+    passes through unchanged.
+    """
+    new_assignment = {
+        key: ("probe" if name == "val" else name)
+        for key, name in assignment.items()
+        if name != "test"
+    }
+    new_ratios = {
+        ("probe" if name == "val" else name): value
+        for name, value in ratios.items()
+        if name != "test"
+    }
+    return new_assignment, new_ratios
+
+
 _SCALAR_LABEL_KINDS = frozenset(
     {
         AnnotationKind.IMAGE_LABEL,
@@ -63,6 +116,28 @@ _SCALAR_LABEL_KINDS = frozenset(
 """Annotation kinds that yield a per-sample scalar label, and can therefore leak an
 unmapped vocabulary into the label index. Dense masks and point clouds carry classes in
 the raster instead, which the index never touches."""
+
+
+@dataclass(frozen=True)
+class PartialAbstainExclusion:
+    """A source dropped from one task's axis entirely (WS-D S26).
+
+    Not a per-row abstention — this is what happens when a source's OWN native labels
+    on the task's axis are a mix of resolved and coarser-abstaining (see
+    ``SourceFit.partial_abstain``). Keeping the resolved subset would confound the label
+    with the source itself — a Roboflow set whose "Unhealthy" rows abstain from
+    `bleaching-condition` while its "Healthy" rows are kept would teach a model
+    "looks like Roboflow" rather than "looks healthy". So the source contributes no
+    rows to this task at all, and that is reported here rather than happening silently.
+    """
+
+    source_id: str
+    task_id: str
+    abstaining_labels: tuple[str, ...]
+    """The native labels responsible — the coarser ones, e.g. ``("Unhealthy",)``."""
+    rows_dropped: int
+    """The source's total item count (``Source.primary_count``), since none of it reaches
+    this task once excluded."""
 
 
 @dataclass
@@ -86,6 +161,10 @@ class Dataset:
     task_kind: TaskKind | None = None
     """The task's kind, when built with ``task_id``. Drives ``split()``'s default
     ratios — a self-supervised corpus doesn't want the supervised 70/15/15."""
+
+    partial_abstain_excluded: tuple[PartialAbstainExclusion, ...] = ()
+    """Sources dropped entirely from this task (WS-D S26) because their own native
+    labels on the task's axis were a mix of resolved and coarser-abstaining."""
 
     def __len__(self) -> int:
         return len(self.samples)
@@ -111,6 +190,8 @@ class Dataset:
         ratios: dict[SplitName, float] | None = None,
         seed: int = 0,
         tolerance: float | None = 0.10,
+        split_map: str | Path | None = None,
+        frozen: bool = False,
     ) -> Dataset:
         """Assign splits. Returns self so it chains.
 
@@ -118,21 +199,38 @@ class Dataset:
             by: ``"site"`` groups by partition then source — the default, and the only
                 one that gives a trustworthy generalisation estimate for transect data.
                 ``"source"`` holds out whole datasets, which measures cross-dataset
-                transfer. ``"random"`` is available but leaks; use it knowingly.
+                transfer. ``"group"`` uses ``sample.meta["split_group"]``, the unit that
+                must land in one split across every source and task (see
+                :mod:`marinedata.scan`). ``"random"`` is available but leaks; use it
+                knowingly.
             ratios: split name to fraction. Defaults to 70/15/15 for a supervised
                 dataset (or one built with no task at all); to 95/5 (``train``/``probe``)
-                for a self-supervised one — see ``SELF_SUPERVISED_DEFAULT_RATIOS``.
+                for a self-supervised one — see ``SELF_SUPERVISED_DEFAULT_RATIOS``. When
+                ``split_map`` already exists on disk and ``ratios`` is omitted, the
+                map's own ratios are used instead of the task default, so a
+                self-supervised build does not raise against a shared 70/15/15 map.
             seed: groups are hashed with this, so the assignment is deterministic and
                 stable when new samples arrive in an existing group.
             tolerance: raise if any achieved split deviates from its requested ratio by
                 more than this. Set ``None`` to accept whatever the group sizes allow.
+            split_map: path to a ``SPLIT_MAP.json`` to read and extend. Omitted (the
+                default), splits are computed fresh every call, as before. Given, a
+                group already recorded there keeps its split forever — see
+                :mod:`marinedata.splitmap` — shared by every task that passes the same
+                path, since the map is keyed by group only.
+            frozen: require every group to already be in ``split_map`` — raise instead
+                of allocating and appending a new one. A release build passes this so
+                it can never grow the shared map; nothing is written to disk either way.
+
+        A self-supervised task reading a shared ``split_map`` never inherits its
+        ``test`` split: those groups are excluded from ``self.splits`` outright, and a
+        ``val`` group is renamed ``probe`` — see :func:`_to_pretrain_vocabulary`. A
+        labelled task's held-out evaluation images must never enter a pretraining
+        corpus.
         """
-        if ratios is None:
-            ratios = (
-                SELF_SUPERVISED_DEFAULT_RATIOS
-                if self.task_kind is TaskKind.SELF_SUPERVISED
-                else SUPERVISED_DEFAULT_RATIOS
-            )
+        ratios = _default_ratios(
+            ratios, self_supervised=self.task_kind is TaskKind.SELF_SUPERVISED, split_map=split_map
+        )
         total = sum(ratios.values())
         if abs(total - 1.0) > 1e-6:
             raise ValueError(f"split ratios must sum to 1.0, got {total}")
@@ -146,11 +244,24 @@ class Dataset:
         # Shared with the streaming path so the two cannot drift. A split that differed
         # between them would be near-impossible to notice and would invalidate every
         # comparison between runs.
-        assignment = assign_splits(counts, ratios, seed=seed)
+        if split_map is not None:
+            assignment = resolve_splits(split_map, counts, ratios, seed=seed, by=by, frozen=frozen)
+        else:
+            assignment = assign_splits(counts, ratios, seed=seed)
+
+        if self.task_kind is TaskKind.SELF_SUPERVISED and split_map is not None:
+            # A shared map speaks train/val/test — the labelled-task vocabulary, not
+            # this task's own. See ``_to_pretrain_vocabulary`` for the rule this
+            # translation enforces: `val` demotes to `probe`, `test` is excluded
+            # outright, never appended to ``self.splits`` at all.
+            assignment, ratios = _to_pretrain_vocabulary(assignment, ratios)
 
         splits: dict[SplitName, list[int]] = {name: [] for name in ratios}
         for position, key in enumerate(keys):
-            splits[assignment[key]].append(position)
+            name = assignment.get(key)
+            if name is None:
+                continue  # a supervised-vocabulary `test` group, excluded from pretraining
+            splits[name].append(position)
         self.splits = splits
 
         empty = [name for name, positions in splits.items() if not positions]
@@ -245,6 +356,7 @@ class DatasetBuilder:
         strict: bool = False,
         allow_unmapped: bool = False,
         task_id: str | None = None,
+        exclude_unmapped: bool = False,
     ) -> None:
         """
         Args:
@@ -257,6 +369,9 @@ class DatasetBuilder:
                 canonical node ids. That is almost always a mistake — a class list of
                 ``["HC", "SC", "18", "47"]`` is two vocabularies pretending to be one —
                 so it is off by default and must be chosen deliberately.
+            exclude_unmapped: drop a source with no crosswalk into ``schema_id`` from this
+                build (reason in :attr:`unmapped_excluded`) instead of raising for the whole
+                task — the release builder's per-source task exclusion (WP-R6).
         """
         self.registry = registry
         self.profile = registry.profile(profile)
@@ -268,6 +383,13 @@ class DatasetBuilder:
         self.allow_unmapped = allow_unmapped
         self.task_id = task_id
         self.task_spec = registry.task(task_id) if task_id else None
+        self.exclude_unmapped = exclude_unmapped
+        self.unmapped_excluded: tuple[tuple[str, str], ...] = ()
+        """``(source_id, reason)`` per source dropped for lacking a crosswalk into the task's
+        schema (only with ``exclude_unmapped``); set by :meth:`build`/:meth:`stream_samples`."""
+        self.partial_abstain_excluded: tuple[PartialAbstainExclusion, ...] = ()
+        """Set by :meth:`stream_samples`/:meth:`build_streaming` once run — see
+        ``Dataset.partial_abstain_excluded`` for the eager path's equivalent."""
 
         # A self-supervised task fixes no vocabulary, so there is nothing to build a
         # projector for — the label index falls back to whatever supervision the roots
@@ -321,6 +443,66 @@ class DatasetBuilder:
             )
         return allowed, denied
 
+    def _drop_unmapped(self, allowed: list[Source]) -> list[Source]:
+        """With ``exclude_unmapped``: ``allowed`` minus the sources that cannot map into
+        ``schema_id`` (recorded with the reason); otherwise ``allowed`` unchanged."""
+        if not self.exclude_unmapped or self.allow_unmapped:
+            return allowed
+        unmapped = set(self._check_mappable(allowed))
+        self.unmapped_excluded = tuple(
+            (sid, f"no crosswalk into schema {self.schema_id!r} for task {self.task_id!r}")
+            for sid in sorted(unmapped)
+        )
+        kept = [source for source in allowed if source.id not in unmapped]
+        if not kept:
+            raise ValueError(
+                "every permitted source lacks a crosswalk into "
+                f"'{self.schema_id}': {', '.join(sorted(unmapped))}."
+            )
+        return kept
+
+    def _partial_abstain_fits(self, sources: list[Source]) -> dict[str, SourceFit]:
+        """Sources among ``sources`` whose native labels on the task's axis are a mix of
+        resolved and coarser-abstaining (WS-D S26).
+
+        Supervised tasks only — a self-supervised task fixes no vocabulary to abstain
+        against. A static crosswalk analysis, same as ``fit_source`` everywhere else in
+        this codebase, so it costs nothing to run before any data is read.
+        """
+        if self.projector is None:
+            return {}
+        fits: dict[str, SourceFit] = {}
+        for source in sources:
+            spec = source.loader
+            if spec is None or not spec.crosswalk_id:
+                continue
+            crosswalk = self.registry.crosswalk(spec.crosswalk_id)
+            if crosswalk.target_schema != self.schema_id:
+                continue
+            fit = fit_source(self.projector, crosswalk, source.id)
+            if fit.partial_abstain:
+                fits[source.id] = fit
+        return fits
+
+    def _drop_partial_abstain(
+        self, sources: list[Source]
+    ) -> tuple[list[Source], tuple[PartialAbstainExclusion, ...]]:
+        """Remove partial-abstain sources from ``sources``, reporting what was dropped."""
+        fits = self._partial_abstain_fits(sources)
+        if not fits:
+            return sources, ()
+        kept = [s for s in sources if s.id not in fits]
+        excluded = tuple(
+            PartialAbstainExclusion(
+                source_id=source_id,
+                task_id=self.task_id or "",
+                abstaining_labels=fit.coarser,
+                rows_dropped=self.registry.source(source_id).primary_count or 0,
+            )
+            for source_id, fit in sorted(fits.items())
+        )
+        return kept, excluded
+
     def stream_samples(self) -> Iterator[Sample]:
         """Yield every permitted sample without materialising the corpus.
 
@@ -334,12 +516,15 @@ class DatasetBuilder:
             raise ValueError(
                 f"No permitted sources for profile '{self.profile.id}':\n  - {reasons}"
             )
+        allowed = self._drop_unmapped(allowed)
         unmapped = self._check_mappable(allowed)
         if unmapped and not self.allow_unmapped:
             raise ValueError(
                 f"These sources emit labels but have no crosswalk into "
                 f"'{self.schema_id}': {', '.join(unmapped)}."
             )
+
+        allowed, self.partial_abstain_excluded = self._drop_partial_abstain(allowed)
 
         for source in allowed:
             try:
@@ -361,6 +546,8 @@ class DatasetBuilder:
         seed: int = 0,
         tolerance: float | None = 0.10,
         min_count: int = 1,
+        split_map: str | Path | None = None,
+        frozen: bool = False,
     ) -> StreamingDataset:
         """Plan a corpus in constant memory, then stream it.
 
@@ -370,14 +557,21 @@ class DatasetBuilder:
 
         Use this when the corpus exceeds ~1M samples; :meth:`build` stays the simpler
         choice below that. Defaults to 70/15/15 for a supervised (or task-less) corpus,
-        95/5 for a self-supervised one — see ``SELF_SUPERVISED_DEFAULT_RATIOS``.
+        95/5 for a self-supervised one — see ``SELF_SUPERVISED_DEFAULT_RATIOS`` — unless
+        ``split_map`` already has a map on disk and ``ratios`` is omitted, in which case
+        the map's own ratios are adopted (see :meth:`Dataset.split`).
+
+        ``split_map``: as in :meth:`Dataset.split` — a path to a ``SPLIT_MAP.json`` to
+        read and extend, shared with the eager path and every task that passes it.
+        ``frozen``: as in :meth:`Dataset.split` — raise on a group absent from the map
+        instead of allocating and appending it; nothing is written either way.
         """
-        if ratios is None:
-            ratios = (
-                SELF_SUPERVISED_DEFAULT_RATIOS
-                if self.task_spec is not None and self.task_spec.kind is TaskKind.SELF_SUPERVISED
-                else SUPERVISED_DEFAULT_RATIOS
-            )
+        ratios = _default_ratios(
+            ratios,
+            self_supervised=self.task_spec is not None
+            and self.task_spec.kind is TaskKind.SELF_SUPERVISED,
+            split_map=split_map,
+        )
         if abs(sum(ratios.values()) - 1.0) > 1e-6:
             raise ValueError(f"split ratios must sum to 1.0, got {sum(ratios.values())}")
 
@@ -385,7 +579,12 @@ class DatasetBuilder:
         if not corpus.total:
             raise ValueError("No samples found. Check `roots` point at fetched data.")
 
-        assignment = assign_splits(dict(corpus.groups), ratios, seed=seed)
+        if split_map is not None:
+            assignment = resolve_splits(
+                split_map, dict(corpus.groups), ratios, seed=seed, by=by, frozen=frozen
+            )
+        else:
+            assignment = assign_splits(dict(corpus.groups), ratios, seed=seed)
 
         achieved: dict[SplitName, int] = {}
         for key, count in corpus.groups.items():
@@ -406,6 +605,8 @@ class DatasetBuilder:
             else LabelIndex.from_counts(corpus.labels, schema, min_count=min_count)
         )
         allowed, denied = self._permitted()
+        excluded_ids = {e.source_id for e in self.partial_abstain_excluded}
+        allowed = [s for s in allowed if s.id not in excluded_ids]
         return StreamingDataset(
             builder=self,
             label_index=index,
@@ -421,6 +622,7 @@ class DatasetBuilder:
             assignment=assignment,
             by=by,
             task_kind=self.task_spec.kind if self.task_spec is not None else None,
+            partial_abstain_excluded=self.partial_abstain_excluded,
         )
 
     def build(self, *, min_count: int = 1) -> Dataset:
@@ -432,6 +634,7 @@ class DatasetBuilder:
                 f"No permitted sources for profile '{self.profile.id}':\n  - {reasons}"
             )
 
+        allowed = self._drop_unmapped(allowed)
         unmapped = self._check_mappable(allowed)
         if unmapped and not self.allow_unmapped:
             raise ValueError(
@@ -443,6 +646,8 @@ class DatasetBuilder:
                 f"Add a crosswalk (registry/crosswalks/), drop the source, or pass "
                 f"allow_unmapped=True if you genuinely want native labels."
             )
+
+        allowed, partial_abstain_excluded = self._drop_partial_abstain(allowed)
 
         samples: list[Sample] = []
         skipped: dict[str, str] = {}
@@ -488,6 +693,7 @@ class DatasetBuilder:
             skipped=skipped,
             projector=self.projector,
             task_kind=self.task_spec.kind if self.task_spec is not None else None,
+            partial_abstain_excluded=partial_abstain_excluded,
         )
 
 
@@ -516,6 +722,9 @@ class StreamingDataset:
     assignment: dict[str, SplitName]
     by: str = "site"
     task_kind: TaskKind | None = None
+    partial_abstain_excluded: tuple[PartialAbstainExclusion, ...] = ()
+    """Sources dropped entirely from this task (WS-D S26) — see
+    ``Dataset.partial_abstain_excluded``."""
 
     def __iter__(self) -> Iterator[Sample]:
         yield from self.builder.stream_samples()

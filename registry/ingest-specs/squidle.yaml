@@ -1,0 +1,31 @@
+id: squidle
+access_class: unknown
+adapter: needs:squidle-api-auth
+license: per-campaign, mostly CC-BY (stated per collection)
+attribution: Squidle+ / CATAMI consortium (AIMS, UWA, IMOS)
+citation: squidle.org
+homepage: https://squidle.org/
+why_not_supported: Anonymous GET on /api/media and /api/media_collection returns JSON
+  (verified live), but is_public=false collections return metadata rows without resolvable
+  image URLs. Needs a per-collection is_public filter plus pagination (11.4M total
+  media rows).
+measured:
+  items: 11398834
+  method: GET https://squidle.org/api/media?results_per_page=1, num_results field;
+    anonymous, no auth
+  date: '2026-09-25'
+  per_item_license: per-campaign
+  by_depth_band_m:
+    0-6000: 11398834
+  label_type: point/polygon annotations, CATAMI + campaign-specific vocab
+  note: figure is ALL media (public+private); true anonymous-downloadable subset is
+    smaller and requires a per-collection is_public filter not yet built
+  bytes: null
+  bytes_basis: 'unmeasured: public/private split requires filtering'
+subset:
+  target_items: 1000000
+  stratify:
+  - collection
+  - is_public
+  rule: anonymous-downloadable media only (is_public=true per collection); dedupe
+    against existing Squidle rows

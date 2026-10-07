@@ -1,0 +1,12 @@
+id: suim
+access_class: open
+adapter: hf
+params:
+  repo: SatwikKambham/suim
+  revision: 0f07fb8db0e067f66061cdf18a04a87c7cf247d8
+license: MIT
+attribution: SUIM (Islam et al., IROS 2020), via HF mirror SatwikKambham/suim
+citation: Islam+ IROS2020
+homepage: https://huggingface.co/datasets/SatwikKambham/suim
+
+disk_floor_gib: 36.0

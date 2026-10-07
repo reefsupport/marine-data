@@ -1,0 +1,35 @@
+# Roboflow's Healthy/Bleached image label (v6i, v1-yolov8s, v2i, v13i) → RS-Benthic v1,
+# condition axis.
+#
+# SPLIT (WS-D S27) off `roboflow-bleaching-condition`, which used to be shared with v3i
+# (Healthy/Unhealthy — see `roboflow-bleaching-condition-hu`). `fit_source`
+# (src/marinedata/task.py) is static over the WHOLE crosswalk, not filtered by which
+# native labels a source actually emits, so the shared file made v6i/v1-yolov8s look
+# partial_abstain on `bleaching-condition` purely because v3i's "Unhealthy" edge was
+# present in the same crosswalk, even though neither source ever emits "Unhealthy".
+# Notes and fidelities below are unchanged from the pre-split file.
+#
+# ADDED (WS-D S37): "Non-Corals", v13i's third one-hot column. Declared
+# `fidelity: unmappable` (no `targets`) rather than mapped or omitted — the image is a
+# non-coral subject, not a condition judgement on a coral, so there is no canonical
+# condition-axis equivalent to invent. `Harmonizer.map_label` (harmonize.py) drops the
+# per-row label (dropped=True, unsupervised on this axis) without dropping the image —
+# it still contributes to `general-pretraining`. `fit_source` (task.py) never adds an
+# `unmappable` edge's label to `coarser` (targets.get(axis) is None -> straight into
+# `abstaining`, `continue` before the coarser check), so it cannot make v13i
+# `partial_abstain` the way a genuine coarser-vs-resolved mix would.
+
+crosswalks:
+  - id: roboflow-bleaching-condition-hb
+    source_schema: roboflow-bleaching-native
+    target_schema: rs-benthic-v1
+    description: >
+      Roboflow's Healthy/Bleached image-classification labels (v6i, v1-yolov8s, v2i,
+      v13i) onto RS-Benthic's condition axis.
+    edges:
+      - { source_label: "Healthy", targets: { condition: HEALTHY }, fidelity: coarsened,
+          note: "The source only ever recorded a binary healthy/not-healthy call; PALE was never distinguished, so 'Healthy' can only map to the coarsest true statement." }
+      - { source_label: "Bleached", targets: { condition: BLEACHED }, fidelity: exact,
+          note: "WS-D S25: v6i/v1-yolov8s's one-hot _classes.csv names this class 'Bleached' outright — it IS the BLEACHED leaf, not a coarsening onto it, so this edge is exact rather than coarsened like the other two." }
+      - { source_label: "Non-Corals", targets: { taxon: UNKNOWN }, fidelity: approximate,
+          note: "WP-7d (was unmappable, WS-D S37): a v13i-only multi-label PRESENCE tag, not a class of image. In the staged labels/image_labels.parquet (2026-09-25) 379 of its 384 images also carry Healthy and/or Bleached; only 5 are Non-Corals alone. So it says the frame also holds content that is not coral and was never classified further. That is the UNKNOWN (unclassified) non-taxon node on the taxon axis; it asserts no taxon and nothing on `condition`." }

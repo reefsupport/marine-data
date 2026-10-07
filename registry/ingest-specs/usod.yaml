@@ -1,0 +1,23 @@
+# USOD (SVAM-Net underwater saliency object detection) test benchmark.
+id: usod
+access_class: unknown
+adapter: local_dir
+params:
+  path: ~/Downloads/marine-manual/usod/data
+  exclude: ['checkpoints/*', '*.h5', '*.zip']
+  version: zip-fb2a1c738fd7
+license: unknown (see homepage)
+attribution: Islam et al. — SVAM-Net
+citation: Islam, Luo, Sattar 2020, RSS
+homepage: https://github.com/xahidbuffon/SVAM-Net
+notes: >-
+  LOCAL-ingest 2026-10-02: new id (USOD.zip, SVAM-Net USOD test benchmark). Contains
+  `USOD/{images,masks,eval_data}` (test images + saliency masks) plus
+  `USOD/checkpoints/*.h5` (SVAM_Net/SVAM_Net_Light/vgg16_ed_pt GAN/CNN weights) and a
+  nested `USOD/eval_data.zip` (kept, extracted beside itself per source instructions).
+  `checkpoints/*` and `*.h5` excluded here — not image data; see `saved_models.zip`
+  note in `lsui.yaml`/`usod10k.yaml`/`seathru-nerf.yaml` siblings (none of those three
+  READMEs name `saved_models`, so the separate `~/Downloads/saved_models.zip` was left
+  untouched — USOD ships its own GAN weights inline instead). No distribution licence
+  stated in-repo; left `unknown (see homepage)`.
+disk_floor_gib: 1.0

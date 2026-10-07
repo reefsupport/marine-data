@@ -1,0 +1,39 @@
+# DeepSeagrass: QUT/CSIRO seagrass substrate classification imagery (5-class + background).
+id: deepseagrass
+access_class: restricted-nd
+adapter: csiro_dap
+license: cc-by-nc-nd-4.0
+attribution: Raine, Marchant, Moghadam, Maire, Kettle, Kusy (CSIRO)
+citation: Raine et al. 2020, DeepSeagrass v1, CSIRO Data Collection, doi:10.25919/spmy-5151
+homepage: https://data.csiro.au/collection/csiro:47653
+params:
+  collection: 47653
+  format: imagefolder
+  exclude: ['*.txt']
+notes: >-
+  ADAPTERS 2026-10-02: wired a new minimal csiro_dap adapter onto this spec (history
+  below unchanged). Anonymous GET
+  https://data.csiro.au/dap/ws/v2/collections/47653/data returns the WHOLE 72,004-file
+  listing in one response (no pagination needed, verified empirically); each file's
+  filename is <split>/<class>/<name>.jpg (66,946 files) or
+  For_5-Class_Case/<split>/<class>/<name>.jpg (5,057 files, an alternate 5-class
+  labeling of a subset) plus one 5ClassInstructions.txt (excluded). Class label comes
+  from the immediate parent folder via the existing format: imagefolder decode path —
+  same mechanism as the other image-folder classification sources, no new framework.
+  History: MIRRORS2 2026-10-02 correction — verdict=match, anonymous access CONFIRMED,
+  no licence click-through exists; licence "Creative Commons Attribution-Noncommercial-
+  No Derivatives 4.0 International Licence", access "available to the public"; verified
+  via GET on 5ClassInstructions.txt (200, 728 bytes) and via HEAD on the non-presigned
+  link href (302 redirect to a fresh presigned URL, no auth challenge). No adapter in
+  this codebase yet consumed a CSIRO DAP v2 listing at the time (closest existing
+  adapters were bucket/manifest/http-index, none matching this API's shape); now
+  addressed by csiro_dap above. mirror_of =
+  https://data.csiro.au/dap/ws/v2/collections/47653/data (CSIRO DAP v2, no login)
+disk_floor_gib: 10.0
+measured:
+  items: 72003
+  bytes: 5579837743
+  method: 'DAP API: GET collections/47653/data, single response, 72,004 file entries (72,003 jpg + 1 txt excluded)'
+  date: '2026-10-02'
+  per_item_license: cc-by-nc-nd-4.0
+  label_type: multiclass (folder name; Background/Substrate/Strappy/… + For_5-Class_Case subset)

@@ -1,0 +1,25 @@
+# WP-6l-B (2026-09-25) new source: needs_adapter:geotiff-tiling — WP-6l-B sonar: deep-sea (~1,600-2,600 m) interferometric SAS from ROV SuBastian
+id: galapagos-insas
+access_class: open
+adapter: zenodo
+params:
+  zenodo_record: 17393662
+license: cc-by-4.0
+attribution: Gini, Jamieson (2025), Zenodo
+citation: doi:10.5281/zenodo.17393662 — Interferometric Synthetic Aperture Sonar data from the FKt231024  expedition
+  to the Galapagos Spreading Center
+homepage: https://zenodo.org/records/17393662
+notes: 'needs_adapter:geotiff-tiling — WP-6l-B sonar: deep-sea (~1,600-2,600 m) interferometric SAS from ROV SuBastian'
+disk_floor_gib: 36.0
+measured:
+  items: 22
+  bytes: 16350760676
+  bytes_basis: Zenodo API file sizes (sum)
+  method: 'Zenodo API: 22 GeoTIFF mosaics; tiles not yet cut'
+  date: '2026-09-25'
+  per_item_license: cc-by-4.0
+  by_depth_band_m: {}
+  label_type: none (unlabelled SAS backscatter and bathymetry rasters)
+  habitat_region: Galapagos Spreading Center hydrothermal fields
+  dedup_chain: new; no registry/ingest-spec/WP-6g/S57 match on title, DOI or record id
+  wp6l_gap: sonar

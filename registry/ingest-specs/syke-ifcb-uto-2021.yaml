@@ -1,0 +1,28 @@
+# WP-6g (2026-09-25) new source: candidate — WP-6g gap 7,6: Baltic (Utö) IFCB phytoplankton; not among planktonzilla's 15 constituents (only syke_ifcb_2022 is)
+id: syke-ifcb-uto-2021
+access_class: open
+adapter: http
+params:
+  version: b2share-w7y96-6jd66
+  urls:
+  - url: https://b2share.eudat.eu/api/records/w7y96-6jd66/files/phytoplankton_Ut%C3%B6_2021_labeled.zip/content
+    key: phytoplankton_Uto_2021_labeled.zip
+    size: 536940086
+license: CC-BY-4.0
+attribution: SYKE (Kraft et al.), EUDAT B2SHARE
+citation: doi:10.23728/b2share.7c273b6f409c47e98a868d6517be3ae3
+homepage: https://doi.org/10.23728/b2share.7c273b6f409c47e98a868d6517be3ae3
+notes: 'candidate — WP-6g gap 7,6: Baltic (Utö) IFCB phytoplankton; not among planktonzilla''s 15 constituents (only
+  syke_ifcb_2022 is)'
+disk_floor_gib: 36.0
+measured:
+  items: 151235
+  bytes: 536940086
+  method: 'HEAD + remote zip CD: entries=151286 ext=[(''png'', 151235), (''pdf'', 1)] dirs=[(''phytoplankton_Ut�_2021_labeled/Un'
+  date: '2026-09-25'
+  per_item_license: CC-BY-4.0
+  by_depth_band_m: {}
+  label_type: class per image (folder)
+  wp6g_gaps:
+  - 7
+  - 6

@@ -20,6 +20,8 @@ from .base import (
     register_loader,
     registered_layouts,
 )
+from .coralscop import CoralscopRleMaskLoader
+from .coralseg import CoralsegRMaskLoader
 from .generic import (
     AudioClipsLoader,
     CocoJsonLoader,
@@ -28,19 +30,26 @@ from .generic import (
     ImageMaskPairLoader,
     MetadataOnlyLoader,
 )
-from .labelbox import LabelboxNdjsonLoader
+from .labelbox import LabelboxNdjsonLoader, LabelboxRgbMaskLoader
+from .segmentsai import SegmentsAiInstanceMaskLoader
+from .staged_tree import StagedTreeLoader
 
 __all__ = [
     "AudioClipsLoader",
     "CocoJsonLoader",
+    "CoralscopRleMaskLoader",
+    "CoralsegRMaskLoader",
     "CsvPointsLoader",
     "DataNotAvailable",
     "ImageFolderLoader",
     "ImageMaskPairLoader",
     "LabelboxNdjsonLoader",
+    "LabelboxRgbMaskLoader",
     "LoaderError",
     "MetadataOnlyLoader",
+    "SegmentsAiInstanceMaskLoader",
     "SourceLoader",
+    "StagedTreeLoader",
     "build_loader",
     "loader_for",
     "register_loader",

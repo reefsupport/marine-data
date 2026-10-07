@@ -1,0 +1,12 @@
+id: mouss
+access_class: open
+adapter: hf
+params:
+  repo: akridge/MOUSS_fish_imagery_dataset_grayscale_small
+  revision: fc8851db5ff372a0528e600a1f6d6098df34917f
+license: NOASSERTION
+attribution: NOAA PIFSC MOUSS fish imagery (grayscale small), via HF akridge/MOUSS_fish_imagery_dataset_grayscale_small
+citation: NOAA PIFSC MOUSS
+homepage: https://huggingface.co/datasets/akridge/MOUSS_fish_imagery_dataset_grayscale_small
+
+disk_floor_gib: 36.0

@@ -1,0 +1,58 @@
+# WP-13 captions parquet schema — one row per image_sha256 (registry/captions/*.parquet).
+# Loaded by src/marinedata/captions/schema.py; keep the two in sync (a test asserts
+# every column here round-trips through validate_frame).
+columns:
+  - name: image_sha256
+    dtype: string
+    nullable: false
+    description: Join key against the v1 `metadata`/task-label configs.
+  - name: caption_template
+    dtype: string
+    nullable: false
+    description: >
+      Tier A. Deterministic sentence built only from caption_facts (facts.py +
+      template.py). Empty string when the row had zero clauses, never a placeholder.
+  - name: caption_facts
+    dtype: string
+    nullable: false
+    description: >
+      Sorted-key JSON dump of the CaptionFacts dataclass that produced
+      caption_template. Every clause traces back to a key in here.
+  - name: caption_vlm
+    dtype: string
+    nullable: true
+    description: Tier B. Only populated for the pilot's stratified sample of rows.
+  - name: vlm_model
+    dtype: string
+    nullable: true
+    description: HF/ModelScope model id used for caption_vlm (e.g. mlx-community/Qwen2.5-VL-3B-Instruct-4bit).
+  - name: vlm_revision
+    dtype: string
+    nullable: true
+    description: Model revision/commit pinned at inference time.
+  - name: prompt_sha256
+    dtype: string
+    nullable: true
+    description: sha256 of the exact grounding prompt sent to the VLM for this row.
+  - name: seed
+    dtype: int64
+    nullable: true
+    description: Sampling/generation seed for the pilot row.
+  - name: label_origin
+    dtype: string
+    nullable: false
+    description: "'derived' for caption_template rows, 'model' once caption_vlm is set (label-origin.yaml vocabulary)."
+  - name: consistency_flags
+    dtype: string
+    nullable: false
+    description: >
+      JSON array of automated-consistency-check flag strings (consistency.py); empty
+      array ("[]") when no contradiction was found or no caption_vlm exists yet.
+  - name: audit_verdict
+    dtype: string
+    nullable: true
+    description: >
+      Agent-audit verdict ('consistent' | 'hallucination' | 'uncertain') for the 150-row
+      blind contact-sheet review sample; null for rows outside that sample. Human
+      verification (>= 1k) is a separate, needs-Yohan/external-annotator pass — see
+      docs/captions.md.

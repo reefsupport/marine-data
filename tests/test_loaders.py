@@ -525,8 +525,37 @@ def test_declared_crosswalk_builds(registry: Registry, source_id: str) -> None:
     assert harmonizer.coverage_report()
 
 
+#: Layouts with no current source, kept intentionally rather than orphaned by accident.
+#: Each entry needs a reason so the next audit can tell "half-landed rename" from "known gap".
+_INTENTIONALLY_UNWIRED_LAYOUTS = {
+    "labelbox-ndjson": "superseded by labelbox-rgb 2026-09-23 (S7a); retire or rewire",
+    "segmentsai-instance": "provenance pending with Yohan (S7e)",
+    "coco-rle-binary": (
+        "coralscop-masks-rs moved to staged-tree once its staged tree was pinned "
+        "(WSD S15b, 2026-09-24); converter kept for a future re-export of raw "
+        "upstream JSONs"
+    ),
+    "dual-condition-masks": (
+        "reef-support-bleaching moved to staged-tree once its staged tree was pinned "
+        "(WS-D S30, 2026-09-24); loader kept for a future re-export of the raw "
+        "masks_bleached/masks_non_bleached pair"
+    ),
+    "labelbox-rgb": (
+        "reef-support-seaview-labels moved to staged-tree once its restaged tree was pinned "
+        "(RB-1/RB-3c, 2026-10-06; the stitched masks sit under labels/masks/); decoder kept "
+        "for a future re-export of the raw Labelbox fill+outline LUT PNGs"
+    ),
+    "coralseg-r-channel": (
+        "coralseg-ucsd-mosaics moved to staged-tree once its own staged copy carried "
+        "split_group + declared mask_values (D-AI2/D-AI3, coralseg-flip-d 2026-09-25); "
+        "converter kept for a future re-export of the raw upstream Image/Mask tree"
+    ),
+}
+
+
 def test_layouts_have_at_least_one_source(registry: Registry) -> None:
     """Flags a layout implemented but never used — usually a rename that half-landed."""
     declared = {s.loader.layout for s in _sources_with_loaders(registry)}
     orphans = set(registered_layouts()) - declared
-    assert not orphans - {"metadata-only"}, f"layouts with no sources: {sorted(orphans)}"
+    unexpected = orphans - {"metadata-only"} - set(_INTENTIONALLY_UNWIRED_LAYOUTS)
+    assert not unexpected, f"layouts with no sources: {sorted(unexpected)}"

@@ -1,0 +1,14 @@
+# u45: Li et al. 2019
+# tiny (45 images, <0.1 GB); catalog found no external download_urls, so try the repo tree directly (images may be committed in-repo).
+id: u45
+access_class: internal-only
+adapter: github
+license: NOASSERTION (no licence stated)
+attribution: Li et al. — U45 underwater test set
+citation: Li et al. 2019
+homepage: https://github.com/IPNUISTlegal/underwater-test-dataset-U45-
+params:
+  repo: IPNUISTlegal/underwater-test-dataset-U45-
+  ref: master
+
+disk_floor_gib: 36.0

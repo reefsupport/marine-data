@@ -1,0 +1,27 @@
+id: duo
+access_class: internal-only
+adapter: local_dir
+params:
+  path: ~/Downloads/marine-manual/duo/data
+  exclude: ['__MACOSX/*', '*.DS_Store']
+  label_patterns: ['annotations/*.json']
+  version: zip-5de58f03a09c
+license: research (non-commercial, per upstream)
+attribution: Liu et al. — DUO (Detecting Underwater Objects)
+citation: Liu et al. 2021, ICMEW
+homepage: https://github.com/chongweiliu/DUO
+notes: >-
+  WP-6d-A gdrive-public adapter; Baidu mirror not used (D-E). MIRRORS2
+  2026-10-02 verdict=match — verified file id 1w-bWevH7jFs7A1bIBlAOvXOxe2OFSHHs
+  against the official chongweiliu/DUO README's own Google Drive link (exact id
+  match); no HF/GitHub no-login mirror exists beyond this and BaiduYun.
+  LOCAL-ingest 2026-10-02 -- A maintainer downloaded duo.zip by hand; switched to local_dir
+  over the unzipped copy (DUO/{images/{train,test},annotations/instances_*.json}).
+  Original gdrive-public provenance kept above (file id 1w-bWevH7jFs7A1bIBlAOvXOxe2OFSHHs).
+  `__MACOSX/` AppleDouble members and `.DS_Store` excluded (macOS zip artifacts).
+disk_floor_gib: 34.0
+
+measured:
+  label_type: COCO bbox annotations, 4 categories
+  method: u15-label-kind-triage (registry-patch.yaml)
+  date: '2026-10-05'

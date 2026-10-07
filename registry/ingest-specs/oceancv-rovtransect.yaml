@@ -1,0 +1,10 @@
+id: oceancv-rovtransect
+access_class: open
+adapter: hf
+params:
+  repo: OceanCV/ROVTransectCompressed
+  revision: 746b1e4dd47a
+license: mit
+attribution: OceanCV
+citation: OceanCV/ROVTransectCompressed (HF)
+homepage: https://huggingface.co/datasets/OceanCV/ROVTransectCompressed

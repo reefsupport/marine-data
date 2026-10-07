@@ -19,8 +19,10 @@ precision.
 
 from __future__ import annotations
 
+from collections.abc import Collection
 from datetime import date
 from enum import Enum
+from typing import NamedTuple
 
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
@@ -68,6 +70,50 @@ class Fidelity(str, Enum):
     """No target exists. The source label is dropped, and the pixel/point becomes
     unsupervised on that axis rather than being forced into a wrong class."""
 
+    NARROWER = "narrower"
+    """The native label spans several children and the edge records only one. Stored for
+    audit and counted as mapped, but never a positive: projection abstains (like ``coarsened``)."""
+
+    @classmethod
+    def _missing_(cls, value: object) -> Fidelity | None:
+        """Accept the public ``match_type`` spelling (``broader``, ``related``, ``unmapped``)."""
+        member = _FROM_MATCH_TYPE.get(str(value))
+        return cls(member) if member else None
+
+    @property
+    def match_type(self) -> str:
+        """The public name (spec 3.3): exact, broader, narrower, related, unmapped."""
+        return _MATCH_TYPE[self.value]
+
+
+_MATCH_TYPE = {
+    "exact": "exact",
+    "coarsened": "broader",
+    "narrower": "narrower",
+    "approximate": "related",
+    "unmappable": "unmapped",
+}
+_FROM_MATCH_TYPE = {v: k for k, v in _MATCH_TYPE.items() if v != k}
+
+
+NON_TAXON_CATEGORIES = frozenset(
+    {
+        "substrate",
+        "debris",
+        "equipment",
+        "human",
+        "water",
+        "habitat",
+        "unknown",
+        "state",
+        "functional-group",
+        "grouping",
+        "background",
+    }
+)
+"""Why a taxon-axis node carries no AphiaID. ``functional-group`` = polyphyletic by
+definition (turf, macroalgae); ``grouping`` = a structural root or residual bucket."""
+
 
 class _Frozen(BaseModel):
     model_config = ConfigDict(frozen=True, extra="forbid")
@@ -112,11 +158,31 @@ class LabelNode(_Frozen):
     worms_status: str | None = None
     worms_checked_on: date | None = None
 
+    # ── explicit non-taxa ─────────────────────────────────────────────
+    # A taxon-axis node without an AphiaID must SAY why: substrate, debris, a diver, a
+    # polyphyletic functional group ("macroalgae"), an "unknown". Without the flag a
+    # missing id is indistinguishable from a forgotten one, and the WP-7 CI test
+    # (100% of taxon nodes: AphiaID or non_taxon) could not be written.
+    non_taxon: bool = False
+    non_taxon_reason: str | None = None
+    """``<category>: <free text>``; the category is one of :data:`NON_TAXON_CATEGORIES`."""
+
     @model_validator(mode="after")
     def _worms_fields_need_an_id(self) -> LabelNode:
         frozen = (self.worms_scientificname, self.worms_rank, self.worms_status)
         if any(f is not None for f in frozen) and self.worms_aphia_id is None:
             raise ValueError(f"node {self.id}: carries frozen WoRMS fields but no worms_aphia_id")
+        if self.non_taxon and self.worms_aphia_id is not None:
+            raise ValueError(f"node {self.id}: non_taxon but carries worms_aphia_id")
+        if self.non_taxon != (self.non_taxon_reason is not None):
+            raise ValueError(f"node {self.id}: non_taxon and non_taxon_reason go together")
+        if self.non_taxon_reason is not None:
+            category = self.non_taxon_reason.split(":", 1)[0].strip()
+            if category not in NON_TAXON_CATEGORIES:
+                raise ValueError(
+                    f"node {self.id}: non_taxon_reason category '{category}' not in "
+                    f"{sorted(NON_TAXON_CATEGORIES)}"
+                )
         return self
 
     @property
@@ -230,17 +296,50 @@ class LabelSchema(_Frozen):
         parents = {n.parent for n in self.nodes if n.parent}
         return tuple(n for n in self.nodes if n.id not in parents)
 
+    def node_facts(self, node_id: str | None, l2_codes: Collection[str] = ()) -> NodeFacts:
+        """Rank, AphiaID and L2 code of ``node_id`` (all null for an unknown or null node).
+
+        ``rs_benthic_code`` is the node itself when it is an L2 code, else its nearest L2
+        ancestor, else null (above L2, or no L2 vocabulary given).
+        """
+        node = self.node(node_id) if node_id else None
+        if node is None:
+            return NodeFacts(None, None, None)
+        code = next((n for n in (node.id, *self.ancestors(node.id)) if n in l2_codes), None)
+        return NodeFacts(node.worms_rank, node.worms_aphia_id, code)
+
 
 class CrosswalkEdge(_Frozen):
     """One source-label → canonical-label mapping."""
 
     source_label: str
+    source_label_id: str | None = None
+    """The source's own id for the label (``label_native_id``). Edges match by id first,
+    name second, so a renamed or double-spaced label cannot silently drop."""
+
     targets: dict[Axis, str] = Field(default_factory=dict)
     """Canonical node id per axis. A single source label can populate several axes —
     ``coralscapes:massive/meandering bleached`` sets taxon, form *and* condition."""
 
     fidelity: Fidelity = Fidelity.EXACT
+    """Stored name. ``match_type`` is the public name; both spellings are read."""
+
     note: str | None = None
+
+    @model_validator(mode="before")
+    @classmethod
+    def _accept_match_type(cls, data: object) -> object:
+        """``match_type`` is an input alias for ``fidelity`` (kept for one release)."""
+        if isinstance(data, dict) and "match_type" in data:
+            if "fidelity" in data:
+                raise ValueError("give either match_type or fidelity, not both")
+            data = {**data, "fidelity": data["match_type"]}
+            del data["match_type"]
+        return data
+
+    @property
+    def match_type(self) -> str:
+        return self.fidelity.match_type
 
     @model_validator(mode="after")
     def _unmappable_has_no_targets(self) -> CrosswalkEdge:
@@ -256,6 +355,14 @@ class CrosswalkEdge(_Frozen):
         return self
 
 
+class NodeFacts(NamedTuple):
+    """Facts derived from one taxonomy node, for the annotation ``taxon_*`` columns."""
+
+    taxon_rank: str | None
+    worms_aphia_id: int | None
+    rs_benthic_code: str | None
+
+
 class Crosswalk(_Frozen):
     """A complete mapping from one schema into a canonical schema."""
 
@@ -264,9 +371,42 @@ class Crosswalk(_Frozen):
     target_schema: str
     description: str = ""
     edges: tuple[CrosswalkEdge, ...] = ()
+    exact_by_construction: str | None = None
+    """Why every edge can honestly claim ``exact``, e.g. the source labels ARE WoRMS
+    scientific names. Independently designed vocabularies almost never align exactly,
+    so an all-exact crosswalk of 20+ edges must state this reason to be admitted."""
 
-    def edge(self, source_label: str) -> CrosswalkEdge | None:
+    def edge(self, source_label: str, label_id: str | None = None) -> CrosswalkEdge | None:
+        """The edge for a native label: by ``label_id`` first when given, then by name."""
+        if label_id is not None:
+            hit = next((e for e in self.edges if e.source_label_id == label_id), None)
+            if hit is not None:
+                return hit
         return next((e for e in self.edges if e.source_label == source_label), None)
+
+    def resolve(
+        self,
+        native: str,
+        *,
+        label_id: str | None = None,
+        target: LabelSchema | None = None,
+        l2_codes: Collection[str] = (),
+    ) -> tuple[str | None, str, int | None, str | None]:
+        """``(taxon_node_id, match_type, worms_aphia_id, rs_benthic_code)`` for a native label.
+
+        A label with no edge resolves to ``unmapped`` (all else null); callers that need to
+        tell a silent drop from an explicit ``unmapped`` use :meth:`edge`. The AphiaID and
+        L2 code need ``target`` (the crosswalk's target schema); without it they are null.
+        ``narrower`` is returned as stored — it is never a positive downstream.
+        """
+        edge = self.edge(native, label_id)
+        if edge is None or edge.fidelity is Fidelity.UNMAPPABLE:
+            return None, Fidelity.UNMAPPABLE.match_type, None, None
+        taxon = edge.targets.get(Axis.TAXON)
+        facts = (
+            target.node_facts(taxon, l2_codes) if target is not None else NodeFacts(*(None,) * 3)
+        )
+        return taxon, edge.match_type, facts.worms_aphia_id, facts.rs_benthic_code
 
     @property
     def coverage(self) -> dict[Fidelity, int]:

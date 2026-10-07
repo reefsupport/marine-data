@@ -1,0 +1,29 @@
+# USOD10k: large underwater salient-object-detection set (RGB/GT/depth/boundary, TR/TE/VAL splits).
+id: usod10k
+access_class: internal-only
+adapter: local_dir
+params:
+  path: ~/Downloads/marine-manual/usod10k/data
+  exclude: ['*.zip']  # nested TE/TR/VAL {RGB,GT,depth,Boundary}.zip kept but already extracted beside themselves
+  version: zip-f82114057c27
+license: unknown (see homepage)
+attribution: Hong et al. — USOD10K
+citation: Hong, Pan, Sun, Gao 2023, IEEE TIP
+homepage: https://github.com/LinHong-HIT/USOD10K
+notes: >-
+  LOCAL-ingest 2026-10-02: new id. USOD10k.zip's own central directory is Zip64 and
+  BSD/Info-ZIP's `unzip` reported "start of central directory not found / zipfile
+  corrupt" on it (and on the nested TR/RGB.zip, 2.5 GB) — verified NOT corrupt via
+  Python's `zipfile` module (zip64-aware), which read all 15 entries cleanly; extracted
+  with `zipfile.ZipFile.extractall` instead of the CLI. Nested per-split/per-modality
+  zips (`TE|TR|VAL/{RGB,GT,depth,Boundary}.zip`) were then extracted beside themselves
+  with `unzip -q -n` (those are all <4 GB and unzipped fine) and kept per source
+  instructions; excluded here via `*.zip` so the already-extracted images aren't
+  double-ingested through the zip-container decode path too. No distribution licence
+  stated in-repo; left `unknown (see homepage)`.
+disk_floor_gib: 1.0
+
+measured:
+  label_type: binary salient-object segmentation masks (GT png) plus depth maps and boundary maps
+  method: u15-label-kind-triage (registry-patch.yaml)
+  date: '2026-10-05'

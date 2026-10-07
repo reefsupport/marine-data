@@ -1,0 +1,25 @@
+# BrackishMOT: multi-object tracking benchmark in brackish water (fish/crab/shrimp), plus a
+# synthetic twin (brackishMOTSynth) and a background-video pool used for synthetic compositing.
+id: brackishmot
+access_class: unknown
+adapter: local_dir
+params:
+  path: ~/Downloads/marine-manual/brackishmot/data
+  label_patterns: ['*.mp4', '*.mp4.meta', '*.txt', '*.ini']
+  version: zip-e717dc1438aa
+license: unknown (see homepage)
+attribution: Pedersen et al. — BrackishMOT
+citation: Pedersen, Haurum, Bengtson, Moeslund 2023, WACV Workshops
+homepage: https://www.kaggle.com/datasets/aalborguniversity/brackishmot
+notes: >-
+  LOCAL-ingest 2026-10-02: new id (archive.zip). `BrackishMOT/{train,test}` (MOTChallenge-
+  style image sequences, `gt/gt.txt`/`det/det.txt`/`seqinfo.ini` carried as label files
+  via the generic `*.txt`/`*.ini` patterns), `brackishMOTSynth/` (synthetic twin, same
+  layout), and `background_videos/Videos/*.mp4(.meta)` (real video clips used to render
+  the synthetic set — carried as plain files via `*.mp4`/`*.mp4.meta`, never decoded to
+  frames, per source instructions). No distribution licence stated on the Kaggle page
+  read this pass; left `unknown (see homepage)`.
+disk_floor_gib: 2.0
+# WP-U14b: source-level constants (evidence: u14-sample/upstream-fields.tsv, marked known)
+default_platform: lander
+default_habitat: brackish_water

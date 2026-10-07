@@ -1,0 +1,296 @@
+# source: fathomnet-fgvc23
+# crosswalk: fathomnet-concepts
+# counts: types
+# retrieved: 2026-09-25 from github.com/fathomnet/fgvc-comp-2023 docs/supercategory_map.csv
+# note: annotation JSONs are Kaggle-only (login) per D-E; coverage is type-weighted
+label	count	description
+Abyssocucumis abyssorum		
+Acanthascinae		
+Acanthogorgia		
+Acanthoptilum		
+Actinernus		
+Actiniaria		
+Actiniidae		
+Actinopterygii		
+Actinoscyphia		
+Aeolidiidae sp. 1		
+Agonidae		
+Akoya platinum		
+Albatrossia pectoralis		
+Alcyoniidae		
+Alepocephalus tenebrosus		
+Alternatipathes		
+Anarrhichthys ocellatus		
+Anguilliformes		
+Annelida		
+Anoplopoma fimbria		
+Antedonidae		
+Anthoptilum grandiflorum		
+Anthoptilum lithophilum		
+Antimora microlepis		
+Antipatharia		
+Aporocidaris milleri		
+Apostichopus		
+Apostichopus californicus		
+Apostichopus leukothele		
+Asteroidea		
+Asthenactis		
+Astropecten		
+Bathyalcyon robustum		
+Bathybembix		
+Bathycrinidae		
+Bathydoris aioca		
+Bathydorus		
+Bathymetrinae		
+Bathypterois		
+Bathysaurus mollis		
+Benthodytes		
+Benthopecten		
+Benthothuria		
+Bolocera		
+Bolosominae		
+Bothrocara brunneum		
+Brachyura		
+Brisaster		
+Buccinidae		
+Caenogastropoda		
+Calocarides quinqueseriatus		
+Calyptrophora		
+Canalipalpata		
+Cancridae		
+Careproctus		
+Careproctus kamikawai		
+Careproctus melanurus		
+Careproctus ovigerus		
+Caridea		
+Cataetyx		
+Caulophacus		
+Ceramaster		
+Chaunacops coloratus		
+Chilara taylori		
+Chionoecetes tanneri		
+Chirostylidae		
+Chonelasma		
+Chorilia longipes		
+Chrysogorgia		
+Chrysogorgia monticola		
+Chrysogorgia pinnata		
+Cirripedia		
+Clavularia		
+Corallium		
+Corbitellinae		
+Coryphaenoides		
+Crinoidea		
+Crossaster		
+Cystechinus giganteus		
+Cystechinus loveni		
+Cystocrepis setigera		
+Dendronotus patricki		
+Desmophyllum dianthus		
+Dictyocalyx		
+Dipsacaster eximius		
+Distichoptilum gracile		
+Docosaccus maculatus		
+Dofleinia		
+Dytaster gilberti		
+Echinocrepis rostrata		
+Echinoidea		
+Echinothuriidae		
+Echiura		
+Elpidia		
+Eptatretus		
+Eualus macrophthalmus		
+Eucryphycus californicus		
+Euplectellidae		
+Farrea		
+Farrea truncata complex		
+Forcipulatida		
+Fungiacyathus (Bathyactis) marenzelleri		
+Funiculina		
+Funiculina-Halipteris complex		
+Galatheoidea		
+Gastropoda		
+Gersemia juliepackardae		
+Gobiidae		
+Goniasteridae		
+Gorgoniidae		
+Halipteris californica		
+Harmothoe		
+Henricia		
+Heterochone calyx		
+Heteropathes		
+Heteropolypus		
+Heteropolypus ritteri		
+Hexactinellida		
+Hippasteria		
+Hirudinea		
+Holothuria (Vaneyothuria) zacae		
+Holothuroidea		
+Hormathiidae		
+Hyalonema		
+Hyalonema (Corynonema) populiferum		
+Hyalonema (Oonema) bianchoratum		
+Hymenaster		
+Hyocrinidae		
+Icelinus		
+Icelinus filamentosus		
+Iridogorgia		
+Isidella		
+Isidella tentaculum		
+Isididae		
+Isosicyonis		
+Keratoisis		
+Kophobelemnidae		
+Laetmogone		
+Lepidion		
+Lepidisis		
+Leptogorgia		
+Lillipathes		
+Liparidae		
+Liponema brevicorne		
+Lithodes couesi		
+Lithodidae		
+Lophaster		
+Lophiiformes		
+Luciobrotula		
+Luidia foliolata		
+Lumpenus sagitta		
+Lycenchelys		
+Lycenchelys crotalinus		
+Lycodapus		
+Lycodes		
+Lycodes brevipes		
+Lycodes cortezianus		
+Lycodes diapterus		
+Lycodes pacificus		
+Lyssacinosida sp. 1		
+Macroregonia macrochira		
+Macrouridae		
+Majidae		
+Mediaster		
+Mediaster aequalis		
+Mediaster tenellus		
+Merluccius productus		
+Metacarcinus magister		
+Metridium farcimen		
+Moridae		
+Munida		
+Munida bapensis		
+Munida quadrispina		
+Munidopsis		
+Munidopsis depressa		
+Munidopsis kensmithi		
+Munidopsis lignaria		
+Munidopsis recta		
+Munidopsis scotti		
+Myctophidae		
+Myxoderma		
+Myxoderma platyacanthum		
+Myxoderma sacculatum		
+Neolithodes diomedeae		
+Neptunea-Buccinum Complex		
+Nettastoma parviceps		
+Nezumia liolepis		
+Nezumia stelgidolepis		
+Nudibranchia		
+Oneirophanta mutabilis complex		
+Ophichthus frontalis		
+Ophidiidae		
+Ophiodon elongatus		
+Pachycara bulbiceps		
+Paelopatides confundens		
+Pandalus		
+Pandalus ampla		
+Pandalus platyceros		
+Pannychia		
+Paradiopatra		
+Paragorgia arborea		
+Paragorgiidae		
+Paralepididae		
+Paraliparis		
+Paralithodes rathbuni		
+Paralomis		
+Paralomis cf. papillata		
+Paralomis multispina		
+Paralomis verrilli		
+Parantipathes		
+Parastenella		
+Pasiphaea		
+Patellogastropoda		
+Patiria miniata		
+Paulasterias mcclaini		
+Paxillosida		
+Peinaleopolynoe orphanae		
+Peniagone		
+Pennatula		
+Pennatula phosphorea		
+Pennatulacea		
+Pentametrocrinus paucispinulus		
+Peribolaster biserialis		
+Plectobranchus evides		
+Plesionika		
+Pleurobranchaea californica		
+Pleuroncodes planipes		
+Plexauridae		
+Polychaeta		
+Polynoidae		
+Poraniopsis		
+Poraniopsis inflata		
+Porichthys mimeticus		
+Primnoidae		
+Protoptilum		
+Pseudostichopus mollis		
+Psolidae		
+Psolus squamatus		
+Psychrolutes phrictus		
+Psychrolutidae		
+Psychronaetes		
+Psychropotes depressa		
+Psychropotidae		
+Pterasteridae		
+Ptilosarcus gurneyi		
+Pycnogonida		
+Pycnopodia helianthoides		
+Pythonaster pacificus		
+Rathbunaster californicus		
+Regadrella		
+Rossellidae		
+Sabellidae		
+Scalpellidae		
+Schizopathidae		
+Scleractinia		
+Sclerothamnopsis		
+Scorpaeniformes		
+Scotoplanes		
+Sebastes		
+Sebastolobus		
+Serpulidae		
+Solasteridae		
+Spectrunculus grandis		
+Staurocalyptus		
+Staurocalyptus solidus		
+Stolonifera		
+Strongylocentrotus fragilis		
+Stylasterias forreri		
+Stylatula		
+Swiftia		
+Swiftia kofoidi		
+Swiftia simplex		
+Synallactes		
+Synaphobranchidae		
+Terebellidae		
+Thrissacanthias penicillatus		
+Tritonia tetraquetra		
+Tromikosoma		
+Umbellapathes		
+Umbellula		
+Valvatida		
+Verum proximum		
+Virgulariidae		
+Xeneretmus		
+Zaniolepis frenata		
+Zaniolepis latipinnis		
+Ziminella vrijenhoeki		
+Zoarcidae		
+Zoroasteridae		
+yellow ruffled sponge		

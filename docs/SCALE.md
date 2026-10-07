@@ -71,7 +71,7 @@ samples either. When a single epoch genuinely cannot read from local NVMe, revis
 |---|---|---|---|---|
 | `reef-support-benthic-own` | T0 | 1,250 | ~3.8 | Caribbean, biota-only, **the only in-region masks** |
 | `coralscapes` | T2 → **T1** | 2,075 | 5.86 | dense seg, Red Sea |
-| `reef-support-seaview-labels` | blocked → **pending email** | 705 | ~2.7 | 46.9% Soft Coral — strongest octocoral evidence we own |
+| `reef-support-seaview-labels` | blocked → **open, approved 2026-10-06** (images CC-BY-3.0, masks CC-BY-4.0) | 705 | ~2.7 | 46.9% Soft Coral — strongest octocoral evidence we own |
 | `deolhonoscorais` | T1 | 1,411 | 12.89 | Brazil, western Atlantic |
 | **NEW** Caribbean AGRRA point set | T0 | 2,000 | ~6 | §8 — the actual unlock |
 | `sweet-corals` (SSL only, P4) | T1 | 90,289 | 339.8 → **~5.4 resized** | in-modality GoPro + COLMAP poses + metric scale |

@@ -21,9 +21,11 @@ import hmac
 import os
 import urllib.parse
 import xml.etree.ElementTree as ET
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from datetime import datetime, timezone
 from pathlib import Path
 
+from .checksums import CHECKSUM_FILE, file_digest, parse_checksums
 from .fetch import FetchError, FetchNotSupported, FetchResult, _get, _write
 from .models import Source
 
@@ -119,6 +121,194 @@ def _s3_endpoint(source: Source) -> tuple[str, str, str]:
     return bucket, f"{bucket}.{endpoint}", region
 
 
+MANIFEST_FETCH_WORKERS = 16
+"""Concurrent GETs for a pinned staged tree. One-at-a-time was latency-bound at ~110
+files/min against ``rs-storage-open`` — ~17 h for the v1 release's ~115k files.
+``MARINEDATA_FETCH_WORKERS`` overrides."""
+MANIFEST_FETCH_RETRIES = 8
+"""Per-file attempts (backoff 1.5, 3, 6, 12, 24, 30, 30 s) — at ~10^5 GETs a 3-attempt
+budget turns an ordinary burst of 5xx/429/timeouts into a failed release."""
+MANIFEST_FETCH_TIMEOUT = 30
+"""Per-attempt socket timeout. ``rs-storage-open`` normally answers in ~0.2 s but
+intermittently stalls one key for tens of seconds (observed 17-21 s TTFB on IPv4 and
+IPv6 alike, and five straight 60 s read timeouts on one v1 image during S44): a stalled
+GET is abandoned and retried sooner, and the retries span ~6 min rather than ~5."""
+MANIFEST_FETCH_MAX_FAILURES = 50
+"""Files that may fail outright before the rest of the fetch is cancelled."""
+
+
+def _manifest_workers() -> int:
+    raw = os.environ.get("MARINEDATA_FETCH_WORKERS", "").strip()
+    try:
+        return max(1, int(raw)) if raw else MANIFEST_FETCH_WORKERS
+    except ValueError:
+        return MANIFEST_FETCH_WORKERS
+
+
+def _is_pinned_staged_tree(source: Source) -> bool:
+    """Whether ``source`` can be fetched by digest-pinned manifest instead of a listing.
+
+    Anonymous ``GetObject`` is allowed on ``rs-storage-open`` but anonymous
+    ``ListBucket`` is not (7i) — every fetch that starts by listing the prefix 403s
+    there. A pinned staged tree does not need to list: ``checksums.root_digest`` names
+    the exact ``CHECKSUMS.sha256`` key to fetch, and that manifest names every other
+    file by key too, so the whole fetch is GETs by known key. Sources without a pin, or
+    without the ``staged-tree`` layout the manifest format is written for, keep the
+    listing path unchanged.
+    """
+    checksums = source.checksums
+    loader = source.loader
+    return (
+        checksums is not None
+        and bool(checksums.root_digest)
+        and loader is not None
+        and loader.layout == "staged-tree"
+    )
+
+
+def staged_root_params(source: Source) -> dict[str, str] | None:
+    """The ``access.params.staged_*`` keys (bucket, endpoint, region, prefix) of a source whose
+    release root is a staged tree that is NOT its fetch method, else ``None``.
+
+    ``atlantis-synthetic-depth`` must stay ``method: api`` / ``client: atlantis`` (its upstream
+    is a Kaggle download, and ``tests/test_fetch_api_dispatch.py`` guards that it is never
+    routed to another client), yet a release build roots it from the staged ``atlantis`` tree.
+    Only a pinned staged tree (``checksums.root_digest`` + ``layout: staged-tree``) with a
+    bucket and prefix qualifies.
+    """
+    params = source.access.params
+    staged = {
+        key: str(params[f"staged_{key}"])
+        for key in ("bucket", "endpoint", "region", "prefix")
+        if params.get(f"staged_{key}")
+    }
+    if "bucket" not in staged or "prefix" not in staged:
+        return None
+    return staged if _is_pinned_staged_tree(source) else None
+
+
+def fetch_staged_root(source: Source, root: Path, limit: int) -> FetchResult:
+    """Fetch the staged tree named by ``access.params.staged_*`` by its pinned manifest."""
+    staged = staged_root_params(source)
+    if staged is None:
+        raise FetchNotSupported(
+            f"{source.id}: no pinned staged tree declared in access.params.staged_*"
+        )
+    host = f"{staged['bucket']}.{staged.get('endpoint', 's3.amazonaws.com')}"
+    return _fetch_s3_manifest(source, root, limit, host, staged["prefix"])
+
+
+def _fetch_s3_manifest(
+    source: Source, root: Path, limit: int, host: str, prefix: str
+) -> FetchResult:
+    """Fetch a pinned staged tree by its ``CHECKSUMS.sha256`` manifest, never listing.
+
+    1. GET ``<prefix>CHECKSUMS.sha256`` by its known key and check its own sha256
+       against ``checksums.root_digest`` — a stale or tampered manifest is caught
+       before a single file it names is trusted.
+    2. Parse it with the repo's own :func:`marinedata.checksums.parse_checksums` (the
+       one place this ``<sha256>  <relpath>`` format is read) and fetch
+       ``metadata.parquet`` plus the first ``limit`` remaining files (the images) in
+       manifest order — sorted-path order, the same every run, so a ``--limit`` sample
+       is reproducible rather than whatever a listing's pagination happened to hand
+       back. A file under ``labels/`` is fetched only if its filename stem matches one
+       of the sampled images (``images/default/<stem>.jpg`` <-> ``labels/masks/<stem>.png``);
+       a label file whose stem matches no image at all — a shared manifest like
+       reefolution's small ``labels/points.parquet`` — is treated like ``metadata.parquet``
+       and always fetched in full. Per-image mask sources like coralscop-masks-rs have
+       ~39k label files for a handful of sampled images, and fetching every one in full
+       made ``verify --limit N`` take an hour instead of seconds.
+    3. Verify each downloaded file's sha256 against the manifest before writing it, so
+       a partial or corrupted transfer raises naming the exact file rather than
+       silently staging bad bytes. Files are fetched :data:`MANIFEST_FETCH_WORKERS` at a
+       time; a file already on disk with the manifest's sha256 is not fetched again, so
+       an interrupted release fetch resumes instead of restarting.
+    4. Check the result on disk: a full fetch (``limit`` covering every image) must
+       leave every manifest file present, a sample every file it chose — otherwise
+       raise with the missing count. A partial tree is never returned as if complete
+       (the staged-tree loader walks ``images/`` on disk, so missing files would silently
+       shrink the release rather than fail it).
+    """
+    manifest_key = f"{prefix}{CHECKSUM_FILE}"
+    manifest_bytes = _get(f"https://{host}/{urllib.parse.quote(manifest_key)}")
+    manifest_digest = hashlib.sha256(manifest_bytes).hexdigest()
+    expected_digest = source.checksums.root_digest  # type: ignore[union-attr]
+    if manifest_digest != expected_digest:
+        raise FetchError(
+            f"{source.id}: {CHECKSUM_FILE} digest {manifest_digest} does not match "
+            f"checksums.root_digest {expected_digest} — the pinned manifest is stale "
+            f"or has been tampered with"
+        )
+
+    digests = parse_checksums(manifest_bytes.decode("utf-8"))
+    metadata = [rel for rel in digests if rel == "metadata.parquet"]
+    rest = [rel for rel in digests if rel != "metadata.parquet" and not rel.startswith("labels/")]
+    image_stems = {Path(rel).stem for rel in rest}
+
+    labels_by_stem: dict[str, list[str]] = {}
+    shared_labels: list[str] = []
+    for rel in digests:
+        if not rel.startswith("labels/"):
+            continue
+        stem = Path(rel).stem
+        if stem in image_stems:
+            labels_by_stem.setdefault(stem, []).append(rel)
+        else:
+            shared_labels.append(rel)
+
+    sampled = rest[:limit]
+    sampled_labels = [rel for path in sampled for rel in labels_by_stem.get(Path(path).stem, [])]
+    # De-duplicated (two partitions can share a stem) so no two workers write one file.
+    wanted = list(dict.fromkeys(metadata + shared_labels + sampled_labels + sampled))
+    truncated = len(rest) > limit
+
+    def fetch_one(relative: str) -> None:
+        dest = root / relative
+        if dest.is_file() and file_digest(dest) == digests[relative]:
+            return  # already staged with the right bytes (an earlier, interrupted run)
+        key = f"{prefix}{relative}"
+        payload = _get(
+            f"https://{host}/{urllib.parse.quote(key)}",
+            timeout=MANIFEST_FETCH_TIMEOUT,
+            retries=MANIFEST_FETCH_RETRIES,
+        )
+        actual_digest = hashlib.sha256(payload).hexdigest()
+        if actual_digest != digests[relative]:
+            raise FetchError(
+                f"{source.id}: {relative} downloaded with sha256 {actual_digest}, the "
+                f"manifest expects {digests[relative]} — the transfer is corrupt or "
+                f"the tree changed under a pinned version"
+            )
+        _write(dest, payload)
+
+    failures: dict[str, Exception] = {}
+    with ThreadPoolExecutor(max_workers=_manifest_workers()) as pool:
+        futures = {pool.submit(fetch_one, relative): relative for relative in wanted}
+        for future in as_completed(futures):
+            exc = future.exception()
+            if exc is not None:
+                failures[futures[future]] = exc
+                if len(failures) >= MANIFEST_FETCH_MAX_FAILURES:
+                    for pending in futures:
+                        pending.cancel()  # the endpoint is down, not flaky — stop early
+                    break
+
+    # Completeness is checked on disk, not inferred from "no exception": a full fetch
+    # must leave every file the manifest names in place, a sample every file it chose.
+    required = list(digests) if not truncated else wanted
+    missing = sorted(rel for rel in required if not (root / rel).is_file())
+    if failures or missing:
+        first = sorted(failures)[0] if failures else missing[0]
+        detail = f"{first}: {failures[first]}" if failures else first
+        raise FetchError(
+            f"{source.id}: {'full' if not truncated else 'sample'} fetch incomplete — "
+            f"{len(missing)} of {len(required)} file(s) missing under {root} "
+            f"({len(failures)} failed to download); first: {detail}"
+        )
+
+    return FetchResult(source.id, root, len(wanted), "s3-manifest", truncated=truncated)
+
+
 def fetch_s3(source: Source, root: Path, limit: int) -> FetchResult:
     """List a bucket prefix and download up to ``limit`` objects.
 
@@ -126,10 +316,20 @@ def fetch_s3(source: Source, root: Path, limit: int) -> FetchResult:
         bucket, endpoint, region, prefix
         credentials_env: prefix for env vars, e.g. ``S3`` → ``S3_ACCESS_KEY_ID``.
             Omit for anonymous buckets.
+
+    A source with ``checksums.root_digest`` and ``loader.layout: staged-tree`` — a
+    pinned tree this repo's own writer produced — is instead fetched by
+    :func:`_fetch_s3_manifest`, which never lists (see :func:`_is_pinned_staged_tree`).
+    Credentialed sources (``credentials_env`` set) always keep this listing path: they
+    can list, so there is no need to trade the loop-detects-drift benefit of a listing
+    for a manifest fetch.
     """
     bucket, host, region = _s3_endpoint(source)
     prefix = str(source.access.params.get("prefix", ""))
     env_prefix = source.access.params.get("credentials_env")
+
+    if env_prefix is None and _is_pinned_staged_tree(source):
+        return _fetch_s3_manifest(source, root, limit, host, prefix)
 
     access_key = secret_key = None
     if env_prefix:

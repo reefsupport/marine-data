@@ -17,6 +17,8 @@ from marinedata.labelindex import IGNORE_INDEX, LabelIndex
 from marinedata.lineage import build_lineage
 from marinedata.sample import LabelValue, Sample
 from marinedata.schema import Axis
+from marinedata.splitmap import resolve_splits
+from marinedata.task import TaskKind
 
 pd = pytest.importorskip("pandas")
 
@@ -100,6 +102,71 @@ def test_site_split_has_no_group_leakage(dataset: Dataset) -> None:
 
     dataset.split(by="site")
     assert len(leakage_report(dataset)) == 0
+
+
+def test_cross_source_duplicate_lands_in_one_split(registry: Registry) -> None:
+    """Byte-identical images ingested under two different sources share a `split_group`
+    (`by="group"`) and must never straddle a split boundary — the leakage rule the
+    site-keyed map cannot make when the duplicate crosses `source_id`."""
+    shared_group = "seaview/12345"
+    shared = [
+        Sample(source_id="seaview-survey-imagery", key="s1", meta={"split_group": shared_group}),
+        Sample(source_id="coralvqa", key="c1", meta={"split_group": shared_group}),
+    ]
+    filler = [
+        Sample(source_id="other", key=f"o{i}", meta={"split_group": f"other/g{i}"})
+        for i in range(20)
+    ]
+    samples = shared + filler
+    schema = registry.label_schema("rs-benthic-v1")
+    index = LabelIndex.from_samples(samples, schema)
+    lineage = build_lineage([], registry.profile("research"))
+    dataset = Dataset(samples=samples, label_index=index, lineage=lineage)
+
+    dataset.split(by="group", tolerance=None)
+
+    shared_positions = {0, 1}
+    containing = [
+        name for name, positions in dataset.splits.items() if shared_positions & set(positions)
+    ]
+    assert len(containing) == 1, "the shared group must not straddle two splits"
+    assert shared_positions <= set(dataset.splits[containing[0]])
+
+
+def test_self_supervised_with_map_adopts_map_ratios(registry: Registry, tmp_path: Path) -> None:
+    """A self-supervised build's own 95/5 default must not raise against a map already
+    written at 70/15/15 for the whole corpus — the builder adopts the map's ratios."""
+    samples = [
+        _sample("a", f"a{i}", "HC" if i % 3 else "SC", partition=f"site{i % 12}")
+        for i in range(120)
+    ]
+    schema = registry.label_schema("rs-benthic-v1")
+    index = LabelIndex.from_samples(samples, schema)
+    lineage = build_lineage([], registry.profile("research"))
+    dataset = Dataset(
+        samples=samples, label_index=index, lineage=lineage, task_kind=TaskKind.SELF_SUPERVISED
+    )
+
+    path = tmp_path / "SPLIT_MAP.json"
+    counts = {f"a/site{i}": 10 for i in range(12)}
+    resolve_splits(
+        path,
+        counts,
+        {"train": 0.7, "val": 0.15, "test": 0.15},
+        seed=0,
+        by="site",
+        now="2026-09-23T00:00:00Z",
+    )
+
+    dataset.split(by="site", split_map=path)  # must not raise
+
+    # A shared map speaks train/val/test — the labelled-task vocabulary. A
+    # self-supervised task must never inherit the map's `test` split: those groups are
+    # excluded from `self.splits` altogether, and `val` demotes to `probe`.
+    assert set(dataset.splits) == {"train", "probe"}
+    assert dataset.splits["probe"], "the map's own val split must be reachable as probe"
+    included = sum(len(positions) for positions in dataset.splits.values())
+    assert included < len(samples), "the map's `test` groups must be excluded from `self.splits`"
 
 
 def test_random_split_leaks_and_that_is_why_it_is_not_the_default(dataset: Dataset) -> None:
@@ -320,13 +387,39 @@ def test_split_never_divides_a_group(registry: Registry) -> None:
 @pytest.fixture
 def mixed_roots(tmp_path: Path) -> dict[str, Path]:
     """A labelled source (coralscapes: real dense masks) and an unlabelled one
-    (sweet-corals: bare images), both real registry entries, faked on disk."""
+    (sweet-corals: bare images), both real registry entries, faked on disk.
+
+    coralscapes' registry entry declares `loader.layout: staged-tree` (S62, D-O) —
+    the shape its bucket copy actually is — so this fixture is a staged tree:
+    `images/`+`labels/masks/`+`metadata.parquet`, not bare `images/`+`masks/` dirs.
+    """
+    from marinedata.tables import StagedImage, write_metadata_table
+
     labelled = tmp_path / "coralscapes"
+    rows = []
     for i in range(4):
-        (labelled / "images").mkdir(parents=True, exist_ok=True)
-        (labelled / "masks").mkdir(parents=True, exist_ok=True)
-        (labelled / "images" / f"f{i}.jpg").write_bytes(b"\x89PNG\r\n\x1a\n")
-        (labelled / "masks" / f"f{i}.png").write_bytes(b"\x89PNG\r\n\x1a\n")
+        stem = f"f{i}"
+        (labelled / "images" / "default").mkdir(parents=True, exist_ok=True)
+        (labelled / "labels" / "masks" / "default").mkdir(parents=True, exist_ok=True)
+        (labelled / "images" / "default" / f"{stem}.jpg").write_bytes(b"\x89PNG\r\n\x1a\n")
+        (labelled / "labels" / "masks" / "default" / f"{stem}.png").write_bytes(
+            b"\x89PNG\r\n\x1a\n"
+        )
+        rows.append(
+            StagedImage(
+                stem=stem,
+                partition="default",
+                upstream_path=f"orig/{stem}.jpg",
+                upstream_split=None,
+                width=10,
+                height=10,
+                # coralscapes declares an explicit split_group rule (pattern
+                # `(?i)(site[0-9]+)` on `stem`) — StagedTreeLoader.validate() rejects
+                # a null split_group when the source has one.
+                split_group=f"coralscapes/site{i}",
+            )
+        )
+    write_metadata_table(labelled / "metadata.parquet", rows)
 
     unlabelled = tmp_path / "sweet-corals"
     unlabelled.mkdir(parents=True, exist_ok=True)

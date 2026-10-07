@@ -2,7 +2,11 @@
 
 sources:
   - id: sweet-corals
+    domain: coral
+    access_class: open
     name: wildflow/sweet-corals
+    # habitat inferred (WP-2b) from this source's own description/notes, not independently verified
+    habitat: [coral_reef]
     version: "2025"
     description: >
       Raw GoPro survey imagery from 13 Indonesian reef patches with full photogrammetry
@@ -10,6 +14,7 @@ sources:
       frames, camera poses and COLMAP reconstructions. Georeferenced and scaled.
     licence: CC-BY-4.0
     legal_basis: licence
+    redistribution: ok
     provenance: public
     verification:
       verified_on: 2026-08-17
@@ -30,8 +35,8 @@ sources:
       - structural-complexity
       - depth-estimation
       - general-pretraining
-    items: 90289
-    items_note: "352 GB raw GoPro imagery across 13 survey patches."
+    n_images: 90289
+    counts_note: "352 GB raw GoPro imagery across 13 survey patches."
     annotations:
       - kind: camera-pose
         supervises: []
@@ -64,13 +69,19 @@ sources:
     tags: [3d, scaled, in-modality, gopro]
 
   - id: deepreefmap-data
+    domain: imaging
+    release_skip_reason: "non-image-modality: video + point-cloud, no stills"
+    access_class: open
     name: DeepReefMap reference data and checkpoints
+    # habitat inferred (WP-2b) from this source's own description/notes, not independently verified
+    habitat: [coral_reef]
     version: "2024"
     description: >
       Red Sea GoPro transect videos with trained segmentation and SfM checkpoints for
       real-time semantic 3D reef mapping.
     licence: CC-BY-4.0
     legal_basis: licence
+    redistribution: ok
     provenance: public
     verification:
       verified_on: 2026-08-17
@@ -82,8 +93,8 @@ sources:
       size_bytes: 11060000000
     modalities: [video, point-cloud]
     capabilities: [3d-reconstruction, benthic-segmentation, pose-slam, depth-estimation]
-    items: 3
-    items_note: "3 videos plus segmentation_net.pth and sfm_net.pth."
+    n_files: 3
+    counts_note: "3 videos plus segmentation_net.pth and sfm_net.pth."
     annotations:
       - kind: point-cloud-label
         schema_id: coralscapes-39
@@ -100,13 +111,19 @@ sources:
     tags: [3d, reference-pipeline]
 
   - id: noaa-ncrmp-structural-complexity
+    domain: imaging
+    release_skip_reason: "no-staged-images: registry lists imagery, nothing staged under sources/ in rs-storage-open (U7/queue follow-up)"
+    access_class: open
     name: NOAA NCRMP structural complexity (SfM)
+    # habitat inferred (WP-2b) from this source's own description/notes, not independently verified
+    habitat: [coral_reef]
     version: "live"
     description: >
       Structure-from-Motion derived rugosity and structural-complexity metrics with
       paired adult and juvenile coral annotations.
     licence: US-GOV-PD
     legal_basis: licence
+    redistribution: ok
     provenance: public
     verification:
       verified_on: 2026-08-17
@@ -130,20 +147,38 @@ sources:
     tags: [metric-3d, rugosity, public-domain]
 
   - id: atlantis-synthetic-depth
+    domain: imaging
+    access_class: restricted-nc  # LICV 2026-10-05 (was open); same as registry/ingest-specs/atlantis.yaml
     name: Atlantis (synthetic underwater depth)
-    version: "2024"
+    # habitat inferred (WP-2b) from this source's own description/notes, not independently verified
+    habitat: [mixed]
+    version: "zip-6fc81e3c43a5"  # staged version (sources/atlantis/<version>/); upstream release year 2024
     description: Synthetic underwater image/depth/text triplets for monocular depth training.
     licence: MIT
     legal_basis: licence
+    redistribution: ok
     provenance: public
+    checksums:
+      version: "zip-6fc81e3c43a5"
+      root_digest: 1ea830727733657f0b5b6f60ef23912995a2c44717b8355d0456038573e6f163
+      files: 3603
+      size_bytes: 1966506966
     verification:
       verified_on: 2026-08-17
       verified_by: "github.com/zkawfanx/Atlantis — MIT licence"
       method: licence-file
     access:
-      method: http
+      method: api
       uri: https://github.com/zkawfanx/Atlantis
       size_bytes: 1962319455
+      params:
+        client: atlantis
+        # Release rooting only (WP-R5b): the staged `atlantis` tree. `fetch_sample` reads the
+        # `staged_*` keys instead of the access method, so fetch dispatch stays `api`/`atlantis`.
+        staged_bucket: rs-storage-open
+        staged_endpoint: hel1.your-objectstorage.com
+        staged_region: hel1
+        staged_prefix: sources/atlantis/zip-6fc81e3c43a5/
       notes: >
         Checked 2026-08-28: sole distribution is Kaggle (zkawfanx/atlantis, 1.96GB,
         no smaller subset; verified as a real zip by reading local file headers, not
@@ -153,9 +188,15 @@ sources:
         depth map, several water-type variants), a one-to-many relationship this
         registry's stem/suffix-matching image-mask-pairs convention cannot express as
         declared. Needs both a smaller host and a different pairing rule.
+        WP-R5/R5b (2026-10-05): the hand-downloaded archive is staged under the id `atlantis`
+        (registry/ingest-specs/atlantis.yaml; flat `images/` of 3600 files + metadata.parquet,
+        CHECKSUMS.sha256) and this canonical entry's `access.params.staged_*` keys point at that tree (prefix +
+        root digest read from the staged CHECKSUMS.sha256), so a release build can root it while
+        fetch dispatch stays `api`/`atlantis`.
+        The licence class is unchanged (restricted-nc, LICV 2026-10-05).
     modalities: [image]
     capabilities: [depth-estimation, image-enhancement]
-    items: 3200
+    n_images: 3200
     annotations:
       - kind: depth-map
         supervises: []
@@ -165,5 +206,5 @@ sources:
       caveats:
         - "Synthetic (Stable-Diffusion generated). Useful for domain-adaptation experiments; not a substitute for real metric ground truth."
         - "Monocular depth underwater is not metric without an in-scene scale reference. Treat as a relative prior only."
-    loader: { layout: image-mask-pairs }
+    loader: { layout: staged-tree }
     tags: [synthetic, depth, permissive]

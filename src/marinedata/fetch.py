@@ -25,16 +25,21 @@ import urllib.error
 import urllib.parse
 import urllib.request
 import zipfile
+from collections.abc import Callable, Mapping
 from dataclasses import dataclass
 from datetime import datetime, timezone
 from pathlib import Path
+from types import MappingProxyType
 
+from .checksums import CHUNK_SIZE, DOWNLOAD_USER_AGENT, stream_into
 from .enums import AccessMethod
 from .models import Source
 
 DATASETS_SERVER = "https://datasets-server.huggingface.co"
 DEFAULT_LIMIT = 100
-USER_AGENT = "marinedata/0.1 (+https://github.com/reefsupport/marine-data)"
+USER_AGENT = DOWNLOAD_USER_AGENT
+"""Alias, not a second literal (D3a2 tidy) — see :data:`marinedata.checksums.
+DOWNLOAD_USER_AGENT`."""
 
 
 class FetchError(Exception):
@@ -75,7 +80,11 @@ class FetchResult:
             "method": self.method,
             "truncated": self.truncated,
             "fetched_at": datetime.now(timezone.utc).isoformat(),
-            "note": "Bounded verification sample. NOT the full dataset.",
+            "note": (
+                "Bounded verification sample. NOT the full dataset."
+                if self.truncated
+                else "Complete fetch of the source, not a bounded sample."
+            ),
         }
 
 
@@ -94,7 +103,9 @@ def _get(
     ``http.client.RemoteDisconnected``, which is neither an ``HTTPError`` nor a
     ``URLError`` and so escaped the original handler entirely.
 
-    4xx is not retried: a 404 will still be a 404. 5xx and connection-level faults are.
+    4xx is not retried: a 404 will still be a 404 — except 429, which is the server
+    asking a concurrent fetch to slow down. 5xx and connection-level faults (timeouts
+    included) are retried with exponential backoff (:func:`_backoff`).
     """
     last: Exception | None = None
     for attempt in range(retries):
@@ -103,7 +114,7 @@ def _get(
             with urllib.request.urlopen(request, timeout=timeout) as response:
                 return response.read()
         except urllib.error.HTTPError as exc:
-            if exc.code < 500:
+            if exc.code < 500 and exc.code != 429:
                 raise FetchError(f"HTTP {exc.code} for {url}") from exc
             last = exc
         except (urllib.error.URLError, http.client.HTTPException, OSError) as exc:
@@ -111,8 +122,51 @@ def _get(
             # socket timeouts all land here.
             last = exc
         if attempt < retries - 1:
-            time.sleep(1.5 * (attempt + 1))
+            time.sleep(_backoff(attempt))
     raise FetchError(f"failed after {retries} attempt(s) for {url}: {last}")
+
+
+def _backoff(attempt: int) -> float:
+    """Seconds to wait after failed attempt ``attempt`` (0-based): 1.5, 3, 6, 12, … capped
+    at 30. The first two steps equal the old linear schedule, so a default 3-attempt
+    ``_get`` waits exactly as long as it always did."""
+    return min(30.0, 1.5 * (2**attempt))
+
+
+def _get_stream(url: str, dest: Path, *, timeout: int = 60, retries: int = 3) -> int:
+    """GET ``url``, writing the response body straight to ``dest`` in
+    :data:`marinedata.checksums.CHUNK_SIZE` pieces rather than buffering it whole in
+    memory the way :func:`_get` does (D2a: an HF parquet shard is ~450 MB, and every
+    shard would otherwise be held in RAM at once).
+
+    Same retry policy as :func:`_get`: a 4xx other than 429 raises immediately; a 5xx or a
+    connection-level fault retries a fresh GET from the start, so ``dest`` is truncated
+    and rewritten on each attempt rather than appended to. Returns the number of bytes
+    written.
+    """
+    last: Exception | None = None
+    dest.parent.mkdir(parents=True, exist_ok=True)
+    for attempt in range(retries):
+        request = urllib.request.Request(url, headers={"User-Agent": USER_AGENT})
+        try:
+            with (
+                urllib.request.urlopen(request, timeout=timeout) as response,
+                dest.open("wb") as handle,
+            ):
+                written = 0
+                while chunk := response.read(CHUNK_SIZE):
+                    handle.write(chunk)
+                    written += len(chunk)
+            return written
+        except urllib.error.HTTPError as exc:
+            if exc.code < 500 and exc.code != 429:
+                raise FetchError(f"HTTP {exc.code} for {url}") from exc
+            last = exc
+        except (urllib.error.URLError, http.client.HTTPException, OSError) as exc:
+            last = exc
+        if attempt < retries - 1:
+            time.sleep(_backoff(attempt))
+    raise FetchError(f"failed after {retries} attempt(s) for streaming GET of {url}: {last}")
 
 
 def _get_json(url: str, *, timeout: int = 60) -> dict:
@@ -413,6 +467,8 @@ def _extract_remote_zip(file_obj: _RemoteFile, root: Path, limit: int, *, label:
     another. The counterpart to :func:`_extract_archive` for archives too large to
     pull in full — see ``MAX_DOWNLOAD_WITHOUT_RANGE``.
     """
+    from .adapters.zipread import read_member  # Deflate64 members (WP-6j)
+
     resolved_root = root.resolve()
     count = 0
     with zipfile.ZipFile(file_obj) as archive:
@@ -422,7 +478,7 @@ def _extract_remote_zip(file_obj: _RemoteFile, root: Path, limit: int, *, label:
             if target is None:
                 continue
             target.parent.mkdir(parents=True, exist_ok=True)
-            target.write_bytes(archive.read(member))
+            target.write_bytes(read_member(archive, member))
             count += 1
 
     if count == 0:
@@ -502,6 +558,8 @@ def _extract_archive(payload: bytes, root: Path, name: str, limit: int) -> int:
     """
     import io
 
+    from .adapters.zipread import read_member  # Deflate64 members (WP-6j)
+
     resolved_root = root.resolve()
     count = 0
     lower = name.lower()
@@ -513,7 +571,7 @@ def _extract_archive(payload: bytes, root: Path, name: str, limit: int) -> int:
                 if target is None:
                     continue
                 target.parent.mkdir(parents=True, exist_ok=True)
-                target.write_bytes(archive.read(member))
+                target.write_bytes(read_member(archive, member))
                 count += 1
     else:
         mode = "r:*"  # autodetect gz/bz2/xz/plain from the stream itself
@@ -703,18 +761,69 @@ def _fetch_s3(source: Source, root: Path, limit: int) -> FetchResult:
     return fetch_s3(source, root, limit)
 
 
-def _fetch_api(source: Source, root: Path, limit: int) -> FetchResult:
-    """Dispatches ``method: api`` sources to their specific fetcher.
-
-    Only one API-backed source exists in the registry today (FathomNet), so this maps
-    the whole ``AccessMethod.API`` value to it directly. A second ``api`` source with a
-    genuinely different API would need this to dispatch on an ``access.params`` field
-    (e.g. ``api_provider``) instead of the access method alone — don't generalise
-    before there is a second case to generalise from.
-    """
+def _fetch_fathomnet_client(source: Source, root: Path, limit: int) -> FetchResult:
     from .fetchers_remote import fetch_fathomnet
 
     return fetch_fathomnet(source, root, limit)
+
+
+def _unimplemented_client(client: str) -> Callable[[Source, Path, int], FetchResult]:
+    """One stub factory shared by every registered-but-unbuilt api client.
+
+    Each of the bespoke clients below (obis, allen-coral-atlas, copernicus-marine,
+    coralnet, atlantis) is a separate workstream (master brief WS-D: 7 non-bulk
+    sources) — this raises rather than silently reusing another source's client.
+    """
+
+    def _fetch(source: Source, root: Path, limit: int) -> FetchResult:
+        raise NotImplementedError(
+            f"{source.id}: api client '{client}' is known but not yet implemented — "
+            "building it is a separate workstream (master brief WS-D: 7 non-bulk sources)."
+        )
+
+    return _fetch
+
+
+_API_CLIENTS: Mapping[str, Callable[[Source, Path, int], FetchResult]] = MappingProxyType(
+    {
+        "fathomnet": _fetch_fathomnet_client,
+        "obis": _unimplemented_client("obis"),
+        "allen-coral-atlas": _unimplemented_client("allen-coral-atlas"),
+        "copernicus-marine": _unimplemented_client("copernicus-marine"),
+        "coralnet": _unimplemented_client("coralnet"),
+        "atlantis": _unimplemented_client("atlantis"),
+    }
+)
+
+# Clients in `_API_CLIENTS` that actually fetch rather than raise `NotImplementedError`.
+# `auto_fetchable` consults this instead of calling the client, so it stays a predicate
+# and never raises.
+_IMPLEMENTED_API_CLIENTS: frozenset[str] = frozenset({"fathomnet"})
+
+
+def _fetch_api(source: Source, root: Path, limit: int) -> FetchResult:
+    """Dispatches ``method: api`` sources to the client their ``access.params.client``
+    names.
+
+    Six ``api`` sources exist in the registry today — fathomnet, obis,
+    allen-coral-atlas, copernicus-globcolour and (once re-valued) coralnet and
+    atlantis-synthetic-depth — each backed by a genuinely different upstream API.
+    Dispatch is explicit on ``client`` so a source can never be silently routed to
+    another source's client; there is no default and no fallback.
+    """
+    client = source.access.params.get("client")
+    if client is None:
+        raise FetchError(
+            f"{source.id}: access.params.client is not set — known clients: "
+            f"{', '.join(sorted(_API_CLIENTS))}"
+        )
+    fetcher = _API_CLIENTS.get(str(client))
+    if fetcher is None:
+        raise FetchError(
+            f"{source.id}: unknown api client '{client}' — known clients: "
+            f"{', '.join(sorted(_API_CLIENTS))}"
+        )
+    return fetcher(source, root, limit)
 
 
 _FETCHERS = {
@@ -732,9 +841,17 @@ def auto_fetchable(source: Source) -> bool:
     Gated, request-only and scrape sources need a human regardless of access method,
     which is exactly what ``fetch_sample`` itself checks before actually fetching; this
     exposes that same static answer for reporting (``marinedata doctor``) without
-    reaching for the network.
+    reaching for the network. For ``method: api`` this also checks that the declared
+    ``access.params.client`` is a known, implemented client — a client that is only
+    registered as a ``NotImplementedError`` stub is not auto-fetchable. This is a pure
+    predicate: unlike ``_fetch_api`` it never raises on a missing or unknown client.
     """
-    return not source.access.gated and source.access.method in _FETCHERS
+    if source.access.gated or source.access.method not in _FETCHERS:
+        return False
+    if source.access.method is AccessMethod.API:
+        client = source.access.params.get("client")
+        return client is not None and str(client) in _IMPLEMENTED_API_CLIENTS
+    return True
 
 
 def fetch_sample(
@@ -761,15 +878,32 @@ def fetch_sample(
 
     if marker.is_file() and not force:
         existing = json.loads(marker.read_text(encoding="utf-8"))
-        return FetchResult(
-            source.id,
-            target,
-            int(existing.get("items", 0)),
-            str(existing.get("method", "cache")),
-            truncated=True,
-        )
+        cached_items = int(existing.get("items", 0))
+        cached_truncated = bool(existing.get("truncated", True))
+        # A truncated cache recorded fewer items than the source actually has. It only
+        # satisfies a request that asks for no more than it already holds — a bigger or
+        # unbounded (release) ``limit`` must re-fetch rather than silently hand back a
+        # partial tree as if it were complete (the coralscop-masks-rs release bug: a
+        # bounded 5-image verification sample was reused for a 10,000,000-item release
+        # fetch, so ``metadata.parquet``'s 38,928 rows outran the images on disk).
+        if not cached_truncated or cached_items >= limit:
+            return FetchResult(
+                source.id,
+                target,
+                cached_items,
+                str(existing.get("method", "cache")),
+                truncated=cached_truncated,
+            )
 
-    fetcher = _FETCHERS.get(source.access.method)
+    from .fetchers_remote import fetch_staged_root, staged_root_params
+
+    # A pinned staged tree declared in `access.params.staged_*` roots the source regardless of its
+    # fetch method (atlantis stays `api`/`atlantis`; its release root is the staged tree).
+    fetcher = (
+        fetch_staged_root
+        if staged_root_params(source) is not None
+        else _FETCHERS.get(source.access.method)
+    )
     if fetcher is None:
         raise FetchNotSupported(
             f"{source.id}: access method '{source.access.method.value}' cannot be "
@@ -795,9 +929,27 @@ def sample_digest(root: Path) -> str:
     identically regardless of their bytes. These are bounded verification samples
     (~100 items, per ``fetch_sample``'s ``limit``), so reading them in full costs
     nothing worth trading correctness for.
+
+    Bytes reach the hash through :func:`marinedata.checksums.stream_into`, the one
+    chunked reader in this package — the same value as before, since the same bytes
+    arrive in the same order, but a sample holding one oversized file no longer has
+    to fit in memory.
     """
     digest = hashlib.sha256()
     for path in sorted(p for p in root.rglob("*") if p.is_file() and p.name != "_fetch.json"):
         digest.update(path.name.encode())
-        digest.update(path.read_bytes())
+        stream_into(digest, path)
     return "sha256:" + digest.hexdigest()[:16]
+
+
+get_bytes = _get
+"""Public alias for :func:`_get` — a retrying GET returning the whole response body.
+For :mod:`marinedata.ingest`, which needs the full archive rather than a sample."""
+
+extract_archive = _extract_archive
+"""Public alias for :func:`_extract_archive` — extract an in-memory archive to a
+directory, bounded to ``limit`` files (``0`` means every member)."""
+
+get_stream = _get_stream
+"""Public alias for :func:`_get_stream` — a retrying GET that streams straight to a
+file (D2a), for :mod:`marinedata.ingest_parquet`, which downloads ~450 MB shards."""

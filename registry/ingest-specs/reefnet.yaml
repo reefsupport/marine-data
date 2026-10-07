@@ -1,0 +1,8 @@
+id: reefnet
+access_class: restricted-nc  # WP-R2: license is CC-BY-NC-SA-4.0 (was open)
+adapter: hf
+params: {}
+license: CC-BY-NC-SA-4.0
+attribution: ReefNet 2025 (arXiv:2510.16822)
+citation: ReefNet 2025 arXiv:2510.16822
+homepage: https://arxiv.org/abs/2510.16822

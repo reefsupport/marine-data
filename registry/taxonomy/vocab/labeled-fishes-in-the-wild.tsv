@@ -1,0 +1,7 @@
+# source: labeled-fishes-in-the-wild
+# crosswalk: labeled-fishes-in-the-wild
+# counts: types
+# retrieved: 2026-10-05 (WP-R3) from registry/sources/fish.yaml loader.verified_note ("No native class string exists in this format - every box is implicitly fish") and crosswalks/labeled-fishes-in-the-wild.yaml; no tree is staged in rs-storage-open
+# note: opencv-cascade-dat carries no label field; one synthetic label, fish, stands for the implicit class; counts are unknown (types)
+label	count	description
+fish		the implicit class of every bounding box (NOAA SWFSC Labeled Fishes in the Wild)

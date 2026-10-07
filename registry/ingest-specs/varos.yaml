@@ -1,0 +1,12 @@
+id: varos
+access_class: open
+adapter: zenodo
+params:
+  zenodo_record: 5567209
+  version: record-5567209
+license: CC-BY-4.0
+attribution: VAROS (Zwilgmeyer et al., ICCVW 2021)
+citation: Zwilgmeyer+ ICCVW2021
+homepage: https://zenodo.org/records/5567209
+
+disk_floor_gib: 36.0

@@ -1,0 +1,18 @@
+id: deepsea-coral-cornerrise
+access_class: open
+adapter: zenodo
+params:
+  zenodo_record: 18171047
+license: cc-by-4.0
+attribution: Zenodo contributors
+citation: Zenodo doi:10.5281/zenodo.18171047
+homepage: https://zenodo.org/records/18171047
+measured:
+  bytes: 107374182
+  method: Zenodo API record size (0.1 GB, 11 files, mostly CSV/XLSX)
+  date: '2026-09-25'
+  per_item_license: cc-by-4.0
+  by_depth_band_m: {}
+  label_type: counts/cls
+  note: format is CSV(+imgs?); confirm image files exist before treating as an image
+    source, else it is a task-label-only companion

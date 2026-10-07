@@ -1,0 +1,13 @@
+# SPEC-w3 discovery: Elliott Bay ROV benthic imagery (Seattle).
+id: elliott-bay-benthic
+access_class: restricted-nc
+adapter: hf
+license: cc-by-nc-4.0
+attribution: davanstrien
+citation: davanstrien/Elliott_Bay_benthic_imagery (HF)
+homepage: https://huggingface.co/datasets/davanstrien/Elliott_Bay_benthic_imagery
+params:
+  repo: davanstrien/Elliott_Bay_benthic_imagery
+  revision: cd20e627ba772d0952914ffb2b30b454bf4b7ac4
+
+disk_floor_gib: 34.0

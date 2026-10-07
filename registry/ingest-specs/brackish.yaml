@@ -1,0 +1,20 @@
+id: brackish
+access_class: open
+adapter: hf
+params:
+  repo: dronefreak/Brackish
+  revision: ee9d8f01ea4935e03aac1d357ceb10c236ef6382
+license: CC-BY-4.0
+attribution: Brackish Dataset (Pedersen et al., CVPRW 2019), via HF mirror dronefreak/Brackish
+citation: Pedersen+ CVPRW2019
+homepage: https://huggingface.co/datasets/dronefreak/Brackish
+notes: 'MIRRORS2 2026-10-02 verdict=match, no change — checked alternate candidate
+  moondream/brackish_underwater (HF, no login, same CVPR2019 Pedersen et al.
+  paper, license cc-by-4.0, train/test/valid splits, 12,444 images total) against
+  the configured dronefreak/Brackish (14,674 images: train 11,739 + valid 1,467 +
+  test 1,468, full Roboflow re-export of all 89 original annotated videos incl.
+  background-only frames). dronefreak/Brackish is a strict superset (moondream
+  appears to exclude the ~15% empty-label frames); already the better mirror, no
+  swap needed.'
+
+disk_floor_gib: 36.0
