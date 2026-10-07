@@ -42,7 +42,7 @@ row = next(iter(stream))
 print(row["licence"], row["attribution"])
 ```
 
-Scripts and training: download the split once, cached afterwards (`validation` and `test` work the same way).
+Scripts and training: download the config once, cached afterwards (all splits are fetched; the full `coral-masks` config is about 12 GB).
 
 ```python
 ds = load_dataset("reefsupport/marine-data", "coral-masks", split="train")
@@ -60,7 +60,7 @@ ds = load_dataset(
 ```
 
 In a plain Python script, stopping a stream after a few rows can keep the process from exiting (an upstream issue in
-pyarrow's dataset scanner). Download the split or a single source instead.
+pyarrow's dataset scanner). Download the config or a single source instead.
 
 Licences differ per source. Keep the `attribution` column when you share or publish results, and see
 [Licensing](#licensing) below. The dataset card documents fields, splits, annotation process and known limitations.
@@ -121,7 +121,7 @@ present = sorted({int(v) for v in row["label"].ravel()} - {labels.IGNORE_INDEX})
 print(row["source"], [names[i] for i in present])
 ```
 
-In a script, load the split or one source as described under [Published datasets](#published-datasets) and pass its
+In a script, download the config or one source as described under [Published datasets](#published-datasets) and pass its
 rows to `remap_row` the same way:
 
 ```python
