@@ -553,7 +553,7 @@ sources:
       ground truth. Useful for weak supervision and pretraining only.
     licence: CC-BY-NC-SA-4.0
     legal_basis: licence
-    redistribution: ok
+    redistribution: unknown  # NOTICE on HF marine-data-nc: obtained via the authors' request form, "Do not redistribute"
     provenance: auto
     verification:
       verified_on: 2026-08-17
