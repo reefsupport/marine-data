@@ -300,6 +300,10 @@ That class is ignored by default (see the [label policy](#label-policy)), so Cor
 its `ABIOTIC` and `NOT_CORAL` regions do not carry soft coral that the Reef Support sources label as `SC` or `CORAL`. The
 cost is that genuinely abiotic hard substrate in Coralscapes is ignored too.
 
+**Seaview masks include whole-frame hard coral.** About 8 percent of the Seaview rows label the whole frame as hard coral.
+These frames are close-ups of dense coral, so their masks carry little boundary information. Weight or sample the
+source accordingly when you mix it with sources that outline individual colonies.
+
 **The scene scheme follows SUIM's definitions.** Ids are SUIM's pixel values, so SUIM masks pass through unchanged. Other
 sources are mapped by label name: `arthropoda`, `mollusk`, `jellyfish`, `starfish` and `corals` go to reefs and
 invertebrates (`RI`); `reptiles`, `shark`, `stingray`, `penguin` and `puffin` go to fish and vertebrates (`FV`); and
