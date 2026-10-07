@@ -1,0 +1,144 @@
+# Published sources: where they live, how their labels are keyed, whether 255 means background.
+# One entry per HF `source` value (`source_id` for fish-boxes). `ids` = the pixel value in the published
+# `mask` (global native ids; 255 is always the ignore value). Checked against registry/crosswalks and
+# tests/data/label_vocab.json by tests/test_labels.py; regenerate the vocab with scripts/dump_label_vocab.py.
+version: 1
+sources:
+  coralscapes:
+    repo: reefsupport/marine-data
+    config: coral-masks
+    kind: semantic
+    crosswalk: coralscapes-39
+    dense: true
+    note: "all 39 classes are annotated; 255 = the source's ignore id 0"
+    ids:
+      1: "seagrass"
+      2: "trash"
+      3: "other coral dead"
+      4: "other coral bleached"
+      5: "sand"
+      6: "other coral alive"
+      7: "human"
+      8: "transect tools"
+      9: "fish"
+      10: "algae covered substrate"
+      11: "other animal"
+      12: "unknown hard substrate"
+      13: "background"
+      14: "dark"
+      15: "transect line"
+      16: "massive/meandering bleached"
+      17: "massive/meandering alive"
+      18: "rubble"
+      19: "branching bleached"
+      20: "branching dead"
+      21: "millepora"
+      22: "branching alive"
+      23: "massive/meandering dead"
+      24: "clam"
+      25: "acropora alive"
+      26: "sea cucumber"
+      27: "turbinaria"
+      28: "table acropora alive"
+      29: "sponge"
+      30: "anemone"
+      31: "pocillopora alive"
+      32: "table acropora dead"
+      33: "meandering bleached"
+      34: "stylophora alive"
+      35: "sea urchin"
+      36: "meandering alive"
+      37: "meandering dead"
+      38: "crown of thorn"
+      39: "dead clam"
+  reef-support-benthic-own:
+    repo: reefsupport/marine-data
+    config: coral-masks
+    kind: semantic
+    crosswalk: reef-support-labelbox
+    dense: false
+    note: "255 = unannotated (NOT background): only Hard/Soft Coral were painted; MIL/OSI regions are 255 too"
+    ids:
+      1: "Hard Coral"
+      2: "Soft Coral"
+  reef-support-seaview-labels:
+    repo: reefsupport/marine-data
+    config: coral-masks
+    kind: semantic
+    crosswalk: reef-support-labelbox
+    dense: false
+    note: "255 = unannotated (NOT background): only Hard/Soft Coral were painted; MIL/OSI regions are 255 too"
+    ids:
+      1: "Hard Coral"
+      2: "Soft Coral"
+  coralseg-ucsd-mosaics:
+    repo: reefsupport/marine-data-nc
+    config: coral-masks
+    kind: semantic
+    crosswalk: coralseg-ucsd-mosaics
+    dense: true
+    note: "Other (0) is the residual non-coral bucket; every pixel is annotated"
+    ids:
+      0: "Other"
+      1: "Hard Coral"
+      2: "Soft Coral"
+  coralscop-masks-rs:
+    repo: reefsupport/marine-data-nc
+    config: coral-masks-machine
+    kind: semantic
+    crosswalk: coralscop-masks-rs
+    dense: false
+    note: "class-agnostic machine masks: 1 = coral instance, 255 (source 0) = not detected, which is NOT a verified negative"
+    ids:
+      1: "coral"
+  suim:
+    repo: reefsupport/marine-data
+    config: scene-masks
+    kind: semantic
+    crosswalk: suim-8class
+    dense: true
+    note: "all pixels carry one of the 8 SUIM classes"
+    ids:
+      0: "BW"
+      1: "HD"
+      2: "PF"
+      3: "WR"
+      4: "RO"
+      5: "RI"
+      6: "FV"
+      7: "SR"
+  uiis:
+    repo: reefsupport/marine-data
+    config: instance-masks
+    kind: instances
+    crosswalk: usis-uiis
+    dense: false
+    note: "instances; unlabelled pixels are unannotated, not background"
+    labels: ["aquatic plants", "fish", "human divers", "reefs", "robots", "sea-floor", "wrecks/ruins"]
+    box_config: fish-boxes
+  uiis10k:
+    repo: reefsupport/marine-data
+    config: instance-masks
+    kind: instances
+    crosswalk: usis-uiis
+    dense: false
+    note: "instances; unlabelled pixels are unannotated, not background"
+    labels: ["arthropoda", "corals", "fish", "garbage", "human", "mollusk", "plants", "reptiles", "robots", "ruins"]
+    box_config: fish-boxes
+  usis10k:
+    repo: reefsupport/marine-data
+    config: instance-masks
+    kind: instances
+    crosswalk: usis-uiis
+    dense: false
+    note: "instances; unlabelled pixels are unannotated, not background"
+    labels: ["aquatic plants", "fish", "human divers", "reefs", "robots", "sea-floor", "wrecks/ruins"]
+    box_config: fish-boxes
+  roboflow-aquarium:
+    repo: reefsupport/marine-data
+    config: fish-boxes
+    kind: boxes
+    crosswalk: roboflow-aquarium
+    dense: false
+    note: "boxes only"
+    labels: ["fish", "jellyfish", "penguin", "puffin", "shark", "starfish", "stingray"]

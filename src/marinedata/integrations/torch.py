@@ -17,7 +17,7 @@ it is easy to get wrong in a way no loss curve reveals.
 
 from __future__ import annotations
 
-from collections.abc import Callable
+from collections.abc import Callable, Iterable, Mapping
 from typing import TYPE_CHECKING, Any
 
 from ..labelindex import IGNORE_INDEX
@@ -63,6 +63,8 @@ def default_mask_loader(path: str):
 
     Deliberately not remapped: mask palettes are source-specific, and silently
     reindexing them here would hide a mismatch that ought to be explicit in a crosswalk.
+    Pass ``scheme=`` to :func:`to_torch_dataset` (or use :mod:`marinedata.labels`) to map the
+    native ids onto a fixed scheme explicitly.
     """
     torch = _require_torch()
     import numpy as np
@@ -84,6 +86,8 @@ def to_torch_dataset(
     transform: Callable[[dict[str, Any]], dict[str, Any]] | None = None,
     image_loader: Callable[[str], Any] | None = None,
     mask_loader: Callable[[str], Any] | None = None,
+    scheme: str | None = None,
+    scheme_options: Mapping[str, Iterable[str]] | None = None,
 ):
     """Wrap a :class:`~marinedata.builder.Dataset` as a ``torch.utils.data.Dataset``.
 
@@ -91,6 +95,10 @@ def to_torch_dataset(
         decode_images: set False to keep paths — useful when a custom pipeline handles
             IO, or when profiling the loader rather than the model.
         transform: applied to the assembled item dict, after decoding.
+        scheme: a :mod:`marinedata.labels` scheme (e.g. ``"benthic-coarse"``). Decoded masks are
+            then remapped from each sample's native ids to the scheme's fixed ids (255 = ignore),
+            using the sample's ``source_id``. ``None`` (default) leaves masks untouched.
+        scheme_options: ``exclude_conditions`` / ``ignore`` for the scheme (see ``labels``).
     """
     torch = _require_torch()
     from torch.utils.data import Dataset as TorchDataset
@@ -100,6 +108,16 @@ def to_torch_dataset(
     projector = dataset.projector
     load_image = image_loader or default_image_loader
     load_mask = mask_loader or default_mask_loader
+    luts: dict[str, Any] = {}
+
+    def remap(source_id: str, mask: Any) -> Any:
+        """Native ids -> scheme ids via the source's LUT (built once per source)."""
+        if source_id not in luts:
+            from .. import labels
+
+            table = labels.lut(source_id, scheme, **(scheme_options or {}))
+            luts[source_id] = torch.from_numpy(table.astype("int64"))
+        return luts[source_id][mask.long()]
 
     class MarineTorchDataset(TorchDataset):
         """Torch view over a licence-cleared, harmonised marine dataset."""
@@ -129,6 +147,8 @@ def to_torch_dataset(
                 )
             if sample.mask is not None:
                 item["mask"] = load_mask(str(sample.mask)) if decode_masks else str(sample.mask)
+                if scheme is not None and decode_masks:
+                    item["mask"] = remap(sample.source_id, item["mask"])
             if sample.boxes:
                 item["boxes"] = torch.tensor(sample.boxes, dtype=torch.float32)
             if sample.points:

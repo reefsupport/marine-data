@@ -112,5 +112,6 @@ testpaths = ["tests"]
 markers = [
     "integration: hits the network; set MARINEDATA_INTEGRATION=1 to run",
     "slow: needs the real _hf/v1 build on disk; skips cleanly when absent",
+    "network: streams rows from the Hugging Face repos (HF login for the private one); run with -m network",
 ]
-addopts = "-ra --strict-markers -m 'not integration'"
+addopts = "-ra --strict-markers -m 'not integration and not network'"

@@ -1,0 +1,862 @@
+{
+ "reefsupport/marine-data-nc/coral-masks": {
+  "coralseg-ucsd-mosaics": {
+   "kind": "class_map",
+   "labels": [
+    {
+     "coarse": null,
+     "count": 4915,
+     "id": 0,
+     "label_native": "Other",
+     "taxon_node": null
+    },
+    {
+     "coarse": "HC",
+     "count": 4780,
+     "id": 1,
+     "label_native": "Hard Coral",
+     "taxon_node": "HC"
+    },
+    {
+     "coarse": "SC",
+     "count": 3215,
+     "id": 2,
+     "label_native": "Soft Coral",
+     "taxon_node": "SC"
+    }
+   ],
+   "rows": 4922
+  }
+ },
+ "reefsupport/marine-data-nc/coral-masks-machine": {
+  "coralscop-masks-rs": {
+   "kind": "class_map",
+   "labels": [
+    {
+     "coarse": null,
+     "count": 38928,
+     "id": 1,
+     "label_native": "coral",
+     "taxon_node": "CNIDARIA"
+    }
+   ],
+   "rows": 38928
+  }
+ },
+ "reefsupport/marine-data/coral-masks": {
+  "coralscapes": {
+   "kind": "class_map",
+   "labels": [
+    {
+     "coarse": null,
+     "count": 33,
+     "id": 1,
+     "label_native": "seagrass",
+     "taxon_node": "SG"
+    },
+    {
+     "coarse": "ABIOTIC",
+     "count": 75,
+     "id": 2,
+     "label_native": "trash",
+     "taxon_node": "TRASH"
+    },
+    {
+     "coarse": "HC",
+     "count": 220,
+     "id": 3,
+     "label_native": "other coral dead",
+     "taxon_node": "HC"
+    },
+    {
+     "coarse": "HC",
+     "count": 201,
+     "id": 4,
+     "label_native": "other coral bleached",
+     "taxon_node": "HC"
+    },
+    {
+     "coarse": "ABIOTIC",
+     "count": 1210,
+     "id": 5,
+     "label_native": "sand",
+     "taxon_node": "SD"
+    },
+    {
+     "coarse": "HC",
+     "count": 1176,
+     "id": 6,
+     "label_native": "other coral alive",
+     "taxon_node": "HC"
+    },
+    {
+     "coarse": null,
+     "count": 153,
+     "id": 7,
+     "label_native": "human",
+     "taxon_node": "DIV"
+    },
+    {
+     "coarse": null,
+     "count": 259,
+     "id": 8,
+     "label_native": "transect tools",
+     "taxon_node": "TWS"
+    },
+    {
+     "coarse": "OTHER_FAUNA",
+     "count": 1669,
+     "id": 9,
+     "label_native": "fish",
+     "taxon_node": "FISH"
+    },
+    {
+     "coarse": null,
+     "count": 915,
+     "id": 10,
+     "label_native": "algae covered substrate",
+     "taxon_node": "DCA"
+    },
+    {
+     "coarse": "OTHER_FAUNA",
+     "count": 134,
+     "id": 11,
+     "label_native": "other animal",
+     "taxon_node": "OT"
+    },
+    {
+     "coarse": "ABIOTIC",
+     "count": 1887,
+     "id": 12,
+     "label_native": "unknown hard substrate",
+     "taxon_node": "RK"
+    },
+    {
+     "coarse": null,
+     "count": 1850,
+     "id": 13,
+     "label_native": "background",
+     "taxon_node": "WC"
+    },
+    {
+     "coarse": null,
+     "count": 1876,
+     "id": 14,
+     "label_native": "dark",
+     "taxon_node": "DRK"
+    },
+    {
+     "coarse": null,
+     "count": 1070,
+     "id": 15,
+     "label_native": "transect line",
+     "taxon_node": "TL"
+    },
+    {
+     "coarse": "HC",
+     "count": 129,
+     "id": 16,
+     "label_native": "massive/meandering bleached",
+     "taxon_node": "HC"
+    },
+    {
+     "coarse": "HC",
+     "count": 1589,
+     "id": 17,
+     "label_native": "massive/meandering alive",
+     "taxon_node": "HC"
+    },
+    {
+     "coarse": "ABIOTIC",
+     "count": 1044,
+     "id": 18,
+     "label_native": "rubble",
+     "taxon_node": "RB"
+    },
+    {
+     "coarse": "HC",
+     "count": 271,
+     "id": 19,
+     "label_native": "branching bleached",
+     "taxon_node": "HC"
+    },
+    {
+     "coarse": "HC",
+     "count": 966,
+     "id": 20,
+     "label_native": "branching dead",
+     "taxon_node": "HC"
+    },
+    {
+     "coarse": "MIL",
+     "count": 160,
+     "id": 21,
+     "label_native": "millepora",
+     "taxon_node": "MIL"
+    },
+    {
+     "coarse": "HC",
+     "count": 914,
+     "id": 22,
+     "label_native": "branching alive",
+     "taxon_node": "HC"
+    },
+    {
+     "coarse": "HC",
+     "count": 830,
+     "id": 23,
+     "label_native": "massive/meandering dead",
+     "taxon_node": "HC"
+    },
+    {
+     "coarse": "OTHER_FAUNA",
+     "count": 104,
+     "id": 24,
+     "label_native": "clam",
+     "taxon_node": "CLAM"
+    },
+    {
+     "coarse": "HC",
+     "count": 592,
+     "id": 25,
+     "label_native": "acropora alive",
+     "taxon_node": "HC_ACROPORA"
+    },
+    {
+     "coarse": "OTHER_FAUNA",
+     "count": 98,
+     "id": 26,
+     "label_native": "sea cucumber",
+     "taxon_node": "CUKE"
+    },
+    {
+     "coarse": "HC",
+     "count": 48,
+     "id": 27,
+     "label_native": "turbinaria",
+     "taxon_node": "HC_TURBINARIA"
+    },
+    {
+     "coarse": "HC",
+     "count": 329,
+     "id": 28,
+     "label_native": "table acropora alive",
+     "taxon_node": "HC_ACROPORA"
+    },
+    {
+     "coarse": null,
+     "count": 300,
+     "id": 29,
+     "label_native": "sponge",
+     "taxon_node": "SP"
+    },
+    {
+     "coarse": null,
+     "count": 50,
+     "id": 30,
+     "label_native": "anemone",
+     "taxon_node": "ANEM"
+    },
+    {
+     "coarse": "HC",
+     "count": 716,
+     "id": 31,
+     "label_native": "pocillopora alive",
+     "taxon_node": "HC_POCILLOPORA"
+    },
+    {
+     "coarse": "HC",
+     "count": 207,
+     "id": 32,
+     "label_native": "table acropora dead",
+     "taxon_node": "HC_ACROPORA"
+    },
+    {
+     "coarse": "HC",
+     "count": 42,
+     "id": 33,
+     "label_native": "meandering bleached",
+     "taxon_node": "HC"
+    },
+    {
+     "coarse": "HC",
+     "count": 351,
+     "id": 34,
+     "label_native": "stylophora alive",
+     "taxon_node": "HC_STYLOPHORA"
+    },
+    {
+     "coarse": "OTHER_FAUNA",
+     "count": 125,
+     "id": 35,
+     "label_native": "sea urchin",
+     "taxon_node": "URCH"
+    },
+    {
+     "coarse": "HC",
+     "count": 718,
+     "id": 36,
+     "label_native": "meandering alive",
+     "taxon_node": "HC"
+    },
+    {
+     "coarse": "HC",
+     "count": 232,
+     "id": 37,
+     "label_native": "meandering dead",
+     "taxon_node": "HC"
+    },
+    {
+     "coarse": "OTHER_FAUNA",
+     "count": 66,
+     "id": 38,
+     "label_native": "crown of thorn",
+     "taxon_node": "COTS"
+    },
+    {
+     "coarse": "OTHER_FAUNA",
+     "count": 60,
+     "id": 39,
+     "label_native": "dead clam",
+     "taxon_node": "CLAM"
+    }
+   ],
+   "rows": 2075
+  },
+  "reef-support-benthic-own": {
+   "kind": "class_map",
+   "labels": [
+    {
+     "coarse": "HC",
+     "count": 1202,
+     "id": 1,
+     "label_native": "Hard Coral",
+     "taxon_node": "HC"
+    },
+    {
+     "coarse": "SC",
+     "count": 547,
+     "id": 2,
+     "label_native": "Soft Coral",
+     "taxon_node": "SC"
+    }
+   ],
+   "rows": 1226
+  },
+  "reef-support-seaview-labels": {
+   "kind": "class_map",
+   "labels": [
+    {
+     "coarse": "HC",
+     "count": 2659,
+     "id": 1,
+     "label_native": "Hard Coral",
+     "taxon_node": "HC"
+    },
+    {
+     "coarse": "SC",
+     "count": 888,
+     "id": 2,
+     "label_native": "Soft Coral",
+     "taxon_node": "SC"
+    }
+   ],
+   "rows": 2696
+  }
+ },
+ "reefsupport/marine-data/fish-boxes": {
+  "roboflow-aquarium": {
+   "kind": "boxes",
+   "labels": [
+    {
+     "coarse": null,
+     "count": 2669,
+     "id": null,
+     "label_native": "fish",
+     "taxon_node": null
+    },
+    {
+     "coarse": null,
+     "count": 694,
+     "id": null,
+     "label_native": "jellyfish",
+     "taxon_node": null
+    },
+    {
+     "coarse": null,
+     "count": 516,
+     "id": null,
+     "label_native": "penguin",
+     "taxon_node": null
+    },
+    {
+     "coarse": null,
+     "count": 284,
+     "id": null,
+     "label_native": "puffin",
+     "taxon_node": null
+    },
+    {
+     "coarse": null,
+     "count": 352,
+     "id": null,
+     "label_native": "shark",
+     "taxon_node": null
+    },
+    {
+     "coarse": null,
+     "count": 116,
+     "id": null,
+     "label_native": "starfish",
+     "taxon_node": null
+    },
+    {
+     "coarse": null,
+     "count": 184,
+     "id": null,
+     "label_native": "stingray",
+     "taxon_node": null
+    }
+   ],
+   "rows": 637
+  },
+  "uiis": {
+   "kind": "boxes",
+   "labels": [
+    {
+     "coarse": null,
+     "count": 1255,
+     "id": null,
+     "label_native": "aquatic plants",
+     "taxon_node": null
+    },
+    {
+     "coarse": null,
+     "count": 16749,
+     "id": null,
+     "label_native": "fish",
+     "taxon_node": null
+    },
+    {
+     "coarse": null,
+     "count": 596,
+     "id": null,
+     "label_native": "human divers",
+     "taxon_node": null
+    },
+    {
+     "coarse": null,
+     "count": 8492,
+     "id": null,
+     "label_native": "reefs",
+     "taxon_node": null
+    },
+    {
+     "coarse": null,
+     "count": 90,
+     "id": null,
+     "label_native": "robots",
+     "taxon_node": null
+    },
+    {
+     "coarse": null,
+     "count": 980,
+     "id": null,
+     "label_native": "sea-floor",
+     "taxon_node": null
+    },
+    {
+     "coarse": null,
+     "count": 248,
+     "id": null,
+     "label_native": "wrecks/ruins",
+     "taxon_node": null
+    }
+   ],
+   "rows": 4622
+  },
+  "uiis10k": {
+   "kind": "boxes",
+   "labels": [
+    {
+     "coarse": null,
+     "count": 387,
+     "id": null,
+     "label_native": "arthropoda",
+     "taxon_node": null
+    },
+    {
+     "coarse": null,
+     "count": 11728,
+     "id": null,
+     "label_native": "corals",
+     "taxon_node": null
+    },
+    {
+     "coarse": null,
+     "count": 21364,
+     "id": null,
+     "label_native": "fish",
+     "taxon_node": null
+    },
+    {
+     "coarse": null,
+     "count": 791,
+     "id": null,
+     "label_native": "garbage",
+     "taxon_node": null
+    },
+    {
+     "coarse": null,
+     "count": 1844,
+     "id": null,
+     "label_native": "human",
+     "taxon_node": null
+    },
+    {
+     "coarse": null,
+     "count": 2333,
+     "id": null,
+     "label_native": "mollusk",
+     "taxon_node": null
+    },
+    {
+     "coarse": null,
+     "count": 1729,
+     "id": null,
+     "label_native": "plants",
+     "taxon_node": null
+    },
+    {
+     "coarse": null,
+     "count": 366,
+     "id": null,
+     "label_native": "reptiles",
+     "taxon_node": null
+    },
+    {
+     "coarse": null,
+     "count": 502,
+     "id": null,
+     "label_native": "robots",
+     "taxon_node": null
+    },
+    {
+     "coarse": null,
+     "count": 816,
+     "id": null,
+     "label_native": "ruins",
+     "taxon_node": null
+    }
+   ],
+   "rows": 10042
+  },
+  "usis10k": {
+   "kind": "boxes",
+   "labels": [
+    {
+     "coarse": null,
+     "count": 623,
+     "id": null,
+     "label_native": "aquatic plants",
+     "taxon_node": null
+    },
+    {
+     "coarse": null,
+     "count": 9652,
+     "id": null,
+     "label_native": "fish",
+     "taxon_node": null
+    },
+    {
+     "coarse": null,
+     "count": 1199,
+     "id": null,
+     "label_native": "human divers",
+     "taxon_node": null
+    },
+    {
+     "coarse": null,
+     "count": 5478,
+     "id": null,
+     "label_native": "reefs",
+     "taxon_node": null
+    },
+    {
+     "coarse": null,
+     "count": 294,
+     "id": null,
+     "label_native": "robots",
+     "taxon_node": null
+    },
+    {
+     "coarse": null,
+     "count": 514,
+     "id": null,
+     "label_native": "sea-floor",
+     "taxon_node": null
+    },
+    {
+     "coarse": null,
+     "count": 1079,
+     "id": null,
+     "label_native": "wrecks/ruins",
+     "taxon_node": null
+    }
+   ],
+   "rows": 10611
+  }
+ },
+ "reefsupport/marine-data/instance-masks": {
+  "uiis": {
+   "kind": "instances",
+   "labels": [
+    {
+     "coarse": null,
+     "count": 1255,
+     "id": null,
+     "label_native": "aquatic plants",
+     "taxon_node": "A3"
+    },
+    {
+     "coarse": null,
+     "count": 16749,
+     "id": null,
+     "label_native": "fish",
+     "taxon_node": "A146419"
+    },
+    {
+     "coarse": null,
+     "count": 596,
+     "id": null,
+     "label_native": "human divers",
+     "taxon_node": "NT_DIVER"
+    },
+    {
+     "coarse": null,
+     "count": 8492,
+     "id": null,
+     "label_native": "reefs",
+     "taxon_node": "NT_REEF"
+    },
+    {
+     "coarse": null,
+     "count": 90,
+     "id": null,
+     "label_native": "robots",
+     "taxon_node": "NT_EQUIPMENT"
+    },
+    {
+     "coarse": null,
+     "count": 980,
+     "id": null,
+     "label_native": "sea-floor",
+     "taxon_node": "NT_SEAFLOOR"
+    },
+    {
+     "coarse": null,
+     "count": 248,
+     "id": null,
+     "label_native": "wrecks/ruins",
+     "taxon_node": "NT_WRECK"
+    }
+   ],
+   "rows": 4622
+  },
+  "uiis10k": {
+   "kind": "instances",
+   "labels": [
+    {
+     "coarse": null,
+     "count": 388,
+     "id": null,
+     "label_native": "arthropoda",
+     "taxon_node": "A1065"
+    },
+    {
+     "coarse": null,
+     "count": 11729,
+     "id": null,
+     "label_native": "corals",
+     "taxon_node": "A1267"
+    },
+    {
+     "coarse": null,
+     "count": 21364,
+     "id": null,
+     "label_native": "fish",
+     "taxon_node": "A146419"
+    },
+    {
+     "coarse": null,
+     "count": 791,
+     "id": null,
+     "label_native": "garbage",
+     "taxon_node": "NT_DEBRIS"
+    },
+    {
+     "coarse": null,
+     "count": 1844,
+     "id": null,
+     "label_native": "human",
+     "taxon_node": "NT_DIVER"
+    },
+    {
+     "coarse": null,
+     "count": 2333,
+     "id": null,
+     "label_native": "mollusk",
+     "taxon_node": "A51"
+    },
+    {
+     "coarse": null,
+     "count": 1729,
+     "id": null,
+     "label_native": "plants",
+     "taxon_node": "A3"
+    },
+    {
+     "coarse": null,
+     "count": 366,
+     "id": null,
+     "label_native": "reptiles",
+     "taxon_node": "A1838"
+    },
+    {
+     "coarse": null,
+     "count": 502,
+     "id": null,
+     "label_native": "robots",
+     "taxon_node": "NT_EQUIPMENT"
+    },
+    {
+     "coarse": null,
+     "count": 816,
+     "id": null,
+     "label_native": "ruins",
+     "taxon_node": "NT_WRECK"
+    }
+   ],
+   "rows": 10042
+  },
+  "usis10k": {
+   "kind": "instances",
+   "labels": [
+    {
+     "coarse": null,
+     "count": 623,
+     "id": null,
+     "label_native": "aquatic plants",
+     "taxon_node": "A3"
+    },
+    {
+     "coarse": null,
+     "count": 9663,
+     "id": null,
+     "label_native": "fish",
+     "taxon_node": "A146419"
+    },
+    {
+     "coarse": null,
+     "count": 1209,
+     "id": null,
+     "label_native": "human divers",
+     "taxon_node": "NT_DIVER"
+    },
+    {
+     "coarse": null,
+     "count": 5483,
+     "id": null,
+     "label_native": "reefs",
+     "taxon_node": "NT_REEF"
+    },
+    {
+     "coarse": null,
+     "count": 297,
+     "id": null,
+     "label_native": "robots",
+     "taxon_node": "NT_EQUIPMENT"
+    },
+    {
+     "coarse": null,
+     "count": 518,
+     "id": null,
+     "label_native": "sea-floor",
+     "taxon_node": "NT_SEAFLOOR"
+    },
+    {
+     "coarse": null,
+     "count": 1080,
+     "id": null,
+     "label_native": "wrecks/ruins",
+     "taxon_node": "NT_WRECK"
+    }
+   ],
+   "rows": 10632
+  }
+ },
+ "reefsupport/marine-data/scene-masks": {
+  "suim": {
+   "kind": "class_map",
+   "labels": [
+    {
+     "coarse": null,
+     "count": 1330,
+     "id": 0,
+     "label_native": "BW",
+     "taxon_node": "WC"
+    },
+    {
+     "coarse": null,
+     "count": 425,
+     "id": 1,
+     "label_native": "HD",
+     "taxon_node": "DIV"
+    },
+    {
+     "coarse": null,
+     "count": 243,
+     "id": 2,
+     "label_native": "PF",
+     "taxon_node": "PLANTAE"
+    },
+    {
+     "coarse": null,
+     "count": 284,
+     "id": 3,
+     "label_native": "WR",
+     "taxon_node": "NON_BENTHIC"
+    },
+    {
+     "coarse": null,
+     "count": 134,
+     "id": 4,
+     "label_native": "RO",
+     "taxon_node": "NON_BENTHIC"
+    },
+    {
+     "coarse": null,
+     "count": 1059,
+     "id": 5,
+     "label_native": "RI",
+     "taxon_node": "BIOTIC"
+    },
+    {
+     "coarse": "OTHER_FAUNA",
+     "count": 1052,
+     "id": 6,
+     "label_native": "FV",
+     "taxon_node": "FISH"
+    },
+    {
+     "coarse": "ABIOTIC",
+     "count": 660,
+     "id": 7,
+     "label_native": "SR",
+     "taxon_node": "ABIOTIC"
+    }
+   ],
+   "rows": 1598
+  }
+ }
+}
