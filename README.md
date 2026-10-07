@@ -88,7 +88,7 @@ marinedata show coralscapes
 
 The masks on Hugging Face keep each source's native ids, and those ids differ between sources. `marinedata.labels` maps
 them onto three fixed schemes, `benthic-coarse`, `coral-binary` and `scene`, with 255 as the ignore value. The example
-needs the `hf` extra (`uv pip install -e ".[hf]"`), which adds `datasets`, numpy and Pillow:
+needs the `hf` extra (`uv pip install -e ".[hf]"`), which adds `datasets` and Pillow:
 
 ```python
 from datasets import load_dataset
@@ -101,8 +101,36 @@ present = sorted({int(v) for v in row["label"].ravel()} - {labels.IGNORE_INDEX})
 print(row["source"], [names[i] for i in present])
 ```
 
-Use `scene` for the `scene-masks` and `instance-masks` configs, and `labels.map_label(source, label, "scene")` for the
-labels of `fish-boxes`. For a dataset built with `marinedata.builder`,
+The other configs use the `scene` scheme. `scene-masks` rows work with `remap_row` as above:
+
+```python
+stream = load_dataset("reefsupport/marine-data", "scene-masks", split="train", streaming=True)
+row = labels.remap_row(next(iter(stream)), "scene")
+names = labels.class_names("scene")
+present = sorted({int(v) for v in row["label"].ravel()} - {labels.IGNORE_INDEX})
+print(row["source"], [names[i] for i in present])
+```
+
+`instance-masks` rows carry a list of `instances` instead of one semantic mask, so map each instance label with
+`labels.map_label` (it returns `None` for a label the scheme does not cover):
+
+```python
+stream = load_dataset("reefsupport/marine-data", "instance-masks", split="train", streaming=True)
+row = next(iter(stream))
+ids = [labels.map_label(row["source"], inst["label_native"], "scene") for inst in row["instances"]]
+print(row["source"], ids)
+```
+
+`fish-boxes` rows have `boxes` and name their source in `source_id`:
+
+```python
+stream = load_dataset("reefsupport/marine-data", "fish-boxes", split="train", streaming=True)
+row = next(iter(stream))
+ids = [labels.map_label(row["source_id"], box["label"], "scene") for box in row["boxes"]]
+print(row["source_id"], ids)
+```
+
+For a dataset built with `marinedata.builder`,
 `to_torch_dataset(dataset, decode_masks=True, scheme="benthic-coarse")` remaps each decoded mask to the scheme ids.
 
 Some sources annotate only a subset of the classes, and for them 255 means "not annotated" rather than background.

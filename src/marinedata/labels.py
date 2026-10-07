@@ -1,4 +1,4 @@
-"""Training label mapping for every published source (HF ``reefsupport/marine-data`` and ``-nc``).
+"""Training label mapping for every published source (Hugging Face ``reefsupport/marine-data``).
 
 The published masks carry each source's *native* ids, which collide across sources. This module
 turns them into fixed, comparable class ids per **scheme**:
