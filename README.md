@@ -1,420 +1,355 @@
 # marine-data
 
-**A licence-aware registry and dataloaders for marine and coral-reef datasets.**
+A licence-aware registry and set of dataloaders for marine and coral-reef datasets, and the open image datasets built from it.
 
-Marine computer vision has an abundance of data and no way to tell what you are allowed
-to do with it. Roughly 160 relevant datasets exist across a dozen incompatible label
-schemes and at least six licence regimes. Some are public domain. Some forbid commercial
-use. Some forbid *derivative works entirely* — meaning you cannot legally generate a
-mask, a crop, or an augmentation from them. At least one redistributes stock photography
-under a licence its publisher does not have the rights to grant.
+Marine computer vision draws on many datasets, with incompatible label schemes and a wide range of licence terms.
+Some are public domain, some forbid commercial use, and some forbid derivative works, which rules out masks, crops and
+augmentations. `marine-data` records the licence of every source before the source is used, so that "every label in
+this training set was permitted for this purpose" can be checked by code instead of remembered.
 
-Every team re-derives this from scratch, usually incompletely, usually after training.
+The project has two parts:
 
-`marine-data` makes licence tier a **first-class dimension of the data layer**, so that
-*"we had the right to train on every one of these labels"* is a mechanical, provable
-property rather than a remembered one.
+- **The registry and tooling** (`src/marinedata`, `registry/`): per-source licence tiers, access rules, label
+  crosswalks, dataloaders, a dataset builder and a release pipeline. The registry lists 143 sources and defines 26
+  capabilities.
+- **The published datasets** on Hugging Face: [`reefsupport/marine-data`](https://huggingface.co/datasets/reefsupport/marine-data),
+  58,803 images with masks or bounding boxes, each row carrying its own `licence` and `attribution` fields.
+
+This is metadata, not legal advice. Tier assignments record Reef Support's reading of primary sources, cited per entry,
+and are a starting point for your own review. See [`docs/LEGAL.md`](docs/LEGAL.md).
+
+## Published datasets
+
+Release v1.0 (October 2026) is a set of four Parquet configs with images and masks embedded. Splits follow the
+upstream splits where a source defines them, and a deterministic 80/10/10 group hash otherwise.
+
+| Config | Task | Images | Sources |
+|---|---|---|---|
+| [`coral-masks`](https://huggingface.co/datasets/reefsupport/marine-data/viewer/coral-masks) | Benthic semantic segmentation | 5,997 | Coralscapes, Reef Support benthic surveys, Seaview imagery with Reef Support masks |
+| [`scene-masks`](https://huggingface.co/datasets/reefsupport/marine-data/viewer/scene-masks) | Underwater scene semantic segmentation | 1,598 | SUIM |
+| [`instance-masks`](https://huggingface.co/datasets/reefsupport/marine-data/viewer/instance-masks) | Underwater instance segmentation | 25,296 | UIIS, UIIS10K, USIS10K |
+| [`fish-boxes`](https://huggingface.co/datasets/reefsupport/marine-data/viewer/fish-boxes) | Object detection (fish and fauna boxes) | 25,912 | UIIS, UIIS10K, USIS10K, Roboflow Aquarium Dataset |
+
+Load a config with the `datasets` library:
+
+```python
+from datasets import load_dataset
+
+ds = load_dataset("reefsupport/marine-data", "coral-masks")  # train / validation / test
+row = ds["train"][0]
+print(row["licence"], row["attribution"])
+
+stream = load_dataset("reefsupport/marine-data", "fish-boxes", split="train", streaming=True)
+```
+
+Licences differ per source. Keep the `attribution` column when you share or publish results, and see
+[Licensing](#licensing) below. The dataset card documents fields, splits, annotation process and known limitations.
+
+## Install
+
+The package is not published on PyPI. Install from source:
+
+```bash
+git clone https://github.com/reefsupport/marine-data
+cd marine-data
+uv venv && uv pip install -e ".[dev]"
+```
+
+Python 3.10 or newer is required. Optional extras pull in heavier dependencies only when needed: `pandas`, `torch`,
+`tf`, `hf`, `croissant`, `geo`, `eval` and `quality`.
+
+## Quick start
+
+Ask the registry which sources may be used for a purpose, and what the licence gate excluded:
 
 ```python
 import marinedata as md
 
-# What can we legally train a shippable benthic segmenter on?
+# Which sources may train a closed-weights benthic segmenter?
 result = md.find(task="benthic-segmentation", profile="ship-commercial")
-print(result.summary())
+for source in result.sources:
+    print(source.id, source.licence.id)
 
-# And what did the gate remove — with the reason?
+# What did the gate exclude, and why?
 for decision in result.excluded:
     print(decision.reason)
 ```
 
-> ⚠️ **This is metadata, not legal advice.** Tier assignments record our reading of
-> primary sources, cited per entry. They are a starting point for your own review, not a
-> substitute for counsel. See [`docs/LEGAL.md`](docs/LEGAL.md).
+The same check from the command line:
 
-> 🌊 **Looking for the data itself?** The hackathon release is on Hugging Face:
-> [`reefsupport/marine-data`](https://huggingface.co/datasets/reefsupport/marine-data) (open licences) and
-> [`reefsupport/marine-data-nc`](https://huggingface.co/datasets/reefsupport/marine-data-nc) (restricted terms).
-> See [Datasets on Hugging Face](#datasets-on-hugging-face).
+```bash
+marinedata check --profile ship-commercial          # every source, admitted or refused, with the reason
+marinedata list --profile research --task benthic-segmentation
+marinedata show coralscapes
+```
 
-### Relationship to `rs-ai`
+## How the registry works
 
-[`reefsupport/rs-ai`](https://github.com/reefsupport/rs-ai) is the inference side —
-model workers, orchestration, and content-hashed MRV manifests. `marine-data` is the
-training side: what may lawfully go *into* a model, and what each source can and cannot
-express.
-
-The two meet at provenance. `rs-ai` emits a manifest describing how a measurement was
-produced; `marine-data` emits a `LINEAGE.json` describing what the model was trained on
-and under which licence. An MRV claim needs both halves, and neither is convincing
-alone — a reproducible pipeline over data you had no right to use is not defensible,
-and nor is clean data behind an unauditable model.
-
----
-
-## Why a registry, not a data lake
-
-**We deliberately do not host or redistribute any data.** For non-commercial and
-no-derivatives sources, redistribution would itself be a violation — a data lake of this
-material could not be built lawfully by anyone. The registry points at canonical sources,
-records what we verified and how, and caches locally on fetch.
-
-That constraint turns out to be a feature: it keeps the project small, keeps liability
-where it belongs, and means a contributor adds value by *verifying a licence*, not by
-uploading terabytes.
-
-## The model
-
-Three orthogonal facets, all queryable:
+Each source is described along three facets that can be queried together.
 
 | Facet | Question it answers |
 |---|---|
-| **Licence tier + flags** | What are we permitted to do? |
-| **Capability** | What is this useful for — benthic segmentation, fish ID, 3D, pretraining…? |
-| **Coverage + domain shift** | Will it actually work where we deploy? |
+| Licence tier and flags | What may be done with the data? |
+| Capability | What is the source useful for: benthic segmentation, fish detection, 3D, pretraining? |
+| Coverage and domain shift | Will it work in the region where it is deployed? |
 
 ### Licence tiers
 
 | Tier | Meaning |
 |---|---|
 | `T0_OWN` | Rights held outright |
-| `T1_PERMISSIVE` | CC0, CC-BY, Apache-2.0, MIT, US-Gov public domain |
-| `T2_COPYLEFT` | CC-BY-SA, GPL — shippable **iff** the derivative is shared alike |
-| `T3_NONCOMMERCIAL` | CC-BY-NC and variants — research and internal use only |
-| `T4_TDM_ONLY` | No grant; lawful access; relies on a statutory TDM exception |
-| `TX_PROHIBITED` | Provenance-defective or contract-blocked — never usable |
+| `T1_PERMISSIVE` | CC0, CC BY, Apache-2.0, MIT, US-Government public domain |
+| `T2_COPYLEFT` | CC BY-SA, GPL: usable if the derivative is shared alike |
+| `T3_NONCOMMERCIAL` | CC BY-NC and variants: research and internal use |
+| `T4_TDM_ONLY` | No grant; lawful access under a statutory text-and-data-mining exception |
+| `TX_PROHIBITED` | Provenance-defective or contract-blocked: never usable |
 
-Tier alone is not enough, so licences also carry **flags**:
+Tier alone is not enough, so licences also carry flags. `no_derivatives` marks terms that forbid masks, crops and
+augmentations, which makes a source unusable for training and not merely non-commercial. `contract_gated` marks access
+that required assent to terms, `provenance_defective` marks a grant the licensor appears not to hold, and
+`share_alike` and `attribution_required` record the remaining obligations.
 
-- `no_derivatives` — ND blocks masks, crops and augmentations. **Untrainable, not merely
-  non-commercial.** This is the most commonly missed restriction in the field.
-- `contract_gated` — access required assent to terms, which can override the EU
-  commercial TDM exception (DSM Art. 7 protects Arts. 3/5/6 but not Art. 4).
-- `provenance_defective` — the licensor appears to grant rights it does not hold. No
-  downstream permission cures this.
-- `share_alike`, `attribution_required`.
+### Profiles
 
-### Profiles — the gate
+A profile declares what a build is for. The gate raises an error when a source is not admitted; it does not warn.
 
-A profile declares what a build is *for*. **The gate raises; it does not warn.** A
-warning that scrolls past in a training log is how tainted data reaches shipped weights.
-
-| Profile | Admits | For |
+| Profile | Admits | Intended for |
 |---|---|---|
 | `ship-commercial` | T0, T1 | Closed weights in a paid product |
-| `ship-open` | T0, T1, T2 | Weights released under share-alike |
-| `research` | T0, T1, T2, T3 | Papers and benchmarks; never shipped |
-| `pretrain-eu` | + T4 | SSL pretraining under EU TDM; requires a counsel opinion reference |
+| `ship-open` | T0, T1, T2 | Weights released under a share-alike licence |
+| `ship-noncommercial` | T0, T1, T2, T3 | Public non-commercial releases |
+| `research` | T0, T1, T2, T3 | Papers and benchmarks that are not shipped |
+| `pretrain-eu` | T0 to T4 | Self-supervised pretraining under the EU text-and-data-mining exception; requires a `legal_opinion_ref` |
 
-`pretrain-eu` cannot be instantiated without `legal_opinion_ref`. The profile enforces
-what a policy document only asks for.
+### Domain shift as data
 
-### Domain shift, as data
-
-Cross-region collapse is the most common deployment failure in marine CV, and no existing
-catalog records it. Entries carry measured drops and — more usefully — **missing
-classes**:
+Cross-region performance drops are a common deployment failure, and entries record them together with the classes a
+source lacks:
 
 ```yaml
 domain_shift:
   trained_regions: [red-sea]
   missing_classes: ["soft coral", "gorgonian / sea fan", "octocoral (any)"]
-  known_drops:
-    - to_region: caribbean
-      metric: "live-coral cover fidelity"
-      delta: -30.0
 ```
 
-That example is Coralscapes, the field's reference dense-segmentation dataset. Its 39
-classes contain **no soft-coral class of any kind**. On Caribbean reefs, where octocorals
-are roughly a quarter of all annotations, a model trained on it has no valid label for
-what it is looking at and collapses into `unknown hard substrate`. A dataset can be
-excellent and still be the wrong choice for your region — that belongs in metadata rather
-than in folklore.
+Coralscapes, for example, has no soft-coral class. A model trained only on it has no valid label for octocorals, which
+make up a large share of annotations on Caribbean reefs.
 
 ## Dataloaders
 
-Sources **declare** an on-disk layout rather than shipping bespoke code:
-
-```yaml
-loader:
-  layout: image-mask-pairs
-  schema_id: coralscapes-39
-  crosswalk_id: coralscapes-39
-  params: { images_dir: images, masks_dir: masks }
-```
+Sources declare an on-disk layout instead of shipping bespoke code. Registered layouts include `image-folder`,
+`image-mask-pairs`, `coco-json`, `yolo-txt`, `csv-points`, `labelbox-ndjson`, `audio-clips` and `metadata-only`.
+Loaders never download data, and an empty result is always an error.
 
 ```python
+import marinedata as md
 from marinedata.loaders import build_loader
 
-loader = build_loader(registry.source("coralscapes"), "/data/coralscapes")
-loader.bind_harmonizer(registry.harmonizer_for("coralscapes"))
-
+registry = md.Registry.load()
+loader = build_loader(registry.source("suim"), "/data/suim")
 for sample in loader:
-    sample.image  # a path, not decoded bytes — lazy by default
-    sample.labels  # {Axis.TAXON: HC, Axis.FORM: CMM, Axis.CONDITION: BLEACHED}
-    sample.supervised  # which axes this source actually annotates
-    sample.licence_tier  # rides along, so lineage reflects what was consumed
+    print(sample.licence_tier)  # provenance travels with every sample
 ```
 
-Eight layouts cover the field's conventions: `image-folder`, `image-mask-pairs`,
-`coco-json`, `yolo-txt`, `csv-points`, `labelbox-ndjson`, `audio-clips`, `metadata-only`.
-
-Adding a source is usually a YAML change, not code. Loaders never download, and an empty
-result is always an error — silent emptiness is indistinguishable from a filter that
-matched nothing.
-
-### Verification — because a declared layout is only a hypothesis
-
-Tests run at two levels, and they fail differently:
-
-- **Synthetic fixtures** prove a *reader* works. A reader bug raises.
-- **Live samples (~100 items)** prove a *declaration* is right. A wrong declaration
-  quietly finds nothing, or the wrong thing.
-
-```bash
-marinedata fetch coralscapes --limit 100      # bounded sample into ~/.cache/marinedata
-marinedata verify                             # run every declared layout against real data
-marinedata verify --unverified-only           # what has never been checked
-```
-
-Sources that cannot be auto-fetched are not all the same problem — a missing sample URL,
-a gated form and a 5 GB Zenodo monolith need different answers. Per-source routes are in
-[`docs/ACCESS_PLANS.md`](docs/ACCESS_PLANS.md).
-
-This is not theoretical. The first full sweep caught two wrong declarations:
-**Coralscapes** was declared as `images/` + `masks/` directories and is in fact
-HuggingFace parquet with `image`/`label` columns; **MOUSS** was declared `coco-json`
-and its HuggingFace mirror ships images only, with the boxes in a separate release.
-Synthetic fixtures would have passed on both, forever.
-
-So `loader.verified_on` is first-class metadata, exactly like licence verification:
-
-```yaml
-loader:
-  layout: flat-images
-  verified_on: 2026-08-17
-  verified_note: "30 live rows fetched from HF; images only — coco-json was a wrong guess"
-```
-
-Unset means the layout is a guess from documentation. `marinedata verify` sets it
-honestly, and the backlog is visible rather than assumed away.
+A declared layout is only a hypothesis until it is run against real data. `marinedata fetch <source> --limit 100`
+downloads a bounded sample, and `marinedata verify` runs each declared layout against it and records the result.
 
 ## Harmonisation
 
-Datasets use a dozen incompatible schemes. Crosswalks map them onto canonical axes —
-`taxon`, `form`, `condition` — and **record what each mapping loses**:
+Label schemes are mapped onto canonical axes (`taxon`, `form`, `condition`) by crosswalks, and each mapping records what
+it loses as `exact`, `coarsened` or `approximate`. A source label with no canonical equivalent leaves the axis
+unsupervised instead of being coerced into the nearest class. The registry holds 41 crosswalks.
 
-```
-crosswalk coralscapes-39 → rs-benthic-v1  (39 edges)
-  exact           27  (69%)
-  coarsened        9  (23%)
-  approximate      3  (8%)
-```
-
-The rule that matters: **a source label with no canonical equivalent leaves the axis
-unsupervised rather than being coerced into the nearest class.** Coercion is exactly how
-a Red-Sea schema with no soft-coral row produces "50% unknown hard substrate" on a
-Caribbean reef, and nothing in a training log reveals it.
-
-## Model development
+## Building a training set
 
 ```python
 import marinedata as md
 
-reg = md.Registry.load()
-ds = md.DatasetBuilder(
-    reg,
+registry = md.Registry.load()
+dataset = md.DatasetBuilder(
+    registry,
     profile="ship-commercial",
-    roots={"coralscapes": "/data/coralscapes", "reef-support-benthic": "/data/rs"},
+    roots={"coralscapes": "/data/coralscapes"},
 ).build()
 
-ds.split(by="site")  # group-wise — see below
-print(ds.summary())
+dataset.split(by="site")  # group-wise split, the default
+print(dataset.summary())
 
-frame = ds.to_pandas()  # exploration, stratification, leakage checks
-torch_ds = ds.to_torch(split="train")
-tf_ds = ds.to_tf(split="train", batch_size=8)
+frame = dataset.to_pandas()
+torch_ds = dataset.to_torch(split="train")
 ```
 
-**Splits are group-wise by default.** Consecutive transect frames overlap heavily — the
-same colony appears in dozens of them — so a random split puts near-duplicates on both
-sides and inflates every metric. `by="random"` exists, but you have to ask for it, and
-`leakage_report(ds)` shows exactly what it costs.
+- **Splits are group-wise by default.** Consecutive transect frames overlap heavily, so a random split places
+  near-duplicates on both sides and inflates metrics. `by="random"` is available when requested explicitly.
+- **Unsupervised axes encode as `-100`**, the default `ignore_index` of PyTorch's `CrossEntropyLoss`. Datasets with
+  different label sets can be combined without custom masking. The TensorFlow adapter emits an explicit mask instead.
+- **Vocabularies are not mixed.** A source without a crosswalk into the target schema raises an error unless
+  `allow_unmapped=True` is passed.
+- `class_weights()`, `class_counts()` and `supervision_coverage()` help with long-tailed class distributions.
 
-**Unsupervised axes encode to `-100`**, PyTorch's `CrossEntropyLoss` default
-`ignore_index`. So combining a 39-class dense set with our own 2-class masks needs no
-custom masking:
+## Lineage
 
-```python
-loss = sum(F.cross_entropy(logits[a], batch["labels"][a]) for a in heads)
-```
-
-Rows from a source that never annotated an axis receive exactly zero gradient on that
-head — verified, not assumed (`tests/test_builder.py`). TensorFlow has no such
-convention, so the TF adapter emits an explicit mask and ships
-`masked_sparse_categorical_crossentropy` to match the torch behaviour rather than
-approximate it.
-
-**The builder refuses to mix vocabularies.** A source with no crosswalk into the target
-schema would inject native labels into the index — a class list of `["HC", "SC", "18",
-"47"]` is two vocabularies pretending to be one. That raises unless you pass
-`allow_unmapped=True`.
-
-Also available: `class_weights()` (reef data is severely long-tailed; unweighted training
-optimises for sand), `class_counts()`, and `supervision_coverage()` — which answers
-"why is my growth-form head weak?" far faster than a loss curve.
-
-## Storage and sharding
-
-**Should everything go into a data lake?** Yes for some of it, never for other parts, and
-the licence tier decides which — because "upload to storage" is two different acts:
-
-| | Private cache | Public mirror |
-|---|---|---|
-| Legally | internal copying | **redistribution** |
-| Admits | T0, T1, T2, **and T3 non-commercial** | T0, T1, T2 only |
-
-Non-commercial material may be cached for our own research but never republished.
-Conflating those is the one mistake here with real legal consequence, so it is enforced in
-code:
-
-```bash
-marinedata mirror --target private-cache     # what may we cache?
-marinedata mirror --target public-mirror     # what may we publish?
-```
-
-Four bars apply to every target, checked before tier: `no_derivatives`,
-`provenance_defective`, TDM-basis (retention is time-limited by statute), and unknown
-basis. Sharding is itself a derivative act, so `write_shards()` goes through the same gate.
-
-```python
-from marinedata.shard import write_shards
-
-write_shards(dataset, "s3-staging/shards", split="train")  # WebDataset tar shards
-```
-
-Raw objects in cloud storage are the real training bottleneck — one GET per image starves
-a GPU. Shards are ~512 MB, deterministic (zeroed mtimes), and carry `SHARD_MANIFEST.json`
-with class lists, head widths and full lineage, plus a generated `ATTRIBUTION.md`.
-
-Full rationale, retention policy and where to physically put things:
-[`docs/STORAGE.md`](docs/STORAGE.md).
-
-## Lineage — the audit artifact
-
-Every build emits a record of what contributed, under which tier and legal basis, what
-was excluded and why, and the obligations carried forward:
+Every build can emit a record of which sources contributed, under which tier and legal basis, what was excluded and
+why, and which obligations carry forward:
 
 ```python
 lineage = md.build_lineage(
-    list(result), registry.profile("ship-commercial"), excluded=list(result.excluded)
+    list(result.sources),
+    registry.profile("ship-commercial"),
+    excluded=list(result.excluded),
 )
-open("LINEAGE.json", "w").write(lineage.to_json())
-print(lineage.attribution_text())  # for the model card / NOTICE file
+with open("LINEAGE.json", "w") as handle:
+    handle.write(lineage.to_json())
+print(lineage.attribution_text())  # for a model card or NOTICE file
 ```
 
-Attach it to your model card. It is the answer to *"prove you had the right to train on
-this"* — and, because the registry is public, a claim a stranger can check.
+## Command-line overview
 
-## Datasets on Hugging Face
+`marinedata --help` lists every command. The main groups are:
 
-The hackathon release v1 (built 2026-10-06) is published as two public Hugging Face datasets. Each is a set of
-Parquet configs (images and masks embedded) with per-row `licence` and `attribution` columns, a dataset card with
-previews, and the per-config `LICENSE`, `NOTICE` and `CHECKSUMS.sha256` under `docs/<config>/`.
+| Purpose | Commands |
+|---|---|
+| Explore the registry | `list`, `show`, `check`, `doctor`, `taxa`, `labels`, `taxonomy` |
+| Check sources against real data | `fetch`, `verify`, `registry verify` |
+| Build datasets | `release`, `splits`, `dedup`, `decon`, `export-wds`, `manifest`, `verify-release` |
+| Quality and evaluation | `quality`, `privacy-scan`, `labelquality`, `eval`, `bench`, `captions` |
+| Provenance | `lineage`, `mirror` |
+| Add or ingest sources | `add`, `ingest`, `ingest-source`, `ingest-batch`, `metadata` |
 
-| Repo | Configs (images) | Terms |
-|---|---|---|
-| [`reefsupport/marine-data`](https://huggingface.co/datasets/reefsupport/marine-data) | `coral-masks` 5,997, `scene-masks` 1,598, `instance-masks` 25,296, `fish-boxes` 25,912 (58,803 in all) | **Open, per source:** Apache-2.0, MIT, CC-BY-4.0, and CC-BY-3.0-AU for the Seaview images (masks CC-BY-4.0, Reef Support) |
-| [`reefsupport/marine-data-nc`](https://huggingface.co/datasets/reefsupport/marine-data-nc) | `coral-masks` (CoralSeg) 4,922, `coral-masks-machine` (CoralSCOP, machine-generated) 38,928 (43,850 in all) | **Restricted:** CoralSeg states no data licence; CoralSCOP data is used under the authors' request-form terms (masks recorded as CC-BY-NC-SA-4.0). Our release notes say do not redistribute |
+`marinedata mirror <source>` reports what may be copied into storage you control and what is refused, because copying
+a source is a redistribution decision as well as a technical one.
 
-```python
-from datasets import load_dataset
+## Licensing
 
-ds = load_dataset("reefsupport/marine-data", "coral-masks")  # train / validation / test
-stream = load_dataset("reefsupport/marine-data", "fish-boxes", split="train", streaming=True)
+**Code.** The code in this repository is released under the Apache License 2.0 ([`LICENSE`](LICENSE)).
+
+**Data.** The code licence does not apply to data. Each source keeps its own licence, recorded in `registry/` and in
+the `licence` and `attribution` columns of every published row. The sources in the published release are:
+
+| Source | What is included | Licence | Required attribution |
+|---|---|---|---|
+| [Coralscapes](https://huggingface.co/datasets/EPFL-ECEO/coralscapes) | `coral-masks`: 2,075 images | [Apache-2.0](https://www.apache.org/licenses/LICENSE-2.0) | Sauder et al. 2025; keep the licence text and note changes (Parquet re-encoding, class map) |
+| Reef Support benthic surveys | `coral-masks`: 1,226 images | [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/) | Reef Support, https://reef.support |
+| [Seaview survey photographs](https://doi.org/10.14264/UQL.2019.930) with Reef Support masks | `coral-masks`: 2,696 images | Images [CC BY 3.0](https://creativecommons.org/licenses/by/3.0/); masks CC BY 4.0 | Images: González-Rivero et al., University of Queensland, doi:10.14264/UQL.2019.930. Masks: Reef Support |
+| [SUIM](https://github.com/IRVLab/SUIM) | `scene-masks`: 1,598 images | [MIT](https://opensource.org/license/mit) | Islam et al. 2020; Copyright (c) 2020 Md Jahidul Islam |
+| UIIS, UIIS10K, USIS10K | `instance-masks`: 25,296 images; part of `fish-boxes` | [Apache-2.0](https://www.apache.org/licenses/LICENSE-2.0), as distributed by the authors | Lian et al. 2023; Li et al. 2025; Lian et al. 2024 |
+| [Roboflow Aquarium Dataset](https://public.roboflow.com/object-detection/aquarium) | `fish-boxes`: 637 images | [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/) | Roboflow, Aquarium Dataset, 2020 |
+
+Images in the UIIS, UIIS10K and USIS10K configurations originate from datasets distributed by their authors under the
+Apache License 2.0. The original publications state that the images were gathered from public sources and earlier
+datasets, so copyright in individual images may rest with third parties. Rights holders can request removal by opening
+an [issue](https://github.com/reefsupport/marine-data/issues) or through the [contact page](https://www.reef.support/contact).
+
+Sources whose terms forbid redistribution are not part of the published datasets. The registry still records
+them, so that their status is visible and gated.
+
+## Limitations
+
+- Labels follow each upstream vocabulary. Native labels are kept and mapped to shared nodes only where a crosswalk
+  exists.
+- 35 `coral-masks` images and 12 `instance-masks` rows were dropped because no class map was available.
+- The mask configs have not been checked for near-duplicate images.
+- Some frames may show divers or visitors.
+- Registry coverage is uneven: some entries are verified from secondary sources and are blocked from shipping
+  profiles until a primary source is checked.
+
+## Citation
+
+Machine-readable metadata is in [`CITATION.cff`](CITATION.cff). To cite the release and the software:
+
+```bibtex
+@misc{reefsupport2026marinedata,
+  title        = {Reef Support Marine Data},
+  author       = {{Reef Support}},
+  year         = {2026},
+  version      = {1.0},
+  howpublished = {\url{https://huggingface.co/datasets/reefsupport/marine-data}},
+  note         = {v1.0 (October 2026). Licences are set per source; see the dataset card.}
+}
+
+@software{reefsupport2026marinedatacode,
+  title   = {marine-data: a licence-aware registry and dataloaders for marine datasets},
+  author  = {{Reef Support}},
+  year    = {2026},
+  version = {1.0},
+  url     = {https://github.com/reefsupport/marine-data},
+  license = {Apache-2.0}
+}
 ```
 
-> ⚠️ **`marine-data-nc` is not open data.** Being public on the Hub is not a licence; read the notice at the top of
-> its card before you use it. Everything in `marine-data` carries an open licence that needs attribution.
+Please also cite the upstream sources you use.
 
-Known gaps, documented on the cards: 35 `coral-masks` images and 12 `instance-masks` rows were dropped (no class map),
-`coral-masks-machine` is model output and has no validation split, and the mask configs were not near-duplicate
-checked. The code that builds these releases is this repository (`src/marinedata`, release builder `hf_export.py`).
+```bibtex
+@inproceedings{sauder2025coralscapesdatasetsemanticscene,
+  title     = {The Coralscapes Dataset: Semantic Scene Understanding in Coral Reefs},
+  author    = {Sauder, Jonathan and Domazetoski, Viktor and Banc-Prandi, Guilhem and Perna, Gabriela and Meibom, Anders and Tuia, Devis},
+  booktitle = {Proceedings of the International Conference on Computer Vision Joint Workshop on Marine Vision},
+  year      = {2025}
+}
 
-## Install
+@misc{gonzalezrivero2019seaview,
+  title     = {Seaview Survey Photo-quadrat and Image Classification Dataset},
+  author    = {Gonz{\'a}lez-Rivero, Manuel and others},
+  year      = {2019},
+  publisher = {The University of Queensland},
+  doi       = {10.14264/UQL.2019.930},
+  note      = {CC BY 3.0}
+}
 
-```bash
-pip install marinedata
-```
+@inproceedings{islam2020suim,
+  title     = {Semantic Segmentation of Underwater Imagery: Dataset and Benchmark},
+  author    = {Islam, Md Jahidul and Edge, Chelsey and Xiao, Yuyang and Luo, Peigen and Mehtaz, Muntaqim and Morse, Christopher and Enan, Sadman Sakib and Sattar, Junaed},
+  booktitle = {IEEE/RSJ International Conference on Intelligent Robots and Systems (IROS)},
+  year      = {2020}
+}
 
-```bash
-git clone https://github.com/reefsupport/marine-data && cd marine-data
-uv venv && uv pip install -e ".[dev]" && pytest
+@inproceedings{lian2023watermask,
+  title     = {WaterMask: Instance Segmentation for Underwater Imagery},
+  author    = {Lian, Shijie and Li, Hua and Cong, Runmin and Li, Suqi and Zhang, Wei and Kwong, Sam},
+  booktitle = {Proceedings of the IEEE/CVF International Conference on Computer Vision (ICCV)},
+  pages     = {1305--1315},
+  year      = {2023}
+}
+
+@article{li2025uwsam,
+  title   = {Advancing Marine Research: UWSAM Framework and UIIS10K Dataset for Precise Underwater Instance Segmentation},
+  author  = {Li, Hua and Lian, Shijie and others},
+  journal = {arXiv preprint arXiv:2505.15581},
+  year    = {2025}
+}
+
+@inproceedings{lian2024usis10k,
+  title     = {Diving into Underwater: Segment Anything Model Guided Underwater Salient Instance Segmentation and A Large-scale Dataset},
+  author    = {Lian, Shijie and Zhang, Ziyi and Li, Hua and Li, Wenjie and Yang, Laurence Tianruo and Kwong, Sam and Cong, Runmin},
+  booktitle = {Proceedings of the 41st International Conference on Machine Learning (ICML)},
+  series    = {PMLR},
+  volume    = {235},
+  pages     = {29545--29559},
+  year      = {2024}
+}
+
+@misc{roboflow2020aquarium,
+  title        = {Aquarium Dataset},
+  author       = {{Roboflow}},
+  year         = {2020},
+  howpublished = {\url{https://public.roboflow.com/object-detection/aquarium}},
+  note         = {CC BY 4.0}
+}
 ```
 
 ## Contributing
 
-Adding a dataset is a pull request against `registry/sources/`. Two rules:
+The most valuable contribution is a verified licence. Adding a source is a pull request that adds an entry to the
+registry, under two rules:
 
-1. **`verified_by` must cite a primary source** — a licence file you opened, a dataset
-   card, written permission. Not "the paper says". Our own prior catalog recorded
-   MarineInst20M as "Mixed / Open" on a paper's phrasing; the `LICENSE.txt` in the
-   repository said CC-BY-NC-SA, over imagery including Getty and Shutterstock.
-2. **Tier changes need a second reviewer.**
+1. `verified_by` must cite a primary source: a licence file, a dataset card, written permission, or a terms-of-use
+   page with the date it was read. A paper's phrasing or a hosting platform's default is not enough.
+2. Changes to a source's tier need a second reviewer.
 
-See [`CONTRIBUTING.md`](CONTRIBUTING.md).
+See [`CONTRIBUTING.md`](CONTRIBUTING.md) for the workflow and [`CHANGELOG.md`](CHANGELOG.md) for release notes.
 
-## Status
+## Contact
 
-**59 sources across 24 capabilities; 9 loader layouts; 208 unit + 10 live integration tests.**
-
-**14 sources verified against live fetched data** — including our own Hetzner buckets,
-Coralscapes, ReefNet species images, MARRS reef soundscapes and AIMS satellite coral
-mapping. `marinedata verify` re-checks them; `--unverified-only` lists the backlog.
-
-Coverage by domain: coral and benthic (deepest), fish and mobile fauna, 3D and
-photogrammetry, coastal ecosystems (mangrove, seagrass, bathymetry, debris),
-bioacoustics, enhancement and depth.
-
-Honest gaps:
-
-- **One crosswalk is complete** (Coralscapes-39 → RS-Benthic). CATAMI, CoralNet, NCRMP
-  and AGRRA are registered as schemas but not yet mapped.
-- **Many fish and enhancement entries carry `method: secondary`** — transcribed from an
-  internal catalog rather than checked at source. They work on `research` and are
-  blocked from shipping profiles until someone opens the primary source. That backlog is
-  deliberate and visible.
-- **No fetchers yet.** Loaders read what is already on disk.
-- Plankton and megafauna are absent; the schema accommodates them.
-
-`marinedata check --profile ship-commercial` prints exactly what is blocked and why.
-
-## Citing this dataset
-
-`marinedata.croissant` emits Croissant 1.0 (+ RAI) metadata for a built Hugging Face
-export (`python -m marinedata.croissant --build-dir <dir> --repo-id <id> --out <path>`);
-see [`docs/croissant-v1.json`](docs/croissant-v1.json) for the v1 build.
-
-For the v1 imagery release itself, cite:
-
-```bibtex
-@misc{reefsupport_marine_data_v1,
-  title        = {ReefSupport Marine Data (v1)},
-  author       = {{Reef Support B.V.}},
-  year         = {2026},
-  howpublished = {\url{https://huggingface.co/datasets/reefsupport/marine-data}},
-  note         = {v1, released 2026-09-24. Licence is mixed per source --- see the
-                  dataset card and docs/DATASHEET.md before use.}
-}
-```
-
-Machine-readable citation metadata for this repository is in
-[`CITATION.cff`](CITATION.cff). See [`docs/DATASHEET.md`](docs/DATASHEET.md) for the
-full datasheet (composition, collection, known biases, ethics) and
-[`CHANGELOG.md`](CHANGELOG.md) for the per-release changelog.
-
-## Licence
-
-Apache-2.0 for the code. CC-BY-4.0 for the registry metadata. We want both copied widely.
-
+Questions, corrections to a licence entry and removal requests: open an
+[issue](https://github.com/reefsupport/marine-data/issues) or use the [contact page](https://www.reef.support/contact).
 Built by [Reef Support](https://reef.support).
