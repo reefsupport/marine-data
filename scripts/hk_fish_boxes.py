@@ -1,4 +1,4 @@
-"""Hackathon fish-boxes driver (HK-4c): staged local mirror -> ``boxes`` parquet per source.
+"""Fish-boxes driver (HK-4c): staged local mirror -> ``boxes`` parquet per source.
 
     python scripts/hk_fish_boxes.py boxes --stage STAGE --data-dir DIR uiis uiis10k usis10k ...
 
@@ -10,7 +10,7 @@ public fetch caps files at 64 MB; the COCO documents are 100 MB+), writes
     python scripts/hk_fish_boxes.py package --hf HF_EXPORT --data-dir DIR --out OUT
 
 ``package`` (see :func:`package`) joins an ``hf_export`` dir (``data/images`` shards +
-``data/metadata`` v2 tables) with the boxes tables into the unified hackathon layout, the same
+``data/metadata`` v2 tables) with the boxes tables into the unified release layout, the same
 column names as ``out/<flavour>/coral-points``: ``OUT/data/<split>-NNNNN-of-NNNNN.parquet`` (one per
 image shard, image bytes embedded, per-row licence/attribution/split/split_group, ``boxes`` =
 list of normalised 0-1 ``x_min, y_min, x_max, y_max`` + ``label``, ``points`` empty), plus the flat
@@ -55,7 +55,7 @@ def write_source_boxes(stage: Path, data_dir: Path, source_id: str, registry) ->
 
 
 def unified_features():
-    """The ``out/<flavour>/coral-points`` feature set: one schema for every hackathon config."""
+    """The ``out/<flavour>/coral-points`` feature set: one schema for every config."""
     import datasets as ds
 
     v = ds.Value

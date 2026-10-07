@@ -86,23 +86,8 @@ def _attribution_table(sources: list[dict]) -> list[str]:
 
 def tail_sections(flavour: str, repo_id: str, sources: list[dict], takedown_url: str) -> list[str]:
     out = ["", "## Licence and attribution per source", "", *_attribution_table(sources)]
-    other = "reefsupport/marine-data-nc" if flavour == "open" else "reefsupport/marine-data"
-    if flavour == "open":
-        out += [
-            "",
-            "## Combine with the -nc repo",
-            "",
-            f"`{other}` holds the non-commercial delta (gated; request access first). The union "
-            "is **non-commercial**; use the open repo alone for commercial work.",
-            "",
-            "```python",
-            "from datasets import concatenate_datasets, load_dataset",
-            f'open_ = load_dataset("{repo_id}", "images", split="train")',
-            f'nc = load_dataset("{other}", "images", split="train")  # gated',
-            "full = concatenate_datasets([open_, nc])  # NON-COMMERCIAL use only",
-            "```",
-        ]
-    else:
+    other = "reefsupport/marine-data"
+    if flavour != "open":  # restricted flavour only; the open card names no other repo
         out += [
             "",
             "## The NC flavour: open + restricted-nc together",
@@ -119,11 +104,13 @@ def tail_sections(flavour: str, repo_id: str, sources: list[dict], takedown_url:
             "nc_flavour = concatenate_datasets([open_, restricted])  # NON-COMMERCIAL use only",
             "```",
         ]
-    out += ["", "## Excluded from both repos", ""]
+    is_open = flavour == "open"
+    # The open card must not name or link the gated repo, so its headings stay single-repo.
+    out += ["", "## Excluded sources" if is_open else "## Excluded from both repos", ""]
     out += [f"- **{name}**: {why}" for name, why in EXCLUDED_CLASSES]
     out += [
         "",
-        "## Takedown and contact",
+        "## Contact" if is_open else "## Takedown and contact",
         "",
         f"Rights holders and data subjects: open an issue at {takedown_url}.",
         "",

@@ -19,6 +19,7 @@ from __future__ import annotations
 
 import argparse
 import sys
+import tempfile
 import time
 import urllib.error
 import urllib.request
@@ -34,13 +35,9 @@ from marinedata.ingest_source import IngestSpec  # noqa: E402
 USER_AGENT = "marinedata-recall/1.0"
 SLEEP_BETWEEN_LOOPS_S = 300.0
 READY_STATUSES = ("200", "206")
-# WP-6o-b: this trigger is a throwaway operational tool (one series, one session), so its
-# tsv/log default lives in the session scratchpad, not the repo — override with --out-dir
-# for any other run.
-DEFAULT_OUT_DIR = Path(
-    "/private/tmp/claude-501/-Users-yohanrunhaar-dev-reefsupport/"
-    "0ca12ad3-aada-4ede-ab99-14fec1fa7cc2/scratchpad/pangaea-recall"
-)
+# WP-6o-b: this trigger is a throwaway operational tool, so its tsv/log default lives in the
+# system temp directory, not the repo. Pass --out-dir to keep the progress file elsewhere.
+DEFAULT_OUT_DIR = Path(tempfile.gettempdir()) / "pangaea-recall"
 
 
 class _Response:
@@ -139,7 +136,12 @@ def main(argv: list[str] | None = None) -> int:
     )
     parser.add_argument("--max-hours", type=float, default=12.0)
     parser.add_argument("--rate", type=float, default=1.0, help="max requests/s")
-    parser.add_argument("--out-dir", type=Path, default=DEFAULT_OUT_DIR)
+    parser.add_argument(
+        "--out-dir",
+        type=Path,
+        default=DEFAULT_OUT_DIR,
+        help="directory for the progress tsv (default: <system temp>/pangaea-recall)",
+    )
     args = parser.parse_args(argv)
 
     urls = series_urls(args.series)

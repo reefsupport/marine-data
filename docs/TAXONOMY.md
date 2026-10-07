@@ -1,10 +1,10 @@
 # OBIS / WoRMS linkage — decision record
 
-> Produced 2026-08-17 by a 5-agent workflow (OBIS API verification, AGRRA/CoralNet
-> conflict investigation, scale analysis, adversarial critique, synthesis).
+> Produced 2026-08-17 from OBIS API verification, an AGRRA/CoralNet conflict
+> investigation, scale analysis, an independent critique and a synthesis.
 >
-> **Independently verified before adoption.** I re-checked every AphiaID against the
-> live WoRMS REST API and confirmed all three reported errors. The OBIS `taxonID` =
+> **Independently verified before adoption.** Every AphiaID was re-checked against the
+> live WoRMS REST API, which confirmed all three reported errors. The OBIS `taxonID` =
 > AphiaID linkage and the Montastraea→Orbicella resolution were confirmed against
 > `api.obis.org/v3/taxon` directly.
 >

@@ -1,0 +1,57 @@
+name: Data issue
+description: A wrong label, a bad mask, a licence or attribution problem, or personal data in an image.
+labels: [data]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Do not attach or link images that show personal data. Give the `image_sha256` and describe the problem.
+        For credentials or personal data, use the private route in the security policy instead of this form.
+  - type: dropdown
+    id: kind
+    attributes:
+      label: Kind of issue
+      options:
+        - Wrong label
+        - Bad mask
+        - Licence or attribution problem
+        - Personal data in an image
+        - Other
+    validations:
+      required: true
+  - type: input
+    id: config
+    attributes:
+      label: Config
+      description: The dataset config.
+      placeholder: coral-masks
+    validations:
+      required: true
+  - type: input
+    id: source
+    attributes:
+      label: Source
+      description: The `source` value of the row.
+    validations:
+      required: true
+  - type: input
+    id: split
+    attributes:
+      label: Split
+      placeholder: train
+    validations:
+      required: true
+  - type: input
+    id: image_sha256
+    attributes:
+      label: image_sha256
+      description: The `image_sha256` value of the row.
+    validations:
+      required: true
+  - type: textarea
+    id: description
+    attributes:
+      label: Description
+      description: What is wrong, and what you expected. For licence problems, link the primary source.
+    validations:
+      required: true

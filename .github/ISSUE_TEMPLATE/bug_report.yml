@@ -1,0 +1,35 @@
+name: Bug report
+description: Something in the marinedata package or its tooling does not work as documented.
+labels: [bug]
+body:
+  - type: textarea
+    id: description
+    attributes:
+      label: What happened
+      description: What you did, what you expected, and what you got instead.
+    validations:
+      required: true
+  - type: textarea
+    id: reproduce
+    attributes:
+      label: Steps to reproduce
+      description: A short snippet or command that shows the problem.
+      render: shell
+    validations:
+      required: true
+  - type: input
+    id: version
+    attributes:
+      label: Version
+      description: Output of `pip show marinedata`, or the commit you installed.
+      placeholder: marinedata 1.0.0
+    validations:
+      required: true
+  - type: input
+    id: environment
+    attributes:
+      label: Environment
+      description: Python version and operating system.
+      placeholder: Python 3.11, Ubuntu 22.04
+    validations:
+      required: false

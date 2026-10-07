@@ -149,8 +149,10 @@ def test_open_card_snapshot() -> None:
     assert "license: other\nlicense_name: mixed-open\nlicense_link: LICENSE\n" in head
     assert "extra_gated" not in head
     assert "| `s1` | CC-BY-4.0 | A. Author |" in card
-    assert "concatenate_datasets([open_, nc])" in card and "reefsupport/marine-data-nc" in card
-    assert "## Excluded from both repos" in card and "restricted-nd" in card
+    # The public card never names or links the gated repo.
+    assert "marine-data-nc" not in card and "-nc repo" not in card and "gated" not in card
+    assert "akedown" not in card and "## Contact" in card
+    assert "## Excluded sources" in card and "restricted-nd" in card
     assert "https://github.com/reefsupport/marine-data/issues" in card
 
 

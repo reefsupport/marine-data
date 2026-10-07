@@ -72,10 +72,16 @@ Licences differ per source. Keep the `attribution` column when you share or publ
 
 ## Install
 
-Requires Python 3.10 or newer and git. The package is not on PyPI; install from source:
+Requires Python 3.10 or newer and git. The package is not on PyPI; install the v1.0.0 release from GitHub:
 
 ```bash
-git clone https://github.com/reefsupport/marine-data
+pip install "marinedata[hf] @ git+https://github.com/reefsupport/marine-data@v1.0.0"
+```
+
+To work on the code, clone the release and install it in editable mode:
+
+```bash
+git clone --branch v1.0.0 https://github.com/reefsupport/marine-data
 cd marine-data
 uv venv && uv pip install -e ".[dev]"
 ```
