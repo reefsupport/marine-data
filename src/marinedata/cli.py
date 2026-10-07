@@ -76,7 +76,7 @@ def _cmd_show(args: argparse.Namespace) -> int:
     print(f"               {src.verification.verified_by}")
     if src.verification.disputed:
         print(f"  ⚠ DISPUTED   {' '.join((src.verification.dispute_note or '').split())}")
-    print(f"  items        {src.items or '—'}  {src.items_note or ''}")
+    print(f"  items        {src.primary_count or '—'}  {src.counts_note or ''}")
     print(f"  capabilities {', '.join(c.value for c in src.capabilities)}")
     print(f"  regions      {', '.join(r.value for r in src.coverage.regions)}")
     print(f"  access       {src.access.method.value}  {src.access.uri or ''}")

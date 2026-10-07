@@ -136,7 +136,7 @@ class PartialAbstainExclusion:
     abstaining_labels: tuple[str, ...]
     """The native labels responsible — the coarser ones, e.g. ``("Unhealthy",)``."""
     rows_dropped: int
-    """The source's total item count (``Source.items``), since none of it reaches
+    """The source's total item count (``Source.primary_count``), since none of it reaches
     this task once excluded."""
 
 
@@ -497,7 +497,7 @@ class DatasetBuilder:
                 source_id=source_id,
                 task_id=self.task_id or "",
                 abstaining_labels=fit.coarser,
-                rows_dropped=self.registry.source(source_id).items or 0,
+                rows_dropped=self.registry.source(source_id).primary_count or 0,
             )
             for source_id, fit in sorted(fits.items())
         )
