@@ -50,7 +50,7 @@ VERIFY_MODEL_VERSION = "yunet_2023mar_2ndpass"
 # Fit on 26 audited true faces (WP-5f, >= the brief's 25-positive floor): the
 # highest score that keeps recall >= 95% on those 26 (fit_threshold_for_min_recall).
 # Precision at this threshold is 12.3%, below the brief's 20% floor -- kept anyway
-# because raising it would drop recall below 95% (see docs/PRIVACY.md, D-I2).
+# because raising it would drop recall below 95% (see docs/PRIVACY.md).
 VERIFY_THRESHOLD = 0.3292
 
 

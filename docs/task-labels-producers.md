@@ -1,7 +1,7 @@
-# WP-8d task-label producers
+# Task-label producers
 
 Four one-module-per-source producers under `src/marinedata/task_layers/sources/`, each
-writing `data/_tasklabels/<source_id>/<task>.parquet` with D-Z2's fixed columns
+writing `data/_tasklabels/<source_id>/<task>.parquet` with a fixed set of columns
 (`sha256`, `source_id`, `label_origin`, plus task-specific payload). This doc records
 what each one does and its real 2026-09-25 execution result — including two genuine
 blockers, documented rather than worked around.
@@ -9,8 +9,8 @@ blockers, documented rather than worked around.
 ## coralseg.py — Coralseg (UCSD) restage + semseg
 
 Restages the legacy `benthic_datasets/mask_labels/Coralseg/<split>/{Image,Mask}/<stem>`
-prefix into the D-D staged-tree layout, reusing `StagedWriter`/`_Uploader`/`checksums`
-rather than a new upload path. D-Z2 authorizes opening Coralseg's images (only) so masks
+prefix into the staged-tree layout, reusing `StagedWriter`/`_Uploader`/`checksums`
+rather than a new upload path. The task-label interface authorizes opening Coralseg's images (only) so masks
 can be keyed by the sha256 the restage itself computes. Mask class_counts come from the
 red-channel histogram (0/1 only), per the registry's already-verified
 `coralseg-r-channel` loader note.
@@ -24,7 +24,7 @@ verification.
 
 ## seaview.py — SEAVIEW's excluded pickle: scan, then convert-or-stay-images-only
 
-Implements D-Z2's path for `labelled_data/labelled_segmentation_data.pickle`
+Implements the path for `labelled_data/labelled_segmentation_data.pickle`
 (6,956,023,722 B, excluded from the registry's size count as an unsafe format): a
 static `pickletools.genops` opcode scan (`scan_globals`/`check_allowlist`, disassembly
 only, never `pickle.load`) against an allowlist of `pandas.*`, `numpy.*`, plain
@@ -49,10 +49,10 @@ pickle-protocol-2 spelling of `builtins`, present in any protocol-2 pickle with 
 in virtually any protocol>=2 pickle) — both now allowlisted. Separately, pandas 3.x
 defaults `future.infer_string=True`, which backs even a plain int64-column DataFrame's
 column-label Index with PyArrow strings and pulls in `pyarrow.lib` globals; this is
-real but **not** added to the allowlist (out of D-Z2's literal `pandas.*, numpy.*`
+real but **not** added to the allowlist (outside the literal `pandas.*, numpy.*`
 scope) — the unit test pins `future.infer_string=False` to test the allowlist as
 specified. If SEAVIEW's pickle ever resurfaces and was written by a PyArrow-string-backed
-pandas, the scan will (correctly, per D-Z2 as written) reject it; that would need a
+pandas, the scan will (correctly, as the allowlist is written) reject it; that would need a
 charter decision, not a code change here.
 
 ## rs_labelled.py — Labelbox ndjson rasteriser
@@ -69,9 +69,9 @@ records in `SEAFLOWER_BOLIVAR/export-result.ndjson` is `annotation_kind:
 "ImageSegmentationMask"` with only a `mask.url` — zero inline `polygon` geometry. The
 brief's "rasterise the polygons" premise doesn't hold for the live export. The
 registry's `rs-labelled-masks.split_group.template` was also fixed from a copy-pasted
-`"seaview/{group}"` (WP-8b's placeholder, wrong source) to `"rs_labelled/{group}"`.
-Resume: either a future Labelbox export with polygon (not mask) annotations, or a D-Z2
-revisit to permit fetching Labelbox-hosted masks under a different rule.
+`"seaview/{group}"` (the earlier placeholder, wrong source) to `"rs_labelled/{group}"`.
+Resume: either a future Labelbox export with polygon (not mask) annotations, or a revision of the task-label rules
+to permit fetching Labelbox-hosted masks under a different rule.
 
 ## coralvqa.py — CoralVQA jsonl -> vqa.parquet
 

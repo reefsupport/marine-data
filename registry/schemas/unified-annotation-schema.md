@@ -46,7 +46,7 @@ Everything else is nullable, and a null always means one thing (see the module d
   (CoralSCOP pseudo-masks). SPDX-like id or expression. Null means "same as the image".
 - `confidence`: [0, 1], else null. Never invented.
 - `upstream_split`: `train | val | test`, normalised with `sample_schema.normalise_split`.
-- `label_status`: `ok | conflict | ambiguous | flagged_hard` (the D-U values).
+- `label_status`: `ok | conflict | ambiguous | flagged_hard` (the `label_status` values).
 
 ## Coordinates
 

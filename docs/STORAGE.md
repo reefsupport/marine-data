@@ -137,7 +137,7 @@ Every copy here passes a gate, carries attribution, and records why it was allow
 
 A staged `sources/<id>/<version>/metadata.parquet` is the wide `sample_schema` table (37 columns,
 schema v2; the older 34-column v1 shape is also accepted). Trees restaged from the legacy layout
-(bucket reorganisation RB-1, 2026-10-06) carry **one extra trailing `partition` column** (38
+(bucket reorganisation, 2026-10-06) carry **one extra trailing `partition` column** (38
 columns): the `images/<partition>/` segment (`SEAVIEW_ATL`, a site, a legacy sub-directory) that
 `StagedTreeLoader` pairs images, masks and labels on. `sample_schema.validate_table` accepts the
 table with or without that trailing column (`OPTIONAL_COLUMNS`); it is string-typed, must come last,

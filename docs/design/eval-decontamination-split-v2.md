@@ -1,8 +1,8 @@
-# Design: benchmark decontamination, split v2 with OOD holdouts, eval harness (WP-11 + WP-12)
+# Design: benchmark decontamination, split v2 with OOD holdouts, eval harness
 
 Status: design, 2026-09-25. Owner of the decisions below: this document. Implementation: the five packages in §5.
-Inputs: rating r0 (WP-11/12 specs), rubric D6/D7/D8, the S57 catalog (168 sources), the WP-10 brief (dedup stages),
-the WP-2b brief (MEOW/depth/habitat fields), `sample_schema.py` on `feat/wp2-metadata` (field names used verbatim).
+Inputs: rating r0 (decontamination and split specifications), the rating rubric, the source catalog (168 sources), the dedup stage specification,
+the metadata specification (MEOW/depth/habitat fields), `sample_schema.py` (field names used verbatim).
 Companion file: `registry/benchmarks.yaml` (28 benchmarks, schema in its header).
 
 ## 0. What is actually wrong with v1's split (the 85.7/7.2/7.1 drift)
@@ -39,7 +39,7 @@ Policy rules (the yaml applies them; a new benchmark follows the same rules):
   Upstream train images are free for the allocator. Any `split_group_id` containing a pinned image takes the pin.
 - **exclude**: the benchmark's eval images and every image in their `split_group_id` are removed from **all** splits of our
   release, and stay in the decontamination manifest. Used when (a) the benchmark is eval-only and its value depends on staying
-  external (MarineEval, U45, SQUID), or (b) the set is a test set we do not carry as a task layer. Licence is never a reason (D-C).
+  external (MarineEval, U45, SQUID), or (b) the set is a test set we do not carry as a task layer. Licence is never a reason.
 - A benchmark we cannot fetch (`needs-yohan`/`unfetchable`) is listed in the card as "not checked"; it counts toward neither
   the ≥ 5 nor the ≥ 15 target.
 
@@ -52,7 +52,7 @@ confirm each before its manifest is marked complete.
 
 ## 2. Contamination thresholds and the CI gate
 
-### 2.1 Stages (reuse WP-10's `marinedata.dedup` functions; no second implementation)
+### 2.1 Stages (reuse the `marinedata.dedup` functions; no second implementation)
 Evaluated for every (our image, benchmark eval image) pair the index returns, cheapest first; the first stage that fires wins.
 
 | stage | signal | contaminated when | review band (logged) |
@@ -60,12 +60,12 @@ Evaluated for every (our image, benchmark eval image) pair the index returns, ch
 | S0 id | `upstream_id` / FathomNet uuid / CoralNet image id / URL | exact equality | — |
 | S1 bytes | sha256 of file bytes | equal | — |
 | S2 pixels | sha256 of decoded RGB8 (EXIF-transposed, alpha dropped) + shape | equal | — |
-| S3 perceptual | candidates: dHash-64 Hamming ≤ 12 via WP-10's band index; decide on pHash-256 | pHash-256 ≤ 32 **and** grey entropy ≥ 4.0 bits | pHash 33–48, or ≤ 32 with entropy < 4.0 (goes to S4) |
-| S4 embedding | cosine of the WP-10-pinned embedding (default `facebook/dinov2-small` CLS, L2-norm) on S3 candidates **plus** ANN top-10 per benchmark image | cosine ≥ τ_decon | τ_decon − 0.05 ≤ cos < τ_decon |
-| S5 patch→parent | our patch's parent (key (parent id,row,col) or WP-10 matcher NCC ≥ 0.90) is a benchmark eval image, or a benchmark patch's parent is ours | parent contaminated | matcher 0.80–0.90 |
+| S3 perceptual | candidates: dHash-64 Hamming ≤ 12 via the dedup band index; decide on pHash-256 | pHash-256 ≤ 32 **and** grey entropy ≥ 4.0 bits | pHash 33–48, or ≤ 32 with entropy < 4.0 (goes to S4) |
+| S4 embedding | cosine of the dedup-pinned embedding (default `facebook/dinov2-small` CLS, L2-norm) on S3 candidates **plus** ANN top-10 per benchmark image | cosine ≥ τ_decon | τ_decon − 0.05 ≤ cos < τ_decon |
+| S5 patch→parent | our patch's parent (key (parent id,row,col) or dedup matcher NCC ≥ 0.90) is a benchmark eval image, or a benchmark patch's parent is ours | parent contaminated | matcher 0.80–0.90 |
 
-τ_decon = τ_dedup − 0.03, clamped to [0.85, 0.95], where τ_dedup is WP-10's precision-95 operating point from its audited
-pairs. Until WP-10 publishes it, τ_dedup = 0.93, so τ_decon = 0.90. Decontamination deliberately sits on the recall side:
+τ_decon = τ_dedup − 0.03, clamped to [0.85, 0.95], where τ_dedup is the dedup precision-95 operating point from its audited
+pairs. Until the dedup report publishes it, τ_dedup = 0.93, so τ_decon = 0.90. Decontamination deliberately sits on the recall side:
 a false positive only costs one dropped training image. The entropy guard exists because of the S47 low-texture
 (blue-water) false merges: for those, perceptual alone never decides.
 The thresholds, the embedding model id and revision, and τ_dedup's calibration-report sha256 are pinned in the yaml's
@@ -120,7 +120,7 @@ Size guards (CI fails, and a human narrows the rule in the yaml; nothing is sile
 - A holdout is **constructible** if it has ≥ 500 images and ≥ 5 groups. Otherwise it is reported as "not constructible in <release>".
   #5 widens once to `platform in {auv, towed}` before it gives up.
 - Each holdout is ≤ 10% of the eligible corpus, and all holdouts together are ≤ 25%.
-Choice rationale: two realms far from the tropical-reef core (#2, #3) satisfy D7-4's "≥ 2 realms" without removing
+Choice rationale: two realms far from the tropical-reef core (#2, #3) satisfy the "≥ 2 realms" criterion without removing
 Reef Support's Caribbean/Colombia data or Coralscapes (Red Sea) from training. DeepFish is the source holdout: fixed-camera
 fish imagery with no S57 duplicate chain.
 
@@ -171,8 +171,8 @@ assignments}. RELEASE.json's existing `split_map_sha256` records it. A regenerat
 | marineeval | 827 files | exclude | — | — | — | excluded |
 | **ID total (UIIS lower bound)** | 920,652 | | 636,869 (69.2%) | 137,387 (14.9%) | 146,396 (15.9%) | passes ±1.5 |
 With v1 + W1 only, holdouts #1, #5 and #6 are **not constructible** (DeepFish is not staged; platform and datetime
-coverage is 0% until WP-2b/WP-6 metadata lands), #4 depends on FathomNet depth metadata, and #2 (1,701) and #3 are
-constructible. D7=4 therefore needs WP-2b coverage plus the W2 sources (benthoz15, seaclear, deepfish) before v2 is cut.
+coverage is 0% until the metadata backfill lands), #4 depends on FathomNet depth metadata, and #2 (1,701) and #3 are
+constructible. The four-realm criterion therefore needs metadata coverage plus the W2 sources (benthoz15, seaclear, deepfish) before v2 is cut.
 FGVC23, VME and later FathomNet share images: the dedup unions merge their groups, so the true totals are lower.
 
 ## 4. Eval harness
@@ -219,9 +219,9 @@ At test sizes ≥ 1k groups the percentile interval is adequate. Revisit if a ta
 - Precision: fp32 on MPS, bf16 on CUDA. Seeds {0, 1, 2}, reported as the mean.
 - Tasks: the cls tasks, points, sem-seg (a linear head as in A, backbone unfrozen), and det via
   `torchvision fasterrcnn_mobilenet_v3_large_fpn` (COCO weights), 12 epochs, on ≤ 20k train images.
-- inst-seg and VQA baselines are deferred: inst-seg needs a GPU, and VQA moves to WP-13 (zero-shot open VLM). Their metrics exist now.
+- inst-seg and VQA baselines are deferred: inst-seg needs a GPU, and VQA moves to the captions layer (zero-shot open VLM). Their metrics exist now.
 **Compute** (planning numbers; P5 must replace them with measured ones):
-- Feature extraction: ~150 img/s on M-series MPS (decode-bound), ~8 img/s on the server Job (WP-6c: 4 vCPU/8 GiB, no GPU).
+- Feature extraction: ~150 img/s on M-series MPS (decode-bound), ~8 img/s on the server Job (ingest Job: 4 vCPU/8 GiB, no GPU).
   At ~1M images that is about 2 h on the Mac against about 35 h on the Job. Features are therefore extracted on the Mac;
   the Job runs the CPU probe fits and the bootstraps.
 - Fine-tune: ~50 img/s on MPS. Capped at 50k images × 10 epochs ≈ 3 h per seed per task, so it is Mac-only (overnight).
@@ -244,9 +244,9 @@ in the example row are illustrative only.
 ## 5. Implementation plan (5 sonnet packages)
 | pkg | scope | files | tests / acceptance | needs merged first |
 |---|---|---|---|---|
-| P1 bench-registry | load + validate `registry/benchmarks.yaml`; confirm the 14 unverified splits (metadata only); build per-benchmark eval-image manifests (S0–S5 signals) for every `obtain` in {staged, w1} | `src/marinedata/benchmarks.py`, `cli_bench.py`, `registry/benchmarks/manifests/<id>.parquet`, yaml edits | schema test over all entries; manifest row count ≥ 99% of eval n for ≥ 5 benchmarks; `split_verified` flips only with a URL | WP-10 (`dedup/` hashes, embed cache), W1-A |
-| P2 decon-gate | `marinedata decon check` + overlap parquet/md; `--decon` flag in `release.py` (one line) | `src/marinedata/decon.py`, `cli_decon.py`, `tests/test_decon.py` | fixture: planted S1/S2/S3/S4/S5 hits each fail; clean fixture passes; exclude-policy hit in test fails; coverage < 99% fails; review-band limit | P1, WP-10 |
-| P3 split-v2 | pools, OOD rules, allocator, repair pass, SPLIT_MAP v2 + hashes, `marinedata splits check` | `src/marinedata/splitv2/{rules,holdouts,allocate,mapfile}.py`, `registry/splits/v2.yaml`, `tests/test_splitv2*.py` | §3.6 recomputed from a synthetic fixture to the same counts; v13i-like coarse stratum within tolerance; any-member-OOD group rule; missing metadata stays ID; byte-identical regeneration; v1 map untouched | WP-10 (`split_group_id`), WP-2b (meow/depth fields; fallbacks cover its absence), P1 (pins) |
+| P1 bench-registry | load + validate `registry/benchmarks.yaml`; confirm the 14 unverified splits (metadata only); build per-benchmark eval-image manifests (S0–S5 signals) for every `obtain` in {staged, w1} | `src/marinedata/benchmarks.py`, `cli_bench.py`, `registry/benchmarks/manifests/<id>.parquet`, yaml edits | schema test over all entries; manifest row count ≥ 99% of eval n for ≥ 5 benchmarks; `split_verified` flips only with a URL | dedup (`dedup/` hashes, embed cache), W1-A |
+| P2 decon-gate | `marinedata decon check` + overlap parquet/md; `--decon` flag in `release.py` (one line) | `src/marinedata/decon.py`, `cli_decon.py`, `tests/test_decon.py` | fixture: planted S1/S2/S3/S4/S5 hits each fail; clean fixture passes; exclude-policy hit in test fails; coverage < 99% fails; review-band limit | P1, dedup |
+| P3 split-v2 | pools, OOD rules, allocator, repair pass, SPLIT_MAP v2 + hashes, `marinedata splits check` | `src/marinedata/splitv2/{rules,holdouts,allocate,mapfile}.py`, `registry/splits/v2.yaml`, `tests/test_splitv2*.py` | §3.6 recomputed from a synthetic fixture to the same counts; v13i-like coarse stratum within tolerance; any-member-OOD group rule; missing metadata stays ID; byte-identical regeneration; v1 map untouched | dedup (`split_group_id`), metadata (meow/depth fields; fallbacks cover its absence), P1 (pins) |
 | P4 eval-core | `eval score`, metric registry, cluster bootstrap, prediction readers | `src/marinedata/eval/{cli,metrics,bootstrap,predictions}.py`, `tests/test_eval_metrics.py` | golden tests vs sklearn/pycocotools within 1e-6; bootstrap is seed-stable; group resampling proven by fixture | none (parallel-safe; split names from P3's yaml) |
-| P5 baselines | feature cache, probe, fine-tune, `eval reproduce`/`eval table`, card table (one-line hook in `hf_card.py`, disclosed) | `src/marinedata/eval/baselines/{features,probe,finetune}.py`, `configs/baselines/v2.yaml`, `results/v2/` | `eval reproduce` on a 2k fixture matches within ±0.5 pt twice; measured MPS/Job throughput recorded | P3, P4, WP-2 (`hf_card` owner) |
+| P5 baselines | feature cache, probe, fine-tune, `eval reproduce`/`eval table`, card table (one-line hook in `hf_card.py`, disclosed) | `src/marinedata/eval/baselines/{features,probe,finetune}.py`, `configs/baselines/v2.yaml`, `results/v2/` | `eval reproduce` on a 2k fixture matches within ±0.5 pt twice; measured MPS/Job throughput recorded | P3, P4 (`hf_card` owner) |
 Order: P1 ∥ P4 → P2 ∥ P3 → P5. The integrator flips `--decon` and `--dedup-v2` together at the v2 build.

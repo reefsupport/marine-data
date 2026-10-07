@@ -118,7 +118,7 @@ def test_write_privacy_config_roundtrip(tmp_path) -> None:
 def test_blur_faces_kernel_spans_the_full_box_not_half_of_it(monkeypatch) -> None:
     """Regression for WP-5f: a kernel scaled to half the box's short side left
     enough low-frequency shape/colour signal that the verifier still re-detected
-    ~40% of real audited-true faces post-blur (see docs/PRIVACY.md D-I2). The
+    ~40% of real audited-true faces post-blur (see docs/PRIVACY.md). The
     kernel must span the box's own short side, not a fraction of it."""
     cv2 = pytest.importorskip("cv2")
     np = pytest.importorskip("numpy")

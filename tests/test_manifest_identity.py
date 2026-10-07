@@ -7,9 +7,7 @@ a fake fetcher. :func:`marinedata.manifest_identity.fetch_source_checksums` itse
 one real network call this module makes) is exercised separately with ``_get``
 monkeypatched — see ``test_fetch_source_checksums_*`` below.
 
-The real, network-backed run (charter D-E: anonymous HTTPS is allowed) was done once by
-hand for the INT-core2b report — see ``docs/integration-v2.md``'s "INT-core2b" section
-for the row/column counts it produced.
+The real, network-backed run (anonymous HTTPS is allowed) was done once by hand.
 """
 
 from __future__ import annotations

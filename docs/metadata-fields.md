@@ -1,8 +1,8 @@
 # Metadata field reference — v1
 
 Every column in the `metadata` HF config (see `src/marinedata/metadata_release.py`), one row
-per `image_sha256`. Fields not listed below are non-null for all v1 rows (see
-`docs/metadata-coverage-v1.md` for the measured percentages).
+per `image_sha256`. Fields not listed below are non-null for all v1 rows (run
+`python -m marinedata.metadata_release` to generate the measured coverage percentages).
 
 | Field | Type | Why it is null for v1 |
 |---|---|---|

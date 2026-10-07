@@ -1,4 +1,4 @@
-# Generic source ingestion (WP-6)
+# Generic source ingestion
 
 `marinedata ingest-source <adapter> <spec.yaml>` takes any open dataset to
 `s3://<open-bucket>/sources/<id>/<version>/`, verified, with bounded local temp.
@@ -38,8 +38,8 @@ dataclass; its field order is the column order of `metadata.parquet`, and
 `arrow_schema()` carries `marinedata.sample_schema=1`.
 
 * Required fields: identity (`sample_id = <source_id>/<stem>`, `stem`, `image_path`,
-  `image_sha256`, `image_bytes`, `image_format`), licence/attribution per row (D-C;
-  a missing licence is `NOASSERTION`, never guessed), and `fetch_date`.
+  `image_sha256`, `image_bytes`, `image_format`), licence/attribution per row
+  (a missing licence is `NOASSERTION`, never guessed), and `fetch_date`.
 * Nullable fields: provenance (`upstream_id/url/digest`, `lineage_root_digest`),
   capture (`capture_datetime` in UTC, `lat`, `lon`, `gps_precision_m`, `depth_m`,
   `depth_source`, `platform`, `camera`), ecology (`meow_realm`, `depth_zone`,
@@ -49,7 +49,7 @@ dataclass; its field order is the column order of `metadata.parquet`, and
   derived from `depth_m` only.
 * `validate_row`/`validate_table`: types, enums, ranges, unique `sample_id`.
 
-## Staged layout (D-D)
+## Staged layout
 
 ```
 sources/<id>/<version>/
@@ -74,7 +74,7 @@ PIN -> LIST -> [per item: FETCH -> DECODE -> WRITE -> (temp >= cap/2 ? FLUSH)]
 ```
 
 FLUSH uploads each closed file, logs it in `work/uploaded.json`, deletes the local
-`images/`/`labels/` copy after a verified upload (D-F).
+`images/`/`labels/` copy after a verified upload .
 
 ## Resume semantics
 
@@ -93,10 +93,10 @@ Staging is deterministic, so resuming means **re-running the same command**:
 * 64 MiB multipart parts, one part in memory. The composite ETag
   (`md5(part md5s)-N`) is precomputed locally, so verification is a HEAD.
 * `DiskGuard`: `df` free ≥ 40 GiB before each batch, else `DiskFloorError`. Temp is
-  capped at 6 GB (D-L), measured by a real walk at each flush -> `peak_temp_bytes`.
+  capped at 6 GB, measured by a real walk at each flush -> `peak_temp_bytes`.
 * Client from rclone.conf `[rs-hel1]` via configparser; credentials never logged.
 
-## Access policy (D-E)
+## Access policy
 
 The HTTP layer is anonymous-only. It never reads `HF_TOKEN`/`GITHUB_TOKEN` and refuses
 `Authorization`/`Cookie` headers. A gated, private, or restricted source, or an HTTP
@@ -117,4 +117,4 @@ The HTTP layer is anonymous-only. It never reads `HF_TOKEN`/`GITHUB_TOKEN` and r
 | verify mismatch | `RuntimeError("verify failed: <rel>")`, stub not written |
 
 Known limits: rows are held in memory until finalize; GCS `list-type=2` is untested
-live; `hf_*` release modules untouched (WP-2 wires a staged source into a release).
+live; `hf_*` release modules untouched (a later step wires a staged source into a release).

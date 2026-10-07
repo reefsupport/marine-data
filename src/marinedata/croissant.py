@@ -141,8 +141,8 @@ RAI_FIELDS: dict[str, object] = {
     ],
     "personal_sensitive_information": [
         "A subset of in-water photographs may show a diver's face or body; see "
-        "docs/DATASHEET.md #Ethics and docs/ETHICS_FACE_AUDIT.md for the measured count "
-        "and method. No sample in v1 carries per-sample GPS coordinates (D8); the "
+        "docs/DATASHEET.md #Ethics and docs/PRIVACY.md for the detection method. "
+        "No sample in v1 carries per-sample GPS coordinates; the "
         "sensitive-species location-rounding policy in the datasheet applies to future "
         "releases once location fields ship."
     ],

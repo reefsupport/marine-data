@@ -1,7 +1,7 @@
 """Generic listable-index adapter (``adapter: http-index``, WP-6d-A).
 
 Three interchangeable list sources (many ``needs_adapter`` rows collapse onto
-whichever fits their host — see ``docs/ingest-queue.md``):
+whichever fits their host — see ``docs/ingest-howto.md``):
 
 * ``params.index_url``: an Apache/nginx-style HTML directory index, walked
   recursively (``<a href>`` links; entries ending in ``/`` are subdirectories)
