@@ -211,8 +211,8 @@ class Habitat(str, Enum):
 
 
 class Domain(str, Enum):
-    """HK-4a: the one subject-matter bucket a source belongs to, for picking a hackathon
-    track's sources (``coral`` / ``fish`` / ``seagrass`` / ``mangrove`` / ``plankton`` /
+    """HK-4a: the one subject-matter bucket a source belongs to, for picking a
+    thematic track's sources (``coral`` / ``fish`` / ``seagrass`` / ``mangrove`` / ``plankton`` /
     ``deep-sea`` / ``fauna`` / ``imaging``). Coarser than ``Habitat`` and than
     ``Capability``: exactly one value per source, set by hand in the registry."""
 

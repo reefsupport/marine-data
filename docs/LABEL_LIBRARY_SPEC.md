@@ -1,7 +1,7 @@
 # Label library specification — taxonomy backbone and per-dataset dictionaries
 
-> Produced 2026-08-17 by a 6-agent workflow: authority/standards research, benthic and
-> fish vocabulary extraction, then two adversarial critiques (taxonomist and engineer).
+> Produced 2026-08-17 from authority and standards research and benthic and fish
+> vocabulary extraction, then two independent critiques (taxonomist and engineer).
 > **Status: specification, not yet implemented.** The DAG design originally proposed was
 > REJECTED by both critiques; see §1.1. Four validation holes it identified in
 > `schema.py` were verified as live bugs and are already fixed.

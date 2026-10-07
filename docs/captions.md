@@ -107,7 +107,7 @@ consistency checker (`consistency.py`) over them and reports the flagged rate.
   **0/69,600 flagged (0.0%)** — expected, since a template caption is built from the
   same facts it is checked against; this is a regression guard, not a measurement of
   real hallucination (that requires `caption_vlm` rows, not run this pass).
-- **Agent audit (150-caption blind contact-sheet review).** Not run this
+- **Blind audit (150-caption contact-sheet review).** Not run this
   pass — it needs real `caption_vlm` output to audit, which does not exist yet (above).
   Once the pilot runs, the protocol is: sample 150 pilot rows, render one contact sheet
   of thumbnails per ~15-20 rows, review each blind (caption hidden until after the

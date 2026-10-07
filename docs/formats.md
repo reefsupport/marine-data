@@ -15,7 +15,7 @@ over one part) — the same convention S3 itself uses, so the manifest can be di
 bucket listing with no download. `MANIFEST.tsv` never lists itself.
 
 ```
-marinedata manifest ~/dev/reefsupport/data/_hf/v1
+marinedata manifest <hf-build-dir>
 ```
 
 ## 2. `marinedata verify-release <dir | s3://bucket/prefix>`
@@ -35,9 +35,9 @@ check, so a new name rather than a collision.
 Exit 0/1, one-line summary on stdout.
 
 ```
-marinedata verify-release ~/dev/reefsupport/data/_hf/v1
+marinedata verify-release <hf-build-dir>
 marinedata verify-release s3://<open-bucket>/releases/marine-data/v1/hf/ \
-  --manifest ~/dev/reefsupport/data/_hf/v1/MANIFEST.tsv --deep 3
+  --manifest <hf-build-dir>/MANIFEST.tsv --deep 3
 ```
 
 ## 3. Streaming load test
@@ -47,7 +47,7 @@ for every `config_name` in the card's `README.md` YAML front matter, reads the f
 and asserts every row has the same column set. A tiny fixture (built in the test itself)
 always runs, proving the mechanism regardless of machine; the real-build parametrization is
 marked `slow` and skips cleanly when `_hf/v1` (`$MARINEDATA_HF_DIR`, default
-`~/dev/reefsupport/data/_hf/v1`) is absent.
+`<hf-build-dir>`) is absent.
 
 ## 4. `marinedata export-wds <hf_dir> <out> [--limit-shards N]`
 
@@ -64,7 +64,7 @@ order, then validation, then test) — **disk rule: on real data, run with `--li
 only.** The unbounded full export happens server-side later, not on this machine.
 
 ```
-marinedata export-wds ~/dev/reefsupport/data/_hf/v1 <out>/wds --limit-shards 1
+marinedata export-wds <hf-build-dir> <out>/wds --limit-shards 1
 ```
 
 Verified with `tarfile` (member names, JSON sidecar content) always, and with `webdataset`

@@ -1,0 +1,5 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Usage questions
+    url: https://huggingface.co/datasets/reefsupport/marine-data/discussions
+    about: Questions about using the dataset belong in the Hugging Face dataset discussions.

@@ -7,6 +7,9 @@ git. The format loosely follows [Keep a Changelog](https://keepachangelog.com/en
 ## [Unreleased]
 
 - Docs: install requirements, standalone snippets, fish-boxes statistics.
+- Repository: security policy, code of conduct, issue and pull request templates; broader `.gitignore`; README install pinned to
+  v1.0.0; annotator e-mails in the Labelbox test fixtures replaced by placeholders; neutral wording and placeholder paths in docs and
+  script comments; the open dataset card no longer references the gated repository.
 
 ## [1.0.0] - 2026-10-07
 

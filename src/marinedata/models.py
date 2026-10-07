@@ -391,7 +391,7 @@ class Source(_Frozen):
 
     domain: Domain | None = Field(default=None)
     """HK-4a: one subject-matter bucket (:class:`~marinedata.enums.Domain`) for selecting a
-    hackathon track's sources. ``None`` only on a hand-built ``Source``; every registry entry
+    thematic track's sources. ``None`` only on a hand-built ``Source``; every registry entry
     sets it (``tests/test_registry_domain.py``)."""
 
     habitat: tuple[Habitat, ...] | None = Field(default=None)

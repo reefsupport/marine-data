@@ -1,8 +1,8 @@
 # Server-side ingest Job
 
 Runs `marinedata ingest-batch <specs_dir>` on a Hetzner node next to `<open-bucket>`
-(hel1), instead of over the Mac's ~10 MB/s uplink. Everything here is for **you** to run —
-no agent touches the cluster, pushes an image, or reads a secret value.
+(hel1), instead of over the Mac's ~10 MB/s uplink. Everything here is for **you** to run;
+nothing touches the cluster, pushes an image, or reads a secret value on its own.
 
 ## What this touches
 
@@ -27,7 +27,7 @@ no agent touches the cluster, pushes an image, or reads a secret value.
 ## 1. Build and push the image
 
 ```bash
-cd ~/dev/.wt/marine-data/<this-worktree>
+cd <worktree>
 docker build -t <registry>/<path>/marinedata-ingest:$(git rev-parse --short HEAD) \
   -f deploy/ingest-job/Dockerfile .
 docker push <registry>/<path>/marinedata-ingest:$(git rev-parse --short HEAD)

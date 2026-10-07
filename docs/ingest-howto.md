@@ -47,7 +47,7 @@ Never invent lat/lon/depth.
 ## 2. Dry run (no bytes move)
 
 ```bash
-cd ~/dev/.wt/marine-data/<your-worktree>
+cd <worktree>
 PYTHONPATH=src .venv/bin/python -m marinedata.cli ingest-source hf <work-dir>/<id>.yaml \
   --dry-run --work <work-dir>/work
 ```

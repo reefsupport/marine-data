@@ -11,3 +11,22 @@ build/
 LINEAGE.json
 .DS_Store
 registry/overlays/*.parquet
+
+# Local tooling and editor assistants
+.claude/
+CLAUDE.md
+AGENTS.md
+.cursor/
+.cursorrules
+.aider*
+copilot-*
+
+# Local environment and credentials
+.env
+.env.*
+
+# Local build output and model weights
+data/_hf/
+*.safetensors
+*.pt
+*.ckpt
