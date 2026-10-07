@@ -30,17 +30,37 @@ upstream splits where a source defines them, and a deterministic 80/10/10 group 
 | [`instance-masks`](https://huggingface.co/datasets/reefsupport/marine-data/viewer/instance-masks) | Underwater instance segmentation | 25,296 | UIIS, UIIS10K, USIS10K |
 | [`fish-boxes`](https://huggingface.co/datasets/reefsupport/marine-data/viewer/fish-boxes) | Object detection (fish and fauna boxes) | 25,912 | UIIS, UIIS10K, USIS10K, Roboflow Aquarium Dataset |
 
-Load a config with the `datasets` library:
+Load a config with the `datasets` library, in one of three ways.
+
+Quick look in a notebook: stream the split and read the first row.
 
 ```python
 from datasets import load_dataset
 
-ds = load_dataset("reefsupport/marine-data", "coral-masks")  # train / validation / test
-row = ds["train"][0]
+stream = load_dataset("reefsupport/marine-data", "coral-masks", split="train", streaming=True)
+row = next(iter(stream))
 print(row["licence"], row["attribution"])
-
-stream = load_dataset("reefsupport/marine-data", "fish-boxes", split="train", streaming=True)
 ```
+
+Scripts and training: download the config once, cached afterwards (all splits are fetched; the full `coral-masks` config is about 12 GB).
+
+```python
+ds = load_dataset("reefsupport/marine-data", "coral-masks", split="train")
+```
+
+One source only: download just that source's shards (file names are `<split>-<source>-<n>-of-<total>.parquet`).
+
+```python
+ds = load_dataset(
+    "reefsupport/marine-data",
+    "coral-masks",
+    split="train",
+    data_files={"train": "data/coral-masks/train-reef-support-seaview-labels-*.parquet"},
+)
+```
+
+In a plain Python script, stopping a stream after a few rows can keep the process from exiting (an upstream issue in
+pyarrow's dataset scanner). Download the config or a single source instead.
 
 Licences differ per source. Keep the `attribution` column when you share or publish results, and see
 [Licensing](#licensing) below. The dataset card documents fields, splits, annotation process and known limitations.
@@ -83,6 +103,80 @@ marinedata check --profile ship-commercial          # every source, admitted or 
 marinedata list --profile research --task benthic-segmentation
 marinedata show coralscapes
 ```
+
+## Label mapping
+
+The masks on Hugging Face keep each source's native ids, and those ids differ between sources. `marinedata.labels` maps
+them onto three fixed schemes, `benthic-coarse`, `coral-binary` and `scene`, with 255 as the ignore value. The example
+needs the `hf` extra (`uv pip install -e ".[hf]"`), which adds `datasets` and Pillow:
+
+```python
+from datasets import load_dataset
+from marinedata import labels
+
+stream = load_dataset("reefsupport/marine-data", "coral-masks", split="train", streaming=True)
+row = labels.remap_row(next(iter(stream)), "benthic-coarse")  # adds `label`, an HxW uint8 array
+names = labels.class_names("benthic-coarse")
+present = sorted({int(v) for v in row["label"].ravel()} - {labels.IGNORE_INDEX})
+print(row["source"], [names[i] for i in present])
+```
+
+In a script, download the config or one source as described under [Published datasets](#published-datasets) and pass its
+rows to `remap_row` the same way:
+
+```python
+ds = load_dataset("reefsupport/marine-data", "scene-masks", split="train")
+row = labels.remap_row(ds[0], "scene")
+```
+
+```python
+ds = load_dataset(
+    "reefsupport/marine-data",
+    "coral-masks",
+    split="train",
+    data_files={"train": "data/coral-masks/train-reef-support-seaview-labels-*.parquet"},
+)
+row = labels.remap_row(ds[0], "benthic-coarse")
+```
+
+The other configs use the `scene` scheme. `scene-masks` rows work with `remap_row` as above:
+
+```python
+stream = load_dataset("reefsupport/marine-data", "scene-masks", split="train", streaming=True)
+row = labels.remap_row(next(iter(stream)), "scene")
+names = labels.class_names("scene")
+present = sorted({int(v) for v in row["label"].ravel()} - {labels.IGNORE_INDEX})
+print(row["source"], [names[i] for i in present])
+```
+
+`instance-masks` rows carry a list of `instances` instead of one semantic mask, so map each instance label with
+`labels.map_label` (it returns `None` for a label the scheme does not cover):
+
+```python
+stream = load_dataset("reefsupport/marine-data", "instance-masks", split="train", streaming=True)
+row = next(iter(stream))
+ids = [labels.map_label(row["source"], inst["label_native"], "scene") for inst in row["instances"]]
+print(row["source"], ids)
+```
+
+`fish-boxes` rows have `boxes` and name their source in `source_id`:
+
+```python
+stream = load_dataset("reefsupport/marine-data", "fish-boxes", split="train", streaming=True)
+row = next(iter(stream))
+ids = [labels.map_label(row["source_id"], box["label"], "scene") for box in row["boxes"]]
+print(row["source_id"], ids)
+```
+
+For a dataset built with `marinedata.builder`,
+`to_torch_dataset(dataset, decode_masks=True, scheme="benthic-coarse")` remaps each decoded mask to the scheme ids.
+
+Some sources annotate only a subset of the classes, and for them 255 means "not annotated" rather than background.
+[`docs/LABELS.md`](docs/LABELS.md) lists the class ids per scheme, how every source maps, and the rules for training with
+partial sources, dead and bleached coral, and the Coralscapes classes. For joint training, `benthic-coarse` and
+`coral-binary` send dead coral and the Coralscapes `unknown hard substrate` class to 255 by default and map a few
+Coralscapes labels the registry leaves open; `exclude_conditions=()` restores the registry behaviour, and the
+[label policy](docs/LABELS.md#label-policy) lists every difference.
 
 ## How the registry works
 

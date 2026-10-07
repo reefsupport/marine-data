@@ -1,0 +1,121 @@
+# Training label schemes: fixed class lists with fixed ids, applied to every published source.
+# Ids are the position in `classes` (benthic-coarse: registry/tasks/benthic.yaml order); 255 is the
+# ignore value everywhere. A label with no class is NEVER guessed: it maps to 255 and, if it is a
+# known label, is listed explicitly. Loaded by marinedata.labels; resolved through
+# registry/crosswalks (native label -> rs-benthic-v1 node [+ condition]), so a crosswalk edit moves
+# the LUTs.
+#
+# Label policy for joint training (docs/LABELS.md, "Label policy"). The schemes deviate from the
+# registry's published `coarse` column in exactly two ways, both listed here and pinned by tests:
+#   * `default_exclude_conditions`: labels whose crosswalk condition is under these (aliases below)
+#     go to 255 unless the caller passes `exclude_conditions=` (an explicit () restores the registry).
+#   * `source_overrides`: source -> native label -> class; `null` = 255. Registry tasks and
+#     crosswalks are never edited for this.
+version: 1
+ignore_index: 255
+
+# `exclude_conditions` option: alias -> rs-benthic-v1 condition nodes (a node excludes its subtree).
+# Raw condition node ids (e.g. PALE, UNHEALTHY) are accepted too.
+condition_aliases:
+  dead: [RECENTLY_DEAD, OLD_DEAD]
+  bleached: [BLEACHED]
+  pale: [PALE]
+  diseased: [DISEASED]
+  healthy: [HEALTHY]
+  unhealthy: [UNHEALTHY]
+
+schemes:
+  benthic-coarse:
+    description: >
+      The registry's six-class benthic cover task. Native label -> crosswalk taxon -> task class
+      (finer nodes roll up; a node coarser than every class, or outside them, is 255).
+    task: benthic-coarse        # classes + order come from registry/tasks/benthic.yaml
+    default_exclude_conditions: [dead]   # D1: dead coral (and dead clam) -> 255; bleached stays HC
+    source_overrides:
+      coralscapes:
+        unknown hard substrate: null     # D2: rock mixed with octocorals: neither ABIOTIC nor NOT_CORAL
+        sponge: OTHER_FAUNA              # D3: crosswalk node SP (PORIFERA) is coarser than every class
+        anemone: OTHER_FAUNA             # D3: crosswalk node ANEM (CNIDARIA) is coarser than every class
+        algae covered substrate: ALGAE   # D3: crosswalk DCA is a transition node; turf on dead substrate
+    sources:
+      - coralscapes
+      - reef-support-benthic-own
+      - reef-support-seaview-labels
+      - coralseg-ucsd-mosaics
+
+  coral-binary:
+    description: >
+      CORAL vs NOT_CORAL. CORAL = the HC, SC and MIL subtrees; NOT_CORAL = every other mapped
+      biotic, abiotic or transition node; non-benthic nodes (water, dark, gear, divers) are 255,
+      as is any node coarser than a CORAL node (it could be either).
+    classes: [NOT_CORAL, CORAL]
+    rules:                      # class -> nodes; the nearest matching node (self, then ancestors) wins
+      CORAL: [HC, SC, MIL]
+      NOT_CORAL: [BIOTIC, ABIOTIC, TRANSITION]
+    ignore_nodes: [NON_BENTHIC]
+    default_exclude_conditions: [dead]   # D1: dead coral (and dead clam) -> 255; bleached stays CORAL
+    source_overrides:           # source -> native label -> class (null = 255), see the header
+      coralscapes:
+        unknown hard substrate: null     # D2: rock mixed with octocorals: neither CORAL nor NOT_CORAL
+      coralseg-ucsd-mosaics:
+        Other: NOT_CORAL        # the source defines it as every non-coral pixel (crosswalk: unmappable)
+      coralscop-masks-rs:
+        coral: CORAL            # class-agnostic coral instance (crosswalk: CNIDARIA, coarsened)
+    sources:
+      - coralscapes
+      - reef-support-benthic-own
+      - reef-support-seaview-labels
+      - coralseg-ucsd-mosaics
+      - coralscop-masks-rs
+
+  scene:
+    description: >
+      SUIM's 8 classes with SUIM's definitions (ids = SUIM pixel values, so SUIM masks pass through
+      unchanged). Labels are mapped by name, not by taxon: SUIM's classes are scene categories.
+    classes: [BW, HD, PF, WR, RO, RI, FV, SR]
+    class_descriptions:
+      BW: Background waterbody
+      HD: Human divers
+      PF: Plants and sea-grass
+      WR: Wrecks and ruins
+      RO: Robots and instruments
+      RI: Reefs and invertebrates
+      FV: Fish and vertebrates
+      SR: Sea-floor and rocks
+    labels:                     # native label -> class
+      BW: BW
+      HD: HD
+      human: HD
+      human divers: HD
+      PF: PF
+      plants: PF
+      aquatic plants: PF
+      WR: WR
+      ruins: WR
+      wrecks/ruins: WR
+      RO: RO
+      robots: RO
+      RI: RI
+      reefs: RI
+      corals: RI
+      arthropoda: RI            # crabs, lobsters, shrimp: invertebrates
+      mollusk: RI
+      jellyfish: RI
+      starfish: RI
+      FV: FV
+      fish: FV
+      reptiles: FV              # turtles: vertebrates
+      shark: FV
+      stingray: FV
+      penguin: FV               # vertebrates
+      puffin: FV
+      SR: SR
+      sea-floor: SR
+    unmapped_labels:            # known labels with no SUIM class -> 255
+      garbage: "debris is none of the 8 SUIM classes (not sea-floor, not an instrument or wreck)"
+    sources:
+      - suim
+      - uiis
+      - uiis10k
+      - usis10k
+      - roboflow-aquarium

@@ -1,6 +1,6 @@
 [project]
 name = "marinedata"
-version = "0.1.0"
+version = "1.0.0"
 description = "Licence-aware registry and dataloaders for marine and coral-reef datasets"
 readme = "README.md"
 requires-python = ">=3.10"
@@ -8,6 +8,7 @@ license = { text = "Apache-2.0" }
 authors = [{ name = "Reef Support B.V." }]
 keywords = ["marine", "coral-reef", "benthic", "dataset", "licence", "croissant"]
 dependencies = [
+    "numpy>=1.24",  # marinedata.labels
     "pyarrow>=15",  # release label gate reads the pinned WoRMS snapshot (WP-7)
     "inflate64>=1.0.4",
     "pydantic>=2.6",
@@ -18,7 +19,7 @@ dependencies = [
 pandas = ["pandas>=2.0"]
 torch = ["torch>=2.2", "numpy>=1.24", "pillow>=10.0"]
 tf = ["tensorflow>=2.15"]
-hf = ["datasets>=2.18"]
+hf = ["datasets>=2.18", "numpy>=1.24", "pillow>=10.0"]  # + marinedata.labels, image decoding
 ingest = ["pyarrow>=15", "pillow==12.3.0", "boto3>=1.34"]
 # WP-6d-B payload decoders: video/rosbag frame extraction, rar/multipart-tar archives,
 # caption/VQA JSON. ffmpeg and bsdtar are shelled out to (system binaries, not pip
@@ -112,5 +113,6 @@ testpaths = ["tests"]
 markers = [
     "integration: hits the network; set MARINEDATA_INTEGRATION=1 to run",
     "slow: needs the real _hf/v1 build on disk; skips cleanly when absent",
+    "network: streams rows from the Hugging Face repos (HF login for the private one); run with -m network",
 ]
-addopts = "-ra --strict-markers -m 'not integration'"
+addopts = "-ra --strict-markers -m 'not integration and not network'"
