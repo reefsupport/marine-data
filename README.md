@@ -330,7 +330,7 @@ previews, and the per-config `LICENSE`, `NOTICE` and `CHECKSUMS.sha256` under `d
 ```python
 from datasets import load_dataset
 
-ds = load_dataset("reefsupport/marine-data", "coral-masks")        # train / validation / test
+ds = load_dataset("reefsupport/marine-data", "coral-masks")  # train / validation / test
 stream = load_dataset("reefsupport/marine-data", "fish-boxes", split="train", streaming=True)
 ```
 
