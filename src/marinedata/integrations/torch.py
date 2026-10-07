@@ -87,7 +87,7 @@ def to_torch_dataset(
     image_loader: Callable[[str], Any] | None = None,
     mask_loader: Callable[[str], Any] | None = None,
     scheme: str | None = None,
-    scheme_options: Mapping[str, Iterable[str]] | None = None,
+    scheme_options: Mapping[str, Iterable[str] | None] | None = None,
 ):
     """Wrap a :class:`~marinedata.builder.Dataset` as a ``torch.utils.data.Dataset``.
 
@@ -98,7 +98,9 @@ def to_torch_dataset(
         scheme: a :mod:`marinedata.labels` scheme (e.g. ``"benthic-coarse"``). Decoded masks are
             then remapped from each sample's native ids to the scheme's fixed ids (255 = ignore),
             using the sample's ``source_id``. ``None`` (default) leaves masks untouched.
-        scheme_options: ``exclude_conditions`` / ``ignore`` for the scheme (see ``labels``).
+        scheme_options: ``exclude_conditions`` / ``ignore`` for the scheme (see ``labels``). Left
+            out, the scheme defaults apply: dead coral is 255 in ``benthic-coarse`` and
+            ``coral-binary``; ``{"exclude_conditions": ()}`` keeps it as coral.
     """
     torch = _require_torch()
     from torch.utils.data import Dataset as TorchDataset

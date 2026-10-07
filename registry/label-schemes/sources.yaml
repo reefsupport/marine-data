@@ -10,7 +10,7 @@ sources:
     kind: semantic
     crosswalk: coralscapes-39
     dense: true
-    note: "all 39 classes are annotated; 255 = the source's ignore id 0"
+    note: "all 39 classes are annotated; 255 = the source's ignore id 0. Records coral condition: the 6 dead labels (5 coral + dead clam) go to 255 by default, see schemes.yaml"
     ids:
       1: "seagrass"
       2: "trash"
@@ -57,7 +57,7 @@ sources:
     kind: semantic
     crosswalk: reef-support-labelbox
     dense: false
-    note: "255 = unannotated (NOT background): only Hard/Soft Coral were painted; MIL/OSI regions are 255 too"
+    note: "255 = unannotated (NOT background): only Hard/Soft Coral were painted; MIL/OSI regions are 255 too. No coral condition is recorded: HC may include recently dead colonies, and the default dead-coral exclusion cannot apply"
     ids:
       1: "Hard Coral"
       2: "Soft Coral"
@@ -67,7 +67,7 @@ sources:
     kind: semantic
     crosswalk: reef-support-labelbox
     dense: false
-    note: "255 = unannotated (NOT background): only Hard/Soft Coral were painted; MIL/OSI regions are 255 too"
+    note: "255 = unannotated (NOT background): only Hard/Soft Coral were painted; MIL/OSI regions are 255 too. No coral condition is recorded: HC may include recently dead colonies, and the default dead-coral exclusion cannot apply"
     ids:
       1: "Hard Coral"
       2: "Soft Coral"

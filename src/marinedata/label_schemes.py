@@ -48,14 +48,15 @@ class SchemeSpec:
     sources: tuple[str, ...]
     rules: Mapping[str, tuple[str, ...]] = field(default_factory=dict)  # class -> nodes
     ignore_nodes: tuple[str, ...] = ()
-    source_overrides: Mapping[str, Mapping[str, str]] = field(default_factory=dict)
+    source_overrides: Mapping[str, Mapping[str, str | None]] = field(default_factory=dict)
     labels: Mapping[str, str] | None = None  # explicit by-name table (scene)
     unmapped_labels: Mapping[str, str] = field(default_factory=dict)
+    default_exclude_conditions: tuple[str, ...] = ()  # aliases / condition nodes, see make_options
 
 
 @dataclass(frozen=True)
 class Options:
-    """Normalised, hashable lut options."""
+    """Normalised, hashable lut options (condition aliases already expanded to nodes)."""
 
     exclude_conditions: frozenset[str] = frozenset()
     ignore: frozenset[str] = frozenset()
@@ -111,6 +112,16 @@ def schemes() -> Mapping[str, SchemeSpec]:
             raise ValueError(
                 f"scheme {sid}: {len(classes)} classes do not fit uint8 with 255 ignored"
             )
+        overrides = {s: dict(m) for s, m in (raw.get("source_overrides") or {}).items()}
+        for source, table in overrides.items():
+            for label, name in table.items():
+                if name is not None and name not in classes:
+                    raise ValueError(
+                        f"scheme {sid}: override {source}/{label!r} names {name!r}, "
+                        f"not one of {list(classes)} (use null for 255)"
+                    )
+        defaults = tuple(raw.get("default_exclude_conditions") or ())
+        _condition_nodes(defaults)  # a typo in the YAML fails at load, not at first use
         out[sid] = SchemeSpec(
             id=sid,
             description=" ".join(str(raw.get("description", "")).split()),
@@ -118,9 +129,10 @@ def schemes() -> Mapping[str, SchemeSpec]:
             sources=tuple(raw["sources"]),
             rules=rules,
             ignore_nodes=tuple(raw.get("ignore_nodes") or ()),
-            source_overrides={s: dict(m) for s, m in (raw.get("source_overrides") or {}).items()},
+            source_overrides=overrides,
             labels=dict(raw["labels"]) if "labels" in raw else None,
             unmapped_labels=dict(raw.get("unmapped_labels") or {}),
+            default_exclude_conditions=defaults,
         )
     return out
 
@@ -145,14 +157,14 @@ def source_spec(source: str, scheme: str | None = None) -> SourceSpec:
     return spec
 
 
-def make_options(exclude_conditions: Iterable[str] = (), ignore: Iterable[str] = ()) -> Options:
-    """Validate and normalise the two public options (typos raise rather than silently no-op)."""
-    if isinstance(exclude_conditions, str) or isinstance(ignore, str):
-        raise TypeError("exclude_conditions and ignore take a sequence of strings, not a string")
+def _condition_nodes(names: Iterable[str]) -> frozenset[str]:
+    """Expand condition aliases (``dead``) and validate raw condition nodes; typos raise."""
+    if isinstance(names, str):
+        raise TypeError("exclude_conditions takes a sequence of strings, not a string")
     schema = _registry().label_schema(_TARGET_SCHEMA)
     aliases = condition_aliases()
     nodes: set[str] = set()
-    for name in exclude_conditions:
+    for name in names:
         if name in aliases:
             nodes.update(aliases[name])
             continue
@@ -162,7 +174,24 @@ def make_options(exclude_conditions: Iterable[str] = (), ignore: Iterable[str] =
                 f"unknown condition {name!r}; use an alias {sorted(aliases)} or a condition node"
             )
         nodes.add(name)
-    return Options(frozenset(nodes), frozenset(ignore))
+    return frozenset(nodes)
+
+
+def make_options(
+    scheme: str,
+    exclude_conditions: Iterable[str] | None = None,
+    ignore: Iterable[str] = (),
+) -> Options:
+    """Validate and normalise the two public options (typos raise rather than silently no-op).
+
+    ``exclude_conditions=None`` is the scheme's ``default_exclude_conditions``; any explicit value,
+    including ``()``, replaces that default.
+    """
+    if isinstance(ignore, str):
+        raise TypeError("ignore takes a sequence of strings, not a string")
+    if exclude_conditions is None:
+        exclude_conditions = scheme_spec(scheme).default_exclude_conditions
+    return Options(_condition_nodes(exclude_conditions), frozenset(ignore))
 
 
 def _walk(node: str | None) -> tuple[str, ...]:
@@ -194,26 +223,8 @@ def _class_of_node(spec: SchemeSpec, node: str) -> str | None:
     return chosen
 
 
-def resolve_class(
-    source: str, label: str, scheme: str, options: Options | None = None
-) -> str | None:
-    """The scheme class name of ``label`` in ``source``, or ``None`` (-> 255)."""
-    options = options or Options()
-    spec = scheme_spec(scheme)
-    src = source_spec(source, scheme)
-    if label not in src.native_labels:
-        raise ValueError(f"label {label!r} is not in the vocabulary of source {source!r}")
-    if label in options.ignore:
-        return None
-    override = spec.source_overrides.get(source, {})
-    if label in override:
-        return override[label]
-    if spec.labels is not None:  # explicit by-name table
-        if label in spec.labels:
-            return spec.labels[label]
-        if label in spec.unmapped_labels:
-            return None
-        raise ValueError(f"scheme {scheme!r} has no entry for label {label!r} of {source!r}")
+def _crosswalk_class(spec: SchemeSpec, src: SourceSpec, label: str, options: Options) -> str | None:
+    """Class of ``label`` through crosswalk -> taxon (-> condition) -> scheme rules."""
     edge = _registry().crosswalk(src.crosswalk).edge(label)
     taxon = edge.targets.get(Axis.TAXON) if edge is not None else None
     if taxon is None:
@@ -224,6 +235,51 @@ def resolve_class(
     if condition and options.exclude_conditions.intersection(_walk(condition)):
         return None
     return _class_of_node(spec, taxon)
+
+
+def _check_label(src: SourceSpec, label: str) -> None:
+    if label not in src.native_labels:
+        raise ValueError(f"label {label!r} is not in the vocabulary of source {src.id!r}")
+
+
+def resolve_class(
+    source: str, label: str, scheme: str, options: Options | None = None
+) -> str | None:
+    """The scheme class name of ``label`` in ``source``, or ``None`` (-> 255).
+
+    ``options=None`` means the scheme defaults (``default_exclude_conditions``, nothing ignored).
+    """
+    options = options if options is not None else make_options(scheme)
+    spec = scheme_spec(scheme)
+    src = source_spec(source, scheme)
+    _check_label(src, label)
+    if label in options.ignore:
+        return None
+    override = spec.source_overrides.get(source, {})
+    if label in override:  # null -> 255
+        return override[label]
+    if spec.labels is not None:  # explicit by-name table
+        if label in spec.labels:
+            return spec.labels[label]
+        if label in spec.unmapped_labels:
+            return None
+        raise ValueError(f"scheme {scheme!r} has no entry for label {label!r} of {source!r}")
+    return _crosswalk_class(spec, src, label, options)
+
+
+def registry_class(source: str, label: str, scheme: str) -> str | None:
+    """What the registry alone gives: crosswalk -> taxon -> class, with no scheme overrides.
+
+    No default condition exclusions apply either. This is the column the registry publishes as
+    ``coarse`` (for ``benthic-coarse``), so ``remap_row`` validates a row against it, not against
+    the scheme output.
+    """
+    spec = scheme_spec(scheme)
+    src = source_spec(source, scheme)
+    _check_label(src, label)
+    if spec.labels is not None:
+        return resolve_class(source, label, scheme, Options())
+    return _crosswalk_class(spec, src, label, Options())
 
 
 def class_id(scheme: str, name: str | None) -> int:

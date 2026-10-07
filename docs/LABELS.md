@@ -12,7 +12,8 @@ of three **schemes**. A scheme is a fixed class list with fixed ids, shared by e
 and 255 is the ignore value in all of them.
 
 The mapping is data, not code. It is derived from `registry/label-schemes/` and the registry crosswalks, so a crosswalk
-correction moves the tables on this page. The module needs numpy only.
+correction moves the tables on this page. The module needs numpy only. The defaults are set for joint training; the
+[label policy](#label-policy) below lists where they differ from the registry.
 
 | Scheme | Use |
 |---|---|
@@ -63,7 +64,7 @@ Ids are the position in the class list. The ids below apply to the published mas
 | Id | Class | Meaning |
 |---|---|---|
 | 0 | `NOT_CORAL` | Every other mapped biotic, abiotic or transition label |
-| 1 | `CORAL` | Hard coral, soft coral and fire coral (dead and bleached included by default) |
+| 1 | `CORAL` | Hard coral, soft coral and fire coral (bleached included, dead ignored by default) |
 | 255 | ignore | Not a class: excluded from the loss and from metrics |
 
 #### `scene`
@@ -86,8 +87,8 @@ Ids are the position in the class list. The ids below apply to the published mas
 
 Config is the Hugging Face config that holds the source. Annotation is `dense` when every pixel of a mask carries a class
 (255 then marks only the source's own ignore region) and `partial` otherwise. Supervised classes are the classes a source
-can ever label. Mapped and Ignored count the source's native labels. Sources that are not part of the public release are
-listed by id only.
+can ever label. Mapped and Ignored count the source's native labels after the [label policy](#label-policy) is applied.
+Sources that are not part of the public release are listed by id only.
 
 <!-- BEGIN GENERATED: label-sources -->
 
@@ -95,7 +96,7 @@ listed by id only.
 
 | Source | Config | Annotation | Supervised classes | Mapped | Ignored |
 |---|---|---|---|---|---|
-| `coralscapes` | `coral-masks` | dense | `HC`, `MIL`, `ABIOTIC`, `OTHER_FAUNA` | 30 | 9 |
+| `coralscapes` | `coral-masks` | dense | `HC`, `MIL`, `ALGAE`, `ABIOTIC`, `OTHER_FAUNA` | 26 | 13 |
 | `reef-support-benthic-own` | `coral-masks` | partial | `HC`, `SC` | 2 | 0 |
 | `reef-support-seaview-labels` | `coral-masks` | partial | `HC`, `SC` | 2 | 0 |
 | `coralseg-ucsd-mosaics` | not public | dense | `HC`, `SC` | 2 | 1 |
@@ -104,7 +105,7 @@ listed by id only.
 
 | Source | Config | Annotation | Supervised classes | Mapped | Ignored |
 |---|---|---|---|---|---|
-| `coralscapes` | `coral-masks` | dense | `NOT_CORAL`, `CORAL` | 34 | 5 |
+| `coralscapes` | `coral-masks` | dense | `NOT_CORAL`, `CORAL` | 27 | 12 |
 | `reef-support-benthic-own` | `coral-masks` | partial | `CORAL` | 2 | 0 |
 | `reef-support-seaview-labels` | `coral-masks` | partial | `CORAL` | 2 | 0 |
 | `coralseg-ucsd-mosaics` | not public | dense | `NOT_CORAL`, `CORAL` | 3 | 0 |
@@ -130,11 +131,12 @@ listed by id only.
 
 | Source | Class (id) | Native labels |
 |---|---|---|
-| `coralscapes` | `HC` (0) | `other coral dead`, `other coral bleached`, `other coral alive`, `massive/meandering bleached`, `massive/meandering alive`, `branching bleached`, `branching dead`, `branching alive`, `massive/meandering dead`, `acropora alive`, `turbinaria`, `table acropora alive`, `pocillopora alive`, `table acropora dead`, `meandering bleached`, `stylophora alive`, `meandering alive`, `meandering dead` |
+| `coralscapes` | `HC` (0) | `other coral bleached`, `other coral alive`, `massive/meandering bleached`, `massive/meandering alive`, `branching bleached`, `branching alive`, `acropora alive`, `turbinaria`, `table acropora alive`, `pocillopora alive`, `meandering bleached`, `stylophora alive`, `meandering alive` |
 | `coralscapes` | `MIL` (1) | `millepora` |
-| `coralscapes` | `ABIOTIC` (4) | `trash`, `sand`, `unknown hard substrate`, `rubble` |
-| `coralscapes` | `OTHER_FAUNA` (5) | `fish`, `other animal`, `clam`, `sea cucumber`, `sea urchin`, `crown of thorn`, `dead clam` |
-| `coralscapes` | 255 (ignored) | `seagrass`, `human`, `transect tools`, `algae covered substrate`, `background`, `dark`, `transect line`, `sponge`, `anemone` |
+| `coralscapes` | `ALGAE` (3) | `algae covered substrate` |
+| `coralscapes` | `ABIOTIC` (4) | `trash`, `sand`, `rubble` |
+| `coralscapes` | `OTHER_FAUNA` (5) | `fish`, `other animal`, `clam`, `sea cucumber`, `sponge`, `anemone`, `sea urchin`, `crown of thorn` |
+| `coralscapes` | 255 (ignored) | `seagrass`, `other coral dead`, `human`, `transect tools`, `unknown hard substrate`, `background`, `dark`, `transect line`, `branching dead`, `massive/meandering dead`, `table acropora dead`, `meandering dead`, `dead clam` |
 | `reef-support-benthic-own` | `HC` (0) | `Hard Coral` |
 | `reef-support-benthic-own` | `SC` (2) | `Soft Coral` |
 | `reef-support-seaview-labels` | `HC` (0) | `Hard Coral` |
@@ -147,9 +149,9 @@ listed by id only.
 
 | Source | Class (id) | Native labels |
 |---|---|---|
-| `coralscapes` | `NOT_CORAL` (0) | `seagrass`, `trash`, `sand`, `fish`, `algae covered substrate`, `other animal`, `unknown hard substrate`, `rubble`, `clam`, `sea cucumber`, `sponge`, `anemone`, `sea urchin`, `crown of thorn`, `dead clam` |
-| `coralscapes` | `CORAL` (1) | `other coral dead`, `other coral bleached`, `other coral alive`, `massive/meandering bleached`, `massive/meandering alive`, `branching bleached`, `branching dead`, `millepora`, `branching alive`, `massive/meandering dead`, `acropora alive`, `turbinaria`, `table acropora alive`, `pocillopora alive`, `table acropora dead`, `meandering bleached`, `stylophora alive`, `meandering alive`, `meandering dead` |
-| `coralscapes` | 255 (ignored) | `human`, `transect tools`, `background`, `dark`, `transect line` |
+| `coralscapes` | `NOT_CORAL` (0) | `seagrass`, `trash`, `sand`, `fish`, `algae covered substrate`, `other animal`, `rubble`, `clam`, `sea cucumber`, `sponge`, `anemone`, `sea urchin`, `crown of thorn` |
+| `coralscapes` | `CORAL` (1) | `other coral bleached`, `other coral alive`, `massive/meandering bleached`, `massive/meandering alive`, `branching bleached`, `millepora`, `branching alive`, `acropora alive`, `turbinaria`, `table acropora alive`, `pocillopora alive`, `meandering bleached`, `stylophora alive`, `meandering alive` |
+| `coralscapes` | 255 (ignored) | `other coral dead`, `human`, `transect tools`, `unknown hard substrate`, `background`, `dark`, `transect line`, `branching dead`, `massive/meandering dead`, `table acropora dead`, `meandering dead`, `dead clam` |
 | `reef-support-benthic-own` | `CORAL` (1) | `Hard Coral`, `Soft Coral` |
 | `reef-support-seaview-labels` | `CORAL` (1) | `Hard Coral`, `Soft Coral` |
 | `coralseg-ucsd-mosaics` | `NOT_CORAL` (0) | `Other` |
@@ -194,6 +196,76 @@ listed by id only.
 
 <!-- END GENERATED: label-mapping -->
 
+### Label policy
+
+The schemes are set up for training on several sources at once. They differ from the registry's published `coarse`
+column in exactly two ways: one default exclusion (dead coral) and a short list of overrides. Everything else follows
+the registry.
+
+1. **Dead coral is ignored.** In `benthic-coarse` and `coral-binary`, a label whose crosswalk condition is
+   `RECENTLY_DEAD` or `OLD_DEAD` (the `dead` alias) goes to 255. This covers the five dead coral classes of Coralscapes
+   and `dead clam`; a dead label that is not coral follows the same rule. Coralscapes separates alive, dead and bleached
+   coral, while the Reef Support and Seaview masks record no condition, so ignoring dead pixels avoids contradictory
+   targets in joint training. Bleached coral is alive and counts as live cover in monitoring, so it stays `HC` /
+   `CORAL`.
+2. **`unknown hard substrate` is ignored in every scheme.** In Coralscapes this class mixes rock with octocorals, so it
+   is neither `ABIOTIC` nor `NOT_CORAL`.
+3. **Clear gaps are filled.** In `benthic-coarse`, `sponge` and `anemone` map to `OTHER_FAUNA`, and
+   `algae covered substrate` maps to `ALGAE` (turf on dead substrate). The crosswalk places the first two at nodes
+   coarser than every class, and the third on a transition node. `seagrass` stays 255 because no class matches it, and so do the non-benthic labels:
+   water, dark, divers, transect tools and the transect line.
+4. **Reef Support and Seaview masks keep `HC` and `SC` as drawn.** They record no coral condition, so their `HC` can
+   include recently dead colonies. Because of rule 1, no source labels dead coral as anything else, so the sources do not
+   contradict each other.
+
+The overrides (rules 2 and 3, and two older ones for sources whose crosswalk has no taxon edge) are set in
+`registry/label-schemes/schemes.yaml`; the registry tasks and crosswalks are unchanged, so the published `coarse` column
+still follows the crosswalks. `Crosswalk alone` below is what the registry gives:
+
+<!-- BEGIN GENERATED: label-overrides -->
+
+| Scheme | Source | Native label | Crosswalk alone | Scheme |
+|---|---|---|---|---|
+| `benthic-coarse` | `coralscapes` | `unknown hard substrate` | `ABIOTIC` | ignored (255) |
+| `benthic-coarse` | `coralscapes` | `sponge` | ignored (255) | `OTHER_FAUNA` |
+| `benthic-coarse` | `coralscapes` | `anemone` | ignored (255) | `OTHER_FAUNA` |
+| `benthic-coarse` | `coralscapes` | `algae covered substrate` | ignored (255) | `ALGAE` |
+| `coral-binary` | `coralscapes` | `unknown hard substrate` | `NOT_CORAL` | ignored (255) |
+| `coral-binary` | `coralseg-ucsd-mosaics` | `Other` | ignored (255) | `NOT_CORAL` |
+| `coral-binary` | `coralscop-masks-rs` | `coral` | ignored (255) | `CORAL` |
+
+<!-- END GENERATED: label-overrides -->
+
+The condition exclusions, per condition alias. `Default` marks the ones that apply without any option; the others are
+opt-in. Only Coralscapes carries a coral condition today.
+
+<!-- BEGIN GENERATED: label-conditions -->
+
+| Scheme | Source | Condition | Default | Labels sent to 255 |
+|---|---|---|---|---|
+| `benthic-coarse` | `coralscapes` | `dead` | yes | `other coral dead`, `branching dead`, `massive/meandering dead`, `table acropora dead`, `meandering dead`, `dead clam` |
+| `benthic-coarse` | `coralscapes` | `bleached` | no | `other coral bleached`, `massive/meandering bleached`, `branching bleached`, `meandering bleached` |
+| `coral-binary` | `coralscapes` | `dead` | yes | `other coral dead`, `branching dead`, `massive/meandering dead`, `table acropora dead`, `meandering dead`, `dead clam` |
+| `coral-binary` | `coralscapes` | `bleached` | no | `other coral bleached`, `massive/meandering bleached`, `branching bleached`, `meandering bleached` |
+
+<!-- END GENERATED: label-conditions -->
+
+To opt out, pass `exclude_conditions`. `None` (the default) means the scheme default, and any explicit value replaces
+it, so `()` restores the registry and `("bleached",)` ignores bleached coral but keeps dead coral:
+
+```python
+labels.lut("coralscapes", "benthic-coarse", exclude_conditions=())  # dead coral is HC again
+labels.lut(
+    "coralscapes", "benthic-coarse", exclude_conditions=("dead", "bleached")
+)  # live coral only
+```
+
+The option has the same meaning in `remap_mask`, `remap_row`, `map_label`, `supervised_classes` and
+`to_torch_dataset(scheme_options={"exclude_conditions": ()})`. The overrides have no switch; to undo one, edit the table
+that `lut` returns (it is a copy), for example `table[12] = 4` sends `unknown hard substrate` to `ABIOTIC`.
+`remap_row` checks a row's `class_map` against the registry, not against the scheme, so the overrides and the default
+exclusions never raise.
+
 ### Rules to know
 
 **255 is ignore.** Train with an ignore index of 255 (`CrossEntropyLoss(ignore_index=255)`), exclude it from metrics, and
@@ -208,21 +280,9 @@ model: `1` is a detected coral instance and 255 is "not detected", which is not 
 the instance and box sources (`uiis`, `uiis10k`, `usis10k`, `roboflow-aquarium`): pixels outside the annotated objects
 are unannotated, not background. `labels.is_dense(source)` returns the flag.
 
-**Defaults follow the registry.** Dead and bleached coral stay hard coral (`HC` in `benthic-coarse`, `CORAL` in
-`coral-binary`), because the registry records them as hard coral with a condition. To send them to ignore instead, pass
-`exclude_conditions=("dead", "bleached")`. Other aliases are `pale`, `diseased`, `healthy` and `unhealthy`, and any
-condition node id of the `rs-benthic-v1` schema is accepted. The option applies to every label whose crosswalk entry has
-that condition, not only to corals. With `exclude_conditions=("dead", "bleached")` the labels below go to ignore, and they
-include `dead clam` in Coralscapes:
-
-<!-- BEGIN GENERATED: label-conditions -->
-
-| Scheme | Source | Labels | Sent to 255 |
-|---|---|---|---|
-| `benthic-coarse` | `coralscapes` | 10 | `other coral dead`, `other coral bleached`, `massive/meandering bleached`, `branching bleached`, `branching dead`, `massive/meandering dead`, `table acropora dead`, `meandering bleached`, `meandering dead`, `dead clam` |
-| `coral-binary` | `coralscapes` | 10 | `other coral dead`, `other coral bleached`, `massive/meandering bleached`, `branching bleached`, `branching dead`, `massive/meandering dead`, `table acropora dead`, `meandering bleached`, `meandering dead`, `dead clam` |
-
-<!-- END GENERATED: label-conditions -->
+**Condition options.** Besides `dead` and `bleached`, the aliases are `pale`, `diseased`, `healthy` and `unhealthy`, and any
+condition node id of the `rs-benthic-v1` schema is accepted. The option applies to every label whose crosswalk entry has that condition, not only
+to corals; `dead clam` in Coralscapes is the one non-coral example today.
 
 `ignore=` adds labels to the ignore set. It takes native label names or `rs-benthic-v1` taxon node ids, and a node
 carries its subtree:
@@ -235,11 +295,10 @@ labels.lut(
 
 Unknown schemes, sources, labels and options raise instead of being skipped.
 
-**Coralscapes has no soft-coral class.** Octocorals and other soft corals are inside its `unknown hard substrate` class,
-which maps to `ABIOTIC` in `benthic-coarse` and to `NOT_CORAL` in `coral-binary`. For joint training this means that
-Coralscapes supplies no `SC` examples, and that its `ABIOTIC` or `NOT_CORAL` regions can contain soft coral that the
-Reef Support sources label as `SC` or `CORAL`. To keep that label noise out, send the class to ignore with
-`ignore=("unknown hard substrate",)`; the cost is that genuinely abiotic hard substrate in Coralscapes is ignored too.
+**Coralscapes has no soft-coral class.** Octocorals and other soft corals are inside its `unknown hard substrate` class.
+That class is ignored by default (see the [label policy](#label-policy)), so Coralscapes supplies no `SC` examples and
+its `ABIOTIC` and `NOT_CORAL` regions do not carry soft coral that the Reef Support sources label as `SC` or `CORAL`. The
+cost is that genuinely abiotic hard substrate in Coralscapes is ignored too.
 
 **The scene scheme follows SUIM's definitions.** Ids are SUIM's pixel values, so SUIM masks pass through unchanged. Other
 sources are mapped by label name: `arthropoda`, `mollusk`, `jellyfish`, `starfish` and `corals` go to reefs and

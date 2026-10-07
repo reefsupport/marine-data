@@ -135,7 +135,10 @@ For a dataset built with `marinedata.builder`,
 
 Some sources annotate only a subset of the classes, and for them 255 means "not annotated" rather than background.
 [`docs/LABELS.md`](docs/LABELS.md) lists the class ids per scheme, how every source maps, and the rules for training with
-partial sources, dead and bleached coral, and the Coralscapes classes.
+partial sources, dead and bleached coral, and the Coralscapes classes. For joint training, `benthic-coarse` and
+`coral-binary` send dead coral and the Coralscapes `unknown hard substrate` class to 255 by default and map a few
+Coralscapes labels the registry leaves open; `exclude_conditions=()` restores the registry behaviour, and the
+[label policy](docs/LABELS.md#label-policy) lists every difference.
 
 ## How the registry works
 

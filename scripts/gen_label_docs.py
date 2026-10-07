@@ -22,13 +22,13 @@ from marinedata.registry import Registry
 ROOT = Path(__file__).resolve().parents[1]
 DOC = ROOT / "docs" / "LABELS.md"
 PUBLIC_REPO = "reefsupport/marine-data"
-EXCLUDE_EXAMPLE = ("dead", "bleached")
+CONDITION_ALIASES = ("dead", "bleached")  # rows of the condition table
 
 # Meaning of the coral-binary classes (benthic-coarse names come from the rs-benthic-v1 schema,
 # scene descriptions from the scheme YAML).
 COARSE_MEANING = {
     "NOT_CORAL": "Every other mapped biotic, abiotic or transition label",
-    "CORAL": "Hard coral, soft coral and fire coral (dead and bleached included by default)",
+    "CORAL": "Hard coral, soft coral and fire coral (bleached included, dead ignored by default)",
 }
 
 
@@ -122,22 +122,58 @@ def mapping_block() -> str:
     return "\n\n".join(parts)
 
 
+def _by_name(scheme: str) -> bool:
+    return ls.scheme_spec(scheme).labels is not None
+
+
 def conditions_block() -> str:
-    options = ls.make_options(exclude_conditions=EXCLUDE_EXAMPLE)
+    """Labels each condition alias sends to 255, compared with the registry (``()``)."""
+    registry_view = {s: ls.make_options(s, exclude_conditions=()) for s in labels.schemes()}
     rows = []
     for scheme in labels.schemes():
-        if ls.scheme_spec(scheme).labels is not None:
+        if _by_name(scheme):
             continue  # a by-name scheme has no condition axis
+        defaults = ls.scheme_spec(scheme).default_exclude_conditions
         for source in ls.scheme_spec(scheme).sources:
-            sent = [
-                label
-                for label in ls.source_spec(source, scheme).native_labels
-                if ls.resolve_class(source, label, scheme) is not None
-                and ls.resolve_class(source, label, scheme, options) is None
-            ]
-            if sent:
-                rows.append((f"`{scheme}`", f"`{source}`", str(len(sent)), _names(sent)))
-    return _table(("Scheme", "Source", "Labels", "Sent to 255"), rows)
+            for alias in CONDITION_ALIASES:
+                options = ls.make_options(scheme, exclude_conditions=(alias,))
+                sent = [
+                    label
+                    for label in ls.source_spec(source, scheme).native_labels
+                    if ls.resolve_class(source, label, scheme, registry_view[scheme]) is not None
+                    and ls.resolve_class(source, label, scheme, options) is None
+                ]
+                if sent:
+                    rows.append(
+                        (
+                            f"`{scheme}`",
+                            f"`{source}`",
+                            f"`{alias}`",
+                            "yes" if alias in defaults else "no",
+                            _names(sent),
+                        )
+                    )
+    return _table(("Scheme", "Source", "Condition", "Default", "Labels sent to 255"), rows)
+
+
+def overrides_block() -> str:
+    """Scheme-level overrides: where a scheme differs from what the crosswalk alone gives."""
+    rows = []
+    for scheme in labels.schemes():
+        spec = ls.scheme_spec(scheme)
+        for source, table in spec.source_overrides.items():
+            for label, name in table.items():
+                registry = ls.registry_class(source, label, scheme)
+                rows.append(
+                    (
+                        f"`{scheme}`",
+                        f"`{source}`",
+                        f"`{_cell(label)}`",
+                        f"`{registry}`" if registry else "ignored (255)",
+                        f"`{name}`" if name else "ignored (255)",
+                    )
+                )
+    return _table(("Scheme", "Source", "Native label", "Crosswalk alone", "Scheme"), rows)
 
 
 BLOCKS: dict[str, Callable[[Registry, dict], str]] = {
@@ -145,6 +181,7 @@ BLOCKS: dict[str, Callable[[Registry, dict], str]] = {
     "label-sources": lambda _r, _raw: sources_block(),
     "label-mapping": lambda _r, _raw: mapping_block(),
     "label-conditions": lambda _r, _raw: conditions_block(),
+    "label-overrides": lambda _r, _raw: overrides_block(),
 }
 
 

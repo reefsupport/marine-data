@@ -3,7 +3,14 @@
 # ignore value everywhere. A label with no class is NEVER guessed: it maps to 255 and, if it is a
 # known label, is listed explicitly. Loaded by marinedata.labels; resolved through
 # registry/crosswalks (native label -> rs-benthic-v1 node [+ condition]), so a crosswalk edit moves
-# the LUTs. Defaults follow the registry as it is (dead and bleached coral stay HC).
+# the LUTs.
+#
+# Label policy for joint training (docs/LABELS.md, "Label policy"). The schemes deviate from the
+# registry's published `coarse` column in exactly two ways, both listed here and pinned by tests:
+#   * `default_exclude_conditions`: labels whose crosswalk condition is under these (aliases below)
+#     go to 255 unless the caller passes `exclude_conditions=` (an explicit () restores the registry).
+#   * `source_overrides`: source -> native label -> class; `null` = 255. Registry tasks and
+#     crosswalks are never edited for this.
 version: 1
 ignore_index: 255
 
@@ -23,6 +30,13 @@ schemes:
       The registry's six-class benthic cover task. Native label -> crosswalk taxon -> task class
       (finer nodes roll up; a node coarser than every class, or outside them, is 255).
     task: benthic-coarse        # classes + order come from registry/tasks/benthic.yaml
+    default_exclude_conditions: [dead]   # D1: dead coral (and dead clam) -> 255; bleached stays HC
+    source_overrides:
+      coralscapes:
+        unknown hard substrate: null     # D2: rock mixed with octocorals: neither ABIOTIC nor NOT_CORAL
+        sponge: OTHER_FAUNA              # D3: crosswalk node SP (PORIFERA) is coarser than every class
+        anemone: OTHER_FAUNA             # D3: crosswalk node ANEM (CNIDARIA) is coarser than every class
+        algae covered substrate: ALGAE   # D3: crosswalk DCA is a transition node; turf on dead substrate
     sources:
       - coralscapes
       - reef-support-benthic-own
@@ -39,7 +53,10 @@ schemes:
       CORAL: [HC, SC, MIL]
       NOT_CORAL: [BIOTIC, ABIOTIC, TRANSITION]
     ignore_nodes: [NON_BENTHIC]
-    source_overrides:           # source -> native label -> class, where the crosswalk has no taxon edge
+    default_exclude_conditions: [dead]   # D1: dead coral (and dead clam) -> 255; bleached stays CORAL
+    source_overrides:           # source -> native label -> class (null = 255), see the header
+      coralscapes:
+        unknown hard substrate: null     # D2: rock mixed with octocorals: neither CORAL nor NOT_CORAL
       coralseg-ucsd-mosaics:
         Other: NOT_CORAL        # the source defines it as every non-coral pixel (crosswalk: unmappable)
       coralscop-masks-rs:

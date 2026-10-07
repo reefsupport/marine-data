@@ -13,9 +13,22 @@ from PIL import Image
 
 from marinedata import label_schemes as ls
 from marinedata import labels
+from marinedata.schema import Axis
 
 VOCAB = json.loads((Path(__file__).parent / "data" / "label_vocab.json").read_text())
 BENTHIC = ("HC", "MIL", "SC", "ALGAE", "ABIOTIC", "OTHER_FAUNA")
+# Label policy (docs/LABELS.md): Coralscapes labels whose crosswalk condition is dead go to 255 by
+# default; these overrides deviate from the registry's crosswalk. Nothing else may differ.
+POLICY_DEAD = {
+    "other coral dead", "branching dead", "massive/meandering dead", "meandering dead",
+    "table acropora dead", "dead clam",
+}  # fmt: skip
+POLICY_OVERRIDES = {  # benthic-coarse; None = 255
+    "unknown hard substrate": None,
+    "sponge": "OTHER_FAUNA",
+    "anemone": "OTHER_FAUNA",
+    "algae covered substrate": "ALGAE",
+}
 
 
 def _vocab_entries():
@@ -66,11 +79,13 @@ def test_lut_is_a_copy_and_unknown_ids_stay_ignored():
 
 def test_pinned_benthic_coarse_entries():
     assert labels.lut("coralscapes", "benthic-coarse")[1] == 255  # seagrass: no home in 6 classes
-    assert _name("coralscapes", "benthic-coarse", 3) == "HC"  # other coral dead stays HC
+    assert _name("coralscapes", "benthic-coarse", 3) is None  # other coral dead: 255 by default
+    assert _name("coralscapes", "benthic-coarse", 6) == "HC"  # other coral alive
+    assert _name("coralscapes", "benthic-coarse", 4) == "HC"  # other coral bleached stays HC
     assert _name("coralscapes", "benthic-coarse", 21) == "MIL"
     assert _name("coralscapes", "benthic-coarse", 5) == "ABIOTIC"  # sand
     assert _name("coralscapes", "benthic-coarse", 9) == "OTHER_FAUNA"  # fish
-    assert _name("coralscapes", "benthic-coarse", 10) is None  # algae covered substrate (DCA)
+    assert _name("coralscapes", "benthic-coarse", 10) == "ALGAE"  # algae covered substrate
     assert _name("coralscapes", "benthic-coarse", 13) is None  # background (water)
     assert labels.lut("reef-support-benthic-own", "benthic-coarse")[1] == 0  # Hard Coral
     assert _name("reef-support-benthic-own", "benthic-coarse", 2) == "SC"
@@ -124,8 +139,115 @@ def test_dense_and_supervised_classes():
         assert labels.is_dense(source) is False
     assert labels.supervised_classes("reef-support-benthic-own", "benthic-coarse") == ("HC", "SC")
     assert labels.supervised_classes("coralscapes", "benthic-coarse") == (
-        "HC", "MIL", "ABIOTIC", "OTHER_FAUNA")  # fmt: skip
+        "HC", "MIL", "ALGAE", "ABIOTIC", "OTHER_FAUNA")  # fmt: skip
     assert labels.supervised_classes("coralscop-masks-rs", "coral-binary") == ("CORAL",)
+
+
+# ── label policy defaults (docs/LABELS.md, "Label policy") ──────────────────────────────────────
+
+DEAD_PIXELS = (
+    3,
+    20,
+    23,
+    32,
+    37,
+)  # other coral, branching, massive/meandering, table acropora, meandering
+BLEACHED_PIXELS = (4, 16, 19, 33)
+
+
+def test_dead_coral_is_ignored_by_default_and_the_opt_out_restores_the_registry():
+    for scheme, coral in (("benthic-coarse", "HC"), ("coral-binary", "CORAL")):
+        for pixel in DEAD_PIXELS:
+            assert _name("coralscapes", scheme, pixel) is None, (scheme, pixel)
+            assert _name("coralscapes", scheme, pixel, exclude_conditions=()) == coral
+            assert _name("coralscapes", scheme, pixel, exclude_conditions=("dead",)) is None
+    # dead non-coral labels follow: dead clam is 255 too, a live clam is not
+    assert _name("coralscapes", "benthic-coarse", 39) is None
+    assert _name("coralscapes", "benthic-coarse", 39, exclude_conditions=()) == "OTHER_FAUNA"
+    assert _name("coralscapes", "coral-binary", 39) is None
+    assert _name("coralscapes", "coral-binary", 39, exclude_conditions=()) == "NOT_CORAL"
+    assert _name("coralscapes", "benthic-coarse", 24) == "OTHER_FAUNA"  # clam
+    assert labels.map_label("coralscapes", "dead clam", "benthic-coarse") is None
+    assert labels.map_label("coralscapes", "branching dead", "coral-binary") is None
+    assert (
+        labels.map_label("coralscapes", "branching dead", "coral-binary", exclude_conditions=())
+        == 1
+    )
+    kept = labels.supervised_classes("coralscapes", "coral-binary", exclude_conditions=("dead",))
+    assert kept == ("NOT_CORAL", "CORAL")
+
+
+def test_bleached_coral_stays_coral_by_default():
+    for scheme, coral in (("benthic-coarse", "HC"), ("coral-binary", "CORAL")):
+        for pixel in BLEACHED_PIXELS:
+            assert _name("coralscapes", scheme, pixel) == coral, (scheme, pixel)
+            assert _name("coralscapes", scheme, pixel, exclude_conditions=()) == coral
+
+
+def test_unknown_hard_substrate_is_ignored_in_every_scheme():
+    for scheme in ("benthic-coarse", "coral-binary"):
+        assert _name("coralscapes", scheme, 12) is None, scheme
+        assert _name("coralscapes", scheme, 12, exclude_conditions=()) is None  # not a condition
+        assert _name("coralscapes", scheme, 18) is not None  # rubble is still a class
+    assert labels.map_label("coralscapes", "unknown hard substrate", "coral-binary") is None
+    for scheme in labels.schemes():  # no scheme may map it to a class
+        spec = ls.scheme_spec(scheme)
+        if "coralscapes" in spec.sources:
+            assert ls.resolve_class("coralscapes", "unknown hard substrate", scheme) is None
+
+
+def test_gap_fills_sponge_anemone_and_algae_covered_substrate():
+    assert _name("coralscapes", "benthic-coarse", 29) == "OTHER_FAUNA"  # sponge
+    assert _name("coralscapes", "benthic-coarse", 30) == "OTHER_FAUNA"  # anemone
+    assert _name("coralscapes", "benthic-coarse", 10) == "ALGAE"  # algae covered substrate
+    assert _name("coralscapes", "benthic-coarse", 1) is None  # seagrass: no matching class
+    for pixel in (7, 8, 13, 14, 15):  # human, tools, background, dark, transect line
+        assert _name("coralscapes", "benthic-coarse", pixel) is None
+    # coral-binary keeps the registry answer for all of them (biotic / transition = NOT_CORAL)
+    for pixel in (10, 29, 30):
+        assert _name("coralscapes", "coral-binary", pixel) == "NOT_CORAL"
+    assert labels.map_label("coralscapes", "sponge", "benthic-coarse") == BENTHIC.index(
+        "OTHER_FAUNA"
+    )
+    reaching_algae = [
+        s for s in ls.scheme_spec("benthic-coarse").sources
+        if "ALGAE" in labels.supervised_classes(s, "benthic-coarse")
+    ]  # fmt: skip
+    assert reaching_algae == ["coralscapes"]  # ALGAE has at least one mapped label
+
+
+def test_reef_support_sources_are_unaffected_by_the_defaults():
+    """No coral condition is recorded there: HC / SC as drawn, the opt-out changes nothing."""
+    for source in ("reef-support-benthic-own", "reef-support-seaview-labels"):
+        for scheme in ("benthic-coarse", "coral-binary"):
+            default = labels.lut(source, scheme)
+            assert np.array_equal(default, labels.lut(source, scheme, exclude_conditions=()))
+        assert (
+            _name(source, "benthic-coarse", 1) == "HC"
+            and _name(source, "benthic-coarse", 2) == "SC"
+        )
+        assert (
+            _name(source, "coral-binary", 1) == "CORAL"
+            and _name(source, "coral-binary", 2) == "CORAL"
+        )
+
+
+def test_scene_has_no_default_exclusions():
+    assert np.array_equal(
+        labels.lut("suim", "scene"), labels.lut("suim", "scene", exclude_conditions=())
+    )
+    assert labels.map_label("uiis10k", "corals", "scene") == labels.map_label(
+        "uiis10k", "corals", "scene", exclude_conditions=()
+    )
+
+
+def test_a_scheme_override_must_name_a_class_of_the_scheme(monkeypatch):
+    """The loader rejects an override to a class that does not exist (null = 255 is fine)."""
+    raw = ls._load_yaml("schemes.yaml")
+    raw["schemes"]["benthic-coarse"]["source_overrides"]["coralscapes"]["sponge"] = "SPONGE"
+    monkeypatch.setattr(ls, "_load_yaml", lambda name: raw)
+    with pytest.raises(ValueError, match="override coralscapes/'sponge' names 'SPONGE'"):
+        ls.schemes.__wrapped__()
 
 
 # ── vocabulary snapshot (tests/data/label_vocab.json, from scripts/dump_label_vocab.py) ────────
@@ -158,12 +280,49 @@ def test_pixel_ids_match_the_published_class_maps():
         assert {i["id"]: i["label_native"] for i in entry["labels"]} == dict(spec.ids), source
 
 
-def test_benthic_coarse_lut_reproduces_the_published_coarse_column():
+def test_benthic_coarse_lut_equals_the_published_coarse_column_except_the_documented_policy():
+    """Exactly the label policy of docs/LABELS.md differs from the registry's ``coarse``."""
+    differing = set()
     for _cfg, source, entry in _vocab_entries():
         if source not in ls.scheme_spec("benthic-coarse").sources:
             continue
         for item in entry["labels"]:
-            assert _name(source, "benthic-coarse", item["id"]) == item["coarse"], (source, item)
+            label = item["label_native"]
+            if source == "coralscapes" and label in POLICY_OVERRIDES:
+                expected = POLICY_OVERRIDES[label]
+            elif source == "coralscapes" and label in POLICY_DEAD:
+                expected = None
+            else:
+                expected = item["coarse"]
+            assert _name(source, "benthic-coarse", item["id"]) == expected, (source, item)
+            if _name(source, "benthic-coarse", item["id"]) != item["coarse"]:
+                differing.add((source, label))
+            # the opt-out leaves only the overrides
+            registry_view = _name(source, "benthic-coarse", item["id"], exclude_conditions=())
+            if source == "coralscapes" and label in POLICY_OVERRIDES:
+                assert registry_view == POLICY_OVERRIDES[label], (source, label)
+            else:
+                assert registry_view == item["coarse"], (source, item)
+    assert differing == {("coralscapes", label) for label in (*POLICY_DEAD, *POLICY_OVERRIDES)}
+
+
+def test_dead_covers_exactly_the_documented_labels():
+    """``dead`` = RECENTLY_DEAD + OLD_DEAD; only Coralscapes carries such a condition today."""
+    assert ls.condition_aliases()["dead"] == ("RECENTLY_DEAD", "OLD_DEAD")
+    dead_nodes = set(ls.condition_aliases()["dead"])
+    carrying: set[tuple[str, str]] = set()
+    for scheme in ("benthic-coarse", "coral-binary"):
+        assert ls.scheme_spec(scheme).default_exclude_conditions == ("dead",)
+        for source in ls.scheme_spec(scheme).sources:
+            spec = ls.source_spec(source)
+            crosswalk = ls._registry().crosswalk(spec.crosswalk)
+            for label in spec.native_labels:
+                edge = crosswalk.edge(label)
+                condition = edge.targets.get(Axis.CONDITION) if edge is not None else None
+                if condition and dead_nodes.intersection(ls._walk(condition)):
+                    carrying.add((source, label))
+    assert carrying == {("coralscapes", label) for label in POLICY_DEAD}
+    assert ls.scheme_spec("scene").default_exclude_conditions == ()
 
 
 def test_id_tables_match_the_ingest_code():
@@ -193,8 +352,9 @@ def test_exclude_conditions_reads_the_crosswalk_condition_axis():
         ):  # dead / bleached labels (39: dead clam)
             assert _name("coralscapes", scheme, pixel, **opts) is None, (scheme, pixel)
         assert _name("coralscapes", scheme, 22, **opts) is not None  # branching alive stays
-        assert _name("coralscapes", scheme, 3) is not None  # default unchanged
+    # an explicit value replaces the scheme default (dead): only bleached goes
     assert _name("coralscapes", "benthic-coarse", 3, exclude_conditions=("bleached",)) == "HC"
+    assert _name("coralscapes", "benthic-coarse", 4, exclude_conditions=("bleached",)) is None
     assert _name("coralscapes", "benthic-coarse", 4, exclude_conditions=("UNHEALTHY",)) is None
     with pytest.raises(ValueError, match="unknown condition"):
         labels.lut("coralscapes", "benthic-coarse", exclude_conditions=("deadd",))
@@ -204,7 +364,7 @@ def test_exclude_conditions_reads_the_crosswalk_condition_axis():
 
 def test_ignore_takes_labels_and_nodes():
     assert _name("coralscapes", "benthic-coarse", 5, ignore=("sand",)) is None
-    assert _name("coralscapes", "benthic-coarse", 12, ignore=("sand",)) == "ABIOTIC"
+    assert _name("coralscapes", "benthic-coarse", 18, ignore=("sand",)) == "ABIOTIC"  # rubble
     for pixel in (2, 5, 12, 18):  # node ignore covers the subtree
         assert _name("coralscapes", "benthic-coarse", pixel, ignore=("ABIOTIC",)) is None
     assert labels.map_label("uiis10k", "fish", "scene", ignore=("fish",)) is None
@@ -232,7 +392,7 @@ def _row(**kwargs):
 
 
 def test_remap_mask_and_row():
-    expected = np.array([[255, 0, 4], [255, 255, 1]], dtype=np.uint8)
+    expected = np.array([[255, 255, 4], [255, 255, 1]], dtype=np.uint8)  # 3 = dead: 255 by default
     out = labels.remap_row(_row(), "benthic-coarse")
     assert out["label"].dtype == np.uint8 and np.array_equal(out["label"], expected)
     assert "label" not in _row()  # input row untouched (new dict returned)
@@ -247,6 +407,8 @@ def test_remap_mask_and_row():
     assert np.array_equal(
         labels.remap_mask(_row()["mask"].astype("int64"), "coralscapes", "benthic-coarse"), expected
     )
+    registry_view = labels.remap_row(_row(), "benthic-coarse", exclude_conditions=())["label"]
+    assert registry_view.tolist() == [[255, 0, 4], [255, 255, 1]]  # the opt-out: dead = HC
     with pytest.raises(ValueError, match=r"outside 0\.\.255"):
         labels.remap_mask(np.array([[300]]), "coralscapes", "benthic-coarse")
 
@@ -262,13 +424,38 @@ def test_remap_row_raises_when_class_map_disagrees():
     bad_coarse["class_map"] = [
         {**e, "coarse": "SC"} if e["id"] == 3 else e for e in bad_coarse["class_map"]
     ]
-    with pytest.raises(ValueError, match="disagrees with the benthic-coarse LUT"):
+    with pytest.raises(ValueError, match="disagrees with the registry"):
         labels.remap_row(bad_coarse, "benthic-coarse")
     missing = _row(mask=np.array([[7]], dtype=np.uint8))
     with pytest.raises(ValueError, match="missing from its class_map"):
         labels.remap_row(missing, "benthic-coarse")
     with pytest.raises(ValueError, match="not defined for scheme"):
         labels.remap_row(_row(), "scene")
+
+
+def test_remap_row_does_not_raise_on_overrides_and_default_exclusions():
+    """class_map is compared with the registry (published ``coarse``), not the scheme output."""
+    mask = np.array([[3, 10, 12], [29, 30, 39]], dtype=np.uint8)
+    class_map = [  # as published: registry classes, i.e. before the label policy
+        {"id": 3, "label_native": "other coral dead", "taxon_node": "HC", "coarse": "HC"},
+        {"id": 10, "label_native": "algae covered substrate", "taxon_node": "DCA", "coarse": None},
+        {
+            "id": 12,
+            "label_native": "unknown hard substrate",
+            "taxon_node": "RK",
+            "coarse": "ABIOTIC",
+        },
+        {"id": 29, "label_native": "sponge", "taxon_node": "SP", "coarse": None},
+        {"id": 30, "label_native": "anemone", "taxon_node": "ANEM", "coarse": None},
+        {"id": 39, "label_native": "dead clam", "taxon_node": "CLAM", "coarse": "OTHER_FAUNA"},
+    ]
+    row = {"source": "coralscapes", "mask": mask, "class_map": class_map}
+    out = labels.remap_row(row, "benthic-coarse")["label"]
+    assert out.tolist() == [[255, 3, 255], [5, 5, 255]]  # ALGAE=3, OTHER_FAUNA=5, rest 255
+    opted_out = labels.remap_row(row, "benthic-coarse", exclude_conditions=())["label"]
+    assert opted_out.tolist() == [[0, 3, 255], [5, 5, 5]]
+    binary = labels.remap_row(row, "coral-binary")["label"]
+    assert binary.tolist() == [[255, 0, 255], [0, 0, 255]]
 
 
 # ── torch wiring (default behaviour unchanged) ────────────────────────────────────────────────
@@ -293,7 +480,12 @@ def test_torch_dataset_scheme_option(tmp_path):
     mapped = to_torch_dataset(
         dataset, decode_images=False, decode_masks=True, scheme="benthic-coarse"
     )
-    assert mapped[0]["mask"].tolist() == [[255, 0], [4, 255]]
+    assert mapped[0]["mask"].tolist() == [[255, 255], [4, 255]]  # 3 = dead coral: 255 by default
+    registry_view = to_torch_dataset(
+        dataset, decode_images=False, decode_masks=True, scheme="benthic-coarse",
+        scheme_options={"exclude_conditions": ()},
+    )  # fmt: skip
+    assert registry_view[0]["mask"].tolist() == [[255, 0], [4, 255]]
     assert isinstance(mapped[0]["mask"], torch.Tensor)
     both = to_torch_dataset(
         dataset, decode_images=False, decode_masks=True, scheme="coral-binary",

@@ -14,6 +14,11 @@ First public release.
   (`benthic-coarse`, `coral-binary`, `scene`), with 255 as the ignore value. It provides `lut`, `remap_mask`,
   `remap_row`, `map_label` and `supervised_classes`, options to ignore dead or bleached coral and chosen labels, and an
   optional `scheme=` argument for `to_torch_dataset`. See `docs/LABELS.md`.
+- Label policy defaults for joint training. In `benthic-coarse` and `coral-binary`, dead coral (the `RECENTLY_DEAD` and
+  `OLD_DEAD` conditions, including `dead clam`) goes to 255 by default; bleached coral stays hard coral. Coralscapes
+  `unknown hard substrate` is 255 in every scheme, and `sponge`, `anemone` and `algae covered substrate` map to
+  `OTHER_FAUNA`, `OTHER_FAUNA` and `ALGAE` in `benthic-coarse`. `exclude_conditions=()` restores the registry behaviour.
+  The registry tasks and crosswalks are unchanged. See "Label policy" in `docs/LABELS.md`.
 
 ### Published datasets (v1.0, October 2026)
 
