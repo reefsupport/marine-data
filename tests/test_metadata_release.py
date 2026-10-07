@@ -179,7 +179,11 @@ def test_project_v2_coverage_reads_generically_and_handles_missing_columns(tmp_p
     assert "has-some" in md and "has-none" in md
 
 
-def test_build_rows_joins_geo_backfill_and_generalizes_sensitive(tmp_path):
+def test_build_rows_joins_geo_backfill_and_generalizes_sensitive(tmp_path, monkeypatch):
+    # No staged metadata.parquet exists for src-a: stand in for "key absent in the staging
+    # bucket" instead of letting the D-D fallback build a real S3 client from rclone.conf
+    # (absent on CI, a real network call on a dev Mac).
+    monkeypatch.setattr(mr, "_fetch_staged_metadata_from_s3", lambda source, dest: False)
     from pathlib import Path
 
     from marinedata import geo_backfill as gb
