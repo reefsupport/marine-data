@@ -1470,7 +1470,7 @@ sources:
       Raw reef-survey photographs mirrored from the University of Queensland eSpace
       record UQ_734799. Excludes labelled_data/labelled_segmentation_data.pickle
       (6,956,023,722 B) - slated for deletion, unsafe pickle format, not counted here.
-    licence: CC-BY-3.0-AU
+    licence: CC-BY-3.0
     legal_basis: licence
     redistribution: ok
     provenance: public

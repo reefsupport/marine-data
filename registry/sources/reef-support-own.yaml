@@ -160,11 +160,11 @@ sources:
     description: >
       Our expert instance masks drawn on reef photographs, across the four SEAVIEW_*
       site directories: SEAVIEW_ATL, SEAVIEW_IDN_PHL, SEAVIEW_PAC_AUS, SEAVIEW_PAC_USA.
-      These are PUBLIC XL Catlin Seaview photographs (CC-BY-3.0-AU, González-Rivero et al.,
+      These are PUBLIC XL Catlin Seaview photographs (CC-BY-3.0, González-Rivero et al.,
       UQ eSpace UQ_734799). The annotation labour and the resulting masks are ours
       (CC-BY-4.0, Reef Support).
-    licence: CC-BY-3.0-AU
-    legal_basis: licence  # images: CC-BY-3.0-AU; masks/labels: own (CC-BY-4.0). The enum has no combined value.
+    licence: CC-BY-3.0
+    legal_basis: licence  # images: CC-BY-3.0; masks/labels: own (CC-BY-4.0). The enum has no combined value.
     redistribution: ok
     provenance: own
     citation: >
@@ -173,7 +173,7 @@ sources:
       Masks and labels: Reef Support annotations (CC-BY-4.0).
     verification:
       verified_on: 2026-10-06
-      verified_by: "APPROVED 2026-10-06 (Yohan): images CC-BY-3.0-AU - the researchdata.edu.au record of UQ eSpace UQ_734799 states Creative Commons Attribution 3.0 (the same record `seaview-survey-imagery` cites; R1 external research 2026-09-24, high confidence); masks and labels CC-BY-4.0, Reef Support (own annotations). Supersedes the 2026-09-24 entry: no Seaview pixel terms confirmed, method absent."
+      verified_by: "APPROVED 2026-10-06 (Yohan): images CC-BY-3.0 - the researchdata.edu.au record of UQ eSpace UQ_734799 states Creative Commons Attribution 3.0 (the same record `seaview-survey-imagery` cites; R1 external research 2026-09-24, high confidence); masks and labels CC-BY-4.0, Reef Support (own annotations). Supersedes the 2026-09-24 entry: no Seaview pixel terms confirmed, method absent. Corrected 2026-10-07: the UQ eSpace record states CC BY 3.0 International, not the Australia port."
       method: licence-file
     access:
       method: s3
@@ -235,7 +235,7 @@ sources:
       failure this registry exists to prevent, in our own data.
 
       Rights (RESOLVED 2026-10-06, Yohan approved): the PIXELS are XL Catlin Seaview's, licensed
-      CC-BY-3.0-AU (González-Rivero et al., UQ eSpace UQ_734799, attribution required); our MASKS and
+      CC-BY-3.0 (González-Rivero et al., UQ eSpace UQ_734799, attribution required); our MASKS and
       labels are CC-BY-4.0, Reef Support. `licence` carries the pixel licence (the binding one),
       `legal_basis` is `licence` for the pixels and `own` for the masks (the enum has no combined
       value), `access_class: open`. History: until 2026-10-06 the pixel terms were unconfirmed

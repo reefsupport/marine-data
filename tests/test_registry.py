@@ -162,10 +162,10 @@ def test_no_source_claims_own_tier_over_third_party_pixels(registry: Registry) -
     assert own.n_images == 1250, "the relicensed pixels must be only the ones we actually own"
 
     borrowed = registry.source("reef-support-seaview-labels")
-    # Yohan 2026-10-06: the Seaview pixels are CC-BY-3.0-AU (UQ eSpace UQ_734799), our masks
+    # Yohan 2026-10-06: the Seaview pixels are CC-BY-3.0 (UQ eSpace UQ_734799), our masks
     # CC-BY-4.0. The pixels' real licence is what the entry carries; it must never be T0_OWN.
     assert borrowed.licence.tier is not Tier.OWN
-    assert borrowed.licence.id == "CC-BY-3.0-AU"
+    assert borrowed.licence.id == "CC-BY-3.0"
     assert borrowed.legal_basis is LegalBasis.LICENCE
 
     ids = {s.id for s in registry}
@@ -230,7 +230,7 @@ def test_noaa_esd_coral_bleaching_is_retired_in_favour_of_pifsc(registry: Regist
 
 
 def test_seaview_survey_imagery_licence_resolved(registry: Registry) -> None:
-    """S21 (R1 Q2, high confidence): CC BY 3.0 AU confirmed at researchdata.edu.au."""
+    """S21 (R1 Q2, high confidence): CC BY 3.0 confirmed at researchdata.edu.au."""
     src = registry.source("seaview-survey-imagery")
     assert src.licence.tier is Tier.PERMISSIVE
     assert src.legal_basis is LegalBasis.LICENCE
@@ -276,7 +276,7 @@ def test_roboflow_attribution_added_where_confirmed(registry: Registry) -> None:
 
 def test_reef_support_seaview_labels_provenance_is_own(registry: Registry) -> None:
     """S21 (R2 Q8): annotation labour is ours; the mislabeled `partner` provenance is
-    corrected to `own`. RESOLVED 2026-10-06 (Yohan): images are CC-BY-3.0-AU (González-Rivero
+    corrected to `own`. RESOLVED 2026-10-06 (Yohan): images are CC-BY-3.0 (González-Rivero
     et al., UQ eSpace UQ_734799, attribution), masks CC-BY-4.0 Reef Support; the entry is
     `open` with `legal_basis: licence` (the enum has no `licence+own`; the masks are
     documented in the citation)."""
@@ -285,7 +285,7 @@ def test_reef_support_seaview_labels_provenance_is_own(registry: Registry) -> No
     assert src.access_class == "open"
     assert src.legal_basis is LegalBasis.LICENCE
     assert src.redistribution is Redistribution.OK
-    assert src.licence.id == "CC-BY-3.0-AU" and src.licence.flags.attribution_required
+    assert src.licence.id == "CC-BY-3.0" and src.licence.flags.attribution_required
     assert src.licence.tier is not Tier.OWN
     assert src.citation and "10.14264/UQL.2019.930" in src.citation
     assert "CC-BY-4.0" in src.citation and "Reef Support" in src.citation
