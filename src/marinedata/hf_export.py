@@ -468,6 +468,19 @@ def load_mask_geo(path: Path) -> dict[str, tuple[float | None, float | None]]:
     return out
 
 
+def record_export_counts(release_json: Path, summary: dict) -> None:
+    """Add ``configs: {config: {split: rows}}`` to RELEASE.json: the counts the load and card
+    gates hold the export to. A ``--sample`` export writes one shard per config and skips this."""
+    data = json.loads(release_json.read_text())
+    configs = {
+        config: {split: entry["splits"][split]["rows"] for split in entry["splits"]}
+        for config, entry in sorted(summary["configs"].items())
+    }
+    release_json.write_text(
+        json.dumps({**data, "configs": configs}, indent=1, sort_keys=True) + "\n"
+    )
+
+
 def main(argv: list[str] | None = None) -> int:
     from .fetch import cache_root
 
@@ -571,6 +584,8 @@ def main(argv: list[str] | None = None) -> int:
 
     with allow_resize(args.allow_resize):
         summary = export(layout, args.out, sample=args.sample)
+    if not args.sample:
+        record_export_counts(release_json, summary)
     if flavour:
         summary["flavour"] = flavour
         summary["repo_id"] = release["repo_id"]

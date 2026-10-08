@@ -1,0 +1,10 @@
+# Target train/validation/test share (percent) that `marinedata release gate --splits` checks each
+# HF config against (tolerance: +/- 5 points). `default` is the documented target for NEW configs.
+# The v1.0 builds used the code default 70/15/15 and keep it: a build's RELEASE.json records the
+# ratios of the split map it used (`split_ratio.target_pct`), which wins over `default` for every
+# config without an entry under `configs`. An entry under `configs` wins over both.
+default:
+  train: 80
+  validation: 10
+  test: 10
+configs: {}

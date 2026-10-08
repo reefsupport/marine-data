@@ -753,6 +753,19 @@ def _skipped_sources(
     return skipped
 
 
+def _split_ratio_record(map_bytes: bytes) -> dict:
+    """The train/validation/test share (percent) the split map was allocated with; the splits
+    gate checks each config against it unless the registry (split_ratio.yaml) names one."""
+    import json as _json
+
+    ratios = _json.loads(map_bytes).get("ratios") or {}
+    total = sum(ratios.values()) or 1.0
+    return {
+        "source": "split_map",
+        "target_pct": {k: round(100.0 * v / total, 2) for k, v in sorted(ratios.items())},
+    }
+
+
 def build_release(
     registry: Registry,
     *,
@@ -958,6 +971,7 @@ def build_release(
         "release": release,
         **taxonomy_stamp,
         "split_map_sha256": map_sha256,
+        "split_ratio": _split_ratio_record(map_bytes),
         "sources": [
             {
                 "id": source_id,

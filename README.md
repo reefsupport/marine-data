@@ -478,3 +478,6 @@ See [`CONTRIBUTING.md`](CONTRIBUTING.md) for the workflow and [`CHANGELOG.md`](C
 Questions, corrections to a licence entry and removal requests: open an
 [issue](https://github.com/reefsupport/marine-data/issues) or use the [contact page](https://www.reef.support/contact).
 Built by [Reef Support](https://reef.support).
+
+
+Release gates: see [docs/GATES.md](docs/GATES.md).

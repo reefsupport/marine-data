@@ -1,9 +1,9 @@
-.PHONY: ci lint check taxonomy-check labels-check test e2e
+.PHONY: ci lint check taxonomy-check labels-check test e2e gates
 
 # `ci` is the exact sequence the GitHub Actions "Test" step runs — kept here so a
 # contributor can reproduce a CI failure locally with one command, and so the
 # workflow itself has no logic beyond `make ci` (D12, 5star-rubric WP-4).
-ci: lint check taxonomy-check labels-check test e2e
+ci: lint check taxonomy-check labels-check test e2e gates
 
 lint:
 	uv run ruff check .
@@ -36,3 +36,7 @@ test:
 # <60s, network-free budget easy to eyeball independent of the full suite.
 e2e:
 	uv run pytest -q tests/test_e2e_release.py
+
+# P1.6 release gates (docs/GATES.md): the gate suite and the masks gate, on synthetic builds.
+gates:
+	uv run pytest -q tests/test_gates_*.py tests/test_masks_gate.py

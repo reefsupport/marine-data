@@ -52,6 +52,8 @@ pinned-tree fetch). Nothing here uploads.
 8. `marinedata hf-card` / upload stages per `docs/formats.md`; check that every config in the card has
    its `data_files` and that `metadata` is listed.
 
+After the export, run the gates: `marinedata release gate BUILD_DIR --all --require-all` (see [GATES.md](GATES.md)).
+
 ## Privacy policy (WP-R9)
 
 After `hf_export` (first pass) run `marinedata privacy-scan` on the shards, then re-run
