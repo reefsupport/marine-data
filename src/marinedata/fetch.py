@@ -30,10 +30,12 @@ from dataclasses import dataclass
 from datetime import datetime, timezone
 from pathlib import Path
 from types import MappingProxyType
+from typing import Any
 
 from .checksums import CHUNK_SIZE, DOWNLOAD_USER_AGENT, stream_into
 from .enums import AccessMethod
 from .models import Source
+from .s3_auth import S3Creds, auth_headers_for
 
 DATASETS_SERVER = "https://datasets-server.huggingface.co"
 DEFAULT_LIMIT = 100
@@ -44,6 +46,13 @@ DOWNLOAD_USER_AGENT`."""
 
 class FetchError(Exception):
     """A sample could not be retrieved."""
+
+
+class IntegrityError(FetchError):
+    """Fetched bytes do not hash to the digest the manifest / CHECKSUMS / registry pins.
+
+    Names the key (or URL) and both digests. Never retried: the transfer completed, so a
+    second download would only fetch the same wrong bytes again."""
 
 
 class FetchNotSupported(FetchError):
@@ -88,42 +97,189 @@ class FetchResult:
         }
 
 
+_ARCHIVE_SUFFIXES = (".tar.gz", ".tar.bz2", ".tar.xz", ".tgz", ".tar", ".zip")
+
+MAX_DOWNLOAD_WITHOUT_RANGE = 200 * 1024 * 1024
+"""A full-body GET is only safe up to this size. CoralVQA's real image archive is a
+single 26.7 GB zip with no smaller subset published anywhere — downloading that just to
+read 100 verification images would be absurd, and it is exactly the shape of "large
+upstream archive, needs a bounded sample" that this registry expects to hit again."""
+
+MAX_MEMBER_BYTES = 500 * 1024 * 1024
+"""Refuse any single archive member larger than this once extracted (uncompressed). A
+verification sample is meant to stay small (~100 items); one member this large is
+either the wrong archive entirely or a bomb, not a sample."""
+
+MAX_TOTAL_EXTRACT_BYTES = 2 * 1024 * 1024 * 1024
+"""Cumulative uncompressed-byte cap across every member extracted by one archive-
+reading call, independent of ``limit`` — ``limit`` bounds member *count*, not how many
+bytes each member can expand to. A 100-member archive that expands to hundreds of GB is
+otherwise "within policy" purely because member count stayed low."""
+
+MAX_COMPRESSION_RATIO = 100
+"""Refuse a member (zip: its own compressed/uncompressed sizes; tar: the whole archive
+payload vs. cumulative bytes extracted so far, since tar has no per-member compressed
+size once the stream itself is compressed) whose uncompressed size exceeds this
+multiple of its compressed size. 100:1 is a generous, conventional zip-bomb threshold —
+real photos and label files don't compress anywhere near that hard; a crafted
+all-zeros payload does."""
+
+MAX_GET_BYTES = MAX_TOTAL_EXTRACT_BYTES
+"""Hard ceiling on a single ``_get()`` response body, enforced while reading rather
+than trusted from ``Content-Length`` — a header can under-report, lie, or be absent
+while the connection keeps streaming."""
+
+
+def _check_complete(response: Any, received: int) -> None:
+    """Raise ``IncompleteRead`` when the body is shorter than its ``Content-Length``.
+
+    ``HTTPResponse.read(n)`` hands back a short chunk without complaint when the server
+    closes early (only the no-argument ``read()`` raises), so a chunked read must check
+    for itself or a truncated transfer looks like a finished one."""
+    headers = getattr(response, "headers", None)
+    declared = headers.get("Content-Length") if headers is not None else None
+    if declared is not None and str(declared).isdigit() and int(declared) != received:
+        raise http.client.IncompleteRead(b"", int(declared) - received)
+
+
+def _retrying_read(
+    url: str,
+    consume: Callable[[Any], Any],
+    *,
+    timeout: int,
+    headers: dict[str, str] | None,
+    retries: int,
+    creds: S3Creds | None,
+) -> Any:
+    """Open ``url`` and hand the response to ``consume``, retrying transient faults.
+
+    4xx is not retried: a 404 will still be a 404 — except 429, which is the server asking
+    a concurrent fetch to slow down. 5xx and connection-level faults (``RemoteDisconnected``,
+    ``BadStatusLine``, ``IncompleteRead``, resets, timeouts) are retried with exponential
+    backoff (:func:`_backoff`), at most ``retries`` attempts.
+
+    With ``creds`` the request is SigV4-signed afresh on every attempt (only for the
+    credentials' own endpoint). A 401/403 on a signed request drops to anonymous for the
+    rest of the call without using up an attempt: signed first, anonymous as the fallback,
+    never the reverse."""
+    last: Exception | None = None
+    signed = creds is not None
+    attempt = 0
+    while attempt < retries:
+        auth = auth_headers_for(url, creds) if signed else {}
+        request = urllib.request.Request(
+            url, headers={"User-Agent": USER_AGENT, **(headers or {}), **auth}
+        )
+        try:
+            with urllib.request.urlopen(request, timeout=timeout) as response:
+                return consume(response)
+        except urllib.error.HTTPError as exc:
+            last = exc
+            if auth and exc.code in (401, 403):
+                signed = False
+                continue
+            if exc.code < 500 and exc.code != 429:
+                raise FetchError(f"HTTP {exc.code} for {url}") from exc
+        except (urllib.error.URLError, http.client.HTTPException, OSError) as exc:
+            last = exc
+        if attempt < retries - 1:
+            time.sleep(_backoff(attempt))
+        attempt += 1
+    raise FetchError(f"failed after {retries} attempt(s) for {url}: {last}")
+
+
 def _get(
     url: str,
     *,
     timeout: int = 60,
     headers: dict[str, str] | None = None,
     retries: int = 3,
+    max_bytes: int = MAX_GET_BYTES,
+    creds: S3Creds | None = None,
 ) -> bytes:
-    """GET with retries on transient faults.
+    """GET with retries on transient faults (:func:`_retrying_read`).
 
-    Retrying is not optional at this scale. Fetching a few hundred images means a few
-    hundred connections, and some fraction of those will be dropped by the far end
-    mid-transfer — the first real multi-source build died on
-    ``http.client.RemoteDisconnected``, which is neither an ``HTTPError`` nor a
-    ``URLError`` and so escaped the original handler entirely.
+    Retrying is not optional at this scale: fetching a few hundred images means a few
+    hundred connections and some fraction are dropped by the far end mid-transfer.
 
-    4xx is not retried: a 404 will still be a 404 — except 429, which is the server
-    asking a concurrent fetch to slow down. 5xx and connection-level faults (timeouts
-    included) are retried with exponential backoff (:func:`_backoff`).
-    """
-    last: Exception | None = None
-    for attempt in range(retries):
-        request = urllib.request.Request(url, headers={"User-Agent": USER_AGENT, **(headers or {})})
+    Read incrementally and bounded by ``max_bytes`` rather than one bare
+    ``response.read()`` — a ``Content-Length`` header can under-report or be absent while
+    the body keeps streaming, so the only reliable cap is one enforced against the bytes
+    actually received. A body shorter than its declared length is retried."""
+
+    def consume(response: Any) -> bytes:
+        chunks: list[bytes] = []
+        total = 0
+        while True:
+            chunk = response.read(1024 * 1024)
+            if not chunk:
+                break
+            total += len(chunk)
+            if total > max_bytes:
+                raise FetchError(
+                    f"{url}: response exceeded {max_bytes} bytes — refused rather than "
+                    f"read further (a cap on bytes actually received, not on Content-Length)"
+                )
+            chunks.append(chunk)
+        _check_complete(response, total)
+        return b"".join(chunks)
+
+    return _retrying_read(
+        url, consume, timeout=timeout, headers=headers, retries=retries, creds=creds
+    )
+
+
+def get_to_file(
+    url: str,
+    dest: Path,
+    *,
+    expected_sha256: str | None = None,
+    label: str | None = None,
+    timeout: int = 60,
+    headers: dict[str, str] | None = None,
+    retries: int = 3,
+    max_bytes: int = MAX_GET_BYTES,
+    creds: S3Creds | None = None,
+) -> str:
+    """Stream ``url`` to ``dest`` through ``<dest>.part`` and return the sha256 hex digest.
+
+    The ``.part`` file is renamed onto ``dest`` only after the whole body arrived and — when
+    ``expected_sha256`` is given — hashes to it, so ``dest`` never holds partial or
+    unverified bytes. A truncated transfer is retried (at most ``retries``, backoff); a
+    digest mismatch raises :class:`IntegrityError` naming ``label``/the URL and both
+    digests, removes the ``.part`` and is not retried."""
+    expected = expected_sha256.removeprefix("sha256:").lower() if expected_sha256 else None
+    part = dest.with_name(dest.name + ".part")
+    dest.parent.mkdir(parents=True, exist_ok=True)
+
+    def consume(response: Any) -> str:
+        digest = hashlib.sha256()
+        total = 0
         try:
-            with urllib.request.urlopen(request, timeout=timeout) as response:
-                return response.read()
-        except urllib.error.HTTPError as exc:
-            if exc.code < 500 and exc.code != 429:
-                raise FetchError(f"HTTP {exc.code} for {url}") from exc
-            last = exc
-        except (urllib.error.URLError, http.client.HTTPException, OSError) as exc:
-            # RemoteDisconnected, BadStatusLine, IncompleteRead, ConnectionReset, and
-            # socket timeouts all land here.
-            last = exc
-        if attempt < retries - 1:
-            time.sleep(_backoff(attempt))
-    raise FetchError(f"failed after {retries} attempt(s) for {url}: {last}")
+            with part.open("wb") as out:
+                while chunk := response.read(CHUNK_SIZE):
+                    total += len(chunk)
+                    if total > max_bytes:
+                        raise FetchError(f"{url}: response exceeded {max_bytes} bytes — refused")
+                    digest.update(chunk)
+                    out.write(chunk)
+            _check_complete(response, total)
+        except BaseException:
+            part.unlink(missing_ok=True)  # a partial transfer is never left behind as a file
+            raise
+        return digest.hexdigest()
+
+    actual = _retrying_read(
+        url, consume, timeout=timeout, headers=headers, retries=retries, creds=creds
+    )
+    if expected is not None and actual != expected:
+        part.unlink(missing_ok=True)
+        raise IntegrityError(
+            f"{label or url}: downloaded with sha256 {actual}, expected {expected} — "
+            f"the transfer is corrupt or the object changed under a pinned digest"
+        )
+    os.replace(part, dest)
+    return actual
 
 
 def _backoff(attempt: int) -> float:
@@ -192,8 +348,39 @@ def _class_dir(value: object, names: list[str] | None) -> str:
 
 
 def _write(path: Path, payload: bytes) -> None:
+    """Write ``payload`` to ``path`` through ``<path>.part`` and a rename, so ``path`` is
+    either absent or complete — a killed run never leaves a half-written file under its name."""
     path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_bytes(payload)
+    part = path.with_name(path.name + ".part")
+    try:
+        part.write_bytes(payload)
+        os.replace(part, path)
+    except BaseException:
+        part.unlink(missing_ok=True)
+        raise
+
+
+def _verify_digest(source_id: str, url: str, payload: bytes, expected_sha256: str | None) -> None:
+    """Raise if ``payload`` does not hash to a declared ``sha256``.
+
+    Only called where ``payload`` is the *whole* fetched artefact — a bare file, or an
+    archive downloaded in full before extraction. A Range-read sample never has the
+    whole artefact's bytes in memory (that is the entire point of Range reading), so it
+    cannot be checked against a whole-file digest without downloading the whole file,
+    which defeats the point of a bounded sample; that gap is real and is not silently
+    hidden — see ``_fetch_http``'s plaintext-http guard, which requires a digest be
+    declared up front specifically because it cannot always be checked after the fact.
+    """
+    if not expected_sha256:
+        return
+    expected = expected_sha256.removeprefix("sha256:").lower()
+    actual = hashlib.sha256(payload).hexdigest()
+    if actual != expected:
+        raise IntegrityError(
+            f"{source_id}: declared sha256 does not match the fetched bytes at {url} — "
+            f"expected {expected}, got {actual}. The bytes on disk are not the bytes "
+            f"the licence was verified against."
+        )
 
 
 def _fetch_huggingface(source: Source, root: Path, limit: int) -> FetchResult:
@@ -306,15 +493,6 @@ def _fetch_huggingface(source: Source, root: Path, limit: int) -> FetchResult:
         raise FetchError(f"{source.id}: {reason} in {hf_id}. Columns: {available}")
 
     return FetchResult(source.id, root, count, "huggingface", truncated=True)
-
-
-_ARCHIVE_SUFFIXES = (".tar.gz", ".tar.bz2", ".tar.xz", ".tgz", ".tar", ".zip")
-
-MAX_DOWNLOAD_WITHOUT_RANGE = 200 * 1024 * 1024
-"""A full-body GET is only safe up to this size. CoralVQA's real image archive is a
-single 26.7 GB zip with no smaller subset published anywhere — downloading that just to
-read 100 verification images would be absurd, and it is exactly the shape of "large
-upstream archive, needs a bounded sample" that this registry expects to hit again."""
 
 
 def _head(url: str, *, timeout: int = 30) -> tuple[int | None, bool]:
@@ -459,6 +637,52 @@ def _nested_zip_window(outer: zipfile.ZipFile, member_name: str) -> tuple[int, i
     return data_offset, info.compress_size
 
 
+def _check_zip_member_bounds(label: str, member: zipfile.ZipInfo, total_so_far: int) -> None:
+    """Raise before extracting ``member`` if it would breach a byte cap.
+
+    Checked against the central-directory metadata alone — ``file_size`` and
+    ``compress_size`` are both known without reading the member's data, so an oversized
+    or bomb-shaped member is refused before any bytes for it are pulled or decompressed.
+    """
+    if member.file_size > MAX_MEMBER_BYTES:
+        raise FetchError(
+            f"archive at {label}: member '{member.filename}' would extract to "
+            f"{member.file_size} bytes, over the {MAX_MEMBER_BYTES}-byte per-member cap"
+        )
+    if member.compress_size and member.file_size / member.compress_size > MAX_COMPRESSION_RATIO:
+        raise FetchError(
+            f"archive at {label}: member '{member.filename}' compresses "
+            f"{member.file_size}:{member.compress_size} "
+            f"({member.file_size / member.compress_size:.0f}:1), over the "
+            f"{MAX_COMPRESSION_RATIO}:1 ratio cap — refused as a likely zip bomb"
+        )
+    if total_so_far + member.file_size > MAX_TOTAL_EXTRACT_BYTES:
+        raise FetchError(
+            f"archive at {label}: extracting member '{member.filename}' would push "
+            f"cumulative extracted bytes past the {MAX_TOTAL_EXTRACT_BYTES}-byte cap"
+        )
+
+
+def _check_tar_member_bounds(label: str, member: tarfile.TarInfo, total_so_far: int) -> None:
+    """Tar equivalent of :func:`_check_zip_member_bounds`.
+
+    No per-member compressed size exists in a tar stream (unlike zip's central
+    directory), so there is no per-member ratio check here — only a per-member and a
+    cumulative cap. A whole-archive ratio guard for a compressed tar stream lives at
+    each caller that actually knows the compressed byte count (``len(payload)``).
+    """
+    if member.size > MAX_MEMBER_BYTES:
+        raise FetchError(
+            f"archive at {label}: member '{member.name}' would extract to "
+            f"{member.size} bytes, over the {MAX_MEMBER_BYTES}-byte per-member cap"
+        )
+    if total_so_far + member.size > MAX_TOTAL_EXTRACT_BYTES:
+        raise FetchError(
+            f"archive at {label}: extracting member '{member.name}' would push "
+            f"cumulative extracted bytes past the {MAX_TOTAL_EXTRACT_BYTES}-byte cap"
+        )
+
+
 def _extract_remote_zip(file_obj: _RemoteFile, root: Path, limit: int, *, label: str) -> int:
     """Extract up to ``limit`` members from a remote zip without downloading it.
 
@@ -471,12 +695,15 @@ def _extract_remote_zip(file_obj: _RemoteFile, root: Path, limit: int, *, label:
 
     resolved_root = root.resolve()
     count = 0
+    total_bytes = 0
     with zipfile.ZipFile(file_obj) as archive:
         members = [m for m in archive.infolist() if not m.is_dir()]
         for member in members[:limit] if limit else members:
             target = _safe_extract_path(resolved_root, member.filename)
             if target is None:
                 continue
+            _check_zip_member_bounds(label, member, total_bytes)
+            total_bytes += member.file_size
             target.parent.mkdir(parents=True, exist_ok=True)
             target.write_bytes(read_member(archive, member))
             count += 1
@@ -507,6 +734,7 @@ def _extract_remote_tar(file_obj: _RemoteFile, root: Path, limit: int, *, label:
     """
     resolved_root = root.resolve()
     count = 0
+    total_bytes = 0
     with tarfile.open(fileobj=file_obj, mode="r:") as archive:
         for member in archive:
             if limit and count >= limit:
@@ -516,6 +744,8 @@ def _extract_remote_tar(file_obj: _RemoteFile, root: Path, limit: int, *, label:
             target = _safe_extract_path(resolved_root, member.name)
             if target is None:
                 continue
+            _check_tar_member_bounds(label, member, total_bytes)
+            total_bytes += member.size
             extracted = archive.extractfile(member)
             if extracted is None:
                 continue
@@ -562,6 +792,7 @@ def _extract_archive(payload: bytes, root: Path, name: str, limit: int) -> int:
 
     resolved_root = root.resolve()
     count = 0
+    total_bytes = 0
     lower = name.lower()
     if lower.endswith(".zip"):
         with zipfile.ZipFile(io.BytesIO(payload)) as archive:
@@ -570,6 +801,8 @@ def _extract_archive(payload: bytes, root: Path, name: str, limit: int) -> int:
                 target = _safe_extract_path(resolved_root, member.filename)
                 if target is None:
                     continue
+                _check_zip_member_bounds(name, member, total_bytes)
+                total_bytes += member.file_size
                 target.parent.mkdir(parents=True, exist_ok=True)
                 target.write_bytes(read_member(archive, member))
                 count += 1
@@ -581,6 +814,21 @@ def _extract_archive(payload: bytes, root: Path, name: str, limit: int) -> int:
                 target = _safe_extract_path(resolved_root, member.name)
                 if target is None:
                     continue
+                _check_tar_member_bounds(name, member, total_bytes)
+                # A compressed tar stream (.tar.gz/.bz2/.xz) has no per-member
+                # compressed size — tar's own header only ever carries the
+                # uncompressed size — so the ratio guard here is whole-archive:
+                # bytes extracted so far against the compressed payload actually
+                # received, which is the only "compressed size" a tar stream has.
+                projected = total_bytes + member.size
+                if len(payload) and projected / len(payload) > MAX_COMPRESSION_RATIO:
+                    raise FetchError(
+                        f"archive '{name}': cumulative extracted size "
+                        f"{total_bytes + member.size} bytes is over "
+                        f"{MAX_COMPRESSION_RATIO}x the {len(payload)}-byte compressed "
+                        f"archive — refused as a likely zip/tar bomb"
+                    )
+                total_bytes += member.size
                 extracted = archive.extractfile(member)
                 if extracted is None:
                     continue
@@ -591,6 +839,25 @@ def _extract_archive(payload: bytes, root: Path, name: str, limit: int) -> int:
     if count == 0:
         raise FetchError(f"archive '{name}' contained no extractable files")
     return count
+
+
+def _require_digest_for_plaintext_http(
+    source_id: str, url: str, expected_sha256: str | None
+) -> None:
+    """``http://`` carries no transport-layer integrity — anything between this process
+    and the server can alter the bytes in flight with nothing here the wiser. TLS is
+    the usual defence; the fallback for a host that does not offer it is a digest to
+    check the bytes against after the fact. A plaintext source with neither is exactly
+    the D2 quiet skip — "a checksum that is absent rather than wrong" — so this fails
+    before ever making the request, by name and reason, rather than fetching something
+    unverifiable and calling it done.
+    """
+    if url.startswith("http://") and not expected_sha256:
+        raise FetchNotSupported(
+            f"{source_id}: {url} is plaintext http:// with no declared `sha256` — "
+            f"nothing vouches for what actually arrives. Declare `access.sha256`, or "
+            f"switch to an https:// URL if the host serves one."
+        )
 
 
 def _fetch_http(source: Source, root: Path, limit: int) -> FetchResult:
@@ -656,6 +923,7 @@ def _fetch_http(source: Source, root: Path, limit: int) -> FetchResult:
             f"{source.id}: no `sample_url` declared. Add one pointing at a small "
             f"downloadable sample, or fetch the data manually."
         )
+    _require_digest_for_plaintext_http(source.id, sample_url, source.access.sha256)
     nested_archive = source.access.params.get("nested_archive")
     tar_start_offset = int(source.access.params.get("tar_start_offset", 0) or 0)
     count = _fetch_one(
@@ -665,10 +933,12 @@ def _fetch_http(source: Source, root: Path, limit: int) -> FetchResult:
         limit,
         nested_archive=nested_archive,
         tar_start_offset=tar_start_offset,
+        expected_sha256=source.access.sha256,
     )
 
     extra_url = source.access.params.get("extra_sample_url")
     if extra_url:
+        _require_digest_for_plaintext_http(source.id, str(extra_url), source.access.sha256)
         count += _fetch_one(source.id, str(extra_url), root, limit)
 
     return FetchResult(source.id, root, count, "http", truncated=True)
@@ -682,10 +952,16 @@ def _fetch_one(
     *,
     nested_archive: object = None,
     tar_start_offset: int = 0,
+    expected_sha256: str | None = None,
 ) -> int:
     """Retrieve one declared file or archive into ``root``. The single-URL body of
     :func:`_fetch_http`, factored out so a second URL (``extra_sample_url``) can reuse
     the exact same archive/size/Range handling rather than a parallel copy of it.
+
+    ``expected_sha256`` is checked only against a payload fetched *in full* (a bare
+    file, or an archive small enough to download whole) — the Range-read branches below
+    never hold the complete artefact in memory, so there is nothing there to check a
+    whole-file digest against. See :func:`_verify_digest`.
     """
     name = Path(urllib.parse.urlparse(url).path).name or "sample.bin"
 
@@ -706,7 +982,9 @@ def _fetch_one(
     if name.lower().endswith(".zip"):
         size, supports_range = _head(url)
         if size and size <= MAX_DOWNLOAD_WITHOUT_RANGE:
-            return _extract_archive(_get(url), root, name, limit)
+            payload = _get(url)
+            _verify_digest(source_id, url, payload, expected_sha256)
+            return _extract_archive(payload, root, name, limit)
         if supports_range and size:
             return _extract_remote_zip(_RemoteFile(url, size), root, limit, label=name)
         if size and size > MAX_DOWNLOAD_WITHOUT_RANGE:
@@ -716,12 +994,16 @@ def _fetch_one(
                 f"without downloading the whole archive. Find a smaller published subset, "
                 f"or fetch it manually."
             )
-        return _extract_archive(_get(url), root, name, limit)
+        payload = _get(url)
+        _verify_digest(source_id, url, payload, expected_sha256)
+        return _extract_archive(payload, root, name, limit)
 
     if name.lower().endswith(".tar"):
         size, supports_range = _head(url)
         if size and size <= MAX_DOWNLOAD_WITHOUT_RANGE and not tar_start_offset:
-            return _extract_archive(_get(url), root, name, limit)
+            payload = _get(url)
+            _verify_digest(source_id, url, payload, expected_sha256)
+            return _extract_archive(payload, root, name, limit)
         if supports_range and size:
             remote = _RemoteFile(
                 url, size, window_offset=tar_start_offset, window_size=size - tar_start_offset
@@ -734,9 +1016,12 @@ def _fetch_one(
                 f"it without downloading the whole archive. Find a smaller published "
                 f"subset, or fetch it manually."
             )
-        return _extract_archive(_get(url), root, name, limit)
+        payload = _get(url)
+        _verify_digest(source_id, url, payload, expected_sha256)
+        return _extract_archive(payload, root, name, limit)
 
     payload = _get(url)
+    _verify_digest(source_id, url, payload, expected_sha256)
     if name.lower().endswith(_ARCHIVE_SUFFIXES):
         return _extract_archive(payload, root, name, limit)
     _write(root / name, payload)

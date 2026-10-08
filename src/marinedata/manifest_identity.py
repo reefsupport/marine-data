@@ -46,6 +46,7 @@ from .fetchers_remote import _s3_endpoint
 from .gate import evaluate
 from .models import Source
 from .registry import Registry
+from .s3_auth import resolve_s3_credentials
 from .splitmap import SplitMap
 from .tables import _require_pyarrow
 
@@ -57,7 +58,9 @@ class ChecksumsFetcher(Protocol):
 def fetch_source_checksums(
     source: Source, *, timeout: int = 30, retries: int = 8
 ) -> dict[str, str]:
-    """GET and verify ``<prefix>CHECKSUMS.sha256`` for one source over anonymous HTTPS.
+    """GET and verify ``<prefix>CHECKSUMS.sha256`` for one source.
+
+    The GET is signed when a key resolves, else anonymous.
 
     The one network call this module ever makes: one small text file (a path->sha256
     listing), never a file it names. Raises if the source has no S3 access, or if the
@@ -68,7 +71,12 @@ def fetch_source_checksums(
     _, host, _ = _s3_endpoint(source)
     prefix = str(source.access.params.get("prefix", ""))
     key = f"{prefix}CHECKSUMS.sha256"
-    payload = _get(f"https://{host}/{urllib.parse.quote(key)}", timeout=timeout, retries=retries)
+    payload = _get(
+        f"https://{host}/{urllib.parse.quote(key)}",
+        timeout=timeout,
+        retries=retries,
+        creds=resolve_s3_credentials(),  # signed when a key resolves, else anonymous
+    )
     digest = hashlib.sha256(payload).hexdigest()
     if source.checksums is not None and digest != source.checksums.root_digest:
         raise ValueError(

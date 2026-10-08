@@ -17,59 +17,21 @@ What each unlocks:
 from __future__ import annotations
 
 import hashlib
-import hmac
 import os
 import urllib.parse
 import xml.etree.ElementTree as ET
 from concurrent.futures import ThreadPoolExecutor, as_completed
-from datetime import datetime, timezone
 from pathlib import Path
 
 from .checksums import CHECKSUM_FILE, file_digest, parse_checksums
-from .fetch import FetchError, FetchNotSupported, FetchResult, _get, _write
+from .fetch import FetchError, FetchNotSupported, FetchResult, IntegrityError, _get, _write
 from .models import Source
+from .s3_auth import _sign, _sigv4_headers, resolve_s3_credentials  # noqa: F401 — re-exported
 
 S3_NS = {"s3": "http://s3.amazonaws.com/doc/2006-03-01/"}
 FETCHABLE_SUFFIXES = frozenset(
     {".jpg", ".jpeg", ".png", ".webp", ".tif", ".tiff", ".csv", ".json", ".ndjson", ".wav", ".txt"}
 )
-
-
-def _sign(key: bytes, msg: str) -> bytes:
-    return hmac.new(key, msg.encode(), hashlib.sha256).digest()
-
-
-def _sigv4_headers(
-    method: str, host: str, path: str, query: str, region: str, access: str, secret: str
-) -> dict[str, str]:
-    """Minimal AWS SigV4 for GET requests with an empty payload."""
-    now = datetime.now(timezone.utc)
-    amz_date = now.strftime("%Y%m%dT%H%M%SZ")
-    date_stamp = now.strftime("%Y%m%d")
-    payload_hash = hashlib.sha256(b"").hexdigest()
-
-    canonical_headers = f"host:{host}\nx-amz-content-sha256:{payload_hash}\nx-amz-date:{amz_date}\n"
-    signed_headers = "host;x-amz-content-sha256;x-amz-date"
-    canonical = f"{method}\n{path}\n{query}\n{canonical_headers}\n{signed_headers}\n{payload_hash}"
-
-    scope = f"{date_stamp}/{region}/s3/aws4_request"
-    to_sign = (
-        f"AWS4-HMAC-SHA256\n{amz_date}\n{scope}\n{hashlib.sha256(canonical.encode()).hexdigest()}"
-    )
-
-    signing_key = _sign(
-        _sign(_sign(_sign(f"AWS4{secret}".encode(), date_stamp), region), "s3"), "aws4_request"
-    )
-    signature = hmac.new(signing_key, to_sign.encode(), hashlib.sha256).hexdigest()
-
-    return {
-        "Authorization": (
-            f"AWS4-HMAC-SHA256 Credential={access}/{scope}, "
-            f"SignedHeaders={signed_headers}, Signature={signature}"
-        ),
-        "x-amz-date": amz_date,
-        "x-amz-content-sha256": payload_hash,
-    }
 
 
 def _stratify(keys: list[tuple[str, int]], prefix: str, limit: int) -> list[tuple[str, int]]:
@@ -230,11 +192,13 @@ def _fetch_s3_manifest(
        shrink the release rather than fail it).
     """
     manifest_key = f"{prefix}{CHECKSUM_FILE}"
-    manifest_bytes = _get(f"https://{host}/{urllib.parse.quote(manifest_key)}")
+    # Signed when a key resolves (env -> rclone.conf), anonymous otherwise; never the reverse.
+    creds = resolve_s3_credentials()
+    manifest_bytes = _get(f"https://{host}/{urllib.parse.quote(manifest_key)}", creds=creds)
     manifest_digest = hashlib.sha256(manifest_bytes).hexdigest()
     expected_digest = source.checksums.root_digest  # type: ignore[union-attr]
     if manifest_digest != expected_digest:
-        raise FetchError(
+        raise IntegrityError(
             f"{source.id}: {CHECKSUM_FILE} digest {manifest_digest} does not match "
             f"checksums.root_digest {expected_digest} — the pinned manifest is stale "
             f"or has been tampered with"
@@ -270,16 +234,17 @@ def _fetch_s3_manifest(
         payload = _get(
             f"https://{host}/{urllib.parse.quote(key)}",
             timeout=MANIFEST_FETCH_TIMEOUT,
-            retries=MANIFEST_FETCH_RETRIES,
+            retries=MANIFEST_FETCH_RETRIES,  # 8, not the default 3: ~10^5 GETs see 5xx bursts
+            creds=creds,
         )
         actual_digest = hashlib.sha256(payload).hexdigest()
         if actual_digest != digests[relative]:
-            raise FetchError(
-                f"{source.id}: {relative} downloaded with sha256 {actual_digest}, the "
+            raise IntegrityError(
+                f"{source.id}: {key} downloaded with sha256 {actual_digest}, the "
                 f"manifest expects {digests[relative]} — the transfer is corrupt or "
                 f"the tree changed under a pinned version"
             )
-        _write(dest, payload)
+        _write(dest, payload)  # `<dest>.part` then rename: dest only ever holds verified bytes
 
     failures: dict[str, Exception] = {}
     with ThreadPoolExecutor(max_workers=_manifest_workers()) as pool:
@@ -309,6 +274,40 @@ def _fetch_s3_manifest(
     return FetchResult(source.id, root, len(wanted), "s3-manifest", truncated=truncated)
 
 
+def _parse_s3_xml(source_id: str, host: str, payload: bytes) -> ET.Element:
+    """Parse a server-controlled S3 listing response, refusing a DOCTYPE first.
+
+    Verified directly against this interpreter (2026-09, CPython on this sandbox) rather
+    than assumed: stdlib ``xml.etree.ElementTree`` (backed by ``pyexpat``) does NOT
+    resolve external entities — a ``SYSTEM "file://..."`` entity raises ``ParseError``
+    here, so classic XXE file-read is not live. It DOES, however, expand internal
+    general entities (``<!ENTITY a "...">`` referenced as ``&a;``) with no built-in
+    depth or size limit — a small, deliberately bounded 4-level nested-entity probe
+    (10 refs/level) expanded to exactly the predicted 10,000 characters. A "billion
+    laughs" payload (more levels, same trick) is therefore a real DoS vector for this
+    parser, not just a theoretical one.
+
+    A real S3 ``ListObjectsV2`` response is always a bare ``<?xml ...?><ListBucketResult
+    ...>`` document — AWS's REST API never publishes or expects a DTD on this endpoint.
+    So rejecting any response containing a ``<!DOCTYPE`` declaration before parsing closes
+    the entity-expansion vector entirely for this call site, using only the stdlib already
+    in use here (``fetchers_remote.py``'s own docstring: "deliberately dependency-free") —
+    a `defusedxml` swap was considered and set aside: it is not a drop-in `import` rename
+    (the project has no such dependency declared, and `pyproject.toml` is outside this
+    lane), and a payload-shape guard closes the concrete, verified vector without one.
+    """
+    if b"<!DOCTYPE" in payload.upper():
+        raise FetchError(
+            f"{source_id}: S3 listing XML from {host} declares a DOCTYPE, which a real "
+            f"ListObjectsV2 response never does — refused unparsed rather than risking "
+            f"entity-expansion (billion-laughs) on a server-controlled document."
+        )
+    try:
+        return ET.fromstring(payload)
+    except ET.ParseError as exc:
+        raise FetchError(f"{source_id}: unparseable S3 listing from {host}") from exc
+
+
 def fetch_s3(source: Source, root: Path, limit: int) -> FetchResult:
     """List a bucket prefix and download up to ``limit`` objects.
 
@@ -327,6 +326,9 @@ def fetch_s3(source: Source, root: Path, limit: int) -> FetchResult:
     bucket, host, region = _s3_endpoint(source)
     prefix = str(source.access.params.get("prefix", ""))
     env_prefix = source.access.params.get("credentials_env")
+    # Sources with explicit `credentials_env` keys keep them; the rest read with the one
+    # resolver (env -> rclone.conf -> anonymous) and fall back to anonymous, never the reverse.
+    creds = None if env_prefix else resolve_s3_credentials()
 
     if env_prefix is None and _is_pinned_staged_tree(source):
         return _fetch_s3_manifest(source, root, limit, host, prefix)
@@ -351,15 +353,11 @@ def fetch_s3(source: Source, root: Path, limit: int) -> FetchResult:
         query = urllib.parse.urlencode(
             sorted(params.items()), quote_via=urllib.parse.quote, safe=""
         )
-        headers = (
-            _sigv4_headers("GET", host, "/", query, region, access_key, secret_key)
-            if access_key
-            else {}
-        )
-        try:
-            return ET.fromstring(_get(f"https://{host}/?{query}", headers=headers))
-        except ET.ParseError as exc:
-            raise FetchError(f"{source.id}: unparseable S3 listing from {host}") from exc
+        url = f"https://{host}/?{query}"
+        if access_key:
+            sig = _sigv4_headers("GET", host, "/", query, region, access_key, secret_key)
+            return _parse_s3_xml(source.id, host, _get(url, headers=sig))
+        return _parse_s3_xml(source.id, host, _get(url, creds=creds))
 
     def _contents(tree: ET.Element) -> list[tuple[str, int]]:
         return [
@@ -405,12 +403,13 @@ def fetch_s3(source: Source, root: Path, limit: int) -> FetchResult:
     for key, _ in wanted:
         relative = key[len(prefix) :].lstrip("/") or Path(key).name
         obj_path = "/" + urllib.parse.quote(key)
-        obj_headers = (
-            _sigv4_headers("GET", host, obj_path, "", region, access_key, secret_key)
-            if access_key
-            else {}
-        )
-        _write(root / relative, _get(f"https://{host}{obj_path}", headers=obj_headers))
+        url = f"https://{host}{obj_path}"
+        if access_key:
+            sig = _sigv4_headers("GET", host, obj_path, "", region, access_key, secret_key)
+            payload = _get(url, headers=sig)
+        else:
+            payload = _get(url, creds=creds)
+        _write(root / relative, payload)
 
     return FetchResult(source.id, root, len(wanted), "s3", truncated=True)
 

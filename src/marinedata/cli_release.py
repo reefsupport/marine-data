@@ -24,6 +24,8 @@ from .fetch import FetchError, cache_root, fetch_sample
 from .fetchers_remote import _is_pinned_staged_tree
 from .flavours import SPLIT_MAP_PROFILE, check_profile, flavour_spec, ships_in
 from .gate import evaluate
+from .gates import write_gates
+from .gates.masks import DEFAULT_EMPTY_THRESHOLD, run_masks_gate
 from .manifest_identity import checksums_digest
 from .neardup import NearDupConfig, NearDupError, default_workers, pil_version
 from .registry import Registry
@@ -264,6 +266,24 @@ def _cmd_release_lock(args: argparse.Namespace) -> int:
     out = write_lock(lock, args.out)
     print(f"release lock: {len(lock.sources)} source(s) -> {out} (sha256 {lock_sha256(out)})")
     return 0
+
+
+def _cmd_release_gate(args: argparse.Namespace) -> int:
+    if not args.masks.is_dir():
+        print(f"release gate: not a directory: {args.masks}", file=sys.stderr)
+        return 1
+    result = run_masks_gate(args.masks, empty_threshold=args.empty_threshold)
+    try:
+        path = write_gates(args.masks, result)
+    except (OSError, ValueError) as exc:
+        print(f"release gate: cannot update GATES.json: {exc}", file=sys.stderr)
+        return 1
+    verdict = "PASS" if result.passed else "FAIL"
+    rows, total = result.counts.get("rows", 0), result.counts.get("failures_total", 0)
+    print(f"release gate {result.name}: {verdict} rows={rows} failures={total} -> {path}")
+    for line in result.failures[:10]:
+        print(f"  {line}", file=sys.stderr)
+    return 0 if result.passed else 1
 
 
 def _cmd_release_split_map(args: argparse.Namespace) -> int:
@@ -639,6 +659,19 @@ def add_release_subparser(sub: argparse._SubParsersAction) -> None:
     )
     p_lock.add_argument("--out", type=Path, default=Path("release.lock.yaml"))
     p_lock.set_defaults(func=_cmd_release_lock)
+
+    p_gate = release_sub.add_parser(
+        "gate", help="Run a release gate on a build directory and merge it into GATES.json"
+    )
+    p_gate.add_argument(
+        "--masks", type=Path, required=True, metavar="BUILD_DIR",
+        help="hf_export output: check the mask configs (size, EXIF, ids, empty masks)",
+    )  # fmt: skip
+    p_gate.add_argument(
+        "--empty-threshold", type=float, default=DEFAULT_EMPTY_THRESHOLD, metavar="RATE",
+        help="fail a source whose share of empty masks exceeds this (default: %(default)s)",
+    )  # fmt: skip
+    p_gate.set_defaults(func=_cmd_release_gate)
 
     p_map = release_sub.add_parser(
         "split-map",

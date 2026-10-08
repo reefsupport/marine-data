@@ -67,6 +67,37 @@ write a checksum marker. Transfers resume after interruption and finished source
 Optional extras add face and person screening (`privacy-scan`), label-quality checks, evaluation-set decontamination
 (`decon`), captions and benchmarks. They are documented under `docs/` and installed only when needed.
 
+## Credentials
+
+Every read of the open bucket (`rs-storage-open`) resolves one identity through
+`marinedata.s3_auth`: (1) the environment, `MARINEDATA_S3_ACCESS_KEY` +
+`MARINEDATA_S3_SECRET_KEY` (optionally `MARINEDATA_S3_ENDPOINT`, `MARINEDATA_S3_REGION`);
+(2) the rclone remote `$MARINEDATA_RCLONE_REMOTE` (default `rs-hel1`) in
+`$MARINEDATA_RCLONE_CONF` (default `~/.config/rclone/rclone.conf`), read with `configparser`;
+(3) neither, which means anonymous. Code signs when it holds a key and falls back to anonymous,
+never the reverse: a signature refused with 401/403 is retried anonymously, and a signature is
+only ever sent to the credentials' own endpoint. The fetchers (`fetchers_remote`),
+`manifest_identity`, `metadata_norm.stage`, `task_layers.s3_keyed` and the `manifest` adapter all
+use this one resolver. Secrets are never printed or logged (`S3Creds.__repr__` redacts them), and
+nothing here writes to the bucket.
+
+What D9 changes: 46 non-open trees in `rs-storage-open` are anonymously readable today. D9
+(allowlist + private default) makes anonymous GET return 403 for everything not on the public
+allowlist, so only code that signs keeps reading the rest. Because every path above already
+signs first, D9 can roll out without a code change; public v1.0 consumers are unaffected.
+`marinedata auth check` prints `signed as <env|remote> (endpoint ...)` or `anonymous`, then one
+`HEAD` of the bucket and one `HEAD` of a single small known key and reports the HTTP status
+(200/403/404). It never lists and always exits 0.
+
+Fetch integrity: a remote GET that has a pinned digest (a staged tree's `CHECKSUMS.sha256`
+entry, or `access.sha256`) is hashed before the file is used. A mismatch raises `IntegrityError`
+naming the key and both digests and is not retried; files are written through `<path>.part` and
+renamed only once whole (and, where pinned, verified); transport faults and truncated bodies are
+retried a bounded number of times with backoff (3 by default, 8 for the ~10^5-file staged-tree
+fetch). A response is capped at `MAX_GET_BYTES` as received, archive members are capped per member,
+in total and by compression ratio, a plaintext `http://` source must declare `access.sha256`, and
+an S3 listing that declares a DOCTYPE is refused unparsed.
+
 ## Design constraints
 
 - **Licence checks come first.** Every entry records the primary source of its licence, and the profile is explicit.
