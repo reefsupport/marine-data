@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import datetime as dt
 import hashlib
 import io
 import json
@@ -14,6 +15,9 @@ from PIL import Image
 
 from marinedata import cli
 from marinedata.annotation_schema import read_annotations
+from marinedata.metadata_norm.resolvers.join import fill_values
+from marinedata.metadata_norm.resolvers.schema import RESOLVED_COLUMNS, ResolvedRow
+from marinedata.metadata_norm.resolvers.schema import write_outputs as write_resolved
 from marinedata.metadata_norm.resolvers.staged import staged_images
 from marinedata.registry import Registry
 from marinedata.task_layers import configs as C
@@ -341,4 +345,86 @@ def test_cli_help_source_guard_and_wiring(tmp_path, monkeypatch, capsys):
     argv = ["tasks", "build-points", "--source", S.SOURCE_ID, "--out", str(tmp_path / "o")]
     assert cli.main([*argv, "--no-worms", "--master-sample-bytes", "0"]) == 0
     assert seen["worms"] is False and seen["master_sample_bytes"] == 0
+    assert seen["metadata_dir"] is None
+    assert cli.main([*argv, "--metadata-dir", "res"]) == 0 and seen["metadata_dir"] == "res"
     assert seen["out"] == str(tmp_path / "o") and "crosswalked 99.0%" in capsys.readouterr().out
+
+
+def _resolved_dir(tree, root, quadrats=(Q1, Q2, Q3)):
+    """Resolver output for the fixture: Q1/Q2 carry lat/lon/date, Q3 is unresolved (all null)."""
+    rows = [
+        ResolvedRow(
+            sample_id=f"{S.SOURCE_ID}/{q}",
+            source_id=S.SOURCE_ID,
+            source_version=VERSION,
+            partition=REGION,
+            stem=q,
+            image_path=f"images/{REGION}/{q}.jpg",
+            image_sha256=tree.shas[q],
+            lat=10.5 if q != Q3 else None,
+            lon=-70.25 if q != Q3 else None,
+            date=dt.date(2023, 5, 1) if q != Q3 else None,
+            date_precision="day" if q != Q3 else None,
+            license="CC-BY-3.0",
+            attribution="Seaview",
+        )
+        for q in quadrats
+    ]
+    write_resolved(root, S.SOURCE_ID, VERSION, rows, [])
+    return root
+
+
+def _run(tree, tmp_path, **kw):
+    objects = _objects(tree)
+    return S.run_build_points(
+        tmp_path / "out",
+        version=VERSION,
+        cache_dir=tmp_path / "cache",
+        worms_cache_path=tmp_path / "worms.json",
+        fetch=objects.__getitem__,
+        master_sample_bytes=0,
+        worms_fetch=lambda name: 777,
+        **kw,
+    )
+
+
+def test_metadata_dir_joins_resolved_columns_onto_points(tree, tmp_path):
+    summary = _run(tree, tmp_path, metadata_dir=_resolved_dir(tree, tmp_path / "res"))
+    out = tmp_path / "out"
+    j = summary["metadata_join"]
+    assert (j["points"], j["lat_lon"], j["date"], j["lat_lon_date"]) == (6, 5, 5, 5)
+    assert j["lat_lon_pct"] == round(100 * 5 / 6, 3)
+    assert json.loads((out / "metadata_join.json").read_text()) == j
+    joined, plain = (
+        pq.read_table(out / "points_joined.parquet"),
+        pq.read_table(out / "points.parquet"),
+    )
+    assert joined.column_names == [*plain.column_names, *RESOLVED_COLUMNS]
+    assert joined.select(plain.column_names).equals(plain)  # the join adds columns, never rows
+    rows = joined.to_pylist()
+    assert [r["lat"] for r in rows if r["image_sha256"] == tree.shas[Q3]] == [None]
+    assert {r["license"] for r in rows} == {"CC-BY-3.0"} and {r["date"] for r in rows} == {
+        "2023-05-01",
+        None,
+    }
+    read_annotations(out / "points.parquet", "points")  # the canonical file is still valid
+
+
+def test_metadata_dir_without_samples_fails_before_any_read(tree, tmp_path):
+    with pytest.raises(ValueError, match=r"samples\.parquet"):
+        S.run_build_points(tmp_path / "out", version=VERSION, metadata_dir=tmp_path / "none")
+    assert not (tmp_path / "out").exists()
+
+
+def test_fill_values_never_replaces_a_value_and_can_hold_back_geo():
+    have = {"lat": 1.0, "date": None, "site_id": "A"}
+    found = {"lat": 2.0, "lon": 3.0, "date": "2023-05-01", "site_id": "B", "year": None}
+    assert fill_values(have, found) == {
+        "lat": 1.0,
+        "date": "2023-05-01",
+        "site_id": "A",
+        "lon": 3.0,
+    }
+    held = fill_values({"lat": None, "lon": None, "date": None}, found, keep_geo=True)
+    assert held["lat"] is None and held["lon"] is None and held["date"] == "2023-05-01"
+    assert have == {"lat": 1.0, "date": None, "site_id": "A"}  # the input is not mutated

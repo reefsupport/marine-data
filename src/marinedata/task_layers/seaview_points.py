@@ -35,6 +35,7 @@ from pathlib import Path
 
 from ..annotation_schema import write_annotations
 from ..checksums import parse_checksums
+from ..metadata_norm.resolvers.join import join_points, load_resolved, location_sensitive_sources
 from ..metadata_norm.resolvers.staged import (
     RangeLedger,
     StagedImage,
@@ -474,6 +475,7 @@ def run_build_points(
     worms_cache_path: str | Path | None = None,
     worms: bool = True,
     annotations_root: str | Path | None = None,
+    metadata_dir: str | Path | None = None,
     fetch: Callable[..., bytes] = fetch_small,
     range_fetch: Callable[[str, int], bytes] | None = None,
     worms_fetch: Callable[[str], int | None] | None = None,
@@ -484,6 +486,11 @@ def run_build_points(
     root = Path(registry_root) if registry_root else _default_root()
     registry = Registry.load(root)
     version = version or default_version(SOURCE_ID, registry_root)
+    resolved = load_resolved(metadata_dir, SOURCE_ID) if metadata_dir else {}
+    if metadata_dir and not resolved:
+        raise ValueError(
+            f"{metadata_dir}: no {SOURCE_ID}/*/samples.parquet (metadata resolve --out)"
+        )
     tree = f"sources/{SOURCE_ID}/{version}/"
     checksums = parse_checksums(fetch(tree + "CHECKSUMS.sha256").decode())
     get = make_getter(tree, checksums, cache_dir, fetch)
@@ -517,5 +524,17 @@ def run_build_points(
         master_sample=sample,
     )
     cache.save()
-    write_outputs(out_dir, result, version=version, annotations_root=annotations_root)
-    return result.summary
+    out = write_outputs(out_dir, result, version=version, annotations_root=annotations_root)
+    if not resolved:
+        return result.summary
+    # P2.5: points + the resolved samples (fill-only, by image_sha256) -> points_joined.parquet
+    n = join_points(
+        out / "points.parquet",
+        out / "points_joined.parquet",
+        resolved,
+        location_sensitive_sources(registry),
+    )
+    n = n | {f"{k}_pct": _pct(v, n["points"]) for k, v in n.items()}
+    text = json.dumps(n, indent=2, sort_keys=True) + "\n"
+    (out / "metadata_join.json").write_text(text, encoding="utf-8")
+    return {**result.summary, "metadata_join": n}

@@ -29,6 +29,7 @@ def _cmd_build_points(args: argparse.Namespace) -> int:
             worms_cache_path=args.worms_cache,
             worms=not args.no_worms,
             annotations_root=args.annotations_root,
+            metadata_dir=args.metadata_dir,
         )
     except Exception as exc:  # network / registry failure: report, never a traceback
         print(f"error: {args.source}: {type(exc).__name__}: {exc}", file=sys.stderr)
@@ -40,6 +41,8 @@ def _cmd_build_points(args: argparse.Namespace) -> int:
         f"WoRMS {summary['worms_aphia_pct']}%, {t['annotation_ids_without_image']} ids and "
         f"{t['images_without_annotation_rows']} images unmatched -> {args.out}"
     )
+    if j := summary.get("metadata_join"):
+        print(f"metadata join: lat/lon {j['lat_lon_pct']}%, date {j['date_pct']}% of {j['points']}")
     return 0
 
 
@@ -58,6 +61,11 @@ def add_tasks_subparser(sub: argparse._SubParsersAction) -> None:
         "--annotations-root",
         help="Also write <root>/_annotations/points/<source>/<version>.parquet "
         "(the layout build_points_config reads)",
+    )
+    b.add_argument(
+        "--metadata-dir",
+        help="Resolver output (metadata resolve --out): also write points_joined.parquet, "
+        "points + lat/lon/date/site/licence columns by image_sha256, and metadata_join.json",
     )
     b.add_argument(
         "--master-sample-bytes",
