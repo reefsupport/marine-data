@@ -89,6 +89,7 @@ Every brief named here has a report (`reports/2026-10-08-PA-<id>.md`).
 - Mask configs gain exif_transposed and EXIF-rotated JPEGs are re-encoded from v1.1; v1.0 files unchanged.
 - `release build` refuses the frozen v1.0 (release id or lock) unless `--allow-frozen`; `tests/golden/v1.0-configs-schema.json` pins the 4 published configs as additive-only.
 - `release gate --require-all` runs every gate (privacy skippable only without image bytes); `release publish` takes its verdict from `marinedata.gates`, uploads with `upload_large_folder` and sends only data parquet, README.md, croissant.json and `provenance/{RELEASE.json,GATES.json,release.lock.yaml}`.
+- `release publish` is fail-closed (P1.13 delta 1): privacy and croissant are required whatever GATES.json lists and a gate absent from it is a failure; `provenance/RELEASE.json` goes up as a public-safe projection (`marinedata.release_provenance`: counts, config names, ids, digests and the lock's sources only, no excluded or skipped sources, buckets, remotes or local paths); the card gains a Provenance line.
 - Integration (P1.13): `docs/PHASE_A.md`, `docs/cli.md` generated from argparse, `task_layers/configs/` split into modules with re-exports.
 
 ## [1.0.0] - 2026-10-07

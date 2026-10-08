@@ -30,10 +30,10 @@ Briefs and reports (`reports/2026-10-08-PA-<id>.md`) live in the session state, 
 
 ## Gates, lock, credentials, upload
 - Gates (`release gate BUILD`): licence, dedup, splits, masks, load, card are required; privacy, croissant, metadata run on request. GATES.json is one dict keyed by gate name plus `summary`.
-- `--require-all` runs every gate and requires each one; privacy may be skipped only when the build has no image bytes. `release publish` takes the same verdict from `marinedata.gates`.
+- `--require-all` runs every gate and requires each one; privacy may be skipped only when the build has no image bytes. `release publish` is fail-closed: it takes its verdict from `marinedata.gates` and refuses unless GATES.json has a passing entry for all eight gates (privacy and croissant included; an absent or skipped gate is a failure).
 - `release.lock.yaml`: `release_id`, `created`, `code_sha`, `reconstructed`, `flavour`, `configs`, `sources` (the registry pins; no silent gaps). `release build --lock` checks the build against it.
 - Credentials: only `s3_auth.py` names rclone.conf and boto3 S3 clients exist only in `s3_auth`/`s3_client` (`tests/test_s3_auth_boundary.py`); `auth check` prints no secret.
-- Upload layout (`release publish --go`, `HfApi.upload_large_folder`; the repo must already exist, nothing is created): `data/**/*.parquet`, `README.md`, `croissant.json`, `provenance/{RELEASE.json,GATES.json,release.lock.yaml}`, nothing else. The frozen v1.0 needs `--allow-frozen`, also for `release build`.
+- Upload layout (`release publish --go`, `HfApi.upload_large_folder`; the repo must already exist, nothing is created): `data/**/*.parquet`, `README.md`, `croissant.json`, `provenance/{RELEASE.json,GATES.json,release.lock.yaml}`, nothing else. GATES.json and the lock go up as they are; RELEASE.json goes up as a public-safe projection (`marinedata.release_provenance`: an allowlist of counts, config names, ids and digests plus the lock's sources; no excluded or skipped sources, buckets, remotes or local paths). The frozen v1.0 needs `--allow-frozen`, also for `release build`.
 
 ## Pending Yohan actions
 - CoralSCOP retag cc-by-nc-sa-4.0 + attribution

@@ -18,7 +18,7 @@ from marinedata.release_lock import lock_sha256
 
 GOLDEN = Path(__file__).parent / "fixtures" / "release_publish" / "plan_open.golden"
 REPOS = {"open": "reefsupport/marine-data", "nc": "reefsupport/marine-data-nc"}
-DEFAULT_GATES = ("licence", "dedup", "splits", "masks", "load", "card")
+DEFAULT_GATES = ("licence", "dedup", "splits", "masks", "load", "card", "privacy", "croissant")
 LOCK_TEXT = "release_id: v1.1\nsources: []\n"
 TOKEN = "hf_tok-secret-value"
 
@@ -169,7 +169,7 @@ def test_refuses_on_gates(tmp_path, capsys, hub, gates, expect):
 
 
 def test_unrequired_failing_gate_does_not_block(tmp_path, capsys, hub):
-    d = make_release(tmp_path, gates={**_gates(), "croissant": _gate(False)})
+    d = make_release(tmp_path, gates={**_gates(), "extra": _gate(False)})
     assert publish("--dir", str(d)) == 0
 
 
@@ -178,6 +178,16 @@ def test_gates_without_summary_need_the_default_set(tmp_path, capsys, hub):
     assert publish("--dir", str(d)) == 1
     err = capsys.readouterr().err
     assert "gate licence: missing" in err and "gate masks" not in err
+
+
+@pytest.mark.parametrize("missing", ["privacy", "croissant"])
+def test_publish_is_fail_closed_on_a_gate_absent_from_gates_json(tmp_path, capsys, hub, missing):
+    """D2: privacy and croissant are required whatever the file lists; absent = failure."""
+    names = tuple(n for n in DEFAULT_GATES if n != missing)  # as an older 'gate --all' wrote it
+    d = make_release(tmp_path, gates=_gates(names))
+    assert publish("--dir", str(d)) == 1
+    err = capsys.readouterr().err
+    assert f"gate {missing}: missing" in err and "skipped" not in err
 
 
 def test_malformed_gates_file_is_a_refusal(tmp_path, capsys, hub):

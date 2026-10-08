@@ -24,7 +24,6 @@ import fnmatch
 import json
 import os
 import re
-import shutil
 import sys
 from dataclasses import dataclass
 from pathlib import Path
@@ -32,6 +31,7 @@ from pathlib import Path
 from .flavours import flavour_spec
 from .gates import GATES_FILE, REQUIRED, publish_verdict
 from .release_lock import LOCK_FILE, lock_sha256
+from .release_provenance import stage_provenance
 
 RELEASE_FILE = "RELEASE.json"
 CARD_FILE = "README.md"
@@ -271,18 +271,15 @@ def _hf_api(token: str):
 
 
 def _stage_provenance(plan: PublishPlan) -> None:
-    """Copy RELEASE.json, GATES.json and the lock into ``<folder>/provenance/`` (upload time only,
-    so a dry run writes nothing)."""
+    """Write ``<folder>/provenance/`` (upload time only, so a dry run writes nothing): RELEASE.json
+    as its public-safe projection, GATES.json and the lock as they are."""
     base = plan.release_dir or plan.folder
-    sources = {
-        RELEASE_FILE: base / RELEASE_FILE,
-        GATES_FILE: plan.folder / GATES_FILE,
-        LOCK_FILE: plan.lock_file or base / LOCK_FILE,
-    }
-    target = plan.folder / PROVENANCE_DIR
-    target.mkdir(exist_ok=True)
-    for name, source in sources.items():
-        shutil.copyfile(source, target / name)
+    stage_provenance(
+        plan.folder / PROVENANCE_DIR,
+        release=base / RELEASE_FILE,
+        gates=plan.folder / GATES_FILE,
+        lock=plan.lock_file or base / LOCK_FILE,
+    )
 
 
 def upload(plan: PublishPlan, token: str, *, api=None) -> str:
@@ -357,7 +354,8 @@ def add_publish_parser(release_sub: argparse._SubParsersAction) -> None:
     """Wire ``release publish`` onto the ``release`` sub-parser (called from ``cli_release``)."""
     p = release_sub.add_parser(
         "publish",
-        help="Upload a gated release to its Hub repo and tag it (dry run unless --go)",
+        help="Upload a gated release to its Hub repo and tag it (dry run unless --go). "
+        "Fail-closed: refuses unless GATES.json passes all eight gates",
     )
     p.add_argument("--release-id", dest="release_id", required=True)
     p.add_argument("--flavour", choices=("open", "nc"), required=True)

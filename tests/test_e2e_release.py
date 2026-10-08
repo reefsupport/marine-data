@@ -387,3 +387,44 @@ def test_e2e_release_gates_pass_on_the_fixture_build(
     for name in ("card", "croissant", "privacy"):  # PASSED, not skipped
         assert gates[name]["passed"] is True and "skipped" not in gates[name], name
     assert (export_dir / "phash.parquet").is_file()
+
+    # D1: the three provenance files, as `release publish` uploads them, are public-safe.
+    import os
+
+    import yaml
+
+    from marinedata.release_provenance import stage_provenance
+    from marinedata.s3_auth import (
+        DEFAULT_REMOTE,
+        ENV_RCLONE_CONF,
+        ENV_RCLONE_REMOTE,
+        OPEN_ENDPOINT,
+        creds_from_rclone,
+    )
+
+    staged = tmp_path / "provenance"
+    stage_provenance(
+        staged,
+        release=run.release_dir / "RELEASE.json",
+        gates=export_dir / "GATES.json",
+        lock=tmp_path / "release.lock.yaml",
+    )
+    texts = {p.name: p.read_text() for p in sorted(staged.iterdir())}
+    assert sorted(texts) == ["GATES.json", "RELEASE.json", "release.lock.yaml"]
+    lock_ids = {s["id"] for s in yaml.safe_load(texts["release.lock.yaml"])["sources"]}
+    outside = {s.id for s in Registry.load().sources} - lock_ids  # not in the lock
+    leaked = sorted(
+        {
+            f"{name}:{sid}"
+            for name, text in texts.items()
+            for sid in outside
+            if re.search(rf"(?<![\w.-]){re.escape(sid)}(?![\w.-])", text)
+        }
+    )
+    assert not leaked, leaked
+    remote = os.environ.get(ENV_RCLONE_REMOTE) or DEFAULT_REMOTE
+    creds = creds_from_rclone(remote, os.environ.get(ENV_RCLONE_CONF))
+    host = creds.endpoint_host if creds else ""  # the config path s3_auth reads; never printed
+    forbidden = ["rs-hel1", "/Users/", "/home/", OPEN_ENDPOINT, *([host] if host else [])]
+    hits = sorted({name for name, text in texts.items() if any(f in text for f in forbidden)})
+    assert not hits, f"private strings in: {hits}"

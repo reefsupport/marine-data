@@ -154,11 +154,17 @@ def _entry_status(entry: object) -> str:
     return "passed" if entry.get("passed") is True else "failed"
 
 
+FAIL_CLOSED = ("privacy", "croissant")
+"""Gates ``release publish`` requires on top of :data:`REQUIRED` whatever GATES.json lists, so an
+older ``release gate --all`` cannot weaken it: a gate absent from the file is a failure."""
+
+
 def publish_verdict(directory: Path) -> tuple[tuple[str, ...], list[str]]:
     """``(required gates, problems)`` for ``<directory>/GATES.json``; no problems = publishable.
-    ``release publish`` asks this and nothing else: the required set is the file's own
-    ``summary.required_for_publish`` (``release gate --all --require-all`` lists every gate there,
-    privacy included), else :data:`REQUIRED`, plus any entry flagged ``required``."""
+    ``release publish`` asks this and nothing else, and it is fail-closed: the required set is
+    :data:`REQUIRED` + :data:`FAIL_CLOSED` + the file's own ``summary.required_for_publish`` + any
+    entry flagged ``required``. Each must be ``passed``; a gate that is absent from the file or
+    only ``skipped`` is a problem, never a skip."""
     import json as _json
 
     path = Path(directory) / GATES_FILE
@@ -177,7 +183,7 @@ def publish_verdict(directory: Path) -> tuple[tuple[str, ...], list[str]]:
     listed = summary.get("required_for_publish") if isinstance(summary, dict) else None
     base = [str(n) for n in listed] if isinstance(listed, list) else list(REQUIRED)
     flagged = [n for n, e in entries.items() if isinstance(e, dict) and e.get("required") is True]
-    required = tuple(dict.fromkeys([*base, *flagged]))
+    required = tuple(dict.fromkeys([*REQUIRED, *FAIL_CLOSED, *base, *flagged]))
     problems = []
     for name in required:
         entry = entries.get(name)
@@ -193,6 +199,7 @@ def publish_verdict(directory: Path) -> tuple[tuple[str, ...], list[str]]:
 
 
 __all__ = [
+    "FAIL_CLOSED",
     "GATES_FILE",
     "MAX_FAILURES",
     "REQUIRED",
