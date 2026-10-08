@@ -97,5 +97,9 @@ teardown (step 8) is part of the build.
   `bash -n` and the unit tests in `tests/test_release_vm_scripts.py` are the checks so far.
 - `release gate --all --require-all` and the `configs` block in `RELEASE.json` come with the gates
   branch. Until it is merged, the gate stage runs only `--masks` and `release publish` refuses.
-- The export and card stages follow `docs/release-runbook.md` steps 6 and 8; they have not run on a real corpus.
+- Runbook coverage (`docs/release-runbook.md`): the VM runs step 3 (build), step 6 (export), the card part of
+  step 8, the gates and the step 9 dry run. Steps 1-2 are replaced by the frozen `registry/SPLIT_MAP.json` at the
+  release ref; steps 4-5 (dedup gate, decon check) are not separate stages: pass `--decon` and the other
+  `release build` flags with `create.sh --build-args`, and expect the `dedup` and `splits` gates from
+  `gate --all`. Step 7 is skipped. Export and card have not run on a real corpus.
 - The image is built on the VM (x86_64). A local arm64 `make image` is only a smoke test.

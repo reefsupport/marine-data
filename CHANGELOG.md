@@ -6,10 +6,6 @@ git. The format loosely follows [Keep a Changelog](https://keepachangelog.com/en
 
 ## [Unreleased]
 
-- Release build image: `Dockerfile` (python:3.12-slim by digest, uv, ffmpeg, git, non-root) and `.dockerignore`; `make image` builds `marinedata:$(git describe)`, `make image-check` runs `--version` and `check --profile research` in the container and enforces the 1.5 GB cap. `marinedata --version` is new.
-- `marinedata release publish --release-id ID --flavour open|nc [--go]`: the dry run prints the plan (repo, configs, files and bytes, card, lock sha, tag `v<id>`) and refuses without a passing `GATES.json`; `--go` needs `HF_TOKEN`, uploads one commit, tags it, and refuses an existing tag and the frozen v1.0 without `--allow-frozen`.
-- `deploy/release-vm/`: `create.sh` (prints the `hcloud` commands; `--run` is opt-in), `bootstrap.sh` (cloud-init user-data: lock, build, export, gate, publish dry run; never `--go`) and a README with prerequisites, cost, teardown and what to copy back.
-
 Nothing below is in a release yet. It is on `main` or on the Phase A branches named in the headings.
 
 ### On main
@@ -44,6 +40,15 @@ Nothing below is in a release yet. It is on `main` or on the Phase A branches na
   (`make docs`; `make docs-check` runs in `make ci`). `make ci` also runs the gate tests and the masks gate on a committed
   2-image fixture.
 - `.github/dependabot.yml`: weekly, grouped updates for pip and GitHub Actions.
+- Release build image: `Dockerfile` (python:3.12-slim by digest, uv, ffmpeg, git, non-root) and `.dockerignore`; `make
+  image` builds `marinedata:$(git describe)`, `make image-check` runs `--version` and `check --profile research` in
+  the container and enforces the 1.5 GB cap. `marinedata --version` is new.
+- `marinedata release publish --release-id ID --flavour open|nc [--go]`: the dry run prints the plan (repo, configs,
+  files and bytes, card, lock sha, tag `v<id>`) and refuses without a passing `GATES.json`; `--go` needs `HF_TOKEN`,
+  uploads one commit, tags it, and refuses an existing tag and the frozen v1.0 without `--allow-frozen`.
+- `deploy/release-vm/`: `create.sh` (prints the `hcloud` commands; `--run` is opt-in), `bootstrap.sh` (cloud-init
+  user-data: lock, build, export, gate, publish dry run; never `--go`) and a README with prerequisites, cost, teardown
+  and what to copy back.
 
 #### Changed
 

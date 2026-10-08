@@ -57,8 +57,9 @@ pinned-tree fetch). Nothing here uploads except step 9 with `--go`.
    unless `GATES.json` shows every required gate passed and `RELEASE.json` matches the flavour, repo and
    lock. `--go` (with `HF_TOKEN` set) uploads one commit and tags it; it refuses an existing tag and the
    frozen `v1.0` without `--allow-frozen`. `RELEASE.json`, `GATES.json`, the lock, `SPLIT_MAP.json`,
-   `DEDUP_GATE.json` and `tasks/` are never uploaded. The VM that runs steps 3-9 is
-   `deploy/release-vm/README.md`.
+   `DEDUP_GATE.json` and `tasks/` are never uploaded. The build VM in `deploy/release-vm/README.md`
+   runs steps 3 and 6, the card part of 8, the gates and the dry run of this step; steps 1-2 are
+   replaced there by the frozen `registry/SPLIT_MAP.json`, and 4, 5 and 7 are not VM stages.
 
 ## Privacy policy (WP-R9)
 
