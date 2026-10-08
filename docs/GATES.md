@@ -60,7 +60,7 @@ Counts rows whose labels name a person (human, diver, snorkeler, operator, ...) 
 `--detector MODULE:ATTR` (an object or factory with `name`, `version`, `detect(bytes) -> [Detection(kind,
 score)]`) every embedded image is scanned and a face or plate scoring at least `--privacy-threshold`
 (0.85) fails. No detector: `skipped` with the people counts. Fix: exclude or blur the image.
-`images/train 3f2a9c1b4d5e face_detected: score 0.91 >= 0.85 (fake 1)`
+`images/test 92d07e13ade4 face_detected: score 0.90 >= 0.85 (fake 1)`
 
 ## load (required)
 Checks: RELEASE.json `configs` and the shards list the same configs and row counts; every shard's
