@@ -250,7 +250,7 @@ sources:
 - id: mouss-seg
   domain: fish
   release_skip_reason: "no-staged-images: registry lists imagery, nothing staged under sources/ in rs-storage-open (U7/queue follow-up)"
-  access_class: open
+  access_class: unknown  # was open; licence not stated, legal_basis unknown (marinedata check)
   name: MOUSS fish segmentation (grayscale)
   version: unversioned
   description: Grayscale stationary-camera fish SEGMENTATION masks from NOAA PIFSC MOUSS surveys — a different
