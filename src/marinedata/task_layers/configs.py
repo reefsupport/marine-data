@@ -49,7 +49,10 @@ CONFIG_IDS = (
 )  # fmt: skip
 
 # WP-8e-resume (manager decision 3): the staged point/mask sources each config reads.
-POINT_SOURCES = ("reefolution", "mermaid-aws")
+POINT_SOURCES = ("reefolution", "mermaid-aws", "seaview-survey-imagery")
+# The benthic rollups (cover, coarse) keep reading the two original point sources: Seaview points
+# feed the ``points`` config only until a cover decision is made (PA-P3.1 report, Open).
+ROLLUP_POINT_SOURCES = ("reefolution", "mermaid-aws")
 # WP-U4: registry-driven. The semseg config reads every source with a unified ``masks`` producer
 # (``masks_table.MASK_SOURCES``); the benthic rollups stay on the two benthic-cover sources (a
 # pseudo-label, a 3-class and a scene-segmentation source must not feed cover).
@@ -365,7 +368,11 @@ def _canonical_taxon(registry: Registry, source_id: str, native_label: str) -> s
 def build_points_config(registry: Registry, base_dir: str | Path) -> ConfigResult:
     """``points``: every :data:`POINT_SOURCES` point in the unified column names (WP-U3):
     ``image_sha256, source_id, ann_id, label_native, label_set, taxon_node_id, match_type,
-    worms_aphia_id, rs_benthic_code, annotator_type, x, y, x_px, y_px, label_status``."""
+    worms_aphia_id, rs_benthic_code, annotator_type, x, y, x_px, y_px, label_status``, plus the
+    provenance and join columns ``source_version, ann_license, ann_attribution, quadrat_id,
+    label_native_group, x_norm, y_norm``. ``x``/``y`` stay normalised 0-1 as in the unified
+    schema and ``x_norm``/``y_norm`` repeat them under the explicit name; ``quadrat_id`` and
+    ``label_native_group`` come from ``attrs`` and are null for sources that do not set them."""
     base_dir = Path(base_dir)
     label_status = _load_label_status(base_dir)
     unmapped: dict[str, _SourceUnmapped] = {}
@@ -380,12 +387,16 @@ def build_points_config(registry: Registry, base_dir: str | Path) -> ConfigResul
                 tally.unmapped += 1
             else:
                 tally.known += 1
+            attrs = _attrs(point)
             rows.append(
                 {
                     "image_sha256": point["image_sha256"],
                     "source_id": source_id,
+                    "source_version": point.get("source_version"),
                     "ann_id": point["ann_id"],
+                    "quadrat_id": attrs.get("quadrat_id"),
                     "label_native": native,
+                    "label_native_group": attrs.get("func_group"),
                     "label_set": point.get("label_set"),
                     "taxon_node_id": taxon,
                     "match_type": point.get("match_type")
@@ -393,8 +404,12 @@ def build_points_config(registry: Registry, base_dir: str | Path) -> ConfigResul
                     "worms_aphia_id": point.get("worms_aphia_id"),
                     "rs_benthic_code": point.get("rs_benthic_code"),
                     "annotator_type": point["annotator_type"],
+                    "ann_license": point.get("ann_license"),
+                    "ann_attribution": point.get("ann_attribution"),
                     "x": point["x"],
                     "y": point["y"],
+                    "x_norm": point["x"],
+                    "y_norm": point["y"],
                     "x_px": point.get("x_px"),
                     "y_px": point.get("y_px"),
                     "label_status": label_status.get(point["image_sha256"], "ok"),
@@ -576,7 +591,7 @@ def _build_benthic_rollup(
             origins.setdefault(sha256, "human")
             source_of.setdefault(sha256, source_id)
 
-    for source_id in POINT_SOURCES:
+    for source_id in ROLLUP_POINT_SOURCES:
         points = _point_records(base_dir, source_id)
         add(source_id, _coarse_counts_from_points(registry, projector, source_id, points))
     for source_id in ROLLUP_MASK_SOURCES:
