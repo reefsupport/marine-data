@@ -44,6 +44,7 @@ from .neardup import (
     near_pairs,
 )
 from .registry import Registry
+from .release_lock import ReleaseLock, ReleaseLockError
 from .sample_schema import staged_partition
 from .splitmap import MergeInfo, Row, load_split_map, resolve_splits, rows_to_counts
 from .strata import DEFAULT_MIN_GROUPS, TEST, TRAIN
@@ -752,6 +753,19 @@ def _skipped_sources(
     return skipped
 
 
+def _split_ratio_record(map_bytes: bytes) -> dict:
+    """The train/validation/test share (percent) the split map was allocated with; the splits
+    gate checks each config against it unless the registry (split_ratio.yaml) names one."""
+    import json as _json
+
+    ratios = _json.loads(map_bytes).get("ratios") or {}
+    total = sum(ratios.values()) or 1.0
+    return {
+        "source": "split_map",
+        "target_pct": {k: round(100.0 * v / total, 2) for k, v in sorted(ratios.items())},
+    }
+
+
 def build_release(
     registry: Registry,
     *,
@@ -772,6 +786,8 @@ def build_release(
     digest: Callable[[Path], str] = file_digest,
     flavour: str | None = None,
     allow_skip: Iterable[str] = (),
+    lock: ReleaseLock | None = None,
+    lock_sha256: str | None = None,
 ) -> ReleaseResult:
     """Build every registry task against a frozen split map and write the release.
 
@@ -853,6 +869,8 @@ def build_release(
             + (f" in flavour {flavour!r}" if flavour else "")
             + " has a resolved root"
         )
+    if lock is not None and (unlocked := sorted(set(admitted) - lock.source_ids())):
+        raise ReleaseLockError(f"source not in the release lock: {', '.join(unlocked)}")
     # WP-7: the label gate — 0 silent drops, >= 95% mapped (or a documented exception),
     # every canonical taxon node anchored. Skipped for in-memory registries (no root).
     unstaged = (  # flavour builds already dropped rowless sources in _skipped_sources
@@ -959,6 +977,7 @@ def build_release(
         "release": release,
         **taxonomy_stamp,
         "split_map_sha256": map_sha256,
+        "split_ratio": _split_ratio_record(map_bytes),
         "sources": [
             {
                 "id": source_id,
@@ -1044,6 +1063,9 @@ def build_release(
         }
         if dropped:  # absent = nothing dropped: a release without per-row drops keeps its bytes
             release_json["licence_rows_dropped"] = dropped
+    if lock is not None:  # Phase A (P1.3): the pin set this release was built from
+        release_json["lock_sha256"] = lock_sha256
+        release_json["lock_sources"] = [e.model_dump(mode="json") for e in lock.sources]
     release_json_text = json.dumps(release_json, indent=2, sort_keys=True) + "\n"
     (release_root / "RELEASE.json").write_text(release_json_text)
 

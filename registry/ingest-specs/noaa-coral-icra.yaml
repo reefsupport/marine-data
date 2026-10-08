@@ -1,5 +1,5 @@
 id: noaa-coral-icra
-access_class: open
+access_class: unknown  # was open; licence not stated and legal_basis unknown in the registry, so `marinedata check` flagged it. Set back to open together with a verified licence.
 adapter: hf
 params:
   repo: NMFS-OSI/NOAA-PIFSC-ESD-ESA-CORAL-ICRA-Dataset

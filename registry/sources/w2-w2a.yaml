@@ -99,7 +99,7 @@ sources:
 - id: noaa-coral-icra
   domain: coral
   release_skip_reason: "no-staged-images: registry lists imagery, nothing staged under sources/ in rs-storage-open (U7/queue follow-up)"
-  access_class: open
+  access_class: unknown  # was open; licence not stated, legal_basis unknown (marinedata check)
   name: NOAA PIFSC ESD-ESA coral ICRA
   version: unversioned
   description: NOAA PIFSC coral image classification/detection assessment (ICRA) dataset.
@@ -1248,7 +1248,7 @@ sources:
 - id: plasticinwater
   domain: imaging
   release_skip_reason: "no-staged-images: registry lists imagery, nothing staged under sources/ in rs-storage-open (U7/queue follow-up)"
-  access_class: open
+  access_class: unknown  # was open; licence not stated, legal_basis unknown (marinedata check)
   name: OceanCV PlasticInWater
   version: unversioned
   description: Underwater marine-debris (plastic) detection imagery from the OceanCV project.
