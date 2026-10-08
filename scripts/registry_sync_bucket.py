@@ -43,7 +43,7 @@ SPECS = ROOT / "registry" / "ingest-specs"
 TREES = ROOT / "registry" / "inventory" / "bucket-trees.csv"
 EVIDENCE = ROOT / "registry" / "inventory" / "bucket-probe-2026-10-08.json"
 PRIOR = "registry-prior"
-KEY = re.compile(r"    ([A-Za-z_]+):")
+DASH = re.compile(r"^( *)- id: ")
 NON_IMAGE = frozenset(
     {
         "context-layer",
@@ -213,20 +213,28 @@ def updates_for(edit: dict, parts: set[str]) -> dict[str, list[str]]:
     return up
 
 
-def set_keys(blk: list[str], updates: dict[str, list[str]]) -> list[str]:
+def _fit(lines: list[str], ind: int) -> list[str]:
+    """Re-indent lines authored for entries dashed at column 2 to the file's own indent."""
+    shift = ind - 2
+    return [" " * shift + ln if shift >= 0 else ln[-shift:] for ln in lines]
+
+
+def set_keys(blk: list[str], updates: dict[str, list[str]], ind: int = 2) -> list[str]:
     """Replace top-level keys of one entry in place (append the missing ones, comments kept)."""
+    key_re = re.compile(" " * (ind + 2) + r"([A-Za-z_]+):")
+    deeper = " " * (ind + 4)
     out: list[str] = []
     seen: set[str] = set()
     skipping = False
     for ln in blk:
-        m = KEY.match(ln)
+        m = key_re.match(ln)
         if m and m.group(1) in updates:
             if m.group(1) not in seen:
-                out += updates[m.group(1)]
+                out += _fit(updates[m.group(1)], ind)
                 seen.add(m.group(1))
             skipping = True
             continue
-        if skipping and ln.startswith("      "):
+        if skipping and ln.startswith(deeper):
             continue
         skipping = False
         out.append(ln)
@@ -235,40 +243,44 @@ def set_keys(blk: list[str], updates: dict[str, list[str]]) -> list[str]:
         tail.insert(0, out.pop())
     for key, lines in updates.items():
         if key not in seen:
-            out += lines
+            out += _fit(lines, ind)
     return out + tail
 
 
-def patch_text(text: str, updates: dict[str, dict[str, list[str]]]) -> tuple[str, int]:
+def patch_text(text: str, updates: dict[str, dict[str, list[str]]]) -> tuple[str, set[str]]:
     lines = text.split("\n")
-    starts = [i for i, ln in enumerate(lines) if ln.startswith("  - id: ")]
-    if not starts:
-        return text, 0
-    out, hit = lines[: starts[0]], 0
+    heads = [(i, DASH.match(ln)) for i, ln in enumerate(lines)]
+    heads = [(i, m) for i, m in heads if m]
+    if not heads:
+        return text, set()
+    ind = len(heads[0][1].group(1))
+    starts = [i for i, m in heads if len(m.group(1)) == ind]
+    out, hit = lines[: starts[0]], set()
     for a, b in pairwise([*starts, len(lines)]):
         blk = lines[a:b]
         sid = re.sub(r"\s+#.*$", "", blk[0].split(":", 1)[1]).strip().strip("\"'")
         if sid in updates:
-            blk, hit = set_keys(blk, updates[sid]), hit + 1
+            blk = set_keys(blk, updates[sid], ind)
+            hit.add(sid)
         out += blk
     return "\n".join(out), hit
 
 
-def apply_plans(plans: dict, parts: set[str]) -> tuple[int, int]:
+def apply_plans(plans: dict, parts: set[str]) -> tuple[int, list[str]]:
     by_file: dict[Path, dict[str, dict[str, list[str]]]] = defaultdict(dict)
     for sid, edit in plans.items():
         up = updates_for(edit, parts)
         if up:
             by_file[edit["path"]][sid] = up
-    changed = want = hit = 0
+    changed, missed = 0, []
     for path, ups in by_file.items():
         old = path.read_text()
-        new, n = patch_text(old, ups)
-        want, hit = want + len(ups), hit + n
+        new, hit = patch_text(old, ups)
+        missed += sorted(set(ups) - hit)
         if new != old:
             path.write_text(new)
             changed += 1
-    return changed, want - hit
+    return changed, missed
 
 
 def show(ev: dict, plans: dict, rep: dict, by_id: dict) -> None:
@@ -314,7 +326,7 @@ def main() -> int:
     show(ev, plans, rep, by_id)
     if args.apply:
         changed, unmatched = apply_plans(plans, set(args.parts.split(",")))
-        print(f"applied: {changed} files changed, {unmatched} edits unmatched")
+        print(f"applied: {changed} files changed; unmatched {len(unmatched)}: {unmatched[:10]}")
     return 0
 
 

@@ -139,7 +139,7 @@ sources:
   domain: fish
   access_class: open
   name: Salmon cage video/GoPro dataset (Zenodo 4931418)
-  version: unversioned
+  version: "record-4931418"
   description: GoPro/diver video from salmon aquaculture cages — welfare and biomass monitoring.
   licence: CC0-1.0
   legal_basis: licence
@@ -174,6 +174,11 @@ sources:
   - aquaculture
   - video
   notes: 'access: pending-ingest — see registry/ingest-specs/salmon-cage.yaml (S57/w2b sweep, 2026-09-25).'
+  checksums:
+    version: "record-4931418"
+    root_digest: 92ae68595092d477424ffdf980f07529071e92fc5f166cbd30bfcfe649cd52a1
+    files: 4992
+    size_bytes: 327561171
 - id: luderick-seagrass
   domain: seagrass
   release_skip_reason: "no-staged-images: registry lists imagery, nothing staged under sources/ in rs-storage-open (U7/queue follow-up)"
@@ -453,7 +458,7 @@ sources:
   release_skip_reason: "non-image-modality: instruction text; 10000 label keys staged, 0 images"
   access_class: open
   name: OceanInstruct v0.1 (OceanGPT)
-  version: unversioned
+  version: "rev-9f5558a8c8f1"
   description: 10k-row instruction/caption JSON dataset for ocean-domain VLM instruction tuning (text
     referencing imagery, not embedded image files).
   licence: MIT
@@ -488,6 +493,11 @@ sources:
   - vlm
   - instruction-tuning
   notes: 'access: pending-ingest — see registry/ingest-specs/oceaninstruct.yaml (S57/w2b sweep, 2026-09-25).'
+  checksums:
+    version: "rev-9f5558a8c8f1"
+    root_digest: 2348545446d915951fb3796603669ab0191bb1576b6726e02d6ff598e2a28463
+    files: 10003
+    size_bytes: 13869330
 - id: seathru
   domain: imaging
   release_skip_reason: "no-staged-images: registry lists imagery, nothing staged under sources/ in rs-storage-open (U7/queue follow-up)"
@@ -532,7 +542,7 @@ sources:
   domain: imaging
   access_class: internal-only
   name: EUVP paired/unpaired underwater enhancement (HF mirror, partial)
-  version: unversioned
+  version: "rev-e3c6d08a8b07"
   description: Paired/unpaired underwater image-enhancement dataset behind FUnIE-GAN (HF mirror is a partial
     5,550-row subset of the ~30k official release).
   licence: RESEARCH-ONLY-NO-REDIST
@@ -573,6 +583,11 @@ sources:
   - kind: none
     notes: paired enhancement reference image (pairs); AnnotationKind has no pairs value
     supervises: []
+  checksums:
+    version: "rev-e3c6d08a8b07"
+    root_digest: 1fff37d5c581cf96fff2617448715dc08600db69c26c2f2b8a9e451cf27d9402
+    files: 5553
+    size_bytes: 93792049
 - id: underwater-images-2542305
   domain: imaging
   release_skip_reason: "no-staged-images: raw mirror of 3850 images only, no INGEST.json/metadata.parquet (U7/queue follow-up)"
@@ -729,7 +744,7 @@ sources:
   domain: imaging
   access_class: internal-only
   name: LSUI (U-shape Transformer underwater enhancement)
-  version: unversioned
+  version: "zip-e15c4a2203f4"
   description: 4,279 paired underwater images with enhanced ground truth.
   licence: RESEARCH-ONLY-NO-REDIST
   legal_basis: licence
@@ -764,6 +779,11 @@ sources:
   - kind: none
     notes: paired enhancement reference image (pairs)
     supervises: []
+  checksums:
+    version: "zip-e15c4a2203f4"
+    root_digest: d8584e73bb7c7d12b8b27f275e2cab8a6d7cb41258f5402855c3d3915343a7c6
+    files: 8561
+    size_bytes: 506636504
 - id: u45
   domain: imaging
   access_class: internal-only
@@ -950,7 +970,7 @@ sources:
   domain: imaging
   access_class: internal-only
   name: USOD10K underwater salient-object detection dataset
-  version: unversioned
+  version: "zip-f82114057c27"
   description: 10,255-image underwater salient-object detection dataset.
   licence: RESEARCH-ONLY-NO-REDIST
   legal_basis: licence
@@ -987,6 +1007,11 @@ sources:
     supervises: []
   - kind: depth-map
     supervises: []
+  checksums:
+    version: "zip-f82114057c27"
+    root_digest: ca3a661b0c6eb8fbf1ab677c4be4f9d0e3f709ef9bbb0a63b35f9f66f10f23aa
+    files: 39997
+    size_bytes: 10155334719
 - id: viame-public
   domain: fish
   access_class: unknown  # LICV 2026-10-05 (was open)
@@ -1035,7 +1060,7 @@ sources:
   domain: fauna
   access_class: internal-only
   name: DUO (Detecting Underwater Objects)
-  version: unversioned
+  version: "zip-5de58f03a09c"
   description: 7,782-image COCO-format underwater object detection dataset (sea cucumber, sea urchin,
     scallop, starfish).
   licence: RESEARCH-ONLY-NO-REDIST
@@ -1072,3 +1097,8 @@ sources:
     kind: bbox
     supervises:
     - taxon
+  checksums:
+    version: "zip-5de58f03a09c"
+    root_digest: a8f86440890ca79859152f8d679dbcd0aab01a80106bc89449f4569e9c7bc1e6
+    files: 14456
+    size_bytes: 3151064208

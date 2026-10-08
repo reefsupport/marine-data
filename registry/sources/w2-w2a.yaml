@@ -215,7 +215,7 @@ sources:
   domain: coral
   access_class: internal-only
   name: EILAT / RSMAS coral texture
-  version: unversioned
+  version: "eilat-rsmas-idx1"
   description: Coral texture-patch classification benchmark (Eilat + RSMAS collections).
   licence:
     id: research-use
@@ -260,6 +260,11 @@ sources:
     kind: image-label
     supervises:
     - taxon
+  checksums:
+    version: "eilat-rsmas-idx1"
+    root_digest: b53a82521caea6386532e3793d0a2b510e267e53eaf4ab34bc5c00f3e4ef203a
+    files: 413
+    size_bytes: 138411297
 - id: fathomnet-coverage
   domain: fauna
   access_class: restricted-nd
@@ -955,7 +960,7 @@ sources:
   domain: imaging
   access_class: internal-only
   name: SeaThru-NeRF scenes
-  version: unversioned
+  version: "zip-ff97f52d5472"
   description: Posed underwater image sets (COLMAP) for NeRF reconstruction with backscatter removal.
   licence:
     id: unknown
@@ -996,6 +1001,11 @@ sources:
   annotations:
   - kind: camera-pose
     supervises: []
+  checksums:
+    version: "zip-ff97f52d5472"
+    root_digest: 649c2231a663bd946f3e5a9d04c0ae2b1e29f36ecda0b0823735577f3492a1c4
+    files: 96
+    size_bytes: 639223036
 - id: seagrassfinder
   domain: seagrass
   access_class: restricted-nd
@@ -1288,7 +1298,7 @@ sources:
   domain: imaging
   access_class: restricted-nc
   name: CADDY underwater gestures/diver pose
-  version: unversioned
+  version: "caddy-idx1"
   description: Stereo underwater imagery of diver gestures/pose for human-robot interaction.
   licence:
     id: cc-by-nc-sa
@@ -1330,6 +1340,11 @@ sources:
   - kind: image-label
     notes: diver-gesture classes; verify count
     supervises: []
+  checksums:
+    version: "caddy-idx1"
+    root_digest: 7d578ad6e64284d9ed4be6fecdf26d210139fa5d1ab4b5a1c6a2c33a21919db3
+    files: 4
+    size_bytes: 26666
 - id: vdd-c
   domain: imaging
   release_skip_reason: "no-staged-images: registry lists imagery, nothing staged under sources/ in rs-storage-open (U7/queue follow-up)"
