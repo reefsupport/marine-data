@@ -146,6 +146,7 @@ sources:
     citation: "Sauder+ 2024"
     notes: "Folded from registry/ingest-specs/deepreefmap.yaml on 2026-10-08 (P1.2). Spec license string, verbatim: 'CC-BY-4.0'. Domain, modalities and capabilities are keyword inferences from the spec text."
     tags: [spec-folded]
+    superseded_by: deepreefmap-data
     release_skip_reason: "no-staged-images: registry lists imagery, nothing staged under sources/ in rs-storage-open (U7/queue follow-up)"
 
   - id: elliott-bay-benthic
@@ -250,6 +251,7 @@ sources:
     citation: "NMFS-OSI/NOAA-PIFSC-ESD-ESA-CORAL-ICRA-Dataset (HF)"
     notes: "Folded from registry/ingest-specs/noaa-pifsc-esa-coral-icra.yaml on 2026-10-08 (P1.2). Spec license string, verbatim: 'other (HF card)'. Domain, modalities and capabilities are keyword inferences from the spec text. The spec said access_class: open; tightened to internal-only because its licence string does not establish a licence (never guess). Loosen after verifying it."
     tags: [spec-folded]
+    superseded_by: noaa-coral-icra
 
   - id: plc-beijbom2015
     domain: coral
@@ -307,6 +309,7 @@ sources:
     citation: "QUT QCR"
     notes: "Folded from registry/ingest-specs/reef-guidance.yaml on 2026-10-08 (P1.2). Spec license string, verbatim: 'CC-BY-NC-SA-4.0'. Domain, modalities and capabilities are keyword inferences from the spec text."
     tags: [spec-folded]
+    superseded_by: reef-guidance-system
     release_skip_reason: "no-staged-images: registry lists imagery, nothing staged under sources/ in rs-storage-open (U7/queue follow-up)"
 
   - id: reefnet-species

@@ -484,6 +484,7 @@ sources:
     citation: "NOAA PIFSC MOUSS"
     notes: "Folded from registry/ingest-specs/mouss.yaml on 2026-10-08 (P1.2). Spec license string, verbatim: 'NOASSERTION'. Domain, modalities and capabilities are keyword inferences from the spec text. The spec said access_class: open; tightened to internal-only because its licence string does not establish a licence (never guess). Loosen after verifying it."
     tags: [spec-folded]
+    superseded_by: mouss-detection
     release_skip_reason: "no-staged-images: registry lists imagery, nothing staged under sources/ in rs-storage-open (U7/queue follow-up)"
 
   - id: muot3m

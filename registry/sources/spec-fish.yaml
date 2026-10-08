@@ -251,6 +251,7 @@ sources:
     citation: "Zheng et al. 2024, ECCV, MarineInst"
     notes: "Folded from registry/ingest-specs/marineinst20m-web.yaml on 2026-10-08 (P1.2). Spec license string, verbatim: 'per upstream website (Corals of the World, EOL, FishDB, Meerwasser-Lexikon/Reeflex); recorded per sample, never a filter (D-C)'. Domain, modalities and capabilities are keyword inferences from the spec text."
     tags: [spec-folded]
+    superseded_by: marineinst20m
 
   - id: noaa-dsc-csv
     domain: fish

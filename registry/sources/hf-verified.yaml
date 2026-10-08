@@ -58,7 +58,7 @@ sources:
 
   - id: reefnet-species-images
     domain: coral
-    access_class: open
+    access_class: restricted-nc  # P1.2: was open; ReefNet is CC-BY-NC-SA-4.0 (entry reefnet)
     name: ReefNet species images
     # habitat inferred (WP-2b) from this source's own description/notes, not independently verified
     habitat: [coral_reef]
