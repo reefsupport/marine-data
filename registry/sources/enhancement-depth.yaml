@@ -153,7 +153,7 @@ sources:
     name: FLSea (visual-inertial and stereo)
     # habitat inferred (WP-2b) from this source's own description/notes, not independently verified
     habitat: [mixed]
-    version: "2022"
+    version: "rev-ae526f0a1251"
     description: Forward-looking underwater depth ground truth with IMU and poses.
     licence: CC-BY-NC-SA-4.0
     legal_basis: licence
@@ -174,6 +174,11 @@ sources:
     tags: [depth, benchmark, noncommercial]
     n_images: 22451
     n_images_method: "ingest-json"
+    checksums:
+      version: "rev-ae526f0a1251"
+      root_digest: 067c64dba74169e647b708ad4441f3abd782a79ae1fe68d1b04528f06e2e1f3d
+      files: 22454
+      size_bytes: 21769239484
 
   - id: suim
     domain: fish

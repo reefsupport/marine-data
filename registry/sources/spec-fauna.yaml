@@ -565,6 +565,7 @@ sources:
     citation: "MUOT-3M (2025), HF AhsanBB"
     notes: "Folded from registry/ingest-specs/muot3m.yaml on 2026-10-08 (P1.2). Spec license string, verbatim: 'CC-BY-NC-ND-4.0 (HF card)'. Domain, modalities and capabilities are keyword inferences from the spec text."
     tags: [spec-folded]
+    checksums_status: missing
 
   - id: nautdata
     domain: fauna
@@ -1174,6 +1175,7 @@ sources:
     tags: [spec-folded]
     n_images: 3819
     n_images_method: "listing"
+    checksums_status: missing
 
   - id: webuot-238-test
     domain: fauna

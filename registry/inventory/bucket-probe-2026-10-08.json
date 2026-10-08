@@ -1,7 +1,7 @@
 {
- "bytes_read": 184579703,
- "gets": 162,
- "method": "anonymous HTTPS GET of single keys, at most 3 per tree, no listing",
+ "bytes_read": 184721759,
+ "gets": 164,
+ "method": "anonymous HTTPS GET of single keys, at most 3 per tree, no listing; plus CHECKSUMS.sha256 of the 2 rs-storage-private trees by signed single-key GET (rs-hel1, P1.2b)",
  "probed_on": "2026-10-08",
  "trees": [
   {
@@ -1202,22 +1202,28 @@
   },
   {
    "bucket": "rs-storage-private",
-   "bytes_read": 0,
-   "gets": 0,
+   "bytes_read": 56711,
+   "files": 579,
+   "gets": 1,
    "id": "ibf",
+   "images": 496,
+   "method": "listing",
    "n_objects": 580,
+   "root_digest": "b42773b6bdea01d33be23b05d70e8d821ffe1f2c9abec2c7a6312d515e7ce059",
    "size_bytes": 2084955624,
-   "skipped": "private bucket: no anonymous read",
    "version": "2026-10-06"
   },
   {
    "bucket": "rs-storage-private",
-   "bytes_read": 0,
-   "gets": 0,
+   "bytes_read": 85345,
+   "files": 872,
+   "gets": 1,
    "id": "reefolution",
+   "images": 870,
+   "method": "listing",
    "n_objects": 873,
+   "root_digest": "60443dd966feee06538ed585496b3fa3d5687fcfef9e5604f9335c19bafdaa7b",
    "size_bytes": 3616150247,
-   "skipped": "private bucket: no anonymous read",
    "version": "2026-09-23-2c84cb0c9cda"
   }
  ],

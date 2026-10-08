@@ -407,6 +407,7 @@ sources:
     tags: [deep-sea, api]
     n_images_method: "registry-prior"
     related: [fathomnet-fgvc23, fathomnet-fgvc25, fathomnet-vme]
+    checksums_status: missing
 
   - id: mouss-detection
     domain: deep-sea
@@ -757,6 +758,7 @@ sources:
     loader: { layout: flat-images, params: { images_dir: images }, schema_id: dataset-native, crosswalk_id: obsea-fish }
     tags: [fish, mediterranean, yolo, fixed-camera]
     n_images_method: "registry-prior"
+    checksums_status: missing
 
   - id: uiis
     access_class: open

@@ -646,6 +646,7 @@ sources:
     2026-09-25).'
   n_images: 3850
   n_images_method: "listing"
+  checksums_status: missing
 - id: marine-snow
   domain: imaging
   release_skip_reason: "no-staged-images: registry lists imagery, nothing staged under sources/ in rs-storage-open (U7/queue follow-up)"
@@ -1086,6 +1087,7 @@ sources:
     supervises: []
   n_images: 4174
   n_images_method: "listing"
+  checksums_status: missing
 - id: duo
   domain: fauna
   access_class: internal-only

@@ -670,6 +670,7 @@ sources:
     citation: "HF dataset AIGeeksGroup/UW-StereoDepth-40K"
     notes: "Folded from registry/ingest-specs/uw-stereodepth-40k.yaml on 2026-10-08 (P1.2). Spec license string, verbatim: 'unstated'. Domain, modalities and capabilities are keyword inferences from the spec text."
     tags: [spec-folded]
+    checksums_status: missing
 
   - id: uw-transstereo
     domain: imaging

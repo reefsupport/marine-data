@@ -31,6 +31,7 @@ sources:
     tags: [per-row-licence, observation]
     n_images: 1
     n_images_method: "listing"
+    checksums_status: missing
 
   - id: planktonzilla
     domain: plankton
@@ -59,6 +60,7 @@ sources:
     tags: [per-row-licence, plankton]
     n_images: 830
     n_images_method: "listing"
+    checksums_status: missing
 
   - id: qut-fish
     domain: fish

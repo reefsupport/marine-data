@@ -150,6 +150,15 @@ sources:
       `n_annotations` = 14,517 instance masks (RB-A lineage count, 2026-10-06).
       The 658 Tayrona (UNAL) images are byte-identical to `reef-support-bleaching`'s 658 images.
     tags: [moat, caribbean, octocoral, biota-only]
+    other_versions:
+      - version: "2026-08"
+        root_digest: f06d84ad4bc3ccb231610b0bf76507f8751bc958f0a917c2399737e9af9a9a52
+        files: 2501
+        size_bytes: 4092140433
+      - version: "2026-09-24"
+        root_digest: e8c6506ea2abda4047b2fece85989f774cac849e85712071e919e72dbba0494b
+        files: 2501
+        size_bytes: 4092140695
 
   - id: reef-support-seaview-labels
     domain: coral
@@ -511,7 +520,7 @@ sources:
       version: "2026-10-06"
       root_digest: b42773b6bdea01d33be23b05d70e8d821ffe1f2c9abec2c7a6312d515e7ce059
       files: 579
-      size_bytes: 2084898913
+      size_bytes: 2084955624
     modalities: [image]
     capabilities: [benthic-classification, general-pretraining]
     n_images: 496

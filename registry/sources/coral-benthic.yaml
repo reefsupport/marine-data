@@ -562,6 +562,11 @@ sources:
       instead (236 groups, max 923 images in one site, `LaehouShallow`), the leak-safe
       choice named in the brief.
     tags: [bleaching, public-domain]
+    other_versions:
+      - version: "rev-8175d66ef034"
+        root_digest: 37dc1dcc6c96fd3d9d52db0c662263ebe0587457658cf1872aa5ef41fed470cb
+        files: 10422
+        size_bytes: 774183165
 
   - id: coralnet
     domain: coral
@@ -977,6 +982,11 @@ sources:
         `CHECKSUMS.sha256` pinned by `checksums.root_digest` above; `shasum -c` 0
         fail. UPLOADED 2026-09-24 (WS-D S28) — see `access.notes`.
     tags: [bleaching, roboflow]
+    other_versions:
+      - version: "v6i-image-labels"
+        root_digest: e6d191737ed47f1235f0ac507e4ffba4e194366fd406c84eb996f641e31f7a96
+        files: 2553
+        size_bytes: 478498
 
   - id: roboflow-coral-bleaching-general-v1-yolov8s
     domain: coral
@@ -1079,6 +1089,11 @@ sources:
         `checksums.root_digest` above; `shasum -c` 0 fail. UPLOADED 2026-09-24
         (WS-D S28) — see `access.notes`.
     tags: [bleaching, roboflow]
+    other_versions:
+      - version: "v1-yolov8s-image-labels"
+        root_digest: 1300b44d9383f1b384ba38081f6655ecbafa7f710784fc9147ce54e57133a92c
+        files: 2545
+        size_bytes: 477240
 
   - id: roboflow-coral-classification-copy-changed-v13i
     domain: coral
@@ -1370,6 +1385,11 @@ sources:
         uploaded this pass (WS-D S25); v13i and v2i stay `metadata-only`, still
         `needs-attribution`/unattributed.
     tags: [bleaching, roboflow]
+    other_versions:
+      - version: "v3i"
+        root_digest: fba76467138ee66b168820df7e148726564b57f1f795daa062b78d7f451323b4
+        files: 4559
+        size_bytes: 845764
 
   - id: coralseg-ucsd-mosaics
     domain: coral
@@ -1693,7 +1713,7 @@ sources:
     name: "Kaggle: healthy and bleached corals — tar-only"
     # habitat inferred (WP-2b) from this source's own description/notes, not independently verified
     habitat: [coral_reef]
-    version: "unversioned"
+    version: "zip-5e15452254a9"
     description: >
       Kaggle-sourced healthy-vs-bleached coral image set found only inside the
       coral_bleaching/others.tar.gz archive — never extracted to a live bucket prefix
@@ -1753,6 +1773,11 @@ sources:
       gated (legal_basis: unknown).
     loader: { layout: metadata-only }
     tags: [needs-permission, tar-only]
+    checksums:
+      version: "zip-5e15452254a9"
+      root_digest: 087d1b7e23853816f91789c8351483e17659287c6965e10190c064061377c833
+      files: 927
+      size_bytes: 27575421
 
   - id: rf100-coral-lwptl
     domain: coral

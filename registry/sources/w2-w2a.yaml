@@ -488,6 +488,7 @@ sources:
   counts_note: unknown
   n_images: 40
   n_images_method: "listing"
+  checksums_status: missing
 - id: pangaea-ofos-msm77
   domain: fauna
   release_skip_reason: "no-staged-images: registry lists imagery, nothing staged under sources/ in rs-storage-open (U7/queue follow-up)"
@@ -977,6 +978,7 @@ sources:
   - kind: camera-pose
     supervises: []
   n_images_method: "registry-prior"
+  checksums_status: missing
 - id: seathru-nerf
   domain: imaging
   access_class: internal-only

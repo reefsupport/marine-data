@@ -221,6 +221,7 @@ sources:
     citation: "doi:10.1594/PANGAEA.961314"
     notes: "Folded from registry/ingest-specs/pangaea-cvap-lander-bbox.yaml on 2026-10-08 (P1.2). Spec license string, verbatim: 'CC-BY-4.0'. Domain, modalities and capabilities are keyword inferences from the spec text."
     tags: [spec-folded]
+    checksums_status: missing
 
   - id: pangaea-ps101-ofos-arctic
     domain: deep-sea

@@ -266,6 +266,7 @@ sources:
     superseded_by: marineinst20m
     n_images: 8217
     n_images_method: "listing"
+    checksums_status: missing
 
   - id: noaa-dsc-csv
     domain: fish
