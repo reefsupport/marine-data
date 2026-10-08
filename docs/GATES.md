@@ -94,3 +94,7 @@ row counts. The card is generated (P1.9); the gate only verifies. Fix: regenerat
 resolver outputs `DIR/<source>/<version>/coverage.json`) and merges it into `--gates` (default `BUILD_DIR/GATES.json`, else
 `./GATES.json`). With `BUILD_DIR --all --require-all` it runs next to the build gates; once it ran it is required for publish
 like any other extra gate. `GATES.json` is one dict keyed by gate name plus `summary`.
+
+## Dedup gate and EXIF-transposed rows
+
+`image_sha256` is the identity of the upstream bytes. A row with `exif_transposed` true stores bytes re-encoded after the EXIF rotation, so the dedup gate does not compare their sha256 with `image_sha256`; it requires that the bytes decode and that their width/height equal the row's (`size_mismatch`). Rows with `exif_transposed` false keep the `sha256_mismatch` check.

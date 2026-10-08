@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import copy
 import json
 import os
 import re
@@ -12,6 +13,7 @@ import yaml
 from test_e2e_release import _pipeline
 
 from marinedata import card_body as cb
+from marinedata import release_croissant
 from marinedata.card_fields import field_doc
 from marinedata.cli import main
 from marinedata.licence_class import unflavoured_for_tests
@@ -216,3 +218,13 @@ def test_validate_reports_a_missing_validator(monkeypatch) -> None:
     monkeypatch.setitem(__import__("sys").modules, "mlcroissant", None)
     status, detail = validate({})
     assert status == "not-validated" and "mlcroissant" in detail
+
+
+def test_validate_does_not_mutate_the_document_or_the_shared_context(e2e) -> None:
+    """mlcroissant adds `@base` to the dict it is given. It once leaked into every later document
+    through the shared module-level CONTEXT, so the golden passed alone and failed in the suite."""
+    doc = json.loads(e2e["croissant"].read_text())
+    before = copy.deepcopy(doc)
+    release_croissant.validate(doc)
+    assert doc == before
+    assert "@base" not in release_croissant.CONTEXT

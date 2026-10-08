@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import hashlib
 import io
 
 import pyarrow.parquet as pq
@@ -71,3 +72,31 @@ def test_dedup_gate_json_not_ok_fails(tmp_path):
     assert _has(run_dedup_gate(build), "dedup_report")
     (build / "DEDUP_GATE.json").write_text('{"ok": true}')
     assert run_dedup_gate(build).passed
+
+
+def _upright(seed: int) -> tuple[str, bytes]:
+    """(sha256 of the upstream bytes, the same picture re-encoded after an EXIF rotation)."""
+    upstream, upright = smooth_png(seed), io.BytesIO()
+    Image.open(io.BytesIO(upstream)).transpose(Image.Transpose.ROTATE_90).save(upright, "PNG")
+    return hashlib.sha256(upstream).hexdigest(), upright.getvalue()
+
+
+def test_exif_transposed_row_keeps_the_upstream_sha_and_passes(tmp_path):
+    sha, upright = _upright(40)
+    result = run_dedup_gate(_build(tmp_path, Img(40, sha=sha, png=upright, exif_transposed=True)))
+    assert result.passed, result.failures
+
+
+def test_the_same_row_without_the_flag_is_still_a_sha256_mismatch(tmp_path):
+    sha, upright = _upright(40)
+    assert _has(run_dedup_gate(_build(tmp_path, Img(40, sha=sha, png=upright))), "sha256_mismatch")
+
+
+def test_exif_transposed_row_must_decode_and_match_its_size(tmp_path):
+    sha, upright = _upright(40)
+    row = Img(40, sha=sha, png=upright, exif_transposed=True, row_size=(32, 64))
+    wrong = run_dedup_gate(_build(tmp_path / "a", row))
+    assert _has(wrong, "size_mismatch") and not _has(wrong, "sha256_mismatch")
+    broken = Img(41, sha="0" * 64, png=b"not an image", exif_transposed=True)
+    result = run_dedup_gate(_build(tmp_path / "b", broken))
+    assert _has(result, "undecodable_image") and not _has(result, "sha256_mismatch")

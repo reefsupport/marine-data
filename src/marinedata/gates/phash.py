@@ -82,6 +82,9 @@ class ImageRecord:
     digest: str  # sha256 of the embedded bytes
     phash: int | None  # None: the bytes do not decode
     where: str
+    exif_transposed: bool = False  # the stored bytes were re-encoded after the EXIF rotation
+    row_size: tuple[int, int] | None = None  # the row's width/height columns, when it has them
+    decoded_size: tuple[int, int] | None = None  # width/height of the embedded bytes
 
 
 def image_configs(build_dir: Path) -> dict[str, list[Path]]:
@@ -90,21 +93,28 @@ def image_configs(build_dir: Path) -> dict[str, list[Path]]:
     return {"images": found["images"]} if "images" in found else found
 
 
+def _row_size(row: dict) -> tuple[int, int] | None:
+    width, height = row.get("width"), row.get("height")
+    return (int(width), int(height)) if width is not None and height is not None else None
+
+
 def scan_images(build_dir: Path) -> list[ImageRecord]:
     from PIL import Image
 
     records = []
     for config, files in image_configs(build_dir).items():
         for path, index, split, row in iter_rows(
-            files, ("image_sha256", "image", "source_id", "source")
+            files,
+            ("image_sha256", "image", "source_id", "source", "exif_transposed", "width", "height"),
         ):
             data = (row.get("image") or {}).get("bytes")
             if not data:
                 continue
+            decoded = None
             try:
                 image = Image.open(io.BytesIO(data))
                 image.load()
-                value = phash(image)
+                value, decoded = phash(image), image.size
             except (OSError, ValueError):
                 value = None
             records.append(
@@ -116,6 +126,9 @@ def scan_images(build_dir: Path) -> list[ImageRecord]:
                     hashlib.sha256(data).hexdigest(),
                     value,
                     f"{config}/{path.name}[{index}]",
+                    bool(row.get("exif_transposed")),
+                    _row_size(row),
+                    decoded,
                 )
             )
     return records

@@ -69,7 +69,17 @@ def run_dedup_gate(
     by_digest: dict[tuple[str, str], list[ImageRecord]] = defaultdict(list)
     for r in records:
         by_digest[(r.config, r.digest)].append(r)
-        if r.image_sha256 != r.digest:
+        if r.exif_transposed:
+            # image_sha256 stays the upstream-bytes identity; the stored bytes were re-encoded after
+            # the EXIF rotation, so they only have to decode (below) and match the row's size
+            if r.row_size and r.decoded_size and r.row_size != r.decoded_size:
+                fail(
+                    "size_mismatch",
+                    _where(r),
+                    f"stored bytes are {r.decoded_size[0]}x{r.decoded_size[1]}, "
+                    f"the row says {r.row_size[0]}x{r.row_size[1]}",
+                )
+        elif r.image_sha256 != r.digest:
             fail(
                 "sha256_mismatch",
                 _where(r),

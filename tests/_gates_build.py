@@ -25,6 +25,7 @@ DEFAULT_SOURCES = [
     {"id": "src-b", "access_class": "open"},
 ]
 _STR = (pa.string(), {"dtype": "string", "_type": "Value"})
+_INT = (pa.int64(), {"dtype": "int64", "_type": "Value"})
 _IMG = (pa.struct([("bytes", pa.binary()), ("path", pa.string())]), {"_type": "Image"})
 _CLASS_MAP = (
     pa.list_(pa.struct([("id", pa.int32()), ("name", pa.string())])),
@@ -96,6 +97,8 @@ class Img:
     shift: int = 0
     sha: str | None = None  # override the image_sha256 column
     png: bytes | None = None  # override the embedded bytes
+    exif_transposed: bool = False  # adds the exif_transposed/width/height columns to `images`
+    row_size: tuple[int, int] | None = None  # override the width/height columns
 
     @property
     def data(self) -> bytes:
@@ -104,6 +107,15 @@ class Img:
     @property
     def digest(self) -> str:
         return hashlib.sha256(self.data).hexdigest()
+
+
+def _size(im: Img) -> tuple[int, int] | None:
+    if im.row_size:
+        return im.row_size
+    try:
+        return Image.open(io.BytesIO(im.data)).size
+    except OSError:
+        return None
 
 
 def default_images() -> list[Img]:
@@ -212,12 +224,24 @@ def make_build(
     cols = (
         IMAGE_COLS if group_column else {k: v for k, v in IMAGE_COLS.items() if k != "split_group"}
     )
+    transposed = any(im.exif_transposed for im in imgs)
+    if transposed:
+        cols = {
+            **cols,
+            "exif_transposed": MASK_COLS["exif_transposed"],
+            "width": _INT,
+            "height": _INT,
+        }
     by_split: dict[str, list[dict]] = {}
     for im in imgs:
-        by_split.setdefault(im.split, []).append({
+        row = {
             "image_sha256": im.sha or im.digest, "image": {"bytes": im.data, "path": None},
             "source_id": im.source, "split_group": im.group or f"g{im.seed}",
-        })  # fmt: skip
+        }  # fmt: skip
+        if transposed:
+            width, height = _size(im) or (None, None)
+            row |= {"exif_transposed": im.exif_transposed, "width": width, "height": height}
+        by_split.setdefault(im.split, []).append(row)
     configs: dict[str, dict[str, int]] = {}
     if by_split:
         write_config(build, "images", by_split, cols)

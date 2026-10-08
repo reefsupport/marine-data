@@ -11,6 +11,7 @@ as the Hub writes them) and list-of-struct columns such as ``boxes`` become ``su
 
 from __future__ import annotations
 
+import copy
 import hashlib
 from pathlib import Path
 
@@ -191,7 +192,7 @@ def build_croissant(
         {"@type": "sc:Organization", "name": "Reef Support", "url": "https://reef.support"}
     )
     doc = {
-        "@context": CONTEXT,
+        "@context": copy.deepcopy(CONTEXT),
         "@type": "sc:Dataset",
         "conformsTo": "http://mlcommons.org/croissant/1.0",
         "name": name or repo_id.split("/")[-1],
@@ -219,7 +220,8 @@ def validate(doc: dict) -> tuple[str, str]:
     except ImportError:
         return "not-validated", "mlcroissant is not installed (extra `croissant`)"
     try:
-        mlc.Dataset(jsonld=doc)
+        # mlcroissant adds "@base" to the dict it is given: validate a copy, never the original
+        mlc.Dataset(jsonld=copy.deepcopy(doc))
     except Exception as err:  # mlcroissant raises ValidationError with every issue listed
         return "invalid", str(err)[:1500]
     return "valid", ""
