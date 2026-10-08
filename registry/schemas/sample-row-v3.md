@@ -39,5 +39,5 @@ means "checked, no evidence" and is never replaced by a guess; null means "not d
 ```
 marinedata metadata resolve <source> --out <dir>          # writes <dir>/<source>/<version>/{samples.parquet,coverage.json}
 marinedata release gate --metadata <dir> [--gates GATES.json]   # coverage floors + licence checks, merged into GATES.json["metadata"]
-python -m marinedata.hf_export ... --metadata-dir <dir>          # fill-only join by image_sha256; no flag = output unchanged
+python -m marinedata.hf_export ... --metadata-dir <dir>          # fill-only join by image_sha256 into `metadata` and 15 `points` columns; no flag = `metadata` unchanged, `points` columns null
 ```

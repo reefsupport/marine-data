@@ -1,8 +1,8 @@
 """Join resolved per-row metadata onto the exported ``metadata`` config (PA-P2.2/P2.4).
 
 ``hf_export --metadata-dir <dir>`` reads ``<dir>/<source>/<version>/samples.parquet`` (the resolver
-output) and joins it to the ``metadata`` config by ``image_sha256``. The join adds no row: the set
-of
+output) and joins it to the ``metadata`` config, and 15 of its columns to the ``points`` config
+(PA-P2.6), by ``image_sha256``. The join adds no row: the set of
 ``image_sha256`` in every config, and every image and mask byte, are identical with and without it
 (the P2.3 contract). It is FILL-ONLY: a column the config already has keeps every non-null value and
 only gains a value where it was null (the staged geo is null where the resolver found a position);
@@ -55,6 +55,18 @@ EXTRA_COLUMNS: tuple[tuple[str, str], ...] = (
 )
 """Candidate columns; those the config already has are only filled, the rest are appended."""
 GEO_COLUMNS = frozenset({"lat", "lon", "coord_precision_m", "geo_source"})
+POINTS = "points"
+POINTS_COLUMNS: tuple[tuple[str, str], ...] = tuple(
+    (name, dict(EXTRA_COLUMNS)[name])
+    for name in (
+        "lat", "lon", "date", "date_precision", "coord_precision_m", "depth_m", "platform",
+        "site_id", "quadrat_id", "survey_id", "region",
+        "license", "license_url", "attribution", "rights_holder",
+    )
+)  # fmt: skip
+"""The image-level geo, date and licence columns of the HF ``points`` config (PA-P2.6): SampleRow v3
+names typed as in :data:`EXTRA_COLUMNS`. ``license`` is the image's; the annotation's own terms stay
+in ``ann_license``/``ann_attribution``."""
 
 
 def _plain(value: Any) -> Any:
@@ -95,18 +107,28 @@ def fill_values(
     return out
 
 
-def join_resolved(
+def _widen(
     layout: Mapping[str, Any],
+    key: str,
+    candidates: tuple[tuple[str, str], ...],
     resolved_by_sha: Mapping[str, Mapping[str, Any]],
-    no_geo_sources: frozenset[str] = frozenset(),
+    no_geo_sources: frozenset[str],
+    *,
+    always: bool = False,
+    only: frozenset[str] | None = None,
+    generalized: frozenset[str] = frozenset(),
 ) -> dict[str, Any]:
-    """``layout`` with the ``metadata`` config widened by the resolved columns (a new layout)."""
-    entry = layout.get(METADATA)
-    if entry is None or not resolved_by_sha:
+    """``layout`` with config ``key`` widened by the ``candidates`` it lacks and each row filled
+    from its resolved record by ``image_sha256`` with :func:`fill_values` (a new layout). Without
+    resolved rows nothing is done unless ``always`` (the columns are then appended, null); ``only``
+    narrows the columns taken from a record; a position is withheld for ``no_geo_sources``, a row
+    marked ``location_generalized`` and the ``generalized`` image hashes."""
+    entry = layout.get(key)
+    if entry is None or not (resolved_by_sha or always):
         return dict(layout)
     spec, splits = entry
     have = {name for name, _ in spec.columns}
-    extra = tuple(c for c in EXTRA_COLUMNS if c[0] not in have)
+    extra = tuple(c for c in candidates if c[0] not in have)
     new_spec = replace(spec, columns=(*spec.columns, *extra))
     blank = {name: None for name, _ in extra}
     new_splits: dict[str, list] = {}
@@ -114,13 +136,62 @@ def join_resolved(
         merged = []
         for row in rows:
             values = {**blank, **row.values}
-            found = resolved_by_sha.get(values.get("image_sha256"), {})
-            keep_geo = values.get("source_id") in no_geo_sources or values.get(
-                "location_generalized"
+            sha = values.get("image_sha256") or values.get("sha256")
+            found = resolved_by_sha.get(sha, {})
+            if only is not None:
+                found = {k: v for k, v in found.items() if k in only}
+            keep_geo = (
+                values.get("source_id") in no_geo_sources
+                or values.get("location_generalized")
+                or sha in generalized
             )
             merged.append(replace(row, values=fill_values(values, found, bool(keep_geo))))
         new_splits[split] = merged
-    return {**layout, METADATA: (new_spec, new_splits)}
+    return {**layout, key: (new_spec, new_splits)}
+
+
+def join_resolved(
+    layout: Mapping[str, Any],
+    resolved_by_sha: Mapping[str, Mapping[str, Any]],
+    no_geo_sources: frozenset[str] = frozenset(),
+) -> dict[str, Any]:
+    """``layout`` with the ``metadata`` config widened by the resolved columns (a new layout)."""
+    return _widen(layout, METADATA, EXTRA_COLUMNS, resolved_by_sha, no_geo_sources)
+
+
+def join_points_config(
+    layout: Mapping[str, Any],
+    resolved_by_sha: Mapping[str, Mapping[str, Any]],
+    no_geo_sources: frozenset[str] = frozenset(),
+) -> dict[str, Any]:
+    """``layout`` with the HF ``points`` config widened by :data:`POINTS_COLUMNS` (a new layout).
+    The columns exist (null) even with no resolved rows, so the schema does not depend on
+    ``--metadata-dir``; with rows each is filled by ``image_sha256`` by :func:`fill_values`, the
+    one fill-only rule. A position is also withheld from the points of an image whose ``metadata``
+    row is ``location_generalized``. No row is added and no other config is touched."""
+    meta = layout.get(METADATA)
+    generalized = frozenset(
+        r.values["image_sha256"]
+        for rows in (meta[1].values() if meta else ())
+        for r in rows
+        if r.values.get("location_generalized")
+    )
+    return _widen(
+        layout, POINTS, POINTS_COLUMNS, resolved_by_sha, no_geo_sources,
+        always=True, only=frozenset(n for n, _ in POINTS_COLUMNS), generalized=generalized,
+    )  # fmt: skip
+
+
+def join_layout(
+    layout: Mapping[str, Any],
+    resolved_by_sha: Mapping[str, Mapping[str, Any]] | None = None,
+    no_geo_sources: frozenset[str] = frozenset(),
+) -> dict[str, Any]:
+    """The ``hf_export`` join step: ``metadata`` widened only with resolved rows (no
+    ``--metadata-dir``: unchanged), ``points`` always (null columns without)."""
+    resolved = resolved_by_sha or {}
+    joined = join_resolved(layout, resolved, no_geo_sources)
+    return join_points_config(joined, resolved, no_geo_sources)
 
 
 def join_points(

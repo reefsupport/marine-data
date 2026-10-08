@@ -488,9 +488,9 @@ def main(argv: list[str] | None = None) -> int:
         "--metadata-dir",
         type=Path,
         default=None,
-        help="PA-P2.2: resolver output dir (<dir>/<source>/<version>/samples.parquet); "
-        "its columns are "
-        "joined into `metadata` by image_sha256, fill-only (no flag = output unchanged)",
+        help="PA-P2.2/P2.6: resolver output dir (<dir>/<source>/<version>/samples.parquet); "
+        "its columns are joined into `metadata`, and 15 geo/date/licence columns into `points`, "
+        "by image_sha256, fill-only (no flag: `metadata` unchanged, the `points` columns null)",
     )
     args = parser.parse_args(argv)
 
@@ -533,16 +533,12 @@ def main(argv: list[str] | None = None) -> int:
             quality_by_sha={r["image_sha256"]: r for r in quality},
             privacy_flags=privacy.flags,
         )  # fmt: skip
-    if args.metadata_dir:  # PA-P2.2: fill-only join of the resolver output, by image_sha256
-        from .metadata_norm.resolvers.join import (
-            join_resolved,
-            load_resolved,
-            location_sensitive_sources,
-        )
+    from .metadata_norm.resolvers.join import join_layout, load_resolved, location_sensitive_sources
 
-        layout = join_resolved(
-            layout, load_resolved(args.metadata_dir), location_sensitive_sources(registry)
-        )
+    # PA-P2.2/P2.6: fill-only join of the resolver output, by image_sha256, into `metadata` (only
+    # with --metadata-dir) and the `points` config (its geo/date/licence columns exist either way)
+    resolved = load_resolved(args.metadata_dir) if args.metadata_dir else {}
+    layout = join_layout(layout, resolved, location_sensitive_sources(registry))
     summary = export(layout, args.out, sample=args.sample)
     if flavour:
         summary["flavour"] = flavour

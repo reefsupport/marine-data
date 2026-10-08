@@ -3,7 +3,7 @@
 sources:
   - id: coralscapes
     default_platform: unknown
-    platform_evidence: "HF card EPFL-ECEO/coralscapes names no collection platform (checked 2026-10-08); left unknown."
+    platform_evidence: "HF card EPFL-ECEO/coralscapes names no collection platform (checked 2026-10-08); left unknown. Rechecked 2026-10-08 (PA-P2.6): the staged tree holds no README (a single-key GET answers 403 and CHECKSUMS.sha256 lists none) and this registry entry names no platform."
     expect_geo: none
     expect_date: none
     expect_site: required
@@ -472,7 +472,7 @@ sources:
 
   - id: noaa-pifsc-bleaching
     default_platform: unknown
-    platform_evidence: "HF card NMFS-OSI/NOAA-PIFSC-ESD-CORAL-Bleaching-Dataset says only \"underwater imagery collected by NOAA's Ecosystem Sciences Division\"; no platform named, left unknown."
+    platform_evidence: "HF card NMFS-OSI/NOAA-PIFSC-ESD-CORAL-Bleaching-Dataset says only \"underwater imagery collected by NOAA's Ecosystem Sciences Division\"; no platform named, left unknown. Rechecked 2026-10-08 (PA-P2.6): the staged tree holds no README (a single-key GET answers 403 and CHECKSUMS.sha256 lists none) and this registry entry names no platform."
     expect_geo: none
     expect_date: none
     expect_site: required
