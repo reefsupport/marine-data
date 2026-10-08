@@ -38,6 +38,11 @@ sources:
     citation: "fathomnet/fgvc-comp-2023 (GitHub); official Kaggle FGVC10 competition"
     notes: "Folded from registry/ingest-specs/fathomnet-fgvc23.yaml on 2026-10-08 (P1.2). Spec license string, verbatim: 'CC-BY-4.0'. Domain, modalities and capabilities are keyword inferences from the spec text."
     tags: [spec-folded]
+    checksums:
+      version: "rev-4636bed20b3b"
+      root_digest: c31b69e5da0bed6d74623b8b5479e8b6cc00ec280cd787fec3e61d7dc7e783f4
+      files: 5954
+      size_bytes: 9940494443
 
   - id: fathomnet-fgvc25
     domain: deep-sea
@@ -74,6 +79,11 @@ sources:
     citation: "FathomNet 2025 competition (Kaggle); FGVC12 workshop, CVPR 2025"
     notes: "Folded from registry/ingest-specs/fathomnet-fgvc25.yaml on 2026-10-08 (P1.2). Spec license string, verbatim: 'CC-BY-4.0'. Domain, modalities and capabilities are keyword inferences from the spec text."
     tags: [spec-folded]
+    checksums:
+      version: "2025"
+      root_digest: c577676e2e11cacb525d0b5eae22eec6c62c157648ef234a73f8cb6e6b676787
+      files: 9310
+      size_bytes: 25949554677
 
   - id: fathomnet-vme
     domain: deep-sea
@@ -138,6 +148,11 @@ sources:
     citation: "doi:10.5281/zenodo.17393662 — Interferometric Synthetic Aperture Sonar data from the FKt231024 expedition to the Galapagos Spreading Center"
     notes: "Folded from registry/ingest-specs/galapagos-insas.yaml on 2026-10-08 (P1.2). Spec license string, verbatim: 'cc-by-4.0'. Domain, modalities and capabilities are keyword inferences from the spec text."
     tags: [spec-folded]
+    checksums:
+      version: "record-17393662"
+      root_digest: 4f344d4c2d59a29c922bd5837ebe1ac1a994c601de99157be4d20d75cb410036
+      files: 24
+      size_bytes: 16381522617
 
   - id: jamstec-jedi
     domain: deep-sea

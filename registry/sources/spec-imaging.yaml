@@ -65,6 +65,11 @@ sources:
     citation: "doi:10.5281/zenodo.18771165 — AquaScan-1K Side Scan Sonar Dataset"
     notes: "Folded from registry/ingest-specs/aquascan-1k-sss.yaml on 2026-10-08 (P1.2). Spec license string, verbatim: 'mit-license'. Domain, modalities and capabilities are keyword inferences from the spec text."
     tags: [spec-folded]
+    checksums:
+      version: "record-18771165"
+      root_digest: fb8da2a0bf5eef49f91058e7dac9f7755a95d219900ba5e06307251305047ca8
+      files: 1037
+      size_bytes: 2702094137
 
   - id: auv-flc-fls-sunboat
     domain: imaging
@@ -100,6 +105,11 @@ sources:
     citation: "doi:10.5281/zenodo.10544811 — AUV-Based Multi-Sensor Dataset: Forward-Looking Camera (FLC) and Forward-Looking Sonar (FLS) Observations in t"
     notes: "Folded from registry/ingest-specs/auv-flc-fls-sunboat.yaml on 2026-10-08 (P1.2). Spec license string, verbatim: 'cc-by-4.0'. Domain, modalities and capabilities are keyword inferences from the spec text."
     tags: [spec-folded]
+    checksums:
+      version: "record-10544811"
+      root_digest: 56b301381b83d4463d6d9e41f7cdc80d4aa0b189764f625a2888e1bd447c53c6
+      files: 17680
+      size_bytes: 37675629219
 
   - id: estonefish-scenes-real
     domain: imaging
@@ -133,6 +143,11 @@ sources:
     citation: "doi:10.5281/zenodo.18473013 — eStonefish-Scenes: A Sim-to-Real Validated and Robot-Centric Event-based Optical Flow Dataset for Underwater V"
     notes: "Folded from registry/ingest-specs/estonefish-scenes-real.yaml on 2026-10-08 (P1.2). Spec license string, verbatim: 'cc-by-4.0'. Domain, modalities and capabilities are keyword inferences from the spec text."
     tags: [spec-folded]
+    checksums:
+      version: "1.0"
+      root_digest: 193a11b0a92701b1a63287f17e285efb589d33d0e60bdbaa5e37848a6bd6c6ad
+      files: 4
+      size_bytes: 8990
 
   - id: gbif-marine
     domain: imaging
@@ -348,6 +363,11 @@ sources:
     citation: "doi:10.5281/zenodo.10119320 — Sidescan Sonar Substrate, Depth, and Shadow Image-Label-Pairs"
     notes: "Folded from registry/ingest-specs/pingmapper-sss-seg.yaml on 2026-10-08 (P1.2). Spec license string, verbatim: 'cc-by-4.0'. Domain, modalities and capabilities are keyword inferences from the spec text."
     tags: [spec-folded]
+    checksums:
+      version: "v1.0.0"
+      root_digest: bd3ecb803d9efef49f705fdd7dbc44fde7879c4c672937cdb3eae7c88ab814d3
+      files: 31017
+      size_bytes: 13791818380
 
   - id: sonar-rgb-diver-lake
     domain: imaging
@@ -413,6 +433,11 @@ sources:
     citation: "HF dataset Lingpenghaha/Sonarsweep_dataset"
     notes: "Folded from registry/ingest-specs/sonarsweep.yaml on 2026-10-08 (P1.2). Spec license string, verbatim: 'unstated'. Domain, modalities and capabilities are keyword inferences from the spec text."
     tags: [spec-folded]
+    checksums:
+      version: "rev-350b20a9acaf"
+      root_digest: fd9f74e9b356daf806015b34030f358b994fe58b0fb2e64c8050ef91069cb415
+      files: 127401
+      size_bytes: 8754460800
 
   - id: sss-mine-detection
     domain: imaging
@@ -448,6 +473,11 @@ sources:
     citation: "doi:10.6084/m9.figshare.24574879.v2 — <i>Side-scan sonar imaging for Mine detection</i>"
     notes: "Folded from registry/ingest-specs/sss-mine-detection.yaml on 2026-10-08 (P1.2). Spec license string, verbatim: 'CC BY 4.0'. Domain, modalities and capabilities are keyword inferences from the spec text."
     tags: [spec-folded]
+    checksums:
+      version: "2"
+      root_digest: c8e0a9baa019030d0d84469aa1426494bc466a017598b5187ea91f22b0d8d3d2
+      files: 1174
+      size_bytes: 218683403
 
   - id: sss-ssl-sediments
     domain: imaging
@@ -511,6 +541,11 @@ sources:
     citation: "doi:10.5281/zenodo.13692547 — SWDD: Sonar Wall Detection Dataset"
     notes: "Folded from registry/ingest-specs/swdd-sss-wall.yaml on 2026-10-08 (P1.2). Spec license string, verbatim: 'cc-by-4.0'. Domain, modalities and capabilities are keyword inferences from the spec text."
     tags: [spec-folded]
+    checksums:
+      version: "record-13692547"
+      root_digest: ea8e35fff66f9273c93163402492f52a59819e1131c627113006c162b9ded0c3
+      files: 10776
+      size_bytes: 5249804498
 
   - id: uatd
     domain: imaging
@@ -547,6 +582,11 @@ sources:
     notes: "Folded from registry/ingest-specs/uatd.yaml on 2026-10-08 (P1.2). Spec license string, verbatim: 'CC BY 4.0'. Domain, modalities and capabilities are keyword inferences from the spec text."
     tags: [spec-folded]
     release_skip_reason: "non-image-modality: audio"
+    checksums:
+      version: "3"
+      root_digest: d86209e997c916f2bc8b5507c5733ff5fab518e0347380f95dbf12a97eee47cf
+      files: 9215
+      size_bytes: 34280467488
 
   - id: usod
     domain: imaging
@@ -580,6 +620,11 @@ sources:
     citation: "Islam, Luo, Sattar 2020, RSS"
     notes: "Folded from registry/ingest-specs/usod.yaml on 2026-10-08 (P1.2). Spec license string, verbatim: 'unknown (see homepage)'. Domain, modalities and capabilities are keyword inferences from the spec text."
     tags: [spec-folded]
+    checksums:
+      version: "zip-fb2a1c738fd7"
+      root_digest: 30259c88e5ddd9b20444ed937b2d4c87495a43fc8eafd841f5795734cb4b2f2e
+      files: 14603
+      size_bytes: 357892122
 
   - id: uw-stereodepth-40k
     domain: imaging
@@ -678,6 +723,11 @@ sources:
     citation: "doi:10.5281/zenodo.10951021 — Underwater Image/Turbidity Dataset"
     notes: "Folded from registry/ingest-specs/uwturbidity-fnu.yaml on 2026-10-08 (P1.2). Spec license string, verbatim: 'agpl-3.0-or-later'. Domain, modalities and capabilities are keyword inferences from the spec text."
     tags: [spec-folded]
+    checksums:
+      version: "1.0.0"
+      root_digest: d2d42002c3506ec988fabb3fd7f47bf7d89f7768d0d1ebddf333aea48039dbeb
+      files: 678
+      size_bytes: 2964936065
 
   - id: uxo-acoustic-optical
     domain: imaging
@@ -712,4 +762,9 @@ sources:
     notes: "Folded from registry/ingest-specs/uxo-acoustic-optical.yaml on 2026-10-08 (P1.2). Spec license string, verbatim: 'bsd-3-clause'. Domain, modalities and capabilities are keyword inferences from the spec text."
     tags: [spec-folded]
     release_skip_reason: "non-image-modality: audio"
+    checksums:
+      version: "1.1"
+      root_digest: a1d4aa1c93a3fca569a0a00ba2266fa44f87473462a9e0f34b88e232360a923a
+      files: 6
+      size_bytes: 7381932
 

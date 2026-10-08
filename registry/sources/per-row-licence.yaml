@@ -81,3 +81,8 @@ sources:
     citation: Anantharajah et al. 2014, WACV
     homepage: https://www.kaggle.com/datasets/giannisgeorgiou/fish-species
     tags: [per-row-licence, fish]
+    checksums:
+      version: "zip-ce6985436f9b"
+      root_digest: daa14fd96a76e7011451f7dd1793f4708d91fa4919651658e6adae7dd175572f
+      files: 13235
+      size_bytes: 1421284316

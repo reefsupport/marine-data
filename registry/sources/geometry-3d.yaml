@@ -162,7 +162,7 @@ sources:
       version: "zip-6fc81e3c43a5"
       root_digest: 1ea830727733657f0b5b6f60ef23912995a2c44717b8355d0456038573e6f163
       files: 3603
-      size_bytes: 1966506966
+      size_bytes: 1966882001
     verification:
       verified_on: 2026-08-17
       verified_by: "github.com/zkawfanx/Atlantis — MIT licence"

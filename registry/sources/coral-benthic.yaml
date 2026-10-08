@@ -20,7 +20,7 @@ sources:
       version: "1.0"
       root_digest: da0ed5b386664e73176cbde0654771509f5f208f22d63c26d2d1d42963826a3e
       files: 4154
-      size_bytes: 5848379518
+      size_bytes: 5848880734
     verification:
       verified_on: 2026-08-18
       verified_by: >
@@ -439,7 +439,7 @@ sources:
       version: "rev-3da50a4429e4"
       root_digest: 8c337c4308ebe3fbbd3ca7ce8ed00a29bb88fa6cf92aabb1fed0fde5aa3ef031
       files: 11809
-      size_bytes: 24247939309
+      size_bytes: 24249291208
     modalities: [image]
     capabilities: [vqa-captioning, general-pretraining, benthic-classification]
     n_images: 11804
@@ -507,7 +507,7 @@ sources:
       version: "1-image-labels"
       root_digest: 655165d2409fd038df530e68b5132cb509c1d0dbb350ad380b50065539ae8ddc
       files: 10421
-      size_bytes: 767895660
+      size_bytes: 769036546
     modalities: [image]
     capabilities: [bleaching-assessment]
     loader:
@@ -672,7 +672,7 @@ sources:
       version: "2026-09-19-bc53d5a2c0b6"
       root_digest: 152db0e89bea9baf9b02b4ddbdc3b3a8c2845b361a8b2e60df695387df0c2e7a
       files: 18566
-      size_bytes: 50559907142
+      size_bytes: 50562171990
     verification:
       verified_on: 2026-08-17
       verified_by: "registry.opendata.aws/coralreef-image-classification-training — CC BY-NC-SA 4.0"
@@ -907,7 +907,7 @@ sources:
       version: "v6i-image-labels-r2"
       root_digest: da617d411c97fd28b3663d21455cc79e0ff7180726be4708311817946d56c473
       files: 2553
-      size_bytes: 187269681
+      size_bytes: 187632080
     modalities: [image]
     capabilities: [bleaching-assessment, general-pretraining]
     n_images: 2551
@@ -1003,7 +1003,7 @@ sources:
       version: "v1-yolov8s-image-labels-r2"
       root_digest: dae37098cfc58536cbbacc23bcd765d47925cb5fe2ea556910c16d4880560d28
       files: 2545
-      size_bytes: 186669980
+      size_bytes: 187031200
     modalities: [image]
     capabilities: [bleaching-assessment, general-pretraining]
     n_images: 2543
@@ -1105,7 +1105,7 @@ sources:
       version: "v13i-image-labels"
       root_digest: 86da47568aa97a8326169fc173573b63987c16a08c32a1f4e315c6d516a5bdfb
       files: 2791
-      size_bytes: 185594622
+      size_bytes: 185996006
     modalities: [image]
     capabilities: [bleaching-assessment, general-pretraining]
     n_images: 2789
@@ -1210,7 +1210,7 @@ sources:
       version: "v2i-image-labels"
       root_digest: f1335a1a4b729d5273d84b605ef61aa256f3de94e6d4729131e9be900a98f340
       files: 10783
-      size_bytes: 790558657
+      size_bytes: 792035145
     modalities: [image]
     capabilities: [bleaching-assessment, general-pretraining]
     n_images: 10781
@@ -1301,7 +1301,7 @@ sources:
       version: "v3i-image-labels"
       root_digest: 17e31b15399c46dfd9816e7ab5ad7dded9599f464db9258e83f96e16402f9655
       files: 4558
-      size_bytes: 239232782
+      size_bytes: 239868450
     modalities: [image]
     capabilities: [bleaching-assessment, general-pretraining]
     n_images: 4556
@@ -1374,7 +1374,7 @@ sources:
       version: "unversioned"
       root_digest: 89c788ae29f42c1cbe2ac6a394360b7abf9223ae5ff82fd8f3ecee433bcec659
       files: 9845
-      size_bytes: 831410317
+      size_bytes: 832877376
     access:
       method: s3
       uri: s3://rs-storage-open/sources/coralseg-ucsd-mosaics/unversioned/
@@ -1494,7 +1494,7 @@ sources:
       version: "2026-10-06"
       root_digest: 62cd8f47cae32a420c79954d72f8c2a2bfcd5019eb23fb996670fc8ad2e7ac86
       files: 12376
-      size_bytes: 19481192006
+      size_bytes: 19482420425
     modalities: [image]
     capabilities: [general-pretraining]
     n_images: 11870
@@ -1758,7 +1758,7 @@ sources:
     checksums:
       version: "rev-83f0a33679b0"
       root_digest: 9744a7fa4eb30acfa1d5ef0c625ec1b06790d1a780f04b8cc88706b86b5ea19e
-      files: 1193
+      files: 1192
       size_bytes: 48555758
     access:
       method: s3

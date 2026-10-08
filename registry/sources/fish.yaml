@@ -650,7 +650,7 @@ sources:
     name: "A Large Scale Fish Dataset (Ulucan et al.) — market/out-of-water"
     # habitat inferred (WP-2b): OUT OF WATER (market/countertop fish photos), never in situ
     habitat: [artificial]
-    version: "unversioned"
+    version: "zip-ffec025d7f5a"
     description: >
       Market/countertop photos of whole fish and shrimp laid out for sale (9 species:
       Sea Bass, Red Mullet, Gilt Head Bream, Red Sea Bream, Shrimp, Black Sea Sprat,
@@ -690,6 +690,11 @@ sources:
     coverage: { regions: [unknown] }
     loader: { layout: metadata-only }
     tags: [out-of-water, market, general-pretraining, release-excluded, quarantined]
+    checksums:
+      version: "zip-ffec025d7f5a"
+      root_digest: aa752cd64dcaff010fd5ca905ca8cb2a9dc8968ca36a3911bf613a8ccb6ae818
+      files: 18433
+      size_bytes: 3498273866
 
   # ---- HK-4a (2026-10-06): the five staged fish/fauna box sources that had no entry ("Unknown source"). ----
   - id: obsea-fish
@@ -777,6 +782,11 @@ sources:
       match_field: stem
       template: "uiis/{group}"
     tags: [instance-seg, usis-uiis]
+    checksums:
+      version: "rev-44ca5db46599"
+      root_digest: 665f217331362fb3f04f386e92ef9d764abad0b721d6c7c6c8f199d94feec119
+      files: 4633
+      size_bytes: 635190157
 
   - id: uiis10k
     access_class: open
@@ -818,6 +828,11 @@ sources:
       match_field: stem
       template: "uiis10k/{group}"
     tags: [instance-seg, usis-uiis]
+    checksums:
+      version: "rev-5c4316368a8e"
+      root_digest: db2b3b8ad13723fdf32f57d7c9b9205de2ff151af95c97e15ae613662412e71d
+      files: 10053
+      size_bytes: 512403738
 
   - id: usis10k
     access_class: open
@@ -859,6 +874,11 @@ sources:
       match_field: stem
       template: "usis10k/{group}"
     tags: [instance-seg, usis-uiis, salient]
+    checksums:
+      version: "rev-b10f41ab819b"
+      root_digest: b09022870191d59a08a260c2bbadd15f396f12dc9ff114fd13814f147708c513
+      files: 10641
+      size_bytes: 581243526
 
   - id: roboflow-aquarium
     access_class: open
@@ -905,3 +925,8 @@ sources:
       match_field: stem
       template: "roboflow-aquarium/{group}"
     tags: [aquarium, captive, yolo]
+    checksums:
+      version: "zip-5d30fed3dd5a"
+      root_digest: c9b4677f9e11329321c1f381e72bac08c1ec27e3b23a93858d83554efe8e28d1
+      files: 1279
+      size_bytes: 70795284

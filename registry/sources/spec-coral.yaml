@@ -119,6 +119,11 @@ sources:
     citation: "CSIRO, Google, Kaggle 2022, TensorFlow Great Barrier Reef competition"
     notes: "Folded from registry/ingest-specs/csiro-cots.yaml on 2026-10-08 (P1.2). Spec license string, verbatim: 'unknown (see homepage); Kaggle competition rules govern reuse'. Domain, modalities and capabilities are keyword inferences from the spec text."
     tags: [spec-folded]
+    checksums:
+      version: "zip-eb9e280ea1ca"
+      root_digest: 40ef8a79605e2d57a8ac3bf68afeea640cd21d3a671d96a28f8b035105c2e8ae
+      files: 23507
+      size_bytes: 15228553478
 
   - id: deepreefmap
     domain: coral
@@ -181,6 +186,11 @@ sources:
     citation: "davanstrien/Elliott_Bay_benthic_imagery (HF)"
     notes: "Folded from registry/ingest-specs/elliott-bay-benthic.yaml on 2026-10-08 (P1.2). Spec license string, verbatim: 'cc-by-nc-4.0'. Domain, modalities and capabilities are keyword inferences from the spec text."
     tags: [spec-folded]
+    checksums:
+      version: "rev-cd20e627ba77"
+      root_digest: 720301a6e18cfde0b07579bd9de2b30aa7adbc17c1d7e023a1d923583fddde0c
+      files: 1503
+      size_bytes: 45301906521
 
   - id: meuvs-video-summ
     domain: coral
@@ -216,6 +226,11 @@ sources:
     citation: "doi:10.5281/zenodo.20746075 — Multi-Environment Underwater Video Summarization Dataset (MEUVS)"
     notes: "Folded from registry/ingest-specs/meuvs-video-summ.yaml on 2026-10-08 (P1.2). Spec license string, verbatim: 'cc-by-4.0'. Domain, modalities and capabilities are keyword inferences from the spec text."
     tags: [spec-folded]
+    checksums:
+      version: "record-20746075"
+      root_digest: e33c489a72b13735666d1e70520b1003d9fb9908e84f07bcfd9d74175f518ef6
+      files: 40592
+      size_bytes: 6768264015
 
   - id: noaa-pifsc-esa-coral-icra
     domain: coral
@@ -252,6 +267,11 @@ sources:
     notes: "Folded from registry/ingest-specs/noaa-pifsc-esa-coral-icra.yaml on 2026-10-08 (P1.2). Spec license string, verbatim: 'other (HF card)'. Domain, modalities and capabilities are keyword inferences from the spec text. The spec said access_class: open; tightened to internal-only because its licence string does not establish a licence (never guess). Loosen after verifying it."
     tags: [spec-folded]
     superseded_by: noaa-coral-icra
+    checksums:
+      version: "rev-b5e722f7c11e"
+      root_digest: b776eabfe5066dfd477d5a0cfdf26683cf8f10eb4bd79ea43c4be02f36bc3332
+      files: 473
+      size_bytes: 5140124601
 
   - id: plc-beijbom2015
     domain: coral
@@ -402,6 +422,11 @@ sources:
     citation: "HF dataset nobg/RMAS"
     notes: "Folded from registry/ingest-specs/rmas-hf.yaml on 2026-10-08 (P1.2). Spec license string, verbatim: 'unstated'. Domain, modalities and capabilities are keyword inferences from the spec text."
     tags: [spec-folded]
+    checksums:
+      version: "rev-7eed10d36cd0"
+      root_digest: c9c9c685decefc145cdc4a0779546616cd2bd638bc8ca3fdc7be89eb7126f6bc
+      files: 3017
+      size_bytes: 495309145
 
   - id: seattle-aquarium
     domain: coral
@@ -437,6 +462,11 @@ sources:
     citation: "Seattle Aquarium ROV benthic imagery (HF)"
     notes: "Folded from registry/ingest-specs/seattle-aquarium.yaml on 2026-10-08 (P1.2). Spec license string, verbatim: 'CC-BY-NC-4.0 (HF card)'. Domain, modalities and capabilities are keyword inferences from the spec text."
     tags: [spec-folded]
+    checksums:
+      version: "rev-78701c4efe73"
+      root_digest: 14363c1f80786361c181d90e3bcd5b75241309eb7b3992c2d5b002f60ef22a82
+      files: 6525
+      size_bytes: 59053650274
 
   - id: uwstereo-syn
     domain: coral
@@ -470,4 +500,9 @@ sources:
     citation: "HF dataset daviddev96/UWStereo_2"
     notes: "Folded from registry/ingest-specs/uwstereo-syn.yaml on 2026-10-08 (P1.2). Spec license string, verbatim: 'mit'. Domain, modalities and capabilities are keyword inferences from the spec text."
     tags: [spec-folded]
+    checksums:
+      version: "rev-62dd4c52418c"
+      root_digest: 1a584e73bf262f15441666ddc7fbfb5c6296b43339276eb737eb234fb6daa956
+      files: 3
+      size_bytes: 6547
 

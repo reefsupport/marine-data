@@ -45,7 +45,7 @@ sources:
       version: "2026-10-06"
       root_digest: 70f0b4516510f565320910477204faadf44bce68251b66d070821db1864e7a74
       files: 18276
-      size_bytes: 4846131071
+      size_bytes: 4848728345
     modalities: [image]
     capabilities:
       - benthic-segmentation
@@ -188,7 +188,7 @@ sources:
       version: "2026-10-06"
       root_digest: 7c97e309ae21b913d920606e461e9a663c97c9b660c45accd8c13a3ab4d2d011
       files: 56025
-      size_bytes: 3326403454
+      size_bytes: 3333401571
     modalities: [image]
     capabilities:
       - benthic-segmentation
@@ -307,7 +307,7 @@ sources:
       version: "2026-09-24"
       root_digest: 2d22bbe938f4a69d9cd2ca13ef123b88195dc7722cad39a4a940b147717ae04a
       files: 1317
-      size_bytes: 1982497341
+      size_bytes: 1982677210
     modalities: [image]
     capabilities: [bleaching-assessment, benthic-segmentation]
     loader:
@@ -408,7 +408,7 @@ sources:
       version: "2026-09-23-2c84cb0c9cda"
       root_digest: 60443dd966feee06538ed585496b3fa3d5687fcfef9e5604f9335c19bafdaa7b
       files: 872
-      size_bytes: 3616064902
+      size_bytes: 3616150247
     modalities: [image]
     capabilities: [benthic-classification, general-pretraining]
     n_images: 870
@@ -573,7 +573,7 @@ sources:
       version: "2026-09-23-3e8612678469"
       root_digest: 9fbc5d88502fc7e67f8358c25416084a2c4efb18a34183f91f30e37ada3de716
       files: 77857
-      size_bytes: 7959632981
+      size_bytes: 7967807944
     modalities: [image]
     capabilities: [coral-instance-segmentation, general-pretraining]
     n_images: 38928

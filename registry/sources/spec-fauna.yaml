@@ -35,6 +35,11 @@ sources:
     citation: "taufiktrf/AQUA20 (HF)"
     notes: "Folded from registry/ingest-specs/aqua20.yaml on 2026-10-08 (P1.2). Spec license string, verbatim: 'unknown (not stated on HF card)'. Domain, modalities and capabilities are keyword inferences from the spec text."
     tags: [spec-folded]
+    checksums:
+      version: "rev-5ccc9d6b8d87"
+      root_digest: b602b0c6e41cc105abce0d0e891025940575d0991e77ede068f8c86e666e03ee
+      files: 8174
+      size_bytes: 205208583
 
   - id: biigle-public
     domain: fauna
@@ -124,6 +129,11 @@ sources:
     citation: "Pedersen, Haurum, Bengtson, Moeslund 2023, WACV Workshops"
     notes: "Folded from registry/ingest-specs/brackishmot.yaml on 2026-10-08 (P1.2). Spec license string, verbatim: 'unknown (see homepage)'. Domain, modalities and capabilities are keyword inferences from the spec text."
     tags: [spec-folded]
+    checksums:
+      version: "zip-e717dc1438aa"
+      root_digest: 6e4b0f176368f0e445dfdefb2a125eecb80528df55f6538c90b44ab2a05ad1de
+      files: 77921
+      size_bytes: 2283642022
 
   - id: discol-peru-basin-ofos
     domain: fauna
@@ -329,6 +339,11 @@ sources:
     citation: "Wong et al. 2025, MarineEval: A Large-scale Benchmark for Marine Understanding in Vision-Language Models, arXiv:2512.21126"
     notes: "Folded from registry/ingest-specs/marineeval.yaml on 2026-10-08 (P1.2). Spec license string, verbatim: 'CC-BY-4.0'. Domain, modalities and capabilities are keyword inferences from the spec text."
     tags: [spec-folded]
+    checksums:
+      version: "rev-cb94f5a61594"
+      root_digest: 8fbd97bb17054712dd9ccd7ad168341bd97397eeb9ce1a0cdd8938a783014f90
+      files: 2676
+      size_bytes: 254898014
 
   - id: marineevt
     domain: fauna
@@ -364,6 +379,11 @@ sources:
     citation: "HF dataset AnTo2209/MarineEVT"
     notes: "Folded from registry/ingest-specs/marineevt.yaml on 2026-10-08 (P1.2). Spec license string, verbatim: 'unstated'. Domain, modalities and capabilities are keyword inferences from the spec text. The spec said access_class: open; tightened to internal-only because its licence string does not establish a licence (never guess). Loosen after verifying it."
     tags: [spec-folded]
+    checksums:
+      version: "rev-37488d3c7690"
+      root_digest: fdfe38fd7fe6082f9cee8b5345aab5683fbbf907b1b6d58e72c118758ac4d366
+      files: 169473
+      size_bytes: 36289266781
 
   - id: mas3k-hf
     domain: fauna
@@ -399,6 +419,11 @@ sources:
     citation: "Li+ 2020 MAS3K"
     notes: "Folded from registry/ingest-specs/mas3k-hf.yaml on 2026-10-08 (P1.2). Spec license string, verbatim: 'unstated'. Domain, modalities and capabilities are keyword inferences from the spec text."
     tags: [spec-folded]
+    checksums:
+      version: "rev-1dff3d4b1fb8"
+      root_digest: 115478b0b1bedfe3712d347fd1500be01941031158254b8de9ac39b69412e4c0
+      files: 8733
+      size_bytes: 2251663055
 
   - id: mermaid
     domain: fauna
@@ -640,6 +665,11 @@ sources:
     citation: "HF dataset zjunlp/OceanGym"
     notes: "Folded from registry/ingest-specs/oceangym.yaml on 2026-10-08 (P1.2). Spec license string, verbatim: 'mit'. Domain, modalities and capabilities are keyword inferences from the spec text."
     tags: [spec-folded]
+    checksums:
+      version: "rev-ca7a8b677cdb"
+      root_digest: 92118e6a2be6e003d9d8bb169953dbdabc077515355d3da644da51e8f1dc053e
+      files: 2015
+      size_bytes: 330737524
 
   - id: onc-camdsb103-fauna
     domain: fauna
@@ -729,6 +759,11 @@ sources:
     citation: "Fu, C. et al. 2023, Rethinking General Underwater Object Detection: Datasets, Challenges, and Solutions, Engineering Applications of Artificial Intelligence 123:106002 (RUOD dataset)"
     notes: "Folded from registry/ingest-specs/ruod.yaml on 2026-10-08 (P1.2). Spec license string, verbatim: 'NOASSERTION'. Domain, modalities and capabilities are keyword inferences from the spec text."
     tags: [spec-folded]
+    checksums:
+      version: "rev-c22094e45b7f"
+      root_digest: 55a4b4e6914e9579d1abf87a8eecaf664930f246517cf991617adda387f2851b
+      files: 14005
+      size_bytes: 3619979937
 
   - id: scallop-pecten-scotland
     domain: fauna
@@ -848,6 +883,11 @@ sources:
     citation: "EnmmmmOvO/SeaTurtleID2022 (HF)"
     notes: "Folded from registry/ingest-specs/seaturtleid2022.yaml on 2026-10-08 (P1.2). Spec license string, verbatim: '?'. Domain, modalities and capabilities are keyword inferences from the spec text."
     tags: [spec-folded]
+    checksums:
+      version: "rev-91cd6c1126c7"
+      root_digest: da7e3e6d78b4f6671be741ddcfa06ec9393b03a1f39732fca06daafc18e10782
+      files: 8732
+      size_bytes: 1760284042
 
   - id: so268-ofos-analysis-ready
     domain: fauna
@@ -943,6 +983,11 @@ sources:
     citation: "doi:10.5281/zenodo.21208479 — Synthetic Seabed Dataset"
     notes: "Folded from registry/ingest-specs/synthetic-seabed-debris.yaml on 2026-10-08 (P1.2). Spec license string, verbatim: 'cc-by-nc-4.0'. Domain, modalities and capabilities are keyword inferences from the spec text."
     tags: [spec-folded]
+    checksums:
+      version: "1.0.0"
+      root_digest: 3ae10a0f8a0d3670a7aacde156a415f7054bcfed679e49114a98d569fb74761c
+      files: 5533
+      size_bytes: 4464552466
 
   - id: trash-icra19
     domain: fauna

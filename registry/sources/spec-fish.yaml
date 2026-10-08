@@ -37,6 +37,11 @@ sources:
     citation: "doi:10.5281/zenodo.5046708 — Acoustic video cameras multi-species multi-cameras Training Dataset (TD) for Deep Learning applications"
     notes: "Folded from registry/ingest-specs/aris-didson-fish-td.yaml on 2026-10-08 (P1.2). Spec license string, verbatim: 'cc-by-4.0'. Domain, modalities and capabilities are keyword inferences from the spec text."
     tags: [spec-folded]
+    checksums:
+      version: "record-5046708"
+      root_digest: 73935d36ce7c64b771d13958ec6564402b919c3b324778c6e01d8c04b7f9c567
+      files: 19229
+      size_bytes: 4586075143
 
   - id: caige-salmon-seg-reid
     domain: fish
@@ -160,6 +165,11 @@ sources:
     citation: "HF dataset perona-lab/Huntington_and_Caltech_Koi_RGB_and_Sonar"
     notes: "Folded from registry/ingest-specs/koi-rgb-sonar.yaml on 2026-10-08 (P1.2). Spec license string, verbatim: 'mit'. Domain, modalities and capabilities are keyword inferences from the spec text."
     tags: [spec-folded]
+    checksums:
+      version: "rev-4120e0f1b59d"
+      root_digest: 61889c69d52b7a3edfb41bf4f7ba420ccc14ba1a3c2ecc27545339f281fbefe8
+      files: 36201
+      size_bytes: 228418738711
 
   - id: lfitw
     domain: fish
@@ -285,6 +295,11 @@ sources:
     citation: "NOAA DSCRTP National Database for Deep-Sea Corals and Sponges"
     notes: "Folded from registry/ingest-specs/noaa-dsc-csv.yaml on 2026-10-08 (P1.2). Spec license string, verbatim: 'public-domain (US federal government work)'. Domain, modalities and capabilities are keyword inferences from the spec text."
     tags: [spec-folded]
+    checksums:
+      version: "zip-5257227aef7d"
+      root_digest: a169edefa01b9007043a79457c0cf514874ac72d235cebf607d29f59a61d1b16
+      files: 4
+      size_bytes: 146113857
 
   - id: noaa-oceaneyes
     domain: fish
@@ -318,6 +333,11 @@ sources:
     citation: "NOAA OceanEyes (Zooniverse-labelled fish frames), NOAA NODD"
     notes: "Folded from registry/ingest-specs/noaa-oceaneyes.yaml on 2026-10-08 (P1.2). Spec license string, verbatim: 'public domain (US government work) — NODD'. Domain, modalities and capabilities are keyword inferences from the spec text."
     tags: [spec-folded]
+    checksums:
+      version: "list-a11ed85b698b"
+      root_digest: 3541e84c0e7d994c31b2d3edc07d10de736b01d908e75b91de58f1abe7ffa105
+      files: 20069
+      size_bytes: 1848381043
 
   - id: pomerfish
     domain: fish

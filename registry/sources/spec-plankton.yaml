@@ -37,6 +37,11 @@ sources:
     citation: "doi:10.5281/zenodo.18405776 — In situ marine plankton holographic image dataset - Baltic Sea 2024"
     notes: "Folded from registry/ingest-specs/aqqua-baltic-holo.yaml on 2026-10-08 (P1.2). Spec license string, verbatim: 'cc-by-4.0'. Domain, modalities and capabilities are keyword inferences from the spec text."
     tags: [spec-folded]
+    checksums:
+      version: "record-18405776"
+      root_digest: 13867e92f96d4f4917141c8e9be589e3608bea5775b14a6cff90833177e0df7f
+      files: 88071
+      size_bytes: 1530168430
 
   - id: ecotaxa-public-export
     domain: plankton
@@ -98,6 +103,11 @@ sources:
     citation: "sosiklab/NES-plankton-classifier-2022-dataset (HF)"
     notes: "Folded from registry/ingest-specs/nes-plankton-2022.yaml on 2026-10-08 (P1.2). Spec license string, verbatim: 'cc-by-4.0'. Domain, modalities and capabilities are keyword inferences from the spec text."
     tags: [spec-folded]
+    checksums:
+      version: "rev-18fb2e57fd77"
+      root_digest: 20b756cdfd7493f2ad64551e09569db2ac2dba5c9062b6935e23fd6643546c9a
+      files: 97029
+      size_bytes: 1585705056
 
   - id: noaa-plankton-shadowgraphs
     domain: plankton
@@ -159,6 +169,11 @@ sources:
     citation: "bcdemattei/plankton_interaction_videos (HF)"
     notes: "Folded from registry/ingest-specs/plankton-interaction-videos.yaml on 2026-10-08 (P1.2). Spec license string, verbatim: 'apache-2.0'. Domain, modalities and capabilities are keyword inferences from the spec text."
     tags: [spec-folded]
+    checksums:
+      version: "rev-f7d40238215e"
+      root_digest: e5ba5324be407c4210e5acaee2c3b0dbeb8ec544ce2f50a5ab915544736d3229
+      files: 21224
+      size_bytes: 5675300200
 
   - id: plankton-noctiluca-capsules
     domain: plankton

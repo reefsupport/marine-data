@@ -389,7 +389,7 @@ class Source(_Frozen):
     n_images_method: str | None = None
     """How ``n_images`` was obtained (P1.2): ``ingest-json`` | ``metadata-parquet`` | ``listing``
     (read off the stored tree; re-checked nightly by ``tests/test_registry_counts.py``),
-    ``spec:<field>`` (an ingest spec's own claim) or ``upstream`` (the dataset card or paper).
+    ``spec:<field>`` (an ingest spec's own claim) or ``registry-prior`` (the dataset card or paper).
     ``None`` only while ``n_images`` is unknown."""
     superseded_by: str | None = None
     """Id of the canonical entry this one duplicates or renames (checked at registry load). The
