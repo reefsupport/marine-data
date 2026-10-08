@@ -632,3 +632,7 @@ def add_release_subparser(sub: argparse._SubParsersAction) -> None:
         "--gates", default="GATES.json", help="GATES.json to merge into (created if absent)"
     )
     p_gate.set_defaults(func=_cmd_release_gate)
+
+    from .cli_release_card import add_card_commands
+
+    add_card_commands(release_sub)

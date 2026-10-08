@@ -1,0 +1,299 @@
+pretty_name: Reef Support Marine Data
+license: other
+license_name: per-source-open-licences
+license_link: https://huggingface.co/datasets/reefsupport/marine-data#licensing
+language:
+- en
+task_categories:
+- image-segmentation
+- object-detection
+task_ids:
+- semantic-segmentation
+- instance-segmentation
+annotations_creators:
+- expert-generated
+- found
+source_datasets:
+- original
+- extended|EPFL-ECEO/coralscapes
+- extended|LiamLian0727/UIIS
+- extended|LiamLian0727/UIIS10K
+- extended|LiamLian0727/USIS10K
+size_categories:
+- 10K<n<100K
+tags:
+- marine
+- coral-reef
+- underwater
+- biology
+- ecology
+- conservation
+- coral
+- benthic
+- fish
+- semantic-segmentation
+- instance-segmentation
+- object-detection
+- reef-support
+configs:
+- config_name: coral-masks
+  data_files:
+  - split: train
+    path: data/coral-masks/train-*.parquet
+  - split: validation
+    path: data/coral-masks/validation-*.parquet
+  - split: test
+    path: data/coral-masks/test-*.parquet
+- config_name: scene-masks
+  data_files:
+  - split: train
+    path: data/scene-masks/train-*.parquet
+  - split: validation
+    path: data/scene-masks/validation-*.parquet
+  - split: test
+    path: data/scene-masks/test-*.parquet
+- config_name: instance-masks
+  data_files:
+  - split: train
+    path: data/instance-masks/train-*.parquet
+  - split: validation
+    path: data/instance-masks/validation-*.parquet
+  - split: test
+    path: data/instance-masks/test-*.parquet
+- config_name: fish-boxes
+  data_files:
+  - split: train
+    path: data/fish-boxes/train-*.parquet
+  - split: validation
+    path: data/fish-boxes/validation-*.parquet
+  - split: test
+    path: data/fish-boxes/test-*.parquet
+dataset_info:
+- config_name: coral-masks
+  features:
+  - name: image_sha256
+    dtype: string
+  - name: image
+    dtype: image
+  - name: mask
+    dtype: image
+  - name: class_map
+    list:
+    - name: id
+      dtype: int64
+    - name: label_native
+      dtype: string
+    - name: taxon_node
+      dtype: string
+    - name: coarse
+      dtype: string
+  - name: source
+    dtype: string
+  - name: licence
+    dtype: string
+  - name: annotation_licence
+    dtype: string
+  - name: attribution
+    dtype: string
+  - name: split
+    dtype: string
+  - name: split_group
+    dtype: string
+  - name: annotator_type
+    dtype: string
+  - name: width
+    dtype: int64
+  - name: height
+    dtype: int64
+  - name: lat
+    dtype: float64
+  - name: lon
+    dtype: float64
+  splits:
+  - name: train
+    num_bytes: 9153321030
+    num_examples: 4585
+  - name: validation
+    num_bytes: 1158030974
+    num_examples: 569
+  - name: test
+    num_bytes: 2298037470
+    num_examples: 843
+  download_size: 12605218916
+  dataset_size: 12609389474
+- config_name: scene-masks
+  features:
+  - name: image_sha256
+    dtype: string
+  - name: image
+    dtype: image
+  - name: mask
+    dtype: image
+  - name: class_map
+    list:
+    - name: id
+      dtype: int64
+    - name: label_native
+      dtype: string
+    - name: taxon_node
+      dtype: string
+    - name: coarse
+      dtype: string
+  - name: source
+    dtype: string
+  - name: licence
+    dtype: string
+  - name: annotation_licence
+    dtype: string
+  - name: attribution
+    dtype: string
+  - name: split
+    dtype: string
+  - name: split_group
+    dtype: string
+  - name: annotator_type
+    dtype: string
+  - name: width
+    dtype: int64
+  - name: height
+    dtype: int64
+  - name: lat
+    dtype: float64
+  - name: lon
+    dtype: float64
+  splits:
+  - name: train
+    num_bytes: 131595262
+    num_examples: 1181
+  - name: validation
+    num_bytes: 18902759
+    num_examples: 163
+  - name: test
+    num_bytes: 26694258
+    num_examples: 254
+  download_size: 176938754
+  dataset_size: 177192279
+- config_name: instance-masks
+  features:
+  - name: image_sha256
+    dtype: string
+  - name: image
+    dtype: image
+  - name: mask
+    dtype: image
+  - name: instances
+    list:
+    - name: id
+      dtype: int64
+    - name: label_native
+      dtype: string
+    - name: taxon_node
+      dtype: string
+    - name: coarse
+      dtype: string
+    - name: bbox_xyxy_norm
+      list: float64
+  - name: source
+    dtype: string
+  - name: licence
+    dtype: string
+  - name: annotation_licence
+    dtype: string
+  - name: attribution
+    dtype: string
+  - name: split
+    dtype: string
+  - name: split_group
+    dtype: string
+  - name: annotator_type
+    dtype: string
+  - name: width
+    dtype: int64
+  - name: height
+    dtype: int64
+  - name: lat
+    dtype: float64
+  - name: lon
+    dtype: float64
+  splits:
+  - name: train
+    num_bytes: 1096824536
+    num_examples: 19409
+  - name: validation
+    num_bytes: 147633173
+    num_examples: 2284
+  - name: test
+    num_bytes: 148350145
+    num_examples: 3603
+  download_size: 1382020733
+  dataset_size: 1392807854
+- config_name: fish-boxes
+  features:
+  - name: image_sha256
+    dtype: string
+  - name: image
+    dtype: image
+  - name: source_id
+    dtype: string
+  - name: split_group
+    dtype: string
+  - name: split
+    dtype: string
+  - name: license
+    dtype: string
+  - name: licence_class
+    dtype: string
+  - name: attribution
+    dtype: string
+  - name: upstream_id
+    dtype: string
+  - name: upstream_url
+    dtype: string
+  - name: lat
+    dtype: float64
+  - name: lon
+    dtype: float64
+  - name: depth_m
+    dtype: float64
+  - name: meow_realm
+    dtype: string
+  - name: habitat
+    dtype: string
+  - name: width
+    dtype: int32
+  - name: height
+    dtype: int32
+  - name: points
+    list:
+    - name: x
+      dtype: float32
+    - name: y
+      dtype: float32
+    - name: label
+      dtype: string
+    - name: t1_class
+      dtype: string
+  - name: boxes
+    list:
+    - name: x_min
+      dtype: float32
+    - name: y_min
+      dtype: float32
+    - name: x_max
+      dtype: float32
+    - name: y_max
+      dtype: float32
+    - name: label
+      dtype: string
+  splits:
+  - name: train
+    num_bytes: 1155289083
+    num_examples: 18967
+  - name: validation
+    num_bytes: 113026303
+    num_examples: 3473
+  - name: test
+    num_bytes: 105155452
+    num_examples: 3472
+  download_size: 1361890950
+  dataset_size: 1373470838

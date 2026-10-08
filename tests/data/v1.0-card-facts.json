@@ -1,0 +1,541 @@
+{
+ "_provenance": "v1.0 facts: INV-HF counts/bytes/features as written in the hand-written card front-matter (reports/2026-10-08-INV-HF.md) and the per-config source tables of that card; licences and everything else come from the registry. Used by tests/test_release_card.py.",
+ "pretty_name": "Reef Support Marine Data",
+ "language": [
+  "en"
+ ],
+ "annotations_creators": [
+  "expert-generated",
+  "found"
+ ],
+ "source_datasets_hf": {
+  "coralscapes": "EPFL-ECEO/coralscapes"
+ },
+ "release": {
+  "id": "v1.0",
+  "label": "v1.0 (October 2026)",
+  "date_label": "October 2026",
+  "built": "2026-10-06",
+  "note": "First release: four configurations, 58,803 rows, eight sources."
+ },
+ "licence_display": {
+  "reef-support-seaview-labels": "images CC BY 3.0, masks CC BY 4.0"
+ },
+ "configs": {
+  "coral-masks": {
+   "features": [
+    {
+     "name": "image_sha256",
+     "dtype": "string"
+    },
+    {
+     "name": "image",
+     "dtype": "image"
+    },
+    {
+     "name": "mask",
+     "dtype": "image"
+    },
+    {
+     "name": "class_map",
+     "list": [
+      {
+       "name": "id",
+       "dtype": "int64"
+      },
+      {
+       "name": "label_native",
+       "dtype": "string"
+      },
+      {
+       "name": "taxon_node",
+       "dtype": "string"
+      },
+      {
+       "name": "coarse",
+       "dtype": "string"
+      }
+     ]
+    },
+    {
+     "name": "source",
+     "dtype": "string"
+    },
+    {
+     "name": "licence",
+     "dtype": "string"
+    },
+    {
+     "name": "annotation_licence",
+     "dtype": "string"
+    },
+    {
+     "name": "attribution",
+     "dtype": "string"
+    },
+    {
+     "name": "split",
+     "dtype": "string"
+    },
+    {
+     "name": "split_group",
+     "dtype": "string"
+    },
+    {
+     "name": "annotator_type",
+     "dtype": "string"
+    },
+    {
+     "name": "width",
+     "dtype": "int64"
+    },
+    {
+     "name": "height",
+     "dtype": "int64"
+    },
+    {
+     "name": "lat",
+     "dtype": "float64"
+    },
+    {
+     "name": "lon",
+     "dtype": "float64"
+    }
+   ],
+   "download_size": 12605218916,
+   "sources": {
+    "coralscapes": {
+     "rows": 2075,
+     "splits": {
+      "train": 1517,
+      "validation": 166,
+      "test": 392
+     }
+    },
+    "reef-support-benthic-own": {
+     "rows": 1226,
+     "splits": {
+      "train": 930,
+      "validation": 129,
+      "test": 167
+     }
+    },
+    "reef-support-seaview-labels": {
+     "rows": 2696,
+     "splits": {
+      "train": 2138,
+      "validation": 274,
+      "test": 284
+     }
+    }
+   },
+   "splits": {
+    "train": {
+     "num_examples": 4585,
+     "num_bytes": 9153321030,
+     "prefix": "train"
+    },
+    "validation": {
+     "num_examples": 569,
+     "num_bytes": 1158030974,
+     "prefix": "validation"
+    },
+    "test": {
+     "num_examples": 843,
+     "num_bytes": 2298037470,
+     "prefix": "test"
+    }
+   }
+  },
+  "scene-masks": {
+   "features": [
+    {
+     "name": "image_sha256",
+     "dtype": "string"
+    },
+    {
+     "name": "image",
+     "dtype": "image"
+    },
+    {
+     "name": "mask",
+     "dtype": "image"
+    },
+    {
+     "name": "class_map",
+     "list": [
+      {
+       "name": "id",
+       "dtype": "int64"
+      },
+      {
+       "name": "label_native",
+       "dtype": "string"
+      },
+      {
+       "name": "taxon_node",
+       "dtype": "string"
+      },
+      {
+       "name": "coarse",
+       "dtype": "string"
+      }
+     ]
+    },
+    {
+     "name": "source",
+     "dtype": "string"
+    },
+    {
+     "name": "licence",
+     "dtype": "string"
+    },
+    {
+     "name": "annotation_licence",
+     "dtype": "string"
+    },
+    {
+     "name": "attribution",
+     "dtype": "string"
+    },
+    {
+     "name": "split",
+     "dtype": "string"
+    },
+    {
+     "name": "split_group",
+     "dtype": "string"
+    },
+    {
+     "name": "annotator_type",
+     "dtype": "string"
+    },
+    {
+     "name": "width",
+     "dtype": "int64"
+    },
+    {
+     "name": "height",
+     "dtype": "int64"
+    },
+    {
+     "name": "lat",
+     "dtype": "float64"
+    },
+    {
+     "name": "lon",
+     "dtype": "float64"
+    }
+   ],
+   "download_size": 176938754,
+   "sources": {
+    "suim": {
+     "rows": 1598,
+     "splits": {
+      "train": 1181,
+      "validation": 163,
+      "test": 254
+     }
+    }
+   },
+   "splits": {
+    "train": {
+     "num_examples": 1181,
+     "num_bytes": 131595262,
+     "prefix": "train"
+    },
+    "validation": {
+     "num_examples": 163,
+     "num_bytes": 18902759,
+     "prefix": "validation"
+    },
+    "test": {
+     "num_examples": 254,
+     "num_bytes": 26694258,
+     "prefix": "test"
+    }
+   }
+  },
+  "instance-masks": {
+   "features": [
+    {
+     "name": "image_sha256",
+     "dtype": "string"
+    },
+    {
+     "name": "image",
+     "dtype": "image"
+    },
+    {
+     "name": "mask",
+     "dtype": "image"
+    },
+    {
+     "name": "instances",
+     "list": [
+      {
+       "name": "id",
+       "dtype": "int64"
+      },
+      {
+       "name": "label_native",
+       "dtype": "string"
+      },
+      {
+       "name": "taxon_node",
+       "dtype": "string"
+      },
+      {
+       "name": "coarse",
+       "dtype": "string"
+      },
+      {
+       "name": "bbox_xyxy_norm",
+       "list": "float64"
+      }
+     ]
+    },
+    {
+     "name": "source",
+     "dtype": "string"
+    },
+    {
+     "name": "licence",
+     "dtype": "string"
+    },
+    {
+     "name": "annotation_licence",
+     "dtype": "string"
+    },
+    {
+     "name": "attribution",
+     "dtype": "string"
+    },
+    {
+     "name": "split",
+     "dtype": "string"
+    },
+    {
+     "name": "split_group",
+     "dtype": "string"
+    },
+    {
+     "name": "annotator_type",
+     "dtype": "string"
+    },
+    {
+     "name": "width",
+     "dtype": "int64"
+    },
+    {
+     "name": "height",
+     "dtype": "int64"
+    },
+    {
+     "name": "lat",
+     "dtype": "float64"
+    },
+    {
+     "name": "lon",
+     "dtype": "float64"
+    }
+   ],
+   "download_size": 1382020733,
+   "sources": {
+    "uiis": {
+     "rows": 4622,
+     "splits": {
+      "train": 3932,
+      "validation": 690
+     }
+    },
+    "uiis10k": {
+     "rows": 10042,
+     "splits": {
+      "train": 8035,
+      "test": 2007
+     }
+    },
+    "usis10k": {
+     "rows": 10632,
+     "splits": {
+      "train": 7442,
+      "validation": 1594,
+      "test": 1596
+     }
+    }
+   },
+   "splits": {
+    "train": {
+     "num_examples": 19409,
+     "num_bytes": 1096824536,
+     "prefix": "train"
+    },
+    "validation": {
+     "num_examples": 2284,
+     "num_bytes": 147633173,
+     "prefix": "validation"
+    },
+    "test": {
+     "num_examples": 3603,
+     "num_bytes": 148350145,
+     "prefix": "test"
+    }
+   }
+  },
+  "fish-boxes": {
+   "features": [
+    {
+     "name": "image_sha256",
+     "dtype": "string"
+    },
+    {
+     "name": "image",
+     "dtype": "image"
+    },
+    {
+     "name": "source_id",
+     "dtype": "string"
+    },
+    {
+     "name": "split_group",
+     "dtype": "string"
+    },
+    {
+     "name": "split",
+     "dtype": "string"
+    },
+    {
+     "name": "license",
+     "dtype": "string"
+    },
+    {
+     "name": "licence_class",
+     "dtype": "string"
+    },
+    {
+     "name": "attribution",
+     "dtype": "string"
+    },
+    {
+     "name": "upstream_id",
+     "dtype": "string"
+    },
+    {
+     "name": "upstream_url",
+     "dtype": "string"
+    },
+    {
+     "name": "lat",
+     "dtype": "float64"
+    },
+    {
+     "name": "lon",
+     "dtype": "float64"
+    },
+    {
+     "name": "depth_m",
+     "dtype": "float64"
+    },
+    {
+     "name": "meow_realm",
+     "dtype": "string"
+    },
+    {
+     "name": "habitat",
+     "dtype": "string"
+    },
+    {
+     "name": "width",
+     "dtype": "int32"
+    },
+    {
+     "name": "height",
+     "dtype": "int32"
+    },
+    {
+     "name": "points",
+     "list": [
+      {
+       "name": "x",
+       "dtype": "float32"
+      },
+      {
+       "name": "y",
+       "dtype": "float32"
+      },
+      {
+       "name": "label",
+       "dtype": "string"
+      },
+      {
+       "name": "t1_class",
+       "dtype": "string"
+      }
+     ]
+    },
+    {
+     "name": "boxes",
+     "list": [
+      {
+       "name": "x_min",
+       "dtype": "float32"
+      },
+      {
+       "name": "y_min",
+       "dtype": "float32"
+      },
+      {
+       "name": "x_max",
+       "dtype": "float32"
+      },
+      {
+       "name": "y_max",
+       "dtype": "float32"
+      },
+      {
+       "name": "label",
+       "dtype": "string"
+      }
+     ]
+    }
+   ],
+   "download_size": 1361890950,
+   "sources": {
+    "uiis10k": {
+     "rows": 10042,
+     "splits": {}
+    },
+    "usis10k": {
+     "rows": 10611,
+     "splits": {}
+    },
+    "uiis": {
+     "rows": 4622,
+     "splits": {}
+    },
+    "roboflow-aquarium": {
+     "rows": 637,
+     "splits": {}
+    }
+   },
+   "splits": {
+    "train": {
+     "num_examples": 18967,
+     "num_bytes": 1155289083,
+     "prefix": "train"
+    },
+    "validation": {
+     "num_examples": 3473,
+     "num_bytes": 113026303,
+     "prefix": "validation"
+    },
+    "test": {
+     "num_examples": 3472,
+     "num_bytes": 105155452,
+     "prefix": "test"
+    }
+   }
+  }
+ }
+}
