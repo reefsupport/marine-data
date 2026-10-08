@@ -170,11 +170,26 @@ class LoaderSpec(_Frozen):
         return self.verified_on is not None
 
 
+SHA256_PATTERN = re.compile(r"^(sha256:)?[0-9a-f]{64}$")
+
+
 class Access(_Frozen):
     method: AccessMethod
     uri: str | None = None
     gated: bool = False
     size_bytes: int | None = None
+    sha256: str | None = Field(
+        default=None,
+        description="Declared sha256 of the fetched artefact, e.g. 'sha256:<64 hex>' or "
+        "the bare 64-char hex digest. `fetch_sample` verifies the downloaded bytes "
+        "against this and raises on mismatch. Optional today — most of the 60 sources "
+        "don't declare one yet, and requiring it everywhere on day one would block "
+        "them all — but a plaintext `http://` source has nothing else vouching for "
+        "what arrived, so `fetch_sample` requires one there. See fetch.py's digest "
+        "handling for what this does and does not yet cover (only artefacts fetched "
+        "in full; a Range-read sample cannot check a whole-file digest without "
+        "downloading the whole file, which defeats the point of a bounded sample).",
+    )
     params: dict[str, str | int | bool] = Field(default_factory=dict)
     """Fetcher parameters — e.g. ``hf_id``, ``image_column``, ``sample_url``.
 
@@ -188,6 +203,15 @@ class Access(_Frozen):
     def _gated_needs_note(self) -> Access:
         if self.gated and not self.notes:
             raise ValueError("gated=true requires notes describing the gate")
+        return self
+
+    @model_validator(mode="after")
+    def _sha256_shape(self) -> Access:
+        if self.sha256 is not None and not SHA256_PATTERN.match(self.sha256):
+            raise ValueError(
+                f"sha256 {self.sha256!r} is not a 64-char hex digest "
+                f"(optionally prefixed 'sha256:')"
+            )
         return self
 
 

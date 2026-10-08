@@ -11,6 +11,7 @@ from __future__ import annotations
 import argparse
 import sys
 
+from .cli_auth import add_auth_subparser  # D9: `marinedata auth check`
 from .cli_bench import add_bench_subparser  # WP-11 P1: registry/benchmarks.yaml validate+hash
 from .cli_decon import add_decon_subparser  # WP-12 P2: benchmark decontamination gate
 from .cli_dedup import add_dedup_subparser
@@ -512,6 +513,8 @@ def build_parser() -> argparse.ArgumentParser:
         help="check: also gate the sources named in this release manifest (repeatable)",
     )
     p_tax.set_defaults(func=_cmd_taxonomy)
+
+    add_auth_subparser(sub)
 
     return parser
 

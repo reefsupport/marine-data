@@ -252,3 +252,21 @@ def _release_lock_optional(request):
     else:
         with unlocked_for_tests():
             yield
+
+
+@pytest.fixture(autouse=True)
+def _anonymous_s3_by_default(monkeypatch: pytest.MonkeyPatch, tmp_path_factory) -> None:
+    """No test signs a request with a developer's real key: the resolver sees no env keys and
+    an rclone.conf that does not exist, so it returns ``None`` (anonymous) unless a test sets
+    ``MARINEDATA_S3_*`` / ``MARINEDATA_RCLONE_CONF`` itself."""
+    for name in (
+        "MARINEDATA_S3_ACCESS_KEY",
+        "MARINEDATA_S3_SECRET_KEY",
+        "MARINEDATA_S3_ENDPOINT",
+        "MARINEDATA_S3_REGION",
+        "MARINEDATA_RCLONE_REMOTE",
+    ):
+        monkeypatch.delenv(name, raising=False)
+    monkeypatch.setenv(
+        "MARINEDATA_RCLONE_CONF", str(tmp_path_factory.getbasetemp() / "no-rclone.conf")
+    )
