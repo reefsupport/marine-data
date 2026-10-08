@@ -164,7 +164,7 @@ def test_kaggle_bleaching_is_internal_and_dropped():
     ("source", "expected"),
     [
         ("large-scale-fish", OPEN),
-        ("marineevt", OPEN),
+        ("marineevt", INTERNAL_ONLY),  # P1.2: licence unstated
         ("seatizen-atlas", OPEN),
         ("mouss-seg", UNKNOWN),
         ("noaa-coral-icra", UNKNOWN),
