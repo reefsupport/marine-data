@@ -386,6 +386,14 @@ class Source(_Frozen):
     )
     counts_note: str | None = None
     """Provenance of the three counts above: what was counted, when, and how."""
+    n_images_method: str | None = None
+    """How ``n_images`` was obtained (P1.2): ``ingest-json`` | ``metadata-parquet`` | ``listing``
+    (read off the stored tree; re-checked nightly by ``tests/test_registry_counts.py``),
+    ``spec:<field>`` (an ingest spec's own claim) or ``upstream`` (the dataset card or paper).
+    ``None`` only while ``n_images`` is unknown."""
+    superseded_by: str | None = None
+    """Id of the canonical entry this one duplicates or renames (checked at registry load). The
+    entry stays so old references keep resolving; new work should use the target."""
 
     @property
     def primary_count(self) -> int | None:

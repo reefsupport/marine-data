@@ -1,0 +1,40 @@
+# Entries folded from registry/ingest-specs/ by scripts/registry_fold_specs.py
+# (P1.2, 2026-10-08). Every field is the spec's own claim; edit freely, the script never
+# rewrites an id it did not add.
+
+sources:
+  - id: deepseagrass
+    domain: seagrass
+    access_class: restricted-nd
+    name: "deepseagrass"
+    version: "dap-47653-72004"
+    description: "Raine et al. 2020, DeepSeagrass v1, CSIRO Data Collection, doi:10.25919/spmy-5151"
+    licence: CC-BY-NC-ND-4.0
+    legal_basis: licence
+    redistribution: unknown
+    provenance: public
+    verification:
+      verified_on: 2026-10-08
+      verified_by: "registry/ingest-specs/deepseagrass.yaml: license field copied verbatim, not independently checked"
+      method: secondary
+    access:
+      method: s3
+      uri: s3://rs-storage-open/sources/deepseagrass/dap-47653-72004
+      notes: "rs-storage-open copy of the upstream dataset (staged tree dap-47653-72004); upstream: https://data.csiro.au/collection/csiro:47653"
+      params:
+        bucket: rs-storage-open
+        endpoint: hel1.your-objectstorage.com
+        region: hel1
+        prefix: sources/deepseagrass/dap-47653-72004/
+      size_bytes: 5615306028
+    modalities: [image]
+    capabilities: [general-pretraining]
+    loader: { layout: staged-tree }
+    n_images: 72003
+    n_images_method: "spec:measured.items"
+    coverage: { regions: [unknown] }
+    homepage: "https://data.csiro.au/collection/csiro:47653"
+    citation: "Raine et al. 2020, DeepSeagrass v1, CSIRO Data Collection, doi:10.25919/spmy-5151"
+    notes: "Folded from registry/ingest-specs/deepseagrass.yaml on 2026-10-08 (P1.2). Spec license string, verbatim: 'cc-by-nc-nd-4.0'. Domain, modalities and capabilities are keyword inferences from the spec text."
+    tags: [spec-folded]
+

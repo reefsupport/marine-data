@@ -1,0 +1,470 @@
+# Entries folded from registry/ingest-specs/ by scripts/registry_fold_specs.py
+# (P1.2, 2026-10-08). Every field is the spec's own claim; edit freely, the script never
+# rewrites an id it did not add.
+
+sources:
+  - id: benthicnet
+    domain: coral
+    access_class: unknown
+    name: "benthicnet"
+    version: "unversioned"
+    description: "Lowe et al. 2025, Sci Data, doi:10.20383/103.0614"
+    licence: PER-SOURCE-VARIES
+    legal_basis: unknown
+    redistribution: unknown
+    provenance: public
+    verification:
+      verified_on: 2026-10-08
+      verified_by: "registry/ingest-specs/benthicnet.yaml: license field copied verbatim, not independently checked"
+      method: secondary
+    access:
+      method: http
+      uri: "https://www.frdr-dfdr.ca/repo/dataset/24c6c813-d0ff-4461-8174-3f960f1edc0d"
+      notes: "ingest adapter frdr-https; see registry/ingest-specs/benthicnet.yaml"
+    modalities: [image]
+    capabilities: [benthic-classification]
+    loader: { layout: metadata-only }
+    coverage: { regions: [unknown] }
+    homepage: "https://www.frdr-dfdr.ca/repo/dataset/24c6c813-d0ff-4461-8174-3f960f1edc0d"
+    citation: "Lowe et al. 2025, Sci Data, doi:10.20383/103.0614"
+    notes: "Folded from registry/ingest-specs/benthicnet.yaml on 2026-10-08 (P1.2). Spec license string, verbatim: 'CC-BY-4.0 (mixed per source survey)'. Domain, modalities and capabilities are keyword inferences from the spec text."
+    tags: [spec-folded]
+    release_skip_reason: "no-staged-images: registry lists imagery, nothing staged under sources/ in rs-storage-open (U7/queue follow-up)"
+
+  - id: coralnet-public
+    domain: coral
+    access_class: internal-only
+    name: "coralnet public"
+    version: "unversioned"
+    description: "Beijbom et al. / CoralNet"
+    licence: PER-SOURCE-VARIES
+    legal_basis: unknown
+    redistribution: unknown
+    provenance: public
+    verification:
+      verified_on: 2026-10-08
+      verified_by: "registry/ingest-specs/coralnet-public.yaml: license field copied verbatim, not independently checked"
+      method: secondary
+    access:
+      method: request
+      uri: "https://coralnet.ucsd.edu/source/about/"
+      notes: "ingest adapter needs:coralnet-browse; see registry/ingest-specs/coralnet-public.yaml"
+    modalities: [image]
+    capabilities: [benthic-classification]
+    loader: { layout: metadata-only }
+    coverage: { regions: [unknown] }
+    homepage: "https://coralnet.ucsd.edu/source/about/"
+    citation: "Beijbom et al. / CoralNet"
+    notes: "Folded from registry/ingest-specs/coralnet-public.yaml on 2026-10-08 (P1.2). Spec license string, verbatim: 'per source (set by each source owner)'. Domain, modalities and capabilities are keyword inferences from the spec text."
+    tags: [spec-folded]
+    release_skip_reason: "no-staged-images: registry lists imagery, nothing staged under sources/ in rs-storage-open (U7/queue follow-up)"
+
+  - id: coralvos
+    domain: coral
+    access_class: internal-only
+    name: "coralvos"
+    version: "unversioned"
+    description: "github.com/hkust-vgd/coralVOS"
+    licence: NO-LICENCE-STATED
+    legal_basis: unknown
+    redistribution: unknown
+    provenance: public
+    verification:
+      verified_on: 2026-10-08
+      verified_by: "registry/ingest-specs/coralvos.yaml: license field copied verbatim, not independently checked"
+      method: secondary
+    access:
+      method: request
+      uri: "https://github.com/hkust-vgd/coralVOS"
+      notes: "ingest adapter needs:gdrive-login; see registry/ingest-specs/coralvos.yaml"
+    modalities: [image]
+    capabilities: [benthic-classification]
+    loader: { layout: metadata-only }
+    coverage: { regions: [unknown] }
+    homepage: "https://github.com/hkust-vgd/coralVOS"
+    citation: "github.com/hkust-vgd/coralVOS"
+    notes: "Folded from registry/ingest-specs/coralvos.yaml on 2026-10-08 (P1.2). Spec license string, verbatim: 'unknown (not stated in repo)'. Domain, modalities and capabilities are keyword inferences from the spec text."
+    tags: [spec-folded]
+    release_skip_reason: "no-staged-images: registry lists imagery, nothing staged under sources/ in rs-storage-open (U7/queue follow-up)"
+
+  - id: csiro-cots
+    domain: coral
+    access_class: internal-only
+    name: "csiro cots"
+    version: "zip-eb9e280ea1ca"
+    description: "CSIRO, Google, Kaggle 2022, TensorFlow Great Barrier Reef competition"
+    licence: NO-LICENCE-STATED
+    legal_basis: unknown
+    redistribution: unknown
+    provenance: public
+    verification:
+      verified_on: 2026-10-08
+      verified_by: "registry/ingest-specs/csiro-cots.yaml: license field copied verbatim, not independently checked"
+      method: secondary
+    access:
+      method: s3
+      uri: s3://rs-storage-open/sources/csiro-cots/zip-eb9e280ea1ca
+      notes: "rs-storage-open copy of the upstream dataset (staged tree zip-eb9e280ea1ca); upstream: https://www.kaggle.com/competitions/tensorflow-great-barrier-reef"
+      params:
+        bucket: rs-storage-open
+        endpoint: hel1.your-objectstorage.com
+        region: hel1
+        prefix: sources/csiro-cots/zip-eb9e280ea1ca/
+      size_bytes: 15228553478
+    modalities: [image]
+    capabilities: [benthic-classification]
+    loader: { layout: staged-tree }
+    coverage: { regions: [unknown] }
+    homepage: "https://www.kaggle.com/competitions/tensorflow-great-barrier-reef"
+    citation: "CSIRO, Google, Kaggle 2022, TensorFlow Great Barrier Reef competition"
+    notes: "Folded from registry/ingest-specs/csiro-cots.yaml on 2026-10-08 (P1.2). Spec license string, verbatim: 'unknown (see homepage); Kaggle competition rules govern reuse'. Domain, modalities and capabilities are keyword inferences from the spec text."
+    tags: [spec-folded]
+
+  - id: deepreefmap
+    domain: coral
+    access_class: open
+    name: "deepreefmap"
+    version: "unversioned"
+    description: "Sauder+ 2024"
+    licence: CC-BY-4.0
+    legal_basis: licence
+    redistribution: ok
+    provenance: public
+    verification:
+      verified_on: 2026-10-08
+      verified_by: "registry/ingest-specs/deepreefmap.yaml: license field copied verbatim, not independently checked"
+      method: secondary
+    access:
+      method: zenodo
+      uri: "https://zenodo.org/records/10624794"
+      notes: "ingest adapter zenodo; see registry/ingest-specs/deepreefmap.yaml"
+    modalities: [image]
+    capabilities: [benthic-classification]
+    loader: { layout: metadata-only }
+    coverage: { regions: [unknown] }
+    homepage: "https://zenodo.org/records/10624794"
+    citation: "Sauder+ 2024"
+    notes: "Folded from registry/ingest-specs/deepreefmap.yaml on 2026-10-08 (P1.2). Spec license string, verbatim: 'CC-BY-4.0'. Domain, modalities and capabilities are keyword inferences from the spec text."
+    tags: [spec-folded]
+    release_skip_reason: "no-staged-images: registry lists imagery, nothing staged under sources/ in rs-storage-open (U7/queue follow-up)"
+
+  - id: elliott-bay-benthic
+    domain: coral
+    access_class: restricted-nc
+    name: "elliott bay benthic"
+    version: "rev-cd20e627ba77"
+    description: "davanstrien/Elliott_Bay_benthic_imagery (HF)"
+    licence: CC-BY-NC-4.0
+    legal_basis: licence
+    redistribution: unknown
+    provenance: public
+    verification:
+      verified_on: 2026-10-08
+      verified_by: "registry/ingest-specs/elliott-bay-benthic.yaml: license field copied verbatim, not independently checked"
+      method: secondary
+    access:
+      method: s3
+      uri: s3://rs-storage-open/sources/elliott-bay-benthic/rev-cd20e627ba77
+      notes: "rs-storage-open copy of the upstream dataset (staged tree rev-cd20e627ba77); upstream: https://huggingface.co/datasets/davanstrien/Elliott_Bay_benthic_imagery"
+      params:
+        bucket: rs-storage-open
+        endpoint: hel1.your-objectstorage.com
+        region: hel1
+        prefix: sources/elliott-bay-benthic/rev-cd20e627ba77/
+      size_bytes: 45301906521
+    modalities: [image]
+    capabilities: [benthic-classification]
+    loader: { layout: staged-tree }
+    coverage: { regions: [unknown] }
+    homepage: "https://huggingface.co/datasets/davanstrien/Elliott_Bay_benthic_imagery"
+    citation: "davanstrien/Elliott_Bay_benthic_imagery (HF)"
+    notes: "Folded from registry/ingest-specs/elliott-bay-benthic.yaml on 2026-10-08 (P1.2). Spec license string, verbatim: 'cc-by-nc-4.0'. Domain, modalities and capabilities are keyword inferences from the spec text."
+    tags: [spec-folded]
+
+  - id: meuvs-video-summ
+    domain: coral
+    access_class: open
+    name: "meuvs video summ"
+    version: "record-20746075"
+    description: "doi:10.5281/zenodo.20746075 — Multi-Environment Underwater Video Summarization Dataset (MEUVS)"
+    licence: CC-BY-4.0
+    legal_basis: licence
+    redistribution: ok
+    provenance: public
+    verification:
+      verified_on: 2026-10-08
+      verified_by: "registry/ingest-specs/meuvs-video-summ.yaml: license field copied verbatim, not independently checked"
+      method: secondary
+    access:
+      method: s3
+      uri: s3://rs-storage-open/sources/meuvs-video-summ/record-20746075
+      notes: "rs-storage-open copy of the upstream dataset (staged tree record-20746075); upstream: https://zenodo.org/records/20746075"
+      params:
+        bucket: rs-storage-open
+        endpoint: hel1.your-objectstorage.com
+        region: hel1
+        prefix: sources/meuvs-video-summ/record-20746075/
+      size_bytes: 6768264015
+    modalities: [image]
+    capabilities: [benthic-classification]
+    loader: { layout: staged-tree }
+    n_images: 39974
+    n_images_method: "spec:measured.items"
+    coverage: { regions: [unknown] }
+    homepage: "https://zenodo.org/records/20746075"
+    citation: "doi:10.5281/zenodo.20746075 — Multi-Environment Underwater Video Summarization Dataset (MEUVS)"
+    notes: "Folded from registry/ingest-specs/meuvs-video-summ.yaml on 2026-10-08 (P1.2). Spec license string, verbatim: 'cc-by-4.0'. Domain, modalities and capabilities are keyword inferences from the spec text."
+    tags: [spec-folded]
+
+  - id: noaa-pifsc-esa-coral-icra
+    domain: coral
+    access_class: internal-only
+    name: "noaa pifsc esa coral icra"
+    version: "rev-b5e722f7c11e"
+    description: "NMFS-OSI/NOAA-PIFSC-ESD-ESA-CORAL-ICRA-Dataset (HF)"
+    licence: NO-LICENCE-STATED
+    legal_basis: unknown
+    redistribution: unknown
+    provenance: public
+    verification:
+      verified_on: 2026-10-08
+      verified_by: "registry/ingest-specs/noaa-pifsc-esa-coral-icra.yaml: license field copied verbatim, not independently checked"
+      method: secondary
+    access:
+      method: s3
+      uri: s3://rs-storage-open/sources/noaa-pifsc-esa-coral-icra/rev-b5e722f7c11e
+      notes: "rs-storage-open copy of the upstream dataset (staged tree rev-b5e722f7c11e); upstream: https://huggingface.co/datasets/NMFS-OSI/NOAA-PIFSC-ESD-ESA-CORAL-ICRA-Dataset"
+      params:
+        bucket: rs-storage-open
+        endpoint: hel1.your-objectstorage.com
+        region: hel1
+        prefix: sources/noaa-pifsc-esa-coral-icra/rev-b5e722f7c11e/
+      size_bytes: 5140124601
+    modalities: [image]
+    capabilities: [benthic-classification]
+    loader: { layout: staged-tree }
+    n_images: 944
+    n_images_method: "spec:measured.items"
+    coverage: { regions: [unknown] }
+    homepage: "https://huggingface.co/datasets/NMFS-OSI/NOAA-PIFSC-ESD-ESA-CORAL-ICRA-Dataset"
+    citation: "NMFS-OSI/NOAA-PIFSC-ESD-ESA-CORAL-ICRA-Dataset (HF)"
+    notes: "Folded from registry/ingest-specs/noaa-pifsc-esa-coral-icra.yaml on 2026-10-08 (P1.2). Spec license string, verbatim: 'other (HF card)'. Domain, modalities and capabilities are keyword inferences from the spec text. The spec said access_class: open; tightened to internal-only because its licence string does not establish a licence (never guess). Loosen after verifying it."
+    tags: [spec-folded]
+
+  - id: plc-beijbom2015
+    domain: coral
+    access_class: open
+    name: "plc beijbom2015"
+    version: "unversioned"
+    description: "zenodo.org/records/5000003"
+    licence: CC0-1.0
+    legal_basis: licence
+    redistribution: ok
+    provenance: public
+    verification:
+      verified_on: 2026-10-08
+      verified_by: "registry/ingest-specs/plc-beijbom2015.yaml: license field copied verbatim, not independently checked"
+      method: secondary
+    access:
+      method: zenodo
+      uri: "https://zenodo.org/records/5000003"
+      notes: "ingest adapter zenodo; see registry/ingest-specs/plc-beijbom2015.yaml"
+    modalities: [image]
+    capabilities: [benthic-classification]
+    loader: { layout: metadata-only }
+    n_images: 5090
+    n_images_method: "spec:measured.items"
+    coverage: { regions: [unknown] }
+    homepage: "https://zenodo.org/records/5000003"
+    citation: "zenodo.org/records/5000003"
+    notes: "Folded from registry/ingest-specs/plc-beijbom2015.yaml on 2026-10-08 (P1.2). Spec license string, verbatim: 'cc0-1.0'. Domain, modalities and capabilities are keyword inferences from the spec text."
+    tags: [spec-folded]
+    release_skip_reason: "no-staged-images: registry lists imagery, nothing staged under sources/ in rs-storage-open (U7/queue follow-up)"
+
+  - id: reef-guidance
+    domain: coral
+    access_class: restricted-nc
+    name: "reef guidance"
+    version: "unversioned"
+    description: "QUT QCR"
+    licence: CC-BY-NC-SA-4.0
+    legal_basis: licence
+    redistribution: unknown
+    provenance: public
+    verification:
+      verified_on: 2026-10-08
+      verified_by: "registry/ingest-specs/reef-guidance.yaml: license field copied verbatim, not independently checked"
+      method: secondary
+    access:
+      method: huggingface
+      uri: "https://huggingface.co/datasets/QCR-Underwater-Perception/reef-guidance-system"
+      notes: "ingest adapter hf; see registry/ingest-specs/reef-guidance.yaml"
+    modalities: [image]
+    capabilities: [benthic-classification]
+    loader: { layout: metadata-only }
+    coverage: { regions: [unknown] }
+    homepage: "https://huggingface.co/datasets/QCR-Underwater-Perception/reef-guidance-system"
+    citation: "QUT QCR"
+    notes: "Folded from registry/ingest-specs/reef-guidance.yaml on 2026-10-08 (P1.2). Spec license string, verbatim: 'CC-BY-NC-SA-4.0'. Domain, modalities and capabilities are keyword inferences from the spec text."
+    tags: [spec-folded]
+    release_skip_reason: "no-staged-images: registry lists imagery, nothing staged under sources/ in rs-storage-open (U7/queue follow-up)"
+
+  - id: reefnet-species
+    domain: coral
+    access_class: restricted-nc
+    name: "reefnet species"
+    version: "unversioned"
+    description: "-"
+    licence: NO-LICENCE-STATED
+    legal_basis: unknown
+    redistribution: unknown
+    provenance: public
+    verification:
+      verified_on: 2026-10-08
+      verified_by: "registry/ingest-specs/reefnet-species.yaml: license field copied verbatim, not independently checked"
+      method: secondary
+    access:
+      method: huggingface
+      uri: "https://huggingface.co/datasets/TsinghuaCorals/reefnet_species_images"
+      notes: "ingest adapter hf; see registry/ingest-specs/reefnet-species.yaml"
+    modalities: [image]
+    capabilities: [benthic-classification]
+    loader: { layout: metadata-only }
+    coverage: { regions: [unknown] }
+    homepage: "https://huggingface.co/datasets/TsinghuaCorals/reefnet_species_images"
+    citation: "-"
+    notes: "Folded from registry/ingest-specs/reefnet-species.yaml on 2026-10-08 (P1.2). Spec license string, verbatim: 'NOASSERTION'. Domain, modalities and capabilities are keyword inferences from the spec text."
+    tags: [spec-folded]
+    release_skip_reason: "no-staged-images: registry lists imagery, nothing staged under sources/ in rs-storage-open (U7/queue follow-up)"
+
+  - id: rls-photo-archive
+    domain: coral
+    access_class: unknown
+    name: "rls photo archive"
+    version: "unversioned"
+    description: "reeflifesurvey.com"
+    licence: NO-LICENCE-STATED
+    legal_basis: unknown
+    redistribution: unknown
+    provenance: public
+    verification:
+      verified_on: 2026-10-08
+      verified_by: "registry/ingest-specs/rls-photo-archive.yaml: license field copied verbatim, not independently checked"
+      method: secondary
+    access:
+      method: request
+      uri: "https://reeflifesurvey.com/"
+      notes: "ingest adapter needs:unresolved-host; see registry/ingest-specs/rls-photo-archive.yaml"
+    modalities: [image]
+    capabilities: [benthic-classification]
+    loader: { layout: metadata-only }
+    coverage: { regions: [unknown] }
+    homepage: "https://reeflifesurvey.com/"
+    citation: "reeflifesurvey.com"
+    notes: "Folded from registry/ingest-specs/rls-photo-archive.yaml on 2026-10-08 (P1.2). Spec license string, verbatim: 'unknown (RLS data-sharing policy applies to counts; photo archive terms unclear)'. Domain, modalities and capabilities are keyword inferences from the spec text."
+    tags: [spec-folded]
+    release_skip_reason: "no-staged-images: registry lists imagery, nothing staged under sources/ in rs-storage-open (U7/queue follow-up)"
+
+  - id: rmas-hf
+    domain: coral
+    access_class: internal-only
+    name: "rmas hf"
+    version: "rev-7eed10d36cd0"
+    description: "HF dataset nobg/RMAS"
+    licence: NO-LICENCE-STATED
+    legal_basis: unknown
+    redistribution: unknown
+    provenance: public
+    verification:
+      verified_on: 2026-10-08
+      verified_by: "registry/ingest-specs/rmas-hf.yaml: license field copied verbatim, not independently checked"
+      method: secondary
+    access:
+      method: s3
+      uri: s3://rs-storage-open/sources/rmas-hf/rev-7eed10d36cd0
+      notes: "rs-storage-open copy of the upstream dataset (staged tree rev-7eed10d36cd0); upstream: https://huggingface.co/datasets/nobg/RMAS"
+      params:
+        bucket: rs-storage-open
+        endpoint: hel1.your-objectstorage.com
+        region: hel1
+        prefix: sources/rmas-hf/rev-7eed10d36cd0/
+      size_bytes: 495309145
+    modalities: [image]
+    capabilities: [benthic-segmentation]
+    loader: { layout: staged-tree }
+    n_images: 3014
+    n_images_method: "spec:measured.items"
+    coverage: { regions: [unknown] }
+    homepage: "https://huggingface.co/datasets/nobg/RMAS"
+    citation: "HF dataset nobg/RMAS"
+    notes: "Folded from registry/ingest-specs/rmas-hf.yaml on 2026-10-08 (P1.2). Spec license string, verbatim: 'unstated'. Domain, modalities and capabilities are keyword inferences from the spec text."
+    tags: [spec-folded]
+
+  - id: seattle-aquarium
+    domain: coral
+    access_class: restricted-nc
+    name: "seattle aquarium"
+    version: "rev-78701c4efe73"
+    description: "Seattle Aquarium ROV benthic imagery (HF)"
+    licence: CC-BY-NC-4.0
+    legal_basis: licence
+    redistribution: unknown
+    provenance: public
+    verification:
+      verified_on: 2026-10-08
+      verified_by: "registry/ingest-specs/seattle-aquarium.yaml: license field copied verbatim, not independently checked"
+      method: secondary
+    access:
+      method: s3
+      uri: s3://rs-storage-open/sources/seattle-aquarium/rev-78701c4efe73
+      notes: "rs-storage-open copy of the upstream dataset (staged tree rev-78701c4efe73); upstream: https://huggingface.co/datasets/Seattle-Aquarium/Seattle_Aquarium_benthic_imagery"
+      params:
+        bucket: rs-storage-open
+        endpoint: hel1.your-objectstorage.com
+        region: hel1
+        prefix: sources/seattle-aquarium/rev-78701c4efe73/
+      size_bytes: 59053650274
+    modalities: [image]
+    capabilities: [benthic-classification]
+    loader: { layout: staged-tree }
+    n_images: 6522
+    n_images_method: "spec:measured.items"
+    coverage: { regions: [unknown] }
+    homepage: "https://huggingface.co/datasets/Seattle-Aquarium/Seattle_Aquarium_benthic_imagery"
+    citation: "Seattle Aquarium ROV benthic imagery (HF)"
+    notes: "Folded from registry/ingest-specs/seattle-aquarium.yaml on 2026-10-08 (P1.2). Spec license string, verbatim: 'CC-BY-NC-4.0 (HF card)'. Domain, modalities and capabilities are keyword inferences from the spec text."
+    tags: [spec-folded]
+
+  - id: uwstereo-syn
+    domain: coral
+    access_class: open
+    name: "uwstereo syn"
+    version: "rev-62dd4c52418c"
+    description: "HF dataset daviddev96/UWStereo_2"
+    licence: MIT
+    legal_basis: licence
+    redistribution: ok
+    provenance: public
+    verification:
+      verified_on: 2026-10-08
+      verified_by: "registry/ingest-specs/uwstereo-syn.yaml: license field copied verbatim, not independently checked"
+      method: secondary
+    access:
+      method: s3
+      uri: s3://rs-storage-open/sources/uwstereo-syn/rev-62dd4c52418c
+      notes: "rs-storage-open copy of the upstream dataset (staged tree rev-62dd4c52418c); upstream: https://huggingface.co/datasets/daviddev96/UWStereo_2"
+      params:
+        bucket: rs-storage-open
+        endpoint: hel1.your-objectstorage.com
+        region: hel1
+        prefix: sources/uwstereo-syn/rev-62dd4c52418c/
+      size_bytes: 6547
+    modalities: [image]
+    capabilities: [benthic-classification]
+    loader: { layout: staged-tree }
+    coverage: { regions: [unknown] }
+    homepage: "https://huggingface.co/datasets/daviddev96/UWStereo_2"
+    citation: "HF dataset daviddev96/UWStereo_2"
+    notes: "Folded from registry/ingest-specs/uwstereo-syn.yaml on 2026-10-08 (P1.2). Spec license string, verbatim: 'mit'. Domain, modalities and capabilities are keyword inferences from the spec text."
+    tags: [spec-folded]
+

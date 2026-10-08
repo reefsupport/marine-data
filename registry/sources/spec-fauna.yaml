@@ -1,0 +1,1182 @@
+# Entries folded from registry/ingest-specs/ by scripts/registry_fold_specs.py
+# (P1.2, 2026-10-08). Every field is the spec's own claim; edit freely, the script never
+# rewrites an id it did not add.
+
+sources:
+  - id: aqua20
+    domain: fauna
+    access_class: internal-only
+    name: "aqua20"
+    version: "rev-5ccc9d6b8d87"
+    description: "taufiktrf/AQUA20 (HF)"
+    licence: NO-LICENCE-STATED
+    legal_basis: unknown
+    redistribution: unknown
+    provenance: public
+    verification:
+      verified_on: 2026-10-08
+      verified_by: "registry/ingest-specs/aqua20.yaml: license field copied verbatim, not independently checked"
+      method: secondary
+    access:
+      method: s3
+      uri: s3://rs-storage-open/sources/aqua20/rev-5ccc9d6b8d87
+      notes: "rs-storage-open copy of the upstream dataset (staged tree rev-5ccc9d6b8d87); upstream: https://huggingface.co/datasets/taufiktrf/AQUA20"
+      params:
+        bucket: rs-storage-open
+        endpoint: hel1.your-objectstorage.com
+        region: hel1
+        prefix: sources/aqua20/rev-5ccc9d6b8d87/
+      size_bytes: 205208583
+    modalities: [image]
+    capabilities: [general-pretraining]
+    loader: { layout: staged-tree }
+    coverage: { regions: [unknown] }
+    homepage: "https://huggingface.co/datasets/taufiktrf/AQUA20"
+    citation: "taufiktrf/AQUA20 (HF)"
+    notes: "Folded from registry/ingest-specs/aqua20.yaml on 2026-10-08 (P1.2). Spec license string, verbatim: 'unknown (not stated on HF card)'. Domain, modalities and capabilities are keyword inferences from the spec text."
+    tags: [spec-folded]
+
+  - id: biigle-public
+    domain: fauna
+    access_class: internal-only
+    name: "biigle public"
+    version: "unversioned"
+    description: "biigle.de"
+    licence: NO-LICENCE-STATED
+    legal_basis: unknown
+    redistribution: unknown
+    provenance: public
+    verification:
+      verified_on: 2026-10-08
+      verified_by: "registry/ingest-specs/biigle-public.yaml: license field copied verbatim, not independently checked"
+      method: secondary
+    access:
+      method: request
+      uri: "https://biigle.de/"
+      notes: "ingest adapter needs:biigle-token; see registry/ingest-specs/biigle-public.yaml"
+    modalities: [image]
+    capabilities: [general-pretraining]
+    loader: { layout: metadata-only }
+    coverage: { regions: [unknown] }
+    homepage: "https://biigle.de/"
+    citation: "biigle.de"
+    notes: "Folded from registry/ingest-specs/biigle-public.yaml on 2026-10-08 (P1.2). Spec license string, verbatim: 'per-volume (mostly CC-BY, per BIIGLE norms)'. Domain, modalities and capabilities are keyword inferences from the spec text."
+    tags: [spec-folded]
+    release_skip_reason: "no-staged-images: registry lists imagery, nothing staged under sources/ in rs-storage-open (U7/queue follow-up)"
+
+  - id: brackish
+    domain: fauna
+    access_class: open
+    name: "brackish"
+    version: "unversioned"
+    description: "Pedersen+ CVPRW2019"
+    licence: CC-BY-4.0
+    legal_basis: licence
+    redistribution: ok
+    provenance: public
+    verification:
+      verified_on: 2026-10-08
+      verified_by: "registry/ingest-specs/brackish.yaml: license field copied verbatim, not independently checked"
+      method: secondary
+    access:
+      method: huggingface
+      uri: "https://huggingface.co/datasets/dronefreak/Brackish"
+      notes: "ingest adapter hf; see registry/ingest-specs/brackish.yaml"
+    modalities: [image]
+    capabilities: [general-pretraining]
+    loader: { layout: metadata-only }
+    coverage: { regions: [unknown] }
+    homepage: "https://huggingface.co/datasets/dronefreak/Brackish"
+    citation: "Pedersen+ CVPRW2019"
+    notes: "Folded from registry/ingest-specs/brackish.yaml on 2026-10-08 (P1.2). Spec license string, verbatim: 'CC-BY-4.0'. Domain, modalities and capabilities are keyword inferences from the spec text."
+    tags: [spec-folded]
+    release_skip_reason: "no-staged-images: registry lists imagery, nothing staged under sources/ in rs-storage-open (U7/queue follow-up)"
+
+  - id: brackishmot
+    domain: fauna
+    access_class: unknown
+    name: "brackishmot"
+    version: "zip-e717dc1438aa"
+    description: "Pedersen, Haurum, Bengtson, Moeslund 2023, WACV Workshops"
+    licence: NO-LICENCE-STATED
+    legal_basis: unknown
+    redistribution: unknown
+    provenance: public
+    verification:
+      verified_on: 2026-10-08
+      verified_by: "registry/ingest-specs/brackishmot.yaml: license field copied verbatim, not independently checked"
+      method: secondary
+    access:
+      method: s3
+      uri: s3://rs-storage-open/sources/brackishmot/zip-e717dc1438aa
+      notes: "rs-storage-open copy of the upstream dataset (staged tree zip-e717dc1438aa); upstream: https://www.kaggle.com/datasets/aalborguniversity/brackishmot"
+      params:
+        bucket: rs-storage-open
+        endpoint: hel1.your-objectstorage.com
+        region: hel1
+        prefix: sources/brackishmot/zip-e717dc1438aa/
+      size_bytes: 2283642022
+    modalities: [image]
+    capabilities: [general-pretraining]
+    loader: { layout: staged-tree }
+    coverage: { regions: [unknown] }
+    homepage: "https://www.kaggle.com/datasets/aalborguniversity/brackishmot"
+    citation: "Pedersen, Haurum, Bengtson, Moeslund 2023, WACV Workshops"
+    notes: "Folded from registry/ingest-specs/brackishmot.yaml on 2026-10-08 (P1.2). Spec license string, verbatim: 'unknown (see homepage)'. Domain, modalities and capabilities are keyword inferences from the spec text."
+    tags: [spec-folded]
+
+  - id: discol-peru-basin-ofos
+    domain: fauna
+    access_class: open
+    name: "discol peru basin ofos"
+    version: "unversioned"
+    description: "doi:10.1594/PANGAEA.890634"
+    licence: CC-BY-3.0
+    legal_basis: licence
+    redistribution: ok
+    provenance: public
+    verification:
+      verified_on: 2026-10-08
+      verified_by: "registry/ingest-specs/discol-peru-basin-ofos.yaml: license field copied verbatim, not independently checked"
+      method: secondary
+    access:
+      method: http
+      uri: "https://doi.pangaea.de/10.1594/PANGAEA.890634"
+      notes: "ingest adapter pangaea-series; see registry/ingest-specs/discol-peru-basin-ofos.yaml"
+    modalities: [image]
+    capabilities: [general-pretraining]
+    loader: { layout: metadata-only }
+    n_images: 17923
+    n_images_method: "spec:measured.items"
+    coverage: { regions: [unknown] }
+    homepage: "https://doi.pangaea.de/10.1594/PANGAEA.890634"
+    citation: "doi:10.1594/PANGAEA.890634"
+    notes: "Folded from registry/ingest-specs/discol-peru-basin-ofos.yaml on 2026-10-08 (P1.2). Spec license string, verbatim: 'CC-BY-3.0 (verified via page meta tag, unrestricted)'. Domain, modalities and capabilities are keyword inferences from the spec text."
+    tags: [spec-folded]
+    release_skip_reason: "no-staged-images: registry lists imagery, nothing staged under sources/ in rs-storage-open (U7/queue follow-up)"
+
+  - id: hacon-aurora-vent-ofos
+    domain: fauna
+    access_class: internal-only
+    name: "hacon aurora vent ofos"
+    version: "unversioned"
+    description: "doi:10.1594/PANGAEA.943364"
+    licence: PER-SOURCE-VARIES
+    legal_basis: unknown
+    redistribution: unknown
+    provenance: public
+    verification:
+      verified_on: 2026-10-08
+      verified_by: "registry/ingest-specs/hacon-aurora-vent-ofos.yaml: license field copied verbatim, not independently checked"
+      method: secondary
+    access:
+      method: http
+      uri: "https://doi.pangaea.de/10.1594/PANGAEA.943364"
+      notes: "ingest adapter pangaea-series; see registry/ingest-specs/hacon-aurora-vent-ofos.yaml"
+    modalities: [image]
+    capabilities: [general-pretraining]
+    loader: { layout: metadata-only }
+    n_images: 7048
+    n_images_method: "spec:measured.items"
+    coverage: { regions: [unknown] }
+    homepage: "https://doi.pangaea.de/10.1594/PANGAEA.943364"
+    citation: "doi:10.1594/PANGAEA.943364"
+    notes: "Folded from registry/ingest-specs/hacon-aurora-vent-ofos.yaml on 2026-10-08 (P1.2). Spec license string, verbatim: 'CC-BY (PANGAEA, per series convention)'. Domain, modalities and capabilities are keyword inferences from the spec text. The spec said access_class: open; tightened to internal-only because its licence string does not establish a licence (never guess). Loosen after verifying it."
+    tags: [spec-folded]
+    release_skip_reason: "no-staged-images: registry lists imagery, nothing staged under sources/ in rs-storage-open (U7/queue follow-up)"
+
+  - id: imos-auv
+    domain: fauna
+    access_class: open
+    name: "imos auv"
+    version: "unversioned"
+    description: "IMOS AUV Facility, https://imos.org.au/facility/autonomous-underwater-vehicles"
+    licence: CC-BY-4.0
+    legal_basis: licence
+    redistribution: ok
+    provenance: public
+    verification:
+      verified_on: 2026-10-08
+      verified_by: "registry/ingest-specs/imos-auv.yaml: license field copied verbatim, not independently checked"
+      method: secondary
+    access:
+      method: http
+      uri: "https://registry.opendata.aws/imos-data/"
+      notes: "ingest adapter manifest; see registry/ingest-specs/imos-auv.yaml"
+    modalities: [image]
+    capabilities: [general-pretraining]
+    loader: { layout: metadata-only }
+    coverage: { regions: [unknown] }
+    homepage: "https://registry.opendata.aws/imos-data/"
+    citation: "IMOS AUV Facility, https://imos.org.au/facility/autonomous-underwater-vehicles"
+    notes: "Folded from registry/ingest-specs/imos-auv.yaml on 2026-10-08 (P1.2). Spec license string, verbatim: 'CC-BY-4.0 (IMOS data licence)'. Domain, modalities and capabilities are keyword inferences from the spec text."
+    tags: [spec-folded]
+    release_skip_reason: "no-staged-images: registry lists imagery, nothing staged under sources/ in rs-storage-open (U7/queue follow-up)"
+
+  - id: jamstec-debris
+    domain: fauna
+    access_class: unknown
+    name: "jamstec debris"
+    version: "unversioned"
+    description: "godac.jamstec.go.jp/catalog/dsdebris/e/"
+    licence: NO-LICENCE-STATED
+    legal_basis: unknown
+    redistribution: unknown
+    provenance: public
+    verification:
+      verified_on: 2026-10-08
+      verified_by: "registry/ingest-specs/jamstec-debris.yaml: license field copied verbatim, not independently checked"
+      method: secondary
+    access:
+      method: request
+      uri: "http://www.godac.jamstec.go.jp/catalog/dsdebris/e/"
+      notes: "ingest adapter needs:jamstec-scrape; see registry/ingest-specs/jamstec-debris.yaml"
+    modalities: [image]
+    capabilities: [general-pretraining]
+    loader: { layout: metadata-only }
+    n_images: 3400
+    n_images_method: "spec:measured.items"
+    coverage: { regions: [unknown] }
+    homepage: "http://www.godac.jamstec.go.jp/catalog/dsdebris/e/"
+    citation: "godac.jamstec.go.jp/catalog/dsdebris/e/"
+    notes: "Folded from registry/ingest-specs/jamstec-debris.yaml on 2026-10-08 (P1.2). Spec license string, verbatim: 'JAMSTEC terms'. Domain, modalities and capabilities are keyword inferences from the spec text."
+    tags: [spec-folded]
+    release_skip_reason: "no-staged-images: registry lists imagery, nothing staged under sources/ in rs-storage-open (U7/queue follow-up)"
+
+  - id: kaggle-ndsb-2015
+    domain: fauna
+    access_class: internal-only
+    name: "kaggle ndsb 2015"
+    version: "unversioned"
+    description: "kaggle.com/c/datasciencebowl"
+    licence: NO-LICENCE-STATED
+    legal_basis: unknown
+    redistribution: unknown
+    provenance: public
+    verification:
+      verified_on: 2026-10-08
+      verified_by: "registry/ingest-specs/kaggle-ndsb-2015.yaml: license field copied verbatim, not independently checked"
+      method: secondary
+    access:
+      method: request
+      uri: "https://www.kaggle.com/c/datasciencebowl"
+      notes: "ingest adapter needs:kaggle-login; see registry/ingest-specs/kaggle-ndsb-2015.yaml"
+    modalities: [image]
+    capabilities: [general-pretraining]
+    loader: { layout: metadata-only }
+    coverage: { regions: [unknown] }
+    homepage: "https://www.kaggle.com/c/datasciencebowl"
+    citation: "kaggle.com/c/datasciencebowl"
+    notes: "Folded from registry/ingest-specs/kaggle-ndsb-2015.yaml on 2026-10-08 (P1.2). Spec license string, verbatim: 'unknown (Kaggle competition terms)'. Domain, modalities and capabilities are keyword inferences from the spec text."
+    tags: [spec-folded]
+    release_skip_reason: "no-staged-images: registry lists imagery, nothing staged under sources/ in rs-storage-open (U7/queue follow-up)"
+
+  - id: marinedet
+    domain: fauna
+    access_class: unknown
+    name: "marinedet"
+    version: "unversioned"
+    description: "unresolved"
+    licence: NO-LICENCE-STATED
+    legal_basis: unknown
+    redistribution: unknown
+    provenance: public
+    verification:
+      verified_on: 2026-10-08
+      verified_by: "registry/ingest-specs/marinedet.yaml: license field copied verbatim, not independently checked"
+      method: secondary
+    access:
+      method: request
+      notes: "ingest adapter needs:unresolved-source; see registry/ingest-specs/marinedet.yaml"
+    modalities: [image]
+    capabilities: [general-pretraining]
+    loader: { layout: metadata-only }
+    coverage: { regions: [unknown] }
+    citation: "unresolved"
+    notes: "Folded from registry/ingest-specs/marinedet.yaml on 2026-10-08 (P1.2). Spec license string, verbatim: 'unknown'. Domain, modalities and capabilities are keyword inferences from the spec text."
+    tags: [spec-folded]
+    release_skip_reason: "no-staged-images: registry lists imagery, nothing staged under sources/ in rs-storage-open (U7/queue follow-up)"
+
+  - id: marineeval
+    domain: fauna
+    access_class: open
+    name: "marineeval"
+    version: "rev-cb94f5a61594"
+    description: "Wong et al. 2025, MarineEval: A Large-scale Benchmark for Marine Understanding in Vision-Language Models, arXiv:2512.21126"
+    licence: CC-BY-4.0
+    legal_basis: licence
+    redistribution: ok
+    provenance: public
+    verification:
+      verified_on: 2026-10-08
+      verified_by: "registry/ingest-specs/marineeval.yaml: license field copied verbatim, not independently checked"
+      method: secondary
+    access:
+      method: s3
+      uri: s3://rs-storage-open/sources/marineeval/rev-cb94f5a61594
+      notes: "rs-storage-open copy of the upstream dataset (staged tree rev-cb94f5a61594); upstream: https://huggingface.co/datasets/WongYukKwan/MarineEval"
+      params:
+        bucket: rs-storage-open
+        endpoint: hel1.your-objectstorage.com
+        region: hel1
+        prefix: sources/marineeval/rev-cb94f5a61594/
+      size_bytes: 254898014
+    modalities: [image]
+    capabilities: [general-pretraining]
+    loader: { layout: staged-tree }
+    coverage: { regions: [unknown] }
+    homepage: "https://huggingface.co/datasets/WongYukKwan/MarineEval"
+    citation: "Wong et al. 2025, MarineEval: A Large-scale Benchmark for Marine Understanding in Vision-Language Models, arXiv:2512.21126"
+    notes: "Folded from registry/ingest-specs/marineeval.yaml on 2026-10-08 (P1.2). Spec license string, verbatim: 'CC-BY-4.0'. Domain, modalities and capabilities are keyword inferences from the spec text."
+    tags: [spec-folded]
+
+  - id: marineevt
+    domain: fauna
+    access_class: internal-only
+    name: "marineevt"
+    version: "rev-37488d3c7690"
+    description: "HF dataset AnTo2209/MarineEVT"
+    licence: NO-LICENCE-STATED
+    legal_basis: unknown
+    redistribution: unknown
+    provenance: public
+    verification:
+      verified_on: 2026-10-08
+      verified_by: "registry/ingest-specs/marineevt.yaml: license field copied verbatim, not independently checked"
+      method: secondary
+    access:
+      method: s3
+      uri: s3://rs-storage-open/sources/marineevt/rev-37488d3c7690
+      notes: "rs-storage-open copy of the upstream dataset (staged tree rev-37488d3c7690); upstream: https://huggingface.co/datasets/AnTo2209/MarineEVT"
+      params:
+        bucket: rs-storage-open
+        endpoint: hel1.your-objectstorage.com
+        region: hel1
+        prefix: sources/marineevt/rev-37488d3c7690/
+      size_bytes: 36289266781
+    modalities: [image]
+    capabilities: [general-pretraining]
+    loader: { layout: staged-tree }
+    n_images: 169409
+    n_images_method: "spec:measured.items"
+    coverage: { regions: [unknown] }
+    homepage: "https://huggingface.co/datasets/AnTo2209/MarineEVT"
+    citation: "HF dataset AnTo2209/MarineEVT"
+    notes: "Folded from registry/ingest-specs/marineevt.yaml on 2026-10-08 (P1.2). Spec license string, verbatim: 'unstated'. Domain, modalities and capabilities are keyword inferences from the spec text. The spec said access_class: open; tightened to internal-only because its licence string does not establish a licence (never guess). Loosen after verifying it."
+    tags: [spec-folded]
+
+  - id: mas3k-hf
+    domain: fauna
+    access_class: internal-only
+    name: "mas3k hf"
+    version: "rev-1dff3d4b1fb8"
+    description: "Li+ 2020 MAS3K"
+    licence: NO-LICENCE-STATED
+    legal_basis: unknown
+    redistribution: unknown
+    provenance: public
+    verification:
+      verified_on: 2026-10-08
+      verified_by: "registry/ingest-specs/mas3k-hf.yaml: license field copied verbatim, not independently checked"
+      method: secondary
+    access:
+      method: s3
+      uri: s3://rs-storage-open/sources/mas3k-hf/rev-1dff3d4b1fb8
+      notes: "rs-storage-open copy of the upstream dataset (staged tree rev-1dff3d4b1fb8); upstream: https://huggingface.co/datasets/KRMayD/MAS3K_Dataset"
+      params:
+        bucket: rs-storage-open
+        endpoint: hel1.your-objectstorage.com
+        region: hel1
+        prefix: sources/mas3k-hf/rev-1dff3d4b1fb8/
+      size_bytes: 2251663055
+    modalities: [image]
+    capabilities: [general-pretraining]
+    loader: { layout: staged-tree }
+    n_images: 2910
+    n_images_method: "spec:measured.items"
+    coverage: { regions: [unknown] }
+    homepage: "https://huggingface.co/datasets/KRMayD/MAS3K_Dataset"
+    citation: "Li+ 2020 MAS3K"
+    notes: "Folded from registry/ingest-specs/mas3k-hf.yaml on 2026-10-08 (P1.2). Spec license string, verbatim: 'unstated'. Domain, modalities and capabilities are keyword inferences from the spec text."
+    tags: [spec-folded]
+
+  - id: mermaid
+    domain: fauna
+    access_class: unknown
+    name: "mermaid"
+    version: "unversioned"
+    description: "MERMAID / WCS"
+    licence: NO-LICENCE-STATED
+    legal_basis: unknown
+    redistribution: unknown
+    provenance: public
+    verification:
+      verified_on: 2026-10-08
+      verified_by: "registry/ingest-specs/mermaid.yaml: license field copied verbatim, not independently checked"
+      method: secondary
+    access:
+      method: http
+      uri: "https://datamermaid.org/"
+      notes: "ingest adapter bucket; see registry/ingest-specs/mermaid.yaml"
+    modalities: [image]
+    capabilities: [general-pretraining]
+    loader: { layout: metadata-only }
+    coverage: { regions: [unknown] }
+    homepage: "https://datamermaid.org/"
+    citation: "MERMAID / WCS"
+    notes: "Folded from registry/ingest-specs/mermaid.yaml on 2026-10-08 (P1.2). Spec license string, verbatim: 'NOASSERTION'. Domain, modalities and capabilities are keyword inferences from the spec text."
+    tags: [spec-folded]
+    release_skip_reason: "no-staged-images: registry lists imagery, nothing staged under sources/ in rs-storage-open (U7/queue follow-up)"
+
+  - id: mlc-moorea
+    domain: fauna
+    access_class: open
+    name: "mlc moorea"
+    version: "unversioned"
+    description: "doi:10.6073/pasta/88dde0e68ab5232a470389f4bedd1892"
+    licence: CC-BY-4.0
+    legal_basis: licence
+    redistribution: ok
+    provenance: public
+    verification:
+      verified_on: 2026-10-08
+      verified_by: "registry/ingest-specs/mlc-moorea.yaml: license field copied verbatim, not independently checked"
+      method: secondary
+    access:
+      method: request
+      uri: "https://portal.edirepository.org/nis/mapbrowse?scope=knb-lter-mcr&identifier=5006"
+      notes: "ingest adapter needs:pasta-api; see registry/ingest-specs/mlc-moorea.yaml"
+    modalities: [image]
+    capabilities: [general-pretraining]
+    loader: { layout: metadata-only }
+    n_images: 2055
+    n_images_method: "spec:measured.items"
+    coverage: { regions: [unknown] }
+    homepage: "https://portal.edirepository.org/nis/mapbrowse?scope=knb-lter-mcr&identifier=5006"
+    citation: "doi:10.6073/pasta/88dde0e68ab5232a470389f4bedd1892"
+    notes: "Folded from registry/ingest-specs/mlc-moorea.yaml on 2026-10-08 (P1.2). Spec license string, verbatim: 'CC-BY-4.0 (MCR LTER policy)'. Domain, modalities and capabilities are keyword inferences from the spec text."
+    tags: [spec-folded]
+    release_skip_reason: "no-staged-images: registry lists imagery, nothing staged under sources/ in rs-storage-open (U7/queue follow-up)"
+
+  - id: mouss
+    domain: fauna
+    access_class: internal-only
+    name: "mouss"
+    version: "unversioned"
+    description: "NOAA PIFSC MOUSS"
+    licence: NO-LICENCE-STATED
+    legal_basis: unknown
+    redistribution: unknown
+    provenance: public
+    verification:
+      verified_on: 2026-10-08
+      verified_by: "registry/ingest-specs/mouss.yaml: license field copied verbatim, not independently checked"
+      method: secondary
+    access:
+      method: huggingface
+      uri: "https://huggingface.co/datasets/akridge/MOUSS_fish_imagery_dataset_grayscale_small"
+      notes: "ingest adapter hf; see registry/ingest-specs/mouss.yaml"
+    modalities: [image]
+    capabilities: [general-pretraining]
+    loader: { layout: metadata-only }
+    coverage: { regions: [unknown] }
+    homepage: "https://huggingface.co/datasets/akridge/MOUSS_fish_imagery_dataset_grayscale_small"
+    citation: "NOAA PIFSC MOUSS"
+    notes: "Folded from registry/ingest-specs/mouss.yaml on 2026-10-08 (P1.2). Spec license string, verbatim: 'NOASSERTION'. Domain, modalities and capabilities are keyword inferences from the spec text. The spec said access_class: open; tightened to internal-only because its licence string does not establish a licence (never guess). Loosen after verifying it."
+    tags: [spec-folded]
+    release_skip_reason: "no-staged-images: registry lists imagery, nothing staged under sources/ in rs-storage-open (U7/queue follow-up)"
+
+  - id: muot3m
+    domain: fauna
+    access_class: restricted-nd
+    name: "muot3m"
+    version: "rev-4294cb6a2537"
+    description: "MUOT-3M (2025), HF AhsanBB"
+    licence: CC-BY-NC-ND-4.0
+    legal_basis: licence
+    redistribution: unknown
+    provenance: public
+    verification:
+      verified_on: 2026-10-08
+      verified_by: "registry/ingest-specs/muot3m.yaml: license field copied verbatim, not independently checked"
+      method: secondary
+    access:
+      method: s3
+      uri: s3://rs-storage-open/sources/muot3m/rev-4294cb6a2537
+      notes: "rs-storage-open copy of the upstream dataset (staged tree rev-4294cb6a2537); upstream: https://huggingface.co/datasets/AhsanBB/MUOT_3M-A_3_Million_Frame_Underwater_Object_Tracking_Dataset"
+      params:
+        bucket: rs-storage-open
+        endpoint: hel1.your-objectstorage.com
+        region: hel1
+        prefix: sources/muot3m/rev-4294cb6a2537/
+      size_bytes: 2615768841
+    modalities: [image]
+    capabilities: [general-pretraining]
+    loader: { layout: staged-tree }
+    n_images: 3074016
+    n_images_method: "spec:measured.items"
+    coverage: { regions: [unknown] }
+    homepage: "https://huggingface.co/datasets/AhsanBB/MUOT_3M-A_3_Million_Frame_Underwater_Object_Tracking_Dataset"
+    citation: "MUOT-3M (2025), HF AhsanBB"
+    notes: "Folded from registry/ingest-specs/muot3m.yaml on 2026-10-08 (P1.2). Spec license string, verbatim: 'CC-BY-NC-ND-4.0 (HF card)'. Domain, modalities and capabilities are keyword inferences from the spec text."
+    tags: [spec-folded]
+
+  - id: nautdata
+    domain: fauna
+    access_class: open
+    name: "nautdata"
+    version: "unversioned"
+    description: "H-EmbodVis/NautData (HF)"
+    licence: Apache-2.0
+    legal_basis: licence
+    redistribution: ok
+    provenance: public
+    verification:
+      verified_on: 2026-10-08
+      verified_by: "registry/ingest-specs/nautdata.yaml: license field copied verbatim, not independently checked"
+      method: secondary
+    access:
+      method: huggingface
+      uri: "https://huggingface.co/datasets/H-EmbodVis/NautData"
+      notes: "ingest adapter hf; see registry/ingest-specs/nautdata.yaml"
+    modalities: [image]
+    capabilities: [general-pretraining]
+    loader: { layout: metadata-only }
+    coverage: { regions: [unknown] }
+    homepage: "https://huggingface.co/datasets/H-EmbodVis/NautData"
+    citation: "H-EmbodVis/NautData (HF)"
+    notes: "Folded from registry/ingest-specs/nautdata.yaml on 2026-10-08 (P1.2). Spec license string, verbatim: 'apache-2.0'. Domain, modalities and capabilities are keyword inferences from the spec text."
+    tags: [spec-folded]
+    release_skip_reason: "no-staged-images: registry lists imagery, nothing staged under sources/ in rs-storage-open (U7/queue follow-up)"
+
+  - id: noaa-gfisher
+    domain: fauna
+    access_class: open
+    name: "noaa gfisher"
+    version: "unversioned"
+    description: "NMFS-OSI/GFISHER (HF)"
+    licence: CC0-1.0
+    legal_basis: licence
+    redistribution: ok
+    provenance: public
+    verification:
+      verified_on: 2026-10-08
+      verified_by: "registry/ingest-specs/noaa-gfisher.yaml: license field copied verbatim, not independently checked"
+      method: secondary
+    access:
+      method: huggingface
+      uri: "https://huggingface.co/datasets/NMFS-OSI/GFISHER"
+      notes: "ingest adapter hf; see registry/ingest-specs/noaa-gfisher.yaml"
+    modalities: [image]
+    capabilities: [general-pretraining]
+    loader: { layout: metadata-only }
+    coverage: { regions: [unknown] }
+    homepage: "https://huggingface.co/datasets/NMFS-OSI/GFISHER"
+    citation: "NMFS-OSI/GFISHER (HF)"
+    notes: "Folded from registry/ingest-specs/noaa-gfisher.yaml on 2026-10-08 (P1.2). Spec license string, verbatim: 'cc0-1.0'. Domain, modalities and capabilities are keyword inferences from the spec text."
+    tags: [spec-folded]
+    release_skip_reason: "no-staged-images: registry lists imagery, nothing staged under sources/ in rs-storage-open (U7/queue follow-up)"
+
+  - id: noaa-oer-video
+    domain: fauna
+    access_class: open
+    name: "noaa oer video"
+    version: "unversioned"
+    description: "NOAA Ocean Exploration, Okeanos Explorer ROV dives"
+    licence: US-GOV-PD
+    legal_basis: licence
+    redistribution: ok
+    provenance: public
+    verification:
+      verified_on: 2026-10-08
+      verified_by: "registry/ingest-specs/noaa-oer-video.yaml: license field copied verbatim, not independently checked"
+      method: secondary
+    access:
+      method: request
+      uri: "https://www.ncei.noaa.gov/access/ocean-exploration/video/"
+      notes: "ingest adapter needs:source-down; see registry/ingest-specs/noaa-oer-video.yaml"
+    modalities: [image]
+    capabilities: [general-pretraining]
+    loader: { layout: metadata-only }
+    coverage: { regions: [unknown] }
+    homepage: "https://www.ncei.noaa.gov/access/ocean-exploration/video/"
+    citation: "NOAA Ocean Exploration, Okeanos Explorer ROV dives"
+    notes: "Folded from registry/ingest-specs/noaa-oer-video.yaml on 2026-10-08 (P1.2). Spec license string, verbatim: 'public domain (US government work)'. Domain, modalities and capabilities are keyword inferences from the spec text."
+    tags: [spec-folded]
+    release_skip_reason: "no-staged-images: registry lists imagery, nothing staged under sources/ in rs-storage-open (U7/queue follow-up)"
+
+  - id: oceangym
+    domain: fauna
+    access_class: open
+    name: "oceangym"
+    version: "rev-ca7a8b677cdb"
+    description: "HF dataset zjunlp/OceanGym"
+    licence: MIT
+    legal_basis: licence
+    redistribution: ok
+    provenance: public
+    verification:
+      verified_on: 2026-10-08
+      verified_by: "registry/ingest-specs/oceangym.yaml: license field copied verbatim, not independently checked"
+      method: secondary
+    access:
+      method: s3
+      uri: s3://rs-storage-open/sources/oceangym/rev-ca7a8b677cdb
+      notes: "rs-storage-open copy of the upstream dataset (staged tree rev-ca7a8b677cdb); upstream: https://huggingface.co/datasets/zjunlp/OceanGym"
+      params:
+        bucket: rs-storage-open
+        endpoint: hel1.your-objectstorage.com
+        region: hel1
+        prefix: sources/oceangym/rev-ca7a8b677cdb/
+      size_bytes: 330737524
+    modalities: [image]
+    capabilities: [general-pretraining]
+    loader: { layout: staged-tree }
+    n_images: 1219
+    n_images_method: "spec:measured.items"
+    coverage: { regions: [unknown] }
+    homepage: "https://huggingface.co/datasets/zjunlp/OceanGym"
+    citation: "HF dataset zjunlp/OceanGym"
+    notes: "Folded from registry/ingest-specs/oceangym.yaml on 2026-10-08 (P1.2). Spec license string, verbatim: 'mit'. Domain, modalities and capabilities are keyword inferences from the spec text."
+    tags: [spec-folded]
+
+  - id: onc-camdsb103-fauna
+    domain: fauna
+    access_class: open
+    name: "onc camdsb103 fauna"
+    version: "unversioned"
+    description: "doi:10.5281/zenodo.22134596 — CAMDSB103 August 2022 to August 2023 Fauna Annotations"
+    licence: CC-BY-4.0
+    legal_basis: licence
+    redistribution: ok
+    provenance: public
+    verification:
+      verified_on: 2026-10-08
+      verified_by: "registry/ingest-specs/onc-camdsb103-fauna.yaml: license field copied verbatim, not independently checked"
+      method: secondary
+    access:
+      method: zenodo
+      uri: "https://zenodo.org/records/22134596"
+      notes: "ingest adapter zenodo; see registry/ingest-specs/onc-camdsb103-fauna.yaml"
+    modalities: [image]
+    capabilities: [general-pretraining]
+    loader: { layout: metadata-only }
+    coverage: { regions: [unknown] }
+    homepage: "https://zenodo.org/records/22134596"
+    citation: "doi:10.5281/zenodo.22134596 — CAMDSB103 August 2022 to August 2023 Fauna Annotations"
+    notes: "Folded from registry/ingest-specs/onc-camdsb103-fauna.yaml on 2026-10-08 (P1.2). Spec license string, verbatim: 'cc-by-4.0'. Domain, modalities and capabilities are keyword inferences from the spec text."
+    tags: [spec-folded]
+    release_skip_reason: "no-staged-images: registry lists imagery, nothing staged under sources/ in rs-storage-open (U7/queue follow-up)"
+
+  - id: onc
+    domain: fauna
+    access_class: open
+    name: "onc"
+    version: "unversioned"
+    description: "data.oceannetworks.ca"
+    licence: CC-BY-4.0
+    legal_basis: licence
+    redistribution: ok
+    provenance: public
+    verification:
+      verified_on: 2026-10-08
+      verified_by: "registry/ingest-specs/onc.yaml: license field copied verbatim, not independently checked"
+      method: secondary
+    access:
+      method: request
+      uri: "https://data.oceannetworks.ca/"
+      notes: "ingest adapter needs:onc-token; see registry/ingest-specs/onc.yaml"
+    modalities: [image]
+    capabilities: [general-pretraining]
+    loader: { layout: metadata-only }
+    coverage: { regions: [unknown] }
+    homepage: "https://data.oceannetworks.ca/"
+    citation: "data.oceannetworks.ca"
+    notes: "Folded from registry/ingest-specs/onc.yaml on 2026-10-08 (P1.2). Spec license string, verbatim: 'CC-BY-4.0 (with account)'. Domain, modalities and capabilities are keyword inferences from the spec text."
+    tags: [spec-folded]
+    release_skip_reason: "no-staged-images: registry lists imagery, nothing staged under sources/ in rs-storage-open (U7/queue follow-up)"
+
+  - id: ruod
+    domain: fauna
+    access_class: internal-only
+    name: "ruod"
+    version: "rev-c22094e45b7f"
+    description: "Fu, C. et al. 2023, Rethinking General Underwater Object Detection: Datasets, Challenges, and Solutions, Engineering Applications of Artificial Intelligence 123:106002 (RUOD dataset)"
+    licence: NO-LICENCE-STATED
+    legal_basis: unknown
+    redistribution: unknown
+    provenance: public
+    verification:
+      verified_on: 2026-10-08
+      verified_by: "registry/ingest-specs/ruod.yaml: license field copied verbatim, not independently checked"
+      method: secondary
+    access:
+      method: s3
+      uri: s3://rs-storage-open/sources/ruod/rev-c22094e45b7f
+      notes: "rs-storage-open copy of the upstream dataset (staged tree rev-c22094e45b7f); upstream: https://huggingface.co/datasets/Mortallll/RUOD"
+      params:
+        bucket: rs-storage-open
+        endpoint: hel1.your-objectstorage.com
+        region: hel1
+        prefix: sources/ruod/rev-c22094e45b7f/
+      size_bytes: 3619979937
+    modalities: [image]
+    capabilities: [general-pretraining]
+    loader: { layout: staged-tree }
+    coverage: { regions: [unknown] }
+    homepage: "https://huggingface.co/datasets/Mortallll/RUOD"
+    citation: "Fu, C. et al. 2023, Rethinking General Underwater Object Detection: Datasets, Challenges, and Solutions, Engineering Applications of Artificial Intelligence 123:106002 (RUOD dataset)"
+    notes: "Folded from registry/ingest-specs/ruod.yaml on 2026-10-08 (P1.2). Spec license string, verbatim: 'NOASSERTION'. Domain, modalities and capabilities are keyword inferences from the spec text."
+    tags: [spec-folded]
+
+  - id: scallop-pecten-scotland
+    domain: fauna
+    access_class: open
+    name: "scallop pecten scotland"
+    version: "unversioned"
+    description: "doi:10.5281/zenodo.10156830 — Data for Scallop (Pecten maximus) Identification in Natural Marine Habitats: A NetHarn Model Approach."
+    licence: CC-BY-4.0
+    legal_basis: licence
+    redistribution: ok
+    provenance: public
+    verification:
+      verified_on: 2026-10-08
+      verified_by: "registry/ingest-specs/scallop-pecten-scotland.yaml: license field copied verbatim, not independently checked"
+      method: secondary
+    access:
+      method: zenodo
+      uri: "https://zenodo.org/records/10156830"
+      notes: "ingest adapter zenodo; see registry/ingest-specs/scallop-pecten-scotland.yaml"
+    modalities: [image]
+    capabilities: [general-pretraining]
+    loader: { layout: metadata-only }
+    n_images: 17246
+    n_images_method: "spec:measured.items"
+    coverage: { regions: [unknown] }
+    homepage: "https://zenodo.org/records/10156830"
+    citation: "doi:10.5281/zenodo.10156830 — Data for Scallop (Pecten maximus) Identification in Natural Marine Habitats: A NetHarn Model Approach."
+    notes: "Folded from registry/ingest-specs/scallop-pecten-scotland.yaml on 2026-10-08 (P1.2). Spec license string, verbatim: 'cc-by-4.0'. Domain, modalities and capabilities are keyword inferences from the spec text."
+    tags: [spec-folded]
+    release_skip_reason: "no-staged-images: registry lists imagery, nothing staged under sources/ in rs-storage-open (U7/queue follow-up)"
+
+  - id: schmidt-ocean-rov
+    domain: fauna
+    access_class: restricted-nc
+    name: "schmidt ocean rov"
+    version: "unversioned"
+    description: "schmidtocean.org"
+    licence: NO-LICENCE-STATED
+    legal_basis: unknown
+    redistribution: unknown
+    provenance: public
+    verification:
+      verified_on: 2026-10-08
+      verified_by: "registry/ingest-specs/schmidt-ocean-rov.yaml: license field copied verbatim, not independently checked"
+      method: secondary
+    access:
+      method: request
+      uri: "https://schmidtocean.org/"
+      notes: "ingest adapter needs:unresolved-host; see registry/ingest-specs/schmidt-ocean-rov.yaml"
+    modalities: [image]
+    capabilities: [general-pretraining]
+    loader: { layout: metadata-only }
+    coverage: { regions: [unknown] }
+    homepage: "https://schmidtocean.org/"
+    citation: "schmidtocean.org"
+    notes: "Folded from registry/ingest-specs/schmidt-ocean-rov.yaml on 2026-10-08 (P1.2). Spec license string, verbatim: 'CC-BY-NC (per SOI media policy, stated)'. Domain, modalities and capabilities are keyword inferences from the spec text."
+    tags: [spec-folded]
+    release_skip_reason: "no-staged-images: registry lists imagery, nothing staged under sources/ in rs-storage-open (U7/queue follow-up)"
+
+  - id: seaclear
+    domain: fauna
+    access_class: open
+    name: "seaclear"
+    version: "unversioned"
+    description: "Djuraskovic+ Sci Data 2024"
+    licence: CC-BY-4.0
+    legal_basis: licence
+    redistribution: ok
+    provenance: public
+    verification:
+      verified_on: 2026-10-08
+      verified_by: "registry/ingest-specs/seaclear.yaml: license field copied verbatim, not independently checked"
+      method: secondary
+    access:
+      method: http
+      uri: "https://doi.org/10.1038/s41597-024-03286-0"
+      notes: "ingest adapter figshare; see registry/ingest-specs/seaclear.yaml"
+    modalities: [image]
+    capabilities: [general-pretraining]
+    loader: { layout: metadata-only }
+    coverage: { regions: [unknown] }
+    homepage: "https://doi.org/10.1038/s41597-024-03286-0"
+    citation: "Djuraskovic+ Sci Data 2024"
+    notes: "Folded from registry/ingest-specs/seaclear.yaml on 2026-10-08 (P1.2). Spec license string, verbatim: 'CC-BY-4.0'. Domain, modalities and capabilities are keyword inferences from the spec text."
+    tags: [spec-folded]
+    release_skip_reason: "no-staged-images: registry lists imagery, nothing staged under sources/ in rs-storage-open (U7/queue follow-up)"
+
+  - id: seaturtleid2022
+    domain: fauna
+    access_class: unknown
+    name: "seaturtleid2022"
+    version: "rev-91cd6c1126c7"
+    description: "EnmmmmOvO/SeaTurtleID2022 (HF)"
+    licence: NO-LICENCE-STATED
+    legal_basis: unknown
+    redistribution: unknown
+    provenance: public
+    verification:
+      verified_on: 2026-10-08
+      verified_by: "registry/ingest-specs/seaturtleid2022.yaml: license field copied verbatim, not independently checked"
+      method: secondary
+    access:
+      method: s3
+      uri: s3://rs-storage-open/sources/seaturtleid2022/rev-91cd6c1126c7
+      notes: "rs-storage-open copy of the upstream dataset (staged tree rev-91cd6c1126c7); upstream: https://huggingface.co/datasets/EnmmmmOvO/SeaTurtleID2022"
+      params:
+        bucket: rs-storage-open
+        endpoint: hel1.your-objectstorage.com
+        region: hel1
+        prefix: sources/seaturtleid2022/rev-91cd6c1126c7/
+      size_bytes: 1760284042
+    modalities: [image]
+    capabilities: [general-pretraining]
+    loader: { layout: staged-tree }
+    coverage: { regions: [unknown] }
+    homepage: "https://huggingface.co/datasets/EnmmmmOvO/SeaTurtleID2022"
+    citation: "EnmmmmOvO/SeaTurtleID2022 (HF)"
+    notes: "Folded from registry/ingest-specs/seaturtleid2022.yaml on 2026-10-08 (P1.2). Spec license string, verbatim: '?'. Domain, modalities and capabilities are keyword inferences from the spec text."
+    tags: [spec-folded]
+
+  - id: so268-ofos-analysis-ready
+    domain: fauna
+    access_class: internal-only
+    name: "so268 ofos analysis ready"
+    version: "unversioned"
+    description: "doi:10.1594/PANGAEA.957274 (bundle) + 10 profile DOIs (957262/264/265/266/267/269/270/272/273)"
+    licence: PER-SOURCE-VARIES
+    legal_basis: unknown
+    redistribution: unknown
+    provenance: public
+    verification:
+      verified_on: 2026-10-08
+      verified_by: "registry/ingest-specs/so268-ofos-analysis-ready.yaml: license field copied verbatim, not independently checked"
+      method: secondary
+    access:
+      method: http
+      uri: "https://doi.org/10.1594/PANGAEA.957274"
+      notes: "ingest adapter pangaea-series; see registry/ingest-specs/so268-ofos-analysis-ready.yaml"
+    modalities: [image]
+    capabilities: [general-pretraining]
+    loader: { layout: metadata-only }
+    n_images: 40476
+    n_images_method: "spec:measured.items"
+    coverage: { regions: [unknown] }
+    homepage: "https://doi.org/10.1594/PANGAEA.957274"
+    citation: "doi:10.1594/PANGAEA.957274 (bundle) + 10 profile DOIs (957262/264/265/266/267/269/270/272/273)"
+    notes: "Folded from registry/ingest-specs/so268-ofos-analysis-ready.yaml on 2026-10-08 (P1.2). Spec license string, verbatim: 'CC-BY (PANGAEA, per series convention)'. Domain, modalities and capabilities are keyword inferences from the spec text. The spec said access_class: open; tightened to internal-only because its licence string does not establish a licence (never guess). Loosen after verifying it."
+    tags: [spec-folded]
+    release_skip_reason: "no-staged-images: registry lists imagery, nothing staged under sources/ in rs-storage-open (U7/queue follow-up)"
+
+  - id: squidle
+    domain: fauna
+    access_class: unknown
+    name: "squidle"
+    version: "unversioned"
+    description: "squidle.org"
+    licence: PER-SOURCE-VARIES
+    legal_basis: unknown
+    redistribution: unknown
+    provenance: public
+    verification:
+      verified_on: 2026-10-08
+      verified_by: "registry/ingest-specs/squidle.yaml: license field copied verbatim, not independently checked"
+      method: secondary
+    access:
+      method: request
+      uri: "https://squidle.org/"
+      notes: "ingest adapter needs:squidle-api-auth; see registry/ingest-specs/squidle.yaml"
+    modalities: [image]
+    capabilities: [general-pretraining]
+    loader: { layout: metadata-only }
+    n_images: 11398834
+    n_images_method: "spec:measured.items"
+    coverage: { regions: [unknown] }
+    homepage: "https://squidle.org/"
+    citation: "squidle.org"
+    notes: "Folded from registry/ingest-specs/squidle.yaml on 2026-10-08 (P1.2). Spec license string, verbatim: 'per-campaign, mostly CC-BY (stated per collection)'. Domain, modalities and capabilities are keyword inferences from the spec text."
+    tags: [spec-folded]
+    release_skip_reason: "no-staged-images: registry lists imagery, nothing staged under sources/ in rs-storage-open (U7/queue follow-up)"
+
+  - id: synthetic-seabed-debris
+    domain: fauna
+    access_class: restricted-nc
+    name: "synthetic seabed debris"
+    version: "1.0.0"
+    description: "doi:10.5281/zenodo.21208479 — Synthetic Seabed Dataset"
+    licence: CC-BY-NC-4.0
+    legal_basis: licence
+    redistribution: unknown
+    provenance: public
+    verification:
+      verified_on: 2026-10-08
+      verified_by: "registry/ingest-specs/synthetic-seabed-debris.yaml: license field copied verbatim, not independently checked"
+      method: secondary
+    access:
+      method: s3
+      uri: s3://rs-storage-open/sources/synthetic-seabed-debris/1.0.0
+      notes: "rs-storage-open copy of the upstream dataset (staged tree 1.0.0); upstream: https://zenodo.org/records/21208479"
+      params:
+        bucket: rs-storage-open
+        endpoint: hel1.your-objectstorage.com
+        region: hel1
+        prefix: sources/synthetic-seabed-debris/1.0.0/
+      size_bytes: 4464552466
+    modalities: [image]
+    capabilities: [general-pretraining]
+    loader: { layout: staged-tree }
+    n_images: 4830
+    n_images_method: "spec:measured.items"
+    coverage: { regions: [unknown] }
+    homepage: "https://zenodo.org/records/21208479"
+    citation: "doi:10.5281/zenodo.21208479 — Synthetic Seabed Dataset"
+    notes: "Folded from registry/ingest-specs/synthetic-seabed-debris.yaml on 2026-10-08 (P1.2). Spec license string, verbatim: 'cc-by-nc-4.0'. Domain, modalities and capabilities are keyword inferences from the spec text."
+    tags: [spec-folded]
+
+  - id: trash-icra19
+    domain: fauna
+    access_class: open
+    name: "trash icra19"
+    version: "unversioned"
+    description: "Fulton et al. 2019, ICRA (Trash-ICRA19)"
+    licence: CC-BY-4.0
+    legal_basis: licence
+    redistribution: ok
+    provenance: public
+    verification:
+      verified_on: 2026-10-08
+      verified_by: "registry/ingest-specs/trash-icra19.yaml: license field copied verbatim, not independently checked"
+      method: secondary
+    access:
+      method: http
+      uri: "https://conservancy.umn.edu/handle/11299/214366"
+      notes: "ingest adapter http; see registry/ingest-specs/trash-icra19.yaml"
+    modalities: [image]
+    capabilities: [general-pretraining]
+    loader: { layout: metadata-only }
+    coverage: { regions: [unknown] }
+    homepage: "https://conservancy.umn.edu/handle/11299/214366"
+    citation: "Fulton et al. 2019, ICRA (Trash-ICRA19)"
+    notes: "Folded from registry/ingest-specs/trash-icra19.yaml on 2026-10-08 (P1.2). Spec license string, verbatim: 'cc-by-4.0'. Domain, modalities and capabilities are keyword inferences from the spec text."
+    tags: [spec-folded]
+    release_skip_reason: "no-staged-images: registry lists imagery, nothing staged under sources/ in rs-storage-open (U7/queue follow-up)"
+
+  - id: trashcan
+    domain: fauna
+    access_class: open
+    name: "trashcan"
+    version: "unversioned"
+    description: "Hong et al. 2020, TrashCan 1.0"
+    licence: CC-BY-4.0
+    legal_basis: licence
+    redistribution: ok
+    provenance: public
+    verification:
+      verified_on: 2026-10-08
+      verified_by: "registry/ingest-specs/trashcan.yaml: license field copied verbatim, not independently checked"
+      method: secondary
+    access:
+      method: http
+      uri: "https://conservancy.umn.edu/handle/11299/214865"
+      notes: "ingest adapter http; see registry/ingest-specs/trashcan.yaml"
+    modalities: [image]
+    capabilities: [general-pretraining]
+    loader: { layout: metadata-only }
+    coverage: { regions: [unknown] }
+    homepage: "https://conservancy.umn.edu/handle/11299/214865"
+    citation: "Hong et al. 2020, TrashCan 1.0"
+    notes: "Folded from registry/ingest-specs/trashcan.yaml on 2026-10-08 (P1.2). Spec license string, verbatim: 'cc-by-4.0'. Domain, modalities and capabilities are keyword inferences from the spec text."
+    tags: [spec-folded]
+    release_skip_reason: "no-staged-images: registry lists imagery, nothing staged under sources/ in rs-storage-open (U7/queue follow-up)"
+
+  - id: treeoflife-10m-captions
+    domain: fauna
+    access_class: restricted-nc
+    name: "treeoflife 10m captions"
+    version: "unversioned"
+    description: "imageomics BioCap"
+    licence: PER-SOURCE-VARIES
+    legal_basis: unknown
+    redistribution: unknown
+    provenance: public
+    licence_per_row: true
+    verification:
+      verified_on: 2026-10-08
+      verified_by: "registry/ingest-specs/treeoflife-10m-captions.yaml: license field copied verbatim, not independently checked"
+      method: secondary
+    access:
+      method: huggingface
+      uri: "https://huggingface.co/datasets/imageomics/TreeOfLife-10M-Captions"
+      notes: "ingest adapter hf; see registry/ingest-specs/treeoflife-10m-captions.yaml"
+    modalities: [image]
+    capabilities: [general-pretraining]
+    loader: { layout: metadata-only }
+    coverage: { regions: [unknown] }
+    homepage: "https://huggingface.co/datasets/imageomics/TreeOfLife-10M-Captions"
+    citation: "imageomics BioCap"
+    notes: "Folded from registry/ingest-specs/treeoflife-10m-captions.yaml on 2026-10-08 (P1.2). Spec license string, verbatim: 'cc-by-sa-4.0'. Domain, modalities and capabilities are keyword inferences from the spec text."
+    tags: [spec-folded]
+    release_skip_reason: "no-staged-images: registry lists imagery, nothing staged under sources/ in rs-storage-open (U7/queue follow-up)"
+
+  - id: treeoflife-10m
+    domain: fauna
+    access_class: restricted-nc
+    name: "treeoflife 10m"
+    version: "unversioned"
+    description: "Stevens et al. 2024, CVPR, BioCLIP"
+    licence: PER-SOURCE-VARIES
+    legal_basis: unknown
+    redistribution: unknown
+    provenance: public
+    licence_per_row: true
+    verification:
+      verified_on: 2026-10-08
+      verified_by: "registry/ingest-specs/treeoflife-10m.yaml: license field copied verbatim, not independently checked"
+      method: secondary
+    access:
+      method: http
+      uri: "https://huggingface.co/datasets/imageomics/TreeOfLife-10M"
+      notes: "ingest adapter hf-member-filter; see registry/ingest-specs/treeoflife-10m.yaml"
+    modalities: [image]
+    capabilities: [general-pretraining]
+    loader: { layout: metadata-only }
+    n_images: 10988032
+    n_images_method: "spec:measured.items"
+    coverage: { regions: [unknown] }
+    homepage: "https://huggingface.co/datasets/imageomics/TreeOfLife-10M"
+    citation: "Stevens et al. 2024, CVPR, BioCLIP"
+    notes: "Folded from registry/ingest-specs/treeoflife-10m.yaml on 2026-10-08 (P1.2). Spec license string, verbatim: 'HF card licence null; per image per upstream (EOL media licence, iNat21 photo licence) — not in the catalog.csv columns read'. Domain, modalities and capabilities are keyword inferences from the spec text."
+    tags: [spec-folded]
+    release_skip_reason: "no-staged-images: registry lists imagery, nothing staged under sources/ in rs-storage-open (U7/queue follow-up)"
+
+  - id: uwbench
+    domain: fauna
+    access_class: internal-only
+    name: "uwbench"
+    version: "rev-84af94500308"
+    description: "da1018/UWBench (HF)"
+    licence: NO-LICENCE-STATED
+    legal_basis: unknown
+    redistribution: unknown
+    provenance: public
+    verification:
+      verified_on: 2026-10-08
+      verified_by: "registry/ingest-specs/uwbench.yaml: license field copied verbatim, not independently checked"
+      method: secondary
+    access:
+      method: s3
+      uri: s3://rs-storage-open/sources/uwbench/rev-84af94500308
+      notes: "rs-storage-open copy of the upstream dataset (staged tree rev-84af94500308); upstream: https://huggingface.co/datasets/da1018/UWBench"
+      params:
+        bucket: rs-storage-open
+        endpoint: hel1.your-objectstorage.com
+        region: hel1
+        prefix: sources/uwbench/rev-84af94500308/
+      size_bytes: 2654456983
+    modalities: [image]
+    capabilities: [general-pretraining]
+    loader: { layout: staged-tree }
+    coverage: { regions: [unknown] }
+    homepage: "https://huggingface.co/datasets/da1018/UWBench"
+    citation: "da1018/UWBench (HF)"
+    notes: "Folded from registry/ingest-specs/uwbench.yaml on 2026-10-08 (P1.2). Spec license string, verbatim: '?'. Domain, modalities and capabilities are keyword inferences from the spec text."
+    tags: [spec-folded]
+
+  - id: webuot-238-test
+    domain: fauna
+    access_class: internal-only
+    name: "webuot 238 test"
+    version: "unversioned"
+    description: "WebUOT-1M, NeurIPS 2024"
+    licence: NO-LICENCE-STATED
+    legal_basis: unknown
+    redistribution: unknown
+    provenance: public
+    verification:
+      verified_on: 2026-10-08
+      verified_by: "registry/ingest-specs/webuot-238-test.yaml: license field copied verbatim, not independently checked"
+      method: secondary
+    access:
+      method: huggingface
+      uri: "https://huggingface.co/datasets/Voxel51/WebUOT-238-Test"
+      notes: "ingest adapter hf; see registry/ingest-specs/webuot-238-test.yaml"
+    modalities: [image]
+    capabilities: [general-pretraining]
+    loader: { layout: metadata-only }
+    n_images: 238
+    n_images_method: "spec:measured.items"
+    coverage: { regions: [unknown] }
+    homepage: "https://huggingface.co/datasets/Voxel51/WebUOT-238-Test"
+    citation: "WebUOT-1M, NeurIPS 2024"
+    notes: "Folded from registry/ingest-specs/webuot-238-test.yaml on 2026-10-08 (P1.2). Spec license string, verbatim: 'unstated'. Domain, modalities and capabilities are keyword inferences from the spec text."
+    tags: [spec-folded]
+    release_skip_reason: "no-staged-images: registry lists imagery, nothing staged under sources/ in rs-storage-open (U7/queue follow-up)"
+
+  - id: wikimedia-underwater
+    domain: fauna
+    access_class: internal-only
+    name: "wikimedia underwater"
+    version: "unversioned"
+    description: "Wikimedia Commons"
+    licence: PER-SOURCE-VARIES
+    legal_basis: unknown
+    redistribution: unknown
+    provenance: public
+    verification:
+      verified_on: 2026-10-08
+      verified_by: "registry/ingest-specs/wikimedia-underwater.yaml: license field copied verbatim, not independently checked"
+      method: secondary
+    access:
+      method: http
+      uri: "https://commons.wikimedia.org/wiki/Category:Underwater_photographs"
+      notes: "ingest adapter commons-api; see registry/ingest-specs/wikimedia-underwater.yaml"
+    modalities: [image]
+    capabilities: [general-pretraining]
+    loader: { layout: metadata-only }
+    n_images: 14247
+    n_images_method: "spec:measured.items"
+    coverage: { regions: [unknown] }
+    homepage: "https://commons.wikimedia.org/wiki/Category:Underwater_photographs"
+    citation: "Wikimedia Commons"
+    notes: "Folded from registry/ingest-specs/wikimedia-underwater.yaml on 2026-10-08 (P1.2). Spec license string, verbatim: 'per file (Commons extmetadata LicenseShortName): CC-BY-SA / CC-BY / CC0 / PD'. Domain, modalities and capabilities are keyword inferences from the spec text. The spec said access_class: open; tightened to internal-only because its licence string does not establish a licence (never guess). Loosen after verifying it."
+    tags: [spec-folded]
+    release_skip_reason: "no-staged-images: registry lists imagery, nothing staged under sources/ in rs-storage-open (U7/queue follow-up)"
+
+  - id: zooscannet
+    domain: fauna
+    access_class: internal-only
+    name: "zooscannet"
+    version: "unversioned"
+    description: "project-oceania/zooscannet (HF)"
+    licence: CC-BY-NC-4.0
+    legal_basis: licence
+    redistribution: unknown
+    provenance: public
+    verification:
+      verified_on: 2026-10-08
+      verified_by: "registry/ingest-specs/zooscannet.yaml: license field copied verbatim, not independently checked"
+      method: secondary
+    access:
+      method: huggingface
+      uri: "https://huggingface.co/datasets/project-oceania/zooscannet"
+      notes: "ingest adapter hf; see registry/ingest-specs/zooscannet.yaml"
+    modalities: [image]
+    capabilities: [general-pretraining]
+    loader: { layout: metadata-only }
+    coverage: { regions: [unknown] }
+    homepage: "https://huggingface.co/datasets/project-oceania/zooscannet"
+    citation: "project-oceania/zooscannet (HF)"
+    notes: "Folded from registry/ingest-specs/zooscannet.yaml on 2026-10-08 (P1.2). Spec license string, verbatim: 'cc-by-nc-4.0'. Domain, modalities and capabilities are keyword inferences from the spec text."
+    tags: [spec-folded]
+    release_skip_reason: "no-staged-images: registry lists imagery, nothing staged under sources/ in rs-storage-open (U7/queue follow-up)"
+
