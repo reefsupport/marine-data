@@ -259,6 +259,8 @@ def _cmd_release_lock(args: argparse.Namespace) -> int:
             flavour=args.flavour,
             configs=args.config,
             source_ids=args.source,
+            code_sha=args.code_sha,
+            reconstructed_at_sha=args.reconstructed_at_sha,
         )
     except ReleaseLockError as exc:
         print(f"release lock: {exc}", file=sys.stderr)
@@ -656,6 +658,15 @@ def add_release_subparser(sub: argparse._SubParsersAction) -> None:
     p_lock.add_argument("--config", nargs="+", action="extend", required=True, help="Config id(s)")
     p_lock.add_argument(
         "--source", action="append", default=None, help="Lock only this source (repeatable)"
+    )
+    p_lock.add_argument(
+        "--code-sha", dest="code_sha", default=None, help="Stamp this commit instead of HEAD"
+    )
+    p_lock.add_argument(
+        "--reconstructed-at-sha",
+        dest="reconstructed_at_sha",
+        default=None,
+        help="Flag a reconstructed lock: digests read from the registry pins at this commit",
     )
     p_lock.add_argument("--out", type=Path, default=Path("release.lock.yaml"))
     p_lock.set_defaults(func=_cmd_release_lock)

@@ -119,7 +119,36 @@ def test_committed_v10_lock_matches_registry_pins():
     )
     lock = load_lock(path, REG)
     assert sorted(e.id for e in lock.sources) == sorted(RELEASED)
+    # v1.0 ships four configs; the lock is flat: all four config ids + the union of their 8 sources
+    assert sorted(lock.configs) == ["coral-masks", "fish-boxes", "instance-masks", "scene-masks"]
+    assert len(lock.sources) == 8
+    for sha in (lock.code_sha, lock.reconstructed_at_sha):  # real commits, not the placeholder
+        assert sha and len(sha) == 40 and set(sha) <= set("0123456789abcdef")
+        assert set(sha) != {"0"}
+    # v1.0 was built by hand on 2026-10-07 from a commit that cannot be identified: say so
+    assert lock.reconstructed is True
+    comments = [ln for ln in path.read_text(encoding="utf-8").splitlines() if ln.startswith("#")]
+    assert len(comments) == 1 and "2026-10-08" in comments[0] and "build time" in comments[0]
     for e in lock.sources:
         assert e.access_class == "open"
         assert e.root_digest == REG.source(e.id).checksums.root_digest
         assert e.n_images is not None and RELEASED[e.id] <= e.n_images
+
+
+def test_reconstructed_keys_roundtrip_and_stay_out_of_ordinary_locks(tmp_path):
+    plain = rl.write_lock(_lock(), tmp_path / "plain.yaml")
+    assert "reconstructed" not in plain.read_text(encoding="utf-8")
+    assert rl.load_lock(plain, REG).reconstructed is False
+    sha = "b" * 40
+    rebuilt = build_lock(
+        REG,
+        release_id="t1",
+        flavour="open",
+        configs=["coral-masks"],
+        source_ids=PINNED,
+        reconstructed_at_sha=sha,
+        **FIXED,
+    )
+    back = rl.load_lock(rl.write_lock(rebuilt, tmp_path / "rebuilt.yaml"), REG)
+    assert back.reconstructed is True and back.reconstructed_at_sha == sha
+    assert back.code_sha == FIXED["code_sha"]  # code_sha is kept, not overwritten

@@ -1,9 +1,15 @@
 release_id: v1.0
-created: '2026-10-08T21:23:24+00:00'
+created: '2026-10-08T21:44:33+00:00'
 code_sha: dc98562be238ad68e6b6177e9d15f69ebc5a699c
+# reconstructed lock: v1.0 was built by hand on 2026-10-07 from a commit that cannot be identified; its digests are the bucket-tree digests pinned in the registry (first pinned 2026-09-18 to 2026-10-08) and read on 2026-10-08, not recorded at build time; code_sha is not the build commit
+reconstructed: true
+reconstructed_at_sha: ce718736c6527124b90fa0b754023d61700ef7c1
 flavour: open
 configs:
 - coral-masks
+- scene-masks
+- instance-masks
+- fish-boxes
 sources:
 - id: coralscapes
   version: '1.0'
