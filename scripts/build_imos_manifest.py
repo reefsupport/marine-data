@@ -231,6 +231,8 @@ def _s3():
     from botocore.config import Config
 
     cfg = Config(signature_version=UNSIGNED, retries={"max_attempts": 8, "mode": "adaptive"})
+    # Exempt from tests/test_s3_auth_boundary.py: this reads the public AWS IMOS bucket anonymously
+    # (unsigned, another endpoint), so it is not part of our storage credential path.
     return boto3.client("s3", region_name="ap-southeast-2", config=cfg)
 
 

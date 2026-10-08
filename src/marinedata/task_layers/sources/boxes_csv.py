@@ -179,12 +179,13 @@ def _ini_sections(text: str) -> dict[str, dict[str, str]] | None:
 
 
 def parse_seqinfo(text: str) -> tuple[int | None, int | None]:
-    """``(imWidth, imHeight)`` of a MOT ``seqinfo.ini`` (``(None, None)`` when unreadable)."""
-    sections = _ini_sections(text)
-    if sections is None or "Sequence" not in sections:
-        return None, None
-    merged = {**sections.get("DEFAULT", {}), **sections["Sequence"]}
+    """``(imWidth, imHeight)`` of a MOT ``seqinfo.ini``."""
+    import configparser
+
+    cp = configparser.ConfigParser()
     try:
-        return int(merged["imwidth"]), int(merged["imheight"])
-    except (KeyError, ValueError):
+        cp.read_string(text)
+        sec = cp["Sequence"]
+        return int(sec["imWidth"]), int(sec["imHeight"])
+    except (configparser.Error, KeyError, ValueError):
         return None, None
