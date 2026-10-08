@@ -303,6 +303,7 @@ sources:
   notes: "access: pending-ingest — see registry/ingest-specs/mouss-seg.yaml (S57/w2b sweep, 2026-09-25). P1.2b (2026-10-08) restored the class to open: the LIC audit (2026-10-05) read the upstream licence (US-GOV-PD), see licence_evidence."
   n_images_method: "registry-prior"
   licence_evidence: "https://huggingface.co/datasets/akridge/MOUSS_fish_segment_dataset_grayscale : License: Public Domain (NOAA Open Data)"
+  related: [mouss]
 - id: urpc
   domain: fish
   release_skip_reason: "no-staged-images: registry lists imagery, nothing staged under sources/ in rs-storage-open (U7/queue follow-up)"

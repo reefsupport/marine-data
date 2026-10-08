@@ -56,6 +56,7 @@ sources:
     citation: "Felemban, Battach, Khan et al., ReefNet, KAUST + MIT, arXiv 2510.16822"
     tags: [genus, benchmark, tabular]
     n_images_method: "unavailable:non-image"
+    related: [reefnet-species]
 
   - id: reefnet-species-images
     domain: coral
@@ -105,6 +106,7 @@ sources:
     citation: "@article{reefnet2024, title={ReefNet: A Large-Scale Coral Reef Annotation Dataset}, year={2024}, note={https://huggingface.co/datasets/ReefNet/ReefNet-1.0}}"
     tags: [pretraining, mis-registered-corrected]
     n_images_method: "unavailable:no-count"
+    related: [reefnet-species]
 
   - id: reef-guidance-system
     domain: coral

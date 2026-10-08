@@ -406,6 +406,7 @@ sources:
         concept labels (e.g. "feather star") and a working images/ + annotations.json.
     tags: [deep-sea, api]
     n_images_method: "registry-prior"
+    related: [fathomnet-fgvc23, fathomnet-fgvc25, fathomnet-vme]
 
   - id: mouss-detection
     domain: deep-sea

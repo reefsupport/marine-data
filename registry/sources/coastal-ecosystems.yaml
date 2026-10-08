@@ -258,6 +258,7 @@ sources:
     citation: "Đuraš, A., Wolf, B. J., Ilioudi, A., Palunko, I., & De Schutter, B. (2024). A Dataset for Detection and Segmentation of Underwater Marine Debris in Shallow Waters. Scientific Data, 11(1). https://doi.org/10.1038/s41597-024-03759-2"
     tags: [debris, permissive]
     n_images_method: "registry-prior"
+    related: [seaclear]
 
   - id: floating-marine-debris
     domain: imaging

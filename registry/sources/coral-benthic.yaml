@@ -260,6 +260,7 @@ sources:
         once the actual label list is public.
     tags: [genus, benchmark, domain-shift-testbed]
     n_images_method: "registry-prior"
+    related: [reefnet-species]
 
   - id: deolhonoscorais
     domain: coral
@@ -618,6 +619,7 @@ sources:
       schema_id: coralnet-labelset
     tags: [tdm, unlicensed, incumbent]
     n_images_method: "registry-prior"
+    related: [coralnet-public]
 
   - id: seatizen-atlas
     domain: coral

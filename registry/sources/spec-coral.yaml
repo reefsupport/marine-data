@@ -27,10 +27,11 @@ sources:
     coverage: { regions: [unknown] }
     homepage: "https://www.frdr-dfdr.ca/repo/dataset/24c6c813-d0ff-4461-8174-3f960f1edc0d"
     citation: "Lowe et al. 2025, Sci Data, doi:10.20383/103.0614"
-    notes: "Folded from registry/ingest-specs/benthicnet.yaml on 2026-10-08 (P1.2). Spec license string, verbatim: 'CC-BY-4.0 (mixed per source survey)'. Domain, modalities and capabilities are keyword inferences from the spec text."
+    notes: "Folded from registry/ingest-specs/benthicnet.yaml on 2026-10-08 (P1.2). Spec license string, verbatim: 'CC-BY-4.0 (mixed per source survey)'. Domain, modalities and capabilities are keyword inferences from the spec text. P1.2b: superseded_by benthicnet-1m - same record: doi:10.20383/103.0614 is in this entry's citation and in benthicnet-1m's access.uri."
     tags: [spec-folded]
     release_skip_reason: "no-staged-images: registry lists imagery, nothing staged under sources/ in rs-storage-open (U7/queue follow-up)"
     n_images_method: "unavailable:no-count"
+    superseded_by: benthicnet-1m
 
   - id: coralnet-public
     domain: coral
@@ -60,6 +61,7 @@ sources:
     tags: [spec-folded]
     release_skip_reason: "no-staged-images: registry lists imagery, nothing staged under sources/ in rs-storage-open (U7/queue follow-up)"
     n_images_method: "unavailable:no-count"
+    related: [coralnet, coralnet-small]
 
   - id: coralvos
     domain: coral
@@ -370,6 +372,7 @@ sources:
     tags: [spec-folded]
     release_skip_reason: "no-staged-images: registry lists imagery, nothing staged under sources/ in rs-storage-open (U7/queue follow-up)"
     n_images_method: "unavailable:no-count"
+    related: [reefnet, reefnet-hf, reefnet-species-images]
 
   - id: rls-photo-archive
     domain: coral

@@ -173,6 +173,7 @@ sources:
   n_images: 450
   counts_note: rows (HF viewer)
   n_images_method: "registry-prior"
+  related: [coralnet-public]
 - id: tascpc
   domain: coral
   access_class: internal-only

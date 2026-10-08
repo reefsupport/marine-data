@@ -96,10 +96,11 @@ sources:
     coverage: { regions: [unknown] }
     homepage: "https://huggingface.co/datasets/dronefreak/Brackish"
     citation: "Pedersen+ CVPRW2019"
-    notes: "Folded from registry/ingest-specs/brackish.yaml on 2026-10-08 (P1.2). Spec license string, verbatim: 'CC-BY-4.0'. Domain, modalities and capabilities are keyword inferences from the spec text."
+    notes: "Folded from registry/ingest-specs/brackish.yaml on 2026-10-08 (P1.2). Spec license string, verbatim: 'CC-BY-4.0'. Domain, modalities and capabilities are keyword inferences from the spec text. P1.2b: superseded_by brackish-dataset - same dataset: this entry's spec says 'via HF mirror dronefreak/Brackish', same Pedersen CVPRW 2019 paper, 14,674 images in both; the mirror says CC-BY-4.0, the original (AAU) CC-BY-SA-4.0, so use the target."
     tags: [spec-folded]
     release_skip_reason: "no-staged-images: registry lists imagery, nothing staged under sources/ in rs-storage-open (U7/queue follow-up)"
     n_images_method: "unavailable:no-count"
+    superseded_by: brackish-dataset
 
   - id: brackishmot
     domain: fauna
@@ -462,10 +463,11 @@ sources:
     coverage: { regions: [unknown] }
     homepage: "https://datamermaid.org/"
     citation: "MERMAID / WCS"
-    notes: "Folded from registry/ingest-specs/mermaid.yaml on 2026-10-08 (P1.2). Spec license string, verbatim: 'NOASSERTION'. Domain, modalities and capabilities are keyword inferences from the spec text."
+    notes: "Folded from registry/ingest-specs/mermaid.yaml on 2026-10-08 (P1.2). Spec license string, verbatim: 'NOASSERTION'. Domain, modalities and capabilities are keyword inferences from the spec text. P1.2b: superseded_by mermaid-aws - same upstream: the spec reads the AWS open-data bucket s3://coral-reef-training that mermaid-aws stages (mermaid-aws owns the tree)."
     tags: [spec-folded]
     release_skip_reason: "no-staged-images: registry lists imagery, nothing staged under sources/ in rs-storage-open (U7/queue follow-up)"
     n_images_method: "unavailable:no-count"
+    superseded_by: mermaid-aws
 
   - id: mlc-moorea
     domain: fauna
@@ -527,6 +529,7 @@ sources:
     release_skip_reason: "no-staged-images: registry lists imagery, nothing staged under sources/ in rs-storage-open (U7/queue follow-up)"
     n_images_method: "unavailable:no-count"
     licence_evidence: "https://huggingface.co/datasets/akridge/MOUSS_fish_imagery_dataset_grayscale_small : License: Public Domain (NOAA Open Data)"
+    related: [mouss-seg]
 
   - id: muot3m
     domain: fauna
@@ -875,6 +878,7 @@ sources:
     tags: [spec-folded]
     release_skip_reason: "no-staged-images: registry lists imagery, nothing staged under sources/ in rs-storage-open (U7/queue follow-up)"
     n_images_method: "unavailable:no-count"
+    related: [seaclear-marine-debris]
 
   - id: seaturtleid2022
     domain: fauna

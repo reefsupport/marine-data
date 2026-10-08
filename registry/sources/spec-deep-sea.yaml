@@ -43,6 +43,7 @@ sources:
       root_digest: c31b69e5da0bed6d74623b8b5479e8b6cc00ec280cd787fec3e61d7dc7e783f4
       files: 5954
       size_bytes: 9940494443
+    related: [fathomnet]
 
   - id: fathomnet-fgvc25
     domain: deep-sea
@@ -84,6 +85,7 @@ sources:
       root_digest: c577676e2e11cacb525d0b5eae22eec6c62c157648ef234a73f8cb6e6b676787
       files: 9310
       size_bytes: 25949554677
+    related: [fathomnet]
 
   - id: fathomnet-vme
     domain: deep-sea
@@ -114,6 +116,7 @@ sources:
     tags: [spec-folded]
     release_skip_reason: "no-staged-images: registry lists imagery, nothing staged under sources/ in rs-storage-open (U7/queue follow-up)"
     n_images_method: "unavailable:no-count"
+    related: [fathomnet]
 
   - id: galapagos-insas
     domain: deep-sea

@@ -22,3 +22,24 @@ INV-REG (2026-10-08) holds no explicit list of 45 flagged ids, so the pairs belo
 | reefnet-species (restricted-nc, NO-LICENCE-STATED) | reefnet-hf (restricted-nc, CC-BY-NC-SA-4.0) | similar id only; ambiguous | one dataset: `reefnet-species` superseded_by `reefnet-hf`, `reefnet-hf` keeps class and counts | two releases or subsets: keep both, `reefnet-species` keeps its staged tree |
 | reefnet-species (restricted-nc, NO-LICENCE-STATED) | reefnet-species-images (open, CC-BY-4.0) | similar id only; ambiguous | one dataset: `reefnet-species` superseded_by `reefnet-species-images`, `reefnet-species-images` keeps class and counts | two releases or subsets: keep both, `reefnet-species` keeps its staged tree |
 | seaclear (open, CC-BY-4.0) | seaclear-marine-debris (open, CC-BY-4.0) | similar id only; ambiguous | one dataset: `seaclear` superseded_by `seaclear-marine-debris`, `seaclear-marine-debris` keeps class and counts | two releases or subsets: keep both, `seaclear` keeps its staged tree |
+
+## P1.2b decisions on the 13 ambiguous pairs (2026-10-08)
+
+Rule: the same upstream DOI, URL, bucket or tree makes the spec-folded id `superseded_by` the entry that owns the staged tree (or the curated entry);
+different data is kept and cross-referenced with `related:` (both ways). Nothing is deleted.
+
+| spec-folded | established | decision | evidence |
+|---|---|---|---|
+| benthicnet | benthicnet-1m | superseded_by | same record: doi:10.20383/103.0614 is in this entry's citation and in benthicnet-1m's access.uri |
+| brackish | brackish-dataset | superseded_by | same dataset: this entry's spec says 'via HF mirror dronefreak/Brackish', same Pedersen CVPRW 2019 paper, 14,674 images in both; the mirror says CC-BY-4.0, the original (AAU) CC-BY-SA-4.0, so use the target |
+| mermaid | mermaid-aws | superseded_by | same upstream: the spec reads the AWS open-data bucket s3://coral-reef-training that mermaid-aws stages (mermaid-aws owns the tree) |
+| coralnet-public | coralnet | keep both, related | public sources of the platform vs the platform entry (a subset, not a duplicate) |
+| coralnet-public | coralnet-small | keep both, related | coralnet-small is a 450-image WHOI re-pack on HF, a different object |
+| fathomnet-fgvc23 | fathomnet | keep both, related | competition subset with its own tree (5,950 images) vs the live API archive |
+| fathomnet-fgvc25 | fathomnet | keep both, related | competition subset with its own tree (9,306 images) vs the live API archive |
+| fathomnet-vme | fathomnet | keep both, related | HF VME benchmark repo vs the live API archive |
+| mouss | mouss-seg | keep both, related | different HF repos: grayscale imagery vs segmentation masks |
+| reefnet-species | reefnet | keep both, related | species-level image set (TsinghuaCorals HF repo) vs the KAUST/MIT ReefNet benchmark (arXiv 2510.16822) |
+| reefnet-species | reefnet-hf | keep both, related | species-level image set (TsinghuaCorals HF repo) vs ReefNet/ReefNet-1.0 on HF |
+| reefnet-species | reefnet-species-images | keep both, related (undecided) | same repo name under two HF namespaces (TsinghuaCorals vs BobDerBaum), no shared locator in either record |
+| seaclear | seaclear-marine-debris | keep both, related (undecided) | different DOIs (10.1038/s41597-024-03286-0 vs -03759-2) for what both name SeaClear marine debris; the stub has no tree (figshare id unresolved) |
