@@ -360,6 +360,34 @@ a source is a redistribution decision as well as a technical one.
 
 Release gates (`marinedata release gate BUILD --all --require-all`): see [docs/GATES.md](docs/GATES.md).
 
+The full command and flag reference is [docs/cli.md](docs/cli.md). It is generated from the argument parser by
+`make docs`, and `make docs-check` fails when it is stale. Commands added in Phase A (see
+[docs/PHASE_A.md](docs/PHASE_A.md)):
+
+- `marinedata auth check` shows which identity bucket reads use (one `head_bucket`, one `head_object`, no listing)
+  and prints no secret.
+- `marinedata metadata resolve --source ID --version V --out DIR` resolves per-row geo, date, site and quadrat
+  metadata into local files only.
+- `marinedata tasks build-points --source ID --version V --out DIR [--metadata-dir DIR]` builds the benthic points
+  table of a staged source; `--metadata-dir` joins the resolved metadata onto it.
+- `marinedata release lock` writes `release.lock.yaml` from the registry pins; `marinedata release build --lock FILE`
+  builds against it.
+- `marinedata release gate BUILD [--masks] [--metadata] [--all] [--require-all]` runs the release gates and merges
+  the results into `GATES.json`.
+- `marinedata release card` and `marinedata release croissant` write the Hugging Face card (`README.md`) and the
+  Croissant JSON-LD of a built release.
+- `marinedata release publish` is a dry run unless `--go`; it uploads a gated release to its Hub repo and tags it.
+  The frozen v1.0 needs `--allow-frozen`.
+
+Registry maintenance (run from the repo root):
+
+- `marinedata.registry_probe` reads a staged tree with anonymous single-key requests (never a listing). It is shared
+  by `scripts/registry_sync_bucket.py` and the nightly drift test.
+- `uv run python scripts/registry_sync_bucket.py [--probe | --apply] [--parts checksums,counts]` writes `n_images`
+  and `root_digest` into `registry/sources/*.yaml`; with neither flag it prints what `--apply` would do.
+- `uv run python scripts/registry_fold_specs.py [--dry-run]` adds a registry entry for every ingest-spec id that has
+  none, in `registry/sources/spec-<domain>.yaml`.
+
 ## Licensing
 
 **Code.** The code in this repository is released under the Apache License 2.0 ([`LICENSE`](LICENSE)).

@@ -32,10 +32,12 @@ labels-check:
 # them by hand. `docs-check` renders into a temp dir and fails when the committed files differ.
 docs:
 	uv run python scripts/gen_sources_docs.py
+	uv run python scripts/gen_cli_docs.py
 
 docs-check:
 	@tmp=$$(mktemp -d) && uv run python scripts/gen_sources_docs.py --out $$tmp > /dev/null && \
-	  { diff -u docs/sources.md $$tmp/sources.md && diff -u docs/configs.md $$tmp/configs.md; } ; \
+	  uv run python scripts/gen_cli_docs.py --out $$tmp > /dev/null && \
+	  { diff -u docs/sources.md $$tmp/sources.md && diff -u docs/configs.md $$tmp/configs.md && diff -u docs/cli.md $$tmp/cli.md; } ; \
 	  rc=$$?; rm -rf $$tmp; [ $$rc -eq 0 ] || echo "docs are stale: run 'make docs' and commit"; \
 	  exit $$rc
 

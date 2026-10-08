@@ -242,7 +242,7 @@ node = ont.resolve_name(row["species"] or row["genus"] or row["family"])
 # gate: what fraction of the corpus is hard coral, across two subphyla
 frac = mean("HARD_CORAL" in ont.groups(s.labels[Axis.TAXON].node_id) for s in samples)
 
-# CLI: marinedata explain wid:205902
+# Planned CLI (not implemented): explain wid:205902
 $ Millepora  rank=Genus(180)  aphia=205902
   is_a: Milleporidae < Capitata < Anthoathecata < Hydroidolina < Hydrozoa < Medusozoa < Cnidaria
   groups(rs): HARD_CORAL [derived R_HARD_CORAL_v1 @ worms-2026-08]

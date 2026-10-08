@@ -39,7 +39,7 @@ Status: decided. Every line is a directive.
   worms_modified: "2015-07-20T15:23:11.000Z"
 ```
 
-**What we fetch, when.** Nothing at load. Nothing in CI-on-PR. WoRMS is hit only by `marinedata taxa resolve`, a maintainer-run codegen step that rewrites YAML, and by a scheduled drift job that re-resolves every id and fails on any change to those five fields. OBIS is hit only by `marinedata prior build`, writing to `~/.cache/marinedata` (§6).
+**What we fetch, when.** Nothing at load. Nothing in CI-on-PR. WoRMS is hit only by `marinedata taxa resolve`, a maintainer-run codegen step that rewrites YAML, and by a scheduled drift job that re-resolves every id and fails on any change to those five fields. OBIS is hit only by the prior builder (planned; no CLI command yet), writing to `~/.cache/marinedata` (§6).
 
 **Fix before anything is built on it** — 3 of 8 hand-typed AphiaIDs are wrong:
 
@@ -190,7 +190,7 @@ Disambiguation is committed as `(name, authority)` or `(name, expect_phylum)` in
 
 **Phase 3 — crosswalks as membership.** Add `source_group` + `contested` to `CrosswalkEdge`. Ingest the full CoralNet 12,263-label dump (already extracted) and AGRRA/CATAMI/NCRMP/Reef Check codebooks. Add the non-comparability query.
 
-**Phase 4 — MEOW vendoring + `marinedata prior build`**, with the effort gate, offset cap, temporal window and the lionfish regression test.
+**Phase 4 — MEOW vendoring + the prior builder (planned; no CLI command yet)**, with the effort gate, offset cap, temporal window and the lionfish regression test.
 
 **Deferred indefinitely:** Parquet backbone (cancelled), full WoRMS mirror, FishNet-as-nodes, a standalone membership artifact, any runtime network resolution.
 
