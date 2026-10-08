@@ -37,3 +37,4 @@ measured:
   date: '2026-10-02'
   per_item_license: cc-by-nc-nd-4.0
   label_type: multiclass (folder name; Background/Substrate/Strappy/… + For_5-Class_Case subset)
+bucket: rs-storage-private

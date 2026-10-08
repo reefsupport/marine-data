@@ -41,3 +41,4 @@ subset:
   cap_per_stratum: 500
   rule: catalog.csv rows in 34 wholly-marine clades or whose binomial is an iNat/WoRMS-marine species (577,120 rows),
     <= 500 per (data_source, species); mixed-clade rows without a marine binomial are excluded (lower bound)
+bucket: rs-storage-private

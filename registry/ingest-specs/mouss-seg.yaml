@@ -11,3 +11,4 @@ params:
   revision: main
 
 disk_floor_gib: 36.0
+bucket: rs-storage-private

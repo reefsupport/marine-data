@@ -31,3 +31,4 @@ subset:
   - catami_label
   rule: every CATAMI-labelled image + unlabelled capped at 5,000 per (source survey x depth band); drop IMOS/Squidle-origin
     rows already covered by imos-auv (dedupe by source image id)
+bucket: rs-storage-private

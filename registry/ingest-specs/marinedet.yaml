@@ -14,3 +14,4 @@ measured:
   bytes: null
   date: '2026-09-25'
   bytes_basis: 'unmeasured: canonical source not identified'
+bucket: rs-storage-private

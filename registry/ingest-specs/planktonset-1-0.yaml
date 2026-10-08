@@ -14,3 +14,4 @@ measured:
   method: HF API dataset_info (train split) + usedStorage
   date: '2026-09-25'
   per_item_license: other
+bucket: rs-storage-private

@@ -29,3 +29,4 @@ subset:
   - is_public
   rule: anonymous-downloadable media only (is_public=true per collection); dedupe
     against existing Squidle rows
+bucket: rs-storage-private

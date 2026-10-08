@@ -12,3 +12,4 @@ citation: "Fu, C. et al. 2023, Rethinking General Underwater Object Detection: D
 homepage: https://huggingface.co/datasets/Mortallll/RUOD
 
 disk_floor_gib: 34.0
+bucket: rs-storage-private

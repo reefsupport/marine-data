@@ -14,3 +14,4 @@ license: CC-BY-4.0
 attribution: "Nikita Manolis (Roboflow Universe, coral-growth-form), via Roboflow 100 (RF100) coral-lwptl; HF mirror LibreYOLO/coral-lwptl"
 citation: "Ciaglia et al. 2022, Roboflow 100: A Rich, Multi-Domain Object Detection Benchmark, arXiv:2211.13523"
 homepage: https://universe.roboflow.com/roboflow-100/coral-lwptl
+bucket: rs-storage-private

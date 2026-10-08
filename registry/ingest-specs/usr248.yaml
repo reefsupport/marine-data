@@ -12,3 +12,4 @@ candidate_endpoints:
 why_not_supported: 1,060 HR images; IRVLab site 403s scripted requests (Cloudflare),
   true payload is a Google Drive folder whose id isn't exposed without rendering the
   page.
+bucket: rs-storage-private

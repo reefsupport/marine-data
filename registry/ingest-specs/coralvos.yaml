@@ -15,3 +15,4 @@ measured:
   method: GitHub repo size 7.4 MB (code only); data host not confirmed
   date: '2026-09-25'
   bytes_basis: 'unmeasured: data host not confirmed'
+bucket: rs-storage-private

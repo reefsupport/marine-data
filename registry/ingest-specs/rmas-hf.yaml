@@ -23,3 +23,4 @@ measured:
   habitat_region: coral reef
   dedup_chain: HF re-pack of RMAS (Li et al. 2023, upstream GitHub/Google Drive); first open anonymous route
   wp6l_gap: salient
+bucket: rs-storage-private

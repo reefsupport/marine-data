@@ -10,3 +10,4 @@ citation: OceanCV/PlasticInWater (HF)
 homepage: https://huggingface.co/datasets/OceanCV/PlasticInWater
 
 disk_floor_gib: 36.0
+bucket: rs-storage-private

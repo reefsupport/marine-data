@@ -70,3 +70,4 @@ subset:
   target_bytes_estimate: 488228198770
   target_bytes_basis: 1,130,014 fetchable photos x 432,055 B mean of 50 smoke-fetched large.* (INT-ingest5)
 disk_floor_gib: 34.0  # INT-ingest5b: runner floor like runner 4 (D-AE)
+bucket: rs-storage-private

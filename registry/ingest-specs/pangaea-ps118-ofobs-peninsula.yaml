@@ -25,3 +25,4 @@ measured:
   child_datasets: 11
   items: 12967
   bytes_basis: 'not measured: PANGAEA child tab exports list image names/URLs but no file sizes (WP-6j listing only, no fetch)'
+bucket: rs-storage-private

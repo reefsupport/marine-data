@@ -14,3 +14,4 @@ citation: "OBSEA fish detection training dataset (YOLO), Zenodo, doi:10.5281/zen
 homepage: https://zenodo.org/records/14888440
 
 disk_floor_gib: 36.0
+bucket: rs-storage-private

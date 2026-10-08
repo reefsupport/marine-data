@@ -28,3 +28,4 @@ measured:
   method: HF tree @3da50a4 (CoralVQA_Image.zip 26694403050 + train.jsonl 62809221 + test.jsonl 7074574)
   date: '2026-09-25'
   bytes_basis: hf-tree
+bucket: rs-storage-private

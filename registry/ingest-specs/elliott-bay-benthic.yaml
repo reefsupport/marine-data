@@ -11,3 +11,4 @@ params:
   revision: cd20e627ba772d0952914ffb2b30b454bf4b7ac4
 
 disk_floor_gib: 34.0
+bucket: rs-storage-private

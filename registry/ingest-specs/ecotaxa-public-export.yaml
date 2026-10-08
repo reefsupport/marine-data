@@ -14,3 +14,4 @@ measured:
   method: main site reachable (301); api.ecotaxa.obs-vlfr.fr DNS failure
   date: '2026-09-25'
   per_item_license: per-project
+bucket: rs-storage-private

@@ -19,3 +19,4 @@ measured:
   child_datasets: 12
 notes: 'candidate — WP-6j pangaea-series: parent PANGAEA.957274 -> 12 child datasets -> 40,476 images (listed 2026-09-25,
   no fetch)'
+bucket: rs-storage-private

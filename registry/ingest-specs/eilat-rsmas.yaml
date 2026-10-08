@@ -19,3 +19,4 @@ measured:
   label_type: image-level coral class (14 classes; class code in filename)
   method: u15-label-kind-triage (registry-patch.yaml)
   date: '2026-10-05'
+bucket: rs-storage-private

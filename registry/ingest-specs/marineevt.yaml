@@ -27,3 +27,4 @@ measured:
   dedup_chain: new; no registry/ingest-spec/WP-6g/S57 match on title, DOI or record id
   wp6l_gap: vqa+video
   items: 169409
+bucket: rs-storage-private

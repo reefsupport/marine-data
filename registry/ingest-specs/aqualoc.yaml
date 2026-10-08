@@ -18,3 +18,4 @@ measured:
   label_type: none (SLAM sequences with reference trajectories; ROS bag)
   method: u15-label-kind-triage (registry-patch.yaml)
   date: '2026-10-05'
+bucket: rs-storage-private

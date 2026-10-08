@@ -10,3 +10,4 @@ citation: QUT QCR
 homepage: https://huggingface.co/datasets/QCR-Underwater-Perception/reef-guidance-system
 
 disk_floor_gib: 36.0
+bucket: rs-storage-private

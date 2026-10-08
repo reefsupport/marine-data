@@ -34,3 +34,4 @@ measured:
   per_item_license: CC-BY-4.0
   n_concepts: 79
   label_type: bbox + multilabel (test labels held out)
+bucket: rs-storage-private

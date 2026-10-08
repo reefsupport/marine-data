@@ -14,3 +14,4 @@ notes: 'Built from Public_Websites/{Corals-of-the-world/urls.txt, EOL/eol_urls.t
   (56,257 unique URLs). The other website folders ship scrape scripts or zipped URL lists only; Flickr/Gettyimages/
   Shutterstock/Private_Data ship a README only (not fetchable).'
 disk_floor_gib: 34.0  # INT-ingest5b: runner floor like runner 4 (D-AE)
+bucket: rs-storage-private
