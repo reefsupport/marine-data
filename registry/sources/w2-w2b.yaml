@@ -53,6 +53,7 @@ sources:
   - vlm
   - trait
   notes: 'access: pending-ingest — see registry/ingest-specs/fish-vista.yaml (S57/w2b sweep, 2026-09-25).'
+  n_images_method: "registry-prior"
 - id: wildfish
   domain: fish
   access_class: internal-only
@@ -94,6 +95,7 @@ sources:
   - fish
   - classification
   notes: 'access: pending-ingest — see registry/ingest-specs/wildfish.yaml (S57/w2b sweep, 2026-09-25).'
+  n_images_method: "registry-prior"
 - id: fish-length-stereo
   domain: imaging
   release_skip_reason: "no-staged-images: registry lists imagery, nothing staged under sources/ in rs-storage-open (U7/queue follow-up)"
@@ -135,6 +137,7 @@ sources:
   - stereo
   - biomass
   notes: 'access: pending-ingest — see registry/ingest-specs/fish-length-stereo.yaml (S57/w2b sweep, 2026-09-25).'
+  n_images_method: "unavailable:no-count"
 - id: salmon-cage
   domain: fish
   access_class: open
@@ -179,6 +182,8 @@ sources:
     root_digest: 92ae68595092d477424ffdf980f07529071e92fc5f166cbd30bfcfe649cd52a1
     files: 4992
     size_bytes: 327561171
+  n_images: 4988
+  n_images_method: "ingest-json"
 - id: luderick-seagrass
   domain: seagrass
   release_skip_reason: "no-staged-images: registry lists imagery, nothing staged under sources/ in rs-storage-open (U7/queue follow-up)"
@@ -216,6 +221,7 @@ sources:
   - fish
   - seagrass
   notes: 'access: pending-ingest — see registry/ingest-specs/luderick-seagrass.yaml (S57/w2b sweep, 2026-09-25).'
+  n_images_method: "unavailable:no-count"
 - id: med-fish
   domain: fish
   release_skip_reason: "no-staged-images: registry lists imagery, nothing staged under sources/ in rs-storage-open (U7/queue follow-up)"
@@ -252,6 +258,7 @@ sources:
   - fish
   - mediterranean
   notes: 'access: pending-ingest — see registry/ingest-specs/med-fish.yaml (S57/w2b sweep, 2026-09-25).'
+  n_images_method: "unavailable:no-count"
 - id: mouss-seg
   domain: fish
   release_skip_reason: "no-staged-images: registry lists imagery, nothing staged under sources/ in rs-storage-open (U7/queue follow-up)"
@@ -295,6 +302,7 @@ sources:
   - fish
   - segmentation
   notes: 'access: pending-ingest — see registry/ingest-specs/mouss-seg.yaml (S57/w2b sweep, 2026-09-25).'
+  n_images_method: "registry-prior"
 - id: urpc
   domain: fish
   release_skip_reason: "no-staged-images: registry lists imagery, nothing staged under sources/ in rs-storage-open (U7/queue follow-up)"
@@ -334,6 +342,7 @@ sources:
   - detection
   - urpc
   notes: 'access: pending-ingest — see registry/ingest-specs/urpc.yaml (S57/w2b sweep, 2026-09-25).'
+  n_images_method: "registry-prior"
 - id: marinelife16k
   domain: imaging
   release_skip_reason: "no-staged-images: registry lists imagery, nothing staged under sources/ in rs-storage-open (U7/queue follow-up)"
@@ -375,6 +384,7 @@ sources:
   - vlm
   - captioning
   notes: 'access: pending-ingest — see registry/ingest-specs/marinelife16k.yaml (S57/w2b sweep, 2026-09-25).'
+  n_images_method: "registry-prior"
 - id: ocean-r1
   domain: imaging
   release_skip_reason: "no-staged-images: registry lists imagery, nothing staged under sources/ in rs-storage-open (U7/queue follow-up)"
@@ -414,6 +424,7 @@ sources:
   - vlm
   - captioning
   notes: 'access: pending-ingest — see registry/ingest-specs/ocean-r1.yaml (S57/w2b sweep, 2026-09-25).'
+  n_images_method: "registry-prior"
 - id: marine-animals-mm
   domain: fauna
   release_skip_reason: "no-staged-images: registry lists imagery, nothing staged under sources/ in rs-storage-open (U7/queue follow-up)"
@@ -453,6 +464,7 @@ sources:
   - vlm
   - captioning
   notes: 'access: pending-ingest — see registry/ingest-specs/marine-animals-mm.yaml (S57/w2b sweep, 2026-09-25).'
+  n_images_method: "registry-prior"
 - id: oceaninstruct
   domain: imaging
   release_skip_reason: "non-image-modality: instruction text; 10000 label keys staged, 0 images"
@@ -498,6 +510,7 @@ sources:
     root_digest: 2348545446d915951fb3796603669ab0191bb1576b6726e02d6ff598e2a28463
     files: 10003
     size_bytes: 13869330
+  n_images_method: "unavailable:no-count"
 - id: seathru
   domain: imaging
   release_skip_reason: "no-staged-images: registry lists imagery, nothing staged under sources/ in rs-storage-open (U7/queue follow-up)"
@@ -538,6 +551,7 @@ sources:
   - enhancement
   - depth
   notes: 'access: pending-ingest — see registry/ingest-specs/seathru.yaml (S57/w2b sweep, 2026-09-25).'
+  n_images_method: "registry-prior"
 - id: euvp
   domain: imaging
   access_class: internal-only
@@ -567,7 +581,8 @@ sources:
   - image
   capabilities:
   - image-enhancement
-  n_images: 1
+  n_images: 5550
+  n_images_method: "ingest-json"
   counts_note: dry-run measured 1 stageable file / 189 MB on the HF mirror on 2026-09-25 — far below the
     ~20k+10k paired/unpaired official count; confirm the mirror's actual content before relying on it.
   coverage:
@@ -628,6 +643,8 @@ sources:
   - enhancement
   notes: 'access: pending-ingest — see registry/ingest-specs/underwater-images-2542305.yaml (S57/w2b sweep,
     2026-09-25).'
+  n_images: 3850
+  n_images_method: "listing"
 - id: marine-snow
   domain: imaging
   release_skip_reason: "no-staged-images: registry lists imagery, nothing staged under sources/ in rs-storage-open (U7/queue follow-up)"
@@ -666,6 +683,7 @@ sources:
   - marine-snow
   - synthetic
   notes: 'access: pending-ingest — see registry/ingest-specs/marine-snow.yaml (S57/w2b sweep, 2026-09-25).'
+  n_images_method: "registry-prior"
 - id: rcaustic
   domain: imaging
   release_skip_reason: "no-staged-images: registry lists imagery, nothing staged under sources/ in rs-storage-open (U7/queue follow-up)"
@@ -704,6 +722,7 @@ sources:
   - enhancement
   - caustics
   notes: 'access: pending-ingest — see registry/ingest-specs/rcaustic.yaml (S57/w2b sweep, 2026-09-25).'
+  n_images_method: "registry-prior"
 - id: sea-undistort
   domain: imaging
   release_skip_reason: "no-staged-images: registry lists imagery, nothing staged under sources/ in rs-storage-open (U7/queue follow-up)"
@@ -740,6 +759,7 @@ sources:
   tags:
   - enhancement
   notes: 'access: pending-ingest — see registry/ingest-specs/sea-undistort.yaml (S57/w2b sweep, 2026-09-25).'
+  n_images_method: "registry-prior"
 - id: lsui
   domain: imaging
   access_class: internal-only
@@ -765,7 +785,8 @@ sources:
   - image
   capabilities:
   - image-enhancement
-  n_images: 4279
+  n_images: 8558
+  n_images_method: "ingest-json"
   coverage:
     regions:
     - unknown
@@ -823,6 +844,7 @@ sources:
   - enhancement
   - eval
   notes: 'access: pending-ingest — see registry/ingest-specs/u45.yaml (S57/w2b sweep, 2026-09-25).'
+  n_images_method: "registry-prior"
 - id: ruie
   domain: imaging
   access_class: internal-only
@@ -859,6 +881,7 @@ sources:
   - enhancement
   - benchmark
   notes: 'access: pending-ingest — see registry/ingest-specs/ruie.yaml (S57/w2b sweep, 2026-09-25).'
+  n_images_method: "registry-prior"
 - id: usr248
   domain: imaging
   access_class: internal-only
@@ -894,6 +917,7 @@ sources:
   - enhancement
   - super-resolution
   notes: 'access: pending-ingest — see registry/ingest-specs/usr248.yaml (S57/w2b sweep, 2026-09-25).'
+  n_images_method: "registry-prior"
 - id: ufo120
   domain: imaging
   access_class: internal-only
@@ -930,6 +954,7 @@ sources:
   - super-resolution
   - paired
   notes: 'access: pending-ingest — see registry/ingest-specs/ufo120.yaml (S57/w2b sweep, 2026-09-25).'
+  n_images_method: "registry-prior"
 - id: hicrd
   domain: imaging
   access_class: internal-only
@@ -966,6 +991,7 @@ sources:
   - enhancement
   - restoration
   notes: 'access: pending-ingest — see registry/ingest-specs/hicrd.yaml (S57/w2b sweep, 2026-09-25).'
+  n_images_method: "registry-prior"
 - id: usod10k
   domain: imaging
   access_class: internal-only
@@ -991,7 +1017,8 @@ sources:
   capabilities:
   - image-enhancement
   - invertebrate-detection
-  n_images: 10255
+  n_images: 39994
+  n_images_method: "ingest-json"
   coverage:
     regions:
     - unknown
@@ -1056,6 +1083,8 @@ sources:
   - kind: depth-map
     notes: HabCam2019 disparity; stereo pairs
     supervises: []
+  n_images: 4174
+  n_images_method: "listing"
 - id: duo
   domain: fauna
   access_class: internal-only
@@ -1083,6 +1112,7 @@ sources:
   capabilities:
   - invertebrate-detection
   n_images: 7782
+  n_images_method: "ingest-json"
   coverage:
     regions:
     - unknown

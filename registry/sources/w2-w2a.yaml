@@ -48,6 +48,7 @@ sources:
     repo''s ~2.97 MB/item average) for the first pass.'
   n_images: 22422
   counts_note: rows (HF viewer); full 66.68 GB, first-pass subset ~44.6 GB (max_images:15000)
+  n_images_method: "registry-prior"
 - id: benthoz15
   domain: coral
   release_skip_reason: "no-staged-images: registry lists imagery, nothing staged under sources/ in rs-storage-open (U7/queue follow-up)"
@@ -96,6 +97,7 @@ sources:
     et al. 2015 supplementary) is not identifiable from the bucket alone'
   n_images: 9874
   counts_note: images (~407k point annotations)
+  n_images_method: "registry-prior"
 - id: noaa-coral-icra
   domain: coral
   release_skip_reason: "no-staged-images: registry lists imagery, nothing staged under sources/ in rs-storage-open (U7/queue follow-up)"
@@ -135,6 +137,7 @@ sources:
   notes: 'Not yet ingested (access: pending-ingest per S57 catalog planning; checksums unset until staged).
     queued for a dry-run ingest via the supported adapter.'
   counts_note: <1K (HF viewer)
+  n_images_method: "unavailable:no-count"
 - id: coralnet-small
   domain: coral
   access_class: internal-only
@@ -173,6 +176,7 @@ sources:
     queued for a dry-run ingest via the supported adapter.'
   n_images: 450
   counts_note: rows (HF viewer)
+  n_images_method: "registry-prior"
 - id: tascpc
   domain: coral
   access_class: internal-only
@@ -211,6 +215,7 @@ sources:
     queued for a dry-run ingest via the supported adapter.'
   n_images: 1300
   counts_note: est. (catalog)
+  n_images_method: "registry-prior"
 - id: eilat-rsmas
   domain: coral
   access_class: internal-only
@@ -253,7 +258,8 @@ sources:
     on this pass (host needed -k/-L, plain http 301s to https); the EILAT+RSMAS image archive itself is
     referenced from a same-page ''dataset'' anchor that needs a follow-up fetch to resolve to an exact
     file URL'
-  n_images: 1889
+  n_images: 410
+  n_images_method: "ingest-json"
   counts_note: patches
   annotations:
   - classes: 14
@@ -304,6 +310,7 @@ sources:
   notes: 'Not yet ingested (access: pending-ingest per S57 catalog planning; checksums unset until staged).
     queued for a dry-run ingest via the supported adapter.'
   counts_note: unknown (HF usedStorage ~0)
+  n_images_method: "unavailable:no-count"
 - id: fathomnet-megalodon
   domain: fauna
   access_class: restricted-nd
@@ -342,6 +349,7 @@ sources:
   notes: 'Not yet ingested (access: pending-ingest per S57 catalog planning; checksums unset until staged).
     queued for a dry-run ingest via the supported adapter.'
   counts_note: unknown
+  n_images_method: "unavailable:no-count"
 - id: noaa-dscrtp
   domain: deep-sea
   release_skip_reason: "no-staged-images: registry lists imagery, nothing staged under sources/ in rs-storage-open (U7/queue follow-up)"
@@ -390,6 +398,7 @@ sources:
     an ImageURL column (no bulk archive); needs an adapter that streams the CSV, dedupes/filters to rows
     with a non-empty ImageURL, then fetches each URL individually. Endpoint: https://www.ncei.noaa.gov/erddap/tabledap/deep_sea_corals.csv?ImageURL,CatalogNumber,ScientificName,ObservationYear&ImageURL!=""'
   counts_note: '>100k records w/ images (est, catalog)'
+  n_images_method: "unavailable:no-count"
 - id: noaa-goa-2019
   domain: deep-sea
   release_skip_reason: "no-staged-images: registry lists imagery, nothing staged under sources/ in rs-storage-open (U7/queue follow-up)"
@@ -432,6 +441,7 @@ sources:
     landing page; needs a follow-up fetch of the resolved URL to find the file manifest (likely an NCEI
     archive info/download API, not a flat file list)'
   counts_note: unknown
+  n_images_method: "unavailable:no-count"
 - id: pangaea-ccz-gsr
   domain: fauna
   release_skip_reason: "no-staged-images: raw mirror of 40 images only, no INGEST.json/metadata.parquet (U7/queue follow-up)"
@@ -479,6 +489,8 @@ sources:
     resolves to a dataset page listing linked image files/collections, not a flat archive); needs a PANGAEA-dataset
     adapter that follows child datasets'
   counts_note: unknown
+  n_images: 40
+  n_images_method: "listing"
 - id: pangaea-ofos-msm77
   domain: fauna
   release_skip_reason: "no-staged-images: registry lists imagery, nothing staged under sources/ in rs-storage-open (U7/queue follow-up)"
@@ -525,6 +537,8 @@ sources:
     needs_adapter:pangaea — same PANGAEA-dataset adapter need as pangaea-ccz-gsr; this DOI is one of ~50
     sibling OFOS profile datasets under the MSM77 cruise series that a real ingest would need to enumerate'
   counts_note: unknown; ~50 linked OFOS profiles
+  n_images: 2114
+  n_images_method: "spec:measured.items"
 - id: bodc-smartex
   domain: fauna
   release_skip_reason: "no-staged-images: registry lists imagery, nothing staged under sources/ in rs-storage-open (U7/queue follow-up)"
@@ -569,6 +583,7 @@ sources:
     bulk files via its own download-manager/FTP rather than flat HTTP, needs a follow-up fetch of the
     resolved catalogue page to find the file access route'
   counts_note: unknown
+  n_images_method: "unavailable:no-count"
 - id: oceancv-rovtransect
   domain: imaging
   release_skip_reason: "no-staged-images: registry lists imagery, nothing staged under sources/ in rs-storage-open (U7/queue follow-up)"
@@ -612,6 +627,7 @@ sources:
     queued for a dry-run ingest via the supported adapter.'
   n_images: 2
   counts_note: rows (HF viewer)
+  n_images_method: "registry-prior"
 - id: deepsea-coral-cornerrise
   domain: deep-sea
   release_skip_reason: "no-staged-images: registry lists imagery, nothing staged under sources/ in rs-storage-open (U7/queue follow-up)"
@@ -654,6 +670,7 @@ sources:
   notes: 'Not yet ingested (access: pending-ingest per S57 catalog planning; checksums unset until staged).
     queued for a dry-run ingest via the supported adapter.'
   counts_note: unknown; mostly xlsx count tables, imagery unconfirmed
+  n_images_method: "unavailable:no-count"
 - id: oceandark
   domain: deep-sea
   access_class: internal-only
@@ -694,6 +711,7 @@ sources:
     URL; needs a Drive-aware fetcher (or a human export to a direct zip link)'
   n_images: 183
   counts_note: images
+  n_images_method: "registry-prior"
 - id: ntnu-arl-uw
   domain: imaging
   release_skip_reason: "non-image-modality: video/sequence, pose-slam"
@@ -741,6 +759,7 @@ sources:
     ~49 GB first-pass subset (mclab_1+mclab_2+fjord_5) is scoped in the ingest spec for when
     that lands.'
   counts_note: 8 rosbags, 148.68 GB total (confirmed via HF tree API)
+  n_images_method: "unavailable:no-count"
 - id: subpipe
   domain: imaging
   release_skip_reason: "no-staged-images: registry lists imagery, nothing staged under sources/ in rs-storage-open (U7/queue follow-up)"
@@ -783,6 +802,7 @@ sources:
   notes: 'Not yet ingested (access: pending-ingest per S57 catalog planning; checksums unset until staged).
     queued for a dry-run ingest via the supported adapter.'
   counts_note: unknown
+  n_images_method: "unavailable:no-count"
 - id: uw-img-imu-sonar
   domain: imaging
   release_skip_reason: "no-staged-images: registry lists imagery, nothing staged under sources/ in rs-storage-open (U7/queue follow-up)"
@@ -824,6 +844,7 @@ sources:
   notes: 'Not yet ingested (access: pending-ingest per S57 catalog planning; checksums unset until staged).
     queued for a dry-run ingest via the supported adapter.'
   counts_note: unknown
+  n_images_method: "unavailable:no-count"
 - id: galapagos-3d
   domain: imaging
   release_skip_reason: "no-staged-images: registry lists imagery, nothing staged under sources/ in rs-storage-open (U7/queue follow-up)"
@@ -866,6 +887,7 @@ sources:
   notes: 'Not yet ingested (access: pending-ingest per S57 catalog planning; checksums unset until staged).
     queued for a dry-run ingest via the supported adapter.'
   counts_note: unknown
+  n_images_method: "unavailable:no-count"
 - id: port-royal
   domain: coral
   release_skip_reason: "no-staged-images: registry lists imagery, nothing staged under sources/ in rs-storage-open (U7/queue follow-up)"
@@ -907,6 +929,7 @@ sources:
   notes: 'Not yet ingested (access: pending-ingest per S57 catalog planning; checksums unset until staged).
     queued for a dry-run ingest via the supported adapter.'
   counts_note: unknown
+  n_images_method: "unavailable:no-count"
 - id: aqualoc
   domain: imaging
   release_skip_reason: "no-staged-images: raw mirror of 16 images only, no INGEST.json/metadata.parquet (U7/queue follow-up)"
@@ -956,6 +979,7 @@ sources:
   annotations:
   - kind: camera-pose
     supervises: []
+  n_images_method: "registry-prior"
 - id: seathru-nerf
   domain: imaging
   access_class: internal-only
@@ -996,7 +1020,8 @@ sources:
   notes: 'Not yet ingested (access: pending-ingest per S57 catalog planning; checksums unset until staged).
     needs_adapter:gdrive — project page links a Google Drive file id (1RzojBFvBWjUUhuJb95xJPSNP3nJwZWaT);
     needs a Drive-aware fetcher (large-file confirm-token handshake)'
-  n_images: 4
+  n_images: 88
+  n_images_method: "ingest-json"
   counts_note: scenes
   annotations:
   - kind: camera-pose
@@ -1046,6 +1071,7 @@ sources:
   notes: 'Not yet ingested (access: pending-ingest per S57 catalog planning; checksums unset until staged).
     queued for a dry-run ingest via the supported adapter.'
   counts_note: unknown
+  n_images_method: "unavailable:no-count"
 - id: posidonia
   domain: seagrass
   release_skip_reason: "no-staged-images: registry lists imagery, nothing staged under sources/ in rs-storage-open (U7/queue follow-up)"
@@ -1086,6 +1112,7 @@ sources:
   notes: 'Not yet ingested (access: pending-ingest per S57 catalog planning; checksums unset until staged).
     queued for a dry-run ingest via the supported adapter.'
   counts_note: unknown
+  n_images_method: "unavailable:no-count"
 - id: whoi-plankton
   domain: plankton
   access_class: internal-only
@@ -1124,6 +1151,7 @@ sources:
     queued for a dry-run ingest via the supported adapter.'
   n_images: 956867
   counts_note: rows (HF viewer)
+  n_images_method: "registry-prior"
 - id: openimages-marine
   domain: fish
   release_skip_reason: "no-staged-images: registry lists imagery, nothing staged under sources/ in rs-storage-open (U7/queue follow-up)"
@@ -1172,6 +1200,7 @@ sources:
     the flat bucket — the bucket adapter alone would pull the whole ~1.9M-image corpus'
   n_images: 50000
   counts_note: est. (catalog, marine classes only)
+  n_images_method: "registry-prior"
 - id: liaci
   domain: imaging
   access_class: unknown
@@ -1213,6 +1242,7 @@ sources:
     fetch'
   n_images: 1893
   counts_note: images
+  n_images_method: "registry-prior"
 - id: smartbay
   domain: fauna
   release_skip_reason: "no-staged-images: registry lists imagery, nothing staged under sources/ in rs-storage-open (U7/queue follow-up)"
@@ -1255,6 +1285,7 @@ sources:
   notes: 'Not yet ingested (access: pending-ingest per S57 catalog planning; checksums unset until staged).
     queued for a dry-run ingest via the supported adapter.'
   counts_note: unknown
+  n_images_method: "unavailable:no-count"
 - id: plasticinwater
   domain: imaging
   release_skip_reason: "no-staged-images: registry lists imagery, nothing staged under sources/ in rs-storage-open (U7/queue follow-up)"
@@ -1294,6 +1325,7 @@ sources:
     queued for a dry-run ingest via the supported adapter.'
   n_images: 1032
   counts_note: rows (HF viewer)
+  n_images_method: "registry-prior"
 - id: caddy
   domain: imaging
   access_class: restricted-nc
@@ -1334,7 +1366,8 @@ sources:
   notes: 'Not yet ingested (access: pending-ingest per S57 catalog planning; checksums unset until staged).
     needs_adapter:site-scrape — caddian.eu root and a guessed /index.php/downloads path (404) exposed
     no direct zip links on this pass; the catalog''s ''zip links'' note implies a subpage not yet located. access_class restricted-nc is held until the authors confirm the licence (lic-A evidence says CC-BY-4.0, unconfirmed; WP-L1b decision 2026-10-05)'
-  n_images: 10000
+  n_images: 1
+  n_images_method: "ingest-json"
   counts_note: stereo pairs (est, catalog)
   annotations:
   - kind: image-label
@@ -1388,6 +1421,7 @@ sources:
     HTML landing page'
   n_images: 105000
   counts_note: est. (catalog)
+  n_images_method: "registry-prior"
 - id: sodd
   domain: imaging
   release_skip_reason: "no-staged-images: registry lists imagery, nothing staged under sources/ in rs-storage-open (U7/queue follow-up)"
@@ -1429,3 +1463,4 @@ sources:
   notes: 'Not yet ingested (access: pending-ingest per S57 catalog planning; checksums unset until staged).
     queued for a dry-run ingest via the supported adapter.'
   counts_note: unknown
+  n_images_method: "unavailable:no-count"
