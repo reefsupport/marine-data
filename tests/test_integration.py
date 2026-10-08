@@ -88,11 +88,13 @@ def test_coralscapes_yields_image_mask_pairs(registry: Registry, sample_root: Pa
     source = registry.source("coralscapes")
     fetched = fetch_sample(source, limit=20, root=sample_root / "coralscapes-pairs")
 
-    loader = build_loader(source, fetched.root)
+    # A sampled root is legitimately incomplete: metadata.parquet names every image, the sample holds 20.
+    loader = build_loader(source, fetched.root, partial=fetched.truncated)
     loader.bind_harmonizer(registry.harmonizer_for("coralscapes"))
     samples = list(loader)
 
-    assert len(samples) == fetched.items
+    images = [p for p in (fetched.root / "images").rglob("*") if p.is_file()]
+    assert len(samples) == len(images) > 0
     for sample in samples:
         assert sample.image is not None and Path(sample.image).is_file()
         assert sample.mask is not None and Path(sample.mask).is_file()
@@ -115,7 +117,10 @@ def test_gated_sources_report_unfetchable_not_failed(registry: Registry) -> None
 def test_fetch_is_bounded(registry: Registry, sample_root: Path) -> None:
     """A verification fetch must never turn into a bulk download."""
     fetched = fetch_sample(registry.source("coralscapes"), limit=5, root=sample_root / "bounded")
-    assert fetched.items <= 5
+    # `items` counts every file the s3-manifest route fetched (metadata, shared and per-image
+    # labels, images), so the bound that matters is the number of images on disk.
+    images = [p for p in (fetched.root / "images").rglob("*") if p.is_file()]
+    assert 0 < len(images) <= 5
     assert fetched.truncated is True
 
 
