@@ -170,7 +170,7 @@ def cmd_release_gate(args: argparse.Namespace) -> int:
         print("release gate: two different build directories given", file=sys.stderr)
         return 2
     build = args.build_dir or legacy
-    names = _selected(args)
+    names = tuple(ALL) if args.require_all else _selected(args)
     if build is None:
         print(
             "release gate: pass the build directory: marinedata release gate BUILD_DIR --all",
@@ -209,7 +209,7 @@ def cmd_release_gate(args: argparse.Namespace) -> int:
             print(f"  {text}", file=sys.stderr)
         failed = failed or gate_status(result.to_dict()) == "failed"
     if args.require_all:
-        ok, problems = verdict(build)
+        ok, problems = verdict(build, strict=True)
         for problem in problems:
             print(f"release gate --require-all: {problem}", file=sys.stderr)
         print(f"release gate --require-all: {'OK' if ok else 'REFUSED'} -> {build / GATES_FILE}")

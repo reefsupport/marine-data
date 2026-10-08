@@ -120,16 +120,76 @@ def write_gates(directory: Path, result: GateResult) -> Path:
     return path
 
 
-def verdict(directory: Path) -> tuple[bool, list[str]]:
+def verdict(directory: Path, *, strict: bool = False) -> tuple[bool, list[str]]:
     """``(ok, problems)``: ok when every required gate in GATES.json is ``passed``. A missing
-    GATES.json, a missing required gate and a skipped required gate are all problems."""
+    GATES.json, a missing required gate and a skipped required gate are all problems.
+
+    ``strict`` is ``release gate --require-all``: every gate of ``runner.ALL`` is required.
+    Privacy may be skipped only when the build has no image bytes (its reason names images)."""
     gates = read_gates(directory)
+    if strict:
+        from .runner import ALL
+
+        problems = []
+        for name in ALL:
+            status = gate_status(gates[name]) if name in gates else "missing"
+            why = gates[name].get("skipped") if status == "skipped" else None
+            if status == "passed" or (name == "privacy" and why and "image" in str(why)):
+                continue
+            problems.append(f"{name}: {status}" + (f" ({why})" if why else ""))
+        return not problems, problems
     problems = []
     for name in summarize(gates)["blocking"]:
         status = gate_status(gates[name]) if name in gates else "missing"
         why = gates[name].get("skipped") if status == "skipped" else None
         problems.append(f"{name}: {status}" + (f" ({why})" if why else ""))
     return not problems, problems
+
+
+def _entry_status(entry: object) -> str:
+    if not isinstance(entry, dict):
+        return "failed"
+    if entry.get("skipped") is not None:
+        return "skipped"
+    return "passed" if entry.get("passed") is True else "failed"
+
+
+def publish_verdict(directory: Path) -> tuple[tuple[str, ...], list[str]]:
+    """``(required gates, problems)`` for ``<directory>/GATES.json``; no problems = publishable.
+    ``release publish`` asks this and nothing else: the required set is the file's own
+    ``summary.required_for_publish`` (``release gate --all --require-all`` lists every gate there,
+    privacy included), else :data:`REQUIRED`, plus any entry flagged ``required``."""
+    import json as _json
+
+    path = Path(directory) / GATES_FILE
+    if not path.is_file():
+        return REQUIRED, [
+            f"{GATES_FILE} missing in {directory}: run 'marinedata release gate --all'"
+        ]
+    try:
+        gates = _json.loads(path.read_text())
+    except ValueError as exc:
+        return REQUIRED, [f"{path} is not valid JSON ({exc})"]
+    if not isinstance(gates, dict):
+        return REQUIRED, [f"{path} is not a JSON object"]
+    entries = {k: v for k, v in gates.items() if k != SUMMARY_KEY}
+    summary = gates.get(SUMMARY_KEY)
+    listed = summary.get("required_for_publish") if isinstance(summary, dict) else None
+    base = [str(n) for n in listed] if isinstance(listed, list) else list(REQUIRED)
+    flagged = [n for n, e in entries.items() if isinstance(e, dict) and e.get("required") is True]
+    required = tuple(dict.fromkeys([*base, *flagged]))
+    problems = []
+    for name in required:
+        entry = entries.get(name)
+        status = _entry_status(entry) if name in entries else "missing"
+        line = f"gate {name}: {status}"
+        if status == "skipped":
+            line += f" ({entry['skipped']})"
+        elif status == "failed" and isinstance(entry, dict) and entry.get("failures"):
+            line += f" ({entry['failures'][0]})"
+        if status != "passed":
+            problems.append(line)
+    return required, problems
 
 
 __all__ = [
@@ -141,6 +201,7 @@ __all__ = [
     "finish",
     "gate_status",
     "merge_gates_json",
+    "publish_verdict",
     "read_gates",
     "read_gates_file",
     "skip",

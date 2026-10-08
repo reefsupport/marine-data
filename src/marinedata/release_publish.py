@@ -7,9 +7,9 @@ when the build is not the flavour asked for, or when a gate required for publish
 
 ``--go`` adds three guards before anything leaves the machine: ``HF_TOKEN`` in the environment,
 the frozen v1.0 release stays untouched unless ``--allow-frozen``, and the tag must not exist on
-the repo yet. It then makes one ``upload_folder`` commit (bookkeeping files left out, see
-:data:`NOT_UPLOADED`) and tags that commit. It never creates a repo: both exist already and
-their visibility is set by hand.
+the repo yet. It then makes runs ``upload_large_folder`` over :data:`UPLOAD_PATTERNS` only (data
+parquet, the card, croissant.json and ``provenance/``), then tags the head of the branch. It never
+creates a repo: both exist already and their visibility is set by hand.
 
 The gate verdict mirrors ``gates.verdict`` (P1.6): a gate counts as required when
 ``summary.required_for_publish`` lists it, or when its entry says ``required: true``; with no
@@ -24,34 +24,29 @@ import fnmatch
 import json
 import os
 import re
+import shutil
 import sys
 from dataclasses import dataclass
 from pathlib import Path
 
 from .flavours import flavour_spec
-from .gates import GATES_FILE
+from .gates import GATES_FILE, REQUIRED, publish_verdict
 from .release_lock import LOCK_FILE, lock_sha256
 
 RELEASE_FILE = "RELEASE.json"
 CARD_FILE = "README.md"
 TOKEN_ENV = "HF_TOKEN"
 SUMMARY_KEY = "summary"
-DEFAULT_REQUIRED_GATES = ("licence", "dedup", "splits", "masks", "load", "card")
+DEFAULT_REQUIRED_GATES = REQUIRED
 FROZEN_VERSION = (1,)
 """The v1.0 release (``1``, ``1.0``, ``v1.0``, ``v1.0.0``): live on the Hub and frozen."""
-NOT_UPLOADED = (
-    RELEASE_FILE,
-    GATES_FILE,
-    LOCK_FILE,
-    "SPLIT_MAP.json",
-    "DEDUP_GATE.json",
-    "tasks/*",
-    "*.tmp",
-    ".git/*",
-    ".cache/*",
-)
-"""Release bookkeeping stays off the Hub (it names excluded sources); the plan counts the rest.
-The lock, gates and RELEASE.json are mirrored to the bucket instead (plan section 4)."""
+PROVENANCE_DIR = "provenance"
+PROVENANCE_FILES = (RELEASE_FILE, GATES_FILE, LOCK_FILE)
+UPLOAD_PATTERNS = ("data/**/*.parquet", CARD_FILE, "croissant.json", f"{PROVENANCE_DIR}/*")
+"""The whole upload set (``allow_patterns``): data parquet, the card, croissant.json and the
+three provenance files, which are copied to ``provenance/`` at upload time. Nothing else is sent."""
+PLAN_PATTERNS = UPLOAD_PATTERNS[:3]
+"""What exists in the release folder before the upload; the provenance copies are made by it."""
 
 _VERSION = re.compile(r"v?(\d+(?:\.\d+)*)")
 
@@ -81,6 +76,9 @@ class PublishPlan:
     def nbytes(self) -> int:
         return sum(size for _, size in self.files)
 
+    release_dir: Path | None = None
+    lock_file: Path | None = None
+
 
 def is_frozen(release_id: str) -> bool:
     match = _VERSION.fullmatch(release_id)
@@ -97,45 +95,9 @@ def tag_for(release_id: str) -> str:
     return release_id if re.match(r"v\d", release_id) else f"v{release_id}"
 
 
-def _gate_status(entry: object) -> str:
-    if not isinstance(entry, dict):
-        return "failed"
-    if entry.get("skipped") is not None:
-        return "skipped"
-    return "passed" if entry.get("passed") is True else "failed"
-
-
 def gate_verdict(directory: Path) -> tuple[tuple[str, ...], list[str]]:
-    """``(required gates, problems)`` for ``<directory>/GATES.json``; no problems = publishable."""
-    path = directory / GATES_FILE
-    if not path.is_file():
-        return DEFAULT_REQUIRED_GATES, [
-            f"{GATES_FILE} missing in {directory}: run 'marinedata release gate --all'"
-        ]
-    try:
-        gates = json.loads(path.read_text())
-    except ValueError as exc:
-        return DEFAULT_REQUIRED_GATES, [f"{path} is not valid JSON ({exc})"]
-    if not isinstance(gates, dict):
-        return DEFAULT_REQUIRED_GATES, [f"{path} is not a JSON object"]
-    entries = {k: v for k, v in gates.items() if k != SUMMARY_KEY}
-    summary = gates.get(SUMMARY_KEY)
-    listed = summary.get("required_for_publish") if isinstance(summary, dict) else None
-    base = [str(n) for n in listed] if isinstance(listed, list) else list(DEFAULT_REQUIRED_GATES)
-    flagged = [n for n, e in entries.items() if isinstance(e, dict) and e.get("required") is True]
-    required = tuple(dict.fromkeys([*base, *flagged]))
-    problems = []
-    for name in required:
-        entry = entries.get(name)
-        status = _gate_status(entry) if name in entries else "missing"
-        line = f"gate {name}: {status}"
-        if status == "skipped":
-            line += f" ({entry['skipped']})"
-        elif status == "failed" and isinstance(entry, dict) and entry.get("failures"):
-            line += f" ({entry['failures'][0]})"
-        if status != "passed":
-            problems.append(line)
-    return required, problems
+    """The gates module's verdict for ``<directory>/GATES.json`` (see ``publish_verdict``)."""
+    return publish_verdict(directory)
 
 
 def _load_json(path: Path, what: str, problems: list[str]) -> dict:
@@ -178,13 +140,13 @@ def release_configs(release: dict) -> dict[str, dict[str, int]]:
 
 
 def upload_files(folder: Path) -> list[tuple[str, int]]:
-    """What ``upload_folder`` will send: every file under ``folder`` except :data:`NOT_UPLOADED`."""
+    """What the plan counts: data parquet, the card and croissant.json under ``folder``."""
     out = []
     for path in sorted(folder.rglob("*")):
         if not path.is_file():
             continue
         rel = path.relative_to(folder).as_posix()
-        if not any(fnmatch.fnmatchcase(rel, pattern) for pattern in NOT_UPLOADED):
+        if any(fnmatch.fnmatchcase(rel, pattern) for pattern in PLAN_PATTERNS):
             out.append((rel, path.stat().st_size))
     return out
 
@@ -260,6 +222,8 @@ def build_plan(
         card=card,
         lock_sha256=recorded,
         required_gates=required,
+        release_dir=release_dir,
+        lock_file=lock_file,
     )
 
 
@@ -283,7 +247,8 @@ def render_plan(plan: PublishPlan, *, go: bool) -> str:
         f"  tag         : {plan.tag}",
         f"  folder      : {plan.folder}",
         f"  files       : {len(plan.files)} ({plan.nbytes:,} bytes, {_human(plan.nbytes)})",
-        f"  left out    : {', '.join(NOT_UPLOADED[:5])}, tasks/*",
+        f"  upload set  : {', '.join(PLAN_PATTERNS)}, "
+        f"{PROVENANCE_DIR}/ ({', '.join(PROVENANCE_FILES)})",
         f"  configs     : {len(plan.configs)}",
     ]
     for name, rows in plan.configs:
@@ -305,30 +270,45 @@ def _hf_api(token: str):
     return HfApi(token=token)
 
 
-def upload(plan: PublishPlan, token: str, *, api=None) -> str:
-    """One ``upload_folder`` commit, then ``create_tag`` on that commit; returns the tag.
+def _stage_provenance(plan: PublishPlan) -> None:
+    """Copy RELEASE.json, GATES.json and the lock into ``<folder>/provenance/`` (upload time only,
+    so a dry run writes nothing)."""
+    base = plan.release_dir or plan.folder
+    sources = {
+        RELEASE_FILE: base / RELEASE_FILE,
+        GATES_FILE: plan.folder / GATES_FILE,
+        LOCK_FILE: plan.lock_file or base / LOCK_FILE,
+    }
+    target = plan.folder / PROVENANCE_DIR
+    target.mkdir(exist_ok=True)
+    for name, source in sources.items():
+        shutil.copyfile(source, target / name)
 
-    Never creates a repo (``upload_folder`` fails on a missing one) and never moves a tag:
-    an existing tag stops the run before anything is sent."""
+
+def upload(plan: PublishPlan, token: str, *, api=None) -> str:
+    """``upload_large_folder`` over :data:`UPLOAD_PATTERNS` (resumable, parallel), then
+    ``create_tag`` on the head of the branch; returns the tag.
+
+    Never creates a repo (``list_repo_refs`` fails on a missing one, and so does the upload's own
+    check first) and never moves a tag: an existing tag stops the run before anything is sent."""
     api = api if api is not None else _hf_api(token)
     tags = {ref.name for ref in api.list_repo_refs(plan.repo_id, repo_type="dataset").tags}
     if plan.tag in tags:
         raise PublishRefused(
             [f"tag {plan.tag} already exists on {plan.repo_id}: not published twice"]
         )
-    commit = api.upload_folder(
+    _stage_provenance(plan)
+    api.upload_large_folder(
         repo_id=plan.repo_id,
         repo_type="dataset",
         folder_path=str(plan.folder),
-        ignore_patterns=list(NOT_UPLOADED),
-        commit_message=f"Release {plan.tag} ({plan.flavour})",
+        allow_patterns=list(UPLOAD_PATTERNS),
     )
-    oid = getattr(commit, "oid", None)
     try:
         api.create_tag(
             plan.repo_id,
             tag=plan.tag,
-            revision=oid,
+            revision=None,
             tag_message=f"marinedata release {plan.release_id} ({plan.flavour}), "
             f"lock {plan.lock_sha256}",
             repo_type="dataset",
@@ -336,7 +316,7 @@ def upload(plan: PublishPlan, token: str, *, api=None) -> str:
         )
     except Exception as exc:
         raise PublishRefused(
-            [f"uploaded commit {oid} to {plan.repo_id} but tagging {plan.tag} failed "
+            [f"uploaded {plan.repo_id} but tagging {plan.tag} failed "
              f"({type(exc).__name__}): tag it by hand"]
         ) from exc  # fmt: skip
     return plan.tag

@@ -78,8 +78,8 @@ class FakeApi:
         self._call("list_repo_refs", *args, **kwargs)
         return SimpleNamespace(tags=[SimpleNamespace(name=t) for t in self.tags])
 
-    def upload_folder(self, *args, **kwargs):
-        self._call("upload_folder", *args, **kwargs)
+    def upload_large_folder(self, *args, **kwargs):
+        self._call("upload_large_folder", *args, **kwargs)
         return SimpleNamespace(oid="c0ffee")
 
     def create_tag(self, *args, **kwargs):
@@ -136,7 +136,7 @@ def test_plan_counts_exactly_what_the_hub_filter_would_send(tmp_path):
     utils = pytest.importorskip("huggingface_hub.utils")
     d = make_release(tmp_path)
     everything = sorted(p.relative_to(d).as_posix() for p in d.rglob("*") if p.is_file())
-    sent = list(utils.filter_repo_objects(everything, ignore_patterns=list(rp.NOT_UPLOADED)))
+    sent = list(utils.filter_repo_objects(everything, allow_patterns=list(rp.PLAN_PATTERNS)))
     assert [name for name, _ in rp.upload_files(d)] == sent
     assert "tasks/open.tsv" in everything and "tasks/open.tsv" not in sent
 
@@ -261,7 +261,7 @@ def test_go_uploads_one_commit_then_tags_it(tmp_path, capsys, hub, monkeypatch):
     d = make_release(tmp_path)
     assert publish("--dir", str(d), "--go") == 0
     assert hub.made == [TOKEN]
-    assert hub.api.names() == ["list_repo_refs", "upload_folder", "create_tag"]
+    assert hub.api.names() == ["list_repo_refs", "upload_large_folder", "create_tag"]
     _, refs_args, refs_kwargs = hub.api.calls[0]
     assert (refs_args, refs_kwargs) == (("reefsupport/marine-data",), {"repo_type": "dataset"})
     _, up_args, up_kwargs = hub.api.calls[1]
@@ -270,12 +270,11 @@ def test_go_uploads_one_commit_then_tags_it(tmp_path, capsys, hub, monkeypatch):
         "repo_id": "reefsupport/marine-data",
         "repo_type": "dataset",
         "folder_path": str(d),
-        "ignore_patterns": list(rp.NOT_UPLOADED),
-        "commit_message": "Release v1.1 (open)",
+        "allow_patterns": list(rp.UPLOAD_PATTERNS),
     }
     _, tag_args, tag_kwargs = hub.api.calls[2]
     assert tag_args == ("reefsupport/marine-data",)
-    assert tag_kwargs["tag"] == "v1.1" and tag_kwargs["revision"] == "c0ffee"
+    assert tag_kwargs["tag"] == "v1.1" and tag_kwargs["revision"] is None
     assert tag_kwargs["repo_type"] == "dataset" and tag_kwargs["exist_ok"] is False
     captured = capsys.readouterr()
     assert "UPLOAD (--go)" in captured.out and "tagged v1.1" in captured.out
@@ -304,17 +303,17 @@ def test_go_tag_failure_names_the_commit(tmp_path, capsys, hub, monkeypatch):
     d = make_release(tmp_path)
     assert publish("--dir", str(d), "--go") == 1
     err = capsys.readouterr().err
-    assert "uploaded commit c0ffee" in err and "tag it by hand" in err
+    assert "uploaded reefsupport/marine-data" in err and "tag it by hand" in err
 
 
 def test_go_upload_error_is_reported_without_the_token(tmp_path, capsys, hub, monkeypatch):
     monkeypatch.setenv("HF_TOKEN", TOKEN)
-    hub.api = FakeApi(fail_on="upload_folder")
+    hub.api = FakeApi(fail_on="upload_large_folder")
     d = make_release(tmp_path)
     assert publish("--dir", str(d), "--go") == 1
     captured = capsys.readouterr()
     assert "upload failed: RuntimeError: boom" in captured.err
-    assert hub.api.names() == ["list_repo_refs", "upload_folder"]
+    assert hub.api.names() == ["list_repo_refs", "upload_large_folder"]
     assert TOKEN not in captured.out + captured.err
 
 

@@ -23,15 +23,31 @@ def _gate(build, *flags: str) -> int:
     return main(["release", "gate", str(build), *flags])
 
 
+def _with_croissant(build) -> None:
+    from marinedata import release_card, release_croissant
+
+    doc = release_croissant.build_croissant(build, release_card.load_context(build))
+    (build / "croissant.json").write_text(json.dumps(doc))
+
+
 def test_all_require_all_passes_on_a_clean_build_and_lists_every_gate(tmp_path):
+    pytest.importorskip("mlcroissant")
     build = make_build(tmp_path)
+    _with_croissant(build)
     assert _gate(build, "--all", "--require-all") == 0
     gates = json.loads((build / "GATES.json").read_text())
     assert ALL_GATES | {"summary"} == set(gates)
     summary = gates["summary"]
-    assert (summary["passed"], summary["failed"], summary["skipped"]) == (7, 0, 1)
-    assert summary["required_for_publish"] == [*REQUIRED, "privacy"]
-    assert gates["privacy"]["passed"] and gates["croissant"]["skipped"]
+    assert (summary["passed"], summary["failed"], summary["skipped"]) == (8, 0, 0)
+    assert set(summary["required_for_publish"]) == ALL_GATES
+    assert gates["privacy"]["passed"] and gates["croissant"]["passed"]
+
+
+def test_require_all_refuses_a_build_without_croissant_json_that_plain_all_accepts(tmp_path):
+    build = make_build(tmp_path)
+    assert _gate(build, "--all") == 0
+    assert _gate(build, "--all", "--require-all") == 1
+    assert json.loads((build / "GATES.json").read_text())["croissant"]["skipped"]
 
 
 def test_a_failing_gate_exits_1_and_require_all_refuses(tmp_path):
