@@ -2,6 +2,8 @@
 
 Generated from the argparse tree by `scripts/gen_cli_docs.py` (run `make docs`); do not edit by hand. `marinedata <command> --help` is the full reference for one command.
 
+`release gate --all --require-all` and `release publish` both refuse a build whose privacy, card or croissant gate is absent, skipped or failed.
+
 | Command | Kind | What it does | Options |
 |---|---|---|---|
 | `marinedata add` | command | Probe a HuggingFace dataset and print a draft registry entry for review | `--output` |

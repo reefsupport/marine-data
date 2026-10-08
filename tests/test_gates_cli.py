@@ -50,6 +50,16 @@ def test_require_all_refuses_a_build_without_croissant_json_that_plain_all_accep
     assert json.loads((build / "GATES.json").read_text())["croissant"]["skipped"]
 
 
+def test_require_all_refuses_a_skipped_privacy_gate(tmp_path, capsys):
+    """P1.13: the privacy gate has to run. A build with no image bytes skips it ("nothing to
+    scan"), and under ``--require-all`` that skip is a failure, not a pass."""
+    build = make_build(tmp_path, images=[], masks=False)  # no image bytes anywhere
+    assert _gate(build, "--all", "--require-all") == 1
+    gates = json.loads((build / "GATES.json").read_text())
+    assert "no image bytes" in gates["privacy"]["skipped"]
+    assert "release gate --require-all: privacy: skipped" in capsys.readouterr().err
+
+
 def test_a_failing_gate_exits_1_and_require_all_refuses(tmp_path):
     build = make_build(
         tmp_path, images=[*default_images(), Img(0, "test", group="gx")], masks=False

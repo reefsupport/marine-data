@@ -45,6 +45,8 @@ def render() -> str:
         "Generated from the argparse tree by `scripts/gen_cli_docs.py` "
         "(run `make docs`); do not edit by "
         "hand. `marinedata <command> --help` is the full reference for one command.\n\n"
+        "`release gate --all --require-all` and `release publish` both refuse a build whose "
+        "privacy, card or croissant gate is absent, skipped or failed.\n\n"
         "| Command | Kind | What it does | Options |\n|---|---|---|---|\n"
     )
     return head + "\n".join(rows) + "\n"

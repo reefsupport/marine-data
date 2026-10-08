@@ -124,22 +124,18 @@ def verdict(directory: Path, *, strict: bool = False) -> tuple[bool, list[str]]:
     """``(ok, problems)``: ok when every required gate in GATES.json is ``passed``. A missing
     GATES.json, a missing required gate and a skipped required gate are all problems.
 
-    ``strict`` is ``release gate --require-all``: every gate of ``runner.ALL`` is required.
-    Privacy may be skipped only when the build has no image bytes (its reason names images)."""
+    ``strict`` is ``release gate --require-all``: every gate of ``runner.ALL`` is required and
+    must have run and passed. An absent, skipped or failed gate is a problem whatever the reason,
+    privacy included: a gate that cannot run means the build has not passed its gates."""
     gates = read_gates(directory)
     if strict:
         from .runner import ALL
 
-        problems = []
-        for name in ALL:
-            status = gate_status(gates[name]) if name in gates else "missing"
-            why = gates[name].get("skipped") if status == "skipped" else None
-            if status == "passed" or (name == "privacy" and why and "image" in str(why)):
-                continue
-            problems.append(f"{name}: {status}" + (f" ({why})" if why else ""))
-        return not problems, problems
+        names = [n for n in ALL if n not in gates or gate_status(gates[n]) != "passed"]
+    else:
+        names = list(summarize(gates)["blocking"])
     problems = []
-    for name in summarize(gates)["blocking"]:
+    for name in names:
         status = gate_status(gates[name]) if name in gates else "missing"
         why = gates[name].get("skipped") if status == "skipped" else None
         problems.append(f"{name}: {status}" + (f" ({why})" if why else ""))

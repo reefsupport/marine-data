@@ -107,7 +107,8 @@ def add_gate_parser(release_sub) -> None:
     p.add_argument(
         "--require-all",
         action="store_true",
-        help="exit 1 unless every required gate in GATES.json passed",
+        help="exit 1 unless all eight gates in GATES.json ran and passed: an absent, "
+        "skipped or failed gate (privacy, card and croissant included) refuses",
     )
     p.set_defaults(func=cmd_release_gate)
 

@@ -15,8 +15,9 @@ marinedata release gate BUILD --all | --licence --dedup --splits --masks --priva
 
 `GATES.json` is a dict keyed by gate name (`passed`, `counts`, `failures` capped at 50, `skipped` reason
 when it checked nothing) plus `summary{passed, failed, skipped, required_for_publish[]}`. A skipped gate
-never counts as passed. Exit codes: 1 when a selected gate failed, or with `--require-all` when a required
-gate is not `passed`; 2 for usage errors. `release gate --masks DIR` (the P1.5 form) still works. The
+never counts as passed. Exit codes: 1 when a selected gate failed, or with `--require-all` when any of the
+eight gates is not `passed` (absent, skipped or failed: privacy, card and croissant included;
+`release publish` applies the same rule); 2 for usage errors. `release gate --masks DIR` (the P1.5 form) still works. The
 metadata gate (`--metadata`) lives on the join branch. A gate that raises is reported as `gate_error`.
 
 **Required for publish:** licence, dedup, splits, masks, load, card. privacy and croissant only when they ran.
