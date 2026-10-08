@@ -13,6 +13,7 @@ dHash is stable across machines.
 
 from __future__ import annotations
 
+import hashlib
 import io
 import re
 import time
@@ -38,6 +39,7 @@ from marinedata.hf_export import build_layout, collect_rows, export
 from marinedata.ingest import ArchivePlan, _stage_with_plan
 from marinedata.models import (
     Access,
+    Checksums,
     Coverage,
     Licence,
     LoaderSpec,
@@ -47,9 +49,11 @@ from marinedata.models import (
     Verification,
 )
 from marinedata.registry import Registry
+from marinedata.release_lock import build_lock, write_lock
 from marinedata.schema import Axis, LabelSchema
 from marinedata.task import TaskKind, TaskSpec
 
+REQUIRES_RELEASE_LOCK = True  # the e2e run goes through release lock -> release build --lock
 FIXTURE_ROOT = Path(__file__).parent / "fixtures" / "e2e_release"
 SOURCES = ("e2e-src-a", "e2e-src-b")
 
@@ -93,6 +97,12 @@ def _source(source_id: str) -> Source:
         # builder's generic reader expects once a source is staged — see
         # ``release.py``'s own docstrings.
         loader=LoaderSpec(layout="staged-tree", params={}),
+        checksums=Checksums(
+            version="v1",
+            root_digest=hashlib.sha256(source_id.encode()).hexdigest(),
+            files=1,
+            size_bytes=1,
+        ),
         annotations=(),
         # One group per stem (not the default one-per-source) so the 15 fixture
         # images give the splitter enough groups for a real, non-empty split.
@@ -215,7 +225,7 @@ def _sha256_tree(root: Path) -> dict[str, str]:
 # change here means a release output changed — regenerate deliberately, never blindly.
 GOLDEN_RELEASE = {
     "releases/wp4-e2e/open/RELEASE.json": (
-        "b18b4eb8623dc7273c659cf708e607af3233d5f5cf0c53bb92d4b55d60d6aeea"
+        "9ebf72547b333c1c25f8065f45766dc76d15147962e0f5a88fb285515fd2ee67"
     ),
     "SPLIT_MAP.json": "383a640ac3afec6cf8c961388261d1a4fe0306e3fd90b6c26e928e6a513a4a48",
     "releases/wp4-e2e/open/tasks/pretrain-set.tsv": (
@@ -251,6 +261,17 @@ def test_e2e_ingest_release_hf_export_is_reproducible(
 
     out_dir = tmp_path / "release"
     split_map = out_dir / "SPLIT_MAP.json"
+    lock_path = write_lock(
+        build_lock(
+            registry,
+            release_id="wp4-e2e",
+            flavour="open",
+            configs=["coral-masks"],
+            created="2026-10-08T00:00:00+00:00",
+            code_sha="0" * 40,
+        ),
+        tmp_path / "release.lock.yaml",
+    )
     code = main(
         [
             "release",
@@ -261,6 +282,8 @@ def test_e2e_ingest_release_hf_export_is_reproducible(
             str(split_map),
             "--out",
             str(out_dir),
+            "--lock",
+            str(lock_path),
             "--flavour",
             "open",
             "--profile",

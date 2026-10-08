@@ -28,6 +28,15 @@ from .manifest_identity import checksums_digest
 from .neardup import NearDupConfig, NearDupError, default_workers, pil_version
 from .registry import Registry
 from .release import ReleaseSkipError, build_release, generate_split_map
+from .release_lock import (
+    ReleaseLockError,
+    build_lock,
+    check_build_against_lock,
+    load_lock,
+    lock_required,
+    lock_sha256,
+    write_lock,
+)
 from .splitmap import load_split_map
 from .strata import DEFAULT_MIN_GROUPS
 
@@ -239,6 +248,24 @@ def _generate_global_split_map(
     return 0
 
 
+def _cmd_release_lock(args: argparse.Namespace) -> int:
+    registry = Registry.load()
+    try:
+        lock = build_lock(
+            registry,
+            release_id=args.release_id,
+            flavour=args.flavour,
+            configs=args.config,
+            source_ids=args.source,
+        )
+    except ReleaseLockError as exc:
+        print(f"release lock: {exc}", file=sys.stderr)
+        return 1
+    out = write_lock(lock, args.out)
+    print(f"release lock: {len(lock.sources)} source(s) -> {out} (sha256 {lock_sha256(out)})")
+    return 0
+
+
 def _cmd_release_split_map(args: argparse.Namespace) -> int:
     """``release split-map``: write the global split map once; both flavour builds read it."""
     registry = Registry.load()
@@ -282,6 +309,30 @@ def _cmd_release_build(args: argparse.Namespace) -> int:
     except ValueError as exc:
         print(f"release build: {exc}", file=sys.stderr)
         return 1
+    lock = None
+    lock_digest = None
+    if args.lock is None and lock_required():
+        print(
+            "release build: --lock <release.lock.yaml> is required "
+            "(write one with 'marinedata release lock')",
+            file=sys.stderr,
+        )
+        return 1
+    if args.lock is not None:
+        try:
+            lock = load_lock(args.lock, registry)
+            check_build_against_lock(
+                lock,
+                registry,
+                release_id=args.release,
+                flavour=flavour,
+                profile=args.profile,
+                local_ids=local,
+            )
+        except ReleaseLockError as exc:
+            print(f"release build: {exc}", file=sys.stderr)
+            return 1
+        lock_digest = lock_sha256(args.lock)
     digest = file_digest
     if args.sources_from and not args.manifest_only:
         print("release build: --sources-from needs --manifest-only", file=sys.stderr)
@@ -378,8 +429,10 @@ def _cmd_release_build(args: argparse.Namespace) -> int:
             digest=digest,
             flavour=flavour,
             allow_skip=args.allow_skip or (),
+            lock=lock,
+            lock_sha256=lock_digest,
         )
-    except (NearDupError, DedupGateError, DeconError, ReleaseSkipError) as exc:
+    except (NearDupError, DedupGateError, DeconError, ReleaseSkipError, ReleaseLockError) as exc:
         print(f"release build: {exc}", file=sys.stderr)
         return 1
 
@@ -415,6 +468,12 @@ def add_release_subparser(sub: argparse._SubParsersAction) -> None:
         "build", help="Build every registry task against a frozen SPLIT_MAP.json"
     )
     p_build.add_argument("--release", required=True, help="Release id")
+    p_build.add_argument(
+        "--lock",
+        type=Path,
+        default=None,
+        help="release.lock.yaml from 'marinedata release lock' (required)",
+    )
     p_build.add_argument(
         "--dedup-v2",
         dest="dedup_v2",
@@ -568,6 +627,18 @@ def add_release_subparser(sub: argparse._SubParsersAction) -> None:
         p_build, required_note="required with --generate-split-map unless --no-near-dup"
     )
     p_build.set_defaults(func=_cmd_release_build)
+
+    p_lock = release_sub.add_parser(
+        "lock", help="Write release.lock.yaml from the registry pins (no silent gaps)"
+    )
+    p_lock.add_argument("--release-id", dest="release_id", required=True)
+    p_lock.add_argument("--flavour", choices=("open", "nc"), required=True)
+    p_lock.add_argument("--config", nargs="+", action="extend", required=True, help="Config id(s)")
+    p_lock.add_argument(
+        "--source", action="append", default=None, help="Lock only this source (repeatable)"
+    )
+    p_lock.add_argument("--out", type=Path, default=Path("release.lock.yaml"))
+    p_lock.set_defaults(func=_cmd_release_lock)
 
     p_map = release_sub.add_parser(
         "split-map",

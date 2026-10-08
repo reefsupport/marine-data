@@ -236,3 +236,19 @@ def _legacy_unflavoured_fixtures():
 
     with unflavoured_for_tests():
         yield
+
+
+import pytest as _pytest_release_lock  # noqa: E402
+
+
+@_pytest_release_lock.fixture(autouse=True)
+def _release_lock_optional(request):
+    """Pre-lock tests build without a lock; modules that set ``REQUIRES_RELEASE_LOCK = True``
+    (the lock tests, the e2e run) exercise the real requirement."""
+    from marinedata.release_lock import unlocked_for_tests
+
+    if getattr(request.module, "REQUIRES_RELEASE_LOCK", False):
+        yield
+    else:
+        with unlocked_for_tests():
+            yield

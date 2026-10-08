@@ -44,6 +44,7 @@ from .neardup import (
     near_pairs,
 )
 from .registry import Registry
+from .release_lock import ReleaseLock, ReleaseLockError
 from .sample_schema import staged_partition
 from .splitmap import MergeInfo, Row, load_split_map, resolve_splits, rows_to_counts
 from .strata import DEFAULT_MIN_GROUPS, TEST, TRAIN
@@ -772,6 +773,8 @@ def build_release(
     digest: Callable[[Path], str] = file_digest,
     flavour: str | None = None,
     allow_skip: Iterable[str] = (),
+    lock: ReleaseLock | None = None,
+    lock_sha256: str | None = None,
 ) -> ReleaseResult:
     """Build every registry task against a frozen split map and write the release.
 
@@ -853,6 +856,8 @@ def build_release(
             + (f" in flavour {flavour!r}" if flavour else "")
             + " has a resolved root"
         )
+    if lock is not None and (unlocked := sorted(set(admitted) - lock.source_ids())):
+        raise ReleaseLockError(f"source not in the release lock: {', '.join(unlocked)}")
     # WP-7: the label gate — 0 silent drops, >= 95% mapped (or a documented exception),
     # every canonical taxon node anchored. Skipped for in-memory registries (no root).
     unstaged = (  # flavour builds already dropped rowless sources in _skipped_sources
@@ -1029,6 +1034,9 @@ def build_release(
         release_json["decon"] = decon_record(decon_result)
     if flavour is not None:
         release_json.update(release_record(registry, flavour, profile, admitted))
+    if lock is not None:  # Phase A (P1.3): the pin set this release was built from
+        release_json["lock_sha256"] = lock_sha256
+        release_json["lock_sources"] = [e.model_dump(mode="json") for e in lock.sources]
     release_json_text = json.dumps(release_json, indent=2, sort_keys=True) + "\n"
     (release_root / "RELEASE.json").write_text(release_json_text)
 
