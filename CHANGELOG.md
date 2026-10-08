@@ -20,7 +20,7 @@ Nothing below is in a release yet. It is on `main` or on the Phase A branches na
 - Release gates (P1.6): `marinedata release gate BUILD --all --require-all` runs the licence, dedup, splits, masks, privacy (EXIF GPS), load, card and croissant gates and merges them into `GATES.json`; `--masks DIR` and `--metadata DIR --gates FILE` keep working in the same command (docs/GATES.md). The dedup gate no longer fails EXIF-transposed rows on `image_sha256`: it checks that the bytes decode and match the row's width/height.
 - Dataset card and Croissant (P1.9): `release card` and `release croissant` generate `README.md` and `croissant.json` from a build; `release_croissant.py` is the single Croissant emitter (the old `croissant.py` is gone) and the croissant gate validates the file it writes. Validation no longer alters the document or the shared context.
 - Per-row metadata resolvers (P2.1): `marinedata metadata resolve --source ID --out DIR` resolves geo, date, site and quadrat per image for four sources.
-- SampleRow v3, per-row licence layer and metadata gate (P2.2, P2.3, P2.4): `release gate --metadata DIR` checks resolver coverage floors and per-row licences.
+- SampleRow v3, per-row licence layer and metadata gate (P2.2, P2.4): `release gate --metadata DIR` checks resolver coverage floors and per-row licences.
 - Seaview benthic points table (P3.1, P2.5): `marinedata tasks build-points` writes it keyed by `image_sha256`; `--metadata-dir` joins the resolved lat/lon/date/licence onto it (P2.5).
 - HF `points` config (P2.6): geo/date/licence columns joined by `image_sha256`; `metadata` and `points` agree on lat/lon/date/date_precision for every image and the resolver output wins over a staged value.
 
@@ -77,6 +77,17 @@ Nothing below is in a release yet. It is on `main` or on the Phase A branches na
 - Nightly `verify-layouts`: the job no longer swallows failures (a fetch outage skips, a layout mismatch fails). Its three
   failing tests are repaired: the face-detector test downloaded a Git LFS pointer instead of the YuNet weights, and the
   coralscapes tests assumed `items` counts images and a complete sample root.
+
+### Phase A: briefs integrated into `feat/phase-a` (P1.13)
+
+Every brief named here has a report (`reports/2026-10-08-PA-<id>.md`).
+
+- Registry as the single truth (P1.2, P1.2b, P1.2c, P1.2d): every ingest-spec id has an entry, licences carry evidence, root digests and the reconstructed v1.0 lock are pinned; `marinedata check` reports 174 permitted / 79 expected / 0 unexpected.
+- `marinedata check` separates expected from unexpected denials (P1.3); `release lock` and `release build --lock` (P1.5).
+- Signed bucket reads and fetch integrity (P1.4); every S3 constructor goes through the resolver and `fetch.py` is the `fetch/` package (P1.4b).
+- `release publish` dry run and the release build image (P1.7); one Croissant emitter and one `release gate` subparser (P1.9b); generated docs and CI gates (P1.10).
+- Mask configs gain exif_transposed and EXIF-rotated JPEGs are re-encoded from v1.1; v1.0 files unchanged.
+- Integration (P1.13): `docs/PHASE_A.md`, `docs/cli.md` generated from argparse, `task_layers/configs/` split into modules with re-exports.
 
 ## [1.0.0] - 2026-10-07
 
