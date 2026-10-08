@@ -44,6 +44,18 @@ def test_spec_with_measured_and_subset_loads(tmp_path):
     assert spec.subset["target_items"] == 5
 
 
+def test_spec_licence_evidence_is_optional(tmp_path):
+    """P1.2b: `licence_evidence` loads when present and is not required when absent."""
+    with_key = tmp_path / "with.yaml"
+    with_key.write_text(
+        yaml.safe_dump({**BASE, "licence_evidence": "https://example.org/README : License: MIT"})
+    )
+    without_key = tmp_path / "without.yaml"
+    without_key.write_text(yaml.safe_dump(BASE))
+    assert IngestSpec.load(with_key).licence_evidence == "https://example.org/README : License: MIT"
+    assert IngestSpec.load(without_key).licence_evidence is None
+
+
 def test_unknown_keys_still_rejected(tmp_path):
     p = tmp_path / "x.yaml"
     p.write_text(yaml.safe_dump({**BASE, "subsett": {}}))

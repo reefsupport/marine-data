@@ -158,6 +158,9 @@ class IngestSpec:
         ""  # WP-U14c: controlled vocabulary, metadata_norm.defaults.INSTRUMENTS
     )
     licence_per_row: bool = False  # every item carries its own licence string
+    # P1.2b: the quote/URL behind a restored licence id. Documentation-only (ignored by the
+    # runner); the registry Source carries the same string, see docs/ingest-howto.md.
+    licence_evidence: str | None = None
     citation: str = ""
     homepage: str = ""
     notes: str = ""
