@@ -468,7 +468,7 @@ def load_mask_geo(path: Path) -> dict[str, tuple[float | None, float | None]]:
     return out
 
 
-def record_export_counts(release_json: Path, summary: dict) -> None:
+def _write_export_counts(release_json: Path, summary: dict) -> None:
     """Add ``configs: {config: {split: rows}}`` to RELEASE.json: the counts the load and card
     gates hold the export to. A ``--sample`` export writes one shard per config and skips this."""
     data = json.loads(release_json.read_text())
@@ -479,6 +479,22 @@ def record_export_counts(release_json: Path, summary: dict) -> None:
     release_json.write_text(
         json.dumps({**data, "configs": configs}, indent=1, sort_keys=True) + "\n"
     )
+
+
+def record_export_counts(release_json: Path, summary: dict) -> bool:
+    """Best effort: record the per-config split rows of ``summary`` in RELEASE.json.
+
+    Returns False and writes nothing when the summary carries no per-config rows or the file is
+    missing (stubbed exports); the load and card gates then report the absent ``configs`` block
+    instead of the export crashing."""
+    release_json = Path(release_json)
+    if not isinstance(summary, dict) or not summary.get("configs") or not release_json.is_file():
+        return False
+    try:
+        _write_export_counts(release_json, summary)
+    except (KeyError, TypeError, AttributeError):
+        return False
+    return True
 
 
 def main(argv: list[str] | None = None) -> int:
