@@ -10,6 +10,8 @@ from ...checksums import parse_checksums
 from ...task_layers.s3_keyed import fetch_small
 from ..defaults import registry_entry, validated_defaults
 from ..stage import spec_fields
+from .common import finish_rows
+from .licence import licence_defaults
 from .registry import resolver_for
 from .schema import write_outputs
 from .staged import (
@@ -68,8 +70,14 @@ def resolve_source(
         ledger=ledger,
     )
     result = resolver(images, ctx)
+    rows = finish_rows(
+        result.rows,
+        platform=ctx.default_platform,
+        licence=licence_defaults(source_id, registry_root),
+        staged_by_sha={i.sha256: i.row for i in images},
+    )
     return write_outputs(
-        out_dir, source_id, version, result.rows, result.unresolved, {"notes": dict(result.notes)}
+        out_dir, source_id, version, rows, result.unresolved, {"notes": dict(result.notes)}
     )
 
 

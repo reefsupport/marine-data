@@ -484,6 +484,14 @@ def main(argv: list[str] | None = None) -> int:
         help="local staged tree holding the mask PNGs at <root>/<bucket key> (MV-1 mask configs); "
         "a key not found there is fetched with the anonymous small-file GET",
     )
+    parser.add_argument(
+        "--metadata-dir",
+        type=Path,
+        default=None,
+        help="PA-P2.2: resolver output dir (<dir>/<source>/<version>/samples.parquet); "
+        "its columns are "
+        "joined into `metadata` by image_sha256, fill-only (no flag = output unchanged)",
+    )
     args = parser.parse_args(argv)
 
     registry = Registry.load()
@@ -525,6 +533,16 @@ def main(argv: list[str] | None = None) -> int:
             quality_by_sha={r["image_sha256"]: r for r in quality},
             privacy_flags=privacy.flags,
         )  # fmt: skip
+    if args.metadata_dir:  # PA-P2.2: fill-only join of the resolver output, by image_sha256
+        from .metadata_norm.resolvers.join import (
+            join_resolved,
+            load_resolved,
+            location_sensitive_sources,
+        )
+
+        layout = join_resolved(
+            layout, load_resolved(args.metadata_dir), location_sensitive_sources(registry)
+        )
     summary = export(layout, args.out, sample=args.sample)
     if flavour:
         summary["flavour"] = flavour

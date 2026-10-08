@@ -32,7 +32,7 @@ def _ctx(**kw) -> NormContext:
 
 def test_output_has_all_sample_columns_plus_class_and_provenance():
     assert (*FIELD_NAMES, "licence_class", "provenance") == OUTPUT_COLUMNS
-    assert len(FIELD_NAMES) == 37
+    assert len(FIELD_NAMES) == 52
     t = normalise("src", "v1", [{"stem": "a", "partition": "train"}], _ctx())
     assert tuple(t.column_names) == OUTPUT_COLUMNS
 

@@ -3,8 +3,8 @@
 A resolver turns what a staged source already carries (file names, upstream tables, EXIF) into
 one :class:`ResolvedRow` per image. The rows are written as NEW local files
 (``<out>/<source>/<version>/samples.parquet`` + ``coverage.json`` + ``unresolved.tsv``); nothing is
-written into a staged tree or the bucket. ``SampleRow`` (schema v2) is deliberately NOT widened
-here: seven of the thirteen resolved columns are not in its 37 and adding them is a schema bump.
+written into a staged tree or the bucket. The columns are the ones ``SampleRow`` (schema v3,
+PA-P2.2) carries; staged trees are not rewritten, the exporter joins these files by sha256.
 """
 
 from __future__ import annotations
@@ -29,6 +29,7 @@ RESOLVED_COLUMNS: tuple[str, ...] = (
     "lat",
     "lon",
     "date",
+    "date_precision",
     "year",
     "depth_m",
     "platform",
@@ -39,6 +40,14 @@ RESOLVED_COLUMNS: tuple[str, ...] = (
     "coord_precision_m",
     "geo_source",
     "date_source",
+    "license",
+    "license_url",
+    "attribution",
+    "rights_holder",
+    "license_verified_by",
+    "license_verified_on",
+    "provenance_url",
+    "upstream_id",
 )
 OUTPUT_COLUMNS: tuple[str, ...] = IDENTITY_COLUMNS + RESOLVED_COLUMNS
 
@@ -59,6 +68,7 @@ class ResolvedRow:
     lat: float | None = None
     lon: float | None = None
     date: dt.date | None = None
+    date_precision: str | None = None
     year: int | None = None
     depth_m: float | None = None
     platform: str | None = None
@@ -69,6 +79,14 @@ class ResolvedRow:
     coord_precision_m: float | None = None
     geo_source: str | None = None
     date_source: str | None = None
+    license: str | None = None
+    license_url: str | None = None
+    attribution: str | None = None
+    rights_holder: str | None = None
+    license_verified_by: str | None = None
+    license_verified_on: dt.date | None = None
+    provenance_url: str | None = None
+    upstream_id: str | None = None
 
 
 @dataclass(frozen=True)
@@ -91,6 +109,7 @@ def arrow_schema():
     s = pa.string()
     types = {"lat": pa.float64(), "lon": pa.float64(), "date": pa.date32(), "year": pa.int16()}
     types |= {"depth_m": pa.float64(), "coord_precision_m": pa.float64()}
+    types["license_verified_on"] = pa.date32()
     return pa.schema([pa.field(n, types.get(n, s)) for n in OUTPUT_COLUMNS])
 
 

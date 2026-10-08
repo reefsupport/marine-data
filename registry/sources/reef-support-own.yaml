@@ -5,6 +5,12 @@
 
 sources:
   - id: reef-support-benthic-own
+    default_platform: unknown
+    platform_evidence: "Registry notes mention GoPro runs and station codes in file stems but state no collection platform; left unknown, not guessed (owner to confirm)."
+    expect_geo: none
+    expect_date: expected
+    expect_site: required
+    expect_depth: none
     domain: coral
     access_class: open
     name: Reef Support benthic instance masks — own imagery (Colombia)
@@ -266,6 +272,12 @@ sources:
     tags: [annotation-ip, octocoral]
 
   - id: reef-support-bleaching
+    default_platform: unknown
+    platform_evidence: "Registry entry states no collection platform; left unknown, not guessed (owner to confirm)."
+    expect_geo: none
+    expect_date: expected
+    expect_site: required
+    expect_depth: none
     domain: coral
     access_class: open
     name: Reef Support bleaching masks (Tayrona)
@@ -541,6 +553,8 @@ sources:
     tags: [needs-permission]
 
   - id: coralscop-masks-rs
+    default_platform: unknown
+    platform_evidence: "Registry entry states no collection platform; left unknown, not guessed."
     domain: coral
     access_class: internal-only
     default_habitat: coral_reef  # WP-U14b: evidence table marks the setting known

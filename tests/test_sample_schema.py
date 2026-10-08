@@ -122,7 +122,7 @@ def test_parquet_round_trip_and_licence_filter(tmp_path):
     ss.write_samples(path, rows)
     table = pq.read_table(path)
     ss.validate_table(table)
-    assert table.schema.metadata[b"marinedata.sample_schema"] == b"2"  # v2: D-AI2 split columns
+    assert table.schema.metadata[b"marinedata.sample_schema"] == b"3"  # v3: PA-P2.2 (v2: D-AI2)
     assert ss.licence_filter(table, ["CC0-1.0"]).column("stem").to_pylist() == ["b2"]
     back = ss.row_from_mapping(table.to_pylist()[0])
     assert back.label_refs == ("labels/image_labels.parquet",)
@@ -142,7 +142,10 @@ def test_validate_table_accepts_the_optional_trailing_partition_column():
     flat = ss.to_table(rows)
     ss.validate_table(flat)  # shape 1: flat
     partitioned = _with_partition(flat, ["SEAVIEW_ATL", "SEAVIEW_PAC_AUS"])
-    assert partitioned.column_names[-1] == "partition" and len(partitioned.column_names) == 38
+    assert (
+        partitioned.column_names[-1] == "partition"
+        and len(partitioned.column_names) == len(ss.FIELD_NAMES) + 1
+    )
     ss.validate_table(partitioned)  # shape 2: wide + trailing partition
     assert "partition" not in ss.FIELD_NAMES
     assert ss.row_from_mapping(partitioned.to_pylist()[0]) == rows[0]

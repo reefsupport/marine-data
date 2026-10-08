@@ -260,6 +260,33 @@ def _cmd_release_split_map(args: argparse.Namespace) -> int:
     )
 
 
+def _cmd_release_gate(args: argparse.Namespace) -> int:
+    """``release gate --metadata <dir>``: the metadata gate (PA-P2.4), merged into GATES.json."""
+    from .gates import merge_gates_json
+    from .gates.metadata import run_gate, source_dirs
+
+    directories = source_dirs(args.metadata)
+    if not directories:
+        print(
+            f"release gate: no <source>/<version>/coverage.json under {args.metadata}",
+            file=sys.stderr,
+        )
+        return 1
+    result = run_gate(directories, Registry.load())
+    merge_gates_json(args.gates, [result])
+    for sid, info in sorted(result.counts["sources"].items()):
+        checks = " ".join(
+            f"{name}={c['level']}:{c['rate']:.4f}{'' if c['passed'] else '(MISS)'}"
+            for name, c in info.get("checks", {}).items()
+        )
+        verdict = "PASS" if info.get("passed") else "FAIL"
+        print(f"{verdict} {sid} [{info.get('version')}] rows={info.get('rows')} {checks}")
+    for failure in result.failures:
+        print(f"  - {failure}")
+    print(f"metadata gate: {'PASS' if result.passed else 'FAIL'} -> {args.gates}")
+    return 0 if result.passed else 1
+
+
 def _cmd_release_build(args: argparse.Namespace) -> int:
     registry = Registry.load()
     flavour = getattr(args, "flavour", None)
@@ -591,3 +618,17 @@ def add_release_subparser(sub: argparse._SubParsersAction) -> None:
     )
     _add_near_dup_args(p_map, required_note="required unless --no-near-dup")
     p_map.set_defaults(func=_cmd_release_split_map)
+
+    p_gate = release_sub.add_parser(
+        "gate",
+        help="Run the metadata gate over resolver outputs and merge it into GATES.json",
+    )
+    p_gate.add_argument(
+        "--metadata",
+        required=True,
+        help="Resolver output dir holding <source>/<version>/coverage.json",
+    )
+    p_gate.add_argument(
+        "--gates", default="GATES.json", help="GATES.json to merge into (created if absent)"
+    )
+    p_gate.set_defaults(func=_cmd_release_gate)

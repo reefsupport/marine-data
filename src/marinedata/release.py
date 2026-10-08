@@ -27,7 +27,7 @@ from pathlib import Path
 
 from .builder import SUPERVISED_DEFAULT_RATIOS, DatasetBuilder, PartialAbstainExclusion, SplitName
 from .checksums import file_digest
-from .flavours import check_profile, flavour_source_ids, release_record, sample_ships
+from .flavours import check_profile, flavour_source_ids, release_record, sample_verdict
 from .gate import evaluate
 from .labelcheck import release_label_gate
 from .licence_class import release_excluded, require_flavour, spec_for
@@ -880,6 +880,7 @@ def build_release(
     tasks: list[TaskManifest] = []
     skipped: list[tuple[str, str]] = []
     never_eval_excluded = 0
+    licence_dropped: dict[str, dict[str, set[str]]] = {}
     near_dup_excluded: list[str] = []
     if near_dup is not None and never_eval_sources:
         near_dup_excluded = _never_eval_near_dups(
@@ -923,7 +924,12 @@ def build_release(
         for split_name, positions in dataset.splits.items():
             for position in positions:
                 sample = dataset.samples[position]
-                if sample.image is None or not sample_ships(registry, sample, flavour):
+                if sample.image is None:
+                    continue
+                verdict = sample_verdict(registry, sample, flavour)
+                if verdict is not None:  # PA-P2.2: per-row licence null / outside the flavour
+                    by_reason = licence_dropped.setdefault(sample.source_id, {})
+                    by_reason.setdefault(verdict, set()).add(str(sample.image))
                     continue
                 sha256 = digest(Path(sample.image))
                 if sample.source_id in never_eval_sources and sha256 in near_dup_excluded_set:
@@ -1029,6 +1035,15 @@ def build_release(
         release_json["decon"] = decon_record(decon_result)
     if flavour is not None:
         release_json.update(release_record(registry, flavour, profile, admitted))
+        dropped = {
+            sid: {
+                "total": sum(len(paths) for paths in by_reason.values()),
+                **{reason: len(paths) for reason, paths in sorted(by_reason.items())},
+            }
+            for sid, by_reason in sorted(licence_dropped.items())
+        }
+        if dropped:  # absent = nothing dropped: a release without per-row drops keeps its bytes
+            release_json["licence_rows_dropped"] = dropped
     release_json_text = json.dumps(release_json, indent=2, sort_keys=True) + "\n"
     (release_root / "RELEASE.json").write_text(release_json_text)
 

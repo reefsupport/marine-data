@@ -44,6 +44,19 @@ Null semantics (the contract — a null always means one specific thing):
   at staging time; ``upstream_split`` is the upstream's own split name (``split_hint`` is
   its normalised form); ``upstream_path`` is the upstream-relative path. A v1 table without
   these columns still validates and reads back with them null.
+* ``date`` / ``date_precision`` / ``year`` (schema v3, PA-P2.2): ``date_precision`` is ``day``,
+  ``month`` or ``year``. ``date`` null with ``year`` set means only the year is known (a campaign
+  year: the Tetes sets carry ``year=2023``, ``date=null``, ``date_precision=year``); a ``month``
+  date is the first of that month. ``date`` requires ``date_precision``, and ``year`` equals
+  ``date.year`` when both are set. ``date_source`` / ``geo_source`` name the table or field a value
+  came from; ``coord_precision_m`` is the radius ``lat``/``lon`` are good to.
+* ``site_id`` / ``quadrat_id`` / ``survey_id`` / ``region`` (v3) null = not resolved.
+* ``license_url`` / ``rights_holder`` / ``license_verified_by`` / ``license_verified_on`` /
+  ``provenance_url`` (v3) default to the registry entry; a source with ``per_row_license`` overrides
+  them from its upstream table. ``platform`` takes a value of :data:`PLATFORM_VOCAB`
+  (``registry/schemas/sample-row-v3.md``): ``unknown`` is a stated "no evidence", null is "not
+  derived".
+  A v2 (37-column) or v1 (34-column) table still validates and reads back with the v3 columns null.
 """
 
 from __future__ import annotations
@@ -55,10 +68,26 @@ from collections.abc import Iterable, Mapping, Sequence
 from dataclasses import asdict, dataclass, field, fields
 from pathlib import Path
 
-SCHEMA_VERSION = "2"
+SCHEMA_VERSION = "3"
 
 DEPTH_SOURCES = frozenset({"sensor", "exif", "metadata", "site-nominal", "estimated"})
-PLATFORMS = frozenset(
+PLATFORM_VOCAB = frozenset(
+    {
+        "diver-photo-quadrat",
+        "diver-video",
+        "auv",
+        "rov",
+        "drop-camera",
+        "bruv",
+        "aerial",
+        "web-collected",
+        "aquarium",
+        "lab",
+        "unknown",
+    }
+)
+"""The v3 controlled vocabulary for ``platform`` and the registry ``default_platform``."""
+LEGACY_PLATFORMS = frozenset(
     {
         "diver",
         "snorkel",
@@ -74,6 +103,9 @@ PLATFORMS = frozenset(
         "unknown",
     }
 )
+"""v1/v2 values (staged trees and registry specs written before PA-P2.2); still valid."""
+PLATFORMS = PLATFORM_VOCAB | LEGACY_PLATFORMS
+DATE_PRECISIONS = frozenset({"day", "month", "year"})
 SPLIT_HINTS = frozenset({"train", "val", "test"})
 _SPLIT_ALIASES = {
     "training": "train",
@@ -164,11 +196,45 @@ class SampleRow:
     split_group: str | None = None
     upstream_split: str | None = None
     upstream_path: str | None = None
+    date: dt.date | None = None
+    date_precision: str | None = None
+    year: int | None = None
+    site_id: str | None = None
+    quadrat_id: str | None = None
+    survey_id: str | None = None
+    region: str | None = None
+    coord_precision_m: float | None = None
+    geo_source: str | None = None
+    date_source: str | None = None
+    license_url: str | None = None
+    rights_holder: str | None = None
+    license_verified_by: str | None = None
+    license_verified_on: dt.date | None = None
+    provenance_url: str | None = None
 
 
 FIELD_NAMES: tuple[str, ...] = tuple(f.name for f in fields(SampleRow))
 V2_FIELDS: tuple[str, ...] = ("split_group", "upstream_split", "upstream_path")
-LEGACY_FIELD_NAMES: tuple[str, ...] = tuple(n for n in FIELD_NAMES if n not in V2_FIELDS)
+V3_FIELDS: tuple[str, ...] = (
+    "date",
+    "date_precision",
+    "year",
+    "site_id",
+    "quadrat_id",
+    "survey_id",
+    "region",
+    "coord_precision_m",
+    "geo_source",
+    "date_source",
+    "license_url",
+    "rights_holder",
+    "license_verified_by",
+    "license_verified_on",
+    "provenance_url",
+)
+V2_FIELD_NAMES: tuple[str, ...] = tuple(n for n in FIELD_NAMES if n not in V3_FIELDS)
+"""Schema-v2 column list (37): every ``metadata.parquet`` written before PA-P2.2."""
+LEGACY_FIELD_NAMES: tuple[str, ...] = tuple(n for n in V2_FIELD_NAMES if n not in V2_FIELDS)
 """Schema-v1 column list: every ``metadata.parquet`` written before D-AI2."""
 OPTIONAL_COLUMNS: tuple[str, ...] = ("partition",)
 """Columns a staged ``metadata.parquet`` may carry after the schema columns, outside the
@@ -236,6 +302,21 @@ def arrow_schema():
         "split_group": s,
         "upstream_split": s,
         "upstream_path": s,
+        "date": pa.date32(),
+        "date_precision": s,
+        "year": pa.int16(),
+        "site_id": s,
+        "quadrat_id": s,
+        "survey_id": s,
+        "region": s,
+        "coord_precision_m": f64,
+        "geo_source": s,
+        "date_source": s,
+        "license_url": s,
+        "rights_holder": s,
+        "license_verified_by": s,
+        "license_verified_on": pa.date32(),
+        "provenance_url": s,
     }
     non_nullable = REQUIRED | {"label_refs", "location_generalized"}
     return pa.schema(
@@ -301,6 +382,18 @@ def validate_row(row: SampleRow) -> list[str]:
         errs.append("meow_realm/meow_province/meow_ecoregion must be all-set or all-null")
     if row.location_generalized and row.lat is None:
         errs.append("location_generalized requires lat/lon to be set")
+    if row.date_precision is not None and row.date_precision not in DATE_PRECISIONS:
+        errs.append(f"date_precision must be one of {sorted(DATE_PRECISIONS)}")
+    if row.date is not None and row.date_precision is None:
+        errs.append("date requires date_precision")
+    if row.date is None and row.date_precision == "day":
+        errs.append("date_precision 'day' requires date")
+    if row.year is not None and not 1800 <= row.year <= 2200:
+        errs.append("year out of range")
+    if row.date is not None and row.year is not None and row.year != row.date.year:
+        errs.append("year disagrees with date")
+    if row.coord_precision_m is not None and (row.lat is None or row.coord_precision_m < 0):
+        errs.append("coord_precision_m needs a position and must be >= 0")
     return errs
 
 
@@ -375,8 +468,8 @@ def validate_table(table) -> None:
         if names[-len(OPTIONAL_COLUMNS) :] == list(OPTIONAL_COLUMNS)
         else names
     )
-    if core not in (list(FIELD_NAMES), list(LEGACY_FIELD_NAMES)):
-        raise SampleSchemaError(f"columns differ from schema v{SCHEMA_VERSION} (or v1)")
+    if core not in (list(FIELD_NAMES), list(V2_FIELD_NAMES), list(LEGACY_FIELD_NAMES)):
+        raise SampleSchemaError(f"columns differ from schema v{SCHEMA_VERSION} (or v2/v1)")
     for got in table.schema:
         if got.name in OPTIONAL_COLUMNS:
             if not got.type.equals(pa.string()):

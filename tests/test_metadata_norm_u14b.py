@@ -159,7 +159,9 @@ def test_real_registry_carries_the_known_constants():
     }
     assert got["brackishmot"] == {"platform": "lander", "habitat": "brackish_water"}
     assert got["aris-didson-fish-td"] == {"habitat": "river", "instrument": "imaging-sonar"}
-    assert got["coralscop-masks-rs"] == {"habitat": "coral_reef"} == got["csiro-cots"]
+    assert got["csiro-cots"] == {"habitat": "coral_reef"}
+    # PA-P2.2: the registry now states `unknown` outright (checked, no evidence)
+    assert got["coralscop-masks-rs"] == {"platform": "unknown", "habitat": "coral_reef"}
 
 
 def test_staged_value_beats_registry_default():

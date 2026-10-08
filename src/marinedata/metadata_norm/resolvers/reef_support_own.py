@@ -1,5 +1,10 @@
 """Reef Support's own Colombian photo sets (benthic-own, bleaching): site, date, platform.
 
+Tetes rows carry year precision only (PA-P2.2): ``year=2023``, ``date=null`` and
+``date_precision=year``, because their only date source is the Labelbox ``dataset_name``
+``Tetes_Providencia_May23`` (a campaign month, no day). ``date_precision`` is filled for every
+resolver by ``common.finish_rows`` (``day`` when ``date`` is set, ``year`` when only ``year`` is).
+
 Per partition (the Labelbox project folder) the stem carries the station and, mostly, the date:
 
 * ``UNAL_BLEACHING_TAYRONA``: ``C10_BC_PM_T1_29nov24_CDaza_corr`` -> bay ``BC``, quadrat

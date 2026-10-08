@@ -2,6 +2,12 @@
 
 sources:
   - id: coralscapes
+    default_platform: unknown
+    platform_evidence: "HF card EPFL-ECEO/coralscapes names no collection platform (checked 2026-10-08); left unknown."
+    expect_geo: none
+    expect_date: none
+    expect_site: required
+    expect_depth: none
     domain: coral
     access_class: open
     name: Coralscapes
@@ -465,6 +471,12 @@ sources:
     tags: [vqa, language]
 
   - id: noaa-pifsc-bleaching
+    default_platform: unknown
+    platform_evidence: "HF card NMFS-OSI/NOAA-PIFSC-ESD-CORAL-Bleaching-Dataset says only \"underwater imagery collected by NOAA's Ecosystem Sciences Division\"; no platform named, left unknown."
+    expect_geo: none
+    expect_date: none
+    expect_site: required
+    expect_depth: none
     domain: coral
     access_class: open
     name: NOAA PIFSC-ESD coral bleaching dataset
@@ -1353,6 +1365,8 @@ sources:
     tags: [bleaching, roboflow]
 
   - id: coralseg-ucsd-mosaics
+    default_platform: unknown
+    platform_evidence: "Registry description: \"Coral reef photomosaics from UCSD\"; the acquisition platform is not stated, left unknown."
     domain: coral
     access_class: internal-only
     name: Coralseg (UCSD) coral reef mosaics
@@ -1459,6 +1473,12 @@ sources:
     tags: [needs-permission]
 
   - id: seaview-survey-imagery
+    default_platform: diver-photo-quadrat
+    platform_evidence: "Registry citation (González-Rivero et al. 2019) titles the set \"Seaview Survey Photo-quadrat and Image Classification Dataset\"; the diver-operated camera comes from the survey method, not a registry sentence (confirm on the data card)."
+    expect_geo: required
+    expect_date: required
+    expect_site: none
+    expect_depth: none
     domain: coral
     release_skip_reason: "no-staged-images: registry lists imagery, nothing staged under sources/ in rs-storage-open (U7/queue follow-up)"
     access_class: open

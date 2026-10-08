@@ -738,6 +738,12 @@ sources:
     tags: [fish, mediterranean, yolo, fixed-camera]
 
   - id: uiis
+    default_platform: unknown
+    platform_evidence: "Registry description lists \"human divers\" only as a class; HF card LiamLian0727/UIIS names no collection platform (checked 2026-10-08); left unknown."
+    expect_geo: none
+    expect_date: none
+    expect_site: none
+    expect_depth: none
     access_class: open
     name: UIIS (WaterMask) underwater instance segmentation
     version: "rev-44ca5db46599"
@@ -779,6 +785,12 @@ sources:
     tags: [instance-seg, usis-uiis]
 
   - id: uiis10k
+    default_platform: unknown
+    platform_evidence: "HF card LiamLian0727/UIIS10K names no collection platform (checked 2026-10-08); left unknown."
+    expect_geo: none
+    expect_date: none
+    expect_site: none
+    expect_depth: none
     access_class: open
     name: UIIS10K underwater instance segmentation (UWSAM)
     version: "rev-5c4316368a8e"
@@ -820,6 +832,12 @@ sources:
     tags: [instance-seg, usis-uiis]
 
   - id: usis10k
+    default_platform: unknown
+    platform_evidence: "HF card LiamLian0727/USIS10K names no collection platform (checked 2026-10-08); left unknown."
+    expect_geo: none
+    expect_date: none
+    expect_site: none
+    expect_depth: none
     access_class: open
     name: USIS10K underwater salient instance segmentation
     version: "rev-b10f41ab819b"
@@ -861,6 +879,8 @@ sources:
     tags: [instance-seg, usis-uiis, salient]
 
   - id: roboflow-aquarium
+    default_platform: aquarium
+    platform_evidence: "Registry description: images \"from two US aquariums (Henry Doorly Zoo, National Aquarium Baltimore)\" - \"Aquarium tanks, not wild reef.\""
     access_class: open
     name: Roboflow Aquarium Combined
     version: "zip-5d30fed3dd5a"

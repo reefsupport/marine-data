@@ -171,6 +171,12 @@ sources:
     tags: [depth, benchmark, noncommercial]
 
   - id: suim
+    default_platform: unknown
+    platform_evidence: "Registry description lists \"diver\" only as a segmentation class; HF card SatwikKambham/suim names no collection platform (checked 2026-10-08); left unknown."
+    expect_geo: none
+    expect_date: none
+    expect_site: none
+    expect_depth: none
     domain: fish
     access_class: open
     name: SUIM (Semantic Segmentation of Underwater Imagery)
