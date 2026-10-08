@@ -1573,6 +1573,20 @@ sources:
       StagedTreeLoader cannot join across sources — plus the region CSVs). `checksums` pinned 2026-10-06
       from the tree's CHECKSUMS.sha256 (12,376 files = 12,373 objects + metadata.parquet, INGEST.json,
       LICENSE). Never-staged pickle stays excluded.
+
+      P1.2b Seaview labels (staged tree; no README is staged in either Seaview tree):
+      labels/points/tabular-data/annotations_<REGION>.csv x9 (ATL, IND_CHA, IND_MDV, PAC_AUS,
+      PAC_IDN_PHL, PAC_SLB, PAC_TLS, PAC_TWN, PAC_USA; columns
+      quadratid,y,x,label_name,label,func_group,method,data_set) are the per-region point sets
+      the points producer reads; seaviewsurvey_annotations.csv (quadratid,y,x,label only) is
+      the unsplit upstream table, i.e. the master CSV, and no staged file says whether its
+      labels are human or machine; the constant 106,900 id offset between 30 PAC_IDN_PHL
+      annotation ids and 30 images (P3.1) is not documented in any staged file. Licence: the
+      staged LICENSE, INGEST.json and the labels LICENSE say CC-BY-3.0-AU (the labels LICENSE
+      cites 'UQ eSpace UQ_734799 (CC-BY-3.0-AU)'), the registry says CC-BY-3.0; the eSpace
+      page answered HTTP 403 to the one scripted GET and DataCite has no record of the DOI, so
+      neither value is confirmed (both are attribution-only T1). The annotations kind: none
+      above is stale: the tree carries point CSVs.
     split_group:
       pattern: '^(.{5})'
       match_field: stem
