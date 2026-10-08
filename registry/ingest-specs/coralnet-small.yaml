@@ -16,3 +16,4 @@ measured:
   method: 'catalog measurement (S57): 450 rows (HF viewer), <=6.47 GB usedStorage'
   date: '2026-09-25'
   per_item_license: unknown
+bucket: rs-storage-private

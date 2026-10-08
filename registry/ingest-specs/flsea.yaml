@@ -17,3 +17,4 @@ homepage: https://www.kaggle.com/datasets/viseaonlab/flsea-vi
 notes: 'mirror_of: bhowmikabhimanyu/flsea-vi (HF, no-login, verdict=match — 22451
   image+depth pairs, train 17961 + validation 4490, 67.6 GB; qz-wei/flsea (HF)
   checked and is an empty repo, not used).'
+bucket: rs-storage-private

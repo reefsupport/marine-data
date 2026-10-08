@@ -50,3 +50,4 @@ measured:
     fathomnet.s3-us-east-2.amazonaws.com: 897
   n_concepts: 2709
   label_type: bbox (concept = WoRMS-aligned name)
+bucket: rs-storage-private

@@ -24,3 +24,4 @@ measured:
   label_type: paired enhancement images (input and GT reference)
   method: u15-label-kind-triage (registry-patch.yaml)
   date: '2026-10-05'
+bucket: rs-storage-private

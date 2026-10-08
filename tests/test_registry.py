@@ -11,7 +11,7 @@ from __future__ import annotations
 import pytest
 
 from marinedata import Registry
-from marinedata.enums import AccessMethod, LegalBasis, Redistribution, Tier
+from marinedata.enums import AccessMethod, LegalBasis, Redistribution, Region, Tier
 from marinedata.registry import _default_root, _read_yaml
 
 
@@ -308,3 +308,47 @@ def test_rs_labelled_masks_split_legal_basis_documented(registry: Registry) -> N
     assert src.licence.tier is not Tier.OWN
     notes = (src.verification.verified_by or "") + (src.notes or "")
     assert "reef-support-benthic-own" in notes and "reef-support-seaview-labels" in notes
+
+
+def test_coralscapes_v2_loads_alongside_v1(registry: Registry) -> None:
+    """V2 must sit next to V1, not replace it, and must resolve to the same tier.
+
+    Apache-2.0 is independently verified for both entries (see coral-benthic.yaml's
+    `verification` blocks) — a wrong tier here would either block a legitimately usable
+    source or ship one that was never actually cleared.
+    """
+    v1 = registry.source("coralscapes")
+    v2 = registry.source("coralscapes-v2")
+    assert v1.id == "coralscapes", "V2 must not have replaced V1"
+    assert v2.licence.tier is Tier.PERMISSIVE
+    assert v2.legal_basis is LegalBasis.LICENCE
+    assert Region.RED_SEA in v2.coverage.regions
+    assert v2.loader is not None
+    assert v2.loader.schema_id == "coralscapes-95"
+    assert v2.loader.crosswalk_id is None, (
+        "no machine-readable 95->39 crosswalk exists; a set crosswalk_id here would "
+        "mean one got hand-derived from the paper's Fig. 5, which this registry must "
+        "never do"
+    )
+
+
+def test_coralscapes_95_schema_loads(registry: Registry) -> None:
+    """The 95-class schema is present, flat, and carries V2's new soft-coral classes.
+
+    No crosswalk to coralscapes-39 is registered for it — see the coralscapes-v2
+    source entry's notes in coral-benthic.yaml for the sources checked before
+    reporting that blocked.
+    """
+    schema = registry.label_schema("coralscapes-95")
+    assert len(schema.nodes) == 95
+    assert schema.node("CS95_FISH") is not None
+    for soft_coral_id in (
+        "CS95_LEATHER_CORAL_ALIVE",
+        "CS95_NEPHTHEIDAE_ALIVE",
+        "CS95_XENIIDAE_ALIVE",
+        "CS95_SOFT_CORAL_MALACALCYONACEA_ALIVE",
+        "CS95_CIRRHIPATHES",
+    ):
+        assert schema.node(soft_coral_id) is not None, (
+            f"{soft_coral_id}: V2's soft-coral classes must be present (V1 has none)"
+        )

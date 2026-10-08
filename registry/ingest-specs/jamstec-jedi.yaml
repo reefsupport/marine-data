@@ -14,3 +14,4 @@ measured:
   date: '2026-09-25'
   per_item_license: request-based
   by_depth_band_m: {}
+bucket: rs-storage-private

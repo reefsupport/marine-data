@@ -21,3 +21,4 @@ measured:
   bytes_basis: 'unmeasured: per-source HTML paging needed'
   public_sources: 2025
   label_type: points (login needed) ; label ids anonymous
+bucket: rs-storage-private

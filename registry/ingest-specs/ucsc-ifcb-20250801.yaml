@@ -20,3 +20,4 @@ measured:
   label_type: class per image
   wp6g_gaps:
   - 7
+bucket: rs-storage-private

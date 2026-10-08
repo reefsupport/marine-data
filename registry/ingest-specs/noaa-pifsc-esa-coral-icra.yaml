@@ -1,8 +1,9 @@
 # NOAA PIFSC ESD Essential-Structural-Attributes / ICRA coral-reef image dataset (HF, official NMFS-OSI org).
 id: noaa-pifsc-esa-coral-icra
-access_class: open
+access_class: open  # P1.2b: restored from the LIC audit, see licence_evidence
 adapter: hf
-license: other (HF card)
+license: US-GOV-PD
+licence_evidence: "https://huggingface.co/datasets/NMFS-OSI/NOAA-PIFSC-ESD-ESA-CORAL-ICRA-Dataset/resolve/main/README.md : License: Public Domain (NOAA Open Data Public Access)"
 attribution: NMFS-OSI
 citation: NMFS-OSI/NOAA-PIFSC-ESD-ESA-CORAL-ICRA-Dataset (HF)
 homepage: https://huggingface.co/datasets/NMFS-OSI/NOAA-PIFSC-ESD-ESA-CORAL-ICRA-Dataset

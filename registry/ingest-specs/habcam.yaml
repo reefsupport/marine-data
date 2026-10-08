@@ -17,3 +17,4 @@ measured:
   by_depth_band_m: {}
   note: operating depth is shelf (40-120 m), NOT >200 m — do not count toward the
     deep-sea >200m target despite being catalogued deep-sea-adjacent
+bucket: rs-storage-private

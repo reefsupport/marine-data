@@ -4,6 +4,7 @@ sources:
   - id: coralscapes
     domain: coral
     access_class: open
+    licence_evidence: "legacy verification record (dataset-card, 2026-08-18): RESOLVED against both distribution points directly. Zenodo REST API record 15061505 returns metadata.license = {\"id\": \"apache2.0\"}; the HuggingFace API for EPFL-ECEO/coralscapes returns cardData.license = \"apache-2.0\" and the tag \"license:apache-2.0\". The earlier CC-BY-SA-4.0 reading came from the ICCV paper text, which is not where the data is licensed.\n"
     name: Coralscapes
     # habitat inferred (WP-2b) from this source's own description/notes, not independently verified
     habitat: [coral_reef]
@@ -20,7 +21,7 @@ sources:
       version: "1.0"
       root_digest: da0ed5b386664e73176cbde0654771509f5f208f22d63c26d2d1d42963826a3e
       files: 4154
-      size_bytes: 5848379518
+      size_bytes: 5848880734
     verification:
       verified_on: 2026-08-18
       verified_by: >
@@ -78,6 +79,7 @@ sources:
         the prior (wrong) note trained on "unlabelled" as class 255-that-never-occurs
         and left index 0 uncovered as a real class.
     n_images: 2075
+    n_images_method: "metadata-parquet"
     annotations:
       - kind: dense-mask
         count: 174000
@@ -121,9 +123,179 @@ sources:
     homepage: https://josauder.github.io/coralscapes/
     tags: [dense-seg, transfer-base, red-sea]
 
+  - id: coralscapes-v2
+    domain: coral
+    redistribution: ok
+    name: Coralscapes V2
+    version: "2.0"
+    description: >
+      Panoptic successor to Coralscapes: 95 fine-grained benthic classes (up from 39)
+      plus 65,738 exhaustive per-individual fish instance masks — the first panoptic
+      coral-reef dataset. V1's 2,075 images are carried forward under their original
+      split assignment and joined by new frames; every image is Red Sea. Shares images
+      and split assignment with `coralscapes` (V1) — see notes for the overlap.
+    licence: Apache-2.0
+    legal_basis: licence
+    provenance: public
+    verification:
+      verified_on: 2026-09-11
+      verified_by: >
+        RESOLVED against the dataset's own HuggingFace repo: the API record for
+        josauder/coralscapesV2 (https://huggingface.co/api/datasets/josauder/coralscapesV2)
+        returns cardData.license = "apache-2.0" and carries the tag "license:apache-2.0".
+        Independently corroborated by the project homepage
+        https://josauder.github.io/coralscapesv2/, which states the release is Apache
+        2.0 licensed in prose. The dataset card's own descriptive README body (below the
+        licence-bearing YAML frontmatter) is stale — copy-pasted from the V1 card, still
+        describing "39 benthic classes" and citing the V1 paper — so only the
+        machine-readable cardData/tags fields were trusted for the licence, and only
+        id2label.json was trusted for the class list; the README prose class table was
+        not used for either. The fish instance masks (HF config "instances", in the same
+        repo) carry the identical apache-2.0 licence: one cardData.license field covers
+        all three configs (default/instances/sequences) in this single dataset
+        repository — they are not a separate artifact, contrary to what the brief for
+        this entry speculated.
+      method: dataset-card
+    access:
+      method: huggingface
+      uri: https://huggingface.co/datasets/josauder/coralscapesV2
+      params:
+        hf_id: josauder/coralscapesV2
+        config: default
+        split: train
+        image_column: image
+        mask_column: label
+      notes: >
+        Confirmed via the HF datasets-server info API (metadata only, no images
+        fetched): config "default" has columns [image, label] (1790/170/473
+        train/validation/test, matching the brief's 2,433 total); config "instances"
+        adds [instance_ids, stem, site] carrying the fish panoptic masks; config
+        "sequences" carries short frame sequences around the same annotated anchor
+        frames (temporal context, not a distinct label stream) and is not represented
+        as a separate `annotations` entry below for that reason.
+    modalities: [image]
+    capabilities:
+      - benthic-segmentation
+      - coral-taxonomy
+      - bleaching-assessment
+      - coral-instance-segmentation
+      - fish-detection
+      - general-pretraining
+    loader:
+      layout: image-mask-pairs
+      schema_id: coralscapes-95
+      params: { images_dir: images, masks_dir: masks }
+      # No crosswalk_id: the 95->39 crosswalk is BLOCKED — no machine-readable mapping
+      # was found. See notes below for the exact sources checked. Do not add one here
+      # without a machine-readable source; a guessed edge list is the failure this
+      # registry exists to prevent.
+      # No verified_on/verified_note: this layout is declared by analogy to the
+      # `coralscapes` (V1) entry's own tested image-mask-pairs convention (V1's HF
+      # parquet uses the identical image/label column pair), not run against a real
+      # fetched V2 sample — no dataset download was performed for this task.
+    n_images: 2433
+    n_images_method: registry-prior
+    n_images_note: >
+      1,790 train / 170 validation / 473 test (HF "default" config). V1's 2,075 images
+      keep their V1 split assignment inside this count (per the paper) — V1 and V2 item
+      counts are NOT additive when sizing a combined corpus; summing them double-counts
+      the shared images.
+    annotations:
+      - kind: dense-mask
+        count: 270000
+        schema_id: coralscapes-95
+        classes: 95
+        supervises: [taxon, form, condition]
+        depth: L3
+        notes: >
+          ~270k polygons (paper-stated, approximate; V1 was 174k). Like coralscapes-39,
+          this is a flattened taxon x form x condition cross-product with no shipped
+          decomposition — see registry/schemas/coralscapes-95.yaml's header for why no
+          crosswalk exists to decompose it.
+      - kind: instance-mask
+        count: 65738
+        schema_id: coralscapes-95
+        classes: 1
+        supervises: [taxon]
+        depth: L1
+        notes: >
+          Exhaustive per-individual fish instance masks, HF config "instances"
+          (image/label/instance_ids/stem/site columns). Cityscapes-style panoptic
+          encoding confirmed via the repo's own extended_metadata.json:
+          class_id * label_divisor + instance_index, label_divisor=2000, fish
+          class_id=25 (== node CS95_FISH in coralscapes-95, id2label "25": "fish").
+          First panoptic coral-reef dataset; best reported detection AP is 15.41 per
+          the brief's addendum — a dataset capability, not yet a validated production
+          model.
+    coverage:
+      regions: [red-sea]
+      ecoregions: ["Northern and Central Red Sea", "Southern Red Sea"]
+      sites: 45
+      years: [2021, 2025]
+    domain_shift:
+      trained_regions: [red-sea]
+      missing_classes:
+        - "gorgonian / sea fan (Gorgoniidae, Plexauridae — Atlantic/Caribbean octocoral families)"
+        - "sea rod"
+        - "sea plume"
+      caveats:
+        - "V2 adds Red-Sea soft-coral classes entirely absent from V1's 39-class schema: leather coral alive, nephtheidae alive, xeniidae alive, a soft coral (malacalcyonacea) alive/bleached catch-all, and cirrhipathes (black/wire coral) — see id2label.json via registry/schemas/coralscapes-95.yaml. But every V2 training image is Red Sea (Jordan, Djibouti, Eritrea, Sudan, Israel), so none of those classes were ever conditioned on a Caribbean specimen."
+        - "A model trained on this schema has no Caribbean octocoral morphotype in its label space and will map Gorgoniidae/Plexauridae sea fans, rods and plumes onto the nearest Red-Sea soft-coral class it has seen, rather than flag them as unknown. That converts 'honestly unknown' into 'confidently wrong' — worse for MRV than V1's flat collapse into 'unknown hard substrate'. No measured Caribbean delta exists yet for V2 specifically (unlike V1's measured -30.0 live-coral-cover delta), so this is a reasoned-from-morphology risk, not yet a benchmarked one."
+        - "Site geolocations are deliberately anonymised by the authors."
+    citation: >
+      Sauder, Ruckli, Strodomskytė, Tuia, Banc-Prandi et al., CoralscapesV2: Panoptic
+      and Fine-Grained Visual Scene Understanding in Coral Reefs (dataset release,
+      2026). No distinct V2 arXiv id was found — the HF repo's own tags carry
+      arxiv:2503.20000, which is the V1 paper's id, not a V2-specific preprint.
+    homepage: https://josauder.github.io/coralscapesv2/
+    tags: [dense-seg, panoptic-seg, transfer-base, red-sea, fish-instances]
+    notes: >
+      OVERLAP WITH V1: this entry shares images and inherited split assignment with
+      `coralscapes` (V1, above) — a future build must never treat the two as
+      independent samples of the same population, or it will double-count the shared
+      2,075 images. The `Source` model (src/marinedata/models.py) has no structured
+      `supersedes`/`overlaps` field, so this relation is recorded here in prose rather
+      than as data; flagged as an `## Open` item in the MD-5 report for the manager to
+      consider adding one.
+
+      95->39 CROSSWALK: BLOCKED. The paper's Fig. 5a/5b shows the 95-class -> 39-class
+      remap as a graphic only. No machine-readable version was found after checking:
+      the HF dataset repo's full file listing (id2label.json, extended_metadata.json
+      and label2color.json exist; no crosswalk/remap file does); the project homepage
+      https://josauder.github.io/coralscapesv2/ (prose + a visual only, no linked data
+      file); the josauder/coralscapesv2 GitHub repo, which is that homepage's own
+      source and contains only the presumed Fig.-5-equivalent
+      static/images/legend_39.png (a PNG, not data — not OCR'd, per instruction); the
+      josauder/dinov3_lora_dpt_coralscapes GitHub repo (V2's own DINOv3 training code —
+      its example dataset_metadata/classes.json and colors.json are V1's 39 classes
+      verbatim, and dataset.py/hub.py/coralscapes_hub_model.py/viz_palette.py/model.py
+      contain no remap logic); the eceo-epfl/coralscapesScripts GitHub repo (V1-only
+      training/eval code, no V2 references); and eceo-epfl/deepreefmap, the production
+      pipeline this repo's own coralscapes-39 crosswalk cites — both
+      configs/classes_coralscapes.yaml and config/classes.py there are still the V1
+      39-class config, with no 95-class counterpart anywhere in that repo. Per brief
+      item 4, no crosswalk file was written and none was hand-derived from the figure.
+      registry/schemas/coralscapes-95.yaml also carries no per-node `roles` field, for
+      a distinct reason: LabelNode (src/marinedata/schema.py) has no `roles` concept at
+      all — coralscapes-39 doesn't carry one either. deepreefmap's own per-class
+      `roles` (e.g. ignore_in_point_cloud, transect_tools) is that external pipeline's
+      rendering hint, unconnected to this registry's schema model.
+
+      SITE-COUNT NOTE: this entry's coverage.sites: 45 is the paper-stated figure. The
+      sibling `coralscapes` (V1) entry above records sites: 5 — apparently a coarser
+      dive-region grouping rather than individual reef sites (the paper states V1 = 35
+      individual sites). Not reconciled here; out of MD-5's lane to edit the V1 entry
+      beyond the overlap paragraph above.
+
+      PRODUCTION NOTE (from the brief's addendum, not re-derived here): V2's mIoU win
+      over V1 is real but small on V1's own test set (58.336 vs 57.800); there is no V2
+      "b2" checkpoint and production currently runs b2; the fish-instance capability is
+      a dataset, not yet a validated production model (best reported AP 15.41).
+
   - id: benthicnet-1m
     domain: coral
     access_class: open
+    licence_evidence: "legacy verification record (dataset-card, 2026-08-17): arXiv 2405.05241 / Scientific Data 2025 — CC-BY-4.0 for metadata and models; most images CC-BY with per-source exceptions noted in Appendix C"
     name: BenthicNet (curated 1M subset)
     # habitat inferred (WP-2b) from this source's own description/notes, not independently verified
     habitat: [mixed]
@@ -182,10 +354,12 @@ sources:
       schema_id: catami-1.4
       crosswalk_id: catami-1.4
     tags: [pretraining, catami, largest]
+    n_images_method: "registry-prior"
 
   - id: reefnet
     domain: coral
     access_class: restricted-nc  # WP-R2: upstream ReefNet-1.0 cardData.license cc-by-nc-sa-4.0 (LICV lic-B)
+    licence_evidence: "legacy verification record (dataset-card, 2026-08-17): arXiv 2510.16822 v3 states CC BY 4.0"
     name: ReefNet
     # habitat inferred (WP-2b) from this source's own description/notes, not independently verified
     habitat: [coral_reef]
@@ -257,10 +431,13 @@ sources:
         machinery rather than being forced onto a coarser or unrelated node — revisit
         once the actual label list is public.
     tags: [genus, benchmark, domain-shift-testbed]
+    n_images_method: "registry-prior"
+    related: [reefnet-species]
 
   - id: deolhonoscorais
     domain: coral
     access_class: open
+    licence_evidence: "legacy verification record (dataset-card, 2026-08-17): PeerJ 16219 / Zenodo 10.5281/zenodo.7338208 — CC-BY"
     name: "#DeOlhoNosCorais"
     # habitat inferred (WP-2b) from this source's own description/notes, not independently verified
     habitat: [coral_reef]
@@ -337,10 +514,12 @@ sources:
         annotations[].schema_id resolves at load; the loader never uses it, since the
         real per-image labels are worms-species binomials, not the polygon classes.
     tags: [atlantic, dense-seg, rare-region]
+    n_images_method: "registry-prior"
 
   - id: heron-reef-benthic
     domain: coral
     access_class: open
+    licence_evidence: "legacy verification record (dataset-card, 2026-08-17): Nature Scientific Data s41597-021-00871-5 — CC-BY 4.0, metadata CC0"
     name: Heron Reef benthic community time series
     # habitat inferred (WP-2b) from this source's own description/notes, not independently verified
     habitat: [coral_reef]
@@ -402,10 +581,12 @@ sources:
         annotations[].notes) — general-pretraining value only, for now.
     citation: "Roelfsema, C., Kovacs, E. M., Markey, K., Vercelloni, J., Rodriguez-Ramirez, A., Lopez-Marcano, S., Gonzalez-Rivero, M., Hoegh-Guldberg, O., & Phinn, S. R. (2021). Benthic and coral reef community field data for Heron Reef, Southern Great Barrier Reef, Australia, 2002-2018. Scientific Data, 8(1). https://doi.org/10.1038/s41597-021-00871-5"
     tags: [time-series, gbr]
+    n_images_method: "registry-prior"
 
   - id: coralvqa
     domain: coral
     access_class: restricted-nc  # LICV 2026-10-05 (was open)
+    licence_evidence: "legacy verification record (dataset-card, 2026-08-17): HuggingFace card CoralReefData/CoralVQA states license:cc-by-4.0"
     notes: >-
       LICV 2026-10-05: access_class -> restricted-nc (was open). Evidence:
       https://huggingface.co/datasets/CoralReefData/CoralVQA/blob/main/README.md . TRAP: HF
@@ -439,10 +620,11 @@ sources:
       version: "rev-3da50a4429e4"
       root_digest: 8c337c4308ebe3fbbd3ca7ce8ed00a29bb88fa6cf92aabb1fed0fde5aa3ef031
       files: 11809
-      size_bytes: 24247939309
+      size_bytes: 24249291208
     modalities: [image]
     capabilities: [vqa-captioning, general-pretraining, benthic-classification]
     n_images: 11804
+    n_images_method: "ingest-json"
     n_files: 11809
     counts_note: "2026-10-06 staged tree (checksums.parquet): 11,804 images (8,688 jpg + 3,116 png) of the 12,805 upstream; digest rebuilt from the 11,809 manifest lines."
     annotations:
@@ -467,6 +649,7 @@ sources:
   - id: noaa-pifsc-bleaching
     domain: coral
     access_class: open
+    licence_evidence: "legacy verification record (dataset-card, 2026-08-17): HuggingFace NMFS-OSI/NOAA-PIFSC-ESD-CORAL-Bleaching-Dataset (NOAA/NMFS)"
     name: NOAA PIFSC-ESD coral bleaching dataset
     # habitat inferred (WP-2b) from this source's own description/notes, not independently verified
     habitat: [coral_reef]
@@ -507,7 +690,7 @@ sources:
       version: "1-image-labels"
       root_digest: 655165d2409fd038df530e68b5132cb509c1d0dbb350ad380b50065539ae8ddc
       files: 10421
-      size_bytes: 767895660
+      size_bytes: 769036546
     modalities: [image]
     capabilities: [bleaching-assessment]
     loader:
@@ -522,6 +705,7 @@ sources:
         for the shape this reproduces (StagedImage `metadata.parquet` +
         `labels/image_labels.parquet`, `partition`="default", `upstream_split` dropped).
     n_images: 10419
+    n_images_method: "metadata-parquet"
     annotations:
       - kind: image-label
         count: 10419
@@ -554,6 +738,11 @@ sources:
       instead (236 groups, max 923 images in one site, `LaehouShallow`), the leak-safe
       choice named in the brief.
     tags: [bleaching, public-domain]
+    other_versions:
+      - version: "rev-8175d66ef034"
+        root_digest: 37dc1dcc6c96fd3d9d52db0c662263ebe0587457658cf1872aa5ef41fed470cb
+        files: 10422
+        size_bytes: 774183165
 
   - id: coralnet
     domain: coral
@@ -610,11 +799,14 @@ sources:
       layout: csv-points
       schema_id: coralnet-labelset
     tags: [tdm, unlicensed, incumbent]
+    n_images_method: "registry-prior"
+    related: [coralnet-public]
 
   - id: seatizen-atlas
     domain: coral
     release_skip_reason: "no-staged-images: registry lists imagery, nothing staged under sources/ in rs-storage-open (U7/queue follow-up)"
     access_class: open
+    licence_evidence: "legacy verification record (dataset-card, 2026-08-17): Nature Scientific Data s41597-024-04267-z / Zenodo 11125847 — CC-BY-4.0 on the Zenodo record (WP-R2)"
     name: Seatizen Atlas
     # habitat inferred (WP-2b) from this source's own description/notes, not independently verified
     habitat: [coral_reef]
@@ -653,10 +845,12 @@ sources:
     loader: { layout: metadata-only }
     citation: "Matteo Contini, Julien Barde, Sylvain Bonhommeau, Victor Illien, Alexis Joly, & Anne-Elise Nieblas. (2026). Seatizen Atlas (Version v1.2.6) [Dataset]. Zenodo. https://doi.org/10.5281/ZENODO.11125847"
     tags: [licence-contradiction-resolved]
+    n_images_method: "registry-prior"
 
   - id: mermaid-aws
     domain: coral
     access_class: restricted-nc
+    licence_evidence: "legacy verification record (dataset-card, 2026-08-17): registry.opendata.aws/coralreef-image-classification-training — CC BY-NC-SA 4.0"
     name: MERMAID community coral reef image classification training data
     # habitat inferred (WP-2b) from this source's own description/notes, not independently verified
     habitat: [coral_reef]
@@ -672,7 +866,7 @@ sources:
       version: "2026-09-19-bc53d5a2c0b6"
       root_digest: 152db0e89bea9baf9b02b4ddbdc3b3a8c2845b361a8b2e60df695387df0c2e7a
       files: 18566
-      size_bytes: 50559907142
+      size_bytes: 50562171990
     verification:
       verified_on: 2026-08-17
       verified_by: "registry.opendata.aws/coralreef-image-classification-training — CC BY-NC-SA 4.0"
@@ -701,7 +895,8 @@ sources:
         prefix: sources/mermaid-aws/2026-09-19-bc53d5a2c0b6/
     modalities: [image, tabular]
     capabilities: [benthic-classification, coral-taxonomy]
-    n_images: 18561  # staged image count, S61 2026-09-25
+    n_images: 18561
+    n_images_method: "metadata-parquet"
     annotations:
       - kind: point-label
         schema_id: mermaid-attributes
@@ -793,11 +988,13 @@ sources:
       why verification requires a primary source.
     loader: { layout: metadata-only }
     tags: [prohibited, provenance-risk]
+    n_images_method: "registry-prior"
 
   - id: noaa-esd-coral-bleaching
     domain: coral
     release_skip_reason: "no-staged-images: registry lists imagery, nothing staged under sources/ in rs-storage-open (U7/queue follow-up)"
     access_class: open
+    licence_evidence: "legacy verification record (dataset-card, 2026-09-24): 2026-09-19 boto3 bucket listing (v4s-open-listing.tsv): 4,430 files / 327,036,884 bytes under coral_bleaching/others/NOAA-ESD-CORAL-Bleaching-Dataset/. The checked-out README.md dataset-card (HF pretty_name 'NOAA-ESD-CORAL-Bleaching-Dataset v1') states 'Public Domain (NOAA Open Data)' (L1 report 2026-09-19). CONFIRMED IDENTICAL 2026-09-24 (R1 external research): 14/14 sampled filenames from this tar/bucket match paths in HF NMFS-OSI/NOAA-PIFSC-ESD-CORAL-Bleaching-Dataset exactly — same repo as `noaa-pifsc-bleaching`."
     name: NOAA ESD coral bleaching dataset (bucket mirror)
     # habitat inferred (WP-2b) from this source's own description/notes, not independently verified
     habitat: [coral_reef]
@@ -866,10 +1063,12 @@ sources:
       from this bucket tree, which has test/ only.
     loader: { layout: metadata-only }
     tags: [bleaching, public-domain, incomplete-extraction, retired]
+    n_images_method: "registry-prior"
 
   - id: roboflow-coral-bleaching-final-v6i
     domain: coral
     access_class: open
+    licence_evidence: "legacy verification record (licence-file, 2026-09-24): README.dataset.txt sidecar: 'License: CC BY 4.0' (L1 report 2026-09-19). 2026-09-19 boto3 bucket listing (v4s-open-listing.tsv): 2,556 files / 187,249,687 bytes under coral_bleaching/others/Coral Bleaching Final.v6i.multiclass/."
     name: Coral Bleaching Final (Roboflow v6i)
     # habitat inferred (WP-2b) from this source's own description/notes, not independently verified
     habitat: [coral_reef]
@@ -907,10 +1106,11 @@ sources:
       version: "v6i-image-labels-r2"
       root_digest: da617d411c97fd28b3663d21455cc79e0ff7180726be4708311817946d56c473
       files: 2553
-      size_bytes: 187269681
+      size_bytes: 187632080
     modalities: [image]
     capabilities: [bleaching-assessment, general-pretraining]
     n_images: 2551
+    n_images_method: "metadata-parquet"
     annotations:
       - kind: image-label
         count: 2551
@@ -962,10 +1162,16 @@ sources:
         `CHECKSUMS.sha256` pinned by `checksums.root_digest` above; `shasum -c` 0
         fail. UPLOADED 2026-09-24 (WS-D S28) — see `access.notes`.
     tags: [bleaching, roboflow]
+    other_versions:
+      - version: "v6i-image-labels"
+        root_digest: e6d191737ed47f1235f0ac507e4ffba4e194366fd406c84eb996f641e31f7a96
+        files: 2553
+        size_bytes: 478498
 
   - id: roboflow-coral-bleaching-general-v1-yolov8s
     domain: coral
     access_class: open
+    licence_evidence: "legacy verification record (licence-file, 2026-09-24): README.dataset.txt sidecar: 'License: CC BY 4.0' (L1 report 2026-09-19). 2026-09-19 boto3 bucket listing (v4s-open-listing.tsv): 2,548 files / 186,654,672 bytes under coral_bleaching/others/Coral Bleaching_General.v1-yolov8s.multiclass/."
     name: Coral Bleaching_General (Roboflow v1, YOLOv8s)
     # habitat inferred (WP-2b) from this source's own description/notes, not independently verified
     habitat: [coral_reef]
@@ -1003,10 +1209,11 @@ sources:
       version: "v1-yolov8s-image-labels-r2"
       root_digest: dae37098cfc58536cbbacc23bcd765d47925cb5fe2ea556910c16d4880560d28
       files: 2545
-      size_bytes: 186669980
+      size_bytes: 187031200
     modalities: [image]
     capabilities: [bleaching-assessment, general-pretraining]
     n_images: 2543
+    n_images_method: "metadata-parquet"
     annotations:
       - kind: image-label
         count: 2543
@@ -1063,10 +1270,16 @@ sources:
         `checksums.root_digest` above; `shasum -c` 0 fail. UPLOADED 2026-09-24
         (WS-D S28) — see `access.notes`.
     tags: [bleaching, roboflow]
+    other_versions:
+      - version: "v1-yolov8s-image-labels"
+        root_digest: 1300b44d9383f1b384ba38081f6655ecbafa7f710784fc9147ce54e57133a92c
+        files: 2545
+        size_bytes: 477240
 
   - id: roboflow-coral-classification-copy-changed-v13i
     domain: coral
     access_class: open
+    licence_evidence: "legacy verification record (licence-file, 2026-09-24): README.dataset.txt sidecar: 'License: CC BY 4.0' (L1 report 2026-09-19). 2026-09-19 boto3 bucket listing (v4s-open-listing.tsv): 2,794 files / 185,563,432 bytes under 'coral_bleaching/others/Coral Classification Copy -Changed-.v13i.multiclass/'."
     name: "Coral Classification Copy -Changed- (Roboflow v13i)"
     # habitat inferred (WP-2b) from this source's own description/notes, not independently verified
     habitat: [coral_reef]
@@ -1105,10 +1318,11 @@ sources:
       version: "v13i-image-labels"
       root_digest: 86da47568aa97a8326169fc173573b63987c16a08c32a1f4e315c6d516a5bdfb
       files: 2791
-      size_bytes: 185594622
+      size_bytes: 185996006
     modalities: [image]
     capabilities: [bleaching-assessment, general-pretraining]
     n_images: 2789
+    n_images_method: "metadata-parquet"
     annotations:
       - kind: image-label
         count: 2789
@@ -1172,6 +1386,7 @@ sources:
   - id: roboflow-coral-reef-bleach-detection-v2i
     domain: coral
     access_class: open
+    licence_evidence: "legacy verification record (licence-file, 2026-09-24): README.dataset.txt sidecar: 'License: CC BY 4.0' (L1 report 2026-09-19). 2026-09-19 boto3 bucket listing (v4s-open-listing.tsv): 10,786 files / 790,572,339 bytes under coral_bleaching/others/Coral Reef Bleach Detection.v2i.multiclass/."
     name: Coral Reef Bleach Detection (Roboflow v2i)
     # habitat inferred (WP-2b) from this source's own description/notes, not independently verified
     habitat: [coral_reef]
@@ -1210,10 +1425,11 @@ sources:
       version: "v2i-image-labels"
       root_digest: f1335a1a4b729d5273d84b605ef61aa256f3de94e6d4729131e9be900a98f340
       files: 10783
-      size_bytes: 790558657
+      size_bytes: 792035145
     modalities: [image]
     capabilities: [bleaching-assessment, general-pretraining]
     n_images: 10781
+    n_images_method: "metadata-parquet"
     annotations:
       - kind: image-label
         count: 10781
@@ -1268,6 +1484,7 @@ sources:
   - id: roboflow-coral-reef-classification-v3i
     domain: coral
     access_class: open
+    licence_evidence: "legacy verification record (licence-file, 2026-09-24): README.dataset.txt sidecar: 'License: CC BY 4.0' (L1 report 2026-09-19). 2026-09-19 boto3 bucket listing (v4s-open-listing.tsv): 4,558 files / 238,924,096 bytes under coral_bleaching/others/Coral Reef Classification.v3i.folder/."
     name: Coral Reef Classification (Roboflow v3i)
     # habitat inferred (WP-2b) from this source's own description/notes, not independently verified
     habitat: [coral_reef]
@@ -1301,10 +1518,11 @@ sources:
       version: "v3i-image-labels"
       root_digest: 17e31b15399c46dfd9816e7ab5ad7dded9599f464db9258e83f96e16402f9655
       files: 4558
-      size_bytes: 239232782
+      size_bytes: 239868450
     modalities: [image]
     capabilities: [bleaching-assessment, general-pretraining]
     n_images: 4556
+    n_images_method: "metadata-parquet"
     annotations:
       - kind: image-label
         count: 4556
@@ -1351,6 +1569,11 @@ sources:
         uploaded this pass (WS-D S25); v13i and v2i stay `metadata-only`, still
         `needs-attribution`/unattributed.
     tags: [bleaching, roboflow]
+    other_versions:
+      - version: "v3i"
+        root_digest: fba76467138ee66b168820df7e148726564b57f1f795daa062b78d7f451323b4
+        files: 4559
+        size_bytes: 845764
 
   - id: coralseg-ucsd-mosaics
     domain: coral
@@ -1374,7 +1597,7 @@ sources:
       version: "unversioned"
       root_digest: 89c788ae29f42c1cbe2ac6a394360b7abf9223ae5ff82fd8f3ecee433bcec659
       files: 9845
-      size_bytes: 831410317
+      size_bytes: 832877376
     access:
       method: s3
       uri: s3://rs-storage-open/sources/coralseg-ucsd-mosaics/unversioned/
@@ -1397,6 +1620,7 @@ sources:
     modalities: [image]
     capabilities: [benthic-segmentation, general-pretraining]
     n_images: 4922
+    n_images_method: "metadata-parquet"
     n_files: 9845
     annotations:
       - kind: none
@@ -1462,6 +1686,7 @@ sources:
     domain: coral
     release_skip_reason: "no-staged-images: registry lists imagery, nothing staged under sources/ in rs-storage-open (U7/queue follow-up)"
     access_class: open
+    licence_evidence: "legacy verification record (licence-file, 2026-09-24): 2026-09-19 boto3 bucket listing (v4s-open-listing.tsv): 12,373 files / 19,480,434,205 bytes under benthic_datasets/point_labels/SEAVIEW/, excluding the pickle file. RESOLVED 2026-09-24 (R1 external research, high confidence): researchdata.edu.au record https://researchdata.edu.au/seaview-survey-photo-classification-dataset/3369315 states 'Creative Commons Attribution 3.0' for this UQ eSpace UQ_734799 record. (legacy: history note)"
     name: SEAVIEW raw survey imagery (UQ eSpace)
     # habitat inferred (WP-2b) from this source's own description/notes, not independently verified
     habitat: [coral_reef]
@@ -1494,10 +1719,11 @@ sources:
       version: "2026-10-06"
       root_digest: 62cd8f47cae32a420c79954d72f8c2a2bfcd5019eb23fb996670fc8ad2e7ac86
       files: 12376
-      size_bytes: 19481192006
+      size_bytes: 19482420425
     modalities: [image]
     capabilities: [general-pretraining]
     n_images: 11870
+    n_images_method: "ingest-json"
     n_files: 12376
     annotations:
       - kind: none
@@ -1532,6 +1758,20 @@ sources:
       StagedTreeLoader cannot join across sources — plus the region CSVs). `checksums` pinned 2026-10-06
       from the tree's CHECKSUMS.sha256 (12,376 files = 12,373 objects + metadata.parquet, INGEST.json,
       LICENSE). Never-staged pickle stays excluded.
+
+      P1.2b Seaview labels (staged tree; no README is staged in either Seaview tree):
+      labels/points/tabular-data/annotations_<REGION>.csv x9 (ATL, IND_CHA, IND_MDV, PAC_AUS,
+      PAC_IDN_PHL, PAC_SLB, PAC_TLS, PAC_TWN, PAC_USA; columns
+      quadratid,y,x,label_name,label,func_group,method,data_set) are the per-region point sets
+      the points producer reads; seaviewsurvey_annotations.csv (quadratid,y,x,label only) is
+      the unsplit upstream table, i.e. the master CSV, and no staged file says whether its
+      labels are human or machine; the constant 106,900 id offset between 30 PAC_IDN_PHL
+      annotation ids and 30 images (P3.1) is not documented in any staged file. Licence: the
+      staged LICENSE, INGEST.json and the labels LICENSE say CC-BY-3.0-AU (the labels LICENSE
+      cites 'UQ eSpace UQ_734799 (CC-BY-3.0-AU)'), the registry says CC-BY-3.0; the eSpace
+      page answered HTTP 403 to the one scripted GET and DataCite has no record of the DOI, so
+      neither value is confirmed (both are attribution-only T1). The annotations kind: none
+      above is stale: the tree carries point CSVs.
     split_group:
       pattern: '^(.{5})'
       match_field: stem
@@ -1604,6 +1844,7 @@ sources:
       reason alone.
     loader: { layout: metadata-only }
     tags: [needs-permission, tar-only]
+    n_images_method: "registry-prior"
 
   - id: coral-health-classification
     domain: coral
@@ -1663,6 +1904,7 @@ sources:
       until a real licence file is read.
     loader: { layout: metadata-only }
     tags: [needs-permission, tar-only]
+    n_images_method: "registry-prior"
 
   - id: kaggle-healthy-bleached-corals
     domain: coral
@@ -1670,7 +1912,7 @@ sources:
     name: "Kaggle: healthy and bleached corals — tar-only"
     # habitat inferred (WP-2b) from this source's own description/notes, not independently verified
     habitat: [coral_reef]
-    version: "unversioned"
+    version: "zip-5e15452254a9"
     description: >
       Kaggle-sourced healthy-vs-bleached coral image set found only inside the
       coral_bleaching/others.tar.gz archive — never extracted to a live bucket prefix
@@ -1709,6 +1951,7 @@ sources:
     modalities: [image]
     capabilities: [bleaching-assessment, general-pretraining]
     n_images: 923
+    n_images_method: "ingest-json"
     annotations:
       - kind: none
         supervises: []
@@ -1729,6 +1972,11 @@ sources:
       gated (legal_basis: unknown).
     loader: { layout: metadata-only }
     tags: [needs-permission, tar-only]
+    checksums:
+      version: "zip-5e15452254a9"
+      root_digest: 087d1b7e23853816f91789c8351483e17659287c6965e10190c064061377c833
+      files: 927
+      size_bytes: 27575421
 
   - id: rf100-coral-lwptl
     domain: coral
@@ -1758,7 +2006,7 @@ sources:
     checksums:
       version: "rev-83f0a33679b0"
       root_digest: 9744a7fa4eb30acfa1d5ef0c625ec1b06790d1a780f04b8cc88706b86b5ea19e
-      files: 1193
+      files: 1192
       size_bytes: 48555758
     access:
       method: s3
@@ -1781,6 +2029,7 @@ sources:
     coverage:
       regions: [unknown]
     n_images: 594
+    n_images_method: "ingest-json"
     citation: "Ciaglia et al. 2022, Roboflow 100: A Rich, Multi-Domain Object Detection Benchmark, arXiv:2211.13523"
     homepage: https://universe.roboflow.com/roboflow-100/coral-lwptl
     loader: { layout: yolo-txt, schema_id: rf100-coral-lwptl-native, crosswalk_id: rf100-coral-lwptl }

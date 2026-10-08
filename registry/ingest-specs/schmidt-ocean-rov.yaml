@@ -14,3 +14,4 @@ measured:
     (curl 000, consistent with S57)'
   date: '2026-09-25'
   per_item_license: CC-BY-NC
+bucket: rs-storage-private

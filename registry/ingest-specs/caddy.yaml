@@ -19,3 +19,4 @@ measured:
   label_type: diver-gesture class labels on ~10k stereo images; file format unverified
   method: u15-label-kind-triage (registry-patch.yaml)
   date: '2026-10-05'
+bucket: rs-storage-private

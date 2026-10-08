@@ -7,6 +7,7 @@ sources:
   - id: reef-support-benthic-own
     domain: coral
     access_class: open
+    licence_evidence: "legacy verification record (licence-file, 2026-08-17): Live rclone scan of s3://rs-storage-open/benthic_datasets/mask_labels/reef_support; per-site image counts parsed from the object manifest (legacy: history note)"
     name: Reef Support benthic instance masks — own imagery (Colombia)
     # habitat inferred (WP-2b) from this source's own description/notes, not independently verified
     habitat: [coral_reef]
@@ -45,7 +46,7 @@ sources:
       version: "2026-10-06"
       root_digest: 70f0b4516510f565320910477204faadf44bce68251b66d070821db1864e7a74
       files: 18276
-      size_bytes: 4846131071
+      size_bytes: 4848728345
     modalities: [image]
     capabilities:
       - benthic-segmentation
@@ -87,6 +88,7 @@ sources:
         passes via the manifest-driven fetch path (`fetchers_remote._fetch_s3_manifest`),
         which never lists the bucket.
     n_images: 1250
+    n_images_method: "ingest-json"
     n_annotations: 14517
     n_files: 18276
     annotations:
@@ -149,10 +151,20 @@ sources:
       `n_annotations` = 14,517 instance masks (RB-A lineage count, 2026-10-06).
       The 658 Tayrona (UNAL) images are byte-identical to `reef-support-bleaching`'s 658 images.
     tags: [moat, caribbean, octocoral, biota-only]
+    other_versions:
+      - version: "2026-08"
+        root_digest: f06d84ad4bc3ccb231610b0bf76507f8751bc958f0a917c2399737e9af9a9a52
+        files: 2501
+        size_bytes: 4092140433
+      - version: "2026-09-24"
+        root_digest: e8c6506ea2abda4047b2fece85989f774cac849e85712071e919e72dbba0494b
+        files: 2501
+        size_bytes: 4092140695
 
   - id: reef-support-seaview-labels
     domain: coral
     access_class: open
+    licence_evidence: "legacy verification record (licence-file, 2026-10-06): APPROVED 2026-10-06 (a maintainer): images CC-BY-3.0 - the researchdata.edu.au record of UQ eSpace UQ_734799 states Creative Commons Attribution 3.0 (the same record `seaview-survey-imagery` cites; R1 external research 2026-09-24, high confidence); masks and labels CC-BY-4.0, Reef Support (own annotations). Supersedes the 2026-09-24 entry: no Seaview pixel terms confirmed, method absent. Corrected 2026-10-07: the UQ eSpace record states CC BY 3.0 International, not the Australia port."
     name: Reef Support annotations on XL Catlin Seaview imagery
     # habitat inferred (WP-2b) from this source's own description/notes, not independently verified
     habitat: [coral_reef]
@@ -188,7 +200,7 @@ sources:
       version: "2026-10-06"
       root_digest: 7c97e309ae21b913d920606e461e9a663c97c9b660c45accd8c13a3ab4d2d011
       files: 56025
-      size_bytes: 3326403454
+      size_bytes: 3333401571
     modalities: [image]
     capabilities:
       - benthic-segmentation
@@ -207,6 +219,7 @@ sources:
         staged tree. RB-1 read the staged `metadata.parquet` back through the StagedTreeLoader: 2,707
         rows = the expected image count (checked against CHECKSUMS.sha256, 2026-10-06).
     n_images: 2707
+    n_images_method: "ingest-json"
     n_annotations: 50603
     n_files: 56025
     counts_note: >
@@ -263,11 +276,17 @@ sources:
       SEAVIEW_PAC_AUS / SEAVIEW_PAC_USA). Version `2026-08` (the legacy reef_support SEAVIEW_* dirs) is
       superseded. `checksums` pinned 2026-10-06 from the tree's CHECKSUMS.sha256. The former
       `rs-labelled-masks` set is a duplicate annotation set over these images and is retired (D7).
+
+      P1.2b: the staged LICENSE reads 'CC-BY-3.0-AU (images); CC-BY-4.0 (masks and labels,
+      Reef Support)'; the registry says CC-BY-3.0 for this entry and the points producer takes
+      ann_license from it. See seaview-survey-imagery for the unconfirmed 3.0 vs 3.0-AU
+      question and the label-file facts.
     tags: [annotation-ip, octocoral]
 
   - id: reef-support-bleaching
     domain: coral
     access_class: open
+    licence_evidence: "legacy verification record (licence-file, 2026-08-17): Live rclone scan of s3://rs-storage-open/coral_bleaching/reef_support/UNAL_BLEACHING_TAYRONA (legacy: history note)"
     name: Reef Support bleaching masks (Tayrona)
     # habitat inferred (WP-2b) from this source's own description/notes, not independently verified
     habitat: [coral_reef]
@@ -307,7 +326,7 @@ sources:
       version: "2026-09-24"
       root_digest: 2d22bbe938f4a69d9cd2ca13ef123b88195dc7722cad39a4a940b147717ae04a
       files: 1317
-      size_bytes: 1982497341
+      size_bytes: 1982677210
     modalities: [image]
     capabilities: [bleaching-assessment, benthic-segmentation]
     loader:
@@ -354,6 +373,7 @@ sources:
         from `positive_label`/`negative_label` at read time — nothing resolved this
         for a staged dense mask before.
     n_images: 658
+    n_images_method: "metadata-parquet"
     annotations:
       - kind: dense-mask
         count: 658
@@ -408,10 +428,11 @@ sources:
       version: "2026-09-23-2c84cb0c9cda"
       root_digest: 60443dd966feee06538ed585496b3fa3d5687fcfef9e5604f9335c19bafdaa7b
       files: 872
-      size_bytes: 3616064902
+      size_bytes: 3616150247
     modalities: [image]
     capabilities: [benthic-classification, general-pretraining]
     n_images: 870
+    n_images_method: "metadata-parquet"
     n_files: 872
     annotations:
       - kind: point-label
@@ -507,7 +528,7 @@ sources:
       version: "2026-10-06"
       root_digest: b42773b6bdea01d33be23b05d70e8d821ffe1f2c9abec2c7a6312d515e7ce059
       files: 579
-      size_bytes: 2084898913
+      size_bytes: 2084955624
     modalities: [image]
     capabilities: [benthic-classification, general-pretraining]
     n_images: 496
@@ -539,6 +560,7 @@ sources:
         tree (`images/<site>/`, `labels/points/<site>/*.cpc|csv`). RB-1 read the staged `metadata.parquet`
         back through the StagedTreeLoader on a shadow tree: 496 rows = the expected image count (2026-10-06).
     tags: [needs-permission]
+    n_images_method: "registry-prior"
 
   - id: coralscop-masks-rs
     domain: coral
@@ -573,10 +595,11 @@ sources:
       version: "2026-09-23-3e8612678469"
       root_digest: 9fbc5d88502fc7e67f8358c25416084a2c4efb18a34183f91f30e37ada3de716
       files: 77857
-      size_bytes: 7959632981
+      size_bytes: 7967807944
     modalities: [image]
     capabilities: [coral-instance-segmentation, general-pretraining]
     n_images: 38928
+    n_images_method: "metadata-parquet"
     annotations:
       - kind: instance-mask
         count: 38928
@@ -685,6 +708,7 @@ sources:
       `request` stub and nothing in the registry loads it. Its private cache objects are not deleted.
     loader: { layout: metadata-only }
     tags: [needs-permission]
+    n_images_method: "registry-prior"
 
   - id: mussel-ai-data
     domain: fauna
@@ -734,3 +758,4 @@ sources:
       outside this prefix and was not otherwise registered — both are gone with D6.
     loader: { layout: metadata-only }
     tags: [retired]
+    n_images_method: "registry-prior"

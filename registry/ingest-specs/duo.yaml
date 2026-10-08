@@ -25,3 +25,4 @@ measured:
   label_type: COCO bbox annotations, 4 categories
   method: u15-label-kind-triage (registry-patch.yaml)
   date: '2026-10-05'
+bucket: rs-storage-private

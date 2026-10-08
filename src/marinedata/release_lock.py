@@ -47,6 +47,11 @@ class ReleaseLock(BaseModel):
     release_id: str
     created: str
     code_sha: str
+    # A lock rebuilt after the fact (the release was built by hand, from a commit that cannot
+    # be identified): code_sha is then not the build commit, and reconstructed_at_sha names the
+    # commit whose registry pins the digests were read from. Written only on such a lock.
+    reconstructed: bool = False
+    reconstructed_at_sha: str | None = None
     flavour: str
     configs: tuple[str, ...]
     sources: tuple[LockSource, ...]
@@ -113,6 +118,7 @@ def build_lock(
     source_ids: Iterable[str] | None = None,
     created: str | None = None,
     code_sha: str | None = None,
+    reconstructed_at_sha: str | None = None,
 ) -> ReleaseLock:
     """Pin ``source_ids`` (default: every source the flavour can ship) from the registry."""
     if flavour not in FLAVOURS:
@@ -145,6 +151,8 @@ def build_lock(
         release_id=release_id,
         created=created or datetime.now(UTC).isoformat(timespec="seconds"),
         code_sha=code_sha or current_code_sha(),
+        reconstructed=reconstructed_at_sha is not None,
+        reconstructed_at_sha=reconstructed_at_sha,
         flavour=flavour,
         configs=cfgs,
         sources=entries,
@@ -154,7 +162,10 @@ def build_lock(
 def write_lock(lock: ReleaseLock, path: str | Path) -> Path:
     out = Path(path)
     out.parent.mkdir(parents=True, exist_ok=True)
-    out.write_text(yaml.safe_dump(lock.model_dump(mode="json"), sort_keys=False), encoding="utf-8")
+    data = lock.model_dump(mode="json")
+    if not lock.reconstructed:  # the reconstruction keys appear only on a reconstructed lock
+        del data["reconstructed"], data["reconstructed_at_sha"]
+    out.write_text(yaml.safe_dump(data, sort_keys=False), encoding="utf-8")
     return out
 
 

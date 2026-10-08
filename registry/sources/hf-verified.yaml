@@ -9,6 +9,7 @@ sources:
     domain: coral
     release_skip_reason: "non-image-modality: tabular benchmark features"
     access_class: restricted-nc  # WP-R2: upstream ReefNet-1.0 cardData.license cc-by-nc-sa-4.0 (LICV lic-B)
+    licence_evidence: "legacy verification record (dataset-card, 2026-08-17): HF dataset ReefNet/ReefNet-1.0 probed live; columns X, CoralNet_source, Image_name, Row, Column, CoralNet_label, CoralNet_label_short_code, Sorted_ReefNet_label"
     name: ReefNet 1.0 (HuggingFace release)
     # habitat inferred (WP-2b) from this source's own description/notes, not independently verified
     habitat: [coral_reef]
@@ -55,16 +56,19 @@ sources:
         the data is open, just not as imagery.
     citation: "Felemban, Battach, Khan et al., ReefNet, KAUST + MIT, arXiv 2510.16822"
     tags: [genus, benchmark, tabular]
+    n_images_method: "unavailable:non-image"
+    related: [reefnet-species]
 
   - id: reefnet-species-images
     domain: coral
-    access_class: open
+    access_class: restricted-nc  # P1.2: was open; ReefNet is CC-BY-NC-SA-4.0 (entry reefnet)
+    licence_evidence: "inherited from parent reefnet-species: https://huggingface.co/datasets/ReefNet/ReefNet-1.0 — 'cardData.license: cc-by-nc-sa-4.0 (upstream ReefNet/ReefNet-1.0)' (LIC-B audit 2026-10-05, confidence medium); subset recorded in registry/ingest-specs/reefnet-species-images.yaml; docs/SCALE.md:79 records this HF repo as 'no licence tag' (CoralNet-derived imagery), so the recorded CC-BY-4.0 id was unsupported"
     name: ReefNet species images
     # habitat inferred (WP-2b) from this source's own description/notes, not independently verified
     habitat: [coral_reef]
     version: "unversioned"
     description: Coral species image classification set derived from the ReefNet corpus.
-    licence: CC-BY-4.0
+    licence: CC-BY-NC-SA-4.0
     legal_basis: licence
     redistribution: ok
     provenance: public
@@ -103,10 +107,13 @@ sources:
       schema_id: dataset-native
     citation: "@article{reefnet2024, title={ReefNet: A Large-Scale Coral Reef Annotation Dataset}, year={2024}, note={https://huggingface.co/datasets/ReefNet/ReefNet-1.0}}"
     tags: [pretraining, mis-registered-corrected]
+    n_images_method: "unavailable:no-count"
+    related: [reefnet-species]
 
   - id: reef-guidance-system
     domain: coral
     access_class: open
+    licence_evidence: "legacy verification record (dataset-card, 2026-08-17): HF dataset QCR-Underwater-Perception/reef-guidance-system probed live; feature image:Image"
     name: QUT reef guidance system imagery
     # habitat inferred (WP-2b) from this source's own description/notes, not independently verified
     habitat: [mixed]
@@ -140,11 +147,13 @@ sources:
       verified_note: "15 live rows fetched from HF; images only"
     citation: "Raine, S., Olivastri, E., Moshirian, B., & Fischer, T. (2026). AI-driven dispensing of coral reseeding devices for broad-scale restoration of the Great Barrier Reef. IEEE/RSJ International Conference on Intelligent Robots and Systems."
     tags: [robotics, pretraining, qut]
+    n_images_method: "unavailable:no-count"
 
   - id: marrs-reef-soundscapes
     domain: imaging
     release_skip_reason: "non-image-modality: audio clips: keep out of the v2 image release, candidate for a later audio config"
     access_class: open
+    licence_evidence: "legacy verification record (dataset-card, 2026-08-17): HF dataset bens-bots/marrs-global-coral-reef-soundscapes probed live; config detections_australia, features audio:Audio, filename, country, sonotype, logit, start_s"
     name: MARRS global coral reef soundscapes
     # habitat inferred (WP-2b) from this source's own description/notes, not independently verified
     habitat: [coral_reef]
@@ -187,10 +196,12 @@ sources:
       schema_id: sonotype
     citation: "Williams et al. (2025) Evidence of ecosystem process recovery across a large-scale coral reef restoration programme using AI accelerated soundscape analysis, https://doi.org/10.1101/2025.09.24.678197 || Williams, Ben; Jones, Kate (2025). Coral Reef Soundscapes from a Global Restoration Programme. University College London. Dataset. https://doi.org/10.5522/04/29958062.v2"
     tags: [bioacoustics, reef-audio, multi-region]
+    n_images_method: "unavailable:non-image"
 
   - id: whoi-plankton-small
     domain: plankton
     access_class: open
+    licence_evidence: "legacy verification record (dataset-card, 2026-08-17): HF dataset nf-whoi/whoi-plankton-small probed live; features image:Image, label:ClassLabel"
     name: WHOI-Plankton (small)
     # habitat inferred (WP-2b) from this source's own description/notes, not independently verified
     habitat: [pelagic]
@@ -220,10 +231,13 @@ sources:
       verified_on: 2026-08-17
       verified_note: "15 live rows fetched from HF; image+ClassLabel"
     tags: [plankton, microscopy, permissive]
+    n_images: 57999
+    n_images_method: "spec:measured.items"
 
   - id: underwater-image-enhancement
     domain: imaging
     access_class: open
+    licence_evidence: "legacy verification record (dataset-card, 2026-08-17): HF dataset iamvastava/underwater_image_enhancement probed live; features image:Image, label:ClassLabel"
     name: Underwater image enhancement set
     # habitat inferred (WP-2b) from this source's own description/notes, not independently verified
     habitat: [mixed]
@@ -254,10 +268,12 @@ sources:
       verified_on: 2026-08-17
       verified_note: "15 live rows fetched from HF; image+ClassLabel"
     tags: [enhancement]
+    n_images_method: "unavailable:no-count"
 
   - id: satellite-coral-mapping
     domain: coral
     access_class: open
+    licence_evidence: "legacy verification record (dataset-card, 2026-08-17): HF dataset aimsks/satellite-coral-mapping probed live; split test, features label:Image, Coral-Sea_S2_R2:Image, Coral-Sea_L8_R1:Image, Coral-Sea_S2_R1:Image"
     name: AIMS satellite coral mapping
     # habitat inferred (WP-2b) from this source's own description/notes, not independently verified
     habitat: [coral_reef]
@@ -296,3 +312,4 @@ sources:
       verified_note: "15 live rows fetched from HF split=test; Coral-Sea_S2_R1 paired with label raster"
       schema_id: dataset-native
     tags: [satellite, aims, paired-labels]
+    n_images_method: "unavailable:no-count"

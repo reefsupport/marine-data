@@ -192,6 +192,19 @@ class Registry:
     ) -> None:
         """A loader pointing at a missing schema should fail at load, not at epoch 1."""
         for src in sources.values():
+            if src.superseded_by is not None and (
+                src.superseded_by == src.id or src.superseded_by not in sources
+            ):
+                raise RegistryError(
+                    f"source '{src.id}' superseded_by references '{src.superseded_by}', which is "
+                    "itself or not a registered source"
+                )
+            for related_id in src.related:
+                if related_id == src.id or related_id not in sources:
+                    raise RegistryError(
+                        f"source '{src.id}' related references '{related_id}', which is itself "
+                        "or not a registered source"
+                    )
             for images_source_id in src.images_from:
                 if images_source_id not in sources:
                     raise RegistryError(

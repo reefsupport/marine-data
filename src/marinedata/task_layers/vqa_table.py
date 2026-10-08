@@ -68,6 +68,7 @@ VQA_SOURCES: dict[str, VqaSource] = {
         VqaSource("coralvqa", "rev-3da50a4429e4", "coralvqa_unified", "pseudo",
                   "template:coralvqa-question-templates", "CC-BY-NC-4.0", NC),
         # lic-A: open (MIT README); the QA are model-generated (has_hallucination flags kept).
+        # P1.2b: the registry class is open again (README quote in licence_evidence).
         VqaSource("marineevt", "rev-37488d3c7690", "marineevt_vqa", "model",
                   "vlm:unspecified (MarineEVT pipeline; model not named in the staged files)",
                   "MIT", OPEN),

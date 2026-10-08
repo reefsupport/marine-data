@@ -1,0 +1,37 @@
+name: registry-nightly
+
+# Registry vs bucket drift (P1.2): n_images and root_digest of every registry entry that names a
+# staged tree must still equal what the bucket holds (tests/test_registry_counts.py, marker
+# `network`). Reads are anonymous single-key GETs of the open bucket today.
+#
+# Once D9 closes the open bucket stops answering anonymous reads. From then on this job needs the
+# repo secrets S3_ACCESS_KEY_ID and S3_SECRET_ACCESS_KEY (a read-only key) to sign the reads:
+# add them under Settings > Secrets and variables > Actions and uncomment the env block below.
+# Until then the default CI job (ci.yml) is untouched and does not run this.
+on:
+  schedule:
+    - cron: "30 3 * * *"
+  workflow_dispatch:
+
+jobs:
+  registry-counts:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install uv
+        run: curl -LsSf https://astral.sh/uv/install.sh | sh
+      - name: Sync
+        run: |
+          export PATH="$HOME/.local/bin:$PATH"
+          uv venv && uv pip install -e ".[all,ingest,hf,dev]"
+      - name: Registry counts and digests vs the bucket
+        # env:
+        #   S3_ACCESS_KEY_ID: ${{ secrets.S3_ACCESS_KEY_ID }}
+        #   S3_SECRET_ACCESS_KEY: ${{ secrets.S3_SECRET_ACCESS_KEY }}
+        run: |
+          export PATH="$HOME/.local/bin:$PATH"
+          . .venv/bin/activate
+          pytest -q -m network tests/test_registry_counts.py

@@ -10,3 +10,4 @@ citation: ReefNet 2025 arXiv:2510.16822
 homepage: https://huggingface.co/datasets/ReefNet/ReefNet-1.0
 
 disk_floor_gib: 36.0
+bucket: rs-storage-private

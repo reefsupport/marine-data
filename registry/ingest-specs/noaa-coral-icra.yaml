@@ -1,10 +1,11 @@
 id: noaa-coral-icra
-access_class: unknown  # was open; licence not stated and legal_basis unknown in the registry, so `marinedata check` flagged it. Set back to open together with a verified licence.
+access_class: open  # P1.2b: restored from the LIC audit, see licence_evidence
 adapter: hf
 params:
   repo: NMFS-OSI/NOAA-PIFSC-ESD-ESA-CORAL-ICRA-Dataset
   revision: b5e722f7c11e
-license: other-hf
+license: US-GOV-PD
+licence_evidence: "https://huggingface.co/datasets/NMFS-OSI/NOAA-PIFSC-ESD-ESA-CORAL-ICRA-Dataset : License: Public Domain (NOAA Open Data Public Access)"
 attribution: NOAA PIFSC
 citation: NOAA PIFSC ESD-ESA CORAL-ICRA
 homepage: https://huggingface.co/datasets/NMFS-OSI/NOAA-PIFSC-ESD-ESA-CORAL-ICRA-Dataset

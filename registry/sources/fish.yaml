@@ -10,6 +10,7 @@ sources:
     domain: imaging
     release_skip_reason: "no-staged-images: nothing staged under sources/ozfish/ in rs-storage-open (Pawsey portal is unlistable; WP-R3 listing = 0 keys)"
     access_class: open
+    licence_evidence: "legacy verification record (licence-file, 2026-08-29): raw.githubusercontent.com/open-AIMS/ozfish/master/README.md — \"This work is licensed under a [Creative Commons Attribution 3.0 Australian License]\", link target creativecommons.org/licenses/by/3.0/au/. Corrected from CC-BY-4.0: the repo's own badge alt-text misleadingly reads \"CC BY 4.0\" while the badge image and the link both say 3.0 AU — the likely source of the original mis-entry. Same practical permissions either way (attribution only).\n"
     name: OzFish
     # habitat inferred (WP-2b) from this source's own description/notes, not independently verified
     habitat: [coral_reef]
@@ -63,10 +64,12 @@ sources:
     loader: { layout: coco-json, params: { annotations: annotations.json, images_dir: images }, schema_id: worms-species }
     citation: "Australian Institute of Marine Science (AIMS), University of Western Australia (UWA) and Curtin University. (2019), OzFish Dataset - Machine learning dataset for Baited Remote Underwater Video Stations, https://doi.org/10.25845/5e28f062c5097"
     tags: [stereo, biomass, length]
+    n_images_method: "registry-prior"
 
   - id: deepfish
     domain: imaging
     access_class: open
+    licence_evidence: "legacy verification record (dataset-card, 2026-08-29): researchdata.jcu.edu.au/published/48fcdde6576ee929325b01fca4207914 (JCU's own institutional research-data repository, DOI 10.25903/5f617fb6d6e0e — the canonical host cited by both the GitHub repo and the Scientific Reports paper) states \"CC BY 4.0: Attribution 4.0 International\". Note for future reviewers: the GitHub repo's own LICENSE file is MIT — that covers the repo's *code*, not the imagery/annotations, which live at JCU under CC-BY-4.0 as recorded here.\n"
     name: DeepFish
     # habitat inferred (WP-2b) from this source's own description/notes, not independently verified
     habitat: [mixed]
@@ -155,6 +158,7 @@ sources:
         describes.
     citation: "Saleh, A., Laradji, I. H., Konovalov, D. A., Bradley, M., Vazquez, D., & Sheaves, M. (2020). A realistic fish-habitat dataset to evaluate algorithms for underwater visual analysis. Scientific Reports, 10(1). https://doi.org/10.1038/s41598-020-71639-x"
     tags: [turbid, weak-labels]
+    n_images_method: "registry-prior"
 
   - id: seamapd21
     domain: fish
@@ -201,6 +205,7 @@ sources:
       layout: coco-json
       schema_id: worms-species
     tags: [caribbean-adjacent, needs-verification]
+    n_images_method: "registry-prior"
 
   - id: fishnet-2023
     domain: fish
@@ -255,11 +260,13 @@ sources:
       layout: coco-json
       schema_id: worms-species
     tags: [taxonomy, copyleft]
+    n_images_method: "registry-prior"
 
   - id: mft25
     domain: fish
     release_skip_reason: "non-image-modality: video tracking benchmark, frames not extracted"
     access_class: open
+    licence_evidence: "legacy verification record (dataset-card, 2026-08-29): huggingface.co/datasets/Vranlee/MFT25 dataset card YAML declares `license: apache-2.0`. Flagged disputed rather than accepted outright: Apache 2.0 is a software licence, an unusual and likely-mistaken choice for a video/annotation dataset (HF's license picklist has no better-fitting option, and uploaders often default to it) — arXiv 2507.06400 and github.com/vranlee/SU-T state no licence at all for the data. A primary source does say Apache-2.0; another primary channel (the paper/code repo) is silent, which is not the same as contradicting it, but is not confirmation either.\n"
     name: MFT25 (Multiple Fish Tracking 2025)
     # habitat inferred (WP-2b) from this source's own description/notes, not independently verified
     habitat: [mixed]
@@ -300,10 +307,12 @@ sources:
       caveats: ["SOTA on this benchmark is 34.1 HOTA — underwater MOT is far from solved. Do not plan a product on tracking-based abundance."]
     loader: { layout: metadata-only }
     tags: [tracking, benchmark]
+    n_images_method: "unavailable:non-image"
 
   - id: deepsea-mot
     domain: deep-sea
     access_class: open
+    licence_evidence: "legacy verification record (dataset-card, 2026-08-17): HuggingFace MBARI-org/DeepSea-MOT — CC-BY-SA 4.0"
     name: DeepSea MOT (MBARI)
     # habitat inferred (WP-2b) from this source's own description/notes, not independently verified
     habitat: [deep_sea_benthic]
@@ -339,10 +348,13 @@ sources:
       verified_note: "Live HF fetch confirms flat image files under the image column, no directory structure to break."
     citation: "Barnard, K., Liu, E., Walz, K., Schlining, B., Stout, N. J., & Lundsten, L. (2025). DeepSea MOT: A benchmark dataset for multi-object tracking on deep-sea video (Version 1). arXiv. https://doi.org/10.48550/ARXIV.2509.03499"
     tags: [tracking, tooling]
+    n_images: 19616
+    n_images_method: "spec:measured.items"
 
   - id: fathomnet
     domain: deep-sea
     access_class: restricted-nd
+    licence_evidence: "legacy verification record (site-terms, 2026-08-29): fathomnet.org/terms (the database's own Terms of Use, not the catalog sweep this previously cited): \"contributors can select from one of four Creative Commons licenses: CC0, CC-BY, CC-BY-NC, and CC-BY-NC-ND\" per image submitted. Confirmed 2026-08-29 the `/api/images/list/all` response carries no per-image licence field at all — only `contributorsEmail` and imaging metadata — so there is no machine-readable way to select only the CC0/CC-BY subset. The previously-recorded CC-BY-4.0 was a blanket inference with no primary support and is corrected: some images in this exact API response are CC-BY-NC-ND, which a blanket CC-BY-4.0 claim would have let straight through the licence gate.\n"
     licence_per_row: true
     name: FathomNet
     # habitat inferred (WP-2b) from this source's own description/notes, not independently verified
@@ -398,10 +410,14 @@ sources:
         Live fetch of 100 images via GET /api/images/list/all confirms bounding-box
         concept labels (e.g. "feather star") and a working images/ + annotations.json.
     tags: [deep-sea, api]
+    n_images_method: "registry-prior"
+    related: [fathomnet-fgvc23, fathomnet-fgvc25, fathomnet-vme]
+    checksums_status: missing
 
   - id: mouss-detection
     domain: deep-sea
     access_class: open
+    licence_evidence: "legacy verification record (dataset-card, 2026-08-17): HuggingFace akridge/MOUSS_fish_imagery_dataset_grayscale_small — NOAA public domain"
     name: MOUSS fish imagery (NOAA PIFSC)
     # habitat inferred (WP-2b) from this source's own description/notes, not independently verified
     habitat: [deep_sea_benthic]
@@ -437,10 +453,12 @@ sources:
       verified_on: 2026-08-17
       verified_note: "30 live rows fetched from HF; images only, no annotation file — coco-json was a wrong guess, corrected to flat-images"
     tags: [public-domain, baseline]
+    n_images_method: "registry-prior"
 
   - id: labeled-fishes-in-the-wild
     domain: fish
     access_class: open
+    licence_evidence: "legacy verification record (site-terms, 2026-08-29): fisheries.noaa.gov/national/about-us/website-policies-and-disclaimers — NOAA Fisheries' own copyright policy: \"Information created by the U.S. government and presented on U.S. government websites is not subject to copyright in the United States.\" Authored by NOAA/NMFS SWFSC employees (Cutter, Stierhoff, Zeng) and hosted directly on the agency's own domain, consistent with 17 U.S.C. §105.\n"
     name: Labeled Fishes in the Wild (NOAA SWFSC)
     # habitat inferred (WP-2b) from this source's own description/notes, not independently verified
     habitat: [rocky_reef]
@@ -499,10 +517,12 @@ sources:
         every box is implicitly "fish" — so this loader emits geometry only, no label,
         matching the `supervises: []` already declared above.
     tags: [public-domain, small]
+    n_images_method: "registry-prior"
 
   - id: brackish-dataset
     domain: imaging
     access_class: open
+    licence_evidence: "legacy verification record (dataset-card, 2026-08-29): Kaggle's own dataset metadata for aalborguniversity/brackish-dataset (the dataset's actual host — the AAU project page itself states no licence at all) records `\"licenseName\":\"CC BY-SA 4.0\"`. Corrected from CC-BY-4.0: the real licence adds a ShareAlike requirement a plain CC-BY does not have.\n"
     name: Brackish Dataset (AAU)
     # habitat inferred (WP-2b) from this source's own description/notes, not independently verified
     habitat: [soft_sediment]
@@ -545,6 +565,7 @@ sources:
       crosswalk_id: brackish-dataset
     citation: "@InProceedings{pedersen2019brackish, title={Detection of Marine Animals in a New Underwater Dataset with Varying Visibility}, author={Pedersen, Malte and Haurum, Joakim Bruslund and Gade, Rikke and Moeslund, Thomas B. and Madsen, Niels}, booktitle = {The IEEE Conference on Computer Vision and Pattern Recognition (CVPR) Workshops}, month = {June}, year = {2019}}"
     tags: [temperate, turbidity]
+    n_images_method: "registry-prior"
 
   - id: fish4knowledge
     domain: fish
@@ -604,11 +625,13 @@ sources:
         fish_image/<class>/*.png — 23 class directories, images-only, no separate
         annotation file needed beyond the directory name.
     tags: [classic, imbalanced]
+    n_images_method: "registry-prior"
 
   - id: sea-urchin-detection
     domain: coral
     release_skip_reason: "no-staged-images: nothing staged under sources/sea-urchin-detection/ in rs-storage-open (WP-R3 listing = 0 keys)"
     access_class: open
+    licence_evidence: "legacy verification record (dataset-card, 2026-08-29): universe.roboflow.com/thesis-ztpwb/sea-urchin-10r8i — this exact project page (the one `access.uri` already points at, confirmed the same project) — states \"LICENSE: CC BY 4.0\" directly, shown twice including in its citation block.\n"
     name: Sea Urchin detection (Roboflow)
     # habitat inferred (WP-2b) from this source's own description/notes, not independently verified
     habitat: [rocky_reef]
@@ -643,14 +666,16 @@ sources:
       layout: yolo-txt
       schema_id: dataset-native
     tags: [urchin, herbivory]
+    n_images_method: "registry-prior"
 
   - id: large-scale-fish
     domain: fish
     access_class: open
+    licence_evidence: "https://www.kaggle.com/datasets/crowww/a-large-scale-fish-dataset — 'Kaggle licence: Attribution 4.0 International (CC BY 4.0); license.txt ships in archive' (LIC-A audit 2026-10-05, confidence high)"
     name: "A Large Scale Fish Dataset (Ulucan et al.) — market/out-of-water"
     # habitat inferred (WP-2b): OUT OF WATER (market/countertop fish photos), never in situ
     habitat: [artificial]
-    version: "unversioned"
+    version: "zip-ffec025d7f5a"
     description: >
       Market/countertop photos of whole fish and shrimp laid out for sale (9 species:
       Sea Bass, Red Mullet, Gilt Head Bream, Red Sea Bream, Shrimp, Black Sea Sprat,
@@ -658,8 +683,8 @@ sources:
       LOCAL-ingest 2026-10-02 (archive (1).zip, a maintainer manual download): tagged
       `out-of-water` so the release builder can exclude it from underwater/in-situ
       outputs; kept as a general-pretraining fish-classification source otherwise.
-    licence: NO-LICENCE-STATED
-    legal_basis: unknown
+    licence: CC-BY-4.0
+    legal_basis: licence
     redistribution: unknown
     provenance: public
     verification:
@@ -678,7 +703,8 @@ sources:
         manual local copy via the `local_dir` adapter (see registry/ingest-specs/large-scale-fish.yaml).
     modalities: [image]
     capabilities: [fish-classification]
-    n_images: 18429
+    n_images: 18430
+    n_images_method: "ingest-json"
     annotations:
     - classes: 9
       kind: image-label
@@ -690,6 +716,13 @@ sources:
     coverage: { regions: [unknown] }
     loader: { layout: metadata-only }
     tags: [out-of-water, market, general-pretraining, release-excluded, quarantined]
+    checksums:
+      version: "zip-ffec025d7f5a"
+      root_digest: aa752cd64dcaff010fd5ca905ca8cb2a9dc8968ca36a3911bf613a8ccb6ae818
+      files: 18433
+      size_bytes: 3498273866
+    n_images_upstream: 18429
+    n_images_note: "measured 18430 in the staged tree (ingest-json); the registry held 18429 before 2026-10-08 (card or paper figure, not re-verified)"
 
   # ---- HK-4a (2026-10-06): the five staged fish/fauna box sources that had no entry ("Unknown source"). ----
   - id: obsea-fish
@@ -736,9 +769,12 @@ sources:
     homepage: https://zenodo.org/records/14888440
     loader: { layout: flat-images, params: { images_dir: images }, schema_id: dataset-native, crosswalk_id: obsea-fish }
     tags: [fish, mediterranean, yolo, fixed-camera]
+    n_images_method: "registry-prior"
+    checksums_status: missing
 
   - id: uiis
     access_class: open
+    licence_evidence: "legacy verification record (dataset-card, 2026-10-06): Staged sources/uiis/rev-44ca5db46599/LICENSE (\"License: Apache-2.0\"), written at ingest from the authors' own HF dataset repo LiamLian0727/UIIS (pinned revision 44ca5db4); matches registry/ingest-specs/uiis.yaml.\n"
     name: UIIS (WaterMask) underwater instance segmentation
     version: "rev-44ca5db46599"
     domain: fauna
@@ -763,6 +799,7 @@ sources:
     modalities: [image]
     capabilities: [fish-detection, megafauna-id]
     n_images: 4628
+    n_images_method: "ingest-json"
     annotations:
       - kind: instance-mask
         classes: 7
@@ -777,9 +814,15 @@ sources:
       match_field: stem
       template: "uiis/{group}"
     tags: [instance-seg, usis-uiis]
+    checksums:
+      version: "rev-44ca5db46599"
+      root_digest: 665f217331362fb3f04f386e92ef9d764abad0b721d6c7c6c8f199d94feec119
+      files: 4633
+      size_bytes: 635190157
 
   - id: uiis10k
     access_class: open
+    licence_evidence: "legacy verification record (dataset-card, 2026-10-06): Staged sources/uiis10k/rev-5c4316368a8e/LICENSE (\"License: Apache-2.0\"), written at ingest from the authors' own HF dataset repo LiamLian0727/UIIS10K (pinned revision 5c431636); matches registry/ingest-specs/uiis10k.yaml.\n"
     name: UIIS10K underwater instance segmentation (UWSAM)
     version: "rev-5c4316368a8e"
     domain: fauna
@@ -803,6 +846,7 @@ sources:
     modalities: [image]
     capabilities: [fish-detection, megafauna-id]
     n_images: 10048
+    n_images_method: "ingest-json"
     annotations:
       - kind: instance-mask
         classes: 10
@@ -818,9 +862,15 @@ sources:
       match_field: stem
       template: "uiis10k/{group}"
     tags: [instance-seg, usis-uiis]
+    checksums:
+      version: "rev-5c4316368a8e"
+      root_digest: db2b3b8ad13723fdf32f57d7c9b9205de2ff151af95c97e15ae613662412e71d
+      files: 10053
+      size_bytes: 512403738
 
   - id: usis10k
     access_class: open
+    licence_evidence: "legacy verification record (dataset-card, 2026-10-06): Staged sources/usis10k/rev-b10f41ab819b/LICENSE (\"License: Apache-2.0\"), written at ingest from the authors' own HF dataset repo LiamLian0727/USIS10K (pinned revision b10f41ab); matches registry/ingest-specs/usis10k.yaml.\n"
     name: USIS10K underwater salient instance segmentation
     version: "rev-b10f41ab819b"
     domain: fauna
@@ -844,6 +894,7 @@ sources:
     modalities: [image]
     capabilities: [fish-detection, megafauna-id]
     n_images: 10632
+    n_images_method: "ingest-json"
     annotations:
       - kind: instance-mask
         classes: 7
@@ -859,9 +910,15 @@ sources:
       match_field: stem
       template: "usis10k/{group}"
     tags: [instance-seg, usis-uiis, salient]
+    checksums:
+      version: "rev-b10f41ab819b"
+      root_digest: b09022870191d59a08a260c2bbadd15f396f12dc9ff114fd13814f147708c513
+      files: 10641
+      size_bytes: 581243526
 
   - id: roboflow-aquarium
     access_class: open
+    licence_evidence: "legacy verification record (licence-file, 2026-10-06): Staged sources/roboflow-aquarium/zip-5d30fed3dd5a/docs/aquarium_pretrain/README.dataset.txt states \"License: CC BY 4.0\" (Roboflow); the staged LICENSE repeats it.\n"
     name: Roboflow Aquarium Combined
     version: "zip-5d30fed3dd5a"
     domain: fauna
@@ -887,6 +944,7 @@ sources:
     modalities: [image]
     capabilities: [fish-detection, megafauna-id]
     n_images: 638
+    n_images_method: "ingest-json"
     annotations:
       - kind: bbox
         classes: 7
@@ -905,3 +963,8 @@ sources:
       match_field: stem
       template: "roboflow-aquarium/{group}"
     tags: [aquarium, captive, yolo]
+    checksums:
+      version: "zip-5d30fed3dd5a"
+      root_digest: c9b4677f9e11329321c1f381e72bac08c1ec27e3b23a93858d83554efe8e28d1
+      files: 1279
+      size_bytes: 70795284

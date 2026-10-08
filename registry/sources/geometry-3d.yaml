@@ -4,6 +4,7 @@ sources:
   - id: sweet-corals
     domain: coral
     access_class: open
+    licence_evidence: "legacy verification record (dataset-card, 2026-08-17): HuggingFace card wildflow/sweet-corals states license:cc-by-4.0, DOI 10.57967/hf/5162"
     name: wildflow/sweet-corals
     # habitat inferred (WP-2b) from this source's own description/notes, not independently verified
     habitat: [coral_reef]
@@ -67,11 +68,13 @@ sources:
       verified_on: 2026-08-29
       verified_note: "Live HF fetch of the declared subpath confirms flat GoPro frame files, no directory structure to break."
     tags: [3d, scaled, in-modality, gopro]
+    n_images_method: "registry-prior"
 
   - id: deepreefmap-data
     domain: imaging
     release_skip_reason: "non-image-modality: video + point-cloud, no stills"
     access_class: open
+    licence_evidence: "legacy verification record (dataset-card, 2026-08-17): Zenodo record 10624794 — CC-BY-4.0"
     name: DeepReefMap reference data and checkpoints
     # habitat inferred (WP-2b) from this source's own description/notes, not independently verified
     habitat: [coral_reef]
@@ -109,11 +112,13 @@ sources:
     citation: "Sauder, Banc-Prandi, Meibom, Tuia, Methods in Ecology and Evolution 2024"
     loader: { layout: metadata-only }
     tags: [3d, reference-pipeline]
+    n_images_method: "unavailable:non-image"
 
   - id: noaa-ncrmp-structural-complexity
     domain: imaging
     release_skip_reason: "no-staged-images: registry lists imagery, nothing staged under sources/ in rs-storage-open (U7/queue follow-up)"
     access_class: open
+    licence_evidence: "legacy verification record (site-terms, 2026-08-17): NOAA InPort item 67851 — US Government work"
     name: NOAA NCRMP structural complexity (SfM)
     # habitat inferred (WP-2b) from this source's own description/notes, not independently verified
     habitat: [coral_reef]
@@ -145,10 +150,12 @@ sources:
       Directly relevant to rugosity and structural-complexity outputs. Volume unconfirmed.
     loader: { layout: metadata-only }
     tags: [metric-3d, rugosity, public-domain]
+    n_images_method: "unavailable:non-image"
 
   - id: atlantis-synthetic-depth
     domain: imaging
     access_class: restricted-nc  # LICV 2026-10-05 (was open); same as registry/ingest-specs/atlantis.yaml
+    licence_evidence: "legacy verification record (licence-file, 2026-08-17): github.com/zkawfanx/Atlantis — MIT licence"
     name: Atlantis (synthetic underwater depth)
     # habitat inferred (WP-2b) from this source's own description/notes, not independently verified
     habitat: [mixed]
@@ -162,7 +169,7 @@ sources:
       version: "zip-6fc81e3c43a5"
       root_digest: 1ea830727733657f0b5b6f60ef23912995a2c44717b8355d0456038573e6f163
       files: 3603
-      size_bytes: 1966506966
+      size_bytes: 1966882001
     verification:
       verified_on: 2026-08-17
       verified_by: "github.com/zkawfanx/Atlantis — MIT licence"
@@ -196,7 +203,8 @@ sources:
         The licence class is unchanged (restricted-nc, LICV 2026-10-05).
     modalities: [image]
     capabilities: [depth-estimation, image-enhancement]
-    n_images: 3200
+    n_images: 3600
+    n_images_method: "ingest-json"
     annotations:
       - kind: depth-map
         supervises: []
@@ -208,3 +216,5 @@ sources:
         - "Monocular depth underwater is not metric without an in-scene scale reference. Treat as a relative prior only."
     loader: { layout: staged-tree }
     tags: [synthetic, depth, permissive]
+    n_images_upstream: 3200
+    n_images_note: "measured 3600 in the staged tree (ingest-json); the registry held 3200 before 2026-10-08 (card or paper figure, not re-verified)"

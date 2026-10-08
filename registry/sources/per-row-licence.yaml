@@ -7,6 +7,7 @@ sources:
   - id: inat-marine
     domain: imaging
     access_class: restricted-nd
+    licence_evidence: "legacy verification record (site-terms, 2026-10-05): registry/ingest-specs/inat-marine.yaml (photos.csv `license`: CC0 / CC-BY / CC-BY-NC / -SA / -ND variants per photo)"
     licence_per_row: true
     name: iNaturalist Open Data (marine research-grade)
     version: "2026-09"
@@ -29,10 +30,14 @@ sources:
     citation: iNaturalist Open Data, AWS Open Data Registry, metadata 2026-09
     homepage: https://registry.opendata.aws/inaturalist-open-data/
     tags: [per-row-licence, observation]
+    n_images: 1
+    n_images_method: "listing"
+    checksums_status: missing
 
   - id: planktonzilla
     domain: plankton
     access_class: restricted-nc
+    licence_evidence: "legacy verification record (site-terms, 2026-10-05): registry/ingest-specs/planktonzilla.yaml: HF card licence `other`; per-sample licence = the originating instrument dataset (not staged, so rows stay unknown)"
     licence_per_row: true
     name: Planktonzilla-17M
     version: "7fd542ef9fc9"
@@ -55,10 +60,14 @@ sources:
     citation: project-oceania/planktonzilla-17M (HF)
     homepage: https://huggingface.co/datasets/project-oceania/planktonzilla-17M
     tags: [per-row-licence, plankton]
+    n_images: 830
+    n_images_method: "listing"
+    checksums_status: missing
 
   - id: qut-fish
     domain: fish
     access_class: restricted-nc
+    licence_evidence: "legacy verification record (site-terms, 2026-10-05): registry/ingest-specs/qut-fish.yaml: licence unknown (LicenceAndAuthors.pdf ships with the zip, not parsed)"
     licence_per_row: true
     name: QUT fish dataset
     version: "zip-ce6985436f9b"
@@ -81,3 +90,10 @@ sources:
     citation: Anantharajah et al. 2014, WACV
     homepage: https://www.kaggle.com/datasets/giannisgeorgiou/fish-species
     tags: [per-row-licence, fish]
+    checksums:
+      version: "zip-ce6985436f9b"
+      root_digest: daa14fd96a76e7011451f7dd1793f4708d91fa4919651658e6adae7dd175572f
+      files: 13235
+      size_bytes: 1421284316
+    n_images: 13231
+    n_images_method: "ingest-json"

@@ -1,10 +1,11 @@
 id: mouss
-access_class: open
+access_class: open  # P1.2b: restored from the LIC audit, see licence_evidence
 adapter: hf
 params:
   repo: akridge/MOUSS_fish_imagery_dataset_grayscale_small
   revision: fc8851db5ff372a0528e600a1f6d6098df34917f
-license: NOASSERTION
+license: US-GOV-PD
+licence_evidence: "https://huggingface.co/datasets/akridge/MOUSS_fish_imagery_dataset_grayscale_small : License: Public Domain (NOAA Open Data)"
 attribution: NOAA PIFSC MOUSS fish imagery (grayscale small), via HF akridge/MOUSS_fish_imagery_dataset_grayscale_small
 citation: NOAA PIFSC MOUSS
 homepage: https://huggingface.co/datasets/akridge/MOUSS_fish_imagery_dataset_grayscale_small

@@ -17,3 +17,4 @@ measured:
   date: '2026-09-25'
   per_item_license: research-only
   label_type: cls/track, 23 classes
+bucket: rs-storage-private

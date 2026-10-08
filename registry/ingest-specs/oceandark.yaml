@@ -10,3 +10,4 @@ homepage: https://sites.google.com/view/oceandark/home
 notes: needs_adapter:gdrive — the Google Sites page links to a Google Drive folder/viewer,
   not a direct file URL; needs a Drive-aware fetcher (or a human export to a direct
   zip link)
+bucket: rs-storage-private

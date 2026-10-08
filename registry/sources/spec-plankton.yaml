@@ -1,0 +1,339 @@
+# Entries folded from registry/ingest-specs/ by scripts/registry_fold_specs.py
+# (P1.2, 2026-10-08). Every field is the spec's own claim; edit freely, the script never
+# rewrites an id it did not add.
+
+sources:
+  - id: aqqua-baltic-holo
+    domain: plankton
+    access_class: open
+    licence_evidence: "https://zenodo.org/api/records/18405776 — 'metadata.license: {\"id\": \"cc-by-4.0\"}; access_right: open' (WP-LICV audit 2026-10-05, confidence confirmed-open)"
+    name: "aqqua baltic holo"
+    version: "record-18405776"
+    description: "doi:10.5281/zenodo.18405776 — In situ marine plankton holographic image dataset - Baltic Sea 2024"
+    licence: CC-BY-4.0
+    legal_basis: licence
+    redistribution: ok
+    provenance: public
+    verification:
+      verified_on: 2026-10-08
+      verified_by: "registry/ingest-specs/aqqua-baltic-holo.yaml: license field copied verbatim, not independently checked"
+      method: secondary
+    access:
+      method: s3
+      uri: s3://rs-storage-open/sources/aqqua-baltic-holo/record-18405776
+      notes: "rs-storage-open copy of the upstream dataset (staged tree record-18405776); upstream: https://zenodo.org/records/18405776"
+      params:
+        bucket: rs-storage-open
+        endpoint: hel1.your-objectstorage.com
+        region: hel1
+        prefix: sources/aqqua-baltic-holo/record-18405776/
+      size_bytes: 1530168430
+    modalities: [image]
+    capabilities: [general-pretraining]
+    loader: { layout: staged-tree }
+    n_images: 88068
+    n_images_method: "ingest-json"
+    coverage: { regions: [unknown] }
+    homepage: "https://zenodo.org/records/18405776"
+    citation: "doi:10.5281/zenodo.18405776 — In situ marine plankton holographic image dataset - Baltic Sea 2024"
+    notes: "Folded from registry/ingest-specs/aqqua-baltic-holo.yaml on 2026-10-08 (P1.2). Spec license string, verbatim: 'cc-by-4.0'. Domain, modalities and capabilities are keyword inferences from the spec text."
+    tags: [spec-folded]
+    checksums:
+      version: "record-18405776"
+      root_digest: 13867e92f96d4f4917141c8e9be589e3608bea5775b14a6cff90833177e0df7f
+      files: 88071
+      size_bytes: 1530168430
+
+  - id: ecotaxa-public-export
+    domain: plankton
+    access_class: internal-only
+    name: "ecotaxa public export"
+    version: "unversioned"
+    description: "ecotaxa.obs-vlfr.fr"
+    licence: NO-LICENCE-STATED
+    legal_basis: unknown
+    redistribution: unknown
+    provenance: public
+    verification:
+      verified_on: 2026-10-08
+      verified_by: "registry/ingest-specs/ecotaxa-public-export.yaml: license field copied verbatim, not independently checked"
+      method: secondary
+    access:
+      method: request
+      uri: "https://ecotaxa.obs-vlfr.fr/"
+      notes: "ingest adapter needs:ecotaxa-api; see registry/ingest-specs/ecotaxa-public-export.yaml"
+    modalities: [image]
+    capabilities: [general-pretraining]
+    loader: { layout: metadata-only }
+    coverage: { regions: [unknown] }
+    homepage: "https://ecotaxa.obs-vlfr.fr/"
+    citation: "ecotaxa.obs-vlfr.fr"
+    notes: "Folded from registry/ingest-specs/ecotaxa-public-export.yaml on 2026-10-08 (P1.2). Spec license string, verbatim: 'per-project (stated per EcoTaxa project metadata)'. Domain, modalities and capabilities are keyword inferences from the spec text."
+    tags: [spec-folded]
+    release_skip_reason: "no-staged-images: registry lists imagery, nothing staged under sources/ in rs-storage-open (U7/queue follow-up)"
+    n_images_method: "unavailable:no-count"
+
+  - id: nes-plankton-2022
+    domain: plankton
+    access_class: open
+    licence_evidence: "https://huggingface.co/datasets/sosiklab/NES-plankton-classifier-2022-dataset — 'This dataset is licensed under CC BY 4.0' (WP-LICV audit 2026-10-05, confidence confirmed-open)"
+    name: "nes plankton 2022"
+    version: "rev-18fb2e57fd77"
+    description: "sosiklab/NES-plankton-classifier-2022-dataset (HF)"
+    licence: CC-BY-4.0
+    legal_basis: licence
+    redistribution: ok
+    provenance: public
+    verification:
+      verified_on: 2026-10-08
+      verified_by: "registry/ingest-specs/nes-plankton-2022.yaml: license field copied verbatim, not independently checked"
+      method: secondary
+    access:
+      method: s3
+      uri: s3://rs-storage-open/sources/nes-plankton-2022/rev-18fb2e57fd77
+      notes: "rs-storage-open copy of the upstream dataset (staged tree rev-18fb2e57fd77); upstream: https://huggingface.co/datasets/sosiklab/NES-plankton-classifier-2022-dataset"
+      params:
+        bucket: rs-storage-open
+        endpoint: hel1.your-objectstorage.com
+        region: hel1
+        prefix: sources/nes-plankton-2022/rev-18fb2e57fd77/
+      size_bytes: 1585705056
+    modalities: [image]
+    capabilities: [general-pretraining]
+    loader: { layout: staged-tree }
+    coverage: { regions: [unknown] }
+    homepage: "https://huggingface.co/datasets/sosiklab/NES-plankton-classifier-2022-dataset"
+    citation: "sosiklab/NES-plankton-classifier-2022-dataset (HF)"
+    notes: "Folded from registry/ingest-specs/nes-plankton-2022.yaml on 2026-10-08 (P1.2). Spec license string, verbatim: 'cc-by-4.0'. Domain, modalities and capabilities are keyword inferences from the spec text."
+    tags: [spec-folded]
+    checksums:
+      version: "rev-18fb2e57fd77"
+      root_digest: 20b756cdfd7493f2ad64551e09569db2ac2dba5c9062b6935e23fd6643546c9a
+      files: 97029
+      size_bytes: 1585705056
+    n_images: 97026
+    n_images_method: "ingest-json"
+
+  - id: noaa-plankton-shadowgraphs
+    domain: plankton
+    access_class: unknown  # P1.2d: was open; no licence evidence
+    licence_evidence: "unverified: claimed as 'public domain (US government work) — NODD' in registry/ingest-specs/noaa-plankton-shadowgraphs.yaml license (folded 2026-10-08, never checked against https://storage.googleapis.com/nmfs_odp_hq/nodd_tools/datasets/plankton_shadowgraphs/)"
+    name: "noaa plankton shadowgraphs"
+    version: "unversioned"
+    description: "NOAA plankton shadowgraph images, NOAA NODD"
+    licence: US-GOV-PD
+    legal_basis: licence
+    redistribution: ok
+    provenance: public
+    verification:
+      verified_on: 2026-10-08
+      verified_by: "registry/ingest-specs/noaa-plankton-shadowgraphs.yaml: license field copied verbatim, not independently checked"
+      method: secondary
+    access:
+      method: http
+      uri: "https://storage.googleapis.com/nmfs_odp_hq/nodd_tools/datasets/plankton_shadowgraphs/"
+      notes: "ingest adapter bucket; see registry/ingest-specs/noaa-plankton-shadowgraphs.yaml"
+    modalities: [image]
+    capabilities: [general-pretraining]
+    loader: { layout: metadata-only }
+    coverage: { regions: [unknown] }
+    homepage: "https://storage.googleapis.com/nmfs_odp_hq/nodd_tools/datasets/plankton_shadowgraphs/"
+    citation: "NOAA plankton shadowgraph images, NOAA NODD"
+    notes: "Folded from registry/ingest-specs/noaa-plankton-shadowgraphs.yaml on 2026-10-08 (P1.2). Spec license string, verbatim: 'public domain (US government work) — NODD'. Domain, modalities and capabilities are keyword inferences from the spec text."
+    tags: [spec-folded]
+    release_skip_reason: "no-staged-images: registry lists imagery, nothing staged under sources/ in rs-storage-open (U7/queue follow-up)"
+    n_images_method: "unavailable:no-count"
+
+  - id: plankton-interaction-videos
+    domain: plankton
+    access_class: open
+    licence_evidence: "https://huggingface.co/datasets/bcdemattei/plankton_interaction_videos — 'HF card front matter: license: apache-2.0' (WP-LICV audit 2026-10-05, confidence confirmed-open)"
+    name: "plankton interaction videos"
+    version: "rev-f7d40238215e"
+    description: "bcdemattei/plankton_interaction_videos (HF)"
+    licence: Apache-2.0
+    legal_basis: licence
+    redistribution: ok
+    provenance: public
+    verification:
+      verified_on: 2026-10-08
+      verified_by: "registry/ingest-specs/plankton-interaction-videos.yaml: license field copied verbatim, not independently checked"
+      method: secondary
+    access:
+      method: s3
+      uri: s3://rs-storage-open/sources/plankton-interaction-videos/rev-f7d40238215e
+      notes: "rs-storage-open copy of the upstream dataset (staged tree rev-f7d40238215e); upstream: https://huggingface.co/datasets/bcdemattei/plankton_interaction_videos"
+      params:
+        bucket: rs-storage-open
+        endpoint: hel1.your-objectstorage.com
+        region: hel1
+        prefix: sources/plankton-interaction-videos/rev-f7d40238215e/
+      size_bytes: 5675300200
+    modalities: [image]
+    capabilities: [general-pretraining]
+    loader: { layout: staged-tree }
+    coverage: { regions: [unknown] }
+    homepage: "https://huggingface.co/datasets/bcdemattei/plankton_interaction_videos"
+    citation: "bcdemattei/plankton_interaction_videos (HF)"
+    notes: "Folded from registry/ingest-specs/plankton-interaction-videos.yaml on 2026-10-08 (P1.2). Spec license string, verbatim: 'apache-2.0'. Domain, modalities and capabilities are keyword inferences from the spec text."
+    tags: [spec-folded]
+    checksums:
+      version: "rev-f7d40238215e"
+      root_digest: e5ba5324be407c4210e5acaee2c3b0dbeb8ec544ce2f50a5ab915544736d3229
+      files: 21224
+      size_bytes: 5675300200
+    n_images: 21221
+    n_images_method: "ingest-json"
+
+  - id: plankton-noctiluca-capsules
+    domain: plankton
+    access_class: unknown  # P1.2d: was open; no licence evidence
+    licence_evidence: "unverified: claimed as 'cc-by-4.0' in registry/ingest-specs/plankton-noctiluca-capsules.yaml license (folded 2026-10-08, never checked against https://zenodo.org/records/4431509); measured.per_item_license 'cc-by-4.0' (2026-09-25)"
+    name: "plankton noctiluca capsules"
+    version: "unversioned"
+    description: "doi:10.5281/zenodo.4431509 — Automatic plankton image classification - can capsules and filters help coping with data set shift?"
+    licence: CC-BY-4.0
+    legal_basis: licence
+    redistribution: ok
+    provenance: public
+    verification:
+      verified_on: 2026-10-08
+      verified_by: "registry/ingest-specs/plankton-noctiluca-capsules.yaml: license field copied verbatim, not independently checked"
+      method: secondary
+    access:
+      method: zenodo
+      uri: "https://zenodo.org/records/4431509"
+      notes: "ingest adapter zenodo; see registry/ingest-specs/plankton-noctiluca-capsules.yaml"
+    modalities: [image]
+    capabilities: [general-pretraining]
+    loader: { layout: metadata-only }
+    n_images: 219062
+    n_images_method: "spec:measured.items"
+    coverage: { regions: [unknown] }
+    homepage: "https://zenodo.org/records/4431509"
+    citation: "doi:10.5281/zenodo.4431509 — Automatic plankton image classification - can capsules and filters help coping with data set shift?"
+    notes: "Folded from registry/ingest-specs/plankton-noctiluca-capsules.yaml on 2026-10-08 (P1.2). Spec license string, verbatim: 'cc-by-4.0'. Domain, modalities and capabilities are keyword inferences from the spec text."
+    tags: [spec-folded]
+    release_skip_reason: "no-staged-images: registry lists imagery, nothing staged under sources/ in rs-storage-open (U7/queue follow-up)"
+
+  - id: planktonset-1-0
+    domain: plankton
+    access_class: internal-only
+    name: "planktonset 1 0"
+    version: "unversioned"
+    description: "project-oceania/planktonset1.0 (HF)"
+    licence: NO-LICENCE-STATED
+    legal_basis: unknown
+    redistribution: unknown
+    provenance: public
+    verification:
+      verified_on: 2026-10-08
+      verified_by: "registry/ingest-specs/planktonset-1-0.yaml: license field copied verbatim, not independently checked"
+      method: secondary
+    access:
+      method: huggingface
+      uri: "https://huggingface.co/datasets/project-oceania/planktonset1.0"
+      notes: "ingest adapter hf; see registry/ingest-specs/planktonset-1-0.yaml"
+    modalities: [image]
+    capabilities: [general-pretraining]
+    loader: { layout: metadata-only }
+    n_images: 60736
+    n_images_method: "spec:measured.items"
+    coverage: { regions: [unknown] }
+    homepage: "https://huggingface.co/datasets/project-oceania/planktonset1.0"
+    citation: "project-oceania/planktonset1.0 (HF)"
+    notes: "Folded from registry/ingest-specs/planktonset-1-0.yaml on 2026-10-08 (P1.2). Spec license string, verbatim: 'other (HF card)'. Domain, modalities and capabilities are keyword inferences from the spec text."
+    tags: [spec-folded]
+    release_skip_reason: "no-staged-images: registry lists imagery, nothing staged under sources/ in rs-storage-open (U7/queue follow-up)"
+
+  - id: syke-ifcb-uto-2021
+    domain: plankton
+    access_class: unknown  # P1.2d: was open; no licence evidence
+    licence_evidence: "unverified: claimed as 'CC-BY-4.0' in registry/ingest-specs/syke-ifcb-uto-2021.yaml license (folded 2026-10-08, never checked against https://doi.org/10.23728/b2share.7c273b6f409c47e98a868d6517be3ae3); measured.per_item_license 'CC-BY-4.0' (2026-09-25)"
+    name: "syke ifcb uto 2021"
+    version: "unversioned"
+    description: "doi:10.23728/b2share.7c273b6f409c47e98a868d6517be3ae3"
+    licence: CC-BY-4.0
+    legal_basis: licence
+    redistribution: ok
+    provenance: public
+    verification:
+      verified_on: 2026-10-08
+      verified_by: "registry/ingest-specs/syke-ifcb-uto-2021.yaml: license field copied verbatim, not independently checked"
+      method: secondary
+    access:
+      method: http
+      uri: "https://doi.org/10.23728/b2share.7c273b6f409c47e98a868d6517be3ae3"
+      notes: "ingest adapter http; see registry/ingest-specs/syke-ifcb-uto-2021.yaml"
+    modalities: [image]
+    capabilities: [general-pretraining]
+    loader: { layout: metadata-only }
+    n_images: 151235
+    n_images_method: "spec:measured.items"
+    coverage: { regions: [unknown] }
+    homepage: "https://doi.org/10.23728/b2share.7c273b6f409c47e98a868d6517be3ae3"
+    citation: "doi:10.23728/b2share.7c273b6f409c47e98a868d6517be3ae3"
+    notes: "Folded from registry/ingest-specs/syke-ifcb-uto-2021.yaml on 2026-10-08 (P1.2). Spec license string, verbatim: 'CC-BY-4.0'. Domain, modalities and capabilities are keyword inferences from the spec text."
+    tags: [spec-folded]
+    release_skip_reason: "no-staged-images: registry lists imagery, nothing staged under sources/ in rs-storage-open (U7/queue follow-up)"
+
+  - id: ucsc-ifcb-20250801
+    domain: plankton
+    access_class: internal-only
+    name: "ucsc ifcb 20250801"
+    version: "unversioned"
+    description: "UCSC IFCB 2025-08-01"
+    licence: NO-LICENCE-STATED
+    legal_basis: unknown
+    redistribution: unknown
+    provenance: public
+    verification:
+      verified_on: 2026-10-08
+      verified_by: "registry/ingest-specs/ucsc-ifcb-20250801.yaml: license field copied verbatim, not independently checked"
+      method: secondary
+    access:
+      method: huggingface
+      uri: "https://huggingface.co/datasets/patcdaniel/Phytoplankton-UCSC-IFCB-20250801"
+      notes: "ingest adapter hf; see registry/ingest-specs/ucsc-ifcb-20250801.yaml"
+    modalities: [image]
+    capabilities: [general-pretraining]
+    loader: { layout: metadata-only }
+    coverage: { regions: [unknown] }
+    homepage: "https://huggingface.co/datasets/patcdaniel/Phytoplankton-UCSC-IFCB-20250801"
+    citation: "UCSC IFCB 2025-08-01"
+    notes: "Folded from registry/ingest-specs/ucsc-ifcb-20250801.yaml on 2026-10-08 (P1.2). Spec license string, verbatim: 'unstated'. Domain, modalities and capabilities are keyword inferences from the spec text."
+    tags: [spec-folded]
+    release_skip_reason: "no-staged-images: registry lists imagery, nothing staged under sources/ in rs-storage-open (U7/queue follow-up)"
+    n_images_method: "unavailable:no-count"
+
+  - id: womack-plankton-hboi
+    domain: plankton
+    access_class: unknown  # P1.2d: was open; no licence evidence
+    licence_evidence: "unverified: claimed as 'cc-by-4.0' in registry/ingest-specs/womack-plankton-hboi.yaml license (folded 2026-10-08, never checked against https://zenodo.org/records/18497521); measured.per_item_license 'cc-by-4.0' (2026-09-25)"
+    name: "womack plankton hboi"
+    version: "unversioned"
+    description: "doi:10.5281/zenodo.18497521 — Plankton imaging datasets - Womack et al. manuscript"
+    licence: CC-BY-4.0
+    legal_basis: licence
+    redistribution: ok
+    provenance: public
+    verification:
+      verified_on: 2026-10-08
+      verified_by: "registry/ingest-specs/womack-plankton-hboi.yaml: license field copied verbatim, not independently checked"
+      method: secondary
+    access:
+      method: zenodo
+      uri: "https://zenodo.org/records/18497521"
+      notes: "ingest adapter zenodo; see registry/ingest-specs/womack-plankton-hboi.yaml"
+    modalities: [image]
+    capabilities: [general-pretraining]
+    loader: { layout: metadata-only }
+    n_images: 106949
+    n_images_method: "spec:measured.items"
+    coverage: { regions: [unknown] }
+    homepage: "https://zenodo.org/records/18497521"
+    citation: "doi:10.5281/zenodo.18497521 — Plankton imaging datasets - Womack et al. manuscript"
+    notes: "Folded from registry/ingest-specs/womack-plankton-hboi.yaml on 2026-10-08 (P1.2). Spec license string, verbatim: 'cc-by-4.0'. Domain, modalities and capabilities are keyword inferences from the spec text."
+    tags: [spec-folded]
+    release_skip_reason: "no-staged-images: registry lists imagery, nothing staged under sources/ in rs-storage-open (U7/queue follow-up)"
+

@@ -29,3 +29,4 @@ measured:
   release_exclusion_reason: tabular occurrence records, no imagery
   method: u15-label-kind-triage (registry-patch.yaml)
   date: '2026-10-05'
+bucket: rs-storage-private

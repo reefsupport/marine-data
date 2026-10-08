@@ -15,3 +15,4 @@ measured:
   bytes: null
   date: '2026-09-25'
   bytes_basis: 'unmeasured: no bulk endpoint found'
+bucket: rs-storage-private

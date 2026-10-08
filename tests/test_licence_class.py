@@ -164,11 +164,11 @@ def test_kaggle_bleaching_is_internal_and_dropped():
     ("source", "expected"),
     [
         ("large-scale-fish", OPEN),
-        ("marineevt", OPEN),
+        ("marineevt", OPEN),  # P1.2b: README says MIT (LIC-A)
         ("seatizen-atlas", OPEN),
-        ("mouss-seg", UNKNOWN),
-        ("noaa-coral-icra", UNKNOWN),
-        ("plasticinwater", UNKNOWN),
+        ("mouss-seg", OPEN),  # P1.2b: audit evidence restored
+        ("noaa-coral-icra", OPEN),  # P1.2b: audit evidence restored
+        ("plasticinwater", OPEN),  # P1.2b: audit evidence restored
         ("caddy", NC),
         ("mermaid-aws", NC),
         ("kaggle-healthy-bleached-corals", INTERNAL_ONLY),
@@ -213,3 +213,56 @@ def test_release_exclusion_flag_does_not_touch_other_sources():
     assert not lc.release_excluded("not-a-source", root=REGISTRY)
     row = {"source_id": "zz-open", "licence_class": OPEN}
     assert flavour_filter([row], "open") == [row]
+
+
+# -- P1.2d: a permissive class is never set without a licence id AND licence evidence --------------
+
+STRICT_CLASSES = (lc.OPEN, lc.NC, lc.ND)
+KNOWN_UNEVIDENCED: frozenset[str] = frozenset()
+"""Ids allowed to hold an open / restricted-nc / restricted-nd class with no ``licence_evidence``.
+P1.2d downgraded every unevidenced id to ``unknown`` (treated as internal-only), so this is empty;
+an id added here needs a reviewed reason, and may only be one whose class is ``unknown``."""
+PLACEHOLDER_IDS = {"NO-LICENCE-STATED", "unknown", "NOASSERTION"}
+
+
+def _registry_sources():
+    return list(Registry.load(REGISTRY).sources)
+
+
+def test_every_open_nc_nd_entry_carries_licence_evidence():
+    missing = sorted(
+        s.id
+        for s in _registry_sources()
+        if s.access_class.value in STRICT_CLASSES
+        and not (s.licence_evidence or "").strip()
+        and s.id not in KNOWN_UNEVIDENCED
+    )
+    assert not missing, f"{len(missing)} open/nc/nd entries without licence_evidence: {missing}"
+
+
+def test_every_open_nc_nd_entry_has_a_real_licence_id_or_is_per_row():
+    bad = sorted(
+        s.id
+        for s in _registry_sources()
+        if s.access_class.value in STRICT_CLASSES
+        and s.licence.id in PLACEHOLDER_IDS
+        and not s.licence_per_row
+    )
+    assert not bad, bad
+
+
+def test_unverified_evidence_never_sits_on_a_permissive_class():
+    # "unverified: <where it was claimed>" records a claim nobody checked: fail-safe classes only
+    bad = sorted(
+        s.id
+        for s in _registry_sources()
+        if (s.licence_evidence or "").startswith("unverified:")
+        and s.access_class.value in STRICT_CLASSES
+    )
+    assert not bad, bad
+
+
+def test_known_unevidenced_only_names_unknown_class_entries():
+    by_id = {s.id: s for s in _registry_sources()}
+    stray = sorted(i for i in KNOWN_UNEVIDENCED if by_id[i].access_class.value != lc.UNKNOWN)
+    assert not stray, stray

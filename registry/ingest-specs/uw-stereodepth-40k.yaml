@@ -24,3 +24,4 @@ measured:
   habitat_region: synthetic/rendered underwater scenes
   dedup_chain: UW-StereoDepth-80K (388.6 GB, same group) is the superset; spec the 40K until a subset rule exists
   wp6l_gap: depth-3d
+bucket: rs-storage-private

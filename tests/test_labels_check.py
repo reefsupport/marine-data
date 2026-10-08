@@ -89,13 +89,11 @@ def test_open_vocabulary_and_label_free_sources_are_na(rows):
 def test_specs_only_ids_are_checked(reg, rows):
     from marinedata.licence_class import SPEC_ALIASES
 
-    # a spec whose id is a registry source's staged-id alias is that source, not a second one (R4)
+    # P1.2: the registry is the single truth, so no ingest spec is left without a registry entry.
+    # A spec whose id is a registry source's staged-id alias is that source, not a second one (R4).
+    # The spec-only path itself is exercised by the tmp_path tests below.
     only_specs = lc.spec_ids(reg.root / "ingest-specs") - {s.id for s in reg.sources}
-    assert only_specs >= set(SPEC_ALIASES.values()) and not set(SPEC_ALIASES.values()) & set(rows)
-    only_specs -= set(SPEC_ALIASES.values())
-    assert len(only_specs) >= 100
-    assert only_specs <= set(rows)
-    assert {rows[i].origin for i in only_specs} == {"spec"}
+    assert only_specs == set(SPEC_ALIASES.values()) and not only_specs & set(rows)
 
 
 def test_specs_only_id_with_class_labels_and_no_crosswalk_is_missing(reg, tmp_path):

@@ -18,3 +18,4 @@ params:
   prefix: nodd_tools/datasets/oceaneyes/full_dataset/
 
 disk_floor_gib: 34.0
+bucket: rs-storage-private
