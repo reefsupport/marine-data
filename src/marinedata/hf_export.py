@@ -440,6 +440,34 @@ def _roots(release_dir: Path, cache: Path) -> dict[str, Path]:
     return roots
 
 
+def load_mask_geo(path: Path) -> dict[str, tuple[float | None, float | None]]:
+    """``{image_sha256: (lat, lon)}`` from a parquet/csv/tsv; missing lat/lon columns or null
+    cells give ``None`` (never a made-up value); a file without the key column gives ``{}``."""
+    path = Path(path)
+    if path.suffix == ".parquet":
+        import pyarrow.parquet as pq
+
+        rows = pq.read_table(path).to_pylist()
+    else:
+        import csv
+
+        with path.open(newline="") as fh:
+            rows = list(csv.DictReader(fh, delimiter="\t" if path.suffix == ".tsv" else ","))
+
+    def num(v: object) -> float | None:
+        try:
+            return None if v in (None, "") else float(v)  # type: ignore[arg-type]
+        except (TypeError, ValueError):
+            return None
+
+    out: dict[str, tuple[float | None, float | None]] = {}
+    for r in rows:
+        sha = r.get("image_sha256") or r.get("sha256")
+        if sha:
+            out[str(sha)] = (num(r.get("lat")), num(r.get("lon")))
+    return out
+
+
 def main(argv: list[str] | None = None) -> int:
     from .fetch import cache_root
 
@@ -484,6 +512,19 @@ def main(argv: list[str] | None = None) -> int:
         help="local staged tree holding the mask PNGs at <root>/<bucket key> (MV-1 mask configs); "
         "a key not found there is fetched with the anonymous small-file GET",
     )
+    parser.add_argument(
+        "--allow-resize",
+        action="store_true",
+        help="fixtures only: nearest-neighbour resize a mask whose size differs from its image "
+        "(default: refuse, so a misaligned mask cannot ship)",
+    )
+    parser.add_argument(
+        "--mask-geo",
+        type=Path,
+        default=None,
+        help="parquet/csv/tsv with image_sha256 (or sha256), lat, lon: the mask configs carry "
+        "whatever geo the metadata provides; absent = unchanged output",
+    )
     args = parser.parse_args(argv)
 
     registry = Registry.load()
@@ -512,6 +553,7 @@ def main(argv: list[str] | None = None) -> int:
         flavour=flavour,
         mask_fetch=_mc.make_fetch(args.mask_root),
         mask_source_meta=_mc.mask_source_meta(registry),
+        mask_geo=load_mask_geo(args.mask_geo) if args.mask_geo else None,
         mask_stats=mask_stats,
     )
     if not args.no_metadata:  # WP-R2b: licence_class / geo / split_group per image, same flavour
@@ -525,7 +567,10 @@ def main(argv: list[str] | None = None) -> int:
             quality_by_sha={r["image_sha256"]: r for r in quality},
             privacy_flags=privacy.flags,
         )  # fmt: skip
-    summary = export(layout, args.out, sample=args.sample)
+    from .task_layers.mask_encode import allow_resize
+
+    with allow_resize(args.allow_resize):
+        summary = export(layout, args.out, sample=args.sample)
     if flavour:
         summary["flavour"] = flavour
         summary["repo_id"] = release["repo_id"]
