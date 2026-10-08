@@ -173,18 +173,18 @@ sources:
 
   - id: hacon-aurora-vent-ofos
     domain: fauna
-    access_class: internal-only
+    access_class: open
     name: "hacon aurora vent ofos"
     version: "unversioned"
     description: "doi:10.1594/PANGAEA.943364"
-    licence: PER-SOURCE-VARIES
-    legal_basis: unknown
-    redistribution: unknown
+    licence: CC-BY-4.0
+    legal_basis: licence
+    redistribution: ok
     provenance: public
     verification:
-      verified_on: 2026-10-08
-      verified_by: "registry/ingest-specs/hacon-aurora-vent-ofos.yaml: license field copied verbatim, not independently checked"
-      method: secondary
+      verified_on: 2026-10-05
+      verified_by: "LIC-B audit 2026-10-05 read https://doi.pangaea.de/10.1594/PANGAEA.943364 : license: https://creativecommons.org/licenses/by/4.0/ (PANGAEA JSON-LD)"
+      method: dataset-card
     access:
       method: http
       uri: "https://doi.pangaea.de/10.1594/PANGAEA.943364"
@@ -197,9 +197,10 @@ sources:
     coverage: { regions: [unknown] }
     homepage: "https://doi.pangaea.de/10.1594/PANGAEA.943364"
     citation: "doi:10.1594/PANGAEA.943364"
-    notes: "Folded from registry/ingest-specs/hacon-aurora-vent-ofos.yaml on 2026-10-08 (P1.2). Spec license string, verbatim: 'CC-BY (PANGAEA, per series convention)'. Domain, modalities and capabilities are keyword inferences from the spec text. The spec said access_class: open; tightened to internal-only because its licence string does not establish a licence (never guess). Loosen after verifying it."
+    notes: "Folded from registry/ingest-specs/hacon-aurora-vent-ofos.yaml on 2026-10-08 (P1.2). Spec license string, verbatim: 'CC-BY (PANGAEA, per series convention)'. Domain, modalities and capabilities are keyword inferences from the spec text. P1.2b (2026-10-08) restored the class to open: the LIC audit (2026-10-05) read the upstream licence (CC-BY-4.0), see licence_evidence."
     tags: [spec-folded]
     release_skip_reason: "no-staged-images: registry lists imagery, nothing staged under sources/ in rs-storage-open (U7/queue follow-up)"
+    licence_evidence: "https://doi.pangaea.de/10.1594/PANGAEA.943364 : license: https://creativecommons.org/licenses/by/4.0/ (PANGAEA JSON-LD)"
 
   - id: imos-auv
     domain: fauna
@@ -358,18 +359,18 @@ sources:
 
   - id: marineevt
     domain: fauna
-    access_class: internal-only
+    access_class: open
     name: "marineevt"
     version: "rev-37488d3c7690"
     description: "HF dataset AnTo2209/MarineEVT"
-    licence: NO-LICENCE-STATED
-    legal_basis: unknown
-    redistribution: unknown
+    licence: MIT
+    legal_basis: licence
+    redistribution: ok
     provenance: public
     verification:
-      verified_on: 2026-10-08
-      verified_by: "registry/ingest-specs/marineevt.yaml: license field copied verbatim, not independently checked"
-      method: secondary
+      verified_on: 2026-10-05
+      verified_by: "LIC-B audit 2026-10-05 read https://huggingface.co/datasets/AnTo2209/MarineEVT/resolve/main/README.md : This dataset is released under the MIT License"
+      method: dataset-card
     access:
       method: s3
       uri: s3://rs-storage-open/sources/marineevt/rev-37488d3c7690
@@ -388,13 +389,14 @@ sources:
     coverage: { regions: [unknown] }
     homepage: "https://huggingface.co/datasets/AnTo2209/MarineEVT"
     citation: "HF dataset AnTo2209/MarineEVT"
-    notes: "Folded from registry/ingest-specs/marineevt.yaml on 2026-10-08 (P1.2). Spec license string, verbatim: 'unstated'. Domain, modalities and capabilities are keyword inferences from the spec text. The spec said access_class: open; tightened to internal-only because its licence string does not establish a licence (never guess). Loosen after verifying it."
+    notes: "Folded from registry/ingest-specs/marineevt.yaml on 2026-10-08 (P1.2). Spec license string, verbatim: 'unstated'. Domain, modalities and capabilities are keyword inferences from the spec text. P1.2b (2026-10-08) restored the class to open: the LIC audit (2026-10-05) read the upstream licence (MIT), see licence_evidence."
     tags: [spec-folded]
     checksums:
       version: "rev-37488d3c7690"
       root_digest: fdfe38fd7fe6082f9cee8b5345aab5683fbbf907b1b6d58e72c118758ac4d366
       files: 169473
       size_bytes: 36289266781
+    licence_evidence: "https://huggingface.co/datasets/AnTo2209/MarineEVT/resolve/main/README.md : This dataset is released under the MIT License"
 
   - id: mas3k-hf
     domain: fauna
@@ -497,18 +499,18 @@ sources:
 
   - id: mouss
     domain: fauna
-    access_class: internal-only
+    access_class: open
     name: "mouss"
     version: "unversioned"
     description: "NOAA PIFSC MOUSS"
-    licence: NO-LICENCE-STATED
-    legal_basis: unknown
-    redistribution: unknown
+    licence: US-GOV-PD
+    legal_basis: licence
+    redistribution: ok
     provenance: public
     verification:
-      verified_on: 2026-10-08
-      verified_by: "registry/ingest-specs/mouss.yaml: license field copied verbatim, not independently checked"
-      method: secondary
+      verified_on: 2026-10-05
+      verified_by: "LIC-B audit 2026-10-05 read https://huggingface.co/datasets/akridge/MOUSS_fish_imagery_dataset_grayscale_small : License: Public Domain (NOAA Open Data)"
+      method: dataset-card
     access:
       method: huggingface
       uri: "https://huggingface.co/datasets/akridge/MOUSS_fish_imagery_dataset_grayscale_small"
@@ -519,11 +521,12 @@ sources:
     coverage: { regions: [unknown] }
     homepage: "https://huggingface.co/datasets/akridge/MOUSS_fish_imagery_dataset_grayscale_small"
     citation: "NOAA PIFSC MOUSS"
-    notes: "Folded from registry/ingest-specs/mouss.yaml on 2026-10-08 (P1.2). Spec license string, verbatim: 'NOASSERTION'. Domain, modalities and capabilities are keyword inferences from the spec text. The spec said access_class: open; tightened to internal-only because its licence string does not establish a licence (never guess). Loosen after verifying it."
+    notes: "Folded from registry/ingest-specs/mouss.yaml on 2026-10-08 (P1.2). Spec license string, verbatim: 'NOASSERTION'. Domain, modalities and capabilities are keyword inferences from the spec text. P1.2b (2026-10-08) restored the class to open: the LIC audit (2026-10-05) read the upstream licence (US-GOV-PD), see licence_evidence."
     tags: [spec-folded]
     superseded_by: mouss-detection
     release_skip_reason: "no-staged-images: registry lists imagery, nothing staged under sources/ in rs-storage-open (U7/queue follow-up)"
     n_images_method: "unavailable:no-count"
+    licence_evidence: "https://huggingface.co/datasets/akridge/MOUSS_fish_imagery_dataset_grayscale_small : License: Public Domain (NOAA Open Data)"
 
   - id: muot3m
     domain: fauna
@@ -915,18 +918,18 @@ sources:
 
   - id: so268-ofos-analysis-ready
     domain: fauna
-    access_class: internal-only
+    access_class: open
     name: "so268 ofos analysis ready"
     version: "unversioned"
     description: "doi:10.1594/PANGAEA.957274 (bundle) + 10 profile DOIs (957262/264/265/266/267/269/270/272/273)"
-    licence: PER-SOURCE-VARIES
-    legal_basis: unknown
-    redistribution: unknown
+    licence: CC-BY-4.0
+    legal_basis: licence
+    redistribution: ok
     provenance: public
     verification:
-      verified_on: 2026-10-08
-      verified_by: "registry/ingest-specs/so268-ofos-analysis-ready.yaml: license field copied verbatim, not independently checked"
-      method: secondary
+      verified_on: 2026-10-05
+      verified_by: "LIC-B audit 2026-10-05 read https://doi.pangaea.de/10.1594/PANGAEA.957274 : license: https://creativecommons.org/licenses/by/4.0/ (PANGAEA JSON-LD)"
+      method: dataset-card
     access:
       method: http
       uri: "https://doi.org/10.1594/PANGAEA.957274"
@@ -939,9 +942,10 @@ sources:
     coverage: { regions: [unknown] }
     homepage: "https://doi.org/10.1594/PANGAEA.957274"
     citation: "doi:10.1594/PANGAEA.957274 (bundle) + 10 profile DOIs (957262/264/265/266/267/269/270/272/273)"
-    notes: "Folded from registry/ingest-specs/so268-ofos-analysis-ready.yaml on 2026-10-08 (P1.2). Spec license string, verbatim: 'CC-BY (PANGAEA, per series convention)'. Domain, modalities and capabilities are keyword inferences from the spec text. The spec said access_class: open; tightened to internal-only because its licence string does not establish a licence (never guess). Loosen after verifying it."
+    notes: "Folded from registry/ingest-specs/so268-ofos-analysis-ready.yaml on 2026-10-08 (P1.2). Spec license string, verbatim: 'CC-BY (PANGAEA, per series convention)'. Domain, modalities and capabilities are keyword inferences from the spec text. P1.2b (2026-10-08) restored the class to open: the LIC audit (2026-10-05) read the upstream licence (CC-BY-4.0), see licence_evidence."
     tags: [spec-folded]
     release_skip_reason: "no-staged-images: registry lists imagery, nothing staged under sources/ in rs-storage-open (U7/queue follow-up)"
+    licence_evidence: "https://doi.pangaea.de/10.1594/PANGAEA.957274 : license: https://creativecommons.org/licenses/by/4.0/ (PANGAEA JSON-LD)"
 
   - id: squidle
     domain: fauna
@@ -1223,7 +1227,7 @@ sources:
     coverage: { regions: [unknown] }
     homepage: "https://commons.wikimedia.org/wiki/Category:Underwater_photographs"
     citation: "Wikimedia Commons"
-    notes: "Folded from registry/ingest-specs/wikimedia-underwater.yaml on 2026-10-08 (P1.2). Spec license string, verbatim: 'per file (Commons extmetadata LicenseShortName): CC-BY-SA / CC-BY / CC0 / PD'. Domain, modalities and capabilities are keyword inferences from the spec text. The spec said access_class: open; tightened to internal-only because its licence string does not establish a licence (never guess). Loosen after verifying it."
+    notes: "Folded from registry/ingest-specs/wikimedia-underwater.yaml on 2026-10-08 (P1.2). Spec license string, verbatim: 'per file (Commons extmetadata LicenseShortName): CC-BY-SA / CC-BY / CC0 / PD'. Domain, modalities and capabilities are keyword inferences from the spec text. The spec said access_class: open; tightened to internal-only because its licence string does not establish a licence (never guess). Loosen after verifying it. LIC-B audit (2026-10-05, medium): licence is per file, free licences only (CC0, PD, CC-BY, CC-BY-SA) per https://commons.wikimedia.org/wiki/Commons:Licensing; there is no single licence id, so the class stays internal-only (research gate: legal_basis unknown) until each file's licence and author are captured at ingest."
     tags: [spec-folded]
     release_skip_reason: "no-staged-images: registry lists imagery, nothing staged under sources/ in rs-storage-open (U7/queue follow-up)"
 

@@ -262,20 +262,19 @@ sources:
 - id: mouss-seg
   domain: fish
   release_skip_reason: "no-staged-images: registry lists imagery, nothing staged under sources/ in rs-storage-open (U7/queue follow-up)"
-  access_class: unknown  # was open; licence not stated, legal_basis unknown (marinedata check)
+  access_class: open
   name: MOUSS fish segmentation (grayscale)
   version: unversioned
   description: Grayscale stationary-camera fish SEGMENTATION masks from NOAA PIFSC MOUSS surveys — a different
     HF repo/modality from the existing mouss-detection (bbox) entry in fish.yaml.
-  licence: NO-LICENCE-STATED
-  legal_basis: unknown
-  redistribution: unknown
+  licence: US-GOV-PD
+  legal_basis: licence
+  redistribution: ok
   provenance: public
   verification:
-    verified_on: '2026-09-25'
-    verified_by: huggingface.co/datasets/akridge/MOUSS_fish_segment_dataset_grayscale — no licence field
-      on the HF card
-    method: absent
+    verified_on: 2026-10-05
+    verified_by: "LIC-B audit 2026-10-05 read https://huggingface.co/datasets/akridge/MOUSS_fish_segment_dataset_grayscale : License: Public Domain (NOAA Open Data)"
+    method: dataset-card
   access:
     method: huggingface
     uri: https://huggingface.co/datasets/akridge/MOUSS_fish_segment_dataset_grayscale
@@ -301,8 +300,9 @@ sources:
   tags:
   - fish
   - segmentation
-  notes: 'access: pending-ingest — see registry/ingest-specs/mouss-seg.yaml (S57/w2b sweep, 2026-09-25).'
+  notes: "access: pending-ingest — see registry/ingest-specs/mouss-seg.yaml (S57/w2b sweep, 2026-09-25). P1.2b (2026-10-08) restored the class to open: the LIC audit (2026-10-05) read the upstream licence (US-GOV-PD), see licence_evidence."
   n_images_method: "registry-prior"
+  licence_evidence: "https://huggingface.co/datasets/akridge/MOUSS_fish_segment_dataset_grayscale : License: Public Domain (NOAA Open Data)"
 - id: urpc
   domain: fish
   release_skip_reason: "no-staged-images: registry lists imagery, nothing staged under sources/ in rs-storage-open (U7/queue follow-up)"

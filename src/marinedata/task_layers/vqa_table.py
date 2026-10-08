@@ -68,10 +68,10 @@ VQA_SOURCES: dict[str, VqaSource] = {
         VqaSource("coralvqa", "rev-3da50a4429e4", "coralvqa_unified", "pseudo",
                   "template:coralvqa-question-templates", "CC-BY-NC-4.0", NC),
         # lic-A: open (MIT README); the QA are model-generated (has_hallucination flags kept).
-        # P1.2: the spec states no licence, so the registry holds internal-only; this row follows.
+        # P1.2b: the registry class is open again (README quote in licence_evidence).
         VqaSource("marineevt", "rev-37488d3c7690", "marineevt_vqa", "model",
                   "vlm:unspecified (MarineEVT pipeline; model not named in the staged files)",
-                  "MIT", INTERNAL_ONLY),
+                  "MIT", OPEN),
         # lic-A: internal-only (no licence stated); QA generation is not documented in the files.
         VqaSource("uwbench", "rev-84af94500308", "uwbench_vqa", "model",
                   "vlm:unverified (UWBench QA generation not documented; conservative non-human)",

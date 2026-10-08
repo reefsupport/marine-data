@@ -221,18 +221,18 @@ sources:
 
   - id: pangaea-ps101-ofos-arctic
     domain: deep-sea
-    access_class: internal-only
+    access_class: open
     name: "pangaea ps101 ofos arctic"
     version: "unversioned"
     description: "doi:10.1594/PANGAEA.871550"
-    licence: PER-SOURCE-VARIES
-    legal_basis: unknown
-    redistribution: unknown
+    licence: CC-BY-3.0
+    legal_basis: licence
+    redistribution: ok
     provenance: public
     verification:
-      verified_on: 2026-10-08
-      verified_by: "registry/ingest-specs/pangaea-ps101-ofos-arctic.yaml: license field copied verbatim, not independently checked"
-      method: secondary
+      verified_on: 2026-10-05
+      verified_by: "LIC-B audit 2026-10-05 read https://doi.pangaea.de/10.1594/PANGAEA.871550 : license: https://creativecommons.org/licenses/by/3.0/ (PANGAEA JSON-LD); one sampled child dataset (873046) exposed no licence field"
+      method: dataset-card
     access:
       method: http
       uri: "https://doi.pangaea.de/10.1594/PANGAEA.871550"
@@ -245,9 +245,10 @@ sources:
     coverage: { regions: [unknown] }
     homepage: "https://doi.pangaea.de/10.1594/PANGAEA.871550"
     citation: "doi:10.1594/PANGAEA.871550"
-    notes: "Folded from registry/ingest-specs/pangaea-ps101-ofos-arctic.yaml on 2026-10-08 (P1.2). Spec license string, verbatim: 'CC-BY (per child)'. Domain, modalities and capabilities are keyword inferences from the spec text. The spec said access_class: open; tightened to internal-only because its licence string does not establish a licence (never guess). Loosen after verifying it."
+    notes: "Folded from registry/ingest-specs/pangaea-ps101-ofos-arctic.yaml on 2026-10-08 (P1.2). Spec license string, verbatim: 'CC-BY (per child)'. Domain, modalities and capabilities are keyword inferences from the spec text. P1.2b (2026-10-08) restored the class to open: the LIC audit (2026-10-05) read the upstream licence (CC-BY-3.0), see licence_evidence."
     tags: [spec-folded]
     release_skip_reason: "no-staged-images: registry lists imagery, nothing staged under sources/ in rs-storage-open (U7/queue follow-up)"
+    licence_evidence: "https://doi.pangaea.de/10.1594/PANGAEA.871550 : license: https://creativecommons.org/licenses/by/3.0/ (PANGAEA JSON-LD); one sampled child dataset (873046) exposed no licence field"
 
   - id: seanoe-eiffel-tower-vl
     domain: deep-sea

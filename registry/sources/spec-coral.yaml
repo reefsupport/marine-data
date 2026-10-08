@@ -242,18 +242,18 @@ sources:
 
   - id: noaa-pifsc-esa-coral-icra
     domain: coral
-    access_class: internal-only
+    access_class: open
     name: "noaa pifsc esa coral icra"
     version: "rev-b5e722f7c11e"
     description: "NMFS-OSI/NOAA-PIFSC-ESD-ESA-CORAL-ICRA-Dataset (HF)"
-    licence: NO-LICENCE-STATED
-    legal_basis: unknown
-    redistribution: unknown
+    licence: US-GOV-PD
+    legal_basis: licence
+    redistribution: ok
     provenance: public
     verification:
-      verified_on: 2026-10-08
-      verified_by: "registry/ingest-specs/noaa-pifsc-esa-coral-icra.yaml: license field copied verbatim, not independently checked"
-      method: secondary
+      verified_on: 2026-10-05
+      verified_by: "LIC-B audit 2026-10-05 read https://huggingface.co/datasets/NMFS-OSI/NOAA-PIFSC-ESD-ESA-CORAL-ICRA-Dataset/resolve/main/README.md : License: Public Domain (NOAA Open Data Public Access)"
+      method: dataset-card
     access:
       method: s3
       uri: s3://rs-storage-open/sources/noaa-pifsc-esa-coral-icra/rev-b5e722f7c11e
@@ -272,7 +272,7 @@ sources:
     coverage: { regions: [unknown] }
     homepage: "https://huggingface.co/datasets/NMFS-OSI/NOAA-PIFSC-ESD-ESA-CORAL-ICRA-Dataset"
     citation: "NMFS-OSI/NOAA-PIFSC-ESD-ESA-CORAL-ICRA-Dataset (HF)"
-    notes: "Folded from registry/ingest-specs/noaa-pifsc-esa-coral-icra.yaml on 2026-10-08 (P1.2). Spec license string, verbatim: 'other (HF card)'. Domain, modalities and capabilities are keyword inferences from the spec text. The spec said access_class: open; tightened to internal-only because its licence string does not establish a licence (never guess). Loosen after verifying it."
+    notes: "Folded from registry/ingest-specs/noaa-pifsc-esa-coral-icra.yaml on 2026-10-08 (P1.2). Spec license string, verbatim: 'other (HF card)'. Domain, modalities and capabilities are keyword inferences from the spec text. P1.2b (2026-10-08) restored the class to open: the LIC audit (2026-10-05) read the upstream licence (US-GOV-PD), see licence_evidence. Caveat (audit): confirm no third-party imagery is mixed in."
     tags: [spec-folded]
     superseded_by: noaa-coral-icra
     checksums:
@@ -280,6 +280,7 @@ sources:
       root_digest: b776eabfe5066dfd477d5a0cfdf26683cf8f10eb4bd79ea43c4be02f36bc3332
       files: 473
       size_bytes: 5140124601
+    licence_evidence: "https://huggingface.co/datasets/NMFS-OSI/NOAA-PIFSC-ESD-ESA-CORAL-ICRA-Dataset/resolve/main/README.md : License: Public Domain (NOAA Open Data Public Access)"
 
   - id: plc-beijbom2015
     domain: coral

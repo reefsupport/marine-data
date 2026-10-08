@@ -1,10 +1,11 @@
 # WP-6g (2026-09-25) new source: pangaea-series (WP-6j) — WP-6g gap 1,6: PS96 Weddell Sea OFOS: Antarctic shelf seabed stills
 id: pangaea-ps96-ofos-weddell
-access_class: internal-only  # P1.2: was open; licence not established
+access_class: open  # P1.2b: restored from the LIC audit, see licence_evidence
 adapter: pangaea-series
 params:
   doi: 10.1594/PANGAEA.862097
-license: CC-BY (per child)
+license: CC-BY-3.0
+licence_evidence: "https://doi.pangaea.de/10.1594/PANGAEA.862097 : license: https://creativecommons.org/licenses/by/3.0/ (PANGAEA JSON-LD)"
 attribution: AWI (Piepenburg / Purser et al.), PANGAEA
 citation: doi:10.1594/PANGAEA.862097
 homepage: https://doi.pangaea.de/10.1594/PANGAEA.862097
@@ -24,4 +25,3 @@ measured:
   child_datasets: 13
   items: 2736
   bytes_basis: 'not measured: PANGAEA child tab exports list image names/URLs but no file sizes (WP-6j listing only, no fetch)'
-bucket: rs-storage-private

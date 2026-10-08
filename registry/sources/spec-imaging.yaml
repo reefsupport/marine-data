@@ -243,18 +243,18 @@ sources:
 
   - id: pangaea-ps118-ofobs-peninsula
     domain: imaging
-    access_class: internal-only
+    access_class: open
     name: "pangaea ps118 ofobs peninsula"
     version: "unversioned"
     description: "doi:10.1594/PANGAEA.911904"
-    licence: PER-SOURCE-VARIES
-    legal_basis: unknown
-    redistribution: unknown
+    licence: CC-BY-4.0
+    legal_basis: licence
+    redistribution: ok
     provenance: public
     verification:
-      verified_on: 2026-10-08
-      verified_by: "registry/ingest-specs/pangaea-ps118-ofobs-peninsula.yaml: license field copied verbatim, not independently checked"
-      method: secondary
+      verified_on: 2026-10-05
+      verified_by: "LIC-B audit 2026-10-05 read https://doi.pangaea.de/10.1594/PANGAEA.911904 : license: https://creativecommons.org/licenses/by/4.0/ (PANGAEA JSON-LD)"
+      method: dataset-card
     access:
       method: http
       uri: "https://doi.pangaea.de/10.1594/PANGAEA.911904"
@@ -267,24 +267,25 @@ sources:
     coverage: { regions: [unknown] }
     homepage: "https://doi.pangaea.de/10.1594/PANGAEA.911904"
     citation: "doi:10.1594/PANGAEA.911904"
-    notes: "Folded from registry/ingest-specs/pangaea-ps118-ofobs-peninsula.yaml on 2026-10-08 (P1.2). Spec license string, verbatim: 'CC-BY (per child)'. Domain, modalities and capabilities are keyword inferences from the spec text. The spec said access_class: open; tightened to internal-only because its licence string does not establish a licence (never guess). Loosen after verifying it."
+    notes: "Folded from registry/ingest-specs/pangaea-ps118-ofobs-peninsula.yaml on 2026-10-08 (P1.2). Spec license string, verbatim: 'CC-BY (per child)'. Domain, modalities and capabilities are keyword inferences from the spec text. P1.2b (2026-10-08) restored the class to open: the LIC audit (2026-10-05) read the upstream licence (CC-BY-4.0), see licence_evidence."
     tags: [spec-folded]
     release_skip_reason: "no-staged-images: registry lists imagery, nothing staged under sources/ in rs-storage-open (U7/queue follow-up)"
+    licence_evidence: "https://doi.pangaea.de/10.1594/PANGAEA.911904 : license: https://creativecommons.org/licenses/by/4.0/ (PANGAEA JSON-LD)"
 
   - id: pangaea-ps81-ofos-antarctic
     domain: imaging
-    access_class: internal-only
+    access_class: open
     name: "pangaea ps81 ofos antarctic"
     version: "unversioned"
     description: "doi:10.1594/PANGAEA.872719"
-    licence: PER-SOURCE-VARIES
-    legal_basis: unknown
-    redistribution: unknown
+    licence: CC-BY-3.0
+    legal_basis: licence
+    redistribution: ok
     provenance: public
     verification:
-      verified_on: 2026-10-08
-      verified_by: "registry/ingest-specs/pangaea-ps81-ofos-antarctic.yaml: license field copied verbatim, not independently checked"
-      method: secondary
+      verified_on: 2026-10-05
+      verified_by: "LIC-B audit 2026-10-05 read https://doi.pangaea.de/10.1594/PANGAEA.872719 : license: https://creativecommons.org/licenses/by/3.0/ (PANGAEA JSON-LD)"
+      method: dataset-card
     access:
       method: http
       uri: "https://doi.pangaea.de/10.1594/PANGAEA.872719"
@@ -297,24 +298,25 @@ sources:
     coverage: { regions: [unknown] }
     homepage: "https://doi.pangaea.de/10.1594/PANGAEA.872719"
     citation: "doi:10.1594/PANGAEA.872719"
-    notes: "Folded from registry/ingest-specs/pangaea-ps81-ofos-antarctic.yaml on 2026-10-08 (P1.2). Spec license string, verbatim: 'CC-BY (per child)'. Domain, modalities and capabilities are keyword inferences from the spec text. The spec said access_class: open; tightened to internal-only because its licence string does not establish a licence (never guess). Loosen after verifying it."
+    notes: "Folded from registry/ingest-specs/pangaea-ps81-ofos-antarctic.yaml on 2026-10-08 (P1.2). Spec license string, verbatim: 'CC-BY (per child)'. Domain, modalities and capabilities are keyword inferences from the spec text. P1.2b (2026-10-08) restored the class to open: the LIC audit (2026-10-05) read the upstream licence (CC-BY-3.0), see licence_evidence."
     tags: [spec-folded]
     release_skip_reason: "no-staged-images: registry lists imagery, nothing staged under sources/ in rs-storage-open (U7/queue follow-up)"
+    licence_evidence: "https://doi.pangaea.de/10.1594/PANGAEA.872719 : license: https://creativecommons.org/licenses/by/3.0/ (PANGAEA JSON-LD)"
 
   - id: pangaea-ps96-ofos-weddell
     domain: imaging
-    access_class: internal-only
+    access_class: open
     name: "pangaea ps96 ofos weddell"
     version: "unversioned"
     description: "doi:10.1594/PANGAEA.862097"
-    licence: PER-SOURCE-VARIES
-    legal_basis: unknown
-    redistribution: unknown
+    licence: CC-BY-3.0
+    legal_basis: licence
+    redistribution: ok
     provenance: public
     verification:
-      verified_on: 2026-10-08
-      verified_by: "registry/ingest-specs/pangaea-ps96-ofos-weddell.yaml: license field copied verbatim, not independently checked"
-      method: secondary
+      verified_on: 2026-10-05
+      verified_by: "LIC-B audit 2026-10-05 read https://doi.pangaea.de/10.1594/PANGAEA.862097 : license: https://creativecommons.org/licenses/by/3.0/ (PANGAEA JSON-LD)"
+      method: dataset-card
     access:
       method: http
       uri: "https://doi.pangaea.de/10.1594/PANGAEA.862097"
@@ -327,9 +329,10 @@ sources:
     coverage: { regions: [unknown] }
     homepage: "https://doi.pangaea.de/10.1594/PANGAEA.862097"
     citation: "doi:10.1594/PANGAEA.862097"
-    notes: "Folded from registry/ingest-specs/pangaea-ps96-ofos-weddell.yaml on 2026-10-08 (P1.2). Spec license string, verbatim: 'CC-BY (per child)'. Domain, modalities and capabilities are keyword inferences from the spec text. The spec said access_class: open; tightened to internal-only because its licence string does not establish a licence (never guess). Loosen after verifying it."
+    notes: "Folded from registry/ingest-specs/pangaea-ps96-ofos-weddell.yaml on 2026-10-08 (P1.2). Spec license string, verbatim: 'CC-BY (per child)'. Domain, modalities and capabilities are keyword inferences from the spec text. P1.2b (2026-10-08) restored the class to open: the LIC audit (2026-10-05) read the upstream licence (CC-BY-3.0), see licence_evidence."
     tags: [spec-folded]
     release_skip_reason: "no-staged-images: registry lists imagery, nothing staged under sources/ in rs-storage-open (U7/queue follow-up)"
+    licence_evidence: "https://doi.pangaea.de/10.1594/PANGAEA.862097 : license: https://creativecommons.org/licenses/by/3.0/ (PANGAEA JSON-LD)"
 
   - id: pingmapper-sss-seg
     domain: imaging

@@ -164,11 +164,11 @@ def test_kaggle_bleaching_is_internal_and_dropped():
     ("source", "expected"),
     [
         ("large-scale-fish", OPEN),
-        ("marineevt", INTERNAL_ONLY),  # P1.2: licence unstated
+        ("marineevt", OPEN),  # P1.2b: README says MIT (LIC-A)
         ("seatizen-atlas", OPEN),
-        ("mouss-seg", UNKNOWN),
-        ("noaa-coral-icra", UNKNOWN),
-        ("plasticinwater", UNKNOWN),
+        ("mouss-seg", OPEN),  # P1.2b: audit evidence restored
+        ("noaa-coral-icra", OPEN),  # P1.2b: audit evidence restored
+        ("plasticinwater", OPEN),  # P1.2b: audit evidence restored
         ("caddy", NC),
         ("mermaid-aws", NC),
         ("kaggle-healthy-bleached-corals", INTERNAL_ONLY),

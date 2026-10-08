@@ -1,13 +1,13 @@
 id: plasticinwater
-access_class: unknown  # was open; licence not stated and legal_basis unknown in the registry, so `marinedata check` flagged it. Set back to open together with a verified licence.
+access_class: open  # P1.2b: restored from the LIC audit, see licence_evidence
 adapter: hf
 params:
   repo: OceanCV/PlasticInWater
   revision: c380143ae980
-license: unknown
+license: MIT
+licence_evidence: "https://huggingface.co/datasets/OceanCV/PlasticInWater : license: MIT (card claim only; upstream image provenance unstated, Roboflow-style export)"
 attribution: OceanCV
 citation: OceanCV/PlasticInWater (HF)
 homepage: https://huggingface.co/datasets/OceanCV/PlasticInWater
 
 disk_floor_gib: 36.0
-bucket: rs-storage-private

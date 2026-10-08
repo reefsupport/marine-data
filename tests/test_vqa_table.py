@@ -246,7 +246,7 @@ def test_marineevt_video_qa_is_pending_with_options_and_flags():
         and attrs["frames_staged"] == 2
         and attrs["options"][1] == "B. Watches the turtle"
     )
-    assert attrs["has_hallucination"] is False and attrs["licence_class"] == "internal-only"
+    assert attrs["has_hallucination"] is False and attrs["licence_class"] == "open"
     assert (row["annotator_type"], row["upstream_split"], row["qa_type"]) == (
         "model",
         "test",

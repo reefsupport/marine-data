@@ -101,21 +101,17 @@ sources:
 - id: noaa-coral-icra
   domain: coral
   release_skip_reason: "no-staged-images: registry lists imagery, nothing staged under sources/ in rs-storage-open (U7/queue follow-up)"
-  access_class: unknown  # was open; licence not stated, legal_basis unknown (marinedata check)
+  access_class: open
   name: NOAA PIFSC ESD-ESA coral ICRA
   version: unversioned
   description: NOAA PIFSC coral image classification/detection assessment (ICRA) dataset.
-  licence:
-    id: other-hf
-    name: other-hf
-    tier: T4_TDM_ONLY
+  licence: US-GOV-PD
   verification:
-    verified_on: '2026-09-25'
-    verified_by: S57 catalog reports/data/2026-09-25-5star-catalog.tsv row (HF/Zenodo API or DataCite,
-      checked 2026-09-25)
-    method: secondary
-  legal_basis: unknown
-  redistribution: unknown
+    verified_on: 2026-10-05
+    verified_by: "LIC-B audit 2026-10-05 read https://huggingface.co/datasets/NMFS-OSI/NOAA-PIFSC-ESD-ESA-CORAL-ICRA-Dataset : License: Public Domain (NOAA Open Data Public Access)"
+    method: dataset-card
+  legal_basis: licence
+  redistribution: ok
   provenance: public
   access:
     method: huggingface
@@ -134,10 +130,10 @@ sources:
     - central-pacific
   citation: NOAA PIFSC ESD-ESA CORAL-ICRA
   homepage: https://huggingface.co/datasets/NMFS-OSI/NOAA-PIFSC-ESD-ESA-CORAL-ICRA-Dataset
-  notes: 'Not yet ingested (access: pending-ingest per S57 catalog planning; checksums unset until staged).
-    queued for a dry-run ingest via the supported adapter.'
+  notes: "Not yet ingested (access: pending-ingest per S57 catalog planning; checksums unset until staged). queued for a dry-run ingest via the supported adapter. P1.2b (2026-10-08) restored the class to open: the LIC audit (2026-10-05) read the upstream licence (US-GOV-PD), see licence_evidence."
   counts_note: <1K (HF viewer)
   n_images_method: "unavailable:no-count"
+  licence_evidence: "https://huggingface.co/datasets/NMFS-OSI/NOAA-PIFSC-ESD-ESA-CORAL-ICRA-Dataset : License: Public Domain (NOAA Open Data Public Access)"
 - id: coralnet-small
   domain: coral
   access_class: internal-only
@@ -1289,21 +1285,17 @@ sources:
 - id: plasticinwater
   domain: imaging
   release_skip_reason: "no-staged-images: registry lists imagery, nothing staged under sources/ in rs-storage-open (U7/queue follow-up)"
-  access_class: unknown  # was open; licence not stated, legal_basis unknown (marinedata check)
+  access_class: open
   name: OceanCV PlasticInWater
   version: unversioned
   description: Underwater marine-debris (plastic) detection imagery from the OceanCV project.
-  licence:
-    id: unknown
-    name: unknown
-    tier: T4_TDM_ONLY
+  licence: MIT
   verification:
-    verified_on: '2026-09-25'
-    verified_by: S57 catalog reports/data/2026-09-25-5star-catalog.tsv row (HF/Zenodo API or DataCite,
-      checked 2026-09-25)
-    method: secondary
-  legal_basis: unknown
-  redistribution: unknown
+    verified_on: 2026-10-05
+    verified_by: "LIC-B audit 2026-10-05 read https://huggingface.co/datasets/OceanCV/PlasticInWater : license: MIT (card claim only; upstream image provenance unstated, Roboflow-style export)"
+    method: dataset-card
+  legal_basis: licence
+  redistribution: ok
   provenance: public
   access:
     method: huggingface
@@ -1321,11 +1313,11 @@ sources:
     - unknown
   citation: OceanCV/PlasticInWater (HF)
   homepage: https://huggingface.co/datasets/OceanCV/PlasticInWater
-  notes: 'Not yet ingested (access: pending-ingest per S57 catalog planning; checksums unset until staged).
-    queued for a dry-run ingest via the supported adapter.'
+  notes: "Not yet ingested (access: pending-ingest per S57 catalog planning; checksums unset until staged). queued for a dry-run ingest via the supported adapter. P1.2b (2026-10-08) restored the class to open: the LIC audit (2026-10-05) read the upstream licence (MIT), see licence_evidence. Caveat: the images look like a Roboflow export and their provenance is unstated; the licence is the card's claim only."
   n_images: 1032
   counts_note: rows (HF viewer)
   n_images_method: "registry-prior"
+  licence_evidence: "https://huggingface.co/datasets/OceanCV/PlasticInWater : license: MIT (card claim only; upstream image provenance unstated, Roboflow-style export)"
 - id: caddy
   domain: imaging
   access_class: restricted-nc
