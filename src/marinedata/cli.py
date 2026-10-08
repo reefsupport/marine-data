@@ -10,6 +10,7 @@ from __future__ import annotations
 
 import argparse
 import sys
+from importlib import metadata
 
 from .cli_auth import add_auth_subparser  # D9: `marinedata auth check`
 from .cli_bench import add_bench_subparser  # WP-11 P1: registry/benchmarks.yaml validate+hash
@@ -364,10 +365,18 @@ def _cmd_labels(args: argparse.Namespace) -> int:
     return 1 if drops and args.strict else 0
 
 
+def _package_version() -> str:
+    try:
+        return metadata.version("marinedata")
+    except metadata.PackageNotFoundError:  # running from a source tree that was never installed
+        return "unknown"
+
+
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         prog="marinedata", description="Licence-aware marine dataset registry."
     )
+    parser.add_argument("--version", action="version", version=f"marinedata {_package_version()}")
     sub = parser.add_subparsers(dest="command", required=True)
 
     def add_common(p: argparse.ArgumentParser) -> None:

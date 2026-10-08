@@ -1,4 +1,4 @@
-.PHONY: ci lint check taxonomy-check labels-check docs docs-check gates test e2e
+.PHONY: ci lint check taxonomy-check labels-check docs docs-check gates test e2e image image-check
 
 # `ci` is the exact sequence the GitHub Actions "Test" step runs — kept here so a
 # contributor can reproduce a CI failure locally with one command, and so the
@@ -55,3 +55,21 @@ test:
 # <60s, network-free budget easy to eyeball independent of the full suite.
 e2e:
 	uv run pytest -q tests/test_e2e_release.py
+
+# Release-build image (Dockerfile; deploy/release-vm/ runs it on a temporary VM). Not part of
+# `ci`: it needs a Docker daemon. `image-check` fails when the image is over IMAGE_MAX_BYTES.
+IMAGE ?= marinedata
+IMAGE_TAG ?= $(shell git describe --tags --always --dirty)
+IMAGE_MAX_BYTES ?= 1500000000
+
+image:
+	docker build -t $(IMAGE):$(IMAGE_TAG) .
+
+image-check:
+	@docker image inspect $(IMAGE):$(IMAGE_TAG) > /dev/null 2>&1 || \
+	  { echo "image-check: $(IMAGE):$(IMAGE_TAG) not built: run 'make image' first"; exit 1; }
+	docker run --rm $(IMAGE):$(IMAGE_TAG) --version
+	@docker run --rm $(IMAGE):$(IMAGE_TAG) check --profile research > /dev/null && \
+	  echo "image-check: registry check ok (research profile, repo registry, no bucket)"
+	@size=$$(docker image inspect --format '{{.Size}}' $(IMAGE):$(IMAGE_TAG)) && \
+	  echo "image-check: $$size bytes (cap $(IMAGE_MAX_BYTES))" && [ $$size -le $(IMAGE_MAX_BYTES) ]
