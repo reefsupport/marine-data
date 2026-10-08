@@ -52,7 +52,7 @@
   "license": [
     "CC0-1.0"
   ],
-  "citeAs": "@misc{reef_support_marine_data_2026,\n  title = {marine-data},\n  author = {Reef Support},\n  year = {2026},\n  version = {1.0},\n  url = {https://huggingface.co/datasets/reefsupport/marine-data},\n}",
+  "citeAs": "@misc{reef_support_marine_data_2026,\n  title = {marine-data},\n  author = {Reef Support},\n  year = {2026},\n  version = {1.0.0},\n  url = {https://huggingface.co/datasets/reefsupport/marine-data},\n}",
   "creator": [
     {
       "@type": "sc:Person",

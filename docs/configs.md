@@ -41,7 +41,7 @@ Published configs come from `registry/label-schemes/sources.yaml`; the layout, m
 
 | config | sources |
 | --- | --- |
-| `points` | `mermaid-aws`, `reefolution` |
+| `points` | `mermaid-aws`, `reefolution`, `seaview-survey-imagery` |
 | `vqa` | `coralvqa`, `marineevt`, `uwbench` |
 | `semseg` | `coralscapes`, `coralscop-masks-rs`, `coralseg-ucsd-mosaics`, `reef-support-benthic-own`, `suim` |
 | `benthic-coarse` | `coralscapes`, `reef-support-benthic-own` |

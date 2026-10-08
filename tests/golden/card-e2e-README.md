@@ -231,7 +231,7 @@ ds = load_dataset("reefsupport/marine-data", "images", split="train", revision="
   title = {marine-data},
   author = {Reef Support},
   year = {2026},
-  version = {1.0},
+  version = {1.0.0},
   url = {https://huggingface.co/datasets/reefsupport/marine-data},
 }
 ```
