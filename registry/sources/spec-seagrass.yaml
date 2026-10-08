@@ -6,6 +6,7 @@ sources:
   - id: deepseagrass
     domain: seagrass
     access_class: restricted-nd
+    licence_evidence: "https://data.csiro.au/dap/ws/v2/collections/47653 — 'Creative Commons Attribution-Noncommercial-No Derivatives 4.0 International Licence' (LIC-A audit 2026-10-05, confidence high)"
     name: "deepseagrass"
     version: "dap-47653-72004"
     description: "Raine et al. 2020, DeepSeagrass v1, CSIRO Data Collection, doi:10.25919/spmy-5151"

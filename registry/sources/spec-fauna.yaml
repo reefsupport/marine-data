@@ -74,7 +74,8 @@ sources:
 
   - id: brackish
     domain: fauna
-    access_class: open
+    access_class: unknown  # P1.2d: was open; no licence evidence
+    licence_evidence: "unverified: claimed as 'CC-BY-4.0' in registry/ingest-specs/brackish.yaml license (folded 2026-10-08, never checked against https://huggingface.co/datasets/dronefreak/Brackish)"
     name: "brackish"
     version: "unversioned"
     description: "Pedersen+ CVPRW2019"
@@ -145,6 +146,7 @@ sources:
   - id: discol-peru-basin-ofos
     domain: fauna
     access_class: open
+    licence_evidence: "registry/ingest-specs/discol-peru-basin-ofos.yaml license: 'CC-BY-3.0 (verified via page meta tag, unrestricted)'; measured.per_item_license 'CC-BY-3.0' (2026-09-25); page https://doi.pangaea.de/10.1594/PANGAEA.890634"
     name: "discol peru basin ofos"
     version: "unversioned"
     description: "doi:10.1594/PANGAEA.890634"
@@ -206,6 +208,7 @@ sources:
   - id: imos-auv
     domain: fauna
     access_class: open
+    licence_evidence: "https://imos.org.au/conditions-of-use — 'IMOS data ... licensed under a Creative Commons Attribution 4.0 International License' (WP-LICV audit 2026-10-05, confidence confirmed-open)"
     name: "imos auv"
     version: "unversioned"
     description: "IMOS AUV Facility, https://imos.org.au/facility/autonomous-underwater-vehicles"
@@ -321,6 +324,7 @@ sources:
   - id: marineeval
     domain: fauna
     access_class: open
+    licence_evidence: "https://huggingface.co/datasets/WongYukKwan/MarineEval — 'HF card front matter: license: cc-by-4.0' (WP-LICV audit 2026-10-05, confidence confirmed-open)"
     name: "marineeval"
     version: "rev-cb94f5a61594"
     description: "Wong et al. 2025, MarineEval: A Large-scale Benchmark for Marine Understanding in Vision-Language Models, arXiv:2512.21126"
@@ -471,7 +475,8 @@ sources:
 
   - id: mlc-moorea
     domain: fauna
-    access_class: open
+    access_class: unknown  # P1.2d: was open; no licence evidence
+    licence_evidence: "unverified: claimed as 'CC-BY-4.0 (MCR LTER policy)' in registry/ingest-specs/mlc-moorea.yaml license (folded 2026-10-08, never checked against https://portal.edirepository.org/nis/mapbrowse?scope=knb-lter-mcr&identifier=5006); measured.per_item_license 'CC-BY-4.0' (2026-09-25)"
     name: "mlc moorea"
     version: "unversioned"
     description: "doi:10.6073/pasta/88dde0e68ab5232a470389f4bedd1892"
@@ -534,6 +539,7 @@ sources:
   - id: muot3m
     domain: fauna
     access_class: restricted-nd
+    licence_evidence: "https://huggingface.co/api/datasets/AhsanBB/MUOT_3M-A_3_Million_Frame_Underwater_Object_Tracking_Dataset — 'license: cc-by-nc-nd-4.0' (LIC-A audit 2026-10-05, confidence high)"
     name: "muot3m"
     version: "rev-4294cb6a2537"
     description: "MUOT-3M (2025), HF AhsanBB"
@@ -569,7 +575,8 @@ sources:
 
   - id: nautdata
     domain: fauna
-    access_class: open
+    access_class: unknown  # P1.2d: was open; no licence evidence
+    licence_evidence: "unverified: claimed as 'apache-2.0' in registry/ingest-specs/nautdata.yaml license (folded 2026-10-08, never checked against https://huggingface.co/datasets/H-EmbodVis/NautData)"
     name: "nautdata"
     version: "unversioned"
     description: "H-EmbodVis/NautData (HF)"
@@ -598,7 +605,8 @@ sources:
 
   - id: noaa-gfisher
     domain: fauna
-    access_class: open
+    access_class: unknown  # P1.2d: was open; no licence evidence
+    licence_evidence: "unverified: claimed as 'cc0-1.0' in registry/ingest-specs/noaa-gfisher.yaml license (folded 2026-10-08, never checked against https://huggingface.co/datasets/NMFS-OSI/GFISHER)"
     name: "noaa gfisher"
     version: "unversioned"
     description: "NMFS-OSI/GFISHER (HF)"
@@ -627,7 +635,8 @@ sources:
 
   - id: noaa-oer-video
     domain: fauna
-    access_class: open
+    access_class: unknown  # P1.2d: was open; no licence evidence
+    licence_evidence: "unverified: claimed as 'public domain (US government work)' in registry/ingest-specs/noaa-oer-video.yaml license (folded 2026-10-08, never checked against https://www.ncei.noaa.gov/access/ocean-exploration/video/)"
     name: "noaa oer video"
     version: "unversioned"
     description: "NOAA Ocean Exploration, Okeanos Explorer ROV dives"
@@ -657,6 +666,7 @@ sources:
   - id: oceangym
     domain: fauna
     access_class: open
+    licence_evidence: "https://huggingface.co/datasets/zjunlp/OceanGym — 'HF card front matter: license: mit' (WP-LICV audit 2026-10-05, confidence confirmed-open)"
     name: "oceangym"
     version: "rev-ca7a8b677cdb"
     description: "HF dataset zjunlp/OceanGym"
@@ -696,7 +706,8 @@ sources:
 
   - id: onc-camdsb103-fauna
     domain: fauna
-    access_class: open
+    access_class: unknown  # P1.2d: was open; no licence evidence
+    licence_evidence: "unverified: claimed as 'cc-by-4.0' in registry/ingest-specs/onc-camdsb103-fauna.yaml license (folded 2026-10-08, never checked against https://zenodo.org/records/22134596); measured.per_item_license 'cc-by-4.0' (2026-09-25)"
     name: "onc camdsb103 fauna"
     version: "unversioned"
     description: "doi:10.5281/zenodo.22134596 — CAMDSB103 August 2022 to August 2023 Fauna Annotations"
@@ -725,7 +736,8 @@ sources:
 
   - id: onc
     domain: fauna
-    access_class: open
+    access_class: unknown  # P1.2d: was open; no licence evidence
+    licence_evidence: "unverified: claimed as 'CC-BY-4.0 (with account)' in registry/ingest-specs/onc.yaml license (folded 2026-10-08, never checked against https://data.oceannetworks.ca/); measured.per_item_license 'CC-BY-4.0' (2026-09-25)"
     name: "onc"
     version: "unversioned"
     description: "data.oceannetworks.ca"
@@ -794,7 +806,8 @@ sources:
 
   - id: scallop-pecten-scotland
     domain: fauna
-    access_class: open
+    access_class: unknown  # P1.2d: was open; no licence evidence
+    licence_evidence: "unverified: claimed as 'cc-by-4.0' in registry/ingest-specs/scallop-pecten-scotland.yaml license (folded 2026-10-08, never checked against https://zenodo.org/records/10156830); measured.per_item_license 'cc-by-4.0' (2026-09-25)"
     name: "scallop pecten scotland"
     version: "unversioned"
     description: "doi:10.5281/zenodo.10156830 — Data for Scallop (Pecten maximus) Identification in Natural Marine Habitats: A NetHarn Model Approach."
@@ -825,11 +838,12 @@ sources:
   - id: schmidt-ocean-rov
     domain: fauna
     access_class: restricted-nc
+    licence_evidence: "https://biigle.de/ — '(c) 2023 Schmidt Ocean Institute ( CC BY-NC-SA 4.0 )' (LIC-B audit 2026-10-05, confidence low)"
     name: "schmidt ocean rov"
     version: "unversioned"
     description: "schmidtocean.org"
-    licence: NO-LICENCE-STATED
-    legal_basis: unknown
+    licence: CC-BY-NC-SA-4.0
+    legal_basis: licence
     redistribution: unknown
     provenance: public
     verification:
@@ -853,7 +867,8 @@ sources:
 
   - id: seaclear
     domain: fauna
-    access_class: open
+    access_class: unknown  # P1.2d: was open; no licence evidence
+    licence_evidence: "unverified: claimed as 'CC-BY-4.0' in registry/ingest-specs/seaclear.yaml license (folded 2026-10-08, never checked against https://doi.org/10.1038/s41597-024-03286-0)"
     name: "seaclear"
     version: "unversioned"
     description: "Djuraskovic+ Sci Data 2024"
@@ -955,6 +970,7 @@ sources:
   - id: squidle
     domain: fauna
     access_class: unknown
+    licence_evidence: "unverified: https://squidle.org/ — 'landing page exposes no licence text' (LIC-B audit 2026-10-05, confidence low)"
     name: "squidle"
     version: "unversioned"
     description: "squidle.org"
@@ -985,6 +1001,7 @@ sources:
   - id: synthetic-seabed-debris
     domain: fauna
     access_class: restricted-nc
+    licence_evidence: "https://zenodo.org/api/records/21208479 — 'metadata.license.id: cc-by-nc-4.0; access_right open' (LIC-A audit 2026-10-05, confidence high)"
     name: "synthetic seabed debris"
     version: "1.0.0"
     description: "doi:10.5281/zenodo.21208479 — Synthetic Seabed Dataset"
@@ -1024,7 +1041,8 @@ sources:
 
   - id: trash-icra19
     domain: fauna
-    access_class: open
+    access_class: unknown  # P1.2d: was open; no licence evidence
+    licence_evidence: "unverified: claimed as 'cc-by-4.0' in registry/ingest-specs/trash-icra19.yaml license (folded 2026-10-08, never checked against https://conservancy.umn.edu/handle/11299/214366)"
     name: "trash icra19"
     version: "unversioned"
     description: "Fulton et al. 2019, ICRA (Trash-ICRA19)"
@@ -1053,7 +1071,8 @@ sources:
 
   - id: trashcan
     domain: fauna
-    access_class: open
+    access_class: unknown  # P1.2d: was open; no licence evidence
+    licence_evidence: "unverified: claimed as 'cc-by-4.0' in registry/ingest-specs/trashcan.yaml license (folded 2026-10-08, never checked against https://conservancy.umn.edu/handle/11299/214865)"
     name: "trashcan"
     version: "unversioned"
     description: "Hong et al. 2020, TrashCan 1.0"
@@ -1083,6 +1102,7 @@ sources:
   - id: treeoflife-10m-captions
     domain: fauna
     access_class: restricted-nc
+    licence_evidence: "inherited from parent treeoflife-10m: https://huggingface.co/datasets/imageomics/TreeOfLife-10M — 'licenses.csv: File with license, source, and copyright holder' (LIC-B audit 2026-10-05, confidence medium); subset recorded in registry/ingest-specs/treeoflife-10m-captions.yaml with measured.per_item_license 'cc-by-sa-4.0'"
     name: "treeoflife 10m captions"
     version: "unversioned"
     description: "imageomics BioCap"
@@ -1113,6 +1133,7 @@ sources:
   - id: treeoflife-10m
     domain: fauna
     access_class: restricted-nc
+    licence_evidence: "https://huggingface.co/datasets/imageomics/TreeOfLife-10M — 'licenses.csv: File with license, source, and copyright holder' (LIC-B audit 2026-10-05, confidence medium)"
     name: "treeoflife 10m"
     version: "unversioned"
     description: "Stevens et al. 2024, CVPR, BioCLIP"
@@ -1240,6 +1261,7 @@ sources:
   - id: zooscannet
     domain: fauna
     access_class: internal-only
+    licence_evidence: "https://huggingface.co/datasets/project-oceania/zooscannet — 'cardData.license: cc-by-nc-4.0; gated: manual' (LIC-B audit 2026-10-05, confidence medium)"
     name: "zooscannet"
     version: "unversioned"
     description: "project-oceania/zooscannet (HF)"

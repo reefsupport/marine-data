@@ -6,6 +6,7 @@ sources:
   - id: fathomnet-fgvc23
     domain: deep-sea
     access_class: restricted-nd
+    licence_evidence: "inherited from parent fathomnet: https://www.fathomnet.org/terms — 'Visual Content ... used only as training data for developing machine learning algorithms' (LIC-A audit 2026-10-05, confidence medium); subset recorded in registry/ingest-specs/fathomnet-fgvc23.yaml with measured.per_item_license 'CC-BY-4.0'"
     name: "fathomnet fgvc23"
     version: "rev-4636bed20b3b"
     description: "fathomnet/fgvc-comp-2023 (GitHub); official Kaggle FGVC10 competition"
@@ -48,6 +49,7 @@ sources:
   - id: fathomnet-fgvc25
     domain: deep-sea
     access_class: restricted-nd
+    licence_evidence: "inherited from parent fathomnet: https://www.fathomnet.org/terms — 'Visual Content ... used only as training data for developing machine learning algorithms' (LIC-A audit 2026-10-05, confidence medium); subset recorded in registry/ingest-specs/fathomnet-fgvc25.yaml with measured.per_item_license 'CC-BY-4.0'"
     name: "fathomnet fgvc25"
     version: "2025"
     description: "FathomNet 2025 competition (Kaggle); FGVC12 workshop, CVPR 2025"
@@ -90,6 +92,7 @@ sources:
   - id: fathomnet-vme
     domain: deep-sea
     access_class: restricted-nd
+    licence_evidence: "https://www.fathomnet.org/terms — 'select from one of four Creative Commons licenses: CC0, CC-BY, CC-BY-NC, and CC-BY-NC-ND' (LIC-B audit 2026-10-05, confidence medium)"
     name: "fathomnet vme"
     version: "unversioned"
     description: "FathomNet/2024-vme-benchmark (HF)"
@@ -121,6 +124,7 @@ sources:
   - id: galapagos-insas
     domain: deep-sea
     access_class: open
+    licence_evidence: "https://zenodo.org/api/records/17393662 — 'metadata.license: {\"id\": \"cc-by-4.0\"}; access_right: open' (WP-LICV audit 2026-10-05, confidence confirmed-open)"
     name: "galapagos insas"
     version: "record-17393662"
     description: "doi:10.5281/zenodo.17393662 — Interferometric Synthetic Aperture Sonar data from the FKt231024 expedition to the Galapagos Spreading Center"
@@ -190,6 +194,7 @@ sources:
   - id: pangaea-cvap-lander-bbox
     domain: deep-sea
     access_class: open
+    licence_evidence: "https://doi.pangaea.de/10.1594/PANGAEA.961314 — 'rightsIdentifier=\"CC-BY-4.0\" (DataCite4 via PANGAEA OAI)' (WP-LICV audit 2026-10-05, confidence confirmed-open)"
     name: "pangaea cvap lander bbox"
     version: "PANGAEA.961314"
     description: "doi:10.1594/PANGAEA.961314"
@@ -256,7 +261,8 @@ sources:
 
   - id: seanoe-eiffel-tower-vl
     domain: deep-sea
-    access_class: open
+    access_class: unknown  # P1.2d: was open; no licence evidence
+    licence_evidence: "unverified: claimed as 'CC-BY-4.0 (SEANOE)' in registry/ingest-specs/seanoe-eiffel-tower-vl.yaml license (folded 2026-10-08, never checked against https://doi.org/10.17882/92226); measured.per_item_license 'CC-BY-4.0 (SEANOE)' (2026-09-25)"
     name: "seanoe eiffel tower vl"
     version: "unversioned"
     description: "doi:10.17882/92226"

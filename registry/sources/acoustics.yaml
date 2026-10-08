@@ -10,6 +10,7 @@ sources:
     domain: coral
     release_skip_reason: "non-image-modality: audio manifest labels: keep out of the v2 image release, candidate for a later audio config"
     access_class: open
+    licence_evidence: "legacy verification record (dataset-card, 2026-08-17): Zenodo record 11071202 — CC-BY 4.0"
     name: ReefSet v1.0
     # habitat inferred (WP-2b) from this source's own description/notes, not independently verified
     habitat: [coral_reef]
@@ -75,6 +76,7 @@ sources:
     domain: imaging
     release_skip_reason: "non-image-modality: hydrophone audio"
     access_class: open
+    licence_evidence: "legacy verification record (dataset-card, 2026-08-17): AWS Open Data registry 'pacific-sound' — CC-BY 4.0"
     name: MBARI Pacific Sound (MARS hydrophone)
     # habitat inferred (WP-2b) from this source's own description/notes, not independently verified
     habitat: [pelagic]
@@ -113,6 +115,7 @@ sources:
     domain: imaging
     release_skip_reason: "non-image-modality: hydrophone audio"
     access_class: open
+    licence_evidence: "legacy verification record (site-terms, 2026-08-17): NOAA NCEI passive acoustic data products — US Government, CC0"
     name: NOAA SanctSound passive acoustic archive
     # habitat inferred (WP-2b) from this source's own description/notes, not independently verified
     habitat: [mixed]
@@ -140,6 +143,7 @@ sources:
     domain: imaging
     release_skip_reason: "non-image-modality: audio/video soundscape"
     access_class: open
+    licence_evidence: "legacy verification record (dataset-card, 2026-08-29): datadryad.org/dataset/doi:10.5061/dryad.mcvdnckcp — the dataset's own Dryad record — carries a `CC0` license field, and its page text states \"FishEye Collaborative approves using these videos, including this watermark, under the CC0 license waiver.\"\n"
     name: Curaçao reef soundscape with 360° video
     # habitat inferred (WP-2b) from this source's own description/notes, not independently verified
     habitat: [coral_reef]

@@ -9,6 +9,7 @@ sources:
     domain: coral
     release_skip_reason: "non-image-modality: tabular benchmark features"
     access_class: restricted-nc  # WP-R2: upstream ReefNet-1.0 cardData.license cc-by-nc-sa-4.0 (LICV lic-B)
+    licence_evidence: "legacy verification record (dataset-card, 2026-08-17): HF dataset ReefNet/ReefNet-1.0 probed live; columns X, CoralNet_source, Image_name, Row, Column, CoralNet_label, CoralNet_label_short_code, Sorted_ReefNet_label"
     name: ReefNet 1.0 (HuggingFace release)
     # habitat inferred (WP-2b) from this source's own description/notes, not independently verified
     habitat: [coral_reef]
@@ -61,12 +62,13 @@ sources:
   - id: reefnet-species-images
     domain: coral
     access_class: restricted-nc  # P1.2: was open; ReefNet is CC-BY-NC-SA-4.0 (entry reefnet)
+    licence_evidence: "inherited from parent reefnet-species: https://huggingface.co/datasets/ReefNet/ReefNet-1.0 — 'cardData.license: cc-by-nc-sa-4.0 (upstream ReefNet/ReefNet-1.0)' (LIC-B audit 2026-10-05, confidence medium); subset recorded in registry/ingest-specs/reefnet-species-images.yaml; docs/SCALE.md:79 records this HF repo as 'no licence tag' (CoralNet-derived imagery), so the recorded CC-BY-4.0 id was unsupported"
     name: ReefNet species images
     # habitat inferred (WP-2b) from this source's own description/notes, not independently verified
     habitat: [coral_reef]
     version: "unversioned"
     description: Coral species image classification set derived from the ReefNet corpus.
-    licence: CC-BY-4.0
+    licence: CC-BY-NC-SA-4.0
     legal_basis: licence
     redistribution: ok
     provenance: public
@@ -111,6 +113,7 @@ sources:
   - id: reef-guidance-system
     domain: coral
     access_class: open
+    licence_evidence: "legacy verification record (dataset-card, 2026-08-17): HF dataset QCR-Underwater-Perception/reef-guidance-system probed live; feature image:Image"
     name: QUT reef guidance system imagery
     # habitat inferred (WP-2b) from this source's own description/notes, not independently verified
     habitat: [mixed]
@@ -150,6 +153,7 @@ sources:
     domain: imaging
     release_skip_reason: "non-image-modality: audio clips: keep out of the v2 image release, candidate for a later audio config"
     access_class: open
+    licence_evidence: "legacy verification record (dataset-card, 2026-08-17): HF dataset bens-bots/marrs-global-coral-reef-soundscapes probed live; config detections_australia, features audio:Audio, filename, country, sonotype, logit, start_s"
     name: MARRS global coral reef soundscapes
     # habitat inferred (WP-2b) from this source's own description/notes, not independently verified
     habitat: [coral_reef]
@@ -197,6 +201,7 @@ sources:
   - id: whoi-plankton-small
     domain: plankton
     access_class: open
+    licence_evidence: "legacy verification record (dataset-card, 2026-08-17): HF dataset nf-whoi/whoi-plankton-small probed live; features image:Image, label:ClassLabel"
     name: WHOI-Plankton (small)
     # habitat inferred (WP-2b) from this source's own description/notes, not independently verified
     habitat: [pelagic]
@@ -232,6 +237,7 @@ sources:
   - id: underwater-image-enhancement
     domain: imaging
     access_class: open
+    licence_evidence: "legacy verification record (dataset-card, 2026-08-17): HF dataset iamvastava/underwater_image_enhancement probed live; features image:Image, label:ClassLabel"
     name: Underwater image enhancement set
     # habitat inferred (WP-2b) from this source's own description/notes, not independently verified
     habitat: [mixed]
@@ -267,6 +273,7 @@ sources:
   - id: satellite-coral-mapping
     domain: coral
     access_class: open
+    licence_evidence: "legacy verification record (dataset-card, 2026-08-17): HF dataset aimsks/satellite-coral-mapping probed live; split test, features label:Image, Coral-Sea_S2_R2:Image, Coral-Sea_L8_R1:Image, Coral-Sea_S2_R1:Image"
     name: AIMS satellite coral mapping
     # habitat inferred (WP-2b) from this source's own description/notes, not independently verified
     habitat: [coral_reef]

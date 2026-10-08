@@ -6,6 +6,7 @@ sources:
   - id: benthicnet
     domain: coral
     access_class: unknown
+    licence_evidence: "unverified: https://doi.org/10.20383/103.0614 — 'Image data ... made available under a variety of terms' (LIC-B audit 2026-10-05, confidence medium)"
     name: "benthicnet"
     version: "unversioned"
     description: "Lowe et al. 2025, Sci Data, doi:10.20383/103.0614"
@@ -36,6 +37,7 @@ sources:
   - id: coralnet-public
     domain: coral
     access_class: internal-only
+    licence_evidence: "https://coralnet.ucsd.edu/source/about/ — 'no licence on source/about page; per-source privacy only' (LIC-B audit 2026-10-05, confidence low)"
     name: "coralnet public"
     version: "unversioned"
     description: "Beijbom et al. / CoralNet"
@@ -134,7 +136,8 @@ sources:
 
   - id: deepreefmap
     domain: coral
-    access_class: open
+    access_class: unknown  # P1.2d: was open; no licence evidence
+    licence_evidence: "unverified: claimed as 'CC-BY-4.0' in registry/ingest-specs/deepreefmap.yaml license (folded 2026-10-08, never checked against https://zenodo.org/records/10624794)"
     name: "deepreefmap"
     version: "unversioned"
     description: "Sauder+ 2024"
@@ -165,6 +168,7 @@ sources:
   - id: elliott-bay-benthic
     domain: coral
     access_class: restricted-nc
+    licence_evidence: "https://huggingface.co/api/datasets/davanstrien/Elliott_Bay_benthic_imagery — 'license: cc-by-nc-4.0' (LIC-A audit 2026-10-05, confidence high)"
     name: "elliott bay benthic"
     version: "rev-cd20e627ba77"
     description: "davanstrien/Elliott_Bay_benthic_imagery (HF)"
@@ -205,6 +209,7 @@ sources:
   - id: meuvs-video-summ
     domain: coral
     access_class: open
+    licence_evidence: "https://zenodo.org/api/records/20746075 — 'metadata.license: {\"id\": \"cc-by-4.0\"}; access_right: open' (WP-LICV audit 2026-10-05, confidence confirmed-open)"
     name: "meuvs video summ"
     version: "record-20746075"
     description: "doi:10.5281/zenodo.20746075 — Multi-Environment Underwater Video Summarization Dataset (MEUVS)"
@@ -287,6 +292,7 @@ sources:
   - id: plc-beijbom2015
     domain: coral
     access_class: open
+    licence_evidence: "registry/ingest-specs/plc-beijbom2015.yaml measured.method: 'Zenodo API record (S57 catalog measurement, verified)'; measured.per_item_license 'cc0-1.0' (2026-09-25); page https://zenodo.org/records/5000003"
     name: "plc beijbom2015"
     version: "unversioned"
     description: "zenodo.org/records/5000003"
@@ -317,6 +323,7 @@ sources:
   - id: reef-guidance
     domain: coral
     access_class: restricted-nc
+    licence_evidence: "https://huggingface.co/datasets/QCR-Underwater-Perception/reef-guidance-system — 'cardData.license: cc-by-nc-sa-4.0' (LIC-B audit 2026-10-05, confidence high)"
     name: "reef guidance"
     version: "unversioned"
     description: "QUT QCR"
@@ -347,11 +354,12 @@ sources:
   - id: reefnet-species
     domain: coral
     access_class: restricted-nc
+    licence_evidence: "https://huggingface.co/datasets/ReefNet/ReefNet-1.0 — 'cardData.license: cc-by-nc-sa-4.0 (upstream ReefNet/ReefNet-1.0)' (LIC-B audit 2026-10-05, confidence medium)"
     name: "reefnet species"
     version: "unversioned"
     description: "-"
-    licence: NO-LICENCE-STATED
-    legal_basis: unknown
+    licence: CC-BY-NC-SA-4.0
+    legal_basis: licence
     redistribution: unknown
     provenance: public
     verification:
@@ -446,6 +454,7 @@ sources:
   - id: seattle-aquarium
     domain: coral
     access_class: restricted-nc
+    licence_evidence: "https://huggingface.co/api/datasets/Seattle-Aquarium/Seattle_Aquarium_benthic_imagery — 'license: cc-by-nc-4.0' (LIC-A audit 2026-10-05, confidence high)"
     name: "seattle aquarium"
     version: "rev-78701c4efe73"
     description: "Seattle Aquarium ROV benthic imagery (HF)"
@@ -486,6 +495,7 @@ sources:
   - id: uwstereo-syn
     domain: coral
     access_class: open
+    licence_evidence: "https://huggingface.co/datasets/daviddev96/UWStereo_2 — 'HF card front matter: license: mit' (WP-LICV audit 2026-10-05, confidence confirmed-open)"
     name: "uwstereo syn"
     version: "rev-62dd4c52418c"
     description: "HF dataset daviddev96/UWStereo_2"

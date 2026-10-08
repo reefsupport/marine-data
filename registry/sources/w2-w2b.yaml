@@ -10,6 +10,7 @@ sources:
   domain: fish
   release_skip_reason: "no-staged-images: registry lists imagery, nothing staged under sources/ in rs-storage-open (U7/queue follow-up)"
   access_class: restricted-nc
+  licence_evidence: "legacy verification record (dataset-card, 2026-09-25): huggingface.co/datasets/imageomics/fish-vista — HF card states a CC-BY/CC-BY-NC mix per image"
   name: Fish-Vista
   version: unversioned
   description: Large fish-imagery collection for species classification, trait segmentation and identification
@@ -100,6 +101,7 @@ sources:
   domain: imaging
   release_skip_reason: "no-staged-images: registry lists imagery, nothing staged under sources/ in rs-storage-open (U7/queue follow-up)"
   access_class: open
+  licence_evidence: "legacy verification record (dataset-card, 2026-09-25): Zenodo API record 19408363 — metadata.license cc-by-4.0, access_right open"
   name: Stereo fish-length dataset (Zenodo 19408363)
   version: unversioned
   description: Stereo-camera fish imagery with length measurements.
@@ -141,6 +143,7 @@ sources:
 - id: salmon-cage
   domain: fish
   access_class: open
+  licence_evidence: "legacy verification record (dataset-card, 2026-09-25): Zenodo API record 4931418 — metadata.license cc-zero, access_right open"
   name: Salmon cage video/GoPro dataset (Zenodo 4931418)
   version: "record-4931418"
   description: GoPro/diver video from salmon aquaculture cages — welfare and biomass monitoring.
@@ -188,6 +191,7 @@ sources:
   domain: seagrass
   release_skip_reason: "no-staged-images: registry lists imagery, nothing staged under sources/ in rs-storage-open (U7/queue follow-up)"
   access_class: open
+  licence_evidence: "legacy verification record (dataset-card, 2026-09-25): Zenodo API record 7659203 — metadata.license cc-by-4.0, access_right open"
   name: Luderick/seagrass fish detection (Zenodo 7659203)
   version: unversioned
   description: Underwater video-derived fish-detection imagery over seagrass habitat.
@@ -226,6 +230,7 @@ sources:
   domain: fish
   release_skip_reason: "no-staged-images: registry lists imagery, nothing staged under sources/ in rs-storage-open (U7/queue follow-up)"
   access_class: open
+  licence_evidence: "legacy verification record (dataset-card, 2026-09-25): Zenodo API record 7534425 — metadata.license cc-by-4.0, access_right open"
   name: DEEPECOMAR Mediterranean fish YOLO dataset (Zenodo 7534425)
   version: unversioned
   description: YOLO-format Mediterranean reef-fish detection imagery.
@@ -308,6 +313,7 @@ sources:
   domain: fish
   release_skip_reason: "no-staged-images: registry lists imagery, nothing staged under sources/ in rs-storage-open (U7/queue follow-up)"
   access_class: open
+  licence_evidence: "legacy verification record (dataset-card, 2026-09-25): huggingface.co/datasets/fuhao7i/URPC — HF card states apache-2.0"
   name: URPC underwater robot competition dataset (HF mirror)
   version: unversioned
   description: Underwater Robot Professional Contest detection dataset (VOC/YOLO), HF mirror.
@@ -348,6 +354,7 @@ sources:
   domain: imaging
   release_skip_reason: "no-staged-images: registry lists imagery, nothing staged under sources/ in rs-storage-open (U7/queue follow-up)"
   access_class: open
+  licence_evidence: "legacy verification record (dataset-card, 2026-09-25): huggingface.co/datasets/MarineLife-16K/MarineLife-16K — HF card states cc-by-4.0"
   name: MarineLife-16K
   version: unversioned
   description: ~16k-image marine-life multimodal captioning collection.
@@ -390,6 +397,7 @@ sources:
   domain: imaging
   release_skip_reason: "no-staged-images: registry lists imagery, nothing staged under sources/ in rs-storage-open (U7/queue follow-up)"
   access_class: open
+  licence_evidence: "legacy verification record (dataset-card, 2026-09-25): huggingface.co/datasets/minglingfeng/Ocean_R1_collected_visual_data — HF card states apache-2.0"
   name: Ocean-R1 collected visual data
   version: unversioned
   description: 135,595-row ocean/marine visual-reasoning collection for VLM training.
@@ -430,6 +438,7 @@ sources:
   domain: fauna
   release_skip_reason: "no-staged-images: registry lists imagery, nothing staged under sources/ in rs-storage-open (U7/queue follow-up)"
   access_class: open
+  licence_evidence: "legacy verification record (dataset-card, 2026-09-25): huggingface.co/datasets/Hariprasath5128/marine-animals-multimodal-dataset — HF card states cc-by-4.0"
   name: Marine animals multimodal dataset
   version: unversioned
   description: ~24.9k-row marine-animal multimodal (image+text) dataset.
@@ -470,6 +479,7 @@ sources:
   domain: imaging
   release_skip_reason: "non-image-modality: instruction text; 10000 label keys staged, 0 images"
   access_class: open
+  licence_evidence: "legacy verification record (dataset-card, 2026-09-25): huggingface.co/datasets/zjunlp/OceanInstruct-v0.1 — HF card states mit"
   name: OceanInstruct v0.1 (OceanGPT)
   version: "rev-9f5558a8c8f1"
   description: 10k-row instruction/caption JSON dataset for ocean-domain VLM instruction tuning (text
@@ -516,6 +526,7 @@ sources:
   domain: imaging
   release_skip_reason: "no-staged-images: registry lists imagery, nothing staged under sources/ in rs-storage-open (U7/queue follow-up)"
   access_class: restricted-nc
+  licence_evidence: "legacy verification record (dataset-card, 2026-09-25): huggingface.co/datasets/bhowmikabhimanyu/seathru-dataset — HF card states cc-by-nc-sa-4.0"
   name: Sea-thru dataset (HF mirror)
   version: unversioned
   description: RAW underwater imagery with registered depth maps for physics-based colour restoration
@@ -610,6 +621,7 @@ sources:
   domain: imaging
   release_skip_reason: "no-staged-images: raw mirror of 3850 images only, no INGEST.json/metadata.parquet (U7/queue follow-up)"
   access_class: open
+  licence_evidence: "legacy verification record (dataset-card, 2026-09-25): Zenodo API record 2542305 — metadata.license cc-by-4.0, access_right open"
   name: Underwater image collection (Zenodo 2542305)
   version: unversioned
   description: Underwater imagery archive; contents are RAR-packed and unconfirmed beyond the record's
@@ -653,6 +665,7 @@ sources:
   domain: imaging
   release_skip_reason: "no-staged-images: registry lists imagery, nothing staged under sources/ in rs-storage-open (U7/queue follow-up)"
   access_class: open
+  licence_evidence: "legacy verification record (dataset-card, 2026-09-25): Zenodo API record 6424752 — metadata.license cc-by-4.0, access_right open"
   name: Synthetic marine-snow overlay dataset (Zenodo 6424752)
   version: unversioned
   description: Synthetic marine-snow particle overlays for underwater image restoration/denoising research.
@@ -692,6 +705,7 @@ sources:
   domain: imaging
   release_skip_reason: "no-staged-images: registry lists imagery, nothing staged under sources/ in rs-storage-open (U7/queue follow-up)"
   access_class: open
+  licence_evidence: "legacy verification record (dataset-card, 2026-09-25): Zenodo API record 10728861 — metadata.license cc-by-4.0, access_right open"
   name: R-CAUSTIC v2.0 (Zenodo 10728861)
   version: unversioned
   description: Underwater caustics/lighting restoration video and image dataset.
@@ -731,6 +745,7 @@ sources:
   domain: imaging
   release_skip_reason: "no-staged-images: registry lists imagery, nothing staged under sources/ in rs-storage-open (U7/queue follow-up)"
   access_class: restricted-nc
+  licence_evidence: "legacy verification record (dataset-card, 2026-09-25): Zenodo API record 15639838 — metadata.license cc-by-nc-sa-4.0, access_right open"
   name: Sea-Undistort (Zenodo 15639838)
   version: unversioned
   description: Underwater image undistortion/restoration dataset.

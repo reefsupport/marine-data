@@ -4,6 +4,7 @@ sources:
   - id: coralscapes
     domain: coral
     access_class: open
+    licence_evidence: "legacy verification record (dataset-card, 2026-08-18): RESOLVED against both distribution points directly. Zenodo REST API record 15061505 returns metadata.license = {\"id\": \"apache2.0\"}; the HuggingFace API for EPFL-ECEO/coralscapes returns cardData.license = \"apache-2.0\" and the tag \"license:apache-2.0\". The earlier CC-BY-SA-4.0 reading came from the ICCV paper text, which is not where the data is licensed.\n"
     name: Coralscapes
     # habitat inferred (WP-2b) from this source's own description/notes, not independently verified
     habitat: [coral_reef]
@@ -294,6 +295,7 @@ sources:
   - id: benthicnet-1m
     domain: coral
     access_class: open
+    licence_evidence: "legacy verification record (dataset-card, 2026-08-17): arXiv 2405.05241 / Scientific Data 2025 — CC-BY-4.0 for metadata and models; most images CC-BY with per-source exceptions noted in Appendix C"
     name: BenthicNet (curated 1M subset)
     # habitat inferred (WP-2b) from this source's own description/notes, not independently verified
     habitat: [mixed]
@@ -357,6 +359,7 @@ sources:
   - id: reefnet
     domain: coral
     access_class: restricted-nc  # WP-R2: upstream ReefNet-1.0 cardData.license cc-by-nc-sa-4.0 (LICV lic-B)
+    licence_evidence: "legacy verification record (dataset-card, 2026-08-17): arXiv 2510.16822 v3 states CC BY 4.0"
     name: ReefNet
     # habitat inferred (WP-2b) from this source's own description/notes, not independently verified
     habitat: [coral_reef]
@@ -434,6 +437,7 @@ sources:
   - id: deolhonoscorais
     domain: coral
     access_class: open
+    licence_evidence: "legacy verification record (dataset-card, 2026-08-17): PeerJ 16219 / Zenodo 10.5281/zenodo.7338208 — CC-BY"
     name: "#DeOlhoNosCorais"
     # habitat inferred (WP-2b) from this source's own description/notes, not independently verified
     habitat: [coral_reef]
@@ -515,6 +519,7 @@ sources:
   - id: heron-reef-benthic
     domain: coral
     access_class: open
+    licence_evidence: "legacy verification record (dataset-card, 2026-08-17): Nature Scientific Data s41597-021-00871-5 — CC-BY 4.0, metadata CC0"
     name: Heron Reef benthic community time series
     # habitat inferred (WP-2b) from this source's own description/notes, not independently verified
     habitat: [coral_reef]
@@ -581,6 +586,7 @@ sources:
   - id: coralvqa
     domain: coral
     access_class: restricted-nc  # LICV 2026-10-05 (was open)
+    licence_evidence: "legacy verification record (dataset-card, 2026-08-17): HuggingFace card CoralReefData/CoralVQA states license:cc-by-4.0"
     notes: >-
       LICV 2026-10-05: access_class -> restricted-nc (was open). Evidence:
       https://huggingface.co/datasets/CoralReefData/CoralVQA/blob/main/README.md . TRAP: HF
@@ -643,6 +649,7 @@ sources:
   - id: noaa-pifsc-bleaching
     domain: coral
     access_class: open
+    licence_evidence: "legacy verification record (dataset-card, 2026-08-17): HuggingFace NMFS-OSI/NOAA-PIFSC-ESD-CORAL-Bleaching-Dataset (NOAA/NMFS)"
     name: NOAA PIFSC-ESD coral bleaching dataset
     # habitat inferred (WP-2b) from this source's own description/notes, not independently verified
     habitat: [coral_reef]
@@ -799,6 +806,7 @@ sources:
     domain: coral
     release_skip_reason: "no-staged-images: registry lists imagery, nothing staged under sources/ in rs-storage-open (U7/queue follow-up)"
     access_class: open
+    licence_evidence: "legacy verification record (dataset-card, 2026-08-17): Nature Scientific Data s41597-024-04267-z / Zenodo 11125847 — CC-BY-4.0 on the Zenodo record (WP-R2)"
     name: Seatizen Atlas
     # habitat inferred (WP-2b) from this source's own description/notes, not independently verified
     habitat: [coral_reef]
@@ -842,6 +850,7 @@ sources:
   - id: mermaid-aws
     domain: coral
     access_class: restricted-nc
+    licence_evidence: "legacy verification record (dataset-card, 2026-08-17): registry.opendata.aws/coralreef-image-classification-training — CC BY-NC-SA 4.0"
     name: MERMAID community coral reef image classification training data
     # habitat inferred (WP-2b) from this source's own description/notes, not independently verified
     habitat: [coral_reef]
@@ -985,6 +994,7 @@ sources:
     domain: coral
     release_skip_reason: "no-staged-images: registry lists imagery, nothing staged under sources/ in rs-storage-open (U7/queue follow-up)"
     access_class: open
+    licence_evidence: "legacy verification record (dataset-card, 2026-09-24): 2026-09-19 boto3 bucket listing (v4s-open-listing.tsv): 4,430 files / 327,036,884 bytes under coral_bleaching/others/NOAA-ESD-CORAL-Bleaching-Dataset/. The checked-out README.md dataset-card (HF pretty_name 'NOAA-ESD-CORAL-Bleaching-Dataset v1') states 'Public Domain (NOAA Open Data)' (L1 report 2026-09-19). CONFIRMED IDENTICAL 2026-09-24 (R1 external research): 14/14 sampled filenames from this tar/bucket match paths in HF NMFS-OSI/NOAA-PIFSC-ESD-CORAL-Bleaching-Dataset exactly — same repo as `noaa-pifsc-bleaching`."
     name: NOAA ESD coral bleaching dataset (bucket mirror)
     # habitat inferred (WP-2b) from this source's own description/notes, not independently verified
     habitat: [coral_reef]
@@ -1058,6 +1068,7 @@ sources:
   - id: roboflow-coral-bleaching-final-v6i
     domain: coral
     access_class: open
+    licence_evidence: "legacy verification record (licence-file, 2026-09-24): README.dataset.txt sidecar: 'License: CC BY 4.0' (L1 report 2026-09-19). 2026-09-19 boto3 bucket listing (v4s-open-listing.tsv): 2,556 files / 187,249,687 bytes under coral_bleaching/others/Coral Bleaching Final.v6i.multiclass/."
     name: Coral Bleaching Final (Roboflow v6i)
     # habitat inferred (WP-2b) from this source's own description/notes, not independently verified
     habitat: [coral_reef]
@@ -1160,6 +1171,7 @@ sources:
   - id: roboflow-coral-bleaching-general-v1-yolov8s
     domain: coral
     access_class: open
+    licence_evidence: "legacy verification record (licence-file, 2026-09-24): README.dataset.txt sidecar: 'License: CC BY 4.0' (L1 report 2026-09-19). 2026-09-19 boto3 bucket listing (v4s-open-listing.tsv): 2,548 files / 186,654,672 bytes under coral_bleaching/others/Coral Bleaching_General.v1-yolov8s.multiclass/."
     name: Coral Bleaching_General (Roboflow v1, YOLOv8s)
     # habitat inferred (WP-2b) from this source's own description/notes, not independently verified
     habitat: [coral_reef]
@@ -1267,6 +1279,7 @@ sources:
   - id: roboflow-coral-classification-copy-changed-v13i
     domain: coral
     access_class: open
+    licence_evidence: "legacy verification record (licence-file, 2026-09-24): README.dataset.txt sidecar: 'License: CC BY 4.0' (L1 report 2026-09-19). 2026-09-19 boto3 bucket listing (v4s-open-listing.tsv): 2,794 files / 185,563,432 bytes under 'coral_bleaching/others/Coral Classification Copy -Changed-.v13i.multiclass/'."
     name: "Coral Classification Copy -Changed- (Roboflow v13i)"
     # habitat inferred (WP-2b) from this source's own description/notes, not independently verified
     habitat: [coral_reef]
@@ -1373,6 +1386,7 @@ sources:
   - id: roboflow-coral-reef-bleach-detection-v2i
     domain: coral
     access_class: open
+    licence_evidence: "legacy verification record (licence-file, 2026-09-24): README.dataset.txt sidecar: 'License: CC BY 4.0' (L1 report 2026-09-19). 2026-09-19 boto3 bucket listing (v4s-open-listing.tsv): 10,786 files / 790,572,339 bytes under coral_bleaching/others/Coral Reef Bleach Detection.v2i.multiclass/."
     name: Coral Reef Bleach Detection (Roboflow v2i)
     # habitat inferred (WP-2b) from this source's own description/notes, not independently verified
     habitat: [coral_reef]
@@ -1470,6 +1484,7 @@ sources:
   - id: roboflow-coral-reef-classification-v3i
     domain: coral
     access_class: open
+    licence_evidence: "legacy verification record (licence-file, 2026-09-24): README.dataset.txt sidecar: 'License: CC BY 4.0' (L1 report 2026-09-19). 2026-09-19 boto3 bucket listing (v4s-open-listing.tsv): 4,558 files / 238,924,096 bytes under coral_bleaching/others/Coral Reef Classification.v3i.folder/."
     name: Coral Reef Classification (Roboflow v3i)
     # habitat inferred (WP-2b) from this source's own description/notes, not independently verified
     habitat: [coral_reef]
@@ -1671,6 +1686,7 @@ sources:
     domain: coral
     release_skip_reason: "no-staged-images: registry lists imagery, nothing staged under sources/ in rs-storage-open (U7/queue follow-up)"
     access_class: open
+    licence_evidence: "legacy verification record (licence-file, 2026-09-24): 2026-09-19 boto3 bucket listing (v4s-open-listing.tsv): 12,373 files / 19,480,434,205 bytes under benthic_datasets/point_labels/SEAVIEW/, excluding the pickle file. RESOLVED 2026-09-24 (R1 external research, high confidence): researchdata.edu.au record https://researchdata.edu.au/seaview-survey-photo-classification-dataset/3369315 states 'Creative Commons Attribution 3.0' for this UQ eSpace UQ_734799 record. (legacy: history note)"
     name: SEAVIEW raw survey imagery (UQ eSpace)
     # habitat inferred (WP-2b) from this source's own description/notes, not independently verified
     habitat: [coral_reef]

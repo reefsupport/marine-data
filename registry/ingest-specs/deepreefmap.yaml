@@ -1,5 +1,5 @@
 id: deepreefmap
-access_class: open
+access_class: unknown  # P1.2d: was open; no licence evidence
 adapter: zenodo
 params:
   zenodo_record: 10624794

@@ -6,6 +6,7 @@ sources:
   - id: aqqua-baltic-holo
     domain: plankton
     access_class: open
+    licence_evidence: "https://zenodo.org/api/records/18405776 — 'metadata.license: {\"id\": \"cc-by-4.0\"}; access_right: open' (WP-LICV audit 2026-10-05, confidence confirmed-open)"
     name: "aqqua baltic holo"
     version: "record-18405776"
     description: "doi:10.5281/zenodo.18405776 — In situ marine plankton holographic image dataset - Baltic Sea 2024"
@@ -75,6 +76,7 @@ sources:
   - id: nes-plankton-2022
     domain: plankton
     access_class: open
+    licence_evidence: "https://huggingface.co/datasets/sosiklab/NES-plankton-classifier-2022-dataset — 'This dataset is licensed under CC BY 4.0' (WP-LICV audit 2026-10-05, confidence confirmed-open)"
     name: "nes plankton 2022"
     version: "rev-18fb2e57fd77"
     description: "sosiklab/NES-plankton-classifier-2022-dataset (HF)"
@@ -114,7 +116,8 @@ sources:
 
   - id: noaa-plankton-shadowgraphs
     domain: plankton
-    access_class: open
+    access_class: unknown  # P1.2d: was open; no licence evidence
+    licence_evidence: "unverified: claimed as 'public domain (US government work) — NODD' in registry/ingest-specs/noaa-plankton-shadowgraphs.yaml license (folded 2026-10-08, never checked against https://storage.googleapis.com/nmfs_odp_hq/nodd_tools/datasets/plankton_shadowgraphs/)"
     name: "noaa plankton shadowgraphs"
     version: "unversioned"
     description: "NOAA plankton shadowgraph images, NOAA NODD"
@@ -144,6 +147,7 @@ sources:
   - id: plankton-interaction-videos
     domain: plankton
     access_class: open
+    licence_evidence: "https://huggingface.co/datasets/bcdemattei/plankton_interaction_videos — 'HF card front matter: license: apache-2.0' (WP-LICV audit 2026-10-05, confidence confirmed-open)"
     name: "plankton interaction videos"
     version: "rev-f7d40238215e"
     description: "bcdemattei/plankton_interaction_videos (HF)"
@@ -183,7 +187,8 @@ sources:
 
   - id: plankton-noctiluca-capsules
     domain: plankton
-    access_class: open
+    access_class: unknown  # P1.2d: was open; no licence evidence
+    licence_evidence: "unverified: claimed as 'cc-by-4.0' in registry/ingest-specs/plankton-noctiluca-capsules.yaml license (folded 2026-10-08, never checked against https://zenodo.org/records/4431509); measured.per_item_license 'cc-by-4.0' (2026-09-25)"
     name: "plankton noctiluca capsules"
     version: "unversioned"
     description: "doi:10.5281/zenodo.4431509 — Automatic plankton image classification - can capsules and filters help coping with data set shift?"
@@ -243,7 +248,8 @@ sources:
 
   - id: syke-ifcb-uto-2021
     domain: plankton
-    access_class: open
+    access_class: unknown  # P1.2d: was open; no licence evidence
+    licence_evidence: "unverified: claimed as 'CC-BY-4.0' in registry/ingest-specs/syke-ifcb-uto-2021.yaml license (folded 2026-10-08, never checked against https://doi.org/10.23728/b2share.7c273b6f409c47e98a868d6517be3ae3); measured.per_item_license 'CC-BY-4.0' (2026-09-25)"
     name: "syke ifcb uto 2021"
     version: "unversioned"
     description: "doi:10.23728/b2share.7c273b6f409c47e98a868d6517be3ae3"
@@ -302,7 +308,8 @@ sources:
 
   - id: womack-plankton-hboi
     domain: plankton
-    access_class: open
+    access_class: unknown  # P1.2d: was open; no licence evidence
+    licence_evidence: "unverified: claimed as 'cc-by-4.0' in registry/ingest-specs/womack-plankton-hboi.yaml license (folded 2026-10-08, never checked against https://zenodo.org/records/18497521); measured.per_item_license 'cc-by-4.0' (2026-09-25)"
     name: "womack plankton hboi"
     version: "unversioned"
     description: "doi:10.5281/zenodo.18497521 — Plankton imaging datasets - Womack et al. manuscript"

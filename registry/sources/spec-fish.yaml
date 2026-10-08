@@ -6,6 +6,7 @@ sources:
   - id: aris-didson-fish-td
     domain: fish
     access_class: open
+    licence_evidence: "https://zenodo.org/api/records/5046708 — 'metadata.license: {\"id\": \"cc-by-4.0\"}; access_right: open' (WP-LICV audit 2026-10-05, confidence confirmed-open)"
     name: "aris didson fish td"
     version: "record-5046708"
     description: "doi:10.5281/zenodo.5046708 — Acoustic video cameras multi-species multi-cameras Training Dataset (TD) for Deep Learning applications"
@@ -45,7 +46,8 @@ sources:
 
   - id: caige-salmon-seg-reid
     domain: fish
-    access_class: open
+    access_class: unknown  # P1.2d: was open; no licence evidence
+    licence_evidence: "unverified: claimed as 'cc-by-4.0' in registry/ingest-specs/caige-salmon-seg-reid.yaml license (folded 2026-10-08, never checked against https://zenodo.org/records/20280854); measured.per_item_license 'cc-by-4.0' (2026-09-25)"
     name: "caige salmon seg reid"
     version: "unversioned"
     description: "doi:10.5281/zenodo.20280854 — cAIge Salmon Re-Identification Dataset, Segmentation Annotations, and Evaluation Results"
@@ -76,6 +78,7 @@ sources:
   - id: habcam
     domain: fish
     access_class: internal-only
+    licence_evidence: "https://www.fisheries.noaa.gov/inport/item/22560 — 'InPort item 22560 is Fall Bottom Trawl Survey, not HabCam' (LIC-B audit 2026-10-05, confidence low)"
     name: "habcam"
     version: "unversioned"
     description: "fisheries.noaa.gov InPort item 22560"
@@ -104,7 +107,8 @@ sources:
 
   - id: kakadu-fish-ai
     domain: fish
-    access_class: open
+    access_class: unknown  # P1.2d: was open; no licence evidence
+    licence_evidence: "unverified: claimed as 'cc-by-4.0' in registry/ingest-specs/kakadu-fish-ai.yaml license (folded 2026-10-08, never checked against https://zenodo.org/records/7250921); measured.per_item_license 'cc-by-4.0' (2026-09-25)"
     name: "kakadu fish ai"
     version: "unversioned"
     description: "doi:10.5281/zenodo.7250921 — A deep learning dataset for underwater object detection of tropical freshwater fish species in northern Austra"
@@ -135,6 +139,7 @@ sources:
   - id: koi-rgb-sonar
     domain: fish
     access_class: open
+    licence_evidence: "https://huggingface.co/datasets/perona-lab/Huntington_and_Caltech_Koi_RGB_and_Sonar — 'HF card front matter: license: mit' (WP-LICV audit 2026-10-05, confidence confirmed-open)"
     name: "koi rgb sonar"
     version: "rev-4120e0f1b59d"
     description: "HF dataset perona-lab/Huntington_and_Caltech_Koi_RGB_and_Sonar"
@@ -203,7 +208,8 @@ sources:
 
   - id: malaysian-fish-turbid
     domain: fish
-    access_class: open
+    access_class: unknown  # P1.2d: was open; no licence evidence
+    licence_evidence: "unverified: claimed as 'cc-by-4.0' in registry/ingest-specs/malaysian-fish-turbid.yaml license (folded 2026-10-08, never checked against https://zenodo.org/records/21875554); measured.per_item_license 'cc-by-4.0' (2026-09-25)"
     name: "malaysian fish turbid"
     version: "unversioned"
     description: "doi:10.5281/zenodo.21875554 — 5 Malaysian Fish Species in Turbid Water"
@@ -310,6 +316,7 @@ sources:
   - id: noaa-oceaneyes
     domain: fish
     access_class: unknown
+    licence_evidence: "unverified: https://www.fisheries.noaa.gov/website-policies-and-disclaimers — 'Information created by the U.S. government ... not subject to copyright in the United States' (WP-LICV audit 2026-10-05, confidence unknown-evidence)"
     name: "noaa oceaneyes"
     version: "list-a11ed85b698b"
     description: "NOAA OceanEyes (Zooniverse-labelled fish frames), NOAA NODD"
@@ -349,7 +356,8 @@ sources:
 
   - id: pomerfish
     domain: fish
-    access_class: open
+    access_class: unknown  # P1.2d: was open; no licence evidence
+    licence_evidence: "unverified: claimed as 'cc-by-4.0' in registry/ingest-specs/pomerfish.yaml license (folded 2026-10-08, never checked against https://zenodo.org/records/17432128); measured.per_item_license 'cc-by-4.0' (2026-09-25)"
     name: "pomerfish"
     version: "unversioned"
     description: "doi:10.5281/zenodo.17432128 — PomerFish: A dataset for fishes across Pomerania freshwater waterbodies in-situ environments"
@@ -378,7 +386,8 @@ sources:
 
   - id: salmon-trout-video
     domain: fish
-    access_class: open
+    access_class: unknown  # P1.2d: was open; no licence evidence
+    licence_evidence: "unverified: claimed as 'cc-by-4.0' in registry/ingest-specs/salmon-trout-video.yaml license (folded 2026-10-08, never checked against https://zenodo.org/records/17249918); measured.per_item_license 'cc-by-4.0' (2026-09-25)"
     name: "salmon trout video"
     version: "unversioned"
     description: "doi:10.5281/zenodo.17249918 — Video Data - Fish Species Classification"
@@ -437,7 +446,8 @@ sources:
 
   - id: sfishtrack
     domain: fish
-    access_class: open
+    access_class: unknown  # P1.2d: was open; no licence evidence
+    licence_evidence: "unverified: claimed as 'cc-by-4.0' in registry/ingest-specs/sfishtrack.yaml license (folded 2026-10-08, never checked against https://zenodo.org/records/20617668); measured.per_item_license 'cc-by-4.0' (2026-09-25)"
     name: "sfishtrack"
     version: "unversioned"
     description: "doi:10.5281/zenodo.20617668 — SFISHTRACK: A Dataset for Fish Segmentation and Tracking in Underwater Videos"

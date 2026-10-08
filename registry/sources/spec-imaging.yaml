@@ -5,7 +5,8 @@
 sources:
   - id: afrl-stereo-vi
     domain: imaging
-    access_class: open
+    access_class: unknown  # P1.2d: was open; no licence evidence
+    licence_evidence: "unverified: claimed as 'mit' in registry/ingest-specs/afrl-stereo-vi.yaml license (folded 2026-10-08, never checked against https://huggingface.co/datasets/afrl-uw/stereo-vi-underwater-dataset)"
     name: "afrl stereo vi"
     version: "unversioned"
     description: "afrl-uw/stereo-vi-underwater-dataset (HF)"
@@ -35,6 +36,7 @@ sources:
   - id: aquascan-1k-sss
     domain: imaging
     access_class: open
+    licence_evidence: "https://zenodo.org/api/records/18771165 — 'metadata.license: {\"id\": \"mit-license\"}; access_right: open' (WP-LICV audit 2026-10-05, confidence confirmed-open)"
     name: "aquascan 1k sss"
     version: "record-18771165"
     description: "doi:10.5281/zenodo.18771165 — AquaScan-1K Side Scan Sonar Dataset"
@@ -75,6 +77,7 @@ sources:
   - id: auv-flc-fls-sunboat
     domain: imaging
     access_class: open
+    licence_evidence: "https://zenodo.org/api/records/10544811 — 'metadata.license: {\"id\": \"cc-by-4.0\"}; access_right: open' (WP-LICV audit 2026-10-05, confidence confirmed-open)"
     name: "auv flc fls sunboat"
     version: "record-10544811"
     description: "doi:10.5281/zenodo.10544811 — AUV-Based Multi-Sensor Dataset: Forward-Looking Camera (FLC) and Forward-Looking Sonar (FLS) Observations in t"
@@ -115,6 +118,7 @@ sources:
   - id: estonefish-scenes-real
     domain: imaging
     access_class: open
+    licence_evidence: "https://zenodo.org/api/records/18473013 — 'metadata.license: {\"id\": \"cc-by-4.0\"}; access_right: open' (WP-LICV audit 2026-10-05, confidence confirmed-open)"
     name: "estonefish scenes real"
     version: "1.0"
     description: "doi:10.5281/zenodo.18473013 — eStonefish-Scenes: A Sim-to-Real Validated and Robot-Centric Event-based Optical Flow Dataset for Underwater V"
@@ -154,11 +158,12 @@ sources:
   - id: gbif-marine
     domain: imaging
     access_class: restricted-nc
+    licence_evidence: "https://registry.opendata.aws/gbif/ — 'License CC-BY-NC under the GBIF terms of use' (LIC-B audit 2026-10-05, confidence medium)"
     name: "gbif marine"
     version: "unversioned"
     description: "GBIF.org occurrence search, 2026-09-25"
-    licence: NO-LICENCE-STATED
-    legal_basis: unknown
+    licence: CC-BY-NC-4.0
+    legal_basis: licence
     redistribution: unknown
     provenance: public
     verification:
@@ -183,7 +188,8 @@ sources:
 
   - id: mimir-uw
     domain: imaging
-    access_class: open
+    access_class: unknown  # P1.2d: was open; no licence evidence
+    licence_evidence: "unverified: claimed as 'cc-by-4.0' in registry/ingest-specs/mimir-uw.yaml license (folded 2026-10-08, never checked against https://zenodo.org/records/10406384); measured.per_item_license 'cc-by-4.0' (2026-09-25)"
     name: "mimir uw"
     version: "unversioned"
     description: "doi:10.5281/zenodo.10406384 — MIMIR-UW: A Multipurpose Synthetic Dataset for Underwater Navigation and Inspection"
@@ -213,7 +219,8 @@ sources:
 
   - id: moud
     domain: imaging
-    access_class: open
+    access_class: unknown  # P1.2d: was open; no licence evidence
+    licence_evidence: "unverified: claimed as 'cc-by-4.0' in registry/ingest-specs/moud.yaml license (folded 2026-10-08, never checked against https://zenodo.org/records/15836103); measured.per_item_license 'cc-by-4.0' (2026-09-25)"
     name: "moud"
     version: "unversioned"
     description: "doi:10.5281/zenodo.15836103 — MOUD"
@@ -337,6 +344,7 @@ sources:
   - id: pingmapper-sss-seg
     domain: imaging
     access_class: open
+    licence_evidence: "https://zenodo.org/api/records/10119320 — 'metadata.license: {\"id\": \"cc-by-4.0\"}; access_right: open' (WP-LICV audit 2026-10-05, confidence confirmed-open)"
     name: "pingmapper sss seg"
     version: "v1.0.0"
     description: "doi:10.5281/zenodo.10119320 — Sidescan Sonar Substrate, Depth, and Shadow Image-Label-Pairs"
@@ -376,7 +384,8 @@ sources:
 
   - id: sonar-rgb-diver-lake
     domain: imaging
-    access_class: open
+    access_class: unknown  # P1.2d: was open; no licence evidence
+    licence_evidence: "unverified: claimed as 'cc-by-4.0' in registry/ingest-specs/sonar-rgb-diver-lake.yaml license (folded 2026-10-08, never checked against https://zenodo.org/records/7728089); measured.per_item_license 'cc-by-4.0' (2026-09-25)"
     name: "sonar rgb diver lake"
     version: "unversioned"
     description: "doi:10.5281/zenodo.7728089 — Sonar-to-RGB Image Translation for Diver Monitoring in Poor Visibility Environments"
@@ -447,6 +456,7 @@ sources:
   - id: sss-mine-detection
     domain: imaging
     access_class: open
+    licence_evidence: "https://api.figshare.com/v2/articles/24574879 — 'license: {\"name\": \"CC BY 4.0\"}' (WP-LICV audit 2026-10-05, confidence confirmed-open)"
     name: "sss mine detection"
     version: "2"
     description: "doi:10.6084/m9.figshare.24574879.v2 — <i>Side-scan sonar imaging for Mine detection</i>"
@@ -486,7 +496,8 @@ sources:
 
   - id: sss-ssl-sediments
     domain: imaging
-    access_class: open
+    access_class: unknown  # P1.2d: was open; no licence evidence
+    licence_evidence: "unverified: claimed as 'cc-by-4.0' in registry/ingest-specs/sss-ssl-sediments.yaml license (folded 2026-10-08, never checked against https://zenodo.org/records/10209445); measured.per_item_license 'cc-by-4.0' (2026-09-25)"
     name: "sss ssl sediments"
     version: "unversioned"
     description: "doi:10.5281/zenodo.10209445 — A Large Scale Side-Scan Sonar Dataset of Seafloor Sediments for Self-Supervised Pretraining"
@@ -516,6 +527,7 @@ sources:
   - id: swdd-sss-wall
     domain: imaging
     access_class: open
+    licence_evidence: "https://zenodo.org/api/records/13692547 — 'metadata.license: {\"id\": \"cc-by-4.0\"}; access_right: open' (WP-LICV audit 2026-10-05, confidence confirmed-open)"
     name: "swdd sss wall"
     version: "record-13692547"
     description: "doi:10.5281/zenodo.13692547 — SWDD: Sonar Wall Detection Dataset"
@@ -556,6 +568,7 @@ sources:
   - id: uatd
     domain: imaging
     access_class: open
+    licence_evidence: "https://api.figshare.com/v2/articles/21331143 — 'license: {\"name\": \"CC BY 4.0\"}' (WP-LICV audit 2026-10-05, confidence confirmed-open)"
     name: "uatd"
     version: "3"
     description: "doi:10.6084/m9.figshare.21331143.v3 — Underwater acoustic target detection (UATD) dataset"
@@ -674,7 +687,8 @@ sources:
 
   - id: uw-transstereo
     domain: imaging
-    access_class: open
+    access_class: unknown  # P1.2d: was open; no licence evidence
+    licence_evidence: "unverified: claimed as 'cc-by-4.0' in registry/ingest-specs/uw-transstereo.yaml license (folded 2026-10-08, never checked against https://zenodo.org/records/16753748); measured.per_item_license 'cc-by-4.0' (2026-09-25)"
     name: "uw transstereo"
     version: "unversioned"
     description: "doi:10.5281/zenodo.16753748 — UW-TransStereo: Underwater Stereo Vision Dataset for Transparent Object Detection & Ranging"

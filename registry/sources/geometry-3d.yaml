@@ -4,6 +4,7 @@ sources:
   - id: sweet-corals
     domain: coral
     access_class: open
+    licence_evidence: "legacy verification record (dataset-card, 2026-08-17): HuggingFace card wildflow/sweet-corals states license:cc-by-4.0, DOI 10.57967/hf/5162"
     name: wildflow/sweet-corals
     # habitat inferred (WP-2b) from this source's own description/notes, not independently verified
     habitat: [coral_reef]
@@ -73,6 +74,7 @@ sources:
     domain: imaging
     release_skip_reason: "non-image-modality: video + point-cloud, no stills"
     access_class: open
+    licence_evidence: "legacy verification record (dataset-card, 2026-08-17): Zenodo record 10624794 — CC-BY-4.0"
     name: DeepReefMap reference data and checkpoints
     # habitat inferred (WP-2b) from this source's own description/notes, not independently verified
     habitat: [coral_reef]
@@ -116,6 +118,7 @@ sources:
     domain: imaging
     release_skip_reason: "no-staged-images: registry lists imagery, nothing staged under sources/ in rs-storage-open (U7/queue follow-up)"
     access_class: open
+    licence_evidence: "legacy verification record (site-terms, 2026-08-17): NOAA InPort item 67851 — US Government work"
     name: NOAA NCRMP structural complexity (SfM)
     # habitat inferred (WP-2b) from this source's own description/notes, not independently verified
     habitat: [coral_reef]
@@ -152,6 +155,7 @@ sources:
   - id: atlantis-synthetic-depth
     domain: imaging
     access_class: restricted-nc  # LICV 2026-10-05 (was open); same as registry/ingest-specs/atlantis.yaml
+    licence_evidence: "legacy verification record (licence-file, 2026-08-17): github.com/zkawfanx/Atlantis — MIT licence"
     name: Atlantis (synthetic underwater depth)
     # habitat inferred (WP-2b) from this source's own description/notes, not independently verified
     habitat: [mixed]
