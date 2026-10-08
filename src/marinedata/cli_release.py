@@ -39,6 +39,7 @@ from .release_lock import (
     lock_sha256,
     write_lock,
 )
+from .release_publish import add_publish_parser
 from .splitmap import load_split_map
 from .strata import DEFAULT_MIN_GROUPS
 
@@ -695,3 +696,5 @@ def add_release_subparser(sub: argparse._SubParsersAction) -> None:
     )
     _add_near_dup_args(p_map, required_note="required unless --no-near-dup")
     p_map.set_defaults(func=_cmd_release_split_map)
+
+    add_publish_parser(release_sub)

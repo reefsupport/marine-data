@@ -1,0 +1,14 @@
+release publish: DRY RUN (nothing is uploaded; add --go to upload)
+  release     : v1.1
+  flavour     : open
+  repo        : reefsupport/marine-data (dataset)
+  tag         : v1.1
+  folder      : <DIR>
+  files       : 4 (1,512 bytes, 1.5 KB)
+  left out    : RELEASE.json, GATES.json, release.lock.yaml, SPLIT_MAP.json, DEDUP_GATE.json, tasks/*
+  configs     : 2
+    coral-masks: test 15, train 120, val 15 = 150 rows
+    scene-masks: test 1, train 8, val 1 = 10 rows
+  card        : <DIR>/README.md
+  lock sha256 : <LOCK>
+  gates       : 6 required, all passed (licence, dedup, splits, masks, load, card)
