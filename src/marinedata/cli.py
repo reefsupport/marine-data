@@ -48,7 +48,6 @@ except ImportError as _captions_import_error:  # pragma: no cover — depends on
         p.set_defaults(func=_missing)
 
 
-from .gate import evaluate
 from .lineage import build_lineage
 from .query import find
 from .registry import Registry, RegistryError
@@ -94,23 +93,26 @@ def _cmd_show(args: argparse.Namespace) -> int:
 
 
 def _cmd_check(args: argparse.Namespace) -> int:
-    """Evaluate every source against a profile. Exits non-zero if any is denied.
+    """Evaluate every source against a profile; fail closed on anything unexplained.
 
-    Unconditional — there is no flag to make a denial exit 0. A caller must not be
-    able to read a zero exit as "everything is permitted".
+    Denials are printed in two groups. EXPECTED: the entry's own ``access_class`` already
+    says it cannot ship under the profile (internal-only, unknown, restricted-nd,
+    restricted-nc under a profile that ships no nc, release-excluded). UNEXPECTED: the class
+    claims it ships and the gate refuses anyway. Exit 1 on any unexpected denial or a
+    malformed registry; exit 0 otherwise. Unconditional: there is no flag to make an
+    unexpected denial exit 0.
     """
-    reg = Registry.load()
-    profile = reg.profile(args.profile)
-    denied = 0
-    for src in reg:
-        decision = evaluate(src, profile, legal_opinion_ref=args.legal_opinion_ref)
-        mark = "✓" if decision.allowed else "✗"
-        print(f"{mark} {src.id}")
-        if not decision.allowed:
-            denied += 1
-            print(f"    {' '.join(decision.reason.split())}")
-    print(f"\n{len(reg) - denied} permitted, {denied} denied under '{profile.id}'")
-    return 1 if denied else 0
+    from .check_report import build_report
+
+    try:
+        reg = Registry.load()
+        profile = reg.profile(args.profile)
+    except (RegistryError, KeyError) as exc:
+        print(f"registry invalid: {exc}", file=sys.stderr)
+        return 1
+    report = build_report(reg, profile, legal_opinion_ref=args.legal_opinion_ref)
+    print("\n".join(report.lines()))
+    return report.exit_code
 
 
 def _cmd_lineage(args: argparse.Namespace) -> int:
