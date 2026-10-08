@@ -1,9 +1,10 @@
-.PHONY: ci lint check taxonomy-check labels-check test e2e
+.PHONY: ci lint check taxonomy-check labels-check docs docs-check gates test e2e
 
 # `ci` is the exact sequence the GitHub Actions "Test" step runs — kept here so a
 # contributor can reproduce a CI failure locally with one command, and so the
-# workflow itself has no logic beyond `make ci` (D12, 5star-rubric WP-4).
-ci: lint check taxonomy-check labels-check test e2e
+# workflow itself has no logic beyond `make ci` (D12, 5star-rubric WP-4). `docs-check` and
+# `gates` sit before `test` so a failure in the long suite cannot hide them.
+ci: lint check taxonomy-check labels-check docs-check gates test e2e
 
 lint:
 	uv run ruff check .
@@ -26,6 +27,24 @@ taxonomy-check:
 # a failing gate for those ids.
 labels-check:
 	uv run marinedata labels check
+
+# docs/sources.md and docs/configs.md are generated from registry/ and hf_export: never edit
+# them by hand. `docs-check` renders into a temp dir and fails when the committed files differ.
+docs:
+	uv run python scripts/gen_sources_docs.py
+
+docs-check:
+	@tmp=$$(mktemp -d) && uv run python scripts/gen_sources_docs.py --out $$tmp > /dev/null && \
+	  { diff -u docs/sources.md $$tmp/sources.md && diff -u docs/configs.md $$tmp/configs.md; } ; \
+	  rc=$$?; rm -rf $$tmp; [ $$rc -eq 0 ] || echo "docs are stale: run 'make docs' and commit"; \
+	  exit $$rc
+
+# Release gates: their unit tests, then the masks gate on a committed 2-image build
+# (tests/fixtures/masks_gate_ok). The gate writes GATES.json next to the build, so it runs on a copy.
+gates:
+	uv run pytest -q tests/test_gate.py tests/test_masks_gate.py tests/test_check_report.py tests/test_release_lock.py
+	@d=$$(mktemp -d) && cp -R tests/fixtures/masks_gate_ok/. $$d && \
+	  uv run marinedata release gate --masks $$d ; rc=$$?; rm -rf $$d; exit $$rc
 
 test:
 	uv run pytest -q
