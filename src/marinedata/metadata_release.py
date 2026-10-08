@@ -245,10 +245,10 @@ def _fetch_staged_metadata_from_s3(source: Source, dest: Path) -> bool:
     staging bucket when no local copy exists. Returns ``False`` (dest untouched) if the
     key is absent rather than raising — a source simply not staged yet is not an error
     here (its fields stay null, documented in :data:`REQUIRED_NULL_REASONS`)."""
-    from .s3_upload import client_from_rclone
+    from .s3_client import get_client
 
     key = f"sources/{source.id}/{source.version}/metadata.parquet"
-    client = client_from_rclone()
+    client = get_client(signed_required=True)
     try:
         head_with_retry(client, STAGING_BUCKET, key)
     except Exception as exc:

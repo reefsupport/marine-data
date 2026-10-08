@@ -28,7 +28,8 @@ from ... import checksums
 from ...adapters import Decoded, RemoteItem
 from ...ingest_source import IngestReport, IngestSpec, _Uploader
 from ...models import SplitGroupRule
-from ...s3_upload import DiskGuard, GiB, client_from_rclone
+from ...s3_client import get_client
+from ...s3_upload import DiskGuard, GiB
 from ...sample_schema import SampleRow, write_samples
 from ...staged_writer import StagedWriter, WriterConfig
 
@@ -214,7 +215,7 @@ def main(argv: list[str] | None = None) -> int:
     p.add_argument("--limit", type=int, default=None, help="cap pairs processed (testing only)")
     p.add_argument("--remote", default="rs-hel1")
     args = p.parse_args(argv)
-    client = client_from_rclone(args.remote)
+    client = get_client(signed_required=True, remote=args.remote)
     report, counts, rows = restage(client, args.work, limit=args.limit)
     n = write_semseg_parquet(rows, counts, args.out)
     print(

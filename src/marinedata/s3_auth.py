@@ -5,6 +5,7 @@ Order: environment (``MARINEDATA_S3_ACCESS_KEY`` + ``MARINEDATA_S3_SECRET_KEY``,
 (``$MARINEDATA_RCLONE_REMOTE``, default ``rs-hel1``, in ``$MARINEDATA_RCLONE_CONF`` or
 ``~/.config/rclone/rclone.conf``, read with ``configparser``), else ``None`` = anonymous.
 Callers sign when they hold a key and fall back to anonymous, never the reverse.
+The cluster Job's legacy ``AWS_*`` pair is a separate opt-in (:func:`creds_from_job_env`).
 
 Secrets are never printed, logged or put in an exception: :class:`S3Creds` redacts its own
 ``repr``. The module is import-light (stdlib only); boto3 is imported inside
@@ -57,7 +58,8 @@ class S3Creds:
 
     @property
     def endpoint_url(self) -> str:
-        if self.endpoint.startswith(("http://", "https://")):
+        """The endpoint as a URL; ``""`` (cluster Job identity only) means the SDK default."""
+        if not self.endpoint or self.endpoint.startswith(("http://", "https://")):
             return self.endpoint
         return f"https://{self.endpoint}"
 
@@ -83,12 +85,15 @@ def _from_env(environ: Mapping[str, str]) -> S3Creds | None:
     return _build(access, secret, environ.get(ENV_ENDPOINT), environ.get(ENV_REGION), "env")
 
 
-def _from_rclone(environ: Mapping[str, str]) -> S3Creds | None:
-    conf = Path(environ.get(ENV_RCLONE_CONF) or DEFAULT_RCLONE_CONF).expanduser()
-    remote = environ.get(ENV_RCLONE_REMOTE) or DEFAULT_REMOTE
+def creds_from_rclone(
+    remote: str = DEFAULT_REMOTE, conf: Path | str | None = None
+) -> S3Creds | None:
+    """The key of one named rclone remote, or ``None`` when the file, the section or the key is
+    absent. The only place in the package that parses an rclone config."""
+    path = Path(conf or DEFAULT_RCLONE_CONF).expanduser()
     parser = configparser.ConfigParser(interpolation=None)  # secrets may contain '%'
     try:
-        if not parser.read(conf) or not parser.has_section(remote):
+        if not parser.read(path) or not parser.has_section(remote):
             return None
     except (configparser.Error, OSError, UnicodeDecodeError):
         return None
@@ -100,10 +105,42 @@ def _from_rclone(environ: Mapping[str, str]) -> S3Creds | None:
     return _build(access, secret, sec.get("endpoint"), sec.get("region"), remote)
 
 
-def resolve_s3_credentials(environ: Mapping[str, str] | None = None) -> S3Creds | None:
-    """The S3 identity this process should read with, or ``None`` for anonymous."""
+def _from_rclone(environ: Mapping[str, str], remote: str | None = None) -> S3Creds | None:
+    return creds_from_rclone(
+        remote or environ.get(ENV_RCLONE_REMOTE) or DEFAULT_REMOTE, environ.get(ENV_RCLONE_CONF)
+    )
+
+
+def resolve_s3_credentials(
+    environ: Mapping[str, str] | None = None, *, remote: str | None = None
+) -> S3Creds | None:
+    """The S3 identity this process should read with, or ``None`` for anonymous. ``remote`` picks
+    the rclone remote to try (default ``$MARINEDATA_RCLONE_REMOTE`` or ``rs-hel1``); a key in the
+    environment still wins."""
     env = os.environ if environ is None else environ
-    return _from_env(env) or _from_rclone(env)
+    return _from_env(env) or _from_rclone(env, remote)
+
+
+def creds_from_job_env(
+    environ: Mapping[str, str] | None = None,
+    *,
+    endpoint_url: str | None = None,
+    region: str | None = None,
+) -> S3Creds | None:
+    """The cluster Job's identity: ``AWS_ACCESS_KEY_ID`` + ``AWS_SECRET_ACCESS_KEY`` with optional
+    ``S3_ENDPOINT`` / ``S3_REGION`` (``deploy/ingest-job``), or ``None`` when either key is
+    missing; an empty endpoint means the SDK default. Deliberately not part of
+    :func:`resolve_s3_credentials`: a developer's real AWS key must never be sent to the Hetzner
+    endpoint, so only callers that ask for the Job path read these variables."""
+    env = os.environ if environ is None else environ
+    access = (env.get("AWS_ACCESS_KEY_ID") or "").strip()
+    secret = (env.get("AWS_SECRET_ACCESS_KEY") or "").strip()
+    if not (access and secret):
+        return None
+    endpoint = (endpoint_url or env.get("S3_ENDPOINT") or "").strip().rstrip("/")
+    return S3Creds(
+        access, secret, endpoint, (region or env.get("S3_REGION") or "").strip(), "job-env"
+    )
 
 
 def make_s3_client(creds: S3Creds | None, *, concurrent: bool = False) -> Any:
@@ -129,8 +166,8 @@ def make_s3_client(creds: S3Creds | None, *, concurrent: bool = False) -> Any:
         )
     return boto3.client(
         "s3",
-        endpoint_url=creds.endpoint_url,
-        region_name=creds.region,
+        endpoint_url=creds.endpoint_url or None,
+        region_name=creds.region or None,
         aws_access_key_id=creds.access_key,
         aws_secret_access_key=creds.secret_key,
         config=Config(

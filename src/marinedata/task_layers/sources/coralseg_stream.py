@@ -174,7 +174,9 @@ def main(argv: list[str] | None = None) -> int:
     p.add_argument("--limit", type=int, default=None, help="cap pairs (testing only)")
     p.add_argument("--version", default=base.VERSION)
     args = p.parse_args(argv)
-    client = base.client_from_rclone("rs-hel1")
+    from ...s3_client import get_client
+
+    client = get_client(signed_required=True, remote="rs-hel1")
     result = restage_streaming(client, args.work, version=args.version, limit=args.limit)
     n = base.write_semseg_parquet(result.pop("rows"), result.pop("class_counts"), args.out)
     print(json.dumps({**result, "head_failed": len(result["head_failed"]), "semseg_rows": n}))

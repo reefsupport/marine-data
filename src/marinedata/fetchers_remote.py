@@ -192,7 +192,7 @@ def _fetch_s3_manifest(
        shrink the release rather than fail it).
     """
     manifest_key = f"{prefix}{CHECKSUM_FILE}"
-    # Signed when a key resolves (env -> rclone.conf), anonymous otherwise; never the reverse.
+    # Signed when a key resolves (env -> rclone remote), anonymous otherwise; never the reverse.
     creds = resolve_s3_credentials()
     manifest_bytes = _get(f"https://{host}/{urllib.parse.quote(manifest_key)}", creds=creds)
     manifest_digest = hashlib.sha256(manifest_bytes).hexdigest()
@@ -327,7 +327,7 @@ def fetch_s3(source: Source, root: Path, limit: int) -> FetchResult:
     prefix = str(source.access.params.get("prefix", ""))
     env_prefix = source.access.params.get("credentials_env")
     # Sources with explicit `credentials_env` keys keep them; the rest read with the one
-    # resolver (env -> rclone.conf -> anonymous) and fall back to anonymous, never the reverse.
+    # resolver (env -> rclone remote -> anonymous) and fall back to anonymous, never the reverse.
     creds = None if env_prefix else resolve_s3_credentials()
 
     if env_prefix is None and _is_pinned_staged_tree(source):

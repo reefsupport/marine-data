@@ -550,22 +550,10 @@ _OBSEA_LABEL = re.compile(
 
 
 def bucket_lister(bucket: str = "rs-storage-open") -> Callable[[str], list[str]]:
-    """Flat, paginated ``list_objects_v2`` of a prefix (credentials by configparser, never echoed)."""  # noqa: E501
-    import configparser
-    import os
+    """Flat, paginated ``list_objects_v2`` of a prefix (credentials via s3_auth, never echoed)."""
+    from ..s3_client import get_client
 
-    import boto3
-
-    cfg = configparser.ConfigParser()
-    cfg.read(os.path.expanduser("~/.config/rclone/rclone.conf"))
-    sec = cfg["rs-hel1"]
-    endpoint = sec["endpoint"]
-    client = boto3.client(
-        "s3",
-        aws_access_key_id=sec["access_key_id"],
-        aws_secret_access_key=sec["secret_access_key"],
-        endpoint_url=endpoint if endpoint.startswith("http") else f"https://{endpoint}",
-    )
+    client = get_client()
 
     def list_keys(prefix: str) -> list[str]:
         pages = client.get_paginator("list_objects_v2").paginate(Bucket=bucket, Prefix=prefix)

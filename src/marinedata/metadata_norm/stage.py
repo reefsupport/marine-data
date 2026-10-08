@@ -3,7 +3,7 @@
 Nothing here writes to the bucket. Small files come through
 :func:`marinedata.task_layers.s3_keyed.fetch_small`;
 listings and ranged parquet reads use a boto3 client from :mod:`marinedata.s3_auth` (env ->
-rclone.conf -> anonymous); credentials are never printed.
+rclone remote -> anonymous); credentials are never printed.
 """
 
 from __future__ import annotations
@@ -29,7 +29,7 @@ Fetch = Callable[..., bytes]
 
 
 def s3_client():
-    """boto3 client from the one resolver: env -> rclone.conf -> anonymous."""
+    """boto3 client from the one resolver: env -> rclone remote -> anonymous."""
     return make_s3_client(resolve_s3_credentials())
 
 

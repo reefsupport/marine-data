@@ -416,9 +416,9 @@ def build(
 
 def upload(out: Path, prefix: str) -> dict:
     """PUT the manifest + stats to rs-storage-open ``prefix`` and HEAD both anonymously."""
-    from marinedata.s3_upload import client_from_rclone
+    from marinedata.s3_client import get_client
 
-    s3 = client_from_rclone("rs-hel1")
+    s3 = get_client(signed_required=True, remote="rs-hel1")
     res = {}
     for f in (out, out.with_suffix(".json")):
         key = prefix.rstrip("/") + "/" + f.name

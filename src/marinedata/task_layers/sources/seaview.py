@@ -168,9 +168,9 @@ def main(argv: list[str] | None = None) -> int:
     scan.add_argument("--remote", default="rs-hel1")
     args = p.parse_args(argv)
     if args.cmd == "scan":
-        from ...s3_upload import client_from_rclone
+        from ...s3_client import get_client
 
-        client = client_from_rclone(args.remote)
+        client = get_client(remote=args.remote)
         body = client.get_object(Bucket=args.bucket, Key=args.key)["Body"]
         found = scan_globals(body)
         bad = check_allowlist(found)

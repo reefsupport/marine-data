@@ -74,7 +74,7 @@ def fetch_small(
     creds: Any = _RESOLVE,
 ) -> bytes:
     """GET of one small non-image object on ``rs-storage-open`` (in memory): SigV4-signed when a
-    key resolves (env -> rclone.conf), anonymous otherwise; a refused signature (401/403) drops
+    key resolves (env -> rclone remote), anonymous otherwise; a refused signature (401/403) drops
     to anonymous for the remaining tries, never the reverse.
 
     Hetzner returns intermittent 403/5xx on this bucket, so every failure is retried with

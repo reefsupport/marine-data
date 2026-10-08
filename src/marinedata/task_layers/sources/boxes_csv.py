@@ -13,6 +13,7 @@ from __future__ import annotations
 
 import csv
 import io
+import re
 from collections.abc import Mapping
 from dataclasses import dataclass, field
 
@@ -143,14 +144,47 @@ def read_csv_boxes(
     return {k: (tuple(boxes.get(k, ())), t.freeze()) for k, t in tallies.items()}
 
 
-def parse_seqinfo(text: str) -> tuple[int | None, int | None]:
-    """``(imWidth, imHeight)`` of a MOT ``seqinfo.ini``."""
-    import configparser
+_INI_SECTION = re.compile(r"\[(?P<header>.+)\]")
+_INI_OPTION = re.compile(r"(?P<option>.*?)\s*[=:]\s*(?P<value>.*)$")
 
-    cp = configparser.ConfigParser()
+
+def _ini_sections(text: str) -> dict[str, dict[str, str]] | None:
+    """Minimal strict INI reader for ``seqinfo.ini``; ``None`` where the stdlib reader raised
+    (option before any section, duplicate section or option, line without a delimiter)."""
+    sections: dict[str, dict[str, str]] = {}
+    current: dict[str, str] | None = None
+    last: str | None = None
+    for raw in text.splitlines():
+        line = raw.strip()
+        if not line or line[0] in "#;":
+            continue
+        if raw[0].isspace() and current is not None and last is not None:
+            current[last] += "\n" + line  # an indented line continues the previous value
+            continue
+        header = _INI_SECTION.match(line)
+        if header:
+            name = header["header"]
+            if name in sections:
+                return None
+            current, last = sections.setdefault(name, {}), None
+            continue
+        option = _INI_OPTION.match(line)
+        if current is None or option is None or not option["option"]:
+            return None
+        key = option["option"].lower()
+        if key in current:
+            return None
+        current[key], last = option["value"], key
+    return sections
+
+
+def parse_seqinfo(text: str) -> tuple[int | None, int | None]:
+    """``(imWidth, imHeight)`` of a MOT ``seqinfo.ini`` (``(None, None)`` when unreadable)."""
+    sections = _ini_sections(text)
+    if sections is None or "Sequence" not in sections:
+        return None, None
+    merged = {**sections.get("DEFAULT", {}), **sections["Sequence"]}
     try:
-        cp.read_string(text)
-        sec = cp["Sequence"]
-        return int(sec["imWidth"]), int(sec["imHeight"])
-    except (configparser.Error, KeyError, ValueError):
+        return int(merged["imwidth"]), int(merged["imheight"])
+    except (KeyError, ValueError):
         return None, None

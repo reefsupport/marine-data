@@ -71,7 +71,7 @@ def _cmd_manifest(args: argparse.Namespace) -> int:
         resolve_source,
         write_manifest,
     )
-    from .s3_client import client_from_rclone
+    from .s3_client import get_client
 
     reg = BenchmarkRegistry.load(args.path)
     try:
@@ -80,7 +80,7 @@ def _cmd_manifest(args: argparse.Namespace) -> int:
         print(f"unknown benchmark id: {args.benchmark_id}", file=sys.stderr)
         return 1
     out_path = reg.manifest_path(entry.id)
-    client = client_from_rclone(args.remote, concurrent=True) if args.source != "upstream" else None
+    client = get_client(remote=args.remote, concurrent=True) if args.source != "upstream" else None
     source = resolve_source(args.source, entry, client, args.bucket) if client else "upstream"
     try:
         if source == "bucket":
