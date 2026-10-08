@@ -213,3 +213,30 @@ Coralscapes samples can.
   existing `build_layout`/`export`/`render_card`/`main` pipelines — v1 export/card output
   is unaffected either way, but a config's card table row is not yet emitted automatically
   from a real release run.
+
+## `points` config: data fields (v1.1, PA-P2.6)
+
+The HF `points` config is new in v1.1 (it is not part of the frozen v1.0 release), so its schema grows
+additively. One row per labelled point. Annotation columns (`build_points_config`): `image_sha256 source_id
+source_version ann_id label_native label_native_group label_set taxon_node_id match_type worms_aphia_id
+rs_benthic_code annotator_type ann_license ann_attribution x y x_norm y_norm x_px y_px label_status`. The 15
+image-level columns below are named as in SampleRow v3 (`registry/schemas/sample-row-v3.md`).
+`hf_export --metadata-dir <dir>` fills them by `image_sha256` from the resolver's `samples.parquet` with the
+`metadata` config's fill-only rule (`metadata_norm/resolvers/join.py: fill_values`); without the flag they exist
+and are null, so the schema does not depend on the flag. A value the config already holds is never replaced.
+
+- `lat` (double): latitude of the image in WGS84 degrees; null when the source states none, and never filled for a location-sensitive source or an image whose `metadata` row is `location_generalized`.
+- `lon` (double): longitude of the image in WGS84 degrees; null under the same rules as `lat`.
+- `coord_precision_m` (double): radius in metres that `lat`/`lon` are good to; null without a position.
+- `date` (string): capture day as ISO `YYYY-MM-DD` (month precision stores the first of the month); null when only a year, or nothing, is known.
+- `date_precision` (string): `day`, `month` or `year`; set whenever `date` is, and `year` for a year-only source.
+- `depth_m` (double): depth in metres where the source states it, else null.
+- `platform` (string): how the image was taken, one of `diver-photo-quadrat diver-video auv rov drop-camera bruv aerial web-collected aquarium lab unknown`; `unknown` means checked, no evidence.
+- `site_id` (string): the source's site identifier; null = not resolved.
+- `quadrat_id` (string): the quadrat the image belongs to; the config's own value (from the annotation's `attrs`) is kept, the resolver only fills a null.
+- `survey_id` (string): the source's survey or campaign identifier; null = not resolved.
+- `region` (string): the source's region label; null = not resolved.
+- `license` (string): licence id of the image, e.g. `CC-BY-3.0` (the annotation's own terms are `ann_license`).
+- `license_url` (string): URL of the licence text; the registry default unless the source sets it per row.
+- `attribution` (string): the credit line to reproduce with the image.
+- `rights_holder` (string): rights holder of the image where known, else null.

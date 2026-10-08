@@ -123,3 +123,19 @@ def test_export_contains_the_metadata_table_with_a_licence_class_per_row(
     assert all(r["license"] == "CC-BY-4.0" and r["split_group"] for r in got)
     for col in ("lat", "lon", "capture_datetime", "camera", "attribution", "source_version"):
         assert col in table.column_names
+
+
+def test_dropped_per_row_licences_are_counted_per_source_in_release_json(fathomnet_build) -> None:
+    """PA-P2.2: rows a flavour cannot ship (per-row licence outside it, or null) are counted per
+    source and reason in RELEASE.json; the rows that do ship are never in the count."""
+    run, shas, rel = fathomnet_build
+    assert run("--flavour", "open", "--generate-split-map", "--no-near-dup") == 0
+    assert run("--flavour", "nc") == 0
+    # open drops u-nc and u-none, nc drops u-by and u-none; u-nd sits in the `test` split, which
+    # the pretrain manifest drops before any licence verdict (see BOX_LICENCES)
+    for flavour, kept in (("open", shas["u-by"]), ("nc", shas["u-nc"])):
+        record = json.loads((rel / flavour / "RELEASE.json").read_text())
+        assert record["licence_rows_dropped"] == {
+            "fathomnet": {"licence-outside-flavour": 2, "total": 2}
+        }
+        assert _manifest(rel, flavour) == {kept}

@@ -184,6 +184,12 @@ sources:
       size_bytes: 21769239484
 
   - id: suim
+    default_platform: unknown
+    platform_evidence: "Registry description lists \"diver\" only as a segmentation class; HF card SatwikKambham/suim names no collection platform (checked 2026-10-08); left unknown."
+    expect_geo: none
+    expect_date: none
+    expect_site: none
+    expect_depth: none
     domain: fish
     access_class: open
     licence_evidence: "legacy verification record (licence-file, 2026-08-29): raw.githubusercontent.com/IRVLab/SUIM/master/LICENSE — the dataset's own repo LICENSE file, headed \"SUIM-Net: Semantic Segmentation of Underwater Imagery: Dataset and Benchmark\" (naming the dataset explicitly, not just generic \"Software\"), covering the whole repo including its `data/` directory. Corrected from CC-BY-4.0, which had no supporting primary source.\n"

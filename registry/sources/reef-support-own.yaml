@@ -5,6 +5,12 @@
 
 sources:
   - id: reef-support-benthic-own
+    default_platform: unknown
+    platform_evidence: "Registry notes mention GoPro runs and station codes in file stems but state no collection platform; left unknown, not guessed (owner to confirm)."
+    expect_geo: none
+    expect_date: expected
+    expect_site: required
+    expect_depth: none
     domain: coral
     access_class: open
     licence_evidence: "legacy verification record (licence-file, 2026-08-17): Live rclone scan of s3://rs-storage-open/benthic_datasets/mask_labels/reef_support; per-site image counts parsed from the object manifest (legacy: history note)"
@@ -284,6 +290,12 @@ sources:
     tags: [annotation-ip, octocoral]
 
   - id: reef-support-bleaching
+    default_platform: unknown
+    platform_evidence: "Registry entry states no collection platform; left unknown, not guessed (owner to confirm)."
+    expect_geo: none
+    expect_date: expected
+    expect_site: required
+    expect_depth: none
     domain: coral
     access_class: open
     licence_evidence: "legacy verification record (licence-file, 2026-08-17): Live rclone scan of s3://rs-storage-open/coral_bleaching/reef_support/UNAL_BLEACHING_TAYRONA (legacy: history note)"
@@ -563,6 +575,8 @@ sources:
     n_images_method: "registry-prior"
 
   - id: coralscop-masks-rs
+    default_platform: unknown
+    platform_evidence: "Registry entry states no collection platform; left unknown, not guessed."
     domain: coral
     access_class: internal-only
     default_habitat: coral_reef  # WP-U14b: evidence table marks the setting known

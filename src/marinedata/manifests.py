@@ -43,11 +43,14 @@ Narrowed from a blanket ``^fetched`` prefix match (D2c): that also caught
 from, not a timestamp — which stays accepted because ``uri`` matches none of the
 suffixes above."""
 
-_REGISTRY_DATE_KEYS: frozenset[str] = frozenset({"verified_on"})
+_REGISTRY_DATE_KEYS: frozenset[str] = frozenset({"verified_on", "expect_date"})
 """Registry-model fields (``Verification.verified_on``, ``LoaderSpec.verified_on`` —
 ``models.py``) that are static dates baked into YAML at author time, not runtime
 clocks: the same bytes come out on every ingest, so they cannot break
-``root_digest`` determinism. Rejected only when NOT in this allowlist (D2e)."""
+``root_digest`` determinism. Rejected only when NOT in this allowlist (D2e).
+
+``Source.expect_date`` (PA-P2.4) is no date at all: a coverage-expectation level
+(``required``/``expected``/``none``) that only ends in ``_date``."""
 
 
 @dataclass(frozen=True)

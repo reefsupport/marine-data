@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import re
 from datetime import date
+from typing import Literal
 
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
@@ -356,6 +357,11 @@ class OtherVersion(_Frozen):
     size_bytes: int | None = None
 
 
+ExpectLevel = Literal["required", "expected", "none"]
+"""PA-P2.4 metadata-gate expectation for one field: ``required`` (coverage floor 0.99),
+``expected`` (floor 0.90) or ``none`` (not checked)."""
+
+
 class Source(_Frozen):
     """A single dataset entry."""
 
@@ -394,6 +400,22 @@ class Source(_Frozen):
     default_platform: str | None = None
     default_habitat: str | None = None
     default_instrument: str | None = None
+    platform_evidence: str | None = None
+    """PA-P2.2: the card, paper or README sentence behind ``default_platform`` (for ``unknown``:
+    what was checked and found silent). One line; never a guess."""
+    expect_geo: ExpectLevel = "none"
+    expect_date: ExpectLevel = "none"
+    expect_site: ExpectLevel = "none"
+    expect_depth: ExpectLevel = "none"
+    """PA-P2.4 metadata gate: how much of ``lat``/``lon``, ``date``, ``site_id`` and ``depth_m`` the
+    resolvers must fill for this source. ``required`` = 0.99 of rows, ``expected`` = 0.90, ``none``
+    = not checked (the default: nothing is demanded until a source is measured)."""
+    per_row_license: dict[str, str] | None = None
+    """PA-P2.2: for a source whose licence is per item, ``{output column: staged metadata field}``
+    (``license``, ``license_url``, ``attribution``, ``rights_holder``, ``provenance_url``,
+    ``upstream_id``); the resolver reads each row's value instead of the registry default."""
+    rights_holder: str | None = None
+    """PA-P2.2: written to every row's ``rights_holder`` unless ``per_row_license`` overrides it."""
     split_group: SplitGroupRule = Field(default_factory=SplitGroupRule)
     """Required per-source rule for ``resolve_splits(by="group")``. Defaults to the
     explicit fallback (``<source_id>/<partition>``) so every source has one without

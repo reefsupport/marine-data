@@ -8,9 +8,10 @@ source pixels), the native label byte-exact, and the taxon columns from
 * :func:`staged_points_rows`: the staged ``labels/points.parquet`` of mermaid-aws and reefolution
   (``image_sha256`` from the tree's own ``CHECKSUMS.sha256``);
 * :func:`seaview_rows` / :func:`ibf_rows`: the SEAVIEW region CSVs
-  (``sources/seaview-survey-imagery/<ver>/labels/points/<region>/``) and the IBF CPCe files
+  (``sources/seaview-survey-imagery/<ver>/labels/points/tabular-data/annotations_<REGION>.csv``) and the IBF CPCe files
   (private ``sources/ibf/<ver>/labels/points/<site>/``). Until the staged trees are read for their
-  ``image_sha256``, rows carry ``image_key`` and ``image_sha256_todo`` (:func:`write_pending_points`).
+  ``image_sha256``, rows carry ``image_key`` and ``image_sha256_todo`` (:func:`write_pending_points`);
+  a SEAVIEW ``image_info`` that also returns the sha256 gives resolved rows (:mod:`.seaview_points`).
 """  # noqa: E501
 
 from __future__ import annotations
@@ -19,6 +20,7 @@ import csv
 import io
 import json
 from collections.abc import Callable, Iterable, Mapping
+from functools import lru_cache
 from pathlib import Path, PurePosixPath
 
 from ..annotation_schema import (
@@ -39,8 +41,15 @@ TODO_TEXT = "TODO: hash image_key once the image is staged under sources/ (not r
 _PLACEHOLDER_SHA = "0" * 64
 
 
-def resolver_for(registry: Registry, crosswalk_id: str) -> Resolver:
-    """Memoised ``native -> (taxon_node_id, match_type, worms_aphia_id, rs_benthic_code)``."""
+def resolver_for(
+    registry: Registry,
+    crosswalk_id: str,
+    *,
+    aphia_fallback: Callable[[str], int | None] | None = None,
+) -> Resolver:
+    """Memoised ``native -> (taxon_node_id, match_type, worms_aphia_id, rs_benthic_code)``.
+
+    ``aphia_fallback(taxon_node_id)`` fills ``worms_aphia_id`` for a node that carries none."""
     walk = registry.crosswalk(crosswalk_id)
     target = registry.label_schema(walk.target_schema)
     l2 = (
@@ -52,7 +61,10 @@ def resolver_for(registry: Registry, crosswalk_id: str) -> Resolver:
 
     def resolve(native: str) -> tuple[str | None, str, int | None, str | None]:
         if native not in cache:
-            cache[native] = walk.resolve(native, target=target, l2_codes=l2)
+            taxon, match_type, aphia, code = walk.resolve(native, target=target, l2_codes=l2)
+            if aphia is None and taxon is not None and aphia_fallback is not None:
+                aphia = aphia_fallback(taxon)
+            cache[native] = (taxon, match_type, aphia, code)
         return cache[native]
 
     return resolve
@@ -63,6 +75,13 @@ def source_licence(registry: Registry, source_id: str) -> str | None:
     return None if lic is None else str(getattr(lic, "id", lic))
 
 
+def source_attribution(registry: Registry, source_id: str) -> str | None:
+    """The registry entry's ``citation``, verbatim (whitespace-trimmed), or None."""
+    cite = registry.source(source_id).citation
+    return cite.strip() if cite and cite.strip() else None
+
+
+@lru_cache(maxsize=4096)
 def _taxon_rank(registry: Registry, taxon: str | None) -> str | None:
     if taxon is None:
         return None
@@ -85,6 +104,7 @@ def point_row(
     height: int,
     annotator: str,
     ann_license: str | None,
+    ann_attribution: str | None = None,
     split: str | None = None,
     confidence: float | None = None,
     attrs: Mapping[str, object] | None = None,
@@ -111,6 +131,7 @@ def point_row(
         "annotator_type": typ,
         "annotator_detail": detail,
         "ann_license": ann_license,
+        "ann_attribution": ann_attribution,
         "confidence": confidence,
         "upstream_split": normalise_split(split),
         "label_status": "ok",
@@ -177,8 +198,10 @@ def staged_points_rows(
     return rows
 
 
-ImageInfo = Callable[[str], "tuple[str, int, int] | None"]
-"""``quadrat id / image name -> (image_key, width, height)``; None when the image is not in the bucket."""  # noqa: E501
+ImageInfo = Callable[[str], "tuple | None"]
+"""``quadrat id -> (image_key, width, height)`` or ``(image_key, width, height, image_sha256)``;
+None when the image is not staged. Three items give *pending* rows (``image_key``, no sha256);
+four give resolved rows (``image_sha256`` set, no pending columns)."""
 
 
 def seaview_rows(
@@ -190,14 +213,19 @@ def seaview_rows(
     source_version: str,
     start: int = 0,
     only: Iterable[str] | None = None,
+    aphia_fallback: Callable[[str], int | None] | None = None,
 ) -> list[dict]:
     """SEAVIEW ``annotations_<REGION>.csv`` (``quadratid,y,x,label_name,label,func_group,method,data_set``).
 
-    ``x``/``y`` are pixels in the quadrat image. Rows for images ``image_info`` cannot find are
-    skipped (the caller counts them). The result is *pending* (``image_key``, no sha256)."""  # noqa: E501
+    ``x``/``y`` are pixels in the quadrat image (a point outside the frame is clamped and flagged
+    ``clamped`` in ``attrs``). Rows for images ``image_info`` cannot find are skipped (the caller
+    counts them). ``ann_license`` / ``ann_attribution`` are the registry entry's licence id and
+    citation; ``annotator_type`` is ``human``; ``attrs`` keeps ``func_group``, ``label_name``,
+    ``method``, ``quadrat_id`` and ``region``."""  # noqa: E501
     source_id = "seaview-survey-imagery"
-    resolve = resolver_for(registry, "seaview-point-labels")
+    resolve = resolver_for(registry, "seaview-point-labels", aphia_fallback=aphia_fallback)
     lic = source_licence(registry, source_id)
+    attribution = source_attribution(registry, source_id)
     wanted = None if only is None else set(only)
     rows: list[dict] = []
     for r in csv.DictReader(io.StringIO(csv_text)):
@@ -207,30 +235,37 @@ def seaview_rows(
         info = image_info(qid)
         if info is None:
             continue
-        key, w, h = info
+        key, w, h, *rest = info
+        sha = rest[0] if rest else None
+        x, y = float(r["x"]), float(r["y"])
+        attrs = {
+            "func_group": r["func_group"],
+            "label_name": r["label_name"],
+            "method": r["method"],
+            "quadrat_id": qid,
+            "region": region,
+        }
+        if not (0 <= x <= w and 0 <= y <= h):
+            attrs["clamped"] = True
         row = point_row(
             source_id=source_id,
             source_version=source_version,
             ordinal=start + len(rows),
-            image_sha256=None,
+            image_sha256=sha,
             native=r["label"],
             resolve=resolve,
             registry=registry,
-            x_px=float(r["x"]),
-            y_px=float(r["y"]),
+            x_px=x,
+            y_px=y,
             width=w,
             height=h,
-            annotator="human_expert",
+            annotator="human",
             ann_license=lic,
+            ann_attribution=attribution,
             split=r.get("data_set"),
-            attrs={
-                "func_group": r["func_group"],
-                "label_name": r["label_name"],
-                "method": r["method"],
-                "region": region,
-            },
+            attrs=attrs,
         )
-        rows.append({**row, "image_key": key, "image_sha256_todo": TODO_TEXT})
+        rows.append(row if sha else {**row, "image_key": key, "image_sha256_todo": TODO_TEXT})
     return rows
 
 
@@ -337,6 +372,7 @@ __all__ = [  # noqa: RUF022
     "parse_cpc",
     "point_row",
     "seaview_rows",
+    "source_attribution",
     "staged_points_rows",
     "resolver_for",
     "validate_pending",

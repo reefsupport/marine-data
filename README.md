@@ -358,6 +358,8 @@ print(lineage.attribution_text())  # for a model card or NOTICE file
 `marinedata mirror <source>` reports what may be copied into storage you control and what is refused, because copying
 a source is a redistribution decision as well as a technical one.
 
+Release gates (`marinedata release gate BUILD --all --require-all`): see [docs/GATES.md](docs/GATES.md).
+
 ## Licensing
 
 **Code.** The code in this repository is released under the Apache License 2.0 ([`LICENSE`](LICENSE)).

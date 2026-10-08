@@ -773,6 +773,12 @@ sources:
     checksums_status: missing
 
   - id: uiis
+    default_platform: unknown
+    platform_evidence: "Registry description lists \"human divers\" only as a class; HF card LiamLian0727/UIIS names no collection platform (checked 2026-10-08); left unknown."
+    expect_geo: none
+    expect_date: none
+    expect_site: none
+    expect_depth: none
     access_class: open
     licence_evidence: "legacy verification record (dataset-card, 2026-10-06): Staged sources/uiis/rev-44ca5db46599/LICENSE (\"License: Apache-2.0\"), written at ingest from the authors' own HF dataset repo LiamLian0727/UIIS (pinned revision 44ca5db4); matches registry/ingest-specs/uiis.yaml.\n"
     name: UIIS (WaterMask) underwater instance segmentation
@@ -821,6 +827,12 @@ sources:
       size_bytes: 635190157
 
   - id: uiis10k
+    default_platform: unknown
+    platform_evidence: "HF card LiamLian0727/UIIS10K names no collection platform (checked 2026-10-08); left unknown."
+    expect_geo: none
+    expect_date: none
+    expect_site: none
+    expect_depth: none
     access_class: open
     licence_evidence: "legacy verification record (dataset-card, 2026-10-06): Staged sources/uiis10k/rev-5c4316368a8e/LICENSE (\"License: Apache-2.0\"), written at ingest from the authors' own HF dataset repo LiamLian0727/UIIS10K (pinned revision 5c431636); matches registry/ingest-specs/uiis10k.yaml.\n"
     name: UIIS10K underwater instance segmentation (UWSAM)
@@ -869,6 +881,12 @@ sources:
       size_bytes: 512403738
 
   - id: usis10k
+    default_platform: unknown
+    platform_evidence: "HF card LiamLian0727/USIS10K names no collection platform (checked 2026-10-08); left unknown."
+    expect_geo: none
+    expect_date: none
+    expect_site: none
+    expect_depth: none
     access_class: open
     licence_evidence: "legacy verification record (dataset-card, 2026-10-06): Staged sources/usis10k/rev-b10f41ab819b/LICENSE (\"License: Apache-2.0\"), written at ingest from the authors' own HF dataset repo LiamLian0727/USIS10K (pinned revision b10f41ab); matches registry/ingest-specs/usis10k.yaml.\n"
     name: USIS10K underwater salient instance segmentation
@@ -917,6 +935,8 @@ sources:
       size_bytes: 581243526
 
   - id: roboflow-aquarium
+    default_platform: aquarium
+    platform_evidence: "Registry description: images \"from two US aquariums (Henry Doorly Zoo, National Aquarium Baltimore)\" - \"Aquarium tanks, not wild reef.\""
     access_class: open
     licence_evidence: "legacy verification record (licence-file, 2026-10-06): Staged sources/roboflow-aquarium/zip-5d30fed3dd5a/docs/aquarium_pretrain/README.dataset.txt states \"License: CC BY 4.0\" (Roboflow); the staged LICENSE repeats it.\n"
     name: Roboflow Aquarium Combined

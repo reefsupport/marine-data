@@ -42,7 +42,7 @@ docs-check:
 # Release gates: their unit tests, then the masks gate on a committed 2-image build
 # (tests/fixtures/masks_gate_ok). The gate writes GATES.json next to the build, so it runs on a copy.
 gates:
-	uv run pytest -q tests/test_gate.py tests/test_masks_gate.py tests/test_check_report.py tests/test_release_lock.py
+	uv run pytest -q tests/test_gate.py tests/test_gates_*.py tests/test_masks_gate.py tests/test_metadata_gate.py tests/test_check_report.py tests/test_release_lock.py
 	@d=$$(mktemp -d) && cp -R tests/fixtures/masks_gate_ok/. $$d && \
 	  uv run marinedata release gate --masks $$d ; rc=$$?; rm -rf $$d; exit $$rc
 

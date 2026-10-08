@@ -27,6 +27,7 @@ from .cli_registry import add_registry_subparsers
 from .cli_release import add_release_subparser
 from .cli_splitmap import add_splitmap_subparser
 from .cli_splits import add_splits_subparser  # WP-11/12 P3: split v2 pools/OOD/allocator
+from .cli_tasks import add_tasks_subparser
 from .cli_verify import add_verify_subparsers
 from .eval.cli import add_eval_subparser
 
@@ -416,6 +417,7 @@ def build_parser() -> argparse.ArgumentParser:
     add_ingest_batch_subparser(sub)
     add_splitmap_subparser(sub)
     add_metadata_subparser(sub)
+    add_tasks_subparser(sub)  # P3.1: `tasks build-points`
     add_release_subparser(sub)
     add_privacy_subparser(sub)
     add_quality_subparser(sub)
