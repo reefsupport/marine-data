@@ -1,0 +1,50 @@
+name: Licence question
+description: Ask whether a source may be used for your purpose, or report a licence or attribution entry that looks wrong.
+title: "[licence] "
+labels: [licence]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        The registry records Reef Support's reading of primary sources. It is metadata, not legal advice, and the maintainers
+        cannot give legal advice. For an entry that looks wrong or out of date, link the primary source (a licence file, a
+        dataset card or a terms page) and say when you read it.
+  - type: dropdown
+    id: kind
+    attributes:
+      label: Kind of question
+      options:
+        - May this source be used for my purpose?
+        - A registry or dataset card entry looks wrong
+        - The attribution text is wrong or incomplete
+        - Other
+    validations:
+      required: true
+  - type: input
+    id: source
+    attributes:
+      label: Source
+      description: The registry id or the `source` value of the row.
+    validations:
+      required: true
+  - type: input
+    id: config
+    attributes:
+      label: Config
+      description: Leave empty if the question is about the registry only.
+  - type: textarea
+    id: purpose
+    attributes:
+      label: What you want to do
+      description: For example research only, a commercial product, redistribution, or derivative works such as crops.
+  - type: textarea
+    id: says
+    attributes:
+      label: What the registry or card says, and what you found
+    validations:
+      required: true
+  - type: input
+    id: primary
+    attributes:
+      label: Primary source
+      description: Link to the licence file, dataset card or terms page, and the date you read it.

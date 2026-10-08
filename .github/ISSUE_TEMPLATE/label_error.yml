@@ -1,0 +1,73 @@
+name: Label error
+description: A wrong class, a missing object, a bad mask or box, or a wrong taxon mapping in a published row.
+title: "[label] "
+labels: [label-error]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Identify the row, not the image. Do not attach or link images that show people.
+        Mask values are class ids, not colours, so a mask looks almost black in an image viewer. Decode it with the row's
+        `class_map` before you report it.
+  - type: dropdown
+    id: kind
+    attributes:
+      label: Kind of error
+      options:
+        - Wrong class
+        - Missing object
+        - Wrong mask boundary or box
+        - Wrong taxon or coarse mapping
+        - Mask does not match its image
+        - Other
+    validations:
+      required: true
+  - type: input
+    id: config
+    attributes:
+      label: Config
+      placeholder: coral-masks
+    validations:
+      required: true
+  - type: input
+    id: source
+    attributes:
+      label: Source
+      description: The `source` value of the row (`source_id` in fish-boxes).
+    validations:
+      required: true
+  - type: input
+    id: split
+    attributes:
+      label: Split
+      placeholder: train
+    validations:
+      required: true
+  - type: input
+    id: image_sha256
+    attributes:
+      label: image_sha256
+      description: The `image_sha256` value of the row.
+    validations:
+      required: true
+  - type: textarea
+    id: observed
+    attributes:
+      label: What the row says
+      description: The class id and `label_native`, or the box or region concerned.
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: What it should be, and how you know
+      description: A reference, a key or a description of the object.
+    validations:
+      required: true
+  - type: checkboxes
+    id: checks
+    attributes:
+      label: Before you submit
+      options:
+        - label: I decoded the mask with the row's `class_map` (values are class ids, and `255` means ignore).
+          required: true

@@ -1,9 +1,9 @@
 cff-version: 1.2.0
-message: "If you use this software or the published datasets, please cite them as below. Licences for the data are set per source; see the dataset card before use."
+message: "If you use this software or the published datasets, please cite them as below, and cite the upstream sources you use (see references). The Apache-2.0 licence covers the code only. Licences for the data are set per source; see the dataset card before use."
 title: "marine-data"
 abstract: "A licence-aware registry and dataloaders for marine and coral-reef datasets, and the open image datasets built from it."
 type: software
-version: "1.0"
+version: "1.0.0"
 date-released: "2026-10-07"
 license: Apache-2.0
 url: "https://huggingface.co/datasets/reefsupport/marine-data"
@@ -11,6 +11,10 @@ repository-code: "https://github.com/reefsupport/marine-data"
 authors:
   - name: "Reef Support"
     website: "https://reef.support"
+contact:
+  - name: "Reef Support"
+    email: "hello@reef.support"
+    website: "https://www.reef.support/contact"
 keywords:
   - marine
   - coral reef
@@ -18,3 +22,92 @@ keywords:
   - computer vision
   - dataset
   - licensing
+references:
+  - type: data
+    title: "Reef Support Marine Data"
+    version: "1.0"
+    year: 2026
+    authors:
+      - name: "Reef Support"
+    repository: "https://huggingface.co/datasets/reefsupport/marine-data"
+    notes: "Four Parquet configs: coral-masks, scene-masks, instance-masks, fish-boxes. Licences are set per source and recorded in every row."
+  - type: conference-paper
+    title: "The Coralscapes Dataset: Semantic Scene Understanding in Coral Reefs"
+    authors:
+      - {family-names: "Sauder", given-names: "Jonathan"}
+      - {family-names: "Domazetoski", given-names: "Viktor"}
+      - {family-names: "Banc-Prandi", given-names: "Guilhem"}
+      - {family-names: "Perna", given-names: "Gabriela"}
+      - {family-names: "Meibom", given-names: "Anders"}
+      - {family-names: "Tuia", given-names: "Devis"}
+    collection-title: "Proceedings of the International Conference on Computer Vision Joint Workshop on Marine Vision"
+    year: 2025
+    url: "https://huggingface.co/datasets/EPFL-ECEO/coralscapes"
+  - type: data
+    title: "Seaview Survey Photo-quadrat and Image Classification Dataset"
+    authors:
+      - {family-names: "González-Rivero", given-names: "Manuel"}
+    publisher: {name: "The University of Queensland"}
+    year: 2019
+    doi: "10.14264/UQL.2019.930"
+    notes: "Further authors are listed in the DOI record. Images are CC BY 3.0."
+  - type: conference-paper
+    title: "Semantic Segmentation of Underwater Imagery: Dataset and Benchmark"
+    authors:
+      - {family-names: "Islam", given-names: "Md Jahidul"}
+      - {family-names: "Edge", given-names: "Chelsey"}
+      - {family-names: "Xiao", given-names: "Yuyang"}
+      - {family-names: "Luo", given-names: "Peigen"}
+      - {family-names: "Mehtaz", given-names: "Muntaqim"}
+      - {family-names: "Morse", given-names: "Christopher"}
+      - {family-names: "Enan", given-names: "Sadman Sakib"}
+      - {family-names: "Sattar", given-names: "Junaed"}
+    collection-title: "IEEE/RSJ International Conference on Intelligent Robots and Systems (IROS)"
+    year: 2020
+    url: "https://github.com/IRVLab/SUIM"
+  - type: conference-paper
+    title: "WaterMask: Instance Segmentation for Underwater Imagery"
+    authors:
+      - {family-names: "Lian", given-names: "Shijie"}
+      - {family-names: "Li", given-names: "Hua"}
+      - {family-names: "Cong", given-names: "Runmin"}
+      - {family-names: "Li", given-names: "Suqi"}
+      - {family-names: "Zhang", given-names: "Wei"}
+      - {family-names: "Kwong", given-names: "Sam"}
+    collection-title: "Proceedings of the IEEE/CVF International Conference on Computer Vision (ICCV)"
+    start: 1305
+    end: 1315
+    year: 2023
+    url: "https://huggingface.co/datasets/LiamLian0727/UIIS"
+  - type: article
+    title: "Advancing Marine Research: UWSAM Framework and UIIS10K Dataset for Precise Underwater Instance Segmentation"
+    authors:
+      - {family-names: "Li", given-names: "Hua"}
+      - {family-names: "Lian", given-names: "Shijie"}
+    journal: "arXiv preprint arXiv:2505.15581"
+    year: 2025
+    url: "https://arxiv.org/abs/2505.15581"
+    notes: "Further authors are listed on arXiv."
+  - type: conference-paper
+    title: "Diving into Underwater: Segment Anything Model Guided Underwater Salient Instance Segmentation and A Large-scale Dataset"
+    authors:
+      - {family-names: "Lian", given-names: "Shijie"}
+      - {family-names: "Zhang", given-names: "Ziyi"}
+      - {family-names: "Li", given-names: "Hua"}
+      - {family-names: "Li", given-names: "Wenjie"}
+      - {family-names: "Yang", given-names: "Laurence Tianruo"}
+      - {family-names: "Kwong", given-names: "Sam"}
+      - {family-names: "Cong", given-names: "Runmin"}
+    collection-title: "Proceedings of the 41st International Conference on Machine Learning (ICML)"
+    volume: 235
+    start: 29545
+    end: 29559
+    year: 2024
+    url: "https://huggingface.co/datasets/LiamLian0727/USIS10K"
+  - type: data
+    title: "Aquarium Dataset"
+    authors:
+      - name: "Roboflow"
+    year: 2020
+    url: "https://public.roboflow.com/object-detection/aquarium"
+    notes: "CC BY 4.0."

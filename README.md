@@ -30,6 +30,15 @@ upstream splits where a source defines them, and a deterministic 80/10/10 group 
 | [`instance-masks`](https://huggingface.co/datasets/reefsupport/marine-data/viewer/instance-masks) | Underwater instance segmentation | 25,296 | UIIS, UIIS10K, USIS10K |
 | [`fish-boxes`](https://huggingface.co/datasets/reefsupport/marine-data/viewer/fish-boxes) | Object detection (fish and fauna boxes) | 25,912 | UIIS, UIIS10K, USIS10K, Roboflow Aquarium Dataset |
 
+Every config loads the same way; only the config name changes. Splits are `train`, `validation` and `test`.
+
+| Config | Call | Download |
+|---|---|---|
+| `coral-masks` | `load_dataset("reefsupport/marine-data", "coral-masks", split="train")` | 12.6 GB |
+| `scene-masks` | `load_dataset("reefsupport/marine-data", "scene-masks", split="train")` | 0.2 GB |
+| `instance-masks` | `load_dataset("reefsupport/marine-data", "instance-masks", split="train")` | 1.4 GB |
+| `fish-boxes` | `load_dataset("reefsupport/marine-data", "fish-boxes", split="train")` | 1.4 GB |
+
 Load a config with the `datasets` library, in one of three ways.
 
 Quick look in a notebook: stream the split and read the first row.
@@ -66,6 +75,11 @@ ds = load_dataset(
 
 In a plain Python script, stopping a stream after a few rows can keep the process from exiting (an upstream issue in
 pyarrow's dataset scanner). Download the config or a single source instead.
+
+**Masks look black in the viewer.** Semantic masks (`coral-masks`, `scene-masks`) are `uint8` PNGs whose pixel values
+are class ids, not colours, and `255` marks pixels to ignore. Image viewers, including the Hugging Face viewer, show
+them as almost black with white ignore regions. Read them as arrays and look the ids up in the row's `class_map`.
+Instance masks (`instance-masks`) are `uint16` instance ids with `0` for background. `fish-boxes` has boxes and no mask.
 
 Licences differ per source. Keep the `attribution` column when you share or publish results, and see
 [Licensing](#licensing) below. The dataset card documents fields, splits, annotation process and known limitations.
@@ -363,7 +377,8 @@ the `licence` and `attribution` columns of every published row. The sources in t
 Images in the UIIS, UIIS10K and USIS10K configurations originate from datasets distributed by their authors under the
 Apache License 2.0. The original publications state that the images were gathered from public sources and earlier
 datasets, so copyright in individual images may rest with third parties. Rights holders can request removal by opening
-an [issue](https://github.com/reefsupport/marine-data/issues) or through the [contact page](https://www.reef.support/contact).
+an [issue](https://github.com/reefsupport/marine-data/issues) or through the [contact page](https://www.reef.support/contact). The
+[takedown procedure](SECURITY.md#takedown-requests) says what to include and what happens next.
 
 Sources whose terms forbid redistribution are not part of the published datasets. The registry still records
 them, so that their status is visible and gated.
@@ -477,4 +492,13 @@ See [`CONTRIBUTING.md`](CONTRIBUTING.md) for the workflow and [`CHANGELOG.md`](C
 
 Questions, corrections to a licence entry and removal requests: open an
 [issue](https://github.com/reefsupport/marine-data/issues) or use the [contact page](https://www.reef.support/contact).
+
+- Problems with the data: the issue forms for a
+  [label error](https://github.com/reefsupport/marine-data/issues/new?template=label_error.yml), a
+  [licence question](https://github.com/reefsupport/marine-data/issues/new?template=licence_question.yml) or a
+  [new source](https://github.com/reefsupport/marine-data/issues/new?template=new_source.yml).
+- Rights holders and people who appear in an image: the [takedown procedure](SECURITY.md#takedown-requests).
+- Vulnerabilities and personal data: report privately, see [`SECURITY.md`](SECURITY.md).
+- Conduct: [`CODE_OF_CONDUCT.md`](CODE_OF_CONDUCT.md).
+
 Built by [Reef Support](https://reef.support).
