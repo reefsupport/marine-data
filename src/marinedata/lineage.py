@@ -167,8 +167,7 @@ def build_lineage(
     ]
 
     dropped_records = [
-        {"id": source_id, "reason": reason}
-        for source_id, reason in sorted((dropped or {}).items())
+        {"id": source_id, "reason": reason} for source_id, reason in sorted((dropped or {}).items())
     ]
 
     stamp = (now or datetime.now(timezone.utc)).isoformat()
