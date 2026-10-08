@@ -31,7 +31,7 @@ sources:
     capabilities: [fish-detection]
     loader: { layout: staged-tree }
     n_images: 19226
-    n_images_method: "spec:measured.items"
+    n_images_method: "ingest-json"
     coverage: { regions: [unknown] }
     homepage: "https://zenodo.org/records/5046708"
     citation: "doi:10.5281/zenodo.5046708 — Acoustic video cameras multi-species multi-cameras Training Dataset (TD) for Deep Learning applications"
@@ -100,6 +100,7 @@ sources:
     notes: "Folded from registry/ingest-specs/habcam.yaml on 2026-10-08 (P1.2). Spec license string, verbatim: 'public domain (US government work, per NOAA norm), request-based access'. Domain, modalities and capabilities are keyword inferences from the spec text."
     tags: [spec-folded]
     release_skip_reason: "no-staged-images: registry lists imagery, nothing staged under sources/ in rs-storage-open (U7/queue follow-up)"
+    n_images_method: "unavailable:no-count"
 
   - id: kakadu-fish-ai
     domain: fish
@@ -158,8 +159,8 @@ sources:
     modalities: [image]
     capabilities: [fish-classification]
     loader: { layout: staged-tree }
-    n_images: 99986
-    n_images_method: "spec:measured.items"
+    n_images: 326076
+    n_images_method: "ingest-json"
     coverage: { regions: [unknown] }
     homepage: "https://huggingface.co/datasets/perona-lab/Huntington_and_Caltech_Koi_RGB_and_Sonar"
     citation: "HF dataset perona-lab/Huntington_and_Caltech_Koi_RGB_and_Sonar"
@@ -198,6 +199,7 @@ sources:
     notes: "Folded from registry/ingest-specs/lfitw.yaml on 2026-10-08 (P1.2). Spec license string, verbatim: 'NOASSERTION'. Domain, modalities and capabilities are keyword inferences from the spec text."
     tags: [spec-folded]
     release_skip_reason: "no-staged-images: registry lists imagery, nothing staged under sources/ in rs-storage-open (U7/queue follow-up)"
+    n_images_method: "unavailable:no-count"
 
   - id: malaysian-fish-turbid
     domain: fish
@@ -262,6 +264,8 @@ sources:
     notes: "Folded from registry/ingest-specs/marineinst20m-web.yaml on 2026-10-08 (P1.2). Spec license string, verbatim: 'per upstream website (Corals of the World, EOL, FishDB, Meerwasser-Lexikon/Reeflex); recorded per sample, never a filter (D-C)'. Domain, modalities and capabilities are keyword inferences from the spec text."
     tags: [spec-folded]
     superseded_by: marineinst20m
+    n_images: 8217
+    n_images_method: "listing"
 
   - id: noaa-dsc-csv
     domain: fish
@@ -300,6 +304,7 @@ sources:
       root_digest: a169edefa01b9007043a79457c0cf514874ac72d235cebf607d29f59a61d1b16
       files: 4
       size_bytes: 146113857
+    n_images_method: "unavailable:no-count"
 
   - id: noaa-oceaneyes
     domain: fish
@@ -338,6 +343,8 @@ sources:
       root_digest: 3541e84c0e7d994c31b2d3edc07d10de736b01d908e75b91de58f1abe7ffa105
       files: 20069
       size_bytes: 1848381043
+    n_images: 20065
+    n_images_method: "ingest-json"
 
   - id: pomerfish
     domain: fish
@@ -366,6 +373,7 @@ sources:
     notes: "Folded from registry/ingest-specs/pomerfish.yaml on 2026-10-08 (P1.2). Spec license string, verbatim: 'cc-by-4.0'. Domain, modalities and capabilities are keyword inferences from the spec text."
     tags: [spec-folded]
     release_skip_reason: "no-staged-images: registry lists imagery, nothing staged under sources/ in rs-storage-open (U7/queue follow-up)"
+    n_images_method: "unavailable:no-count"
 
   - id: salmon-trout-video
     domain: fish
@@ -424,6 +432,7 @@ sources:
     notes: "Folded from registry/ingest-specs/seaclef-lifeclef-fish.yaml on 2026-10-08 (P1.2). Spec license string, verbatim: 'unknown (challenge terms)'. Domain, modalities and capabilities are keyword inferences from the spec text."
     tags: [spec-folded]
     release_skip_reason: "no-staged-images: registry lists imagery, nothing staged under sources/ in rs-storage-open (U7/queue follow-up)"
+    n_images_method: "unavailable:no-count"
 
   - id: sfishtrack
     domain: fish

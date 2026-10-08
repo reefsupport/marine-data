@@ -30,8 +30,8 @@ sources:
     modalities: [image]
     capabilities: [general-pretraining]
     loader: { layout: staged-tree }
-    n_images: 19217
-    n_images_method: "spec:measured.items"
+    n_images: 88068
+    n_images_method: "ingest-json"
     coverage: { regions: [unknown] }
     homepage: "https://zenodo.org/records/18405776"
     citation: "doi:10.5281/zenodo.18405776 — In situ marine plankton holographic image dataset - Baltic Sea 2024"
@@ -70,6 +70,7 @@ sources:
     notes: "Folded from registry/ingest-specs/ecotaxa-public-export.yaml on 2026-10-08 (P1.2). Spec license string, verbatim: 'per-project (stated per EcoTaxa project metadata)'. Domain, modalities and capabilities are keyword inferences from the spec text."
     tags: [spec-folded]
     release_skip_reason: "no-staged-images: registry lists imagery, nothing staged under sources/ in rs-storage-open (U7/queue follow-up)"
+    n_images_method: "unavailable:no-count"
 
   - id: nes-plankton-2022
     domain: plankton
@@ -108,6 +109,8 @@ sources:
       root_digest: 20b756cdfd7493f2ad64551e09569db2ac2dba5c9062b6935e23fd6643546c9a
       files: 97029
       size_bytes: 1585705056
+    n_images: 97026
+    n_images_method: "ingest-json"
 
   - id: noaa-plankton-shadowgraphs
     domain: plankton
@@ -136,6 +139,7 @@ sources:
     notes: "Folded from registry/ingest-specs/noaa-plankton-shadowgraphs.yaml on 2026-10-08 (P1.2). Spec license string, verbatim: 'public domain (US government work) — NODD'. Domain, modalities and capabilities are keyword inferences from the spec text."
     tags: [spec-folded]
     release_skip_reason: "no-staged-images: registry lists imagery, nothing staged under sources/ in rs-storage-open (U7/queue follow-up)"
+    n_images_method: "unavailable:no-count"
 
   - id: plankton-interaction-videos
     domain: plankton
@@ -174,6 +178,8 @@ sources:
       root_digest: e5ba5324be407c4210e5acaee2c3b0dbeb8ec544ce2f50a5ab915544736d3229
       files: 21224
       size_bytes: 5675300200
+    n_images: 21221
+    n_images_method: "ingest-json"
 
   - id: plankton-noctiluca-capsules
     domain: plankton
@@ -292,6 +298,7 @@ sources:
     notes: "Folded from registry/ingest-specs/ucsc-ifcb-20250801.yaml on 2026-10-08 (P1.2). Spec license string, verbatim: 'unstated'. Domain, modalities and capabilities are keyword inferences from the spec text."
     tags: [spec-folded]
     release_skip_reason: "no-staged-images: registry lists imagery, nothing staged under sources/ in rs-storage-open (U7/queue follow-up)"
+    n_images_method: "unavailable:no-count"
 
   - id: womack-plankton-hboi
     domain: plankton

@@ -39,6 +39,7 @@ sources:
     loader: { layout: metadata-only }
     citation: "Bunting, P., Rosenqvist, A., Hilarides, L., Lucas, R., Thomas, N., Tadono, T., Worthington, T., Spalding, M., Murray, N., & Rebelo, L.-M. (2022). Global Mangrove Watch (1996 - 2020) Version 3.0 Dataset (Version 3.0) [Dataset]. Zenodo. https://doi.org/10.5281/ZENODO.6894273"
     tags: [mangrove, extent, context-layer]
+    n_images_method: "unavailable:non-image"
 
   - id: global-seagrass-10m
     domain: seagrass
@@ -69,6 +70,7 @@ sources:
     loader: { layout: metadata-only }
     citation: "Peng, J., Li, J., Krause, J., Lyons, M., Murray, N., Schill, S., Roelfsema, C., & Asner, G. (2026). Global 10-meter seagrass maps [Dataset]. Zenodo. https://doi.org/10.5281/ZENODO.18612240"
     tags: [seagrass, extent, context-layer]
+    n_images_method: "unavailable:non-image"
 
   - id: allen-coral-atlas
     domain: coral
@@ -105,6 +107,7 @@ sources:
     loader: { layout: metadata-only }
     citation: "Allen Coral Atlas (2022). Imagery, maps and monitoring of the world's tropical coral reefs. https://doi.org/10.5281/zenodo.3833242"
     tags: [satellite, basemap, context-layer]
+    n_images_method: "unavailable:non-image"
 
   - id: noaa-nccos-benthic-habitat
     domain: coral
@@ -137,6 +140,7 @@ sources:
       assets for our region. Hierarchical classification schemes vary by mapping campaign.
     loader: { layout: metadata-only }
     tags: [caribbean, public-domain, habitat]
+    n_images_method: "unavailable:non-image"
 
   - id: gebco-2024
     domain: imaging
@@ -167,6 +171,7 @@ sources:
       caveats: ["~450 m resolution — a regional context layer, far too coarse for reef-scale depth."]
     loader: { layout: metadata-only }
     tags: [bathymetry, context-layer]
+    n_images_method: "unavailable:non-image"
 
   - id: icesat2-atl24
     domain: imaging
@@ -192,6 +197,7 @@ sources:
     annotations: [{ kind: tabular, supervises: [] }]
     loader: { layout: metadata-only }
     tags: [bathymetry, lidar]
+    n_images_method: "unavailable:non-image"
 
   - id: seaclear-marine-debris
     domain: imaging
@@ -251,6 +257,7 @@ sources:
         instance-mask/40-class annotation.
     citation: "Đuraš, A., Wolf, B. J., Ilioudi, A., Palunko, I., & De Schutter, B. (2024). A Dataset for Detection and Segmentation of Underwater Marine Debris in Shallow Waters. Scientific Data, 11(1). https://doi.org/10.1038/s41597-024-03759-2"
     tags: [debris, permissive]
+    n_images_method: "registry-prior"
 
   - id: floating-marine-debris
     domain: imaging
@@ -287,6 +294,8 @@ sources:
     loader: { layout: staged-tree, schema_id: dataset-native }
     citation: 'M. M. Duarte and L. Azevedo, "Automatic Detection and Identification of Floating Marine Debris Using Multispectral Satellite Imagery," in IEEE Transactions on Geoscience and Remote Sensing, vol. 61, pp. 1-15, 2023, Art no. 2002315, doi: 10.1109/TGRS.2023.3283607.'
     tags: [debris, spectral]
+    n_images: 11
+    n_images_method: "ingest-json"
 
   - id: copernicus-globcolour
     domain: imaging
@@ -316,6 +325,7 @@ sources:
     notes: "Environmental covariate layer — pairs with bleaching models rather than feeding vision directly."
     loader: { layout: metadata-only }
     tags: [environmental, covariate]
+    n_images_method: "unavailable:non-image"
 
   - id: obis
     domain: coral
@@ -346,3 +356,4 @@ sources:
       biogeographically impossible predictions — e.g. Indo-Pacific genera on a Caribbean reef.
     loader: { layout: metadata-only }
     tags: [occurrence, prior, taxonomy]
+    n_images_method: "unavailable:non-image"

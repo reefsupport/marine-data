@@ -87,6 +87,7 @@ sources:
         passes via the manifest-driven fetch path (`fetchers_remote._fetch_s3_manifest`),
         which never lists the bucket.
     n_images: 1250
+    n_images_method: "ingest-json"
     n_annotations: 14517
     n_files: 18276
     annotations:
@@ -207,6 +208,7 @@ sources:
         staged tree. RB-1 read the staged `metadata.parquet` back through the StagedTreeLoader: 2,707
         rows = the expected image count (checked against CHECKSUMS.sha256, 2026-10-06).
     n_images: 2707
+    n_images_method: "ingest-json"
     n_annotations: 50603
     n_files: 56025
     counts_note: >
@@ -354,6 +356,7 @@ sources:
         from `positive_label`/`negative_label` at read time — nothing resolved this
         for a staged dense mask before.
     n_images: 658
+    n_images_method: "metadata-parquet"
     annotations:
       - kind: dense-mask
         count: 658
@@ -412,6 +415,7 @@ sources:
     modalities: [image]
     capabilities: [benthic-classification, general-pretraining]
     n_images: 870
+    n_images_method: "metadata-parquet"
     n_files: 872
     annotations:
       - kind: point-label
@@ -539,6 +543,7 @@ sources:
         tree (`images/<site>/`, `labels/points/<site>/*.cpc|csv`). RB-1 read the staged `metadata.parquet`
         back through the StagedTreeLoader on a shadow tree: 496 rows = the expected image count (2026-10-06).
     tags: [needs-permission]
+    n_images_method: "registry-prior"
 
   - id: coralscop-masks-rs
     domain: coral
@@ -577,6 +582,7 @@ sources:
     modalities: [image]
     capabilities: [coral-instance-segmentation, general-pretraining]
     n_images: 38928
+    n_images_method: "metadata-parquet"
     annotations:
       - kind: instance-mask
         count: 38928
@@ -685,6 +691,7 @@ sources:
       `request` stub and nothing in the registry loads it. Its private cache objects are not deleted.
     loader: { layout: metadata-only }
     tags: [needs-permission]
+    n_images_method: "registry-prior"
 
   - id: mussel-ai-data
     domain: fauna
@@ -734,3 +741,4 @@ sources:
       outside this prefix and was not otherwise registered — both are gone with D6.
     loader: { layout: metadata-only }
     tags: [retired]
+    n_images_method: "registry-prior"

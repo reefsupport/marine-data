@@ -78,6 +78,7 @@ sources:
         the prior (wrong) note trained on "unlabelled" as class 255-that-never-occurs
         and left index 0 uncovered as a real class.
     n_images: 2075
+    n_images_method: "metadata-parquet"
     annotations:
       - kind: dense-mask
         count: 174000
@@ -182,6 +183,7 @@ sources:
       schema_id: catami-1.4
       crosswalk_id: catami-1.4
     tags: [pretraining, catami, largest]
+    n_images_method: "registry-prior"
 
   - id: reefnet
     domain: coral
@@ -257,6 +259,7 @@ sources:
         machinery rather than being forced onto a coarser or unrelated node — revisit
         once the actual label list is public.
     tags: [genus, benchmark, domain-shift-testbed]
+    n_images_method: "registry-prior"
 
   - id: deolhonoscorais
     domain: coral
@@ -337,6 +340,7 @@ sources:
         annotations[].schema_id resolves at load; the loader never uses it, since the
         real per-image labels are worms-species binomials, not the polygon classes.
     tags: [atlantic, dense-seg, rare-region]
+    n_images_method: "registry-prior"
 
   - id: heron-reef-benthic
     domain: coral
@@ -402,6 +406,7 @@ sources:
         annotations[].notes) — general-pretraining value only, for now.
     citation: "Roelfsema, C., Kovacs, E. M., Markey, K., Vercelloni, J., Rodriguez-Ramirez, A., Lopez-Marcano, S., Gonzalez-Rivero, M., Hoegh-Guldberg, O., & Phinn, S. R. (2021). Benthic and coral reef community field data for Heron Reef, Southern Great Barrier Reef, Australia, 2002-2018. Scientific Data, 8(1). https://doi.org/10.1038/s41597-021-00871-5"
     tags: [time-series, gbr]
+    n_images_method: "registry-prior"
 
   - id: coralvqa
     domain: coral
@@ -443,6 +448,7 @@ sources:
     modalities: [image]
     capabilities: [vqa-captioning, general-pretraining, benthic-classification]
     n_images: 11804
+    n_images_method: "ingest-json"
     n_files: 11809
     counts_note: "2026-10-06 staged tree (checksums.parquet): 11,804 images (8,688 jpg + 3,116 png) of the 12,805 upstream; digest rebuilt from the 11,809 manifest lines."
     annotations:
@@ -522,6 +528,7 @@ sources:
         for the shape this reproduces (StagedImage `metadata.parquet` +
         `labels/image_labels.parquet`, `partition`="default", `upstream_split` dropped).
     n_images: 10419
+    n_images_method: "metadata-parquet"
     annotations:
       - kind: image-label
         count: 10419
@@ -610,6 +617,7 @@ sources:
       layout: csv-points
       schema_id: coralnet-labelset
     tags: [tdm, unlicensed, incumbent]
+    n_images_method: "registry-prior"
 
   - id: seatizen-atlas
     domain: coral
@@ -653,6 +661,7 @@ sources:
     loader: { layout: metadata-only }
     citation: "Matteo Contini, Julien Barde, Sylvain Bonhommeau, Victor Illien, Alexis Joly, & Anne-Elise Nieblas. (2026). Seatizen Atlas (Version v1.2.6) [Dataset]. Zenodo. https://doi.org/10.5281/ZENODO.11125847"
     tags: [licence-contradiction-resolved]
+    n_images_method: "registry-prior"
 
   - id: mermaid-aws
     domain: coral
@@ -701,7 +710,8 @@ sources:
         prefix: sources/mermaid-aws/2026-09-19-bc53d5a2c0b6/
     modalities: [image, tabular]
     capabilities: [benthic-classification, coral-taxonomy]
-    n_images: 18561  # staged image count, S61 2026-09-25
+    n_images: 18561
+    n_images_method: "metadata-parquet"
     annotations:
       - kind: point-label
         schema_id: mermaid-attributes
@@ -793,6 +803,7 @@ sources:
       why verification requires a primary source.
     loader: { layout: metadata-only }
     tags: [prohibited, provenance-risk]
+    n_images_method: "registry-prior"
 
   - id: noaa-esd-coral-bleaching
     domain: coral
@@ -866,6 +877,7 @@ sources:
       from this bucket tree, which has test/ only.
     loader: { layout: metadata-only }
     tags: [bleaching, public-domain, incomplete-extraction, retired]
+    n_images_method: "registry-prior"
 
   - id: roboflow-coral-bleaching-final-v6i
     domain: coral
@@ -911,6 +923,7 @@ sources:
     modalities: [image]
     capabilities: [bleaching-assessment, general-pretraining]
     n_images: 2551
+    n_images_method: "metadata-parquet"
     annotations:
       - kind: image-label
         count: 2551
@@ -1007,6 +1020,7 @@ sources:
     modalities: [image]
     capabilities: [bleaching-assessment, general-pretraining]
     n_images: 2543
+    n_images_method: "metadata-parquet"
     annotations:
       - kind: image-label
         count: 2543
@@ -1109,6 +1123,7 @@ sources:
     modalities: [image]
     capabilities: [bleaching-assessment, general-pretraining]
     n_images: 2789
+    n_images_method: "metadata-parquet"
     annotations:
       - kind: image-label
         count: 2789
@@ -1214,6 +1229,7 @@ sources:
     modalities: [image]
     capabilities: [bleaching-assessment, general-pretraining]
     n_images: 10781
+    n_images_method: "metadata-parquet"
     annotations:
       - kind: image-label
         count: 10781
@@ -1305,6 +1321,7 @@ sources:
     modalities: [image]
     capabilities: [bleaching-assessment, general-pretraining]
     n_images: 4556
+    n_images_method: "metadata-parquet"
     annotations:
       - kind: image-label
         count: 4556
@@ -1397,6 +1414,7 @@ sources:
     modalities: [image]
     capabilities: [benthic-segmentation, general-pretraining]
     n_images: 4922
+    n_images_method: "metadata-parquet"
     n_files: 9845
     annotations:
       - kind: none
@@ -1498,6 +1516,7 @@ sources:
     modalities: [image]
     capabilities: [general-pretraining]
     n_images: 11870
+    n_images_method: "ingest-json"
     n_files: 12376
     annotations:
       - kind: none
@@ -1604,6 +1623,7 @@ sources:
       reason alone.
     loader: { layout: metadata-only }
     tags: [needs-permission, tar-only]
+    n_images_method: "registry-prior"
 
   - id: coral-health-classification
     domain: coral
@@ -1663,6 +1683,7 @@ sources:
       until a real licence file is read.
     loader: { layout: metadata-only }
     tags: [needs-permission, tar-only]
+    n_images_method: "registry-prior"
 
   - id: kaggle-healthy-bleached-corals
     domain: coral
@@ -1709,6 +1730,7 @@ sources:
     modalities: [image]
     capabilities: [bleaching-assessment, general-pretraining]
     n_images: 923
+    n_images_method: "ingest-json"
     annotations:
       - kind: none
         supervises: []
@@ -1781,6 +1803,7 @@ sources:
     coverage:
       regions: [unknown]
     n_images: 594
+    n_images_method: "ingest-json"
     citation: "Ciaglia et al. 2022, Roboflow 100: A Rich, Multi-Domain Object Detection Benchmark, arXiv:2211.13523"
     homepage: https://universe.roboflow.com/roboflow-100/coral-lwptl
     loader: { layout: yolo-txt, schema_id: rf100-coral-lwptl-native, crosswalk_id: rf100-coral-lwptl }

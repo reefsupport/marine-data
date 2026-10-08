@@ -30,6 +30,7 @@ sources:
     notes: "Folded from registry/ingest-specs/benthicnet.yaml on 2026-10-08 (P1.2). Spec license string, verbatim: 'CC-BY-4.0 (mixed per source survey)'. Domain, modalities and capabilities are keyword inferences from the spec text."
     tags: [spec-folded]
     release_skip_reason: "no-staged-images: registry lists imagery, nothing staged under sources/ in rs-storage-open (U7/queue follow-up)"
+    n_images_method: "unavailable:no-count"
 
   - id: coralnet-public
     domain: coral
@@ -58,6 +59,7 @@ sources:
     notes: "Folded from registry/ingest-specs/coralnet-public.yaml on 2026-10-08 (P1.2). Spec license string, verbatim: 'per source (set by each source owner)'. Domain, modalities and capabilities are keyword inferences from the spec text."
     tags: [spec-folded]
     release_skip_reason: "no-staged-images: registry lists imagery, nothing staged under sources/ in rs-storage-open (U7/queue follow-up)"
+    n_images_method: "unavailable:no-count"
 
   - id: coralvos
     domain: coral
@@ -86,6 +88,7 @@ sources:
     notes: "Folded from registry/ingest-specs/coralvos.yaml on 2026-10-08 (P1.2). Spec license string, verbatim: 'unknown (not stated in repo)'. Domain, modalities and capabilities are keyword inferences from the spec text."
     tags: [spec-folded]
     release_skip_reason: "no-staged-images: registry lists imagery, nothing staged under sources/ in rs-storage-open (U7/queue follow-up)"
+    n_images_method: "unavailable:no-count"
 
   - id: csiro-cots
     domain: coral
@@ -124,6 +127,8 @@ sources:
       root_digest: 40ef8a79605e2d57a8ac3bf68afeea640cd21d3a671d96a28f8b035105c2e8ae
       files: 23507
       size_bytes: 15228553478
+    n_images: 23501
+    n_images_method: "ingest-json"
 
   - id: deepreefmap
     domain: coral
@@ -153,6 +158,7 @@ sources:
     tags: [spec-folded]
     superseded_by: deepreefmap-data
     release_skip_reason: "no-staged-images: registry lists imagery, nothing staged under sources/ in rs-storage-open (U7/queue follow-up)"
+    n_images_method: "unavailable:no-count"
 
   - id: elliott-bay-benthic
     domain: coral
@@ -191,6 +197,8 @@ sources:
       root_digest: 720301a6e18cfde0b07579bd9de2b30aa7adbc17c1d7e023a1d923583fddde0c
       files: 1503
       size_bytes: 45301906521
+    n_images: 1000
+    n_images_method: "ingest-json"
 
   - id: meuvs-video-summ
     domain: coral
@@ -219,8 +227,8 @@ sources:
     modalities: [image]
     capabilities: [benthic-classification]
     loader: { layout: staged-tree }
-    n_images: 39974
-    n_images_method: "spec:measured.items"
+    n_images: 40587
+    n_images_method: "ingest-json"
     coverage: { regions: [unknown] }
     homepage: "https://zenodo.org/records/20746075"
     citation: "doi:10.5281/zenodo.20746075 — Multi-Environment Underwater Video Summarization Dataset (MEUVS)"
@@ -259,8 +267,8 @@ sources:
     modalities: [image]
     capabilities: [benthic-classification]
     loader: { layout: staged-tree }
-    n_images: 944
-    n_images_method: "spec:measured.items"
+    n_images: 470
+    n_images_method: "ingest-json"
     coverage: { regions: [unknown] }
     homepage: "https://huggingface.co/datasets/NMFS-OSI/NOAA-PIFSC-ESD-ESA-CORAL-ICRA-Dataset"
     citation: "NMFS-OSI/NOAA-PIFSC-ESD-ESA-CORAL-ICRA-Dataset (HF)"
@@ -331,6 +339,7 @@ sources:
     tags: [spec-folded]
     superseded_by: reef-guidance-system
     release_skip_reason: "no-staged-images: registry lists imagery, nothing staged under sources/ in rs-storage-open (U7/queue follow-up)"
+    n_images_method: "unavailable:no-count"
 
   - id: reefnet-species
     domain: coral
@@ -359,6 +368,7 @@ sources:
     notes: "Folded from registry/ingest-specs/reefnet-species.yaml on 2026-10-08 (P1.2). Spec license string, verbatim: 'NOASSERTION'. Domain, modalities and capabilities are keyword inferences from the spec text."
     tags: [spec-folded]
     release_skip_reason: "no-staged-images: registry lists imagery, nothing staged under sources/ in rs-storage-open (U7/queue follow-up)"
+    n_images_method: "unavailable:no-count"
 
   - id: rls-photo-archive
     domain: coral
@@ -387,6 +397,7 @@ sources:
     notes: "Folded from registry/ingest-specs/rls-photo-archive.yaml on 2026-10-08 (P1.2). Spec license string, verbatim: 'unknown (RLS data-sharing policy applies to counts; photo archive terms unclear)'. Domain, modalities and capabilities are keyword inferences from the spec text."
     tags: [spec-folded]
     release_skip_reason: "no-staged-images: registry lists imagery, nothing staged under sources/ in rs-storage-open (U7/queue follow-up)"
+    n_images_method: "unavailable:no-count"
 
   - id: rmas-hf
     domain: coral
@@ -416,7 +427,7 @@ sources:
     capabilities: [benthic-segmentation]
     loader: { layout: staged-tree }
     n_images: 3014
-    n_images_method: "spec:measured.items"
+    n_images_method: "ingest-json"
     coverage: { regions: [unknown] }
     homepage: "https://huggingface.co/datasets/nobg/RMAS"
     citation: "HF dataset nobg/RMAS"
@@ -456,7 +467,7 @@ sources:
     capabilities: [benthic-classification]
     loader: { layout: staged-tree }
     n_images: 6522
-    n_images_method: "spec:measured.items"
+    n_images_method: "ingest-json"
     coverage: { regions: [unknown] }
     homepage: "https://huggingface.co/datasets/Seattle-Aquarium/Seattle_Aquarium_benthic_imagery"
     citation: "Seattle Aquarium ROV benthic imagery (HF)"
@@ -505,4 +516,5 @@ sources:
       root_digest: 1a584e73bf262f15441666ddc7fbfb5c6296b43339276eb737eb234fb6daa956
       files: 3
       size_bytes: 6547
+    n_images_method: "unavailable:no-count"
 

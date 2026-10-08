@@ -30,6 +30,7 @@ sources:
     notes: "Folded from registry/ingest-specs/afrl-stereo-vi.yaml on 2026-10-08 (P1.2). Spec license string, verbatim: 'mit'. Domain, modalities and capabilities are keyword inferences from the spec text."
     tags: [spec-folded]
     release_skip_reason: "no-staged-images: registry lists imagery, nothing staged under sources/ in rs-storage-open (U7/queue follow-up)"
+    n_images_method: "unavailable:no-count"
 
   - id: aquascan-1k-sss
     domain: imaging
@@ -58,8 +59,8 @@ sources:
     modalities: [image]
     capabilities: [general-pretraining]
     loader: { layout: staged-tree }
-    n_images: 1029
-    n_images_method: "spec:measured.items"
+    n_images: 1033
+    n_images_method: "ingest-json"
     coverage: { regions: [unknown] }
     homepage: "https://zenodo.org/records/18771165"
     citation: "doi:10.5281/zenodo.18771165 — AquaScan-1K Side Scan Sonar Dataset"
@@ -99,7 +100,7 @@ sources:
     capabilities: [general-pretraining]
     loader: { layout: staged-tree }
     n_images: 17676
-    n_images_method: "spec:measured.items"
+    n_images_method: "ingest-json"
     coverage: { regions: [unknown] }
     homepage: "https://zenodo.org/records/10544811"
     citation: "doi:10.5281/zenodo.10544811 — AUV-Based Multi-Sensor Dataset: Forward-Looking Camera (FLC) and Forward-Looking Sonar (FLS) Observations in t"
@@ -148,6 +149,7 @@ sources:
       root_digest: 193a11b0a92701b1a63287f17e285efb589d33d0e60bdbaa5e37848a6bd6c6ad
       files: 4
       size_bytes: 8990
+    n_images_method: "unavailable:no-count"
 
   - id: gbif-marine
     domain: imaging
@@ -357,7 +359,7 @@ sources:
     capabilities: [general-pretraining]
     loader: { layout: staged-tree }
     n_images: 31014
-    n_images_method: "spec:measured.items"
+    n_images_method: "ingest-json"
     coverage: { regions: [unknown] }
     homepage: "https://zenodo.org/records/10119320"
     citation: "doi:10.5281/zenodo.10119320 — Sidescan Sonar Substrate, Depth, and Shadow Image-Label-Pairs"
@@ -426,8 +428,8 @@ sources:
     modalities: [image]
     capabilities: [general-pretraining]
     loader: { layout: staged-tree }
-    n_images: 63982
-    n_images_method: "spec:measured.items"
+    n_images: 127396
+    n_images_method: "ingest-json"
     coverage: { regions: [unknown] }
     homepage: "https://huggingface.co/datasets/Lingpenghaha/Sonarsweep_dataset"
     citation: "HF dataset Lingpenghaha/Sonarsweep_dataset"
@@ -467,7 +469,7 @@ sources:
     capabilities: [general-pretraining]
     loader: { layout: staged-tree }
     n_images: 1170
-    n_images_method: "spec:measured.items"
+    n_images_method: "ingest-json"
     coverage: { regions: [unknown] }
     homepage: "https://doi.org/10.6084/m9.figshare.24574879.v2"
     citation: "doi:10.6084/m9.figshare.24574879.v2 — <i>Side-scan sonar imaging for Mine detection</i>"
@@ -506,6 +508,7 @@ sources:
     notes: "Folded from registry/ingest-specs/sss-ssl-sediments.yaml on 2026-10-08 (P1.2). Spec license string, verbatim: 'cc-by-4.0'. Domain, modalities and capabilities are keyword inferences from the spec text."
     tags: [spec-folded]
     release_skip_reason: "no-staged-images: registry lists imagery, nothing staged under sources/ in rs-storage-open (U7/queue follow-up)"
+    n_images_method: "unavailable:no-count"
 
   - id: swdd-sss-wall
     domain: imaging
@@ -534,8 +537,8 @@ sources:
     modalities: [image]
     capabilities: [general-pretraining]
     loader: { layout: staged-tree }
-    n_images: 10631
-    n_images_method: "spec:measured.items"
+    n_images: 10771
+    n_images_method: "ingest-json"
     coverage: { regions: [unknown] }
     homepage: "https://zenodo.org/records/13692547"
     citation: "doi:10.5281/zenodo.13692547 — SWDD: Sonar Wall Detection Dataset"
@@ -587,6 +590,8 @@ sources:
       root_digest: d86209e997c916f2bc8b5507c5733ff5fab518e0347380f95dbf12a97eee47cf
       files: 9215
       size_bytes: 34280467488
+    n_images: 9212
+    n_images_method: "ingest-json"
 
   - id: usod
     domain: imaging
@@ -625,6 +630,8 @@ sources:
       root_digest: 30259c88e5ddd9b20444ed937b2d4c87495a43fc8eafd841f5795734cb4b2f2e
       files: 14603
       size_bytes: 357892122
+    n_images: 14600
+    n_images_method: "ingest-json"
 
   - id: uw-stereodepth-40k
     domain: imaging
@@ -688,6 +695,7 @@ sources:
     notes: "Folded from registry/ingest-specs/uw-transstereo.yaml on 2026-10-08 (P1.2). Spec license string, verbatim: 'cc-by-4.0'. Domain, modalities and capabilities are keyword inferences from the spec text."
     tags: [spec-folded]
     release_skip_reason: "no-staged-images: registry lists imagery, nothing staged under sources/ in rs-storage-open (U7/queue follow-up)"
+    n_images_method: "unavailable:no-count"
 
   - id: uwturbidity-fnu
     domain: imaging
@@ -717,7 +725,7 @@ sources:
     capabilities: [general-pretraining]
     loader: { layout: staged-tree }
     n_images: 675
-    n_images_method: "spec:measured.items"
+    n_images_method: "ingest-json"
     coverage: { regions: [unknown] }
     homepage: "https://zenodo.org/records/10951021"
     citation: "doi:10.5281/zenodo.10951021 — Underwater Image/Turbidity Dataset"
@@ -767,4 +775,6 @@ sources:
       root_digest: a1d4aa1c93a3fca569a0a00ba2266fa44f87473462a9e0f34b88e232360a923a
       files: 6
       size_bytes: 7381932
+    n_images: 3
+    n_images_method: "ingest-json"
 

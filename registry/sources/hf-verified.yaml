@@ -55,6 +55,7 @@ sources:
         the data is open, just not as imagery.
     citation: "Felemban, Battach, Khan et al., ReefNet, KAUST + MIT, arXiv 2510.16822"
     tags: [genus, benchmark, tabular]
+    n_images_method: "unavailable:non-image"
 
   - id: reefnet-species-images
     domain: coral
@@ -103,6 +104,7 @@ sources:
       schema_id: dataset-native
     citation: "@article{reefnet2024, title={ReefNet: A Large-Scale Coral Reef Annotation Dataset}, year={2024}, note={https://huggingface.co/datasets/ReefNet/ReefNet-1.0}}"
     tags: [pretraining, mis-registered-corrected]
+    n_images_method: "unavailable:no-count"
 
   - id: reef-guidance-system
     domain: coral
@@ -140,6 +142,7 @@ sources:
       verified_note: "15 live rows fetched from HF; images only"
     citation: "Raine, S., Olivastri, E., Moshirian, B., & Fischer, T. (2026). AI-driven dispensing of coral reseeding devices for broad-scale restoration of the Great Barrier Reef. IEEE/RSJ International Conference on Intelligent Robots and Systems."
     tags: [robotics, pretraining, qut]
+    n_images_method: "unavailable:no-count"
 
   - id: marrs-reef-soundscapes
     domain: imaging
@@ -187,6 +190,7 @@ sources:
       schema_id: sonotype
     citation: "Williams et al. (2025) Evidence of ecosystem process recovery across a large-scale coral reef restoration programme using AI accelerated soundscape analysis, https://doi.org/10.1101/2025.09.24.678197 || Williams, Ben; Jones, Kate (2025). Coral Reef Soundscapes from a Global Restoration Programme. University College London. Dataset. https://doi.org/10.5522/04/29958062.v2"
     tags: [bioacoustics, reef-audio, multi-region]
+    n_images_method: "unavailable:non-image"
 
   - id: whoi-plankton-small
     domain: plankton
@@ -220,6 +224,8 @@ sources:
       verified_on: 2026-08-17
       verified_note: "15 live rows fetched from HF; image+ClassLabel"
     tags: [plankton, microscopy, permissive]
+    n_images: 57999
+    n_images_method: "spec:measured.items"
 
   - id: underwater-image-enhancement
     domain: imaging
@@ -254,6 +260,7 @@ sources:
       verified_on: 2026-08-17
       verified_note: "15 live rows fetched from HF; image+ClassLabel"
     tags: [enhancement]
+    n_images_method: "unavailable:no-count"
 
   - id: satellite-coral-mapping
     domain: coral
@@ -296,3 +303,4 @@ sources:
       verified_note: "15 live rows fetched from HF split=test; Coral-Sea_S2_R1 paired with label raster"
       schema_id: dataset-native
     tags: [satellite, aims, paired-labels]
+    n_images_method: "unavailable:no-count"

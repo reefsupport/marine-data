@@ -32,7 +32,7 @@ sources:
     capabilities: [general-pretraining]
     loader: { layout: staged-tree }
     n_images: 5950
-    n_images_method: "spec:measured.items"
+    n_images_method: "ingest-json"
     coverage: { regions: [unknown] }
     homepage: "https://github.com/fathomnet/fgvc-comp-2023"
     citation: "fathomnet/fgvc-comp-2023 (GitHub); official Kaggle FGVC10 competition"
@@ -73,7 +73,7 @@ sources:
     capabilities: [general-pretraining]
     loader: { layout: staged-tree }
     n_images: 9306
-    n_images_method: "spec:measured.items"
+    n_images_method: "ingest-json"
     coverage: { regions: [unknown] }
     homepage: "https://www.kaggle.com/competitions/fathomnet-2025"
     citation: "FathomNet 2025 competition (Kaggle); FGVC12 workshop, CVPR 2025"
@@ -113,6 +113,7 @@ sources:
     notes: "Folded from registry/ingest-specs/fathomnet-vme.yaml on 2026-10-08 (P1.2). Spec license string, verbatim: 'other (HF card)'. Domain, modalities and capabilities are keyword inferences from the spec text."
     tags: [spec-folded]
     release_skip_reason: "no-staged-images: registry lists imagery, nothing staged under sources/ in rs-storage-open (U7/queue follow-up)"
+    n_images_method: "unavailable:no-count"
 
   - id: galapagos-insas
     domain: deep-sea
@@ -141,8 +142,8 @@ sources:
     modalities: [image]
     capabilities: [general-pretraining]
     loader: { layout: staged-tree }
-    n_images: 22
-    n_images_method: "spec:measured.items"
+    n_images: 21
+    n_images_method: "ingest-json"
     coverage: { regions: [unknown] }
     homepage: "https://zenodo.org/records/17393662"
     citation: "doi:10.5281/zenodo.17393662 — Interferometric Synthetic Aperture Sonar data from the FKt231024 expedition to the Galapagos Spreading Center"
@@ -181,6 +182,7 @@ sources:
     notes: "Folded from registry/ingest-specs/jamstec-jedi.yaml on 2026-10-08 (P1.2). Spec license string, verbatim: 'JAMSTEC terms (request-based)'. Domain, modalities and capabilities are keyword inferences from the spec text."
     tags: [spec-folded]
     release_skip_reason: "no-staged-images: registry lists imagery, nothing staged under sources/ in rs-storage-open (U7/queue follow-up)"
+    n_images_method: "unavailable:no-count"
 
   - id: pangaea-cvap-lander-bbox
     domain: deep-sea

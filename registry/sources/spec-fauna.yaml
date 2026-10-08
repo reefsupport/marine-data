@@ -40,6 +40,8 @@ sources:
       root_digest: b602b0c6e41cc105abce0d0e891025940575d0991e77ede068f8c86e666e03ee
       files: 8174
       size_bytes: 205208583
+    n_images: 8171
+    n_images_method: "ingest-json"
 
   - id: biigle-public
     domain: fauna
@@ -68,6 +70,7 @@ sources:
     notes: "Folded from registry/ingest-specs/biigle-public.yaml on 2026-10-08 (P1.2). Spec license string, verbatim: 'per-volume (mostly CC-BY, per BIIGLE norms)'. Domain, modalities and capabilities are keyword inferences from the spec text."
     tags: [spec-folded]
     release_skip_reason: "no-staged-images: registry lists imagery, nothing staged under sources/ in rs-storage-open (U7/queue follow-up)"
+    n_images_method: "unavailable:no-count"
 
   - id: brackish
     domain: fauna
@@ -96,6 +99,7 @@ sources:
     notes: "Folded from registry/ingest-specs/brackish.yaml on 2026-10-08 (P1.2). Spec license string, verbatim: 'CC-BY-4.0'. Domain, modalities and capabilities are keyword inferences from the spec text."
     tags: [spec-folded]
     release_skip_reason: "no-staged-images: registry lists imagery, nothing staged under sources/ in rs-storage-open (U7/queue follow-up)"
+    n_images_method: "unavailable:no-count"
 
   - id: brackishmot
     domain: fauna
@@ -134,6 +138,8 @@ sources:
       root_digest: 6e4b0f176368f0e445dfdefb2a125eecb80528df55f6538c90b44ab2a05ad1de
       files: 77921
       size_bytes: 2283642022
+    n_images: 76618
+    n_images_method: "ingest-json"
 
   - id: discol-peru-basin-ofos
     domain: fauna
@@ -222,6 +228,7 @@ sources:
     notes: "Folded from registry/ingest-specs/imos-auv.yaml on 2026-10-08 (P1.2). Spec license string, verbatim: 'CC-BY-4.0 (IMOS data licence)'. Domain, modalities and capabilities are keyword inferences from the spec text."
     tags: [spec-folded]
     release_skip_reason: "no-staged-images: registry lists imagery, nothing staged under sources/ in rs-storage-open (U7/queue follow-up)"
+    n_images_method: "unavailable:no-count"
 
   - id: jamstec-debris
     domain: fauna
@@ -280,6 +287,7 @@ sources:
     notes: "Folded from registry/ingest-specs/kaggle-ndsb-2015.yaml on 2026-10-08 (P1.2). Spec license string, verbatim: 'unknown (Kaggle competition terms)'. Domain, modalities and capabilities are keyword inferences from the spec text."
     tags: [spec-folded]
     release_skip_reason: "no-staged-images: registry lists imagery, nothing staged under sources/ in rs-storage-open (U7/queue follow-up)"
+    n_images_method: "unavailable:no-count"
 
   - id: marinedet
     domain: fauna
@@ -306,6 +314,7 @@ sources:
     notes: "Folded from registry/ingest-specs/marinedet.yaml on 2026-10-08 (P1.2). Spec license string, verbatim: 'unknown'. Domain, modalities and capabilities are keyword inferences from the spec text."
     tags: [spec-folded]
     release_skip_reason: "no-staged-images: registry lists imagery, nothing staged under sources/ in rs-storage-open (U7/queue follow-up)"
+    n_images_method: "unavailable:no-count"
 
   - id: marineeval
     domain: fauna
@@ -344,6 +353,8 @@ sources:
       root_digest: 8fbd97bb17054712dd9ccd7ad168341bd97397eeb9ce1a0cdd8938a783014f90
       files: 2676
       size_bytes: 254898014
+    n_images: 2672
+    n_images_method: "ingest-json"
 
   - id: marineevt
     domain: fauna
@@ -373,7 +384,7 @@ sources:
     capabilities: [general-pretraining]
     loader: { layout: staged-tree }
     n_images: 169409
-    n_images_method: "spec:measured.items"
+    n_images_method: "ingest-json"
     coverage: { regions: [unknown] }
     homepage: "https://huggingface.co/datasets/AnTo2209/MarineEVT"
     citation: "HF dataset AnTo2209/MarineEVT"
@@ -412,8 +423,8 @@ sources:
     modalities: [image]
     capabilities: [general-pretraining]
     loader: { layout: staged-tree }
-    n_images: 2910
-    n_images_method: "spec:measured.items"
+    n_images: 8730
+    n_images_method: "ingest-json"
     coverage: { regions: [unknown] }
     homepage: "https://huggingface.co/datasets/KRMayD/MAS3K_Dataset"
     citation: "Li+ 2020 MAS3K"
@@ -452,6 +463,7 @@ sources:
     notes: "Folded from registry/ingest-specs/mermaid.yaml on 2026-10-08 (P1.2). Spec license string, verbatim: 'NOASSERTION'. Domain, modalities and capabilities are keyword inferences from the spec text."
     tags: [spec-folded]
     release_skip_reason: "no-staged-images: registry lists imagery, nothing staged under sources/ in rs-storage-open (U7/queue follow-up)"
+    n_images_method: "unavailable:no-count"
 
   - id: mlc-moorea
     domain: fauna
@@ -511,6 +523,7 @@ sources:
     tags: [spec-folded]
     superseded_by: mouss-detection
     release_skip_reason: "no-staged-images: registry lists imagery, nothing staged under sources/ in rs-storage-open (U7/queue follow-up)"
+    n_images_method: "unavailable:no-count"
 
   - id: muot3m
     domain: fauna
@@ -574,6 +587,7 @@ sources:
     notes: "Folded from registry/ingest-specs/nautdata.yaml on 2026-10-08 (P1.2). Spec license string, verbatim: 'apache-2.0'. Domain, modalities and capabilities are keyword inferences from the spec text."
     tags: [spec-folded]
     release_skip_reason: "no-staged-images: registry lists imagery, nothing staged under sources/ in rs-storage-open (U7/queue follow-up)"
+    n_images_method: "unavailable:no-count"
 
   - id: noaa-gfisher
     domain: fauna
@@ -602,6 +616,7 @@ sources:
     notes: "Folded from registry/ingest-specs/noaa-gfisher.yaml on 2026-10-08 (P1.2). Spec license string, verbatim: 'cc0-1.0'. Domain, modalities and capabilities are keyword inferences from the spec text."
     tags: [spec-folded]
     release_skip_reason: "no-staged-images: registry lists imagery, nothing staged under sources/ in rs-storage-open (U7/queue follow-up)"
+    n_images_method: "unavailable:no-count"
 
   - id: noaa-oer-video
     domain: fauna
@@ -630,6 +645,7 @@ sources:
     notes: "Folded from registry/ingest-specs/noaa-oer-video.yaml on 2026-10-08 (P1.2). Spec license string, verbatim: 'public domain (US government work)'. Domain, modalities and capabilities are keyword inferences from the spec text."
     tags: [spec-folded]
     release_skip_reason: "no-staged-images: registry lists imagery, nothing staged under sources/ in rs-storage-open (U7/queue follow-up)"
+    n_images_method: "unavailable:no-count"
 
   - id: oceangym
     domain: fauna
@@ -658,8 +674,8 @@ sources:
     modalities: [image]
     capabilities: [general-pretraining]
     loader: { layout: staged-tree }
-    n_images: 1219
-    n_images_method: "spec:measured.items"
+    n_images: 1220
+    n_images_method: "ingest-json"
     coverage: { regions: [unknown] }
     homepage: "https://huggingface.co/datasets/zjunlp/OceanGym"
     citation: "HF dataset zjunlp/OceanGym"
@@ -698,6 +714,7 @@ sources:
     notes: "Folded from registry/ingest-specs/onc-camdsb103-fauna.yaml on 2026-10-08 (P1.2). Spec license string, verbatim: 'cc-by-4.0'. Domain, modalities and capabilities are keyword inferences from the spec text."
     tags: [spec-folded]
     release_skip_reason: "no-staged-images: registry lists imagery, nothing staged under sources/ in rs-storage-open (U7/queue follow-up)"
+    n_images_method: "unavailable:no-count"
 
   - id: onc
     domain: fauna
@@ -726,6 +743,7 @@ sources:
     notes: "Folded from registry/ingest-specs/onc.yaml on 2026-10-08 (P1.2). Spec license string, verbatim: 'CC-BY-4.0 (with account)'. Domain, modalities and capabilities are keyword inferences from the spec text."
     tags: [spec-folded]
     release_skip_reason: "no-staged-images: registry lists imagery, nothing staged under sources/ in rs-storage-open (U7/queue follow-up)"
+    n_images_method: "unavailable:no-count"
 
   - id: ruod
     domain: fauna
@@ -764,6 +782,8 @@ sources:
       root_digest: 55a4b4e6914e9579d1abf87a8eecaf664930f246517cf991617adda387f2851b
       files: 14005
       size_bytes: 3619979937
+    n_images: 14000
+    n_images_method: "ingest-json"
 
   - id: scallop-pecten-scotland
     domain: fauna
@@ -822,6 +842,7 @@ sources:
     notes: "Folded from registry/ingest-specs/schmidt-ocean-rov.yaml on 2026-10-08 (P1.2). Spec license string, verbatim: 'CC-BY-NC (per SOI media policy, stated)'. Domain, modalities and capabilities are keyword inferences from the spec text."
     tags: [spec-folded]
     release_skip_reason: "no-staged-images: registry lists imagery, nothing staged under sources/ in rs-storage-open (U7/queue follow-up)"
+    n_images_method: "unavailable:no-count"
 
   - id: seaclear
     domain: fauna
@@ -850,6 +871,7 @@ sources:
     notes: "Folded from registry/ingest-specs/seaclear.yaml on 2026-10-08 (P1.2). Spec license string, verbatim: 'CC-BY-4.0'. Domain, modalities and capabilities are keyword inferences from the spec text."
     tags: [spec-folded]
     release_skip_reason: "no-staged-images: registry lists imagery, nothing staged under sources/ in rs-storage-open (U7/queue follow-up)"
+    n_images_method: "unavailable:no-count"
 
   - id: seaturtleid2022
     domain: fauna
@@ -888,6 +910,8 @@ sources:
       root_digest: da7e3e6d78b4f6671be741ddcfa06ec9393b03a1f39732fca06daafc18e10782
       files: 8732
       size_bytes: 1760284042
+    n_images: 8729
+    n_images_method: "ingest-json"
 
   - id: so268-ofos-analysis-ready
     domain: fauna
@@ -977,7 +1001,7 @@ sources:
     capabilities: [general-pretraining]
     loader: { layout: staged-tree }
     n_images: 4830
-    n_images_method: "spec:measured.items"
+    n_images_method: "ingest-json"
     coverage: { regions: [unknown] }
     homepage: "https://zenodo.org/records/21208479"
     citation: "doi:10.5281/zenodo.21208479 — Synthetic Seabed Dataset"
@@ -1016,6 +1040,7 @@ sources:
     notes: "Folded from registry/ingest-specs/trash-icra19.yaml on 2026-10-08 (P1.2). Spec license string, verbatim: 'cc-by-4.0'. Domain, modalities and capabilities are keyword inferences from the spec text."
     tags: [spec-folded]
     release_skip_reason: "no-staged-images: registry lists imagery, nothing staged under sources/ in rs-storage-open (U7/queue follow-up)"
+    n_images_method: "unavailable:no-count"
 
   - id: trashcan
     domain: fauna
@@ -1044,6 +1069,7 @@ sources:
     notes: "Folded from registry/ingest-specs/trashcan.yaml on 2026-10-08 (P1.2). Spec license string, verbatim: 'cc-by-4.0'. Domain, modalities and capabilities are keyword inferences from the spec text."
     tags: [spec-folded]
     release_skip_reason: "no-staged-images: registry lists imagery, nothing staged under sources/ in rs-storage-open (U7/queue follow-up)"
+    n_images_method: "unavailable:no-count"
 
   - id: treeoflife-10m-captions
     domain: fauna
@@ -1073,6 +1099,7 @@ sources:
     notes: "Folded from registry/ingest-specs/treeoflife-10m-captions.yaml on 2026-10-08 (P1.2). Spec license string, verbatim: 'cc-by-sa-4.0'. Domain, modalities and capabilities are keyword inferences from the spec text."
     tags: [spec-folded]
     release_skip_reason: "no-staged-images: registry lists imagery, nothing staged under sources/ in rs-storage-open (U7/queue follow-up)"
+    n_images_method: "unavailable:no-count"
 
   - id: treeoflife-10m
     domain: fauna
@@ -1137,6 +1164,8 @@ sources:
     citation: "da1018/UWBench (HF)"
     notes: "Folded from registry/ingest-specs/uwbench.yaml on 2026-10-08 (P1.2). Spec license string, verbatim: '?'. Domain, modalities and capabilities are keyword inferences from the spec text."
     tags: [spec-folded]
+    n_images: 3819
+    n_images_method: "listing"
 
   - id: webuot-238-test
     domain: fauna
@@ -1225,4 +1254,5 @@ sources:
     notes: "Folded from registry/ingest-specs/zooscannet.yaml on 2026-10-08 (P1.2). Spec license string, verbatim: 'cc-by-nc-4.0'. Domain, modalities and capabilities are keyword inferences from the spec text."
     tags: [spec-folded]
     release_skip_reason: "no-staged-images: registry lists imagery, nothing staged under sources/ in rs-storage-open (U7/queue follow-up)"
+    n_images_method: "unavailable:no-count"
 

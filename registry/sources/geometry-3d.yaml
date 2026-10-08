@@ -67,6 +67,7 @@ sources:
       verified_on: 2026-08-29
       verified_note: "Live HF fetch of the declared subpath confirms flat GoPro frame files, no directory structure to break."
     tags: [3d, scaled, in-modality, gopro]
+    n_images_method: "registry-prior"
 
   - id: deepreefmap-data
     domain: imaging
@@ -109,6 +110,7 @@ sources:
     citation: "Sauder, Banc-Prandi, Meibom, Tuia, Methods in Ecology and Evolution 2024"
     loader: { layout: metadata-only }
     tags: [3d, reference-pipeline]
+    n_images_method: "unavailable:non-image"
 
   - id: noaa-ncrmp-structural-complexity
     domain: imaging
@@ -145,6 +147,7 @@ sources:
       Directly relevant to rugosity and structural-complexity outputs. Volume unconfirmed.
     loader: { layout: metadata-only }
     tags: [metric-3d, rugosity, public-domain]
+    n_images_method: "unavailable:non-image"
 
   - id: atlantis-synthetic-depth
     domain: imaging
@@ -196,7 +199,8 @@ sources:
         The licence class is unchanged (restricted-nc, LICV 2026-10-05).
     modalities: [image]
     capabilities: [depth-estimation, image-enhancement]
-    n_images: 3200
+    n_images: 3600
+    n_images_method: "ingest-json"
     annotations:
       - kind: depth-map
         supervises: []
