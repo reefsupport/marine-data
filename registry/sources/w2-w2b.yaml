@@ -604,6 +604,8 @@ sources:
     root_digest: 1fff37d5c581cf96fff2617448715dc08600db69c26c2f2b8a9e451cf27d9402
     files: 5553
     size_bytes: 93792049
+  n_images_upstream: 1
+  n_images_note: "measured 5550 in the staged tree (ingest-json); the registry held 1 before 2026-10-08 (card or paper figure, not re-verified)"
 - id: underwater-images-2542305
   domain: imaging
   release_skip_reason: "no-staged-images: raw mirror of 3850 images only, no INGEST.json/metadata.parquet (U7/queue follow-up)"
@@ -807,6 +809,8 @@ sources:
     root_digest: d8584e73bb7c7d12b8b27f275e2cab8a6d7cb41258f5402855c3d3915343a7c6
     files: 8561
     size_bytes: 506636504
+  n_images_upstream: 4279
+  n_images_note: "measured 8558 in the staged tree (ingest-json); the registry held 4279 before 2026-10-08 (card or paper figure, not re-verified)"
 - id: u45
   domain: imaging
   access_class: internal-only
@@ -1041,6 +1045,8 @@ sources:
     root_digest: ca3a661b0c6eb8fbf1ab677c4be4f9d0e3f709ef9bbb0a63b35f9f66f10f23aa
     files: 39997
     size_bytes: 10155334719
+  n_images_upstream: 10255
+  n_images_note: "measured 39994 in the staged tree (ingest-json); the registry held 10255 before 2026-10-08 (card or paper figure, not re-verified)"
 - id: viame-public
   domain: fish
   access_class: unknown  # LICV 2026-10-05 (was open)

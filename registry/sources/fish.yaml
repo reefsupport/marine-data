@@ -711,6 +711,8 @@ sources:
       root_digest: aa752cd64dcaff010fd5ca905ca8cb2a9dc8968ca36a3911bf613a8ccb6ae818
       files: 18433
       size_bytes: 3498273866
+    n_images_upstream: 18429
+    n_images_note: "measured 18430 in the staged tree (ingest-json); the registry held 18429 before 2026-10-08 (card or paper figure, not re-verified)"
 
   # ---- HK-4a (2026-10-06): the five staged fish/fauna box sources that had no entry ("Unknown source"). ----
   - id: obsea-fish

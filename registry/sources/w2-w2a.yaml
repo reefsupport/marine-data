@@ -268,6 +268,8 @@ sources:
     root_digest: b53a82521caea6386532e3793d0a2b510e267e53eaf4ab34bc5c00f3e4ef203a
     files: 413
     size_bytes: 138411297
+  n_images_upstream: 1889
+  n_images_note: "stub tree? measured 410 in the staged tree (ingest-json) against 1889 in the registry before 2026-10-08 (card or paper figure); re-count on the VM before trusting either"
 - id: fathomnet-coverage
   domain: fauna
   access_class: restricted-nd
@@ -1030,6 +1032,8 @@ sources:
     root_digest: 649c2231a663bd946f3e5a9d04c0ae2b1e29f36ecda0b0823735577f3492a1c4
     files: 96
     size_bytes: 639223036
+  n_images_upstream: 4
+  n_images_note: "measured 88 in the staged tree (ingest-json); the registry held 4 before 2026-10-08 (card or paper figure, not re-verified)"
 - id: seagrassfinder
   domain: seagrass
   access_class: restricted-nd
@@ -1373,6 +1377,8 @@ sources:
     root_digest: 7d578ad6e64284d9ed4be6fecdf26d210139fa5d1ab4b5a1c6a2c33a21919db3
     files: 4
     size_bytes: 26666
+  n_images_upstream: 10000
+  n_images_note: "stub tree? measured 1 in the staged tree (ingest-json) against 10000 in the registry before 2026-10-08 (card or paper figure); re-count on the VM before trusting either"
 - id: vdd-c
   domain: imaging
   release_skip_reason: "no-staged-images: registry lists imagery, nothing staged under sources/ in rs-storage-open (U7/queue follow-up)"
