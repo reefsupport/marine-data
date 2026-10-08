@@ -347,6 +347,15 @@ class SplitGroupRule(_Frozen):
         return self.template.format(group=match.group(1), source_id=source_id, partition=partition)
 
 
+class OtherVersion(_Frozen):
+    """A further staged tree of a source that the pinned ``Source.version`` does not name."""
+
+    version: str
+    root_digest: str | None = None
+    files: int | None = None
+    size_bytes: int | None = None
+
+
 class Source(_Frozen):
     """A single dataset entry."""
 
@@ -418,6 +427,22 @@ class Source(_Frozen):
     superseded_by: str | None = None
     """Id of the canonical entry this one duplicates or renames (checked at registry load). The
     entry stays so old references keep resolving; new work should use the target."""
+    related: tuple[str, ...] = ()
+    """Ids of entries that share an upstream but are NOT duplicates (a subset, a derivative, a
+    sibling release). A cross-reference only: nothing is merged. Checked at registry load."""
+    licence_evidence: str | None = None
+    """What ``licence`` and ``access_class`` rest on: a URL, or the quoted README/paper sentence.
+    Set whenever a class was taken from an audit rather than copied from an ingest spec."""
+    n_images_upstream: int | None = None
+    """The figure the registry held (dataset card, paper) before a tree was counted; kept when the
+    measured ``n_images`` replaced it. Never used for sizing."""
+    n_images_note: str | None = None
+    """Why the two figures differ; ``stub tree?`` when the measured count is under 10 % of it."""
+    checksums_status: str | None = None
+    """``missing``: a tree is staged but carries no CHECKSUMS.sha256 (its digest needs a VM job).
+    Valid only while ``checksums`` is unset."""
+    other_versions: tuple[OtherVersion, ...] = ()
+    """Further staged trees of this source, not the pinned version (which owns ``checksums``)."""
 
     @property
     def primary_count(self) -> int | None:
@@ -495,6 +520,18 @@ class Source(_Frozen):
     def _prohibited_needs_reason(self) -> Source:
         if self.licence.tier is Tier.PROHIBITED and not self.notes:
             raise ValueError(f"{self.id}: PROHIBITED tier requires notes explaining why")
+        return self
+
+    @model_validator(mode="after")
+    def _checksums_status_is_consistent(self) -> Source:
+        if self.checksums_status is None:
+            return self
+        if self.checksums_status != "missing":
+            raise ValueError(
+                f"{self.id}: checksums_status must be 'missing', got {self.checksums_status!r}"
+            )
+        if self.checksums is not None:
+            raise ValueError(f"{self.id}: checksums_status=missing but a checksums block is set")
         return self
 
     @model_validator(mode="after")
