@@ -39,7 +39,7 @@ from .release_lock import (
     lock_sha256,
     write_lock,
 )
-from .release_publish import add_publish_parser
+from .release_publish import add_publish_parser, is_frozen
 from .splitmap import load_split_map
 from .strata import DEFAULT_MIN_GROUPS
 
@@ -292,6 +292,11 @@ def _cmd_release_split_map(args: argparse.Namespace) -> int:
     )
 
 
+_FROZEN_BUILD = (
+    "release build: {what} is the frozen v1.0 (live on the Hub): building it needs --allow-frozen"
+)
+
+
 def _cmd_release_build(args: argparse.Namespace) -> int:
     registry = Registry.load()
     flavour = getattr(args, "flavour", None)
@@ -314,6 +319,9 @@ def _cmd_release_build(args: argparse.Namespace) -> int:
     except ValueError as exc:
         print(f"release build: {exc}", file=sys.stderr)
         return 1
+    if is_frozen(args.release) and not args.allow_frozen:
+        print(_FROZEN_BUILD.format(what=f"--release {args.release}"), file=sys.stderr)
+        return 1
     lock = None
     lock_digest = None
     if args.lock is None and lock_required():
@@ -326,6 +334,9 @@ def _cmd_release_build(args: argparse.Namespace) -> int:
     if args.lock is not None:
         try:
             lock = load_lock(args.lock, registry)
+            if is_frozen(lock.release_id) and not args.allow_frozen:
+                print(_FROZEN_BUILD.format(what=f"the {lock.release_id} lock"), file=sys.stderr)
+                return 1
             check_build_against_lock(
                 lock,
                 registry,
@@ -473,6 +484,11 @@ def add_release_subparser(sub: argparse._SubParsersAction) -> None:
         "build", help="Build every registry task against a frozen SPLIT_MAP.json"
     )
     p_build.add_argument("--release", required=True, help="Release id")
+    p_build.add_argument(
+        "--allow-frozen",
+        action="store_true",
+        help="build the frozen v1.0 (live on the Hub) again; refused without this flag",
+    )
     p_build.add_argument(
         "--lock",
         type=Path,
