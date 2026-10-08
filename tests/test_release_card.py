@@ -1,4 +1,3 @@
-# ruff: noqa: E501
 """P1.9: the dataset card and Croissant generators (offline; fixture builds only)."""
 
 from __future__ import annotations
@@ -10,12 +9,12 @@ from pathlib import Path
 
 import pytest
 import yaml
-from test_e2e_release import _registry, _stage_all
+from test_e2e_release import _pipeline
 
 from marinedata import card_body as cb
 from marinedata.card_fields import field_doc
 from marinedata.cli import main
-from marinedata.hf_export import build_layout, collect_rows, export
+from marinedata.licence_class import unflavoured_for_tests
 from marinedata.metadata_norm.resolvers.join import POINTS_COLUMNS
 from marinedata.metadata_release import METADATA_COLUMNS
 from marinedata.registry import Registry
@@ -153,25 +152,12 @@ def test_gates_table_summarises_gates_json() -> None:
 @pytest.fixture(scope="module")
 def e2e(tmp_path_factory) -> dict:
     tmp = tmp_path_factory.mktemp("card-e2e")
-    registry = _registry()
-    with pytest.MonkeyPatch.context() as mp:
-        mp.setattr(Registry, "load", classmethod(lambda cls, root=None: registry))
-        mp.setenv("MARINEDATA_CACHE", str(tmp / "dhash-cache"))
-        roots = _stage_all(tmp, mp)
-        out_dir = tmp / "release"
-        build = [
-            "release", "build", "--release", "wp4-e2e", "--split-map", str(out_dir / "SPLIT_MAP.json"),
-            "--out", str(out_dir), "--flavour", "open", "--profile", "ship-open",
-            "--generate-split-map", "--no-near-dup", "--seed", "0",
-            *[f"--local={sid}={root}" for sid, root in roots.items()],
-        ]  # fmt: skip
-        assert main(build) == 0
-        release_dir = out_dir / "releases" / "wp4-e2e" / "open"
-        export_dir = tmp / "hf_export"
-        export(
-            build_layout(collect_rows(registry, roots, release_dir, "ship-open"), flavour="open"),
-            export_dir,
-        )
+    with (
+        pytest.MonkeyPatch.context() as mp,
+        unflavoured_for_tests(),
+    ):  # module scope: the autouse guard is off
+        run = _pipeline(tmp, mp)  # the shared e2e fixture: lock, release build, hf_export
+        export_dir, release_dir = run.export_dir, run.release_dir
         common = ["--release-dir", str(release_dir), "--citation", str(REPO / "CITATION.cff")]
         readme, croissant = tmp / "README.md", tmp / "croissant.json"
         assert main(["release", "card", str(export_dir), *common, "--out", str(readme)]) == 0

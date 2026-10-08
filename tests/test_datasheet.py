@@ -111,7 +111,8 @@ def test_croissant_generator_round_trips_a_synthetic_build(tmp_path: Path) -> No
     pq = pytest.importorskip("pyarrow.parquet", reason="pyarrow is a dev/croissant extra")
     import pyarrow as pa
 
-    from marinedata import croissant
+    from marinedata.release_card import load_context
+    from marinedata.release_croissant import build_croissant
 
     build_dir = tmp_path / "build"
     config_dir = build_dir / "data" / "widgets"
@@ -119,11 +120,9 @@ def test_croissant_generator_round_trips_a_synthetic_build(tmp_path: Path) -> No
     table = pa.table({"id": ["a", "b"], "label": ["x", "y"]})
     pq.write_table(table, config_dir / "train-00000-of-00001.parquet")
 
-    metadata = croissant.build_metadata(
-        build_dir, "reefsupport/synthetic-test", name="synthetic", description="a fixture"
-    )
+    ctx = load_context(build_dir, repo_id="reefsupport/synthetic-test")
     out = tmp_path / "croissant.json"
-    out.write_text(__import__("json").dumps(metadata.to_json()))
+    out.write_text(__import__("json").dumps(build_croissant(build_dir, ctx, name="synthetic")))
 
     try:
         mlc.Dataset(str(out))

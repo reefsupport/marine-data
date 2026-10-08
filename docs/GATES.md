@@ -87,3 +87,10 @@ row counts. The card is generated (P1.9); the gate only verifies. Fix: regenerat
 `croissant.json` must be JSON with `@context`, `@type`, `name` and validate with `mlcroissant`
 (`uv sync --extra croissant`). `skipped` when the file is absent or `mlcroissant` is not installed.
 `croissant.json unparseable_json: Expecting property name enclosed in double quotes`
+
+## Metadata gate and build gates in one command (PA-P2.4 + P1.6)
+
+`marinedata release gate --metadata DIR [--gates FILE]` runs the metadata gate (coverage floors and licence checks over the
+resolver outputs `DIR/<source>/<version>/coverage.json`) and merges it into `--gates` (default `BUILD_DIR/GATES.json`, else
+`./GATES.json`). With `BUILD_DIR --all --require-all` it runs next to the build gates; once it ran it is required for publish
+like any other extra gate. `GATES.json` is one dict keyed by gate name plus `summary`.

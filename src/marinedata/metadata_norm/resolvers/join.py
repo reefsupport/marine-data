@@ -107,6 +107,22 @@ def fill_values(
     return out
 
 
+def _resolver_wins(
+    values: dict[str, Any], found: Mapping[str, Any], keep_geo: bool
+) -> dict[str, Any]:
+    """``values`` with the position and the date of ``found`` replacing the row's own staged ones
+    (with their precision and source), so a ``metadata`` row never disagrees with the ``points`` of
+    the same image (PA-P1.9b). A position needs lat and lon and is left alone when withheld."""
+    out = dict(values)
+    if not keep_geo and found.get("lat") is not None and found.get("lon") is not None:
+        for key in ("lat", "lon", "coord_precision_m", "geo_source"):
+            out[key] = found.get(key)
+    if found.get("date") is not None:
+        for key in ("date", "date_precision", "date_source"):
+            out[key] = found.get(key)
+    return out
+
+
 def _widen(
     layout: Mapping[str, Any],
     key: str,
@@ -117,6 +133,7 @@ def _widen(
     always: bool = False,
     only: frozenset[str] | None = None,
     generalized: frozenset[str] = frozenset(),
+    resolver_wins: bool = False,
 ) -> dict[str, Any]:
     """``layout`` with config ``key`` widened by the ``candidates`` it lacks and each row filled
     from its resolved record by ``image_sha256`` with :func:`fill_values` (a new layout). Without
@@ -145,7 +162,10 @@ def _widen(
                 or values.get("location_generalized")
                 or sha in generalized
             )
-            merged.append(replace(row, values=fill_values(values, found, bool(keep_geo))))
+            filled = fill_values(values, found, bool(keep_geo))
+            if resolver_wins:
+                filled = _resolver_wins(filled, found, bool(keep_geo))
+            merged.append(replace(row, values=filled))
         new_splits[split] = merged
     return {**layout, key: (new_spec, new_splits)}
 
@@ -155,8 +175,12 @@ def join_resolved(
     resolved_by_sha: Mapping[str, Mapping[str, Any]],
     no_geo_sources: frozenset[str] = frozenset(),
 ) -> dict[str, Any]:
-    """``layout`` with the ``metadata`` config widened by the resolved columns (a new layout)."""
-    return _widen(layout, METADATA, EXTRA_COLUMNS, resolved_by_sha, no_geo_sources)
+    """``layout`` with the ``metadata`` config widened by the resolved columns (a new layout):
+    fill-only, except position and date, which the resolver output sets (it is what ``points``
+    carries, see :func:`_resolver_wins`)."""
+    return _widen(
+        layout, METADATA, EXTRA_COLUMNS, resolved_by_sha, no_geo_sources, resolver_wins=True
+    )
 
 
 def join_points_config(

@@ -322,7 +322,7 @@ def test_e2e_release_gates_pass_on_the_fixture_build(
     image-only fixture sources have no licence metadata and no masks, so a synthetic
     ``metadata`` and ``coral-masks`` config is added next to the real ``images`` shards."""
     import pyarrow.parquet as pq
-    from _gates_build import MASK_COLS, META_COLS, card_text, mask_rows, meta_row, write_config
+    from _gates_build import MASK_COLS, META_COLS, mask_rows, meta_row, write_config
 
     run = _pipeline(tmp_path, monkeypatch)
     export_dir = run.export_dir
@@ -348,7 +348,13 @@ def test_e2e_release_gates_pass_on_the_fixture_build(
             }
         },
     )
-    (export_dir / "README.md").write_text(card_text(configs))
+    # P1.9b: the card and the Croissant are the ones `release card` / `release croissant` generate
+    # for this very build (not a hand-written stand-in); the card and croissant gates must PASS.
+    citation = Path(__file__).resolve().parent.parent / "CITATION.cff"
+    common = ["--release-dir", str(run.release_dir), "--citation", str(citation)]
+    readme, croissant = export_dir / "README.md", export_dir / "croissant.json"
+    assert main(["release", "card", str(export_dir), *common, "--out", str(readme)]) == 0
+    assert main(["release", "croissant", str(export_dir), *common, "--out", str(croissant)]) == 0
 
     code = main(
         [
@@ -376,5 +382,8 @@ def test_e2e_release_gates_pass_on_the_fixture_build(
         "croissant",
         "summary",
     }
-    assert gates["summary"]["failed"] == 0 and gates["summary"]["passed"] == 7
+    assert gates["summary"]["failed"] == 0 and gates["summary"]["skipped"] == 0
+    assert gates["summary"]["passed"] == 8
+    for name in ("card", "croissant", "privacy"):  # PASSED, not skipped
+        assert gates[name]["passed"] is True and "skipped" not in gates[name], name
     assert (export_dir / "phash.parquet").is_file()

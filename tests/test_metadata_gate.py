@@ -67,7 +67,7 @@ def test_gate_result_caps_failures_and_merges_into_gates_json(tmp_path):
     assert len(many.failures) == 50
     path = tmp_path / "GATES.json"
     path.write_text(json.dumps({"masks": {"passed": True, "counts": {}, "failures": []}}))
-    assert set(merge_gates_json(path, [many])) == {"masks", "metadata"}
+    assert set(merge_gates_json(path, [many])) == {"masks", "metadata", "summary"}
     assert json.loads(path.read_text())["metadata"]["passed"] is False
     merge_gates_json(path, [GateResult("metadata", True)])
     data = json.loads(path.read_text())

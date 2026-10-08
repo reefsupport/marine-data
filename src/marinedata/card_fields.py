@@ -12,6 +12,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 
 FIELD_DOCS: dict[str, str] = {
+    "exif_transposed": "True when the stored image was rotated by its EXIF orientation tag so that it lines up with its mask; false otherwise.",
     # identity, pixels, labels
     "image_sha256": "SHA-256 of the image bytes. Stable id and join key across configs.",
     "image": "RGB photo (embedded bytes).",

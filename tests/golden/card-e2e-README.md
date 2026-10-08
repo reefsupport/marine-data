@@ -175,8 +175,8 @@ Registry facts per source. An en dash means the registry does not record the fie
 
 | Source | Version | Access class | Images (build / upstream) | Root digest | Checksums | Platform | Licence evidence | Per-row licence | Rights holder | Expected metadata | Other versions |
 |---|---|---|---|---|---|---|---|---|---|---|---|
-| `e2e-src-a` | v1 | open | – | – | – | – | – | no | – | date=none, depth=none, geo=none, site=none | – |
-| `e2e-src-b` | v1 | open | – | – | – | – | – | no | – | date=none, depth=none, geo=none, site=none | – |
+| `e2e-src-a` | v1 | open | – | – | pinned | – | – | no | – | date=none, depth=none, geo=none, site=none | – |
+| `e2e-src-b` | v1 | open | – | – | pinned | – | – | no | – | date=none, depth=none, geo=none, site=none | – |
 
 ### Build and verification
 

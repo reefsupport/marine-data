@@ -112,7 +112,8 @@ def _scalar(t) -> str:
 def _feature(name: str, t, hf: dict | None) -> dict:
     import pyarrow.types as pt
 
-    if (hf or {}).get("_type") == "Image" or _is_image(t):
+    hf = hf if isinstance(hf, dict) else {}  # a list column's entry is a one-element list
+    if hf.get("_type") == "Image" or hf.get("dtype") == "image" or _is_image(t):
         return {"name": name, "dtype": "image"}
     if pt.is_list(t) or pt.is_large_list(t):
         inner = t.value_type
@@ -133,6 +134,8 @@ def arrow_features(schema) -> list[dict]:
             hf = json.loads(raw).get("info", {}).get("features", {}) or {}
         except ValueError:
             hf = {}
+        if isinstance(hf, list):  # the `datasets` YAML shape: [{name, dtype}, ...]
+            hf = {f["name"]: f for f in hf if isinstance(f, dict) and "name" in f}
     return [_feature(f.name, f.type, hf.get(f.name)) for f in schema]
 
 
