@@ -184,6 +184,9 @@ No `GATES.json` accompanied this build, so no gate result is recorded here.
 
 No `release.lock.yaml` accompanied this build.
 
+Provenance: `provenance/RELEASE.json` (build facts, public-safe), `provenance/GATES.json` (gate
+results) and `provenance/release.lock.yaml` (pinned inputs) ship with the data.
+
 ## Licensing
 
 The data are not under one licence. Every row records its own `licence`, `annotation_licence` and `attribution`; the table lists each source with the licence its authors chose and the attribution it requires. Combine sources only in ways each licence allows. The table records the licences as Reef Support read them from the primary sources and is not legal advice.
