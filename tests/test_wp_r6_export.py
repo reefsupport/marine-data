@@ -59,7 +59,7 @@ def test_build_and_hf_export_fail_closed_naming_the_source(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     sources = [_src("src-open", "open")]
-    monkeypatch.setattr("marinedata.release.release_label_gate", lambda *a, **k: {})
+    monkeypatch.setattr("marinedata.release.build.release_label_gate", lambda *a, **k: {})
     registry, roots, _ = _build(tmp_path, sources, allow_unmapped=True)
     release_dir = tmp_path / "rel" / "releases" / "r1" / "open"
 
@@ -67,7 +67,7 @@ def test_build_and_hf_export_fail_closed_naming_the_source(
     with pytest.raises(HFExportError, match="src-open"):
         collect_rows(registry, roots, release_dir, "ship-open")
 
-    monkeypatch.setattr("marinedata.release.DatasetBuilder", _NoGroup)
+    monkeypatch.setattr("marinedata.release.build.DatasetBuilder", _NoGroup)
     with pytest.raises(SplitGroupError, match="src-open"):
         build_release(
             registry,
@@ -84,7 +84,7 @@ def test_build_and_hf_export_fail_closed_naming_the_source(
 def test_source_without_a_crosswalk_is_excluded_from_the_task_not_the_task(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    monkeypatch.setattr("marinedata.release.release_label_gate", lambda *a, **k: {})
+    monkeypatch.setattr("marinedata.release.build.release_label_gate", lambda *a, **k: {})
     lab = _src("src-lab", "open")
     lab = lab.model_copy(
         update={
