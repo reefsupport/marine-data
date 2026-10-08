@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from pathlib import Path
+
 import pytest
 import yaml
 
@@ -103,4 +105,21 @@ def test_v10_public_lock_is_complete_or_names_every_missing_pin():
         assert all(i in str(exc.value) for i in missing)
     lock = _lock([i for i in sorted(RELEASED) if i not in missing])
     for e in lock.sources:  # released rows are a subset of the pinned tree
+        assert e.n_images is not None and RELEASED[e.id] <= e.n_images
+
+
+def test_committed_v10_lock_matches_registry_pins():
+    # committed v1.0 open lock: the 8 public sources, no drift from the registry pins
+    path = (
+        Path(__file__).resolve().parents[1]
+        / "releases"
+        / "marine-data"
+        / "v1.0"
+        / "release.lock.yaml"
+    )
+    lock = load_lock(path, REG)
+    assert sorted(e.id for e in lock.sources) == sorted(RELEASED)
+    for e in lock.sources:
+        assert e.access_class == "open"
+        assert e.root_digest == REG.source(e.id).checksums.root_digest
         assert e.n_images is not None and RELEASED[e.id] <= e.n_images
