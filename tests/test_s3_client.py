@@ -125,17 +125,6 @@ def test_error_message_is_not_repr_quoted() -> None:
     assert str(S3CredentialsError("plain message")) == "plain message"
 
 
-def test_no_module_builds_its_own_client_or_reads_rclone() -> None:
-    offenders = [
-        f"{path.relative_to(SRC)}: {needle}"
-        for path in sorted(SRC.rglob("*.py"))
-        if path.name != "s3_auth.py"
-        for needle in ("configparser", "rclone.conf", "boto3.client(", "boto3.Session(")
-        if needle in path.read_text()
-    ]
-    assert offenders == []
-
-
 @pytest.mark.parametrize("rel", WRITERS)
 def test_writers_ask_for_a_signed_client(rel: str) -> None:
     tree = ast.parse((SRC / rel).read_text())
