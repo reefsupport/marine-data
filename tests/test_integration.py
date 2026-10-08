@@ -88,7 +88,8 @@ def test_coralscapes_yields_image_mask_pairs(registry: Registry, sample_root: Pa
     source = registry.source("coralscapes")
     fetched = fetch_sample(source, limit=20, root=sample_root / "coralscapes-pairs")
 
-    # A sampled root is legitimately incomplete: metadata.parquet names every image, the sample holds 20.
+    # A sampled root is legitimately incomplete: metadata.parquet names every image,
+    # the sample holds 20.
     loader = build_loader(source, fetched.root, partial=fetched.truncated)
     loader.bind_harmonizer(registry.harmonizer_for("coralscapes"))
     samples = list(loader)

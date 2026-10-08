@@ -32,6 +32,7 @@ def test_every_registry_source_has_one_row_and_both_files_carry_the_header():
     sources = (ROOT / "docs" / "sources.md").read_text(encoding="utf-8")
     rows = [line for line in sources.splitlines() if line.startswith("| `")]
     assert len(rows) == len(Registry.load(ROOT / "registry"))
-    assert rows == sorted(rows), "rows must stay ordered by id"
+    ids = [line.split("`")[1] for line in rows]
+    assert ids == sorted(ids), "rows must stay ordered by id"
     for name in ("sources.md", "configs.md"):
         assert HEADER in (ROOT / "docs" / name).read_text(encoding="utf-8")

@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+# ruff: noqa: E501
 """Render ``docs/sources.md`` and ``docs/configs.md`` from ``registry/`` and ``hf_export``.
 
 Both files are generated end to end and never hand-edited: ``make docs`` regenerates them and
