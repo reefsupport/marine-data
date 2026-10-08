@@ -6,10 +6,59 @@ git. The format loosely follows [Keep a Changelog](https://keepachangelog.com/en
 
 ## [Unreleased]
 
+Nothing below is in a release yet. It is on `main` or on the Phase A branches named in the headings.
+
+### On main
+
 - Docs: install requirements, standalone snippets, fish-boxes statistics.
 - Repository: security policy, code of conduct, issue and pull request templates; broader `.gitignore`; README install pinned to
   v1.0.0; annotator e-mails in the Labelbox test fixtures replaced by placeholders; neutral wording and placeholder paths in docs and
   script comments; the open dataset card no longer references the gated repository.
+
+### Phase A: `feat/repo-hygiene` (merged into `feat/phase-a`)
+
+#### Added
+
+- Takedown path: a "Takedown requests" section in `SECURITY.md` with a public form and a private e-mail route, and four
+  issue forms (new source, takedown request, label error, licence question). `.github/CODEOWNERS`.
+- `CONTRIBUTING.md`: data-problem section, development setup, `make ci`, commit and pull request conventions.
+- `README.md`: per-config loading table, a note on why label-index masks look black, takedown pointers.
+  `CITATION.cff`: version 1.0.0, contact, licence message and references for the dataset and its source papers.
+
+### Phase A: `feat/phase-a`
+
+#### Added
+
+- `marinedata release lock` and `release build --lock`: a committed `release.lock.yaml` pins every source by `root_digest`,
+  and a build refuses a source that is not in the lock.
+- Masks gate, `marinedata release gate --masks BUILD_DIR`: checks mask size, EXIF orientation, class ids, dtype, instance
+  ids and the empty-mask rate per source, and merges its result into `GATES.json`. Mask export no longer resizes silently.
+- One S3 credential resolver (`marinedata.s3_auth`) and one client factory (`marinedata.s3_client`); writers refuse to run
+  anonymously. A test (`tests/test_s3_auth_boundary.py`) keeps every other module away from the rclone config and from
+  boto3 client constructors.
+- `docs/sources.md` and `docs/configs.md`, generated from the registry by `scripts/gen_sources_docs.py`
+  (`make docs`; `make docs-check` runs in `make ci`). `make ci` also runs the gate tests and the masks gate on a committed
+  2-image fixture.
+- `.github/dependabot.yml`: weekly, grouped updates for pip and GitHub Actions.
+
+#### Changed
+
+- `marinedata check` separates expected denials from unexpected ones and exits 0 when only expected denials remain.
+  `marinedata lineage` exits 0 on denials.
+- Fetching verifies integrity (hash-pinned manifest, checksum markers, retries on truncated transfers). `fetch.py` is now the
+  `marinedata.fetch` package; behaviour is unchanged.
+- Lineage describes the build that happened, not the intent, and verification claims in the registry are computed instead of
+  typed by hand.
+- Three sources that were never ingested (`noaa-coral-icra`, `plasticinwater`, `mouss-seg`) moved from open to unknown until
+  their licence is stated.
+- The old "Data issue" form is retired; the label error, licence question and takedown forms cover its cases.
+
+#### Fixed
+
+- The licence gate failed open on three paths; it now fails closed.
+- Nightly `verify-layouts`: the job no longer swallows failures (a fetch outage skips, a layout mismatch fails). Its three
+  failing tests are repaired: the face-detector test downloaded a Git LFS pointer instead of the YuNet weights, and the
+  coralscapes tests assumed `items` counts images and a complete sample root.
 
 ## [1.0.0] - 2026-10-07
 
@@ -29,7 +78,7 @@ First public release.
 
 ### Published datasets (v1.0, October 2026)
 
-- Four Parquet configurations with images and masks embedded, 58,803 rows in total: `coral-masks` (5,997),
+- Four Parquet configurations with images and masks embedded, 58,803 rows and 15.5 GB in total: `coral-masks` (5,997),
   `scene-masks` (1,598), `instance-masks` (25,296) and `fish-boxes` (25,912).
 - Eight sources: Coralscapes, SUIM, UIIS, UIIS10K, USIS10K, Roboflow Aquarium Dataset, Reef Support's benthic
   surveys, and Seaview imagery with Reef Support masks.
@@ -75,3 +124,6 @@ First public release.
 See "Considerations and limitations" in the dataset card and section 5 of `docs/DATASHEET.md`. In brief: the mask
 configurations were not checked for near-duplicates across splits, the Seaview `split_group` is provisional, label
 vocabularies differ per source, and image provenance for the UIIS family is described in the licensing section.
+
+[Unreleased]: https://github.com/reefsupport/marine-data/compare/v1.0.0...HEAD
+[1.0.0]: https://github.com/reefsupport/marine-data/releases/tag/v1.0.0
