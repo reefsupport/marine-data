@@ -20,7 +20,7 @@ _HELP = {
     "licence": "lock source classes, row licences and attribution fit the flavour",
     "dedup": "no exact / perceptual (pHash) duplicate across sources or splits; writes phash.parquet",
     "splits": "groups stay in one split, ratios near the target, no train near-dup in val/test",
-    "privacy": "count people rows; face/plate detector via --detector (skipped without one)",
+    "privacy": "EXIF GPS in images; people-row counts; --detector for faces/plates",
     "load": "datasets.load_dataset per config: schema, 50 rows per split, counts vs RELEASE.json",
     "card": "README.md parses as a dataset card; configs, counts and sizes match the release",
     "croissant": "croissant.json validates with mlcroissant (skipped when absent or not installed)",

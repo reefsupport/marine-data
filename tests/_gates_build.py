@@ -70,6 +70,23 @@ def smooth_png(seed: int, shift: int = 0, size: int = 64) -> bytes:
     return buf.getvalue()
 
 
+GPS_INFO_TAG = 0x8825
+
+
+def gps_image(seed: int, fmt: str = "PNG", *, gps: bool = True) -> bytes:
+    """``smooth_png(seed)`` re-encoded as ``fmt``; ``gps`` writes a synthetic EXIF GPSInfo IFD
+    (16 55 12 S, 145 40 30 E) through Pillow."""
+    save_args: dict = {}
+    if gps:
+        exif = Image.Exif()
+        exif[GPS_INFO_TAG] = {1: "S", 2: (16.0, 55.0, 12.0), 3: "E", 4: (145.0, 40.0, 30.0)}
+        save_args["exif"] = exif
+    buf = io.BytesIO()
+    with Image.open(io.BytesIO(smooth_png(seed))) as im:
+        im.save(buf, fmt, **save_args)
+    return buf.getvalue()
+
+
 @dataclass(frozen=True)
 class Img:
     seed: int

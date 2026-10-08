@@ -28,9 +28,9 @@ def test_all_require_all_passes_on_a_clean_build_and_lists_every_gate(tmp_path):
     gates = json.loads((build / "GATES.json").read_text())
     assert ALL_GATES | {"summary"} == set(gates)
     summary = gates["summary"]
-    assert (summary["passed"], summary["failed"], summary["skipped"]) == (6, 0, 2)
-    assert summary["required_for_publish"] == list(REQUIRED)
-    assert gates["privacy"]["skipped"] and gates["croissant"]["skipped"]
+    assert (summary["passed"], summary["failed"], summary["skipped"]) == (7, 0, 1)
+    assert summary["required_for_publish"] == [*REQUIRED, "privacy"]
+    assert gates["privacy"]["passed"] and gates["croissant"]["skipped"]
 
 
 def test_a_failing_gate_exits_1_and_require_all_refuses(tmp_path):

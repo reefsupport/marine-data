@@ -54,12 +54,19 @@ instance masks, ids inside the class map, 255 never a class, instance ids 1..N, 
 under `--empty-threshold` (5%). A build without mask rows fails. Fix: re-export the mask config.
 `data/coral-masks/train-00000-of-00001.parquet[3] 3f2a9c1b4d5e size_mismatch: mask 64x32 != image 64x64`
 
-## privacy (required only when a detector ran)
+## privacy (required whenever it ran)
+Always on: an embedded image whose EXIF carries a GPSInfo IFD (tag 34853) fails its row, unless its
+source is `true` under `privacy.allow_exif_gps` in `registry/gates.yaml`. An image whose EXIF cannot
+be read fails as `exif_unreadable`. Only the EXIF GPSInfo IFD is checked, not GPS written to XMP.
 Counts rows whose labels name a person (human, diver, snorkeler, operator, ...) from `label`,
 `native_label`, `class_map`, `mask_class_map` and `instances`; they never fail. With
 `--detector MODULE:ATTR` (an object or factory with `name`, `version`, `detect(bytes) -> [Detection(kind,
-score)]`) every embedded image is scanned and a face or plate scoring at least `--privacy-threshold`
-(0.85) fails. No detector: `skipped` with the people counts. Fix: exclude or blur the image.
+score)]`) every embedded image is also scanned and a face or plate scoring at least
+`--privacy-threshold` (0.85) fails. `skipped` only when the build holds no image bytes.
+Fix: strip the GPS tags before export (for example `exiftool -gps:all=`), or allow the source in
+`registry/gates.yaml` (`privacy: {allow_exif_gps: {<source_id>: true}}`) after its licence and privacy
+review; exclude or blur a detected face or plate.
+`images/train-00000-of-00001.parquet[1] image_sha256=<64 hex> source=src-b exif_gps_present: GPSInfo (tag 34853)`
 `images/test 92d07e13ade4 face_detected: score 0.90 >= 0.85 (fake 1)`
 
 ## load (required)

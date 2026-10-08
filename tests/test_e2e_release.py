@@ -376,5 +376,5 @@ def test_e2e_release_gates_pass_on_the_fixture_build(
         "croissant",
         "summary",
     }
-    assert gates["summary"]["failed"] == 0 and gates["summary"]["passed"] == 6
+    assert gates["summary"]["failed"] == 0 and gates["summary"]["passed"] == 7
     assert (export_dir / "phash.parquet").is_file()
