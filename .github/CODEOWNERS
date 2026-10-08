@@ -1,0 +1,3 @@
+# Code owners are asked for review automatically. A change to a source's licence tier still
+# needs a second reviewer (CONTRIBUTING.md); this file does not replace that rule.
+*  @yrunhaar

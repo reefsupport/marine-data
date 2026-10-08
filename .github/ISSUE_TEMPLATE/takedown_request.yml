@@ -1,0 +1,68 @@
+name: Takedown request
+description: Ask for rows to be removed, or for a licence or attribution to be corrected. This form is public.
+title: "[takedown] "
+labels: [takedown]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        This issue is public. Do not post personal details, and do not attach or link the image.
+        If you appear in an image, if the request involves personal data, or if you would rather it were not public, write to
+        [hello@reef.support](mailto:hello@reef.support) instead. The steps are in the
+        [takedown procedure](https://github.com/reefsupport/marine-data/blob/main/SECURITY.md#takedown-requests).
+  - type: dropdown
+    id: relationship
+    attributes:
+      label: You are
+      options:
+        - The rights holder of one or more images
+        - The author or maintainer of an upstream dataset
+        - Other
+    validations:
+      required: true
+  - type: dropdown
+    id: request
+    attributes:
+      label: What you ask for
+      options:
+        - Remove the rows
+        - Correct the licence
+        - Correct the attribution
+        - Other
+    validations:
+      required: true
+  - type: input
+    id: config
+    attributes:
+      label: Config
+      placeholder: instance-masks
+    validations:
+      required: true
+  - type: input
+    id: source
+    attributes:
+      label: Source
+      description: The `source` value of the rows (`source_id` in fish-boxes).
+    validations:
+      required: true
+  - type: textarea
+    id: rows
+    attributes:
+      label: Rows
+      description: The `image_sha256` values, one per line, or "all rows of this source".
+    validations:
+      required: true
+  - type: textarea
+    id: basis
+    attributes:
+      label: Why you are entitled to ask
+      description: For example that you hold the copyright. Link the original publication or page. Do not paste private documents.
+    validations:
+      required: true
+  - type: checkboxes
+    id: acknowledgement
+    attributes:
+      label: Before you submit
+      options:
+        - label: I understand that this issue is public.
+          required: true
