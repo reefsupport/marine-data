@@ -38,7 +38,7 @@ paths are `coral-benthic.yaml` and `reef-support-own.yaml` unless noted.
   `benthic_datasets/mask_labels/Coralseg/` returned `AccessDenied` (bucket policy allows
   anonymous `GetObject` on known keys, not anonymous listing). Listing via boto3 +
   rclone-conf creds (per the creds rule) is not blocked. The real blocker is
-  architectural, not access: `release.py`'s `build_release` keys every task row by
+  architectural, not access: `release/build.py`'s `build_release` keys every task row by
   `hashlib.file_digest(Path(sample.image))` — the sha256 of the **image file on disk**.
   Coralseg's images were never staged and have no `images_from` link to an
   already-hashed Reef Support source (unlike rs_labelled, below), so there is no way to
@@ -125,8 +125,8 @@ data-gap findings above:
 
 - **`points`** (Reefolution): loadable today, no remaining data gap. Needs the
   crosswalk-through-canonical-through-coarse wiring (`Harmonizer`/`schema.py`) plus the
-  `release.py`/`hf_export.py`/`hf_card.py`/`loaders/` integration — not reached this
-  pass; this is genuinely new plumbing (`release.py` has no `--tasks`/CLI flag at all
+  `release/`/`hf_export.py`/`hf_card.py`/`loaders/` integration — not reached this
+  pass; this is genuinely new plumbing (`release/` has no `--tasks`/CLI flag at all
   today, v1 or v2 — confirmed by grep, so "behind `--tasks v2` only" is new surface, not
   a toggle on existing code).
 - **`vqa`** (CoralVQA): train split now fetched (see above); building the JSONL →
@@ -160,7 +160,7 @@ nothing that could regress them was touched.
 3. Build the `vqa` adapter from `CoralVQA_train.jsonl` (fetched, `<work-dir>/coralvqa/`)
    + `CoralVQA_test.jsonl` (re-fetch once HF's rate limit clears; no login/token).
 4. Add the `--tasks {v1,v2}` flag and wire `points`/`vqa`/`semseg`/`benthic-coarse`/
-   `benthic-cover` into `release.py`, `hf_export.py`, `loaders/` and `hf_card.py`'s table
+   `benthic-cover` into `release/`, `hf_export.py`, `loaders/` and `hf_card.py`'s table
    (all disclosed), then the loader tests, human/model separation test, real
    build, and `make ci`/full suite.
 5. SEAVIEW and IBF stay at 0 point/vqa/mask rows (images-only, confirmed twice) —
@@ -176,7 +176,7 @@ The resume plan above is done for the three sources with usable data today
 (`points`, `vqa`, `semseg`, `benthic-coarse`, `benthic-cover`) by running native labels
 through the `Harmonizer`/`TaskProjector` and `rollup.py`'s `rollup_counts()`, joining
 `data/_labelquality/2026-09-25/label_status.parquet` when present, and reporting the
-unmapped fraction per source (excluded from the rollup denominator). `release.py` gained a
+unmapped fraction per source (excluded from the rollup denominator). `release/` gained a
 `--tasks {v1,v2}` flag (default `v1`, additive-only) that, under `v2`, calls
 `build_all_configs`/`write_configs` and writes `<release>/task_layers/<config>.parquet`.
 
