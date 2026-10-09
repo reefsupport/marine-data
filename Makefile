@@ -30,14 +30,17 @@ labels-check:
 
 # docs/sources.md and docs/configs.md are generated from registry/ and hf_export: never edit
 # them by hand. `docs-check` renders into a temp dir and fails when the committed files differ.
+# docs/STORAGE.md and docs/task-layers.md hold GENERATED blocks (gen_storage_docs.py, which has its
+# own `--check`): edit the prose around them, never the blocks.
 docs:
 	uv run python scripts/gen_sources_docs.py
 	uv run python scripts/gen_cli_docs.py
+	uv run python scripts/gen_storage_docs.py
 
 docs-check:
 	@tmp=$$(mktemp -d) && uv run python scripts/gen_sources_docs.py --out $$tmp > /dev/null && \
 	  uv run python scripts/gen_cli_docs.py --out $$tmp > /dev/null && \
-	  { diff -u docs/sources.md $$tmp/sources.md && diff -u docs/configs.md $$tmp/configs.md && diff -u docs/cli.md $$tmp/cli.md; } ; \
+	  { diff -u docs/sources.md $$tmp/sources.md && diff -u docs/configs.md $$tmp/configs.md && diff -u docs/cli.md $$tmp/cli.md && uv run python scripts/gen_storage_docs.py --check; } ; \
 	  rc=$$?; rm -rf $$tmp; [ $$rc -eq 0 ] || echo "docs are stale: run 'make docs' and commit"; \
 	  exit $$rc
 

@@ -122,11 +122,9 @@ The rule, as a function of post-resize corpus bytes **D** and node NVMe **C**:
 +     raise ShardError(f"{source_id}: not resolvable in registry; no shard may be written") from exc
 
 # tensorflow.py:74-75 — sorted(index.axes) called twice per sample inside the loop → hoist
-
-# builder/dataset.py:115-127 — slice groups by cumulative SAMPLE weight, not group index
 ```
 
-The split bug is the sharpest: simulated with real corpus sizes, a requested **70/15/15 returns 23.5/76.4/0.1**, BenthicNet lands entirely in val, and the whole labelled Caribbean set is the *only* thing in test. The `empty splits` guard at `builder/dataset.py:144-150` does not fire because no split is empty.
+The split bug flagged here (70/15/15 returning 23.5/76.4/0.1) is fixed in the allocator (`assign_splits`); `tests/test_scan.py::test_assign_splits_reef_support_shape` guards it.
 
 **Signature-only, lazy, zero behaviour change** (a `list` is an `Iterable`, so existing callers and tests are untouched): `LabelIndex.from_samples` and `class_weights` → `Iterable[Sample]`; transpose `class_weights`' loops so `encode` runs once per sample (O(N·A²) → O(N·A)); `Dataset.class_counts` and `supervision_coverage` → iterate `self._iter()` with a carried `self._n`; `pandas.leakage_report` → take the group→split map, not `dataset.samples` (it is a pure #groups reduction).
 
