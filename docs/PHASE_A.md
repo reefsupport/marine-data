@@ -35,31 +35,14 @@ Briefs and reports (`reports/2026-10-08-PA-<id>.md`) live in the session state, 
 - Credentials: only `s3_auth.py` names rclone.conf and boto3 S3 clients exist only in `s3_auth`/`s3_client` (`tests/test_s3_auth_boundary.py`); `auth check` prints no secret.
 - Upload layout (`release publish --go`, `HfApi.upload_large_folder`; the repo must already exist, nothing is created): `data/**/*.parquet`, `README.md`, `croissant.json`, `provenance/{RELEASE.json,GATES.json,release.lock.yaml}`, nothing else. GATES.json and the lock go up as they are; RELEASE.json goes up as a public-safe projection (`marinedata.release_provenance`: an allowlist of counts, config names, ids and digests plus the lock's sources; no excluded or skipped sources, buckets, remotes or local paths). The frozen v1.0 needs `--allow-frozen`, also for `release build`.
 
-## Pending Yohan actions
-- CoralSCOP retag cc-by-nc-sa-4.0 + attribution
-- coral-ai card
-- gate marine-data-nc
-- tag v1.0 on HF
-- 5 GitHub labels
-- SECURITY takedown wording
-- ff local main
-- delete 59 -d-safe branches
-- push branches/open MRs
-- VM/hcloud token
-- D9 allowlist + P1.12 moves (47 non-open trees in open bucket, plus the reefolution tree)
-- D20 nc pair class
-- D21 own-data platform
-- 13 ambiguous reconcile pairs (2 still undecided, kept with `related`)
-- 13 trees without CHECKSUMS (237 GB, VM; caps root_digest at 76)
-- caddy stub tree
-- v1.1 points config widening (additive)
-- run P1.7 scripts (VM create, publish --go; x86_64 image size untested)
-- D23 veto option (revert 429a077)
-- Seaview licence id CC-BY-3.0 vs CC-BY-3.0-AU (human read of UQ eSpace doi:10.14264/UQL.2019.930)
-- wikimedia-underwater stays internal-only (per-file licences)
-- P1.2d: 29 ids downgraded to access_class unknown need a network licence pass to return to open (ids in reports/2026-10-08-PA-P1.2d.md)
-- P1.2d: keep or revert the 5 audit-driven licence-id changes (gbif-marine, large-scale-fish, reefnet-species, schmidt-ocean-rov + 1)
-- P1.2d: 24 evidence lines cite the S57 catalog TSV, not in the repo
+## Open items
+Maintainer follow-ups tracked outside this repository. None of them changes v1.0.
+- Hub metadata: re-tag the CoralSCOP model repository (CC BY-NC-SA 4.0, with attribution), add a model card for coral-ai, enable gated access on the non-commercial dataset repository, add the v1.0 tag.
+- Registry: 29 sources were downgraded to `access_class: unknown` pending a licence re-check against their upstream pages; five licence ids changed by the audit await confirmation; two reconciliation pairs remain undecided and are kept as `related`; the caddy stub tree and wikimedia-underwater (per-file licences) stay internal-only.
+- Seaview image licence: confirm CC-BY-3.0 against CC-BY-3.0-AU on the UQ eSpace record (doi:10.14264/UQL.2019.930).
+- Storage: 13 source trees have no CHECKSUMS file yet, so `root_digest` pins 76 trees; access classes for the non-commercial pairs (D20), the platform value for own data (D21) and the bucket access-policy review (D9) are pending.
+- Release: build v1.1 (points and metadata configs) on the release VM under `deploy/release-vm/`, run the gates and publish; the x86_64 image has not been exercised yet. Any widening of the v1.1 points config stays additive.
+- Repository: issue labels, the takedown wording in SECURITY.md, branch clean-up after merge.
 
 ## Evidence pointing outside the repo
 24 `licence_evidence:` lines cite the S57 catalog (`reports/data/2026-09-25-5star-catalog.tsv`), which is not in the repo; they are left as written:
