@@ -167,7 +167,10 @@ def test_a_crosswalk_without_a_vocab_is_measured_on_its_edges(rows):
 
 def test_measured_sources_report_unmapped_labels(rows):
     assert rows["plc-beijbom2015"].status == lc.WARN and rows["plc-beijbom2015"].unmapped
-    assert rows["coralscapes"].status == lc.PASS and rows["coralscapes"].mapped_pct == 100.0
+    # taxonomy 3.0.0 (D9): 'unknown hard substrate' is unmapped, so coralscapes warns at ~91.7 %
+    coralscapes = rows["coralscapes"]
+    assert coralscapes.status == lc.WARN and "unknown hard substrate" in str(coralscapes.unmapped)
+    assert round(coralscapes.mapped_pct, 1) == 91.7
 
 
 def test_unknown_release_id_fails(reg):

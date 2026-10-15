@@ -9,6 +9,7 @@ import pytest
 
 from marinedata.annotation_schema import validate_row
 from marinedata.registry import Registry, _default_root
+from marinedata.schema import Fidelity
 from marinedata.task_layers import masks_table as mt
 from marinedata.task_layers.configs import SEMSEG_SOURCES, build_semseg_config
 from marinedata.task_layers.producers.coralscapes_semseg import _ID_TO_LABEL
@@ -77,13 +78,48 @@ def test_all_unknown_or_empty_row_is_unmapped(reg):
 
 @pytest.mark.parametrize("sid", sorted(mt.MASK_SOURCES))
 def test_every_declared_class_resolves_through_its_crosswalk(reg, sid):
+    """Resolved + declared-unmappable == declared; a class with no edge at all still fails.
+
+    An ``unmappable`` edge is a declared outcome, never a dropped class: Coralseg's ``Other`` and,
+    since taxonomy 3.0.0 (D9), Coralscapes' ``unknown hard substrate``. A class the crosswalk does
+    not name at all is a silent drop (``Crosswalk.resolve`` answers ``unmapped`` for it as well, so
+    the edge itself is checked)."""
     spec = mt.MASK_SOURCES[sid]
+    walk = reg.crosswalk(spec.crosswalk_id)
     resolve = mt.resolver_for(reg, spec.crosswalk_id)
-    mapped = [lbl for lbl in spec.id_to_label.values() if resolve(lbl)[1] != "unmapped"]
-    assert mapped, sid
-    if sid != "coralseg-ucsd-mosaics":
-        assert len(mapped) == len(spec.id_to_label)
-    assert len(_ID_TO_LABEL) == 39
+    declared = list(spec.id_to_label.values())
+    edges = {lbl: walk.edge(lbl) for lbl in declared}
+    assert [lbl for lbl, edge in edges.items() if edge is None] == [], (
+        f"{sid}: class without an edge"
+    )
+    resolved = [lbl for lbl in declared if resolve(lbl)[1] != "unmapped"]
+    unmappable = [lbl for lbl, edge in edges.items() if edge.fidelity is Fidelity.UNMAPPABLE]
+    assert resolved, sid
+    assert not set(resolved) & set(unmappable)
+    assert len(resolved) + len(unmappable) == len(declared)
+    if sid == "coralscapes":  # D9: 38 resolve to a node, the 39th is the one declared unmappable
+        assert len(_ID_TO_LABEL) == len(declared) == 39
+        assert (len(resolved), unmappable) == (38, ["unknown hard substrate"])
+
+
+def test_a_declared_unmappable_class_is_carried_with_taxon_none_not_dropped(reg):
+    """D9 on the table: ``unknown hard substrate`` keeps its class id and pixels, taxon None."""
+    label = "unknown hard substrate"
+    pixel = next(i for i, name in _ID_TO_LABEL.items() if name == label)
+    rubble = next(i for i, name in _ID_TO_LABEL.items() if name == "rubble")
+    row = _row(reg, "coralscapes", {pixel: 60, rubble: 40})
+    assert validate_row("masks", row) == []
+    assert json.loads(row["class_map"]) == {str(pixel): label, str(rubble): "rubble"}
+    assert json.loads(row["class_counts"]) == {label: 60, "rubble": 40}
+    attrs = json.loads(row["attrs"])
+    assert attrs["class_resolution"][label] == {
+        "pixel": pixel, "taxon_node_id": None, "match_type": "unmapped",
+        "worms_aphia_id": None, "rs_benthic_code": None,
+    }  # fmt: skip
+    # not a taxon: out of the canonical histogram and the mapped share, never the labelled total
+    assert json.loads(row["canonical_class_counts"]) == {"RB": 40}
+    assert (attrs["mapped_pixels"], attrs["labelled_pixels"]) == (40, 100)
+    assert row["match_type"] == "exact" and row["taxon_node_id"] is None
 
 
 def test_coralscop_rows_are_pseudo_internal_only_and_droppable(reg):

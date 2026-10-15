@@ -436,15 +436,10 @@ def test_remap_row_raises_when_class_map_disagrees():
 def test_remap_row_does_not_raise_on_overrides_and_default_exclusions():
     """class_map is compared with the registry (published ``coarse``), not the scheme output."""
     mask = np.array([[3, 10, 12], [29, 30, 39]], dtype=np.uint8)
-    class_map = [  # as published: registry classes, i.e. before the label policy
+    class_map = [  # as published: registry classes (3.0.0: 'unknown hard substrate' is unmapped)
         {"id": 3, "label_native": "other coral dead", "taxon_node": "HC", "coarse": "HC"},
         {"id": 10, "label_native": "algae covered substrate", "taxon_node": "DCA", "coarse": None},
-        {
-            "id": 12,
-            "label_native": "unknown hard substrate",
-            "taxon_node": "RK",
-            "coarse": "ABIOTIC",
-        },
+        {"id": 12, "label_native": "unknown hard substrate", "taxon_node": None, "coarse": None},
         {"id": 29, "label_native": "sponge", "taxon_node": "SP", "coarse": None},
         {"id": 30, "label_native": "anemone", "taxon_node": "ANEM", "coarse": None},
         {"id": 39, "label_native": "dead clam", "taxon_node": "CLAM", "coarse": "OTHER_FAUNA"},

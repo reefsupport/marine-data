@@ -118,6 +118,14 @@ def _size(im: Img) -> tuple[int, int] | None:
         return None
 
 
+FIXTURE_RATIO = {
+    "source": "split_map",
+    "target_pct": {"train": 80.0, "validation": 10.0, "test": 10.0},
+}
+"""The split map the fixture builds claim (their images are 16/2/2). Pass ``ratio=None`` for a build
+whose RELEASE.json records none, so the registry default applies."""
+
+
 def default_images() -> list[Img]:
     plan = ["train"] * 16 + ["validation"] * 2 + ["test"] * 2
     return [Img(i, s, "src-a" if i % 2 == 0 else "src-b") for i, s in enumerate(plan)]
@@ -213,7 +221,7 @@ def make_build(
     release_configs: bool = True,
     flavour: str | None = "open",
     sources=None,
-    ratio=None,
+    ratio=FIXTURE_RATIO,
     group_column: bool = True,
     licence: str = OPEN_LICENCE,
     licence_class: str = "open",
@@ -257,8 +265,8 @@ def make_build(
         configs["metadata"] = {s: len(meta[s]) for s in SPLITS if s in meta}
     if masks:
         rows = mask_rows(class_names)
-        write_config(build, "coral-masks", {"train": rows}, MASK_COLS)
-        configs["coral-masks"] = {"train": len(rows)}
+        write_config(build, "fixture-masks", {"train": rows}, MASK_COLS)
+        configs["fixture-masks"] = {"train": len(rows)}
     if card:
         (build / "README.md").write_text(
             card_text(card_configs or configs, categories=categories, info_lines=info_lines)

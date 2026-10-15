@@ -21,7 +21,10 @@ and are a starting point for your own review. See [`docs/LEGAL.md`](docs/LEGAL.m
 ## Published datasets
 
 Release v1.0 (October 2026) is a set of four Parquet configs with images and masks embedded. Splits follow the
-upstream splits where a source defines them, and a deterministic 80/10/10 group hash otherwise.
+upstream splits where a source defines them, and a deterministic group hash (70/15/15 target) otherwise. Because the
+upstream splits dominate, no nominal ratio describes v1.0. The measured train/validation/test shares are 76.5/9.5/14.1
+(`coral-masks`), 76.7/9.0/14.2 (`instance-masks`), 73.9/10.2/15.9 (`scene-masks`) and 73.2/13.4/13.4 (`fish-boxes`),
+75.1/11.0/13.9 over all four. Configs added from v1.1.0 target 70/15/15.
 
 | Config | Task | Images | Sources |
 |---|---|---|---|
@@ -140,11 +143,16 @@ from datasets import load_dataset
 from marinedata import labels
 
 stream = load_dataset("reefsupport/marine-data", "coral-masks", split="train", streaming=True)
-row = labels.remap_row(next(iter(stream)), "benthic-coarse")  # adds `label`, an HxW uint8 array
+row = labels.remap_row(
+    next(iter(stream)), "benthic-coarse", taxonomy_version="2.9.0"
+)  # adds `label`, an HxW uint8 array
 names = labels.class_names("benthic-coarse")
 present = sorted({int(v) for v in row["label"].ravel()} - {labels.IGNORE_INDEX})
 print(row["source"], [names[i] for i in present])
 ```
+
+The published v1.0 tables are frozen under taxonomy 2.9.0, so these examples pass `taxonomy_version="2.9.0"`; v1.1.0
+tables will carry a `taxonomy_version` column written at build, which `remap_row` reads from the row.
 
 In a script, download the config or one source as described under [Published datasets](#published-datasets) and pass its
 rows to `remap_row` the same way:
@@ -154,7 +162,7 @@ from datasets import load_dataset
 from marinedata import labels
 
 ds = load_dataset("reefsupport/marine-data", "scene-masks", split="train")
-row = labels.remap_row(ds[0], "scene")
+row = labels.remap_row(ds[0], "scene", taxonomy_version="2.9.0")
 ```
 
 ```python
@@ -167,7 +175,7 @@ ds = load_dataset(
     split="train",
     data_files={"train": "data/coral-masks/train-reef-support-seaview-labels-*.parquet"},
 )
-row = labels.remap_row(ds[0], "benthic-coarse")
+row = labels.remap_row(ds[0], "benthic-coarse", taxonomy_version="2.9.0")
 ```
 
 The other configs use the `scene` scheme. `scene-masks` rows work with `remap_row` as above:
@@ -177,7 +185,7 @@ from datasets import load_dataset
 from marinedata import labels
 
 stream = load_dataset("reefsupport/marine-data", "scene-masks", split="train", streaming=True)
-row = labels.remap_row(next(iter(stream)), "scene")
+row = labels.remap_row(next(iter(stream)), "scene", taxonomy_version="2.9.0")
 names = labels.class_names("scene")
 present = sorted({int(v) for v in row["label"].ravel()} - {labels.IGNORE_INDEX})
 print(row["source"], [names[i] for i in present])

@@ -13,3 +13,58 @@ flavours:
     repo_id: reefsupport/marine-data-nc
     profile: ship-noncommercial
     profiles: [ship-noncommercial]
+    # Frozen exceptions (D3, accepted 2026-10-15). The v1.0 nc repo already publishes two sources the
+    # registry now classes `internal-only`. Those published files stay exactly as they are (v1.0 is frozen),
+    # and nothing else changes for them: `ships_in` still refuses both sources, v1.1 adds no row from them,
+    # and the licence gate raises on every row of these sources that is not in a shard whose sha256 is in
+    # `files_sha256`. The allowlist is files, never rows or sources, so it can never admit a new row.
+    # `files_sha256` holds the sha256 of every published v1.0 nc shard of the source (one digest per shard,
+    # `shards_v1_0` of them), copied 2026-10-15 from the CHECKSUMS.sha256 files of the nc repo; an empty list
+    # admits nothing. Lifting is the owner's call: drop the entry once
+    # the registry class allows nc (coralscop) or written permission arrives (coralseg).
+    frozen_exceptions:
+      - source_id: coralscop-masks-rs
+        config: coral-masks-machine
+        registry_class: internal-only
+        licence: CC-BY-NC-SA-4.0
+        shards_v1_0: 21
+        files_sha256:
+          - 9104a93fbbefc6138197dea85f1cf496529737a802074a1fa1af0d672df25a75  # data/coral-masks-machine/test-coralscop-masks-rs-00000-of-00001.parquet
+          - 2b403e3c7f3606bc436e988bbc2bbdf475d607991695a5eeed9bb2d5b0f919ac  # data/coral-masks-machine/train-coralscop-masks-rs-00000-of-00020.parquet
+          - 28701a491aeeeaf395226bd2e4eded0ce28b8aebc8baab27850bc9da48e914eb  # data/coral-masks-machine/train-coralscop-masks-rs-00001-of-00020.parquet
+          - b04246c99bfcf6ee46a12f8fee2bfebd704dfeb59832be96e240323dab6acc60  # data/coral-masks-machine/train-coralscop-masks-rs-00002-of-00020.parquet
+          - ffd2686c550e4485b81d51a1edcb71e38df39f51e8db8a9fdb5897f14eb90a45  # data/coral-masks-machine/train-coralscop-masks-rs-00003-of-00020.parquet
+          - c0481d4aca0338953fd4184c0090df00121be3554f23ffd69e9eff9e9d35a9c2  # data/coral-masks-machine/train-coralscop-masks-rs-00004-of-00020.parquet
+          - 84e68bad816f5350aac37cabbdf01d333a3e54b3cf96c2b8cef7bef824d3eab0  # data/coral-masks-machine/train-coralscop-masks-rs-00005-of-00020.parquet
+          - 6d5d19229b5e5ab4aba2aecf7b835a733ecdf0e4ce0b5b9034b4af86a1417bf1  # data/coral-masks-machine/train-coralscop-masks-rs-00006-of-00020.parquet
+          - f0a134943d006b32752576ffd147c5c67f9c320dedb18e9b2936f5458c1c79c4  # data/coral-masks-machine/train-coralscop-masks-rs-00007-of-00020.parquet
+          - a58c478d0a76912784aa44631b18247a43e331aec64a71932ab2b171449cf97a  # data/coral-masks-machine/train-coralscop-masks-rs-00008-of-00020.parquet
+          - 1a12200e58e81290d0eefb41a23a0b93e69fd0f2c52d683e49c553bde05f0f2a  # data/coral-masks-machine/train-coralscop-masks-rs-00009-of-00020.parquet
+          - de20f34b1f546d8329e34d33793e8c23726194503c1087c48235762555133d61  # data/coral-masks-machine/train-coralscop-masks-rs-00010-of-00020.parquet
+          - 5b74a8b0e5b102a0790ac7fa39bad71c442372bae626c466767914fc3d7044ca  # data/coral-masks-machine/train-coralscop-masks-rs-00011-of-00020.parquet
+          - 1439508b28c5e8feb3923335bbc6cb19c5773b53238683846e16781fb47d974e  # data/coral-masks-machine/train-coralscop-masks-rs-00012-of-00020.parquet
+          - a5f8801a3bfa9918264ae0808c8c6d12d10eff85ccac22bce04baa033998db0e  # data/coral-masks-machine/train-coralscop-masks-rs-00013-of-00020.parquet
+          - 5c8633600463c7064ef2dff76b7694116378f0a1ef23216b5e49e237b1b69324  # data/coral-masks-machine/train-coralscop-masks-rs-00014-of-00020.parquet
+          - d46770a78c14669f45aa400a061d9ba0551a945b106acecec05deeaf5830ac92  # data/coral-masks-machine/train-coralscop-masks-rs-00015-of-00020.parquet
+          - 9fe2e145249a711b81f5e4d86601afb376e3051096eef548c50d06c757b5e99e  # data/coral-masks-machine/train-coralscop-masks-rs-00016-of-00020.parquet
+          - 1c76507ca02bebf28544c3d59a6d1a708be6bcb9142030329c2fba4923958f61  # data/coral-masks-machine/train-coralscop-masks-rs-00017-of-00020.parquet
+          - 5deb0a1d2bc5073e04ff7f67143540d2652c2653e15b9e5cc0e0ce868af9b93b  # data/coral-masks-machine/train-coralscop-masks-rs-00018-of-00020.parquet
+          - f3694e24404c3e33f8aa0248e8a2c53981d44e2d2a5e072db7b3c21b72f04d74  # data/coral-masks-machine/train-coralscop-masks-rs-00019-of-00020.parquet
+        reason: >-
+          CoralSCOP-generated masks, registry class internal-only today (reef-support-own.yaml). The v1.0 nc
+          rows predate that class and stay as published. Share-alike (CC-BY-NC-SA-4.0) applies to them in nc.
+          Lift by reclassifying the data to restricted-nc.
+      - source_id: coralseg-ucsd-mosaics
+        config: coral-masks
+        registry_class: internal-only
+        licence: NO-LICENCE-STATED
+        shards_v1_0: 4
+        files_sha256:
+          - 639a4b86befab1917bacf8f67fb8399f806730b671e84cb112a3ba0794782f60  # data/coral-masks/test-coralseg-ucsd-mosaics-00000-of-00001.parquet
+          - 828511f952eeda58b8572bd7ec1ae1d948b3646b95bbd21ffb8793c543ea6131  # data/coral-masks/train-coralseg-ucsd-mosaics-00000-of-00002.parquet
+          - 4abda11b578b10229c430a4103abcb705b004eab0e5226c8e8a31c6949a061b0  # data/coral-masks/train-coralseg-ucsd-mosaics-00001-of-00002.parquet
+          - 75cebfa89135d83f519ab76d2a645a9326bf5392ef188b452759d7aca1a55785  # data/coral-masks/validation-coralseg-ucsd-mosaics-00000-of-00001.parquet
+        reason: >-
+          UCSD mosaics with no licence published (all rights reserved by default), registry class internal-only.
+          The v1.0 nc rows stay until written UCSD permission arrives or a post-freeze nc release removes them
+          (removal rewrites v1.0 rows, which is forbidden during the hackathon).

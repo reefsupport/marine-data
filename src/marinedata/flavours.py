@@ -8,6 +8,7 @@ ships (:func:`flavour_source_ids`) and what RELEASE.json records about it
 
 from __future__ import annotations
 
+import re
 from collections import Counter
 from collections.abc import Iterable
 from dataclasses import dataclass
@@ -32,18 +33,84 @@ SPLIT_MAP_PROFILE = "ship-noncommercial"
 (every open + nc source), whichever flavour asked for it."""
 
 
+_HEX64 = re.compile(r"^[0-9a-f]{64}$")
+
+
+@dataclass(frozen=True)
+class FrozenException:
+    """Published v1.0 rows of a source whose registry class the flavour does not allow (D3).
+
+    The exception is about *files*: ``ships_in`` ignores it, a release adds no row from the
+    source, and the licence gate raises on every row of the source that is not in a shard whose
+    sha256 is in ``files_sha256``. It can never admit a source or a new row."""
+
+    source_id: str
+    config: str
+    registry_class: str
+    licence: str
+    reason: str
+    shards_v1_0: int
+    files_sha256: frozenset[str]
+
+
 @dataclass(frozen=True)
 class FlavourSpec:
     flavour: str
     repo_id: str
     profile: str
     profiles: tuple[str, ...]
+    frozen_exceptions: tuple[FrozenException, ...] = ()
 
 
 @dataclass(frozen=True)
 class FlavourConfig:
     takedown_url: str
     flavours: dict[str, FlavourSpec]
+
+
+def _frozen_exceptions(flavour: str, raw: object) -> tuple[FrozenException, ...]:
+    entries = list(raw or ())
+    if not entries:
+        return ()
+    if flavour != "nc":
+        raise ValueError(
+            f"flavour {flavour!r} cannot declare frozen_exceptions: "
+            "only nc carries published v1.0 rows "
+            "of sources its class does not allow; open ships class `open` rows only"
+        )
+    out: list[FrozenException] = []
+    for entry in entries:
+        sid = str(entry.get("source_id") or "").strip()
+        reason = str(entry.get("reason") or "").strip()
+        if not sid or not reason or not str(entry.get("config") or "").strip():
+            raise ValueError("a frozen exception needs source_id, config and a reason")
+        if sid in {e.source_id for e in out}:
+            raise ValueError(f"frozen exception {sid!r} declared twice")
+        declared = coerce_class(entry.get("registry_class"))
+        if declared == FLAVOURS[flavour]:
+            raise ValueError(
+                f"{sid!r} is class {declared!r}, the flavour's own: it needs no exception"
+            )
+        digests = [str(d).strip().lower() for d in entry.get("files_sha256") or ()]
+        bad = [d for d in digests if not _HEX64.match(d)]
+        shards = int(entry.get("shards_v1_0") or 0)
+        if bad or len(set(digests)) != len(digests) or (digests and len(digests) != shards):
+            raise ValueError(
+                f"{sid!r}: files_sha256 must be unique 64-char hex digests, "
+                f"one per v1.0 shard ({shards})"
+            )
+        out.append(
+            FrozenException(
+                source_id=sid,
+                config=str(entry["config"]),
+                registry_class=declared,
+                licence=str(entry.get("licence") or ""),
+                reason=reason,
+                shards_v1_0=shards,
+                files_sha256=frozenset(digests),
+            )
+        )
+    return tuple(out)
 
 
 def load_flavours(root: str | Path | None = None) -> FlavourConfig:
@@ -56,6 +123,7 @@ def load_flavours(root: str | Path | None = None) -> FlavourConfig:
             repo_id=str(entry["repo_id"]),
             profile=str(entry["profile"]),
             profiles=tuple(entry.get("profiles") or [entry["profile"]]),
+            frozen_exceptions=_frozen_exceptions(name, entry.get("frozen_exceptions")),
         )
         for name, entry in (data.get("flavours") or {}).items()
     }
@@ -70,6 +138,33 @@ def flavour_spec(flavour: str, root: str | Path | None = None) -> FlavourSpec:
     if flavour not in FLAVOURS:
         raise ValueError(f"unknown flavour {flavour!r}; expected one of {sorted(FLAVOURS)}")
     return load_flavours(root).flavours[flavour]
+
+
+def frozen_exception_map(
+    flavour: str, root: str | Path | None = None
+) -> dict[str, FrozenException]:
+    """``{source_id: exception}`` for the flavour (empty for open)."""
+    return {e.source_id: e for e in flavour_spec(flavour, root).frozen_exceptions}
+
+
+def frozen_exception_problems(registry, flavour: str, root: str | Path | None = None) -> list[str]:
+    """Drift between the declared exceptions and the live registry (empty = consistent)."""
+    problems: list[str] = []
+    for exc in flavour_spec(flavour, root).frozen_exceptions:
+        try:
+            live = _class(registry, exc.source_id)
+        except (KeyError, ValueError):
+            problems.append(f"{exc.source_id}: not in the registry")
+            continue
+        if live == FLAVOURS[flavour]:
+            problems.append(
+                f"{exc.source_id}: now class {live!r}, the flavour's own; drop the exception"
+            )
+        elif live != exc.registry_class:
+            problems.append(
+                f"{exc.source_id}: declared {exc.registry_class!r}, the registry says {live!r}"
+            )
+    return problems
 
 
 def takedown_url(root: str | Path | None = None) -> str:
@@ -162,7 +257,7 @@ def release_record(registry, flavour: str, profile: str, kept: Iterable[str]) ->
         else:
             reason = _reason(registry, source.id)
         excluded.setdefault(reason, []).append(source.id)
-    return {
+    record = {
         "flavour": flavour,
         "profile": profile,
         "repo_id": spec.repo_id,
@@ -173,6 +268,18 @@ def release_record(registry, flavour: str, profile: str, kept: Iterable[str]) ->
         },
         "excluded_sources": {k: sorted(v) for k, v in sorted(excluded.items())},
     }
+    if spec.frozen_exceptions:  # published v1.0 files, listed for provenance; no source is admitted
+        record["frozen_exceptions"] = [
+            {
+                "source_id": e.source_id,
+                "config": e.config,
+                "registry_class": e.registry_class,
+                "licence": e.licence,
+                "files_sha256": sorted(e.files_sha256),
+            }
+            for e in spec.frozen_exceptions
+        ]
+    return record
 
 
 def _counts(classes: Iterable[str]) -> dict[str, int]:

@@ -32,8 +32,12 @@ def test_ratio_off_target_fails(tmp_path):
 
 
 def test_target_comes_from_release_record_and_registry_overrides_it(tmp_path):
-    images = _imgs(14, 3, 3)  # 70/15/15, the v1.0 code default
-    assert _has(run_splits_gate(make_build(tmp_path / "a", images=images)), "ratio_off_target")
+    images = _imgs(14, 3, 3)  # 70/15/15, the registry default since v1.1.0
+    assert run_splits_gate(make_build(tmp_path / "a", images=images, ratio=None)).passed
+    off = _imgs(16, 2, 2)  # 80/10/10 is off the default target
+    assert _has(
+        run_splits_gate(make_build(tmp_path / "a2", images=off, ratio=None)), "ratio_off_target"
+    )
     ratio = {"source": "split_map", "target_pct": {"train": 70.0, "validation": 15.0, "test": 15.0}}
     assert run_splits_gate(make_build(tmp_path / "b", images=images, ratio=ratio)).passed
     registry = tmp_path / "reg"
@@ -63,6 +67,8 @@ def test_config_without_all_three_splits_skips_the_ratio(tmp_path):
     assert result.counts["ratio_skipped_configs"] >= 1
 
 
-def test_registry_default_is_80_10_10():
+def test_registry_default_is_70_15_15_and_v1_configs_keep_their_measured_shares():
     default, per_config = load_split_targets()
-    assert default == {"train": 80.0, "validation": 10.0, "test": 10.0} and per_config == {}
+    assert default == {"train": 70.0, "validation": 15.0, "test": 15.0}
+    assert set(per_config) == {"coral-masks", "instance-masks", "scene-masks", "fish-boxes"}
+    assert per_config["scene-masks"] == {"train": 73.9, "validation": 10.2, "test": 15.9}
