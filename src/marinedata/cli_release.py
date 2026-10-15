@@ -27,8 +27,9 @@ from .fetchers_remote import _is_pinned_staged_tree
 from .flavours import SPLIT_MAP_PROFILE, check_profile, flavour_spec, ships_in
 from .gate import evaluate
 from .manifest_identity import checksums_digest
+from .models import Profile, Source
 from .neardup import NearDupConfig, NearDupError, default_workers, pil_version
-from .registry import Registry
+from .registry import Registry, RegistryError
 from .release import ReleaseSkipError, build_release, generate_split_map
 from .release_lock import (
     ReleaseLockError,
@@ -72,24 +73,76 @@ class ReleaseFetchError(Exception):
         super().__init__(f"failed to fetch {len(failures)} admitted source(s): {detail}")
 
 
+def _unfetchable_reason(
+    registry: Registry, prof: Profile, source: Source, flavour: str | None
+) -> str | None:
+    """Why ``source`` is not an admitted pinned staged tree for this build (``None``: it is).
+
+    The three filters :func:`_resolve_roots` applies before it fetches, in their order; the
+    ``--lock`` pre-check reads the same verdict, so the two can never disagree."""
+    if not evaluate(source, prof).allowed:
+        return f"not admitted under profile {prof.id!r}"
+    if flavour is not None and not ships_in(registry, source.id, flavour):
+        return f"does not ship in flavour {flavour!r}"  # never fetch another flavour's bytes
+    if not _is_pinned_staged_tree(source):
+        return "no pinned staged tree (needs checksums.root_digest and a staged-tree loader)"
+    return None
+
+
+def _locked_source_problems(
+    registry: Registry,
+    prof: Profile,
+    local: dict[str, Path],
+    only: set[str],
+    flavour: str | None,
+) -> list[str]:
+    """``"<id> (<why>)"`` for each locked source that no root can be resolved for, by id."""
+    problems: list[str] = []
+    for source_id in sorted(only):
+        try:
+            source = registry.source(source_id)
+        except RegistryError:
+            problems.append(f"{source_id} (not in the registry)")
+            continue
+        if source_id in local:
+            continue  # the --local tree is its root, whatever the fetch filters say
+        if (reason := _unfetchable_reason(registry, prof, source, flavour)) is not None:
+            problems.append(f"{source_id} ({reason})")
+    return problems
+
+
 def _resolve_roots(
-    registry: Registry, profile: str, local: dict[str, Path], flavour: str | None = None
+    registry: Registry,
+    profile: str,
+    local: dict[str, Path],
+    flavour: str | None = None,
+    *,
+    only: set[str] | None = None,
 ) -> dict[str, Path]:
     """Every admitted source's local root: a ``--local`` override first, else a fetched
     pinned staged tree. A fetch failure for an admitted source raises
     :class:`ReleaseFetchError` naming every failed source — the build must fail closed
-    rather than silently produce a smaller release."""
+    rather than silently produce a smaller release.
+
+    ``only`` (the ``--lock`` source ids) scopes the build to the lock: every other registry
+    source is skipped and never fetched. Each locked source must then resolve — a ``--local``
+    tree, or an admitted pinned staged tree — or :class:`ReleaseLockError` names it before
+    the first fetch: a lock is never silently built short. ``None`` is the unscoped build."""
     prof = registry.profile(profile)
     roots: dict[str, Path] = dict(local)
     failures: list[tuple[str, str]] = []
+    if only is not None and (
+        problems := _locked_source_problems(registry, prof, local, only, flavour)
+    ):
+        raise ReleaseLockError(
+            "cannot resolve every source in the release lock: " + ", ".join(problems)
+        )
     for source in registry:
         if source.id in roots:
             continue
-        if not evaluate(source, prof).allowed:
-            continue
-        if flavour is not None and not ships_in(registry, source.id, flavour):
-            continue  # never fetch another flavour's bytes
-        if not _is_pinned_staged_tree(source):
+        if only is not None and source.id not in only:
+            continue  # --lock: a source the lock does not name is never evaluated or fetched
+        if _unfetchable_reason(registry, prof, source, flavour) is not None:
             continue
         try:
             result = fetch_sample(source, limit=_RELEASE_FETCH_LIMIT)
@@ -365,7 +418,13 @@ def _cmd_release_build(args: argparse.Namespace) -> int:
             )
             digest = checksums_digest(registry, roots)
         else:
-            roots = _resolve_roots(registry, args.profile, local, flavour)
+            roots = _resolve_roots(
+                registry,
+                args.profile,
+                local,
+                flavour,
+                only=set(lock.source_ids()) if lock is not None else None,
+            )
     except ValueError as exc:
         print(f"release build: {exc}", file=sys.stderr)
         return 1
