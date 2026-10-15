@@ -37,8 +37,10 @@ labels.map_label("uiis10k", "reptiles", "scene")  # 6, the id of FV; None means 
 labels.supervised_classes("reef-support-benthic-own", "benthic-coarse")  # ('HC', 'SC')
 ```
 
-For a row of the published `coral-masks` or `scene-masks` configs, `labels.remap_row(row, scheme)` returns the row with a
-`label` array added. It also checks the row's `class_map` against the registry and raises on a mismatch. See the
+For a row of the published `coral-masks` or `scene-masks` configs, `labels.remap_row(row, scheme, taxonomy_version="2.9.0")`
+returns the row with a `label` array added. It also checks the row's `class_map` against the registry and raises on a
+mismatch. The published v1.0 tables are frozen under taxonomy 2.9.0, so they are checked against that release; a row with
+no `taxonomy_version` of its own and no argument is checked against the current release. See the
 [README](../README.md#label-mapping) for a complete example.
 
 ### Class lists

@@ -143,11 +143,16 @@ from datasets import load_dataset
 from marinedata import labels
 
 stream = load_dataset("reefsupport/marine-data", "coral-masks", split="train", streaming=True)
-row = labels.remap_row(next(iter(stream)), "benthic-coarse")  # adds `label`, an HxW uint8 array
+row = labels.remap_row(
+    next(iter(stream)), "benthic-coarse", taxonomy_version="2.9.0"
+)  # adds `label`, an HxW uint8 array
 names = labels.class_names("benthic-coarse")
 present = sorted({int(v) for v in row["label"].ravel()} - {labels.IGNORE_INDEX})
 print(row["source"], [names[i] for i in present])
 ```
+
+The published v1.0 tables are frozen under taxonomy 2.9.0, so these examples pass `taxonomy_version="2.9.0"`; v1.1.0
+tables will carry a `taxonomy_version` column written at build, which `remap_row` reads from the row.
 
 In a script, download the config or one source as described under [Published datasets](#published-datasets) and pass its
 rows to `remap_row` the same way:
@@ -157,7 +162,7 @@ from datasets import load_dataset
 from marinedata import labels
 
 ds = load_dataset("reefsupport/marine-data", "scene-masks", split="train")
-row = labels.remap_row(ds[0], "scene")
+row = labels.remap_row(ds[0], "scene", taxonomy_version="2.9.0")
 ```
 
 ```python
@@ -170,7 +175,7 @@ ds = load_dataset(
     split="train",
     data_files={"train": "data/coral-masks/train-reef-support-seaview-labels-*.parquet"},
 )
-row = labels.remap_row(ds[0], "benthic-coarse")
+row = labels.remap_row(ds[0], "benthic-coarse", taxonomy_version="2.9.0")
 ```
 
 The other configs use the `scene` scheme. `scene-masks` rows work with `remap_row` as above:
@@ -180,7 +185,7 @@ from datasets import load_dataset
 from marinedata import labels
 
 stream = load_dataset("reefsupport/marine-data", "scene-masks", split="train", streaming=True)
-row = labels.remap_row(next(iter(stream)), "scene")
+row = labels.remap_row(next(iter(stream)), "scene", taxonomy_version="2.9.0")
 names = labels.class_names("scene")
 present = sorted({int(v) for v in row["label"].ravel()} - {labels.IGNORE_INDEX})
 print(row["source"], [names[i] for i in present])

@@ -20,6 +20,7 @@ added edges alone would have been MINOR (the design's `2.10.0` is superseded).
 - **Configs affected: new v1.1 tables only.** The published v1.0 configs (`coral-masks`, `fish-boxes`, `instance-masks`,
   `scene-masks`) are frozen artifacts and are not regenerated; a rebuild of v1.0 `scene-masks` from this registry would give the
   `unknown hard substrate` class_map entry no taxon (`release build` refuses v1.0 without `--allow-frozen`).
+- **Rows follow their stamped release:** `labels.remap_row` validates a row against its stamped taxonomy release; v1.0 rows stay valid.
 
 ## 2.9.0 — 2026-10-05
 
