@@ -4,9 +4,10 @@ from __future__ import annotations
 
 import json
 from collections.abc import Mapping
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from functools import cache, lru_cache
 from pathlib import Path
+from typing import Any
 
 from ...registry import Registry
 from ...schema import Axis
@@ -23,6 +24,8 @@ class ConfigResult:
     """Fraction of native labels/pixels that had no crosswalk edge, per source_id —
     reported so a lossy crosswalk (e.g. Coralscapes' missing soft-coral row) is visible
     on the card, not just silently dropped."""
+    notes: Mapping[str, Any] = field(default_factory=dict)
+    """Bookkeeping of the v1.1.0 layer (``task_layers.v11_tables``); empty for v1 configs."""
 
     @property
     def n_images(self) -> int:

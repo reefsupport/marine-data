@@ -531,6 +531,7 @@ def _cmd_release_build(args: argparse.Namespace) -> int:
             split_v2=args.split_v2,
             tasks=args.tasks,
             v2=args.v2,
+            v11=getattr(args, "v11", False),
             tasklabels_root=args.tasklabels_root,
             digest=digest,
             flavour=flavour,
@@ -708,6 +709,14 @@ def add_release_subparser(sub: argparse._SubParsersAction) -> None:
         help="Directory holding _tasklabels/ (and _labelquality/) for --tasks v2; a path "
         "ending in _tasklabels means its parent. Default: <repo>/data, derived from the "
         "registry's location, never the cwd",
+    )
+    p_build.add_argument(
+        "--v11",
+        dest="v11",
+        action="store_true",
+        help="(PR-B, needs --tasks v2) Build the v1.1.0 task tables: points, bleaching, boxes, "
+        "semseg, instances stamped with split / taxonomy_version / fidelity / bytes_config, plus "
+        "the metadata spine; counts land in task_layers/V11_TABLES.json.",
     )
     p_build.add_argument(
         "--v2",

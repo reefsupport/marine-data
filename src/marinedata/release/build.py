@@ -53,6 +53,7 @@ def build_release(
     allow_skip: Iterable[str] = (),
     lock: ReleaseLock | None = None,
     lock_sha256: str | None = None,
+    v11: bool = False,
 ) -> ReleaseResult:
     """Build every registry task against a frozen split map and write the release.
 
@@ -60,6 +61,13 @@ def build_release(
     its shipping profiles, into ``<out_dir>/releases/<release>/<flavour>/``; RELEASE.json
     records the flavour, class counts and every excluded source. ``None`` (default) is the
     unfiltered v1 build, byte-identical to before.
+
+    ``v11`` (PR-B, needs ``tasks="v2"``): the task-layer configs become the v1.1.0 tables.
+    ``points``, ``bleaching``, ``boxes``, ``semseg`` and ``instances`` are stamped with ``split``,
+    ``taxonomy_version``, ``fidelity`` and ``bytes_config`` and typed by the WP-U1 schemas;
+    ``metadata`` is the spine (:mod:`marinedata.task_layers.v11_tables`).
+    ``task_layers/V11_TABLES.json`` records the row, image and unsplit counts. ``False``
+    (default) is byte-identical to before.
 
     ``tasks`` (WP-8c, charter D-X): ``"v1"`` (default) never touches the task-layer
     configs below and produces byte-identical output to before this parameter existed.
@@ -109,6 +117,10 @@ def build_release(
         split_v2 = True
         tasks = "v2"
     tasks_mode = tasks
+    if v11 and tasks_mode != "v2":
+        raise ValueError(
+            "v11 builds the v1.1.0 task tables from the task-layer configs: needs tasks='v2'"
+        )
     split_map_path = Path(split_map)
     if load_split_map(split_map_path) is None:
         raise ValueError(
@@ -340,8 +352,25 @@ def build_release(
 
         # INT-core3c: never the cwd — explicit root, else derived from the registry.
         base_dir = resolve_tasklabels_root(registry, tasklabels_root)
-        results = build_all_configs(registry, base_dir, flavour)
-        write_configs(results, release_root / "task_layers")
+        v11_inputs = None
+        if v11:
+            from ..task_layers.v11_tables import inputs_from_build
+
+            v11_inputs = inputs_from_build(
+                taxonomy_version=taxonomy_stamp.get("taxonomy_version"),
+                roots=admitted_roots,
+                manifests=tasks,
+                split_map=load_split_map(split_map_path),
+                dedup_groups=dedup_v2_groups,
+            )
+        results = build_all_configs(registry, base_dir, flavour, v11=v11_inputs)
+        if v11_inputs is None:
+            write_configs(results, release_root / "task_layers")
+        else:
+            from ..task_layers.v11_tables import v11_schemas, write_v11_report
+
+            write_configs(results, release_root / "task_layers", v11_schemas(results))
+            write_v11_report(results, release_root / "task_layers")
         task_layer_configs = {config_id: result.n_images for config_id, result in results.items()}
 
     return ReleaseResult(
