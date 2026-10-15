@@ -214,11 +214,11 @@
 | `soneva-corals` | wildflow soneva-corals | open | cc-by-4.0 | 22,422 | — | unversioned | – | – |
 | `squid` | SQUID (Stereo Quantitative Underwater Image Dataset) | restricted-nc | CC-BY-NC-SA-4.0 | 57 | depth-map | 2019 | – | – |
 | `squidle` | squidle | unknown | PER-SOURCE-VARIES | 11,398,834 | — | unversioned | – | – |
-| `sss-mine-detection` | sss mine detection | open | CC-BY-4.0 | 1,170 | — | 2 | ✓ | – |
+| `sss-mine-detection` | sss mine detection | open | CC-BY-4.0 | 1,170 | bbox | 2 | ✓ | – |
 | `sss-ssl-sediments` | sss ssl sediments | unknown | CC-BY-4.0 | — | — | unversioned | – | – |
 | `subpipe` | SubPipe pipeline inspection | open | cc-by-4.0 | — | — | unversioned | – | – |
 | `suim` | SUIM (Semantic Segmentation of Underwater Imagery) | open | MIT | 1,598 | dense-mask | 2020 | ✓ | `scene-masks` |
-| `swdd-sss-wall` | swdd sss wall | open | CC-BY-4.0 | 10,771 | — | record-13692547 | ✓ | – |
+| `swdd-sss-wall` | swdd sss wall | open | CC-BY-4.0 | 10,771 | bbox | record-13692547 | ✓ | – |
 | `sweet-corals` | wildflow/sweet-corals | open | CC-BY-4.0 | 90,289 | camera-pose, point-cloud-label | 2025 | – | – |
 | `syke-ifcb-uto-2021` | syke ifcb uto 2021 | unknown | CC-BY-4.0 | 151,235 | — | unversioned | – | – |
 | `synthetic-seabed-debris` | synthetic seabed debris | restricted-nc | CC-BY-NC-4.0 | 4,830 | — | 1.0.0 | ✓ | – |

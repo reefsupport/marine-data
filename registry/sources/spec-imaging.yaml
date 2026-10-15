@@ -480,7 +480,12 @@ sources:
       size_bytes: 218683403
     modalities: [image]
     capabilities: [general-pretraining]
-    loader: { layout: staged-tree }
+    annotations:
+      - kind: bbox
+        classes: 2
+        supervises: []
+        notes: "Side-scan sonar mine-like object boxes (ingest spec label_type: YOLO boxes). Class ids 0 and 1, names not staged; the sss-mine-detection crosswalk maps both to NT_UNKNOWN (rs-taxa-v1). Box count not measured."
+    loader: { layout: staged-tree, schema_id: dataset-native, crosswalk_id: sss-mine-detection }
     n_images: 1170
     n_images_method: "ingest-json"
     coverage: { regions: [unknown] }
@@ -551,7 +556,12 @@ sources:
       size_bytes: 5249804498
     modalities: [image]
     capabilities: [general-pretraining]
-    loader: { layout: staged-tree }
+    annotations:
+      - kind: bbox
+        classes: 1
+        supervises: []
+        notes: "Side-scan sonar boxes of walls and structures (ingest spec label_type: YOLO txt + json). One class, id 0.0; the swdd-sss-wall crosswalk maps it to NT_WRECK (approximate: artificial structure, not a wreck). Box count not measured."
+    loader: { layout: staged-tree, schema_id: dataset-native, crosswalk_id: swdd-sss-wall }
     n_images: 10771
     n_images_method: "ingest-json"
     coverage: { regions: [unknown] }
