@@ -562,7 +562,25 @@ def main(argv: list[str] | None = None) -> int:
         help="parquet/csv/tsv with image_sha256 (or sha256), lat, lon: the mask configs carry "
         "whatever geo the metadata provides; absent = unchanged output",
     )
+    parser.add_argument(
+        "--v1-sha256",
+        type=Path,
+        default=None,
+        help="v1.1.0 builds: text file of the image sha256s the live v1.0 configs already "
+        "embed (whitespace separated); `images` never re-uploads them",
+    )
+    parser.add_argument(
+        "--v1-dir",
+        type=Path,
+        default=None,
+        help="v1.1.0 builds: a local copy of the v1.0 export; its shards are scanned for the "
+        "image_sha256 they embed (same effect as --v1-sha256)",
+    )
     args = parser.parse_args(argv)
+    from . import hf_export_v11 as _v11
+
+    if _v11.is_v11_release(args.release_dir):  # task_layers/V11_TABLES.json: the v1.1.0 export
+        return _v11.run(args)
 
     registry = Registry.load()
     release_json = args.release_dir / "RELEASE.json"

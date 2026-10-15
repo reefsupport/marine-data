@@ -282,3 +282,15 @@ def test_fetch_failure_for_admitted_source_fails_the_build(
     assert "connection reset" in err
     assert not split_map.exists()
     assert not out_dir.exists()
+
+
+def test_missing_split_map_under_v11_points_at_split_map_inherit(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
+    split_map = tmp_path / "SPLIT_MAP.json"
+    code = _run(monkeypatch, tmp_path, split_map, ["--v11"])
+    assert code != 0
+    assert not split_map.exists()
+    err = capsys.readouterr().err
+    assert "marinedata release split-map --inherit --lock <lock> --out <SPLIT_MAP_FILE>" in err
+    assert "--generate-split-map" not in err
