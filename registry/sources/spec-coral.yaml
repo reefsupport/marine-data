@@ -281,6 +281,7 @@ sources:
     citation: "NMFS-OSI/NOAA-PIFSC-ESD-ESA-CORAL-ICRA-Dataset (HF)"
     notes: "Folded from registry/ingest-specs/noaa-pifsc-esa-coral-icra.yaml on 2026-10-08 (P1.2). Spec license string, verbatim: 'other (HF card)'. Domain, modalities and capabilities are keyword inferences from the spec text. P1.2b (2026-10-08) restored the class to open: the LIC audit (2026-10-05) read the upstream licence (US-GOV-PD), see licence_evidence. Caveat (audit): confirm no third-party imagery is mixed in."
     tags: [spec-folded]
+    release_skip_reason: "deferred to v1.2: not in the v1.1.0 fetch list (vm-build-plan 4.3, md-design 2)"
     superseded_by: noaa-coral-icra
     checksums:
       version: "rev-b5e722f7c11e"

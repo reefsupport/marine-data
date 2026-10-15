@@ -41,6 +41,7 @@ from .release_lock import (
     write_lock,
 )
 from .release_publish import add_publish_parser, is_frozen
+from .release_scope import scope_problem
 from .splitmap import load_split_map
 from .strata import DEFAULT_MIN_GROUPS
 
@@ -78,15 +79,11 @@ def _unfetchable_reason(
 ) -> str | None:
     """Why ``source`` is not an admitted pinned staged tree for this build (``None``: it is).
 
-    The three filters :func:`_resolve_roots` applies before it fetches, in their order; the
-    ``--lock`` pre-check reads the same verdict, so the two can never disagree."""
-    if not evaluate(source, prof).allowed:
-        return f"not admitted under profile {prof.id!r}"
-    if flavour is not None and not ships_in(registry, source.id, flavour):
-        return f"does not ship in flavour {flavour!r}"  # never fetch another flavour's bytes
-    if not _is_pinned_staged_tree(source):
-        return "no pinned staged tree (needs checksums.root_digest and a staged-tree loader)"
-    return None
+    The filters :func:`_resolve_roots` applies before it fetches, in their order: the release
+    scope of :mod:`.release_scope` (admitted, ships in the flavour, no registry
+    ``release_skip_reason``, a pinned staged tree). ``release lock`` and the lock check read the
+    same predicate, so the three can never disagree and a skipped tree is never fetched."""
+    return scope_problem(registry, prof, source, flavour, rooted=_is_pinned_staged_tree(source))
 
 
 def _locked_source_problems(
@@ -320,7 +317,11 @@ def _cmd_release_lock(args: argparse.Namespace) -> int:
         print(f"release lock: {exc}", file=sys.stderr)
         return 1
     out = write_lock(lock, args.out)
-    print(f"release lock: {len(lock.sources)} source(s) -> {out} (sha256 {lock_sha256(out)})")
+    kept_out = f", {len(lock.excluded)} left out by the registry" if lock.excluded else ""
+    print(
+        f"release lock: {len(lock.sources)} source(s){kept_out} -> {out} "
+        f"(sha256 {lock_sha256(out)})"
+    )
     return 0
 
 

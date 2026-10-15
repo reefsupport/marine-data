@@ -187,6 +187,7 @@ sources:
     size_bytes: 327561171
   n_images: 4988
   n_images_method: "ingest-json"
+  release_skip_reason: "deferred to v1.2: not in the v1.1.0 fetch list (vm-build-plan 4.3, md-design 2)"
 - id: luderick-seagrass
   domain: seagrass
   release_skip_reason: "no-staged-images: registry lists imagery, nothing staged under sources/ in rs-storage-open (U7/queue follow-up)"

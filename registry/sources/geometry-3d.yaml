@@ -216,5 +216,6 @@ sources:
         - "Monocular depth underwater is not metric without an in-scene scale reference. Treat as a relative prior only."
     loader: { layout: staged-tree }
     tags: [synthetic, depth, permissive]
+    release_skip_reason: "deferred to v1.2: not in the v1.1.0 fetch list (vm-build-plan 4.3, md-design 2)"
     n_images_upstream: 3200
     n_images_note: "measured 3600 in the staged tree (ingest-json); the registry held 3200 before 2026-10-08 (card or paper figure, not re-verified)"

@@ -651,6 +651,7 @@ sources:
         `sources/coralvqa/rev-3da50a4429e4/` (8,688 jpg + 3,116 png under `images/`, `labels/files/*.jsonl`,
         metadata.parquet); layout not re-verified.
     tags: [vqa, language]
+    release_skip_reason: "deferred to v1.2: not in the v1.1.0 fetch list (vm-build-plan 4.3, md-design 2)"
 
   - id: noaa-pifsc-bleaching
     default_platform: unknown
@@ -958,6 +959,7 @@ sources:
       (Columnar, Corymbose, Arborescent) have no node on the canonical `form` axis, so a
       form crosswalk cannot be authored honestly without extending rs-benthic-v1 first.
     tags: [crosswalk, noncommercial]
+    release_skip_reason: "deferred to v1.2: MERMAID is a v1.2 source (md-design, vm-build-plan 4.3); not in the v1.1.0 fetch list"
 
   - id: marineinst20m
     domain: coral

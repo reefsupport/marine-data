@@ -175,6 +175,7 @@ sources:
     loader: { layout: staged-tree }
     citation: "Yelena Randall, Ori Lifschitz, Tali Treibitz. FLSea: Underwater Visual-Inertial and Stereo-Vision Forward-Looking Datasets. Authorea. DOI: 10.22541/au.175434035.54074686/v1. August 04, 2025. https://www.authorea.com/users/952772/articles/1322072-flsea-underwater-visual-inertial-and-stereo-vision-forward-looking-datasets"
     tags: [depth, benchmark, noncommercial]
+    release_skip_reason: "deferred to v1.2: not in the v1.1.0 fetch list (vm-build-plan 4.3, md-design 2)"
     n_images: 22451
     n_images_method: "ingest-json"
     checksums:

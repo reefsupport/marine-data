@@ -21,7 +21,9 @@ pinned-tree fetch). Nothing here uploads except step 9 with `--go`.
    --out rel --local-only [--local=ID=PATH ...]` (run for each flavour, same `SPLIT_MAP.json`)
    Writes `rel/releases/<id>/<flavour>/` (`tasks/*.tsv`, `RELEASE.json`). With `--lock FILE` only the
    sources the lock names are fetched, and a locked source that cannot be resolved (not admitted, no pinned
-   staged tree and no `--local` tree) fails the build, naming it, before the first fetch. A source that cannot be
+   staged tree and no `--local` tree) fails the build, naming it, before the first fetch. A pinned source the registry leaves out
+   (`release_skip_reason`, e.g. `deferred to v1.2: ...`) is never locked, demanded by the lock check or
+   fetched. A source that cannot be
    grouped (no `split_group` from the loader or the enumeration) fails the build with an error naming
    the source. A source without a crosswalk into a task's taxonomy is excluded from that task only; the
    reason is logged under `task_source_exclusions` in `RELEASE.json`. A per-row-licence source
