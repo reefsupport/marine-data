@@ -1,5 +1,27 @@
 # Taxonomy changelog
 
+## 3.0.0 — 2026-10-15
+
+MAJOR: 0 nodes added, 5 edges added, 1 edge retargeted, nothing removed or re-parented
+(`marinedata taxonomy diff 2.9.0 HEAD`: nodes added 0 / removed 0 / changed 0; edges added 5 / removed 0 / changed 1).
+MAJOR because the versioning rule in the `registry/taxonomy/taxonomy.yaml` header counts an edge retarget as breaking; the five
+added edges alone would have been MINOR (the design's `2.10.0` is superseded).
+
+- **D9 (the retarget):** Coralscapes-39 `unknown hard substrate` was `approximate` -> `RK`; it is now `unmappable` with no target.
+  It is Coralscapes' dumping ground: on non-Red-Sea imagery it absorbs octocorals the schema cannot name, so no single node is
+  honest. Its pixels leave the class space (255 in training views). Coralscapes now sits below the 95 % mapped floor (91.7 % of
+  22,669 annotations; the other 38 classes map), so `coverage_exceptions.coralscapes` records why.
+- **Bridges (design section 3.1, 5 edges, all exact subtree roots on one AphiaID, no new nodes):** new crosswalks
+  `rs-taxa-to-rs-benthic` (Scleractinia `A1363` -> `HC`, Octocorallia `A1341` -> `SC`, Actinopterygii `A10194` -> `FISH`) and
+  `rs-taxa-to-rs-fauna` (Actinopterygii `A10194` -> `FISH_ACTINOPT`, Elasmobranchii `A10193` -> `FISH_ELASMO`). A descendant of a
+  root coarsens to it. The `usis-uiis` `fish` edge already pointed at `A146419` (the smallest accepted clade; Pisces is unaccepted
+  in WoRMS), so it is left as it is.
+- **Fidelity:** the 26 `coralscapes-39` edges that relied on the default now say `fidelity: exact`; no value changed.
+- **Configs affected: new v1.1 tables only.** The published v1.0 configs (`coral-masks`, `fish-boxes`, `instance-masks`,
+  `scene-masks`) are frozen artifacts and are not regenerated; a rebuild of v1.0 `scene-masks` from this registry would give the
+  `unknown hard substrate` class_map entry no taxon (`release build` refuses v1.0 without `--allow-frozen`).
+- **Rows follow their stamped release:** `labels.remap_row` validates a row against its stamped taxonomy release; v1.0 rows stay valid.
+
 ## 2.9.0 — 2026-10-05
 
 MINOR: 0 nodes and 6 edges added, nothing removed, re-parented or retargeted

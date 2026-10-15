@@ -204,7 +204,7 @@
 | `seatizen-atlas` | Seatizen Atlas | open | CC-BY-4.0 | 1,600,000 | instance-mask | 2024 | – | – |
 | `seattle-aquarium` | seattle aquarium | restricted-nc | CC-BY-NC-4.0 | 6,522 | — | rev-78701c4efe73 | ✓ | – |
 | `seaturtleid2022` | seaturtleid2022 | unknown | NO-LICENCE-STATED | 8,729 | — | rev-91cd6c1126c7 | ✓ | – |
-| `seaview-survey-imagery` | SEAVIEW raw survey imagery (UQ eSpace) | open | CC-BY-3.0 | 11,870 | none | 2026-10-06 | ✓ | – |
+| `seaview-survey-imagery` | SEAVIEW raw survey imagery (UQ eSpace) | open | CC-BY-3.0 | 11,870 | point-label | 2026-10-06 | ✓ | – |
 | `sfishtrack` | sfishtrack | unknown | CC-BY-4.0 | 24,115 | — | unversioned | – | – |
 | `smartbay` | SmartBay marine types OD | open | cc-by-4.0 | — | — | unversioned | – | – |
 | `so268-ofos-analysis-ready` | so268 ofos analysis ready | open | CC-BY-4.0 | 40,476 | — | unversioned | – | – |
@@ -214,14 +214,14 @@
 | `soneva-corals` | wildflow soneva-corals | open | cc-by-4.0 | 22,422 | — | unversioned | – | – |
 | `squid` | SQUID (Stereo Quantitative Underwater Image Dataset) | restricted-nc | CC-BY-NC-SA-4.0 | 57 | depth-map | 2019 | – | – |
 | `squidle` | squidle | unknown | PER-SOURCE-VARIES | 11,398,834 | — | unversioned | – | – |
-| `sss-mine-detection` | sss mine detection | open | CC-BY-4.0 | 1,170 | — | 2 | ✓ | – |
+| `sss-mine-detection` | sss mine detection | open | CC-BY-4.0 | 1,170 | bbox | 2 | ✓ | – |
 | `sss-ssl-sediments` | sss ssl sediments | unknown | CC-BY-4.0 | — | — | unversioned | – | – |
 | `subpipe` | SubPipe pipeline inspection | open | cc-by-4.0 | — | — | unversioned | – | – |
 | `suim` | SUIM (Semantic Segmentation of Underwater Imagery) | open | MIT | 1,598 | dense-mask | 2020 | ✓ | `scene-masks` |
-| `swdd-sss-wall` | swdd sss wall | open | CC-BY-4.0 | 10,771 | — | record-13692547 | ✓ | – |
+| `swdd-sss-wall` | swdd sss wall | open | CC-BY-4.0 | 10,771 | bbox | record-13692547 | ✓ | – |
 | `sweet-corals` | wildflow/sweet-corals | open | CC-BY-4.0 | 90,289 | camera-pose, point-cloud-label | 2025 | – | – |
 | `syke-ifcb-uto-2021` | syke ifcb uto 2021 | unknown | CC-BY-4.0 | 151,235 | — | unversioned | – | – |
-| `synthetic-seabed-debris` | synthetic seabed debris | restricted-nc | CC-BY-NC-4.0 | 4,830 | — | 1.0.0 | ✓ | – |
+| `synthetic-seabed-debris` | synthetic seabed debris | restricted-nc | CC-BY-NC-4.0 | 4,830 | bbox | 1.0.0 | ✓ | – |
 | `tascpc` | Tasmania Coral Point Count | internal-only | unknown | 1,300 | — | unversioned | – | – |
 | `trash-icra19` | trash icra19 | unknown | CC-BY-4.0 | — | — | unversioned | – | – |
 | `trashcan` | trashcan | unknown | CC-BY-4.0 | — | — | unversioned | – | – |

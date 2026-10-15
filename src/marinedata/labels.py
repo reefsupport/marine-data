@@ -31,6 +31,11 @@ Options (``exclude_conditions`` is validated, typos raise):
 conditions to 255. ``None`` (the default) is the scheme default; any explicit value, ``()``
 included, replaces it. ``ignore=("sand", "RK")`` sends extra native labels or taxon nodes (with
 their subtree) to 255.
+
+``remap_row`` checks a row's ``class_map`` against the taxonomy release the row was built under:
+the row's own ``taxonomy_version`` stamp, else the ``taxonomy_version=`` argument (for a table that
+predates the stamp, such as the frozen v1.0 tables, built under ``"2.9.0"``), else the current
+release. A frozen row stays valid under its release; only new tables follow the current one.
 """
 
 from __future__ import annotations
@@ -46,6 +51,7 @@ import numpy as np
 from . import label_schemes as _ls
 
 IGNORE_INDEX = _ls.IGNORE
+_STAMP_FIELD = "taxonomy_version"
 
 
 def schemes() -> tuple[str, ...]:
@@ -164,11 +170,28 @@ def _class_map(row: Mapping[str, Any]) -> list[Mapping[str, Any]]:
     return json.loads(raw) if isinstance(raw, str) else list(raw)
 
 
+def _stamp(row: Mapping[str, Any], default: str | None) -> str | None:
+    """The taxonomy release a row was built under: its own stamp, else the caller's, else none."""
+    raw = row.get(_STAMP_FIELD)
+    raw = default if raw is None or raw == "" else raw
+    return None if raw is None else str(raw)
+
+
 def _validate_class_map(
-    entries: list[Mapping[str, Any]], pixels: np.ndarray, source: str, scheme: str
+    entries: list[Mapping[str, Any]],
+    pixels: np.ndarray,
+    source: str,
+    scheme: str,
+    taxonomy_version: str | None = None,
 ) -> None:
-    """Raise unless the row's ``class_map`` agrees with the registry tables for this source."""
+    """Raise unless the row's ``class_map`` agrees with the registry tables for this source.
+
+    ``taxonomy_version`` is the release the row was built under (``None``: the current one); the
+    published ``coarse`` is rebuilt from that release's crosswalk edges.
+    """
     src = _ls.source_spec(source, scheme)
+    release = _ls.release_for(taxonomy_version)
+    where = "the registry" if release is None else f"taxonomy {release.version}"
     for entry in entries:
         expected = src.ids.get(int(entry["id"]))
         if expected != entry["label_native"]:
@@ -179,11 +202,11 @@ def _validate_class_map(
         if scheme == "benthic-coarse":
             # the registry's own answer: scheme overrides and default exclusions never raise here
             published = entry.get("coarse")
-            derived = _ls.registry_class(source, entry["label_native"], scheme)
+            derived = _ls.registry_class(source, entry["label_native"], scheme, release=release)
             if published != derived:
                 raise ValueError(
                     f"{source}: class_map coarse {published!r} for {entry['label_native']!r} "
-                    f"disagrees with the registry ({derived!r})"
+                    f"disagrees with {where} ({derived!r})"
                 )
     present = {int(v) for v in np.unique(pixels)} - {_ls.IGNORE}
     unknown = present - {int(e["id"]) for e in entries}
@@ -197,6 +220,7 @@ def remap_row(
     *,
     exclude_conditions: Sequence[str] | None = None,
     ignore: Iterable[str] = (),
+    taxonomy_version: str | None = None,
 ) -> dict[str, Any]:
     """Copy of an HF mask row with ``label`` added: the mask remapped to ``scheme`` (HxW uint8).
 
@@ -204,12 +228,20 @@ def remap_row(
     registry tables (and, for benthic-coarse, its published ``coarse``): a mismatch raises. The
     check compares with the registry, not with the scheme output, so the scheme's overrides and
     default exclusions never raise.
+
+    The registry is read at the taxonomy release the row was built under: the row's own
+    ``taxonomy_version`` stamp, else ``taxonomy_version`` (for a table that predates the stamp, e.g.
+    the frozen v1.0 tables: ``"2.9.0"``), else the current release (fail closed). A release before
+    the current one is rebuilt from ``registry/taxonomy/releases/<version>.json``, so a frozen row
+    stays valid; a row stamped with the current release must follow it. A stamp that is malformed,
+    newer than the registry or without a release file raises. Only the check depends on the
+    release; the remap itself reads the current tables.
     """
     source = row["source"]
     pixels = _decode_mask(row["mask"])
     if pixels.ndim == 3:
         pixels = pixels[..., 0]
-    _validate_class_map(_class_map(row), pixels, source, scheme)
+    _validate_class_map(_class_map(row), pixels, source, scheme, _stamp(row, taxonomy_version))
     label = remap_mask(pixels, source, scheme, exclude_conditions=exclude_conditions, ignore=ignore)
     return {**row, "label": label}
 

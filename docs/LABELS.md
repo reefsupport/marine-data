@@ -37,8 +37,10 @@ labels.map_label("uiis10k", "reptiles", "scene")  # 6, the id of FV; None means 
 labels.supervised_classes("reef-support-benthic-own", "benthic-coarse")  # ('HC', 'SC')
 ```
 
-For a row of the published `coral-masks` or `scene-masks` configs, `labels.remap_row(row, scheme)` returns the row with a
-`label` array added. It also checks the row's `class_map` against the registry and raises on a mismatch. See the
+For a row of the published `coral-masks` or `scene-masks` configs, `labels.remap_row(row, scheme, taxonomy_version="2.9.0")`
+returns the row with a `label` array added. It also checks the row's `class_map` against the registry and raises on a
+mismatch. The published v1.0 tables are frozen under taxonomy 2.9.0, so they are checked against that release; a row with
+no `taxonomy_version` of its own and no argument is checked against the current release. See the
 [README](../README.md#label-mapping) for a complete example.
 
 ### Class lists
@@ -226,11 +228,11 @@ still follows the crosswalks. `Crosswalk alone` below is what the registry gives
 
 | Scheme | Source | Native label | Crosswalk alone | Scheme |
 |---|---|---|---|---|
-| `benthic-coarse` | `coralscapes` | `unknown hard substrate` | `ABIOTIC` | ignored (255) |
+| `benthic-coarse` | `coralscapes` | `unknown hard substrate` | ignored (255) | ignored (255) |
 | `benthic-coarse` | `coralscapes` | `sponge` | ignored (255) | `OTHER_FAUNA` |
 | `benthic-coarse` | `coralscapes` | `anemone` | ignored (255) | `OTHER_FAUNA` |
 | `benthic-coarse` | `coralscapes` | `algae covered substrate` | ignored (255) | `ALGAE` |
-| `coral-binary` | `coralscapes` | `unknown hard substrate` | `NOT_CORAL` | ignored (255) |
+| `coral-binary` | `coralscapes` | `unknown hard substrate` | ignored (255) | ignored (255) |
 | `coral-binary` | `coralseg-ucsd-mosaics` | `Other` | ignored (255) | `NOT_CORAL` |
 | `coral-binary` | `coralscop-masks-rs` | `coral` | ignored (255) | `CORAL` |
 
