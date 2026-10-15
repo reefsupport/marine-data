@@ -1704,7 +1704,6 @@ sources:
     expect_site: none
     expect_depth: none
     domain: coral
-    release_skip_reason: "no-staged-images: registry lists imagery, nothing staged under sources/ in rs-storage-open (U7/queue follow-up)"
     access_class: open
     licence_evidence: "legacy verification record (licence-file, 2026-09-24): 2026-09-19 boto3 bucket listing (v4s-open-listing.tsv): 12,373 files / 19,480,434,205 bytes under benthic_datasets/point_labels/SEAVIEW/, excluding the pickle file. RESOLVED 2026-09-24 (R1 external research, high confidence): researchdata.edu.au record https://researchdata.edu.au/seaview-survey-photo-classification-dataset/3369315 states 'Creative Commons Attribution 3.0' for this UQ eSpace UQ_734799 record. (legacy: history note)"
     name: SEAVIEW raw survey imagery (UQ eSpace)
@@ -1746,9 +1745,12 @@ sources:
     n_images_method: "ingest-json"
     n_files: 12376
     annotations:
-      - kind: none
-        supervises: []
-        notes: "Raw survey imagery; labelled_data/labelled_segmentation_data.pickle excluded (unsafe format, slated for deletion)."
+      - kind: point-label
+        count: 859870
+        schema_id: dataset-native
+        classes: 181
+        supervises: [taxon]
+        notes: "Per-region point sets labels/points/tabular-data/annotations_<REGION>.csv (9 regions, 181 codes, 859,870 points), staged 2026-10-06; the seaview-point-labels crosswalk maps the codes onto rs-benthic-v1 (taxon axis). Count and classes from registry/crosswalks/seaview-point-labels.yaml; per-code counts in registry/taxonomy/vocab/seaview-point-labels.tsv (sum 859,870). labelled_data/labelled_segmentation_data.pickle stays excluded (unsafe format, slated for deletion)."
     coverage:
       regions: [unknown]
     homepage: https://espace.library.uq.edu.au/view/UQ:734799
@@ -1790,14 +1792,18 @@ sources:
       staged LICENSE, INGEST.json and the labels LICENSE say CC-BY-3.0-AU (the labels LICENSE
       cites 'UQ eSpace UQ_734799 (CC-BY-3.0-AU)'), the registry says CC-BY-3.0; the eSpace
       page answered HTTP 403 to the one scripted GET and DataCite has no record of the DOI, so
-      neither value is confirmed (both are attribution-only T1). The annotations kind: none
-      above is stale: the tree carries point CSVs.
+      neither value is confirmed (both are attribution-only T1). Annotations refreshed 2026-10-15: the
+      staged point CSVs are declared as `kind: point-label` (859,870 points, 181 codes, 9 regions) and
+      read through the `seaview-point-labels` crosswalk, so the earlier `kind: none` and "images-only"
+      statements above are superseded for the point CSVs (the excluded pickle stays gone).
     split_group:
       pattern: '^(.{5})'
       match_field: stem
       template: "seaview/{group}"
     loader:
       layout: staged-tree
+      schema_id: dataset-native
+      crosswalk_id: seaview-point-labels
       verified_note: >
         RE-POINTED 2026-10-06 (RB-1/RB-3): `images/<region>/` + `labels/points/<region>/annotations_*.csv`;
         RB-1 read the staged `metadata.parquet` back through the StagedTreeLoader: 11,870 rows = the expected

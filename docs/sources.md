@@ -204,7 +204,7 @@
 | `seatizen-atlas` | Seatizen Atlas | open | CC-BY-4.0 | 1,600,000 | instance-mask | 2024 | – | – |
 | `seattle-aquarium` | seattle aquarium | restricted-nc | CC-BY-NC-4.0 | 6,522 | — | rev-78701c4efe73 | ✓ | – |
 | `seaturtleid2022` | seaturtleid2022 | unknown | NO-LICENCE-STATED | 8,729 | — | rev-91cd6c1126c7 | ✓ | – |
-| `seaview-survey-imagery` | SEAVIEW raw survey imagery (UQ eSpace) | open | CC-BY-3.0 | 11,870 | none | 2026-10-06 | ✓ | – |
+| `seaview-survey-imagery` | SEAVIEW raw survey imagery (UQ eSpace) | open | CC-BY-3.0 | 11,870 | point-label | 2026-10-06 | ✓ | – |
 | `sfishtrack` | sfishtrack | unknown | CC-BY-4.0 | 24,115 | — | unversioned | – | – |
 | `smartbay` | SmartBay marine types OD | open | cc-by-4.0 | — | — | unversioned | – | – |
 | `so268-ofos-analysis-ready` | so268 ofos analysis ready | open | CC-BY-4.0 | 40,476 | — | unversioned | – | – |
