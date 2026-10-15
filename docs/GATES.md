@@ -100,3 +100,23 @@ like any other extra gate. `GATES.json` is one dict keyed by gate name plus `sum
 ## Dedup gate and EXIF-transposed rows
 
 `image_sha256` is the identity of the upstream bytes. A row with `exif_transposed` true stores bytes re-encoded after the EXIF rotation, so the dedup gate does not compare their sha256 with `image_sha256`; it requires that the bytes decode and that their width/height equal the row's (`size_mismatch`). Rows with `exif_transposed` false keep the `sha256_mismatch` check.
+
+## v1.1.0 gates (library level)
+
+`publish_verdict` also requires `V11_REQUIRED` for a v1.1.0 release (`task_layers/V11_TABLES.json` or
+`data/images` in the release directory, or any of these in GATES.json), next to `masks`, `croissant`
+and `privacy`. A gate that is absent or only `skipped` blocks `release publish`; a `--rehearsal` run
+can only skip, never pass.
+
+| Gate | Module | Fails when |
+|---|---|---|
+| G1 `join` | `gates/join.py` | a table row has no `metadata` row; an open row joins a non-open image |
+| G2 `frozen` | `gates/frozen.py` | a v1.0 file other than README.md differs by one byte; a v1.0 `configs:` entry changes |
+| G3 `leak` | `gates/leak.py` | an nc id, the nc repo name or a private bucket appears in the open set (never echoed) |
+| G4 `bytes_once` | `gates/bytes_once.py` | image bytes twice, a v1.0 image re-uploaded, a bytes column outside `images` |
+| G5 `masks` | `gates/masks_palette.py` | a `semseg` mask is not mode P with its declared palette |
+| G6 `splits_v11` | `gates/splits_v11.py` | unsplit / `--allow-unsplit` build, v1.0 reassignment, straddling group, OOD guards, +/-5 pt ratio |
+| G7 `decon` | `gates/decon_gate.py` | a release sha256 is in a hidden-test or benchmark manifest; either input is missing |
+
+Not wired yet: the `release gate` CLI entry for these, G9 `labelmap`, and the G8 privacy pass scoped
+to `images`. The pinned YuNet model (`gates/yunet_model.py`) is baked into the image by the Dockerfile.

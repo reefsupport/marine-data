@@ -155,6 +155,22 @@ FAIL_CLOSED = ("privacy", "croissant")
 older ``release gate --all`` cannot weaken it: a gate absent from the file is a failure."""
 
 
+V11_REQUIRED = ("join", "frozen", "leak", "bytes_once", "splits_v11", "decon")
+"""Gates a v1.1.0 release (``task_layers/V11_TABLES.json`` or ``data/images`` in the directory, or
+any of these in GATES.json) must pass on top of :data:`FAIL_CLOSED`: G1 join, G2 frozen v1.0, G3
+leak, G4 bytes once, G6 splits, G7 decontamination (G5 is ``masks``, G8 ``croissant`` +
+``privacy``). Absent or skipped is a problem, so a release that never ran them cannot publish."""
+
+
+def _is_v11(directory: Path, entries: Mapping) -> bool:
+    root = Path(directory)
+    return (
+        any(name in entries for name in V11_REQUIRED)
+        or (root / "task_layers" / "V11_TABLES.json").is_file()
+        or (root / "data" / "images").is_dir()
+    )
+
+
 def publish_verdict(directory: Path) -> tuple[tuple[str, ...], list[str]]:
     """``(required gates, problems)`` for ``<directory>/GATES.json``; no problems = publishable.
     ``release publish`` asks this and nothing else, and it is fail-closed: the required set is
@@ -179,7 +195,8 @@ def publish_verdict(directory: Path) -> tuple[tuple[str, ...], list[str]]:
     listed = summary.get("required_for_publish") if isinstance(summary, dict) else None
     base = [str(n) for n in listed] if isinstance(listed, list) else list(REQUIRED)
     flagged = [n for n, e in entries.items() if isinstance(e, dict) and e.get("required") is True]
-    required = tuple(dict.fromkeys([*REQUIRED, *FAIL_CLOSED, *base, *flagged]))
+    v11 = V11_REQUIRED if _is_v11(directory, entries) else ()
+    required = tuple(dict.fromkeys([*REQUIRED, *FAIL_CLOSED, *v11, *base, *flagged]))
     problems = []
     for name in required:
         entry = entries.get(name)
@@ -200,6 +217,7 @@ __all__ = [
     "MAX_FAILURES",
     "REQUIRED",
     "SUMMARY_KEY",
+    "V11_REQUIRED",
     "GateResult",
     "finish",
     "gate_status",
