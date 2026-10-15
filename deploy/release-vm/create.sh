@@ -9,9 +9,11 @@
 # compromised), the hcloud CLI, --ssh-key, and a typed confirmation (or --yes). No bucket or Hub
 # secret passes through here; the S3 secrets file is copied to the VM by hand (README step 4).
 #
-# --target pve renders the Proxmox build VM instead: out/vm-900.sh (the qm sequence, run by the
-# owner as root on the host) and out/marinedata-build.yaml (the cloud-init vendor snippet, settings
-# only). It contacts nothing, refuses --run and a --ref that is not a full 40-hex commit sha.
+# --target pve renders the Proxmox build VM instead: out/vm-VMID.sh (the qm sequence, run by the
+# owner as root on the host) and out/NAME.yaml (the cloud-init vendor snippet, settings only). It
+# contacts nothing, refuses --run and a --ref that is not a full 40-hex commit sha. The operator's
+# own host, user, VM id, addresses and key comments are not in this file: they come from flags,
+# PVE_* environment variables or --env-file (pve.env.example), and an unset one is refused.
 
 set -Eeuo pipefail
 
@@ -44,13 +46,23 @@ usage: create.sh --release-id ID --flavour open|nc --ref SHA [options]
   --target hetzner|pve   hetzner (default): the hcloud commands. pve: render the Proxmox files
                          (out/vm-VMID.sh and out/NAME.yaml, never run; --ref must be 40 hex)
 
-Proxmox options (--target pve only; --name defaults to marinedata-build, --out-dir to out/ beside create.sh):
-  --vmid N               default 900          --ip CIDR         default 10.0.0.90/24
-  --gw ADDR              default 10.0.0.2     --bridge B        default vmbr1
-  --storage S            default local-lvm    --cores N         default 6
-  --memory MB            default 16384        --data-gb GB      default 100
-  --image local:iso/F    default local:iso/debian-12-genericcloud-amd64.qcow2
-  --keys-file PATH       default /root/vm900-keys.pub (on the host)
+Proxmox options (--target pve only). Each value is the flag, else the environment variable of the
+same name, else the line in --env-file PATH (KEY=VALUE lines, read and never sourced; copy
+pve.env.example to the git-ignored pve.env). The first group names your own host, user, VM and keys:
+it has no default and create.sh refuses to render while one is unset.
+  --host H               PVE_HOST                 Proxmox host: the ssh jump host in the printed commands
+  --ci-user U            PVE_CI_USER              cloud-init login user of the VM
+  --sshkeys-from-vmid N  PVE_SSHKEYS_FROM_VMID    the VM whose cloud-init sshkeys the new VM gets
+  --key-comments "A, B"  PVE_KEY_COMMENTS         the comments those keys must carry (checked by eye)
+  --ip CIDR              PVE_STATIC_IP            address of the VM, a.b.c.d/nn
+  --gw ADDR              PVE_GATEWAY              --bridge B    PVE_BRIDGE    --vmid N    PVE_VMID
+  --env-file PATH
+With a generic default:
+  --name NAME            PVE_NAME         marinedata-build     --nameserver ADDR  PVE_NAMESERVER  1.1.1.1
+  --storage S            PVE_STORAGE      local-lvm            --cores N          PVE_CORES       6
+  --memory MB            PVE_MEMORY       16384                --data-gb GB       PVE_DATA_GB     100
+  --image local:iso/F    PVE_IMAGE        local:iso/debian-12-genericcloud-amd64.qcow2
+  --keys-file PATH       PVE_KEYS_FILE    /root/vm<VMID>-keys.pub (on the host)
 EOF
 }
 
@@ -58,10 +70,16 @@ RELEASE_ID="" FLAVOUR="" REF="" SSH_KEY="" NAME="" OUT_DIR=""
 LOCATION=hel1 SERVER_TYPE=cx32 VOLUME_GB=200 OS_IMAGE=ubuntu-24.04
 OPT_LOCK_FILE="" OPT_SPLIT_MAP_FILE="" OPT_REPO_URL=""
 MODE=print YES=0
-TARGET=hetzner PVE_SEEN=""
-PVE_VMID=900 PVE_IP=10.0.0.90/24 PVE_GW=10.0.0.2 PVE_BRIDGE=vmbr1 PVE_STORAGE=local-lvm
-PVE_IMAGE=local:iso/debian-12-genericcloud-amd64.qcow2 PVE_CORES=6 PVE_MEMORY=16384 PVE_DATA_GB=100
-PVE_KEYS=/root/vm900-keys.pub
+TARGET=hetzner PVE_SEEN="" PVE_ENV_FILE=""
+# --target pve values: a flag wins over the environment variable of the same name, which wins over
+# --env-file. PVE_REQUIRED names the operator's own host, user, VM and keys: no default exists.
+PVE_REQUIRED="PVE_HOST PVE_CI_USER PVE_SSHKEYS_FROM_VMID PVE_KEY_COMMENTS PVE_STATIC_IP PVE_GATEWAY PVE_BRIDGE PVE_VMID"
+PVE_OPTIONAL="PVE_NAME PVE_NAMESERVER PVE_STORAGE PVE_IMAGE PVE_CORES PVE_MEMORY PVE_DATA_GB PVE_KEYS_FILE"
+PVE_HOST=${PVE_HOST:-} PVE_CI_USER=${PVE_CI_USER:-} PVE_SSHKEYS_FROM_VMID=${PVE_SSHKEYS_FROM_VMID:-}
+PVE_KEY_COMMENTS=${PVE_KEY_COMMENTS:-} PVE_STATIC_IP=${PVE_STATIC_IP:-} PVE_GATEWAY=${PVE_GATEWAY:-}
+PVE_BRIDGE=${PVE_BRIDGE:-} PVE_VMID=${PVE_VMID:-} PVE_NAME=${PVE_NAME:-} PVE_NAMESERVER=${PVE_NAMESERVER:-}
+PVE_STORAGE=${PVE_STORAGE:-} PVE_IMAGE=${PVE_IMAGE:-} PVE_CORES=${PVE_CORES:-} PVE_MEMORY=${PVE_MEMORY:-}
+PVE_DATA_GB=${PVE_DATA_GB:-} PVE_KEYS_FILE=${PVE_KEYS_FILE:-}
 
 while (($#)); do
   case $1 in
@@ -85,15 +103,21 @@ while (($#)); do
     --yes) YES=1; shift ;;
     --target) TARGET=${2:?--target needs a value}; shift 2 ;;
     --vmid) PVE_SEEN="$PVE_SEEN $1"; PVE_VMID=${2:?--vmid needs a value}; shift 2 ;;
-    --ip) PVE_SEEN="$PVE_SEEN $1"; PVE_IP=${2:?--ip needs a value}; shift 2 ;;
-    --gw) PVE_SEEN="$PVE_SEEN $1"; PVE_GW=${2:?--gw needs a value}; shift 2 ;;
+    --ip) PVE_SEEN="$PVE_SEEN $1"; PVE_STATIC_IP=${2:?--ip needs a value}; shift 2 ;;
+    --gw) PVE_SEEN="$PVE_SEEN $1"; PVE_GATEWAY=${2:?--gw needs a value}; shift 2 ;;
     --bridge) PVE_SEEN="$PVE_SEEN $1"; PVE_BRIDGE=${2:?--bridge needs a value}; shift 2 ;;
     --storage) PVE_SEEN="$PVE_SEEN $1"; PVE_STORAGE=${2:?--storage needs a value}; shift 2 ;;
     --image) PVE_SEEN="$PVE_SEEN $1"; PVE_IMAGE=${2:?--image needs a value}; shift 2 ;;
     --cores) PVE_SEEN="$PVE_SEEN $1"; PVE_CORES=${2:?--cores needs a value}; shift 2 ;;
     --memory) PVE_SEEN="$PVE_SEEN $1"; PVE_MEMORY=${2:?--memory needs a value}; shift 2 ;;
     --data-gb) PVE_SEEN="$PVE_SEEN $1"; PVE_DATA_GB=${2:?--data-gb needs a value}; shift 2 ;;
-    --keys-file) PVE_SEEN="$PVE_SEEN $1"; PVE_KEYS=${2:?--keys-file needs a value}; shift 2 ;;
+    --keys-file) PVE_SEEN="$PVE_SEEN $1"; PVE_KEYS_FILE=${2:?--keys-file needs a value}; shift 2 ;;
+    --host) PVE_SEEN="$PVE_SEEN $1"; PVE_HOST=${2:?--host needs a value}; shift 2 ;;
+    --ci-user) PVE_SEEN="$PVE_SEEN $1"; PVE_CI_USER=${2:?--ci-user needs a value}; shift 2 ;;
+    --sshkeys-from-vmid) PVE_SEEN="$PVE_SEEN $1"; PVE_SSHKEYS_FROM_VMID=${2:?--sshkeys-from-vmid needs a value}; shift 2 ;;
+    --key-comments) PVE_SEEN="$PVE_SEEN $1"; PVE_KEY_COMMENTS=${2:?--key-comments needs a value}; shift 2 ;;
+    --nameserver) PVE_SEEN="$PVE_SEEN $1"; PVE_NAMESERVER=${2:?--nameserver needs a value}; shift 2 ;;
+    --env-file) PVE_SEEN="$PVE_SEEN $1"; PVE_ENV_FILE=${2:?--env-file needs a value}; shift 2 ;;
     -h | --help) usage; exit 0 ;;
     *) usage >&2; die "unknown option: $1" ;;
   esac
@@ -109,9 +133,12 @@ need() { [[ $1 =~ $2 ]] || die "$3 '$1' is not valid"; }
 
 # ---- --target pve: render the host script and the cloud-init vendor snippet; nothing is run ----
 # Both files come from the templates below, which are the build plan's vm-900.sh (section 3.2) and
-# vendor snippet (section 3.3) with the flags as @TOKENS@. The defaults reproduce them exactly.
+# vendor snippet (section 3.3) with the values as @TOKENS@. Nothing that names the operator's own
+# host, user, VM, addresses or keys lives in this file: those values come from a flag, else the
+# environment variable of the same name, else --env-file, and an unset one stops the render.
 
 PVE_DEFAULT_IMAGE=local:iso/debian-12-genericcloud-amd64.qcow2
+PVE_KNOWN_KEYS=" $PVE_REQUIRED $PVE_OPTIONAL "
 
 ipv4_ok() {
   local octets o
@@ -122,37 +149,93 @@ ipv4_ok() {
   done
 }
 
+# The flag that sets a PVE_* variable: --ci-user for PVE_CI_USER, and so on.
+pve_flag_name() {
+  case $1 in
+    PVE_STATIC_IP) printf -- '--ip' ;;
+    PVE_GATEWAY) printf -- '--gw' ;;
+    *) printf -- '--%s' "$(printf '%s' "${1#PVE_}" | tr 'A-Z_' 'a-z-')" ;;
+  esac
+}
+
+# --env-file: KEY=VALUE lines (# comments, blank lines, optional quotes around the value). The file is
+# read, never sourced, and only the PVE_* names above are accepted. A value already set by a flag or
+# by the environment wins over the file.
+pve_read_env_file() {
+  local file=$1 line key value n=0
+  local blank='^[[:space:]]*(#.*)?$' pair='^[[:space:]]*([A-Z][A-Z0-9_]*)=(.*)$' dq='^"(.*)"$' sq="^'(.*)'\$"
+  [[ -f $file && -r $file ]] || die "--env-file '$file' is not a readable file"
+  while IFS= read -r line || [[ -n $line ]]; do
+    n=$((n + 1))
+    line=${line%$'\r'}
+    if [[ $line =~ $blank ]]; then continue; fi
+    [[ $line =~ $pair ]] || die "$file:$n: expected KEY=VALUE or a # comment"
+    key=${BASH_REMATCH[1]}
+    value=${BASH_REMATCH[2]}
+    [[ $PVE_KNOWN_KEYS == *" $key "* ]] || die "$file:$n: unknown key $key (known:${PVE_KNOWN_KEYS% })"
+    if [[ $value =~ $dq || $value =~ $sq ]]; then value=${BASH_REMATCH[1]}; fi
+    if [[ -z ${!key} ]]; then printf -v "$key" '%s' "$value"; fi
+  done <"$file"
+}
+
+# Flag > environment variable > --env-file > the generic default below. The PVE_REQUIRED values name
+# the operator's own host, user, VM, addresses and keys: none has a default, and a missing one stops here.
+pve_resolve() {
+  local key missing=""
+  if [[ -n $NAME ]]; then PVE_NAME=$NAME; fi
+  if [[ -n $PVE_ENV_FILE ]]; then pve_read_env_file "$PVE_ENV_FILE"; fi
+  for key in $PVE_REQUIRED; do
+    if [[ -z ${!key} ]]; then missing="$missing $key ($(pve_flag_name "$key"))"; fi
+  done
+  [[ -z $missing ]] ||
+    die "--target pve has no value for:$missing. Pass each as its flag or environment variable, or list them in --env-file PATH (deploy/release-vm/pve.env.example). Nothing is guessed."
+  PVE_NAME=${PVE_NAME:-marinedata-build}
+  PVE_NAMESERVER=${PVE_NAMESERVER:-1.1.1.1}
+  PVE_STORAGE=${PVE_STORAGE:-local-lvm}
+  PVE_IMAGE=${PVE_IMAGE:-$PVE_DEFAULT_IMAGE}
+  PVE_CORES=${PVE_CORES:-6}
+  PVE_MEMORY=${PVE_MEMORY:-16384}
+  PVE_DATA_GB=${PVE_DATA_GB:-100}
+  PVE_KEYS_FILE=${PVE_KEYS_FILE:-/root/vm${PVE_VMID}-keys.pub}
+}
+
 pve_validate() {
   [[ $MODE != run ]] || die "--run is not supported with --target pve: the host commands are run by the owner (README, Proxmox section)"
   [[ -z $SSH_KEY && $LOCATION == hel1 && $SERVER_TYPE == cx32 && $VOLUME_GB == 200 && $OS_IMAGE == ubuntu-24.04 && $YES == 0 ]] ||
     die "--ssh-key, --location, --server-type, --volume-size, --os-image and --yes belong to --target hetzner"
   [[ $REF =~ ^[0-9a-f]{40}$ ]] ||
     die "--target pve needs --ref as a full 40-character commit sha (got '$REF'); a tag, a branch or a short sha can move"
+  pve_resolve
   [[ $REPO_URL =~ ^https://[A-Za-z0-9._/-]+$ ]] || die "--repo-url '$REPO_URL' must be a plain https URL without credentials"
   if [[ -n $OPT_LOCK_FILE ]]; then need "$LOCK_FILE" '^[A-Za-z0-9][A-Za-z0-9._/-]*$' "--lock-file"; fi
   if [[ -n $OPT_SPLIT_MAP_FILE ]]; then need "$SPLIT_MAP_FILE" '^[A-Za-z0-9][A-Za-z0-9._/-]*$' "--split-map-file"; fi
   need "$RELEASE_BUILD_ARGS" '^[A-Za-z0-9 ._/=:,+-]*$' "--build-args"
   need "$EXPORT_ARGS" '^[A-Za-z0-9 ._/=:,+-]*$' "--export-args"
-  PVE_NAME=${NAME:-marinedata-build}
-  need "$PVE_NAME" '^[a-z0-9][a-z0-9-]*$' "--name"
-  need "$PVE_VMID" '^[0-9]+$' "--vmid"
-  ((PVE_VMID >= 100)) || die "--vmid must be at least 100"
-  need "$PVE_IP" '^[0-9.]+/[0-9]+$' "--ip"
-  PVE_ADDR=${PVE_IP%/*}
-  { ipv4_ok "$PVE_ADDR" && ((10#${PVE_IP#*/} <= 32)); } || die "--ip '$PVE_IP' is not an a.b.c.d/nn address"
-  ipv4_ok "$PVE_GW" || die "--gw '$PVE_GW' is not an IPv4 address"
-  need "$PVE_BRIDGE" '^[A-Za-z0-9_]+$' "--bridge"
-  need "$PVE_STORAGE" '^[A-Za-z0-9][A-Za-z0-9._-]*$' "--storage"
+  need "$PVE_NAME" '^[a-z0-9][a-z0-9-]*$' "PVE_NAME"
+  need "$PVE_HOST" '^[A-Za-z0-9][A-Za-z0-9._-]*$' "PVE_HOST"
+  need "$PVE_CI_USER" '^[a-z_][a-z0-9_-]{0,31}$' "PVE_CI_USER"
+  need "$PVE_SSHKEYS_FROM_VMID" '^[0-9]+$' "PVE_SSHKEYS_FROM_VMID"
+  need "$PVE_KEY_COMMENTS" '^[A-Za-z0-9@._-]+(, [A-Za-z0-9@._-]+)*$' "PVE_KEY_COMMENTS (comma and space between comments)"
+  PVE_KEY_COUNT=$(printf '%s\n' "$PVE_KEY_COMMENTS" | awk -F', ' '{ print NF }')
+  need "$PVE_VMID" '^[0-9]+$' "PVE_VMID"
+  ((10#$PVE_VMID >= 100)) || die "PVE_VMID must be at least 100"
+  need "$PVE_STATIC_IP" '^[0-9.]+/[0-9]+$' "PVE_STATIC_IP"
+  PVE_ADDR=${PVE_STATIC_IP%/*}
+  { ipv4_ok "$PVE_ADDR" && ((10#${PVE_STATIC_IP#*/} <= 32)); } || die "PVE_STATIC_IP '$PVE_STATIC_IP' is not an a.b.c.d/nn address"
+  ipv4_ok "$PVE_GATEWAY" || die "PVE_GATEWAY '$PVE_GATEWAY' is not an IPv4 address"
+  ipv4_ok "$PVE_NAMESERVER" || die "PVE_NAMESERVER '$PVE_NAMESERVER' is not an IPv4 address"
+  need "$PVE_BRIDGE" '^[A-Za-z0-9_]+$' "PVE_BRIDGE"
+  need "$PVE_STORAGE" '^[A-Za-z0-9][A-Za-z0-9._-]*$' "PVE_STORAGE"
   [[ $PVE_IMAGE =~ ^local:iso/[A-Za-z0-9][A-Za-z0-9._-]*$ ]] ||
-    die "--image '$PVE_IMAGE' must be local:iso/FILE (the 'local' directory storage, /var/lib/vz)"
+    die "PVE_IMAGE '$PVE_IMAGE' must be local:iso/FILE (the 'local' directory storage, /var/lib/vz)"
   PVE_IMG_PATH=/var/lib/vz/template/iso/${PVE_IMAGE#local:iso/}
-  need "$PVE_CORES" '^[0-9]+$' "--cores"
-  ((PVE_CORES >= 1 && PVE_CORES <= 128)) || die "--cores must be between 1 and 128"
-  need "$PVE_MEMORY" '^[0-9]+$' "--memory"
-  ((PVE_MEMORY >= 1024)) || die "--memory must be at least 1024 (MB)"
-  need "$PVE_DATA_GB" '^[0-9]+$' "--data-gb"
-  ((PVE_DATA_GB >= 10)) || die "--data-gb must be at least 10 (GB)"
-  need "$PVE_KEYS" '^/[A-Za-z0-9._/-]+$' "--keys-file"
+  need "$PVE_CORES" '^[0-9]+$' "PVE_CORES"
+  ((10#$PVE_CORES >= 1 && 10#$PVE_CORES <= 128)) || die "PVE_CORES must be between 1 and 128"
+  need "$PVE_MEMORY" '^[0-9]+$' "PVE_MEMORY"
+  ((10#$PVE_MEMORY >= 1024)) || die "PVE_MEMORY must be at least 1024 (MB)"
+  need "$PVE_DATA_GB" '^[0-9]+$' "PVE_DATA_GB"
+  ((10#$PVE_DATA_GB >= 10)) || die "PVE_DATA_GB must be at least 10 (GB)"
+  need "$PVE_KEYS_FILE" '^/[A-Za-z0-9._/-]+$' "PVE_KEYS_FILE"
 }
 
 # /etc/marinedata/settings.env: settings only, no credential of any kind.
@@ -193,8 +276,8 @@ ping -c1 -W1 @IP@ >/dev/null && { echo "@IP@ answers"; exit 1; }
 ip neigh show @IP@                                   # expect nothing or FAILED
 pvesm status | grep -E '^(local|@STORAGE@) '              # both active
 stat -c %s @IMG_PATH@@IMG_NOTE@
-printf '%b\n' "$(qm config 103 | sed -n 's/^sshkeys: //p' | sed 's/%/\\x/g')" | grep -v '^$' > @KEYS@
-ssh-keygen -lf @KEYS@                       # exactly 2: root@rs-server-2, gitlab-user-20260213
+printf '%b\n' "$(qm config @SSHKEYS_VMID@ | sed -n 's/^sshkeys: //p' | sed 's/%/\\x/g')" | grep -v '^$' > @KEYS@
+ssh-keygen -lf @KEYS@                       # exactly @KEY_COUNT@: @KEY_COMMENTS@
 install -m 0644 @NAME@.yaml /var/lib/vz/snippets/@NAME@.yaml
 qm create @VMID@ --name @NAME@ \
   --description 'Disposable marine-data v1.1.0 build. Raw qm, not in OpenTofu by design. Destroy after publish.' \
@@ -206,10 +289,10 @@ qm set @VMID@ --scsi0 @STORAGE@:vm-@VMID@-disk-0,discard=on,iothread=1,ssd=1,bac
 qm resize @VMID@ scsi0 32G
 qm set @VMID@ --scsi1 @STORAGE@:@DATA_GB@,discard=on,iothread=1,ssd=1,backup=0
 qm set @VMID@ --ide2 @STORAGE@:cloudinit --boot order=scsi0
-qm set @VMID@ --ciuser rsadmin --sshkeys @KEYS@ \
-  --ipconfig0 ip=@CIDR@,gw=@GW@ --nameserver 1.1.1.1 --searchdomain localdomain
+qm set @VMID@ --ciuser @CI_USER@ --sshkeys @KEYS@ \
+  --ipconfig0 ip=@CIDR@,gw=@GW@ --nameserver @NAMESERVER@ --searchdomain localdomain
 qm set @VMID@ --cicustom vendor=local:snippets/@NAME@.yaml
-qm cloudinit dump @VMID@ user | grep -c 'ssh-'               # 2
+qm cloudinit dump @VMID@ user | grep -c 'ssh-'               # @KEY_COUNT@
 qm start @VMID@
 timeout 900 sh -c 'until qm guest ping @VMID@ 2>/dev/null; do sleep 15; done'
 qm guest exec @VMID@ --timeout 600 -- cloud-init status --wait
@@ -239,15 +322,20 @@ pve_render_script() {
   t=${t//@IMG_NOTE@/$note}
   t=${t//@VMID@/$PVE_VMID}
   t=${t//@NAME@/$PVE_NAME}
-  t=${t//@CIDR@/$PVE_IP}
+  t=${t//@CIDR@/$PVE_STATIC_IP}
   t=${t//@IP@/$PVE_ADDR}
-  t=${t//@GW@/$PVE_GW}
+  t=${t//@GW@/$PVE_GATEWAY}
   t=${t//@BRIDGE@/$PVE_BRIDGE}
   t=${t//@STORAGE@/$PVE_STORAGE}
   t=${t//@CORES@/$PVE_CORES}
   t=${t//@MEMORY@/$PVE_MEMORY}
   t=${t//@DATA_GB@/$PVE_DATA_GB}
-  t=${t//@KEYS@/$PVE_KEYS}
+  t=${t//@KEYS@/$PVE_KEYS_FILE}
+  t=${t//@CI_USER@/$PVE_CI_USER}
+  t=${t//@NAMESERVER@/$PVE_NAMESERVER}
+  t=${t//@SSHKEYS_VMID@/$PVE_SSHKEYS_FROM_VMID}
+  t=${t//@KEY_COUNT@/$PVE_KEY_COUNT}
+  t=${t//@KEY_COMMENTS@/$PVE_KEY_COMMENTS}  # last: a key comment holds an @
   printf '#!/usr/bin/env bash\n'
   printf '# Rendered by create.sh --target pve. Run as root on the Proxmox host, in the folder that holds\n'
   printf '# %s.yaml: bash vm-%s.sh\n' "$PVE_NAME" "$PVE_VMID"
@@ -261,17 +349,17 @@ print_pve() {
   printf 'create.sh: PROXMOX TARGET. Nothing was created; no host, token or network was used.\n'
   printf 'create.sh: wrote %s (settings only)\n' "$yaml"
   printf 'create.sh: wrote %s (the qm sequence)\n' "$script"
-  printf '\n# 1. Read both files (printed below). The owner copies them into one folder on the Proxmox host and runs, as root:\n'
+  printf '\n# 1. Read both files (printed below). The owner copies them into one folder on the Proxmox host (%s) and runs, as root:\n' "$PVE_HOST"
   printf '  bash vm-%s.sh\n' "$PVE_VMID"
   printf '\n# 2. From your own machine, once it has finished (the VM answers at %s):\n' "$PVE_ADDR"
-  printf "  ssh -J root@PVE_HOST rsadmin@%s 'cloud-init status; ping -c1 -M do -s 1372 1.1.1.1'\n" "$PVE_ADDR"
+  printf "  ssh -J root@%s %s@%s 'cloud-init status; ping -c1 -M do -s 1372 1.1.1.1'\n" "$PVE_HOST" "$PVE_CI_USER" "$PVE_ADDR"
   printf '\n# 3. In the VM as root (README, Proxmox section): the set-up first, then the stages\n'
   printf '  set -a; . /etc/marinedata/settings.env; set +a; cd %s\n' "$REPO_DIR"
   printf '  STAGES="" bash deploy/release-vm/bootstrap.sh\n'
   printf '\n# 4. Teardown, only after the copy-back (README step 8). It destroys the build output.\n'
   printf '  qm shutdown %s --timeout 120 || qm stop %s\n' "$PVE_VMID" "$PVE_VMID"
   printf '  qm destroy %s --purge 1 --destroy-unreferenced-disks 1\n' "$PVE_VMID"
-  printf '  rm -f /var/lib/vz/snippets/%s.yaml %s\n' "$PVE_NAME" "$PVE_KEYS"
+  printf '  rm -f /var/lib/vz/snippets/%s.yaml %s\n' "$PVE_NAME" "$PVE_KEYS_FILE"
   printf '\n# --- %s ---\n' "$yaml"
   cat "$yaml"
   printf '\n# --- %s ---\n' "$script"

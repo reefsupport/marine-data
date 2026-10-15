@@ -9,6 +9,12 @@
 # Set-up (idempotent): docker + git, the data disk at /data, a clone of MARINEDATA_REF, the image,
 # and /usr/local/bin/marinedata-run (runs a command in the image with this VM's mounts).
 # STAGES="" (set but empty) stops after the set-up: no stage, no wait for the secrets file.
+# Re-run on a VM set up earlier with another ref: give it the new MARINEDATA_REF (export it after
+# sourcing settings.env, which keeps the first-boot ref) and the STAGES you want. The checkout is
+# fetched and moved with `git checkout --detach`: never `reset --hard`, never `clean`, and local
+# changes to tracked files stop the move. The image is rebuilt under a tag with the new commit, /data
+# keeps its contents (a disk with a filesystem is mounted, never formatted) and only those STAGES run.
+# Run it with BOOTSTRAP_DRY_RUN=1 first: it shows where the checkout is and where it would go.
 # Stages (STAGES="gate plan" runs only those; unset runs all of them, in this order):
 #   lock      the lock and the frozen split map are in the checkout; print their sha256
 #   build     marinedata release build   -> /data/releases/$RELEASE_ID/$FLAVOUR
@@ -212,17 +218,37 @@ prepare_data_dir() {
   install -d "$LOG_DIR"
 }
 
+# True when a tracked file differs from HEAD. A clone made with --no-checkout has no index yet and
+# counts as clean.
+checkout_is_dirty() {
+  [[ -e $REPO_DIR/.git/index ]] || return 1
+  [[ -n $(git -C "$REPO_DIR" status --porcelain --untracked-files=no 2>/dev/null) ]]
+}
+
+# Safe to repeat with another MARINEDATA_REF: fetch, then move the checkout with a plain
+# `git checkout --detach`. Never `reset --hard`, never `clean`. Local changes to tracked files stop a
+# move to a different commit (git would carry them into the new ref and from there into the image);
+# untracked files are left as they are.
 clone_repo() {
   export GIT_TERMINAL_PROMPT=0
   if [[ ! -d $REPO_DIR/.git ]]; then
     git clone --quiet --no-checkout "$REPO_URL" "$REPO_DIR"
   fi
+  local before target
+  before=$(git -C "$REPO_DIR" rev-parse --verify --quiet HEAD || true)
   git -C "$REPO_DIR" fetch --quiet --tags origin
-  if ! git -C "$REPO_DIR" checkout --quiet --detach "$MARINEDATA_REF" 2>/dev/null; then
+  if ! target=$(git -C "$REPO_DIR" rev-parse --verify --quiet "${MARINEDATA_REF}^{commit}"); then
     git -C "$REPO_DIR" fetch --quiet origin "$MARINEDATA_REF"
-    git -C "$REPO_DIR" checkout --quiet --detach FETCH_HEAD
+    target=$(git -C "$REPO_DIR" rev-parse --verify "FETCH_HEAD^{commit}")
   fi
+  if [[ -n $before && $before != "$target" ]] && checkout_is_dirty; then
+    die "$REPO_DIR has local changes to tracked files and will not move from ${before:0:12} to ${target:0:12}: bootstrap never resets or cleans. Commit, stash or revert them (git -C $REPO_DIR status), then run it again"
+  fi
+  git -C "$REPO_DIR" checkout --quiet --detach "$target"
   COMMIT=$(git -C "$REPO_DIR" rev-parse HEAD)
+  if [[ -n $before && $before != "$COMMIT" ]]; then
+    say "moved $REPO_DIR from ${before:0:12} to ${COMMIT:0:12}"
+  fi
   say "checked out $MARINEDATA_REF = $COMMIT"
   if [[ ! $MARINEDATA_REF =~ ^[0-9a-f]{40}$ ]]; then
     say "warning: $MARINEDATA_REF is not a full commit sha; a tag or branch can move"
@@ -269,8 +295,10 @@ wait_for_secrets() {
   done
 }
 
-# marinedata-run [--py] ARGS...: run marinedata (or python with --py) in the image, with /data
-# and the checkout's data/ (task labels, read-only) mounted. HF_TOKEN is passed through only
+# marinedata-run [--py] ARGS...: run marinedata (or python with --py) in the image, with /data,
+# the checkout's data/ (task labels, read-only) and, when the ref has one, its releases/ (read-only
+# at /app/releases: .dockerignore keeps it out of the image, so the lock and split map committed at
+# the ref are the ones LOCK_FILE and SPLIT_MAP_FILE name). HF_TOKEN is passed through only
 # when the calling shell has it; the S3 env file is added only while it exists. TMPDIR and
 # TORCH_HOME sit on /data (the root disk is 32 GiB and also holds /var/lib/docker); --memory 14g
 # makes an overrun kill the container, not sshd.
@@ -280,6 +308,9 @@ write_wrapper() {
 # Written by bootstrap.sh. Usage: marinedata-run release publish ... | marinedata-run --py -m MODULE ...
 set -euo pipefail
 args=(--rm -e HF_TOKEN -e TMPDIR=${DATA_DIR}/tmp -e TORCH_HOME=${DATA_DIR}/torch --memory 14g -v ${DATA_DIR}:${DATA_DIR} -v ${REPO_DIR}/data:/app/data:ro --workdir ${DATA_DIR})
+if [[ -d ${REPO_DIR}/releases ]]; then
+  args+=(-v ${REPO_DIR}/releases:/app/releases:ro)
+fi
 if [[ -r ${SECRETS_FILE} ]]; then
   args+=(--env-file ${SECRETS_FILE})
 fi
@@ -434,6 +465,24 @@ dry_run_device() {
   fi
 }
 
+# What BOOTSTRAP_DRY_RUN=1 says about the checkout. Read-only: rev-parse and status, no fetch.
+dry_run_checkout() {
+  local before
+  if [[ ! -d $REPO_DIR/.git ]]; then
+    say "dry run: no checkout at $REPO_DIR: it would be cloned from $REPO_URL and checked out at $MARINEDATA_REF"
+    return 0
+  fi
+  before=$(git -C "$REPO_DIR" rev-parse --verify --quiet HEAD || true)
+  if [[ $before == "$MARINEDATA_REF" ]]; then
+    say "dry run: $REPO_DIR is already at $MARINEDATA_REF"
+    return 0
+  fi
+  say "dry run: $REPO_DIR is at ${before:-no commit}: it would be fetched and checked out at $MARINEDATA_REF (checkout --detach; no reset, no clean) and the image rebuilt"
+  if checkout_is_dirty; then
+    die "refusing to move $REPO_DIR: it has local changes to tracked files (git -C $REPO_DIR status). Commit, stash or revert them first"
+  fi
+}
+
 dry_run() {
   validate_settings
   derive_paths
@@ -450,6 +499,7 @@ dry_run() {
     say "dry run: no build or export stage: the run does not wait for $SECRETS_FILE"
   fi
   dry_run_device
+  dry_run_checkout
 }
 
 main() {

@@ -33,3 +33,5 @@ data/_hf/
 
 # Rendered Proxmox files (deploy/release-vm/create.sh --target pve): regenerable, never committed
 deploy/release-vm/out/
+# Operator values for --target pve (host, user, addresses): copy pve.env.example, never commit the copy
+deploy/release-vm/pve.env
