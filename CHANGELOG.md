@@ -15,6 +15,11 @@ Nothing below is in a release yet. It is on `main` or on the Phase A branches na
   v1.0.0; annotator e-mails in the Labelbox test fixtures replaced by placeholders; neutral wording and placeholder paths in docs and
   script comments; the open dataset card no longer references the gated repository.
 
+### v1.1.0: `feat/v1.1-gates` (PR-G, PR-G2)
+
+- Release gates (PR-G): G1 join, G2 frozen v1.0 tree, G3 leak, G4 bytes once, G5 masks, G6 splits and G7 decontamination in `marinedata.gates`; `release publish` requires them on a v1.1.0 build (`V11_REQUIRED`) on top of the v1.0 gates, and a skipped gate never publishes. G8 packaging pins the YuNet model by sha256 (`verified_model_path`, never downloaded).
+- v1.1.0 gate CLI (PR-G2): `marinedata release gate BUILD --v11` runs G1-G9 (join, frozen, leak, bytes_once, masks, splits_v11, decon, privacy, labelmap) into `GATES.json` and ends with the `release publish` verdict; `--rehearsal` only skips, never passes (docs/GATES.md). New G9 labelmap gate (`registry/gates.yaml` `labelmap`, now in `V11_REQUIRED`) and an images-only G8 privacy pass that loads YuNet through `verified_model_path`; the v1.0 gate path is unchanged.
+
 ### v1.1.0 registry items (PR-R: R4, R5, R6)
 
 - Split ratio (R4): `registry/split_ratio.yaml` defaults to 70/15/15 for new configs and records the four v1.0 configs at their measured train/validation/test shares (coral-masks 76.5/9.5/14.1, instance-masks 76.7/9.0/14.2, scene-masks 73.9/10.2/15.9, fish-boxes 73.2/13.4/13.4). README, the v1.0 entry below and `docs/GATES.md` no longer say 80/10/10. Gate fixtures declare their own split map, and their synthetic mask config is now `fixture-masks`.

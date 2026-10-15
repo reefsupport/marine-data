@@ -155,11 +155,12 @@ FAIL_CLOSED = ("privacy", "croissant")
 older ``release gate --all`` cannot weaken it: a gate absent from the file is a failure."""
 
 
-V11_REQUIRED = ("join", "frozen", "leak", "bytes_once", "splits_v11", "decon")
+V11_REQUIRED = ("join", "frozen", "leak", "bytes_once", "splits_v11", "decon", "labelmap")
 """Gates a v1.1.0 release (``task_layers/V11_TABLES.json`` or ``data/images`` in the directory, or
 any of these in GATES.json) must pass on top of :data:`FAIL_CLOSED`: G1 join, G2 frozen v1.0, G3
-leak, G4 bytes once, G6 splits, G7 decontamination (G5 is ``masks``, G8 ``croissant`` +
-``privacy``). Absent or skipped is a problem, so a release that never ran them cannot publish."""
+leak, G4 bytes once, G6 splits, G7 decontamination, G9 labelmap (G5 is ``masks``, G8
+``croissant`` + ``privacy``). Absent or skipped is a problem, so a release that never ran them
+cannot publish."""
 
 
 def _is_v11(directory: Path, entries: Mapping) -> bool:
