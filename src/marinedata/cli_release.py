@@ -494,9 +494,15 @@ def _cmd_release_build(args: argparse.Namespace) -> int:
         return 1
 
     if not split_map_exists and not args.generate_split_map:
+        how = "pass --generate-split-map to create it"
+        if getattr(args, "v11", False):  # --v11 cannot generate: the map inherits v1.0's groups
+            how = (
+                "write it with `marinedata release split-map --inherit --lock <lock> --out "
+                "<SPLIT_MAP_FILE>`"
+            )
         print(
-            f"release build: {split_map_path} does not exist; pass --generate-split-map "
-            "to create it, or point --split-map at an existing frozen map",
+            f"release build: {split_map_path} does not exist; {how}, "
+            "or point --split-map at an existing frozen map",
             file=sys.stderr,
         )
         return 1
