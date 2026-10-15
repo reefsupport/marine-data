@@ -121,6 +121,35 @@ licences:
       files in place for research. Citing this as CC-BY-NC-4.0 (which permits
       redistribution with attribution) would overstate the grant.
 
+  # ── Reference data that ships next to the imagery (taxonomy, geography) ───
+  # Not source licences: no registry source cites these ids. They hold the attribution terms the
+  # `taxonomy` config and the per-row `meow_*` fields must carry.
+  - id: WORMS-CC-BY-4.0
+    name: World Register of Marine Species (WoRMS), CC BY 4.0
+    tier: T1_PERMISSIVE
+    url: https://www.marinespecies.org/aphia.php?p=copyright
+    flags: { attribution_required: true }
+    notes: >
+      WoRMS content (AphiaIDs, accepted names, ranks, classification) is published under CC BY 4.0, so
+      shipping it needs the citation: WoRMS Editorial Board (year). World Register of Marine Species.
+      Available from https://www.marinespecies.org at VLIZ. Accessed (date). doi:10.14284/170. Carry it on
+      the `taxonomy` config and in any card or NOTICE that ships WoRMS-derived fields (`worms_aphia_id`,
+      `worms_scientificname`, ranks, classification). The committed node is the pin, with the snapshot
+      date (docs/TAXONOMY.md). Re-read the URL's wording before each release.
+
+  - id: MEOW-WORKING-GROUP
+    name: Marine Ecoregions of the World (MEOW), Spalding et al. 2007
+    tier: T3_NONCOMMERCIAL
+    flags: { attribution_required: true }
+    notes: >
+      The data's own terms (registry/geo/SOURCES.md): no sale, distribution, loan or offering of the
+      digital data "in whole or in part" without the MEOW Working Group's approval, and no GIS product made
+      to sell for profit without its written consent. So the polygon geometry is never published; only the
+      derived `meow_realm`, `meow_province` and `meow_ecoregion` strings ship. They carry the citation
+      (Spalding MD et al. 2007, Marine Ecoregions of the World: a bioregionalization of coastal and shelf
+      areas, BioScience 57: 573-583, doi:10.1641/B570707), acknowledge the MEOW Working Group and its
+      members' organisations as data contributors, and state any modification of the original units.
+
   # ── No grant ──────────────────────────────────────────────────────────────
   - id: NO-LICENCE-STATED
     name: No licence published
