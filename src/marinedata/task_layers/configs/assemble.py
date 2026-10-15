@@ -5,6 +5,7 @@ from __future__ import annotations
 import dataclasses
 from collections.abc import Mapping
 from pathlib import Path
+from typing import TYPE_CHECKING, Any
 
 from ...licence_class import drop_release_excluded, flavour_filter, require_flavour
 from ...registry import Registry
@@ -22,6 +23,9 @@ from .free_tables import (
 from .masks import build_instance_config, build_semseg_config
 from .points import build_points_config
 from .tasklabels import _row_sha
+
+if TYPE_CHECKING:
+    from ..v11_tables import V11Inputs
 
 
 def assert_no_mixed_origin_in_eval(
@@ -54,13 +58,24 @@ def apply_flavour(result: ConfigResult, flavour: str | None) -> ConfigResult:
 
 
 def build_all_configs(
-    registry: Registry, base_dir: str | Path, flavour: str | None = None
+    registry: Registry,
+    base_dir: str | Path,
+    flavour: str | None = None,
+    *,
+    v11: V11Inputs | None = None,
 ) -> dict[str, ConfigResult]:
     """Every config the sources available today can build (D-Z2 producers wired).
-    ``flavour`` (``open`` | ``nc``) keeps only the rows that flavour ships (WP-L1a)."""
+    ``flavour`` (``open`` | ``nc``) keeps only the rows that flavour ships (WP-L1a). ``v11``
+    (PR-B) replaces ``points`` / ``bleaching`` / ``boxes`` / ``semseg`` / ``instances`` by their
+    stamped v1.1.0 tables and adds ``metadata`` (:mod:`marinedata.task_layers.v11_tables`)."""
     require_flavour(flavour, "build_all_configs")
     built = _build_all_configs(registry, Path(base_dir))
-    return {k: apply_flavour(v, flavour) for k, v in built.items()}
+    configs = {k: apply_flavour(v, flavour) for k, v in built.items()}
+    if v11 is None:
+        return configs
+    from ..v11_tables import build_v11_tables
+
+    return {**configs, **build_v11_tables(registry, configs, v11)}
 
 
 def _build_all_configs(registry: Registry, base_dir: Path) -> dict[str, ConfigResult]:
@@ -79,8 +94,13 @@ def _build_all_configs(registry: Registry, base_dir: Path) -> dict[str, ConfigRe
     }
 
 
-def write_configs(results: Mapping[str, ConfigResult], out_dir: str | Path) -> dict[str, Path]:
-    """Write each config's rows as parquet under ``out_dir/<config_id>.parquet``."""
+def write_configs(
+    results: Mapping[str, ConfigResult],
+    out_dir: str | Path,
+    schemas: Mapping[str, Any] | None = None,
+) -> dict[str, Path]:
+    """Write each config's rows as parquet under ``out_dir/<config_id>.parquet``; a config in
+    ``schemas`` (a pyarrow schema: the v1.1.0 tables) is written with exactly that schema."""
     _require_pyarrow()
     import pyarrow as pa
     import pyarrow.parquet as pq
@@ -90,7 +110,11 @@ def write_configs(results: Mapping[str, ConfigResult], out_dir: str | Path) -> d
     written: dict[str, Path] = {}
     for config_id, result in results.items():
         path = out_dir / f"{config_id}.parquet"
-        table = pa.Table.from_pylist(list(result.rows)) if result.rows else pa.table({})
+        schema = (schemas or {}).get(config_id)
+        if schema is not None:
+            table = pa.Table.from_pylist(list(result.rows), schema=schema)
+        else:
+            table = pa.Table.from_pylist(list(result.rows)) if result.rows else pa.table({})
         pq.write_table(table, path)
         written[config_id] = path
     return written

@@ -83,6 +83,24 @@ def png_bytes(arr) -> bytes:
     return buf.getvalue()
 
 
+def palette_png(arr) -> bytes:
+    """Lossless mode-``P`` PNG of a 2-D ``uint8`` index array carrying the declared 256-entry
+    palette (:func:`~marinedata.task_layers.mask_classmap.palette_rgb`): a viewer shows the
+    classes in colour instead of near-black. Pixel values are exactly those of :func:`png_bytes`.
+    Opt-in (v1.1.0); the v1.0 mask configs stay mode L."""
+    import numpy as np
+    from PIL import Image
+
+    from .mask_classmap import palette_rgb
+
+    h, w = arr.shape
+    img = Image.frombytes("P", (w, h), np.ascontiguousarray(arr, dtype=np.uint8).tobytes())
+    img.putpalette([c for i in range(256) for c in palette_rgb(i)])
+    buf = io.BytesIO()
+    img.save(buf, format="PNG")
+    return buf.getvalue()
+
+
 _ALLOW_RESIZE: contextvars.ContextVar[bool] = contextvars.ContextVar(
     "marinedata_mask_allow_resize", default=False
 )
@@ -118,11 +136,17 @@ def _fit(arr, size: tuple[int, int] | None):
 
 
 def semantic_png(
-    data: bytes, *, encoding: str, ignore_value: int | None, size: tuple[int, int] | None = None
+    data: bytes,
+    *,
+    encoding: str,
+    ignore_value: int | None,
+    size: tuple[int, int] | None = None,
+    palette: bool = False,
 ) -> bytes:
-    """One staged semantic mask -> the HF index PNG (255 = ignore)."""
-    arr = remap_ignore(decode_index(data, encoding), ignore_value)
-    return png_bytes(_fit(arr, size))
+    """One staged semantic mask -> the HF index PNG (255 = ignore); ``palette=True`` (v1.1.0)
+    writes the mode-``P`` PNG with the declared palette instead of the mode-``L`` one."""
+    arr = _fit(remap_ignore(decode_index(data, encoding), ignore_value), size)
+    return palette_png(arr) if palette else png_bytes(arr)
 
 
 def compose_parts(

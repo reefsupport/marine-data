@@ -51,3 +51,29 @@ def hf_class_map(record: Mapping, coarse: Callable[[str | None], str | None]) ->
             {"id": int(pixel), "label_native": label, "taxon_node": taxon, "coarse": coarse(taxon)}
         )
     return json.dumps(out)
+
+
+IGNORE_INDEX = 255
+_GOLDEN = 0.618033988749895
+
+
+def palette_rgb(index: int) -> tuple[int, int, int]:
+    """The declared colour of pixel value ``index`` (v1.1.0 semseg palette): a golden-ratio hue
+    walk, so neighbouring class ids never share a hue; black for the ignore value 255. A pure
+    function of ``index``: the palette embedded in a mask PNG and the ``palette`` column of its
+    row cannot drift apart."""
+    if index == IGNORE_INDEX:
+        return (0, 0, 0)
+    import colorsys
+
+    r, g, b = colorsys.hsv_to_rgb((index * _GOLDEN) % 1.0, 0.65, 0.95)
+    return (round(r * 255), round(g * 255), round(b * 255))
+
+
+def palette_json(class_map: str | None) -> str | None:
+    """The declared palette of one semantic row: JSON ``[{id, rgb}]`` for every class id of its
+    ``hf_class_map`` plus the ignore value; ``None`` when the row carries no class map."""
+    if not class_map:
+        return None
+    ids = sorted({int(c["id"]) for c in json.loads(class_map)} | {IGNORE_INDEX})
+    return json.dumps([{"id": i, "rgb": list(palette_rgb(i))} for i in ids])

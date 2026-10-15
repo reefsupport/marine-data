@@ -381,7 +381,21 @@ _FROZEN_BUILD = (
 )
 
 
+_V11_SPLIT_MAP = (
+    "release build: --v11 cannot --generate-split-map: the v1.1.0 split map is written by "
+    "`marinedata release split-map --inherit <PRIOR_SPLIT_MAP> --lock <lock> --out "
+    "<SPLIT_MAP_FILE>` (it keeps the v1.0 groups verbatim and enumerates only the lock's "
+    "sources); pass that file as --split-map"
+)
+
+
 def _cmd_release_build(args: argparse.Namespace) -> int:
+    if getattr(args, "v11", False) and args.generate_split_map:
+        print(_V11_SPLIT_MAP, file=sys.stderr)
+        return 1
+    if getattr(args, "allow_unsplit", False) and not getattr(args, "v11", False):
+        print("release build: --allow-unsplit needs --v11", file=sys.stderr)
+        return 1
     registry = Registry.load()
     flavour = getattr(args, "flavour", None)
     if flavour is None:
@@ -516,6 +530,8 @@ def _cmd_release_build(args: argparse.Namespace) -> int:
             )
             return 1
 
+    from .task_layers.v11_tables import UnsplitImagesError
+
     try:
         result = build_release(
             registry,
@@ -531,6 +547,8 @@ def _cmd_release_build(args: argparse.Namespace) -> int:
             split_v2=args.split_v2,
             tasks=args.tasks,
             v2=args.v2,
+            v11=getattr(args, "v11", False),
+            allow_unsplit=getattr(args, "allow_unsplit", False),
             tasklabels_root=args.tasklabels_root,
             digest=digest,
             flavour=flavour,
@@ -538,7 +556,10 @@ def _cmd_release_build(args: argparse.Namespace) -> int:
             lock=lock,
             lock_sha256=lock_digest,
         )
-    except (NearDupError, DedupGateError, DeconError, ReleaseSkipError, ReleaseLockError) as exc:
+    except (
+        NearDupError, DedupGateError, DeconError, ReleaseSkipError, ReleaseLockError,
+        UnsplitImagesError,
+    ) as exc:  # fmt: skip
         print(f"release build: {exc}", file=sys.stderr)
         return 1
 
@@ -708,6 +729,22 @@ def add_release_subparser(sub: argparse._SubParsersAction) -> None:
         help="Directory holding _tasklabels/ (and _labelquality/) for --tasks v2; a path "
         "ending in _tasklabels means its parent. Default: <repo>/data, derived from the "
         "registry's location, never the cwd",
+    )
+    p_build.add_argument(
+        "--v11",
+        dest="v11",
+        action="store_true",
+        help="(PR-B, needs --tasks v2) Build the v1.1.0 task tables: points, bleaching, boxes, "
+        "semseg, instances stamped with split / taxonomy_version / fidelity / bytes_config, plus "
+        "the metadata spine; counts land in task_layers/V11_TABLES.json. An image with no split "
+        "in --split-map fails the build (see --allow-unsplit).",
+    )
+    p_build.add_argument(
+        "--allow-unsplit",
+        dest="allow_unsplit",
+        action="store_true",
+        help="(rehearsal builds only, needs --v11) keep the rows of images the split map does not "
+        "cover with split = null instead of failing; V11_TABLES.json records the unsplit counts",
     )
     p_build.add_argument(
         "--v2",
