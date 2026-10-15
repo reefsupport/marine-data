@@ -21,7 +21,10 @@ and are a starting point for your own review. See [`docs/LEGAL.md`](docs/LEGAL.m
 ## Published datasets
 
 Release v1.0 (October 2026) is a set of four Parquet configs with images and masks embedded. Splits follow the
-upstream splits where a source defines them, and a deterministic 80/10/10 group hash otherwise.
+upstream splits where a source defines them, and a deterministic group hash (70/15/15 target) otherwise. Because the
+upstream splits dominate, no nominal ratio describes v1.0. The measured train/validation/test shares are 76.5/9.5/14.1
+(`coral-masks`), 76.7/9.0/14.2 (`instance-masks`), 73.9/10.2/15.9 (`scene-masks`) and 73.2/13.4/13.4 (`fish-boxes`),
+75.1/11.0/13.9 over all four. Configs added from v1.1.0 target 70/15/15.
 
 | Config | Task | Images | Sources |
 |---|---|---|---|

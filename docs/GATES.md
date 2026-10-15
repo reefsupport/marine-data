@@ -43,8 +43,9 @@ Fix: remove the duplicates from the source selection and rebuild.
 Checks: no `split_group` in two splits; each config within `--split-tolerance` (5 points) of its target;
 no validation/test image within `--phash-bits` of a train image; some config carries `split_group`.
 Target, first match: `registry/split_ratio.yaml` `configs:` entry, the RELEASE.json
-`split_ratio.target_pct` (ratios of the frozen split map the build used), the registry `default` (80/10/10
-for new configs; the v1.0 code default 70/15/15 is unchanged and recorded per build). Configs without
+`split_ratio.target_pct` (ratios of the frozen split map the build used), the registry `default` (70/15/15
+for new configs, as in `registry/splits/v2.yaml`; the four v1.0 configs sit under `configs:` at their measured
+shares, because upstream splits dominate them and no nominal ratio describes v1.0). Configs without
 train, validation and test are only ratio-checked when the registry names them. Fix: regenerate the
 split map, or set the target in the registry.
 `images/test ratio_off_target: 10.0% of 20 rows, target 25% +/- 5 (release:split_ratio)`

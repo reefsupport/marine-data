@@ -320,7 +320,7 @@ def test_e2e_release_gates_pass_on_the_fixture_build(
 ) -> None:
     """P1.6: ``release gate --all --require-all`` exits 0 on the fixture export. The two
     image-only fixture sources have no licence metadata and no masks, so a synthetic
-    ``metadata`` and ``coral-masks`` config is added next to the real ``images`` shards."""
+    ``metadata`` and ``fixture-masks`` config is added next to the real ``images`` shards."""
     import pyarrow.parquet as pq
     from _gates_build import MASK_COLS, META_COLS, mask_rows, meta_row, write_config
 
@@ -333,13 +333,13 @@ def test_e2e_release_gates_pass_on_the_fixture_build(
             meta_row(sha, SOURCES[i % 2], license="CC0-1.0") for i, sha in enumerate(shas)
         ]
     write_config(export_dir, "metadata", meta, META_COLS)
-    write_config(export_dir, "coral-masks", {"train": mask_rows()}, MASK_COLS)
+    write_config(export_dir, "fixture-masks", {"train": mask_rows()}, MASK_COLS)
     configs = {
         c: {s: e["splits"][s]["rows"] for s in e["splits"]}
         for c, e in run.summary["configs"].items()
     }
     configs["metadata"] = {s: len(rows) for s, rows in meta.items()}
-    configs["coral-masks"] = {"train": 4}
+    configs["fixture-masks"] = {"train": 4}
     record_export_counts(
         run.release_dir / "RELEASE.json",
         {

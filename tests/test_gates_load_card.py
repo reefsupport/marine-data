@@ -21,7 +21,7 @@ from marinedata.gates.load import run_load_gate
 CONFIGS = {
     "images": {"train": 16, "validation": 2, "test": 2},
     "metadata": {"train": 16, "validation": 2, "test": 2},
-    "coral-masks": {"train": 4},
+    "fixture-masks": {"train": 4},
 }
 
 

@@ -1,10 +1,19 @@
 # Target train/validation/test share (percent) that `marinedata release gate --splits` checks each
-# HF config against (tolerance: +/- 5 points). `default` is the documented target for NEW configs.
-# The v1.0 builds used the code default 70/15/15 and keep it: a build's RELEASE.json records the
-# ratios of the split map it used (`split_ratio.target_pct`), which wins over `default` for every
-# config without an entry under `configs`. An entry under `configs` wins over both.
+# HF config against (tolerance: +/- 5 points). `default` is the documented target for NEW configs
+# (v1.1.0 onward): 70/15/15, the same as registry/splits/v2.yaml and docs/GATES.md. A build's
+# RELEASE.json records the ratios of the split map it used (`split_ratio.target_pct`), which wins over
+# `default` for every config without an entry under `configs`. An entry under `configs` wins over both.
+#
+# `configs` freezes the four v1.0 configs at their MEASURED shares (design 2026-10-15, section 2.4;
+# measured over the published rows: 75.1/11.0/13.9 over all four). Upstream splits dominate them
+# (Coralscapes 1,517/166/392, the UIIS family), so neither 80/10/10 nor 70/15/15 describes v1.0 and
+# no nominal ratio is promised for it. v1.0 stays as published; do not retarget these entries.
 default:
-  train: 80
-  validation: 10
-  test: 10
-configs: {}
+  train: 70
+  validation: 15
+  test: 15
+configs:
+  coral-masks: {train: 76.5, validation: 9.5, test: 14.1}
+  instance-masks: {train: 76.7, validation: 9.0, test: 14.2}
+  scene-masks: {train: 73.9, validation: 10.2, test: 15.9}
+  fish-boxes: {train: 73.2, validation: 13.4, test: 13.4}
