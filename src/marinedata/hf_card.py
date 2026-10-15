@@ -23,6 +23,8 @@ from .hf_export import (
 from .privacy import policy as privacy_policy
 from .task_layers import hf_wiring as _tl
 
+LEGACY_PRETTY_NAME = "Reef Support coral-reef imagery v1"
+
 METADATA = "metadata"
 
 CONFIG_BLURB = {
@@ -387,7 +389,10 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--release-dir", type=Path, required=True)
     parser.add_argument("--summary", type=Path, required=True)
     parser.add_argument("--out", type=Path, required=True)
-    parser.add_argument("--pretty-name", default="Reef Support coral-reef imagery v1")
+    parser.add_argument("--pretty-name", default=None, help="default: the card version's own name")
+    parser.add_argument(
+        "--citation", type=Path, default=None, help="CITATION.cff for a v1.1.0 export"
+    )
     parser.add_argument("--repo-id", default=None, help="default: the flavour's repo id")
     parser.add_argument(
         "--flavour", choices=("open", "nc"), default=None, help="default: RELEASE.json's flavour"
@@ -400,6 +405,10 @@ def main(argv: list[str] | None = None) -> int:
     args = parser.parse_args(argv)
 
     summary = json.loads(args.summary.read_text())
+    if summary.get("layout") == "v1.1":  # E3: the v1.1.0 card has its own renderer
+        from . import hf_card_v11
+
+        return hf_card_v11.run(args, summary)
     release = json.loads((args.release_dir / "RELEASE.json").read_text())
     flavour = args.flavour or release.get("flavour")
     if flavour and release.get("flavour") not in (None, flavour):
@@ -423,7 +432,7 @@ def main(argv: list[str] | None = None) -> int:
             summary,
             release,
             sources,
-            pretty_name=args.pretty_name,
+            pretty_name=args.pretty_name or LEGACY_PRETTY_NAME,
             repo_id=repo_id,
             flavour=flavour,
             takedown_url=release.get("takedown_url"),

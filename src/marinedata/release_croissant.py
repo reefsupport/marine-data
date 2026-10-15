@@ -210,6 +210,10 @@ def build_croissant(
     if ctx.get("release_id"):
         doc["version"] = ctx["release_id"]
     doc |= {"distribution": [repo, *shards, *filesets], "recordSet": recordsets}
+    from . import release_croissant_v11 as v11  # lazy: only the v1.1.0 export needs it
+
+    if v11.is_v11_export(facts):
+        doc = v11.apply_v11(doc, Path(build_dir), ctx, date_published=date_published)
     return doc
 
 

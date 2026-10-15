@@ -60,3 +60,70 @@ def stage_provenance(target: Path, *, release: Path, gates: Path, lock: Path) ->
     )
     shutil.copyfile(gates, target / GATES_FILE)
     shutil.copyfile(lock, target / LOCK_FILE)
+
+
+# ------------------------------------------------------------------ v1.1.0 root files (E4)
+
+LICENCE_PREAMBLE = (
+    "This dataset is not under one licence. Every source keeps the licence its authors chose; "
+    "the notices below list each source with the annotation licence and the attribution it "
+    "requires, and every `metadata` row repeats them. The Apache-2.0 licence of the marine-data "
+    "code does not cover the data. The notices record the licences as Reef Support read them "
+    "from the primary sources and are not legal advice."
+)
+NC_PREAMBLE = "This flavour may be used for non-commercial purposes only."
+
+
+def _value(row: dict, key: str) -> str:
+    return " ".join(str(row.get(key) or "-").split())
+
+
+def _by_source(sources: list[dict]) -> list[dict]:
+    return sorted(sources, key=lambda s: str(s.get("source_id")))
+
+
+def render_license(sources: list[dict], *, pretty_name: str, flavour: str) -> str:
+    """``LICENSE``: the per-source licence notices of the ``sources`` config rows."""
+    lines = [f"{pretty_name}: licences", "", LICENCE_PREAMBLE, ""]
+    if flavour != "open":
+        lines += [NC_PREAMBLE, ""]
+    for s in _by_source(sources):
+        link = f" ({s['licence_url']})" if s.get("licence_url") else ""
+        lines += [
+            f"{s['source_id']} (version {_value(s, 'version')})",
+            f"  Image licence: {_value(s, 'licence')}{link}",
+            f"  Annotation licence: {_value(s, 'ann_licence')}",
+            f"  Attribution: {_value(s, 'attribution')}",
+            "",
+        ]
+    return "\n".join(lines).rstrip() + "\n"
+
+
+def render_notice(sources: list[dict], *, pretty_name: str) -> str:
+    """``NOTICE``: the rights holder and the attribution of every source, then the MEOW and WoRMS
+    credits."""
+    from .card_v11_text import MEOW, WORMS
+
+    lines = [
+        pretty_name,
+        "Copyright (c) Reef Support and the rights holders named below.",
+        "",
+        "This dataset redistributes material from the sources below. Keep the attribution each "
+        "source requires when you redistribute it.",
+        "",
+    ]
+    for s in _by_source(sources):
+        lines += [
+            f"- {s['source_id']}: {_value(s, 'attribution')}",
+            f"  Rights holder: {_value(s, 'rights_holder')}. Source: {_value(s, 'provenance_url')}",
+        ]
+    return "\n".join([*lines, "", "Ecology and taxonomy", f"- {MEOW}", f"- {WORMS}"]) + "\n"
+
+
+def render_citation_cff(cff: dict, *, version: str, released: str | None = None) -> str:
+    """``CITATION.cff`` of the release: the repository's file with this release's version (and
+    date). No DOI is minted here."""
+    doc = {**cff, "version": version}
+    if released:
+        doc["date-released"] = released
+    return yaml.safe_dump(doc, sort_keys=False, allow_unicode=True, width=10_000)
