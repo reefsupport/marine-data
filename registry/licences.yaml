@@ -127,7 +127,7 @@ licences:
   - id: WORMS-CC-BY-4.0
     name: World Register of Marine Species (WoRMS), CC BY 4.0
     tier: T1_PERMISSIVE
-    url: https://www.marinespecies.org/aphia.php?p=copyright
+    url: https://www.marinespecies.org/about.php#terms
     flags: { attribution_required: true }
     notes: >
       WoRMS content (AphiaIDs, accepted names, ranks, classification) is published under CC BY 4.0, so
@@ -135,7 +135,14 @@ licences:
       Available from https://www.marinespecies.org at VLIZ. Accessed (date). doi:10.14284/170. Carry it on
       the `taxonomy` config and in any card or NOTICE that ships WoRMS-derived fields (`worms_aphia_id`,
       `worms_scientificname`, ranks, classification). The committed node is the pin, with the snapshot
-      date (docs/TAXONOMY.md). Re-read the URL's wording before each release.
+      date (docs/TAXONOMY.md). Terms of use, read 2026-10-15 at the url above: "The text on the WoRMS
+      pages is open-access under the terms of the Creative Commons Attribution License (CC-BY). This
+      License permits unrestricted use, provided it is cited as requested on the WoRMS webpages, unless
+      stated otherwise on the individual pages" (the page links the 4.0 deed,
+      creativecommons.org/licenses/by/4.0/). Two limits from the same section:
+      images are CC BY-NC-SA by default (no WoRMS image ships here), and "Re-distribution of the entire
+      database is not permitted, unless by prior written agreement", so the `taxonomy` config carries the
+      registry's own nodes only, never the register. Re-read the terms before each release.
 
   - id: MEOW-WORKING-GROUP
     name: Marine Ecoregions of the World (MEOW), Spalding et al. 2007
