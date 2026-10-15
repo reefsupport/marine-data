@@ -30,3 +30,6 @@ data/_hf/
 *.safetensors
 *.pt
 *.ckpt
+
+# Rendered Proxmox files (deploy/release-vm/create.sh --target pve): regenerable, never committed
+deploy/release-vm/out/

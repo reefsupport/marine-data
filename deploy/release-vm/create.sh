@@ -8,6 +8,10 @@
 # HCLOUD_TOKEN in the environment (a fresh project token; the earlier Hetzner token is
 # compromised), the hcloud CLI, --ssh-key, and a typed confirmation (or --yes). No bucket or Hub
 # secret passes through here; the S3 secrets file is copied to the VM by hand (README step 4).
+#
+# --target pve renders the Proxmox build VM instead: out/vm-900.sh (the qm sequence, run by the
+# owner as root on the host) and out/marinedata-build.yaml (the cloud-init vendor snippet, settings
+# only). It contacts nothing, refuses --run and a --ref that is not a full 40-hex commit sha.
 
 set -Eeuo pipefail
 
@@ -37,6 +41,16 @@ usage: create.sh --release-id ID --flavour open|nc --ref SHA [options]
   --print-only           write user-data and print the commands (default)
   --run                  run them: needs HCLOUD_TOKEN, --ssh-key, hcloud and a confirmation
   --yes                  skip the typed confirmation (still needs HCLOUD_TOKEN)
+  --target hetzner|pve   hetzner (default): the hcloud commands. pve: render the Proxmox files
+                         (out/vm-VMID.sh and out/NAME.yaml, never run; --ref must be 40 hex)
+
+Proxmox options (--target pve only; --name defaults to marinedata-build, --out-dir to out/ beside create.sh):
+  --vmid N               default 900          --ip CIDR         default 10.0.0.90/24
+  --gw ADDR              default 10.0.0.2     --bridge B        default vmbr1
+  --storage S            default local-lvm    --cores N         default 6
+  --memory MB            default 16384        --data-gb GB      default 100
+  --image local:iso/F    default local:iso/debian-12-genericcloud-amd64.qcow2
+  --keys-file PATH       default /root/vm900-keys.pub (on the host)
 EOF
 }
 
@@ -44,6 +58,10 @@ RELEASE_ID="" FLAVOUR="" REF="" SSH_KEY="" NAME="" OUT_DIR=""
 LOCATION=hel1 SERVER_TYPE=cx32 VOLUME_GB=200 OS_IMAGE=ubuntu-24.04
 OPT_LOCK_FILE="" OPT_SPLIT_MAP_FILE="" OPT_REPO_URL=""
 MODE=print YES=0
+TARGET=hetzner PVE_SEEN=""
+PVE_VMID=900 PVE_IP=10.0.0.90/24 PVE_GW=10.0.0.2 PVE_BRIDGE=vmbr1 PVE_STORAGE=local-lvm
+PVE_IMAGE=local:iso/debian-12-genericcloud-amd64.qcow2 PVE_CORES=6 PVE_MEMORY=16384 PVE_DATA_GB=100
+PVE_KEYS=/root/vm900-keys.pub
 
 while (($#)); do
   case $1 in
@@ -65,6 +83,17 @@ while (($#)); do
     --print-only) MODE=print; shift ;;
     --run) MODE=run; shift ;;
     --yes) YES=1; shift ;;
+    --target) TARGET=${2:?--target needs a value}; shift 2 ;;
+    --vmid) PVE_SEEN="$PVE_SEEN $1"; PVE_VMID=${2:?--vmid needs a value}; shift 2 ;;
+    --ip) PVE_SEEN="$PVE_SEEN $1"; PVE_IP=${2:?--ip needs a value}; shift 2 ;;
+    --gw) PVE_SEEN="$PVE_SEEN $1"; PVE_GW=${2:?--gw needs a value}; shift 2 ;;
+    --bridge) PVE_SEEN="$PVE_SEEN $1"; PVE_BRIDGE=${2:?--bridge needs a value}; shift 2 ;;
+    --storage) PVE_SEEN="$PVE_SEEN $1"; PVE_STORAGE=${2:?--storage needs a value}; shift 2 ;;
+    --image) PVE_SEEN="$PVE_SEEN $1"; PVE_IMAGE=${2:?--image needs a value}; shift 2 ;;
+    --cores) PVE_SEEN="$PVE_SEEN $1"; PVE_CORES=${2:?--cores needs a value}; shift 2 ;;
+    --memory) PVE_SEEN="$PVE_SEEN $1"; PVE_MEMORY=${2:?--memory needs a value}; shift 2 ;;
+    --data-gb) PVE_SEEN="$PVE_SEEN $1"; PVE_DATA_GB=${2:?--data-gb needs a value}; shift 2 ;;
+    --keys-file) PVE_SEEN="$PVE_SEEN $1"; PVE_KEYS=${2:?--keys-file needs a value}; shift 2 ;;
     -h | --help) usage; exit 0 ;;
     *) usage >&2; die "unknown option: $1" ;;
   esac
@@ -77,6 +106,198 @@ if [[ -n $OPT_REPO_URL ]]; then REPO_URL=$OPT_REPO_URL; fi
 validate_settings
 
 need() { [[ $1 =~ $2 ]] || die "$3 '$1' is not valid"; }
+
+# ---- --target pve: render the host script and the cloud-init vendor snippet; nothing is run ----
+# Both files come from the templates below, which are the build plan's vm-900.sh (section 3.2) and
+# vendor snippet (section 3.3) with the flags as @TOKENS@. The defaults reproduce them exactly.
+
+PVE_DEFAULT_IMAGE=local:iso/debian-12-genericcloud-amd64.qcow2
+
+ipv4_ok() {
+  local octets o
+  [[ $1 =~ ^[0-9]{1,3}(\.[0-9]{1,3}){3}$ ]] || return 1
+  IFS=. read -r -a octets <<<"$1"
+  for o in "${octets[@]}"; do
+    ((10#$o <= 255)) || return 1
+  done
+}
+
+pve_validate() {
+  [[ $MODE != run ]] || die "--run is not supported with --target pve: the host commands are run by the owner (README, Proxmox section)"
+  [[ -z $SSH_KEY && $LOCATION == hel1 && $SERVER_TYPE == cx32 && $VOLUME_GB == 200 && $OS_IMAGE == ubuntu-24.04 && $YES == 0 ]] ||
+    die "--ssh-key, --location, --server-type, --volume-size, --os-image and --yes belong to --target hetzner"
+  [[ $REF =~ ^[0-9a-f]{40}$ ]] ||
+    die "--target pve needs --ref as a full 40-character commit sha (got '$REF'); a tag, a branch or a short sha can move"
+  [[ $REPO_URL =~ ^https://[A-Za-z0-9._/-]+$ ]] || die "--repo-url '$REPO_URL' must be a plain https URL without credentials"
+  if [[ -n $OPT_LOCK_FILE ]]; then need "$LOCK_FILE" '^[A-Za-z0-9][A-Za-z0-9._/-]*$' "--lock-file"; fi
+  if [[ -n $OPT_SPLIT_MAP_FILE ]]; then need "$SPLIT_MAP_FILE" '^[A-Za-z0-9][A-Za-z0-9._/-]*$' "--split-map-file"; fi
+  need "$RELEASE_BUILD_ARGS" '^[A-Za-z0-9 ._/=:,+-]*$' "--build-args"
+  need "$EXPORT_ARGS" '^[A-Za-z0-9 ._/=:,+-]*$' "--export-args"
+  PVE_NAME=${NAME:-marinedata-build}
+  need "$PVE_NAME" '^[a-z0-9][a-z0-9-]*$' "--name"
+  need "$PVE_VMID" '^[0-9]+$' "--vmid"
+  ((PVE_VMID >= 100)) || die "--vmid must be at least 100"
+  need "$PVE_IP" '^[0-9.]+/[0-9]+$' "--ip"
+  PVE_ADDR=${PVE_IP%/*}
+  { ipv4_ok "$PVE_ADDR" && ((10#${PVE_IP#*/} <= 32)); } || die "--ip '$PVE_IP' is not an a.b.c.d/nn address"
+  ipv4_ok "$PVE_GW" || die "--gw '$PVE_GW' is not an IPv4 address"
+  need "$PVE_BRIDGE" '^[A-Za-z0-9_]+$' "--bridge"
+  need "$PVE_STORAGE" '^[A-Za-z0-9][A-Za-z0-9._-]*$' "--storage"
+  [[ $PVE_IMAGE =~ ^local:iso/[A-Za-z0-9][A-Za-z0-9._-]*$ ]] ||
+    die "--image '$PVE_IMAGE' must be local:iso/FILE (the 'local' directory storage, /var/lib/vz)"
+  PVE_IMG_PATH=/var/lib/vz/template/iso/${PVE_IMAGE#local:iso/}
+  need "$PVE_CORES" '^[0-9]+$' "--cores"
+  ((PVE_CORES >= 1 && PVE_CORES <= 128)) || die "--cores must be between 1 and 128"
+  need "$PVE_MEMORY" '^[0-9]+$' "--memory"
+  ((PVE_MEMORY >= 1024)) || die "--memory must be at least 1024 (MB)"
+  need "$PVE_DATA_GB" '^[0-9]+$' "--data-gb"
+  ((PVE_DATA_GB >= 10)) || die "--data-gb must be at least 10 (GB)"
+  need "$PVE_KEYS" '^/[A-Za-z0-9._/-]+$' "--keys-file"
+}
+
+# /etc/marinedata/settings.env: settings only, no credential of any kind.
+pve_settings() {
+  printf 'MARINEDATA_REF=%s\n' "$MARINEDATA_REF"
+  printf 'RELEASE_ID=%s\n' "$RELEASE_ID"
+  printf 'FLAVOUR=%s\n' "$FLAVOUR"
+  if [[ -n $OPT_LOCK_FILE ]]; then printf 'LOCK_FILE=%s\n' "$LOCK_FILE"; fi
+  if [[ -n $OPT_SPLIT_MAP_FILE ]]; then printf 'SPLIT_MAP_FILE=%s\n' "$SPLIT_MAP_FILE"; fi
+  if [[ -n $RELEASE_BUILD_ARGS ]]; then printf 'RELEASE_BUILD_ARGS=%q\n' "$RELEASE_BUILD_ARGS"; fi
+  if [[ -n $EXPORT_ARGS ]]; then printf 'EXPORT_ARGS=%q\n' "$EXPORT_ARGS"; fi
+  printf 'DATA_DEV=%s\n' "$PVE_DATA_DEV"
+}
+
+pve_tpl_yaml() {
+  cat <<'EOF'
+#cloud-config
+package_update: true
+packages: [qemu-guest-agent, git, ca-certificates, curl, jq]
+write_files:
+  - path: /etc/marinedata/settings.env
+    permissions: '0644'
+    content: |
+@SETTINGS@
+runcmd:
+  - [systemctl, enable, --now, qemu-guest-agent]
+  - [git, clone, --no-checkout, "@REPO_URL@", @REPO_DIR@]
+  - [sh, -c, '. /etc/marinedata/settings.env && git -C @REPO_DIR@ checkout --detach "$MARINEDATA_REF"']
+EOF
+}
+
+pve_tpl_script() {
+  cat <<'EOF'
+set -euo pipefail
+qm status @VMID@ >/dev/null 2>&1 && { echo "vmid @VMID@ exists"; exit 1; }
+qm list; pct list
+ping -c1 -W1 @IP@ >/dev/null && { echo "@IP@ answers"; exit 1; }
+ip neigh show @IP@                                   # expect nothing or FAILED
+pvesm status | grep -E '^(local|@STORAGE@) '              # both active
+stat -c %s @IMG_PATH@@IMG_NOTE@
+printf '%b\n' "$(qm config 103 | sed -n 's/^sshkeys: //p' | sed 's/%/\\x/g')" | grep -v '^$' > @KEYS@
+ssh-keygen -lf @KEYS@                       # exactly 2: root@rs-server-2, gitlab-user-20260213
+install -m 0644 @NAME@.yaml /var/lib/vz/snippets/@NAME@.yaml
+qm create @VMID@ --name @NAME@ \
+  --description 'Disposable marine-data v1.1.0 build. Raw qm, not in OpenTofu by design. Destroy after publish.' \
+  --ostype l26 --cpu host --sockets 1 --cores @CORES@ --memory @MEMORY@ --scsihw virtio-scsi-single \
+  --agent enabled=1 --serial0 socket --vga serial0 --onboot 0 --net0 virtio,bridge=@BRIDGE@,firewall=0,mtu=1
+qm importdisk @VMID@ @IMG_PATH@ @STORAGE@
+qm config @VMID@ | grep '^unused0: @STORAGE@:vm-@VMID@-disk-0'  # the name the next line uses
+qm set @VMID@ --scsi0 @STORAGE@:vm-@VMID@-disk-0,discard=on,iothread=1,ssd=1,backup=0
+qm resize @VMID@ scsi0 32G
+qm set @VMID@ --scsi1 @STORAGE@:@DATA_GB@,discard=on,iothread=1,ssd=1,backup=0
+qm set @VMID@ --ide2 @STORAGE@:cloudinit --boot order=scsi0
+qm set @VMID@ --ciuser rsadmin --sshkeys @KEYS@ \
+  --ipconfig0 ip=@CIDR@,gw=@GW@ --nameserver 1.1.1.1 --searchdomain localdomain
+qm set @VMID@ --cicustom vendor=local:snippets/@NAME@.yaml
+qm cloudinit dump @VMID@ user | grep -c 'ssh-'               # 2
+qm start @VMID@
+timeout 900 sh -c 'until qm guest ping @VMID@ 2>/dev/null; do sleep 15; done'
+qm guest exec @VMID@ --timeout 600 -- cloud-init status --wait
+qm guest exec @VMID@ -- sh -c 'ip -br link; ls -l /dev/disk/by-id/; lsblk -o NAME,SIZE,TYPE,PTTYPE'
+EOF
+}
+
+pve_render_yaml() {
+  local t settings
+  settings=$(pve_settings | sed 's/^/      /')
+  t=$(pve_tpl_yaml)
+  t=${t//@SETTINGS@/$settings}
+  t=${t//@REPO_URL@/$REPO_URL}
+  t=${t//@REPO_DIR@/$REPO_DIR}
+  printf '%s\n' "$t"
+}
+
+# The shebang, two comment lines and the cd are the only lines added to the plan's block; the cd is
+# there because the block installs ./NAME.yaml by a relative path.
+pve_render_script() {
+  local t note=""
+  if [[ $PVE_IMAGE == "$PVE_DEFAULT_IMAGE" ]]; then
+    note='   # 349634560'
+  fi
+  t=$(pve_tpl_script)
+  t=${t//@IMG_PATH@/$PVE_IMG_PATH}
+  t=${t//@IMG_NOTE@/$note}
+  t=${t//@VMID@/$PVE_VMID}
+  t=${t//@NAME@/$PVE_NAME}
+  t=${t//@CIDR@/$PVE_IP}
+  t=${t//@IP@/$PVE_ADDR}
+  t=${t//@GW@/$PVE_GW}
+  t=${t//@BRIDGE@/$PVE_BRIDGE}
+  t=${t//@STORAGE@/$PVE_STORAGE}
+  t=${t//@CORES@/$PVE_CORES}
+  t=${t//@MEMORY@/$PVE_MEMORY}
+  t=${t//@DATA_GB@/$PVE_DATA_GB}
+  t=${t//@KEYS@/$PVE_KEYS}
+  printf '#!/usr/bin/env bash\n'
+  printf '# Rendered by create.sh --target pve. Run as root on the Proxmox host, in the folder that holds\n'
+  printf '# %s.yaml: bash vm-%s.sh\n' "$PVE_NAME" "$PVE_VMID"
+  # shellcheck disable=SC2016  # literal text for the rendered script
+  printf 'cd "$(dirname "$0")" || exit 1\n'
+  printf '%s\n' "$t"
+}
+
+print_pve() {
+  local yaml=$1 script=$2
+  printf 'create.sh: PROXMOX TARGET. Nothing was created; no host, token or network was used.\n'
+  printf 'create.sh: wrote %s (settings only)\n' "$yaml"
+  printf 'create.sh: wrote %s (the qm sequence)\n' "$script"
+  printf '\n# 1. Read both files (printed below). The owner copies them into one folder on the Proxmox host and runs, as root:\n'
+  printf '  bash vm-%s.sh\n' "$PVE_VMID"
+  printf '\n# 2. From your own machine, once it has finished (the VM answers at %s):\n' "$PVE_ADDR"
+  printf "  ssh -J root@PVE_HOST rsadmin@%s 'cloud-init status; ping -c1 -M do -s 1372 1.1.1.1'\n" "$PVE_ADDR"
+  printf '\n# 3. In the VM as root (README, Proxmox section): the set-up first, then the stages\n'
+  printf '  set -a; . /etc/marinedata/settings.env; set +a; cd %s\n' "$REPO_DIR"
+  printf '  STAGES="" bash deploy/release-vm/bootstrap.sh\n'
+  printf '\n# 4. Teardown, only after the copy-back (README step 8). It destroys the build output.\n'
+  printf '  qm shutdown %s --timeout 120 || qm stop %s\n' "$PVE_VMID" "$PVE_VMID"
+  printf '  qm destroy %s --purge 1 --destroy-unreferenced-disks 1\n' "$PVE_VMID"
+  printf '  rm -f /var/lib/vz/snippets/%s.yaml %s\n' "$PVE_NAME" "$PVE_KEYS"
+  printf '\n# --- %s ---\n' "$yaml"
+  cat "$yaml"
+  printf '\n# --- %s ---\n' "$script"
+  cat "$script"
+}
+
+pve_main() {
+  pve_validate
+  local out=${OUT_DIR:-$HERE/out}
+  local yaml=$out/$PVE_NAME.yaml script=$out/vm-$PVE_VMID.sh
+  mkdir -p "$out"
+  pve_render_yaml >"$yaml"
+  pve_render_script >"$script"
+  chmod 755 "$script"
+  print_pve "$yaml" "$script"
+}
+
+case $TARGET in
+  hetzner | pve) ;;
+  *) die "--target must be hetzner or pve, got '$TARGET'" ;;
+esac
+if [[ $TARGET == pve ]]; then
+  pve_main
+  exit 0
+fi
+[[ -z $PVE_SEEN ]] || die "${PVE_SEEN# } work with --target pve only"
 need "$LOCATION" '^[a-z0-9-]+$' "--location"
 need "$SERVER_TYPE" '^[a-z0-9-]+$' "--server-type"
 need "$OS_IMAGE" '^[a-z0-9._-]+$' "--os-image"

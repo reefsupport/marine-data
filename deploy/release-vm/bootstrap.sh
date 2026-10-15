@@ -3,25 +3,36 @@
 #
 # Runs once, as root, from cloud-init user-data (create.sh prepends the non-secret settings as
 # `export` lines) or by hand: RELEASE_ID=v1.1 FLAVOUR=open MARINEDATA_REF=<sha> bash bootstrap.sh
-# (run it as a file, not piped into bash).
+# (run it as a file, not piped into bash). On the Proxmox VM the settings are in
+# /etc/marinedata/settings.env: `set -a; . /etc/marinedata/settings.env; set +a` first.
 #
-# Set-up (idempotent): docker + git, the volume at /data, a clone of MARINEDATA_REF, the image,
+# Set-up (idempotent): docker + git, the data disk at /data, a clone of MARINEDATA_REF, the image,
 # and /usr/local/bin/marinedata-run (runs a command in the image with this VM's mounts).
-# Stages (STAGES="gate plan" runs only those):
-#   lock    the lock and the frozen split map are in the checkout; print their sha256
-#   build   marinedata release build   -> /data/releases/$RELEASE_ID/$FLAVOUR
-#   export  hf_export + hf_card        -> /data/export/$RELEASE_ID/$FLAVOUR (the folder to upload)
-#   gate    marinedata release gate    -> GATES.json in the export folder
-#   plan    marinedata release publish -> the DRY RUN plan; this script never passes --go
+# STAGES="" (set but empty) stops after the set-up: no stage, no wait for the secrets file.
+# Stages (STAGES="gate plan" runs only those; unset runs all of them, in this order):
+#   lock      the lock and the frozen split map are in the checkout; print their sha256
+#   build     marinedata release build   -> /data/releases/$RELEASE_ID/$FLAVOUR
+#   export    hf_export + hf_card        -> /data/export/$RELEASE_ID/$FLAVOUR (the folder to upload)
+#   croissant marinedata release croissant -> croissant.json in the export folder
+#   gate      marinedata release gate    -> GATES.json in the export folder
+#   plan      marinedata release publish -> the DRY RUN plan; this script never passes --go
+#
+# The data disk is DATA_DEV (environment, else the DATA_DEV= line of /etc/marinedata/settings.env),
+# else the Hetzner volume /dev/disk/by-id/scsi-0HC_Volume_*, else the Proxmox disk
+# /dev/disk/by-id/scsi-0QEMU_QEMU_HARDDISK_drive-scsi1. A blank disk is formatted and one that holds a
+# filesystem is mounted as it is. One with a partition table, partitions, a mount or the root
+# filesystem is refused.
 #
 # Secrets never travel in user-data: it is stored in plain text with the server and on the VM.
 # The operator copies $SECRETS_FILE (MARINEDATA_S3_* lines, mode 600) to the VM and this script
 # waits for it. HF_TOKEN is not in that file: it is exported by hand for `publish --go` only.
 #
 # Settings (environment). Required: MARINEDATA_REF (a full commit sha; a tag can move),
-# RELEASE_ID, FLAVOUR (open|nc). Optional: REPO_URL, LOCK_FILE, SPLIT_MAP_FILE,
+# RELEASE_ID, FLAVOUR (open|nc). Optional: REPO_URL, LOCK_FILE, SPLIT_MAP_FILE, DATA_DEV,
 # RELEASE_BUILD_ARGS (extra `release build` flags), EXPORT_ARGS (extra hf_export flags),
 # SECRETS_FILE, SECRETS_WAIT_SECONDS, STAGES.
+# BOOTSTRAP_DRY_RUN=1 prints the stage list and what would happen to the data disk, then exits
+# without changing anything (exit 1 if the disk would be refused). It needs no root.
 
 set -Eeuo pipefail
 
@@ -33,8 +44,13 @@ RELEASE_BUILD_ARGS=${RELEASE_BUILD_ARGS:-}
 EXPORT_ARGS=${EXPORT_ARGS:-}
 SECRETS_FILE=${SECRETS_FILE:-/root/marinedata.env}
 SECRETS_WAIT_SECONDS=${SECRETS_WAIT_SECONDS:-3600}
-STAGES=${STAGES:-lock build export gate plan}
+# `-` not `:-`: STAGES set but empty means set-up only; only an unset STAGES runs every stage.
+STAGES=${STAGES-lock build export croissant gate plan}
 DATA_DIR=/data
+DATA_DEV=${DATA_DEV:-}
+SETTINGS_ENV=${SETTINGS_ENV:-/etc/marinedata/settings.env}
+HETZNER_DEV_GLOB='/dev/disk/by-id/scsi-0HC_Volume_*'
+PVE_DATA_DEV=/dev/disk/by-id/scsi-0QEMU_QEMU_HARDDISK_drive-scsi1
 LOG_DIR=$DATA_DIR/logs
 RUN_WRAPPER=/usr/local/bin/marinedata-run
 
@@ -42,6 +58,11 @@ say() { printf 'bootstrap: %s\n' "$*"; }
 die() {
   printf 'bootstrap: %s\n' "$*" >&2
   exit 1
+}
+
+# True for an empty value or a plain /dev path (no spaces, no '..').
+plain_dev() {
+  [[ -z $1 ]] || [[ $1 =~ ^/dev/[A-Za-z0-9._:+/-]+$ && $1 != *..* ]]
 }
 
 validate_settings() {
@@ -56,12 +77,13 @@ validate_settings() {
   [[ $SECRETS_FILE =~ ^/[A-Za-z0-9._/-]+$ ]] || die "SECRETS_FILE '$SECRETS_FILE' must be a plain absolute path"
   [[ $REPO_URL != -* ]] || die "REPO_URL '$REPO_URL' must not start with '-'"
   [[ $SECRETS_WAIT_SECONDS =~ ^[0-9]+$ ]] || die "SECRETS_WAIT_SECONDS must be a whole number"
+  plain_dev "$DATA_DEV" || die "DATA_DEV '$DATA_DEV' must be a plain /dev path (for example /dev/disk/by-id/...)"
   local stage
   # shellcheck disable=SC2086  # STAGES is a deliberate word list
   for stage in $STAGES; do
     case $stage in
-      lock | build | export | gate | plan) ;;
-      *) die "unknown stage '$stage' in STAGES (lock build export gate plan)" ;;
+      lock | build | export | croissant | gate | plan) ;;
+      *) die "unknown stage '$stage' in STAGES (lock build export croissant gate plan)" ;;
     esac
   done
 }
@@ -80,40 +102,113 @@ install_packages() {
   systemctl enable --now docker
 }
 
-# The Hetzner volume shows up as /dev/disk/by-id/scsi-0HC_Volume_<id>. A blank one is formatted;
-# one that already has a filesystem is mounted as it is and never reformatted.
-attach_volume() {
-  if mountpoint -q "$DATA_DIR"; then
-    return 0
+# Is /data already a mount point? (mountpoint is Linux-only; a missing one counts as "no".)
+data_mounted() {
+  command -v mountpoint >/dev/null 2>&1 && mountpoint -q "$DATA_DIR"
+}
+
+# The DATA_DEV= line of $SETTINGS_ENV, read and never sourced; empty when there is none.
+settings_data_dev() {
+  local line
+  [[ -r $SETTINGS_ENV ]] || return 0
+  line=$(sed -n 's/^DATA_DEV=//p' "$SETTINGS_ENV" | tail -n 1)
+  line=${line#[\"\']}
+  printf '%s' "${line%[\"\']}"
+}
+
+# Sets DATA_DEV and waits up to $1 s for the device: DATA_DEV from the environment or $SETTINGS_ENV
+# wins; else the Hetzner volume (/dev/disk/by-id/scsi-0HC_Volume_*); else the Proxmox scsi1 disk.
+resolve_data_dev() {
+  local max_wait=$1 waited=0 matches
+  if [[ -z $DATA_DEV ]]; then
+    DATA_DEV=$(settings_data_dev)
+    plain_dev "$DATA_DEV" || die "DATA_DEV '$DATA_DEV' in $SETTINGS_ENV must be a plain /dev path"
   fi
-  local matches waited=0 dev fs
-  while ((waited < 120)); do
-    matches=(/dev/disk/by-id/scsi-0HC_Volume_*)
-    if [[ -e ${matches[0]} ]]; then
-      break
+  while :; do
+    if [[ -n $DATA_DEV ]]; then
+      if [[ -e $DATA_DEV ]]; then
+        return 0
+      fi
+    else
+      matches=(/dev/disk/by-id/scsi-0HC_Volume_*)
+      if [[ -e ${matches[0]} ]]; then
+        ((${#matches[@]} == 1)) || die "more than one volume attached (${matches[*]}); detach the others or set DATA_DEV"
+        DATA_DEV=${matches[0]}
+        return 0
+      fi
+      if [[ -e $PVE_DATA_DEV ]]; then
+        DATA_DEV=$PVE_DATA_DEV
+        return 0
+      fi
     fi
+    ((waited < max_wait)) || break
     sleep 5
     waited=$((waited + 5))
   done
-  [[ -e ${matches[0]} ]] || die "no Hetzner volume attached (/dev/disk/by-id/scsi-0HC_Volume_*)"
-  ((${#matches[@]} == 1)) || die "more than one volume attached (${matches[*]}); detach the others"
-  dev=${matches[0]}
+  if [[ -n $DATA_DEV ]]; then
+    die "DATA_DEV $DATA_DEV does not exist"
+  fi
+  die "no data disk found: set DATA_DEV, or attach the Hetzner volume ($HETZNER_DEV_GLOB) or the Proxmox scsi1 disk ($PVE_DATA_DEV)"
+}
+
+# Prints why $1 must not be formatted and returns 1; prints nothing and returns 0 for a blank,
+# unused disk. A partitioned whole disk has no blkid TYPE, so the blkid test alone would format it.
+check_blank_disk() {
+  local dev=$1 pttype kids mounts
+  pttype=$(lsblk -no PTTYPE "$dev" 2>/dev/null) || { printf 'lsblk cannot read it'; return 1; }
+  kids=$(lsblk -nro TYPE "$dev" 2>/dev/null) || { printf 'lsblk cannot read it'; return 1; }
+  mounts=$(lsblk -nro MOUNTPOINTS "$dev" 2>/dev/null) || { printf 'lsblk cannot read it'; return 1; }
+  pttype=$(printf '%s\n' "$pttype" | awk 'NF { print $1; exit }')
+  if [[ -n $pttype ]]; then
+    printf 'it has a partition table (%s)' "$pttype"
+    return 1
+  fi
+  if (($(printf '%s\n' "$kids" | grep -c .) > 1)); then
+    printf 'it has partitions or other child devices'
+    return 1
+  fi
+  if printf '%s\n' "$mounts" | grep -qx /; then
+    printf 'it backs /'
+    return 1
+  fi
+  if printf '%s\n' "$mounts" | grep -q .; then
+    printf 'it or a child is mounted'
+    return 1
+  fi
+  return 0
+}
+
+# A blank disk is formatted (-m 0: the container runs as uid 10001, so the 5 % root reserve would
+# be unusable); one that already has a filesystem is mounted as it is and never reformatted.
+attach_volume() {
+  if data_mounted; then
+    return 0
+  fi
+  local dev fs why uuid
+  resolve_data_dev 120
+  dev=$DATA_DEV
   fs=$(blkid -o value -s TYPE "$dev" || true)
   if [[ -z $fs ]]; then
-    say "formatting the blank volume $dev as ext4"
-    mkfs.ext4 -q -F "$dev"
+    if ! why=$(check_blank_disk "$dev"); then
+      die "refusing to format $dev: $why"
+    fi
+    say "formatting the blank disk $dev as ext4"
+    mkfs.ext4 -q -F -m 0 "$dev"
   fi
   mkdir -p "$DATA_DIR"
   mount -o discard,defaults "$dev" "$DATA_DIR"
   if ! grep -qF " $DATA_DIR " /etc/fstab; then
-    printf '%s %s ext4 discard,nofail,defaults 0 0\n' "$dev" "$DATA_DIR" >>/etc/fstab
+    uuid=$(blkid -p -o value -s UUID "$dev")
+    [[ -n $uuid ]] || die "no UUID on $dev after mounting it"
+    printf 'UUID=%s %s ext4 discard,nofail,defaults 0 0\n' "$uuid" "$DATA_DIR" >>/etc/fstab
   fi
 }
 
 # uid 10001 is the non-root user of the image (Dockerfile).
 prepare_data_dir() {
   chown 10001:10001 "$DATA_DIR"
-  install -d -o 10001 -g 10001 "$DATA_DIR/cache" "$DATA_DIR/hf" "$DATA_DIR/releases" "$DATA_DIR/export"
+  install -d -o 10001 -g 10001 "$DATA_DIR/cache" "$DATA_DIR/hf" "$DATA_DIR/releases" "$DATA_DIR/export" \
+    "$DATA_DIR/tmp" "$DATA_DIR/torch"
   install -d "$LOG_DIR"
 }
 
@@ -176,13 +271,15 @@ wait_for_secrets() {
 
 # marinedata-run [--py] ARGS...: run marinedata (or python with --py) in the image, with /data
 # and the checkout's data/ (task labels, read-only) mounted. HF_TOKEN is passed through only
-# when the calling shell has it; the S3 env file is added only while it exists.
+# when the calling shell has it; the S3 env file is added only while it exists. TMPDIR and
+# TORCH_HOME sit on /data (the root disk is 32 GiB and also holds /var/lib/docker); --memory 14g
+# makes an overrun kill the container, not sshd.
 write_wrapper() {
   cat >"$RUN_WRAPPER" <<EOF
 #!/usr/bin/env bash
 # Written by bootstrap.sh. Usage: marinedata-run release publish ... | marinedata-run --py -m MODULE ...
 set -euo pipefail
-args=(--rm -e HF_TOKEN -v ${DATA_DIR}:${DATA_DIR} -v ${REPO_DIR}/data:/app/data:ro --workdir ${DATA_DIR})
+args=(--rm -e HF_TOKEN -e TMPDIR=${DATA_DIR}/tmp -e TORCH_HOME=${DATA_DIR}/torch --memory 14g -v ${DATA_DIR}:${DATA_DIR} -v ${REPO_DIR}/data:/app/data:ro --workdir ${DATA_DIR})
 if [[ -r ${SECRETS_FILE} ]]; then
   args+=(--env-file ${SECRETS_FILE})
 fi
@@ -242,6 +339,26 @@ stage_export() {
     --out "$EXPORT_DIR" --flavour "$FLAVOUR"
 }
 
+# The Hub repo id of $FLAVOUR, read from the checkout's registry/flavours.yaml (the host has no yaml tool).
+flavour_repo_id() {
+  awk -v want="$FLAVOUR" '
+    /^flavours:/ { in_flavours = 1; next }
+    /^[^ #]/ { in_flavours = 0 }
+    in_flavours && /^  [^ #]/ { cur = $1; sub(/:$/, "", cur) }
+    in_flavours && cur == want && $1 == "repo_id:" { v = $2; gsub(/\047|"/, "", v); print v; exit }
+  ' "$REPO_DIR/registry/flavours.yaml"
+}
+
+# Croissant metadata for the export folder: gates/croissant.py skips without croissant.json and
+# --require-all cannot pass. --citation is absolute: the wrapper's workdir is /data, not /app.
+stage_croissant() {
+  local repo_id
+  repo_id=$(flavour_repo_id) || return 1
+  [[ -n $repo_id ]] || die "no repo_id for flavour $FLAVOUR in $REPO_DIR/registry/flavours.yaml"
+  "$RUN_WRAPPER" release croissant "$EXPORT_DIR" --release-dir "$REL_DIR" \
+    --citation /app/CITATION.cff --repo-id "$repo_id"
+}
+
 # The gate suite (--all, --require-all) arrives with the gates branch; before that only the
 # masks gate exists, and 'release publish' then refuses for the missing required gates.
 stage_gate() {
@@ -273,7 +390,73 @@ bootstrap: dry run finished for $RELEASE_ID ($FLAVOUR) at $COMMIT.
 EOF
 }
 
+print_setup_done() {
+  cat <<EOF
+
+bootstrap: set-up finished for $RELEASE_ID ($FLAVOUR) at $COMMIT; no stage ran.
+  $DATA_DIR is mounted, image $IMAGE is built, $RUN_WRAPPER is written.
+  Run the stages (any subset, in order; build and export wait for $SECRETS_FILE, README step 4):
+    STAGES="lock build export croissant gate plan" bash $REPO_DIR/deploy/release-vm/bootstrap.sh
+EOF
+}
+
+# True when STAGES holds a stage that reads the bucket (build, export): only those wait for the secrets file.
+stages_need_secrets() {
+  local stage
+  # shellcheck disable=SC2086  # STAGES is a deliberate word list
+  for stage in $STAGES; do
+    if [[ $stage == build || $stage == export ]]; then
+      return 0
+    fi
+  done
+  return 1
+}
+
+# What BOOTSTRAP_DRY_RUN=1 says about the data disk. Read-only: lsblk and blkid, no mount, no mkfs.
+dry_run_device() {
+  local fs why
+  if data_mounted; then
+    say "dry run: $DATA_DIR is already a mount point: the data disk is left alone"
+    return 0
+  fi
+  resolve_data_dev 0
+  say "dry run: data disk $DATA_DEV"
+  if [[ $(id -u) -ne 0 ]]; then
+    say "dry run: not root, so blkid may not see a filesystem on it"
+  fi
+  fs=$(blkid -o value -s TYPE "$DATA_DEV" 2>/dev/null || true)
+  if [[ -n $fs ]]; then
+    say "dry run: $DATA_DEV holds a $fs filesystem: it would be mounted at $DATA_DIR as it is, never reformatted"
+  elif why=$(check_blank_disk "$DATA_DEV"); then
+    say "dry run: $DATA_DEV is blank and unused: it would be formatted ext4 (-m 0) and mounted at $DATA_DIR"
+  else
+    die "refusing to format $DATA_DEV: $why"
+  fi
+}
+
+dry_run() {
+  validate_settings
+  derive_paths
+  say "dry run: nothing is installed, mounted, formatted, cloned or built"
+  say "dry run: release $RELEASE_ID ($FLAVOUR) from $MARINEDATA_REF"
+  # shellcheck disable=SC2086  # STAGES is a deliberate word list
+  set -- $STAGES
+  say "dry run: stages=[$*]"
+  if (($# == 0)); then
+    say "dry run: STAGES is empty: set-up only, no stage runs and nothing waits for $SECRETS_FILE"
+  elif stages_need_secrets; then
+    say "dry run: build or export is in STAGES: the run waits for $SECRETS_FILE"
+  else
+    say "dry run: no build or export stage: the run does not wait for $SECRETS_FILE"
+  fi
+  dry_run_device
+}
+
 main() {
+  if [[ ${BOOTSTRAP_DRY_RUN:-0} == 1 ]]; then
+    dry_run
+    return 0
+  fi
   [[ $(id -u) -eq 0 ]] || die "run as root"
   validate_settings
   derive_paths
@@ -285,27 +468,25 @@ main() {
   say "release $RELEASE_ID ($FLAVOUR) from $MARINEDATA_REF"
   clone_repo
   build_image
-  local stage needs_secrets=0
-  # shellcheck disable=SC2086  # STAGES is a deliberate word list
-  for stage in $STAGES; do
-    if [[ $stage == build || $stage == export ]]; then
-      needs_secrets=1
-    fi
-  done
+  local stage
   if [[ " $STAGES " == *" lock "* ]]; then
     run_stage lock stage_lock
   fi
-  if ((needs_secrets)); then
+  if stages_need_secrets; then
     wait_for_secrets
   fi
   write_wrapper
-  # shellcheck disable=SC2086
+  # shellcheck disable=SC2086  # STAGES is a deliberate word list
   for stage in $STAGES; do
     if [[ $stage != lock ]]; then
       run_stage "$stage" "stage_$stage"
     fi
   done
-  print_next_steps
+  if [[ -n ${STAGES//[[:space:]]/} ]]; then
+    print_next_steps
+  else
+    print_setup_done
+  fi
 }
 
 if [[ ${BOOTSTRAP_SOURCE_ONLY:-0} != 1 ]]; then
