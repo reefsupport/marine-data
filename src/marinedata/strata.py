@@ -37,6 +37,9 @@ from .scan import SplitName
 
 TRAIN: SplitName = "train"
 TEST: SplitName = "test"
+TEST_OOD: SplitName = "test_ood"
+"""The out-of-distribution evaluation split (design 2.4): outside the 70/15/15 quota, assigned only
+by :mod:`marinedata.splitmap_inherit` from the ``splits/v2.yaml`` holdouts."""
 DEFAULT_MIN_GROUPS = 3
 
 

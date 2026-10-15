@@ -35,6 +35,9 @@ UNION_MAX_HAMMING = 4
 """Eval-capable rows this close are one component in split-map generation (rule B)."""
 NEVER_EVAL_EXCLUDE_MAX_HAMMING = 8
 """A never-eval row this close to any eval-capable row is dropped from the release (A)."""
+INHERIT_BAND_MAX_HAMMING = NEVER_EVAL_EXCLUDE_MAX_HAMMING
+"""A new image this close to an image of an inherited (prior-release) map is never-eval when that
+image is train and never-train when it is an evaluation image (:func:`v1_band_pairs`)."""
 CHAIN_GUARD_FRACTION = 0.01
 """Largest near-dup-merged component, as a fraction of all images, before generation
 refuses to continue (dHash links are not transitive-safe: A~B~C can chain)."""
@@ -221,6 +224,18 @@ def near_pairs(
     pairs = [(q_keys[i], t_keys[j], d) for (i, j), d in found.items()]
     pairs.sort()
     return pairs
+
+
+def v1_band_pairs(
+    new: Mapping[str, int],
+    prior: Mapping[str, int],
+    *,
+    union_max: int = UNION_MAX_HAMMING,
+    band_max: int = INHERIT_BAND_MAX_HAMMING,
+) -> list[tuple[str, str, int]]:
+    """``(new_sha, prior_sha, hamming)`` with ``union_max < hamming <= band_max``: the band between
+    "one component" (the union radius, handled by the self-join) and "unrelated". Sorted."""
+    return [pair for pair in near_pairs(new, band_max, prior) if pair[2] > union_max]
 
 
 def default_workers() -> int:

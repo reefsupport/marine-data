@@ -195,6 +195,17 @@ class SplitMap:
     near_dup: dict[str, object] = field(default_factory=dict)
     """The near-duplicate check that shaped the map (WS-D S47): dHash definition, Pillow
     version, thresholds. Written only when set, like ``stratify``."""
+    inherits: dict[str, object] = field(default_factory=dict)
+    """The prior release map this one embeds (``release``, ``seed``, ``groups``, ``sha256``);
+    see :mod:`marinedata.splitmap_inherit`. Written only when set, like ``stratify``."""
+    ood: dict[str, object] = field(default_factory=dict)
+    """The out-of-distribution rules that routed groups to ``test_ood`` (rules digest, province,
+    one entry per holdout); see :mod:`marinedata.splitv2.release_ood`. Written only when set."""
+    ood_rules: dict[str, list[str]] = field(default_factory=dict)
+    """``split_group`` -> the holdout names that sent it to ``test_ood``. Written only when set."""
+    withheld: dict[str, str] = field(default_factory=dict)
+    """``split_group`` -> why it has no assignment: it cannot be placed without contradicting a
+    prior-release split it neighbours (GATES.json lists it). Written only when set."""
 
 
 def load_split_map(path: str | Path) -> SplitMap | None:
@@ -223,6 +234,10 @@ def load_split_map(path: str | Path) -> SplitMap | None:
         stratify=raw.get("stratify", ""),
         schema_version=version,
         near_dup=dict(raw.get("near_dup", {})),
+        inherits=dict(raw.get("inherits", {})),
+        ood=dict(raw.get("ood", {})),
+        ood_rules={key: list(tags) for key, tags in raw.get("ood_rules", {}).items()},
+        withheld=dict(raw.get("withheld", {})),
     )
 
 
@@ -241,6 +256,10 @@ def save_split_map(path: str | Path, split_map: SplitMap) -> None:
         "release": split_map.release,
         **({"stratify": split_map.stratify} if split_map.stratify else {}),
         **({"near_dup": dict(sorted(split_map.near_dup.items()))} if split_map.near_dup else {}),
+        **({"inherits": dict(sorted(split_map.inherits.items()))} if split_map.inherits else {}),
+        **({"ood": dict(sorted(split_map.ood.items()))} if split_map.ood else {}),
+        **({"ood_rules": dict(sorted(split_map.ood_rules.items()))} if split_map.ood_rules else {}),
+        **({"withheld": dict(sorted(split_map.withheld.items()))} if split_map.withheld else {}),
         "assignments": dict(sorted(split_map.assignments.items())),
     }
     p = Path(path)
@@ -463,6 +482,7 @@ def resolve_splits(
         merged = expanded
 
     if not frozen and (new_assignment or existing is None):
+        carried = existing if existing is not None else SplitMap(by=by, seed=seed, ratios={})
         save_split_map(
             path,
             SplitMap(
@@ -474,6 +494,10 @@ def resolve_splits(
                 release=release_value,
                 stratify=stratify,
                 near_dup=near_dup_value,
+                inherits=dict(carried.inherits),  # header fields a rewrite must not drop
+                ood=dict(carried.ood),
+                ood_rules={key: list(tags) for key, tags in carried.ood_rules.items()},
+                withheld=dict(carried.withheld),
             ),
         )
 
