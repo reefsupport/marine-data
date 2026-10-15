@@ -221,7 +221,7 @@
 | `swdd-sss-wall` | swdd sss wall | open | CC-BY-4.0 | 10,771 | bbox | record-13692547 | ✓ | – |
 | `sweet-corals` | wildflow/sweet-corals | open | CC-BY-4.0 | 90,289 | camera-pose, point-cloud-label | 2025 | – | – |
 | `syke-ifcb-uto-2021` | syke ifcb uto 2021 | unknown | CC-BY-4.0 | 151,235 | — | unversioned | – | – |
-| `synthetic-seabed-debris` | synthetic seabed debris | restricted-nc | CC-BY-NC-4.0 | 4,830 | — | 1.0.0 | ✓ | – |
+| `synthetic-seabed-debris` | synthetic seabed debris | restricted-nc | CC-BY-NC-4.0 | 4,830 | bbox | 1.0.0 | ✓ | – |
 | `tascpc` | Tasmania Coral Point Count | internal-only | unknown | 1,300 | — | unversioned | – | – |
 | `trash-icra19` | trash icra19 | unknown | CC-BY-4.0 | — | — | unversioned | – | – |
 | `trashcan` | trashcan | unknown | CC-BY-4.0 | — | — | unversioned | – | – |

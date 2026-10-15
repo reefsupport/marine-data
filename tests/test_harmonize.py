@@ -186,9 +186,11 @@ def test_coralscapes_records_its_lossiness(registry: Registry) -> None:
     assert coverage[Fidelity.COARSENED] > 0
     assert coverage[Fidelity.APPROXIMATE] > 0
     # 'unknown hard substrate' is the dumping ground — it must never claim exactness.
+    # Since taxonomy 3.0.0 (D9) it is unmapped rather than an approximate RK edge.
     edge = walk.edge("unknown hard substrate")
     assert edge is not None
-    assert edge.fidelity is Fidelity.APPROXIMATE
+    assert edge.fidelity is Fidelity.UNMAPPABLE
+    assert not edge.targets
 
 
 def test_roboflow_unhealthy_never_resolves_to_bleached(registry: Registry) -> None:

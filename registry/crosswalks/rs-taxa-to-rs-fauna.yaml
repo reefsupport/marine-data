@@ -1,0 +1,18 @@
+# Declared bridges (taxonomy 3.0.0, R3, design 3.1). Each edge is a rs-taxa-v1 subtree ROOT with the same AphiaID on both sides
+# (exact; tests/test_taxonomy.py checks it). Every rs-taxa-v1 descendant of the root reaches the same target as coarsened.
+crosswalks:
+- id: rs-taxa-to-rs-fauna
+  source_schema: rs-taxa-v1
+  target_schema: rs-fauna-v1
+  description: 'Declared bridges from rs-taxa-v1 subtree roots to rs-fauna-v1 classes: Actinopterygii -> FISH_ACTINOPT, Elasmobranchii -> FISH_ELASMO.'
+  edges:
+  - source_label: Actinopterygii
+    source_label_id: A10194
+    targets: {taxon: FISH_ACTINOPT}
+    fidelity: exact
+    note: 'AphiaID 10194 on both sides; species below coarsen to FISH_ACTINOPT'
+  - source_label: Elasmobranchii
+    source_label_id: A10193
+    targets: {taxon: FISH_ELASMO}
+    fidelity: exact
+    note: 'AphiaID 10193 on both sides; species below coarsen to FISH_ELASMO'

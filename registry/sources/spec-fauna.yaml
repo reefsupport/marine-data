@@ -1010,9 +1010,9 @@ sources:
     redistribution: unknown
     provenance: public
     verification:
-      verified_on: 2026-10-08
-      verified_by: "registry/ingest-specs/synthetic-seabed-debris.yaml: license field copied verbatim, not independently checked"
-      method: secondary
+      verified_on: 2026-10-15
+      verified_by: "https://zenodo.org/api/records/21208479 read 2026-10-15: metadata.license.id cc-by-nc-4.0, access_right open (same as the LIC-A audit 2026-10-05)"
+      method: dataset-card
     access:
       method: s3
       uri: s3://rs-storage-open/sources/synthetic-seabed-debris/1.0.0
@@ -1025,7 +1025,12 @@ sources:
       size_bytes: 4464552466
     modalities: [image]
     capabilities: [general-pretraining]
-    loader: { layout: staged-tree }
+    annotations:
+      - kind: bbox
+        classes: 20
+        supervises: []
+        notes: "Synthetic debris-on-seabed images with YOLO boxes (ingest spec label_type). 19 debris classes map to NT_DEBRIS (rs-taxa-v1, coarsened: item detail stays in the source label); the generic Fauna class maps to Animalia (approximate). Class names come from the synthetic-seabed-debris crosswalk."
+    loader: { layout: staged-tree, schema_id: dataset-native, crosswalk_id: synthetic-seabed-debris }
     n_images: 4830
     n_images_method: "ingest-json"
     coverage: { regions: [unknown] }

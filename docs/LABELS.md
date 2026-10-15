@@ -226,11 +226,11 @@ still follows the crosswalks. `Crosswalk alone` below is what the registry gives
 
 | Scheme | Source | Native label | Crosswalk alone | Scheme |
 |---|---|---|---|---|
-| `benthic-coarse` | `coralscapes` | `unknown hard substrate` | `ABIOTIC` | ignored (255) |
+| `benthic-coarse` | `coralscapes` | `unknown hard substrate` | ignored (255) | ignored (255) |
 | `benthic-coarse` | `coralscapes` | `sponge` | ignored (255) | `OTHER_FAUNA` |
 | `benthic-coarse` | `coralscapes` | `anemone` | ignored (255) | `OTHER_FAUNA` |
 | `benthic-coarse` | `coralscapes` | `algae covered substrate` | ignored (255) | `ALGAE` |
-| `coral-binary` | `coralscapes` | `unknown hard substrate` | `NOT_CORAL` | ignored (255) |
+| `coral-binary` | `coralscapes` | `unknown hard substrate` | ignored (255) | ignored (255) |
 | `coral-binary` | `coralseg-ucsd-mosaics` | `Other` | ignored (255) | `NOT_CORAL` |
 | `coral-binary` | `coralscop-masks-rs` | `coral` | ignored (255) | `CORAL` |
 
