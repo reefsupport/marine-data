@@ -13,3 +13,32 @@ flavours:
     repo_id: reefsupport/marine-data-nc
     profile: ship-noncommercial
     profiles: [ship-noncommercial]
+    # Frozen exceptions (D3, accepted 2026-10-15). The v1.0 nc repo already publishes two sources the
+    # registry now classes `internal-only`. Those published files stay exactly as they are (v1.0 is frozen),
+    # and nothing else changes for them: `ships_in` still refuses both sources, v1.1 adds no row from them,
+    # and the licence gate raises on every row of these sources that is not in a shard whose sha256 is in
+    # `files_sha256`. The allowlist is files, never rows or sources, so it can never admit a new row.
+    # `files_sha256` is filled from the existing v1.0 nc parquet at publish time (one digest per shard,
+    # `shards_v1_0` of them); an empty list admits nothing. Lifting is the owner's call: drop the entry once
+    # the registry class allows nc (coralscop) or written permission arrives (coralseg).
+    frozen_exceptions:
+      - source_id: coralscop-masks-rs
+        config: coral-masks-machine
+        registry_class: internal-only
+        licence: CC-BY-NC-SA-4.0
+        shards_v1_0: 21
+        files_sha256: []
+        reason: >-
+          CoralSCOP-generated masks, registry class internal-only today (reef-support-own.yaml). The v1.0 nc
+          rows predate that class and stay as published. Share-alike (CC-BY-NC-SA-4.0) applies to them in nc.
+          Lift by reclassifying the data to restricted-nc.
+      - source_id: coralseg-ucsd-mosaics
+        config: coral-masks
+        registry_class: internal-only
+        licence: NO-LICENCE-STATED
+        shards_v1_0: 4
+        files_sha256: []
+        reason: >-
+          UCSD mosaics with no licence published (all rights reserved by default), registry class internal-only.
+          The v1.0 nc rows stay until written UCSD permission arrives or a post-freeze nc release removes them
+          (removal rewrites v1.0 rows, which is forbidden during the hackathon).
