@@ -396,6 +396,7 @@ sources:
     citation: "HF dataset AnTo2209/MarineEVT"
     notes: "Folded from registry/ingest-specs/marineevt.yaml on 2026-10-08 (P1.2). Spec license string, verbatim: 'unstated'. Domain, modalities and capabilities are keyword inferences from the spec text. P1.2b (2026-10-08) restored the class to open: the LIC audit (2026-10-05) read the upstream licence (MIT), see licence_evidence."
     tags: [spec-folded]
+    release_skip_reason: "deferred to v1.2: not in the v1.1.0 fetch list (vm-build-plan 4.3, md-design 2); staged tree 33.8 GiB"
     checksums:
       version: "rev-37488d3c7690"
       root_digest: fdfe38fd7fe6082f9cee8b5345aab5683fbbf907b1b6d58e72c118758ac4d366

@@ -109,6 +109,7 @@ sources:
     citation: "doi:10.5281/zenodo.10544811 — AUV-Based Multi-Sensor Dataset: Forward-Looking Camera (FLC) and Forward-Looking Sonar (FLS) Observations in t"
     notes: "Folded from registry/ingest-specs/auv-flc-fls-sunboat.yaml on 2026-10-08 (P1.2). Spec license string, verbatim: 'cc-by-4.0'. Domain, modalities and capabilities are keyword inferences from the spec text."
     tags: [spec-folded]
+    release_skip_reason: "deferred to v1.2: not in the v1.1.0 fetch list (vm-build-plan 4.3, md-design 2); staged tree 35.1 GiB"
     checksums:
       version: "record-10544811"
       root_digest: 56b301381b83d4463d6d9e41f7cdc80d4aa0b189764f625a2888e1bd447c53c6

@@ -18,10 +18,11 @@ from datetime import UTC, datetime
 from pathlib import Path
 
 import yaml
-from pydantic import BaseModel, ConfigDict, ValidationError
+from pydantic import BaseModel, ConfigDict, Field, ValidationError
 
 from .gate import evaluate
 from .registry import Registry
+from .release_scope import release_scope, scope_problem
 
 LOCK_FILE = "release.lock.yaml"
 FLAVOURS = ("open", "nc")
@@ -55,6 +56,10 @@ class ReleaseLock(BaseModel):
     flavour: str
     configs: tuple[str, ...]
     sources: tuple[LockSource, ...]
+    # Pinned sources the registry deliberately keeps out of this release (release_skip_reason):
+    # {id: reason}, an audit trail only. Optional, and written only when non-empty, so every
+    # lock without exclusions is byte-identical to one written before the field existed.
+    excluded: dict[str, str] = Field(default_factory=dict)
 
     def source_ids(self) -> frozenset[str]:
         return frozenset(s.id for s in self.sources)
@@ -120,7 +125,10 @@ def build_lock(
     code_sha: str | None = None,
     reconstructed_at_sha: str | None = None,
 ) -> ReleaseLock:
-    """Pin ``source_ids`` (default: every source the flavour can ship) from the registry."""
+    """Pin ``source_ids`` (default: the flavour's release scope, see :mod:`.release_scope`).
+
+    The scope is the pinned staged trees the profile admits and the registry does not skip; the
+    pinned sources it skips are recorded under ``excluded``. Naming a skipped source fails."""
     if flavour not in FLAVOURS:
         raise ReleaseLockError(f"flavour must be one of {FLAVOURS}, got {flavour!r}")
     cfgs = tuple(configs)
@@ -128,11 +136,17 @@ def build_lock(
     if not cfgs or unknown:
         raise ReleaseLockError(f"missing or malformed --config {unknown or ''} (kebab-case ids)")
     shippable = _shippable(registry, flavour)
-    ids = sorted(set(source_ids)) if source_ids is not None else sorted(shippable)
+    admitted, excluded = release_scope(registry, flavour)
+    ids = sorted(set(source_ids)) if source_ids is not None else sorted(admitted)
     bad = [i for i in ids if i not in shippable]
     if bad:
         raise ReleaseLockError(
             f"cannot ship in flavour {flavour!r} (denied or wrong class): {', '.join(bad)}"
+        )
+    if left_out := [i for i in ids if registry.source(i).release_skip_reason]:
+        raise ReleaseLockError(
+            "the registry leaves these out of the release (release_skip_reason): "
+            + "; ".join(f"{i} ({registry.source(i).release_skip_reason})" for i in left_out)
         )
     missing = [i for i in ids if not _pin(registry, i)]
     if missing:
@@ -156,6 +170,7 @@ def build_lock(
         flavour=flavour,
         configs=cfgs,
         sources=entries,
+        excluded=excluded,
     )
 
 
@@ -165,6 +180,8 @@ def write_lock(lock: ReleaseLock, path: str | Path) -> Path:
     data = lock.model_dump(mode="json")
     if not lock.reconstructed:  # the reconstruction keys appear only on a reconstructed lock
         del data["reconstructed"], data["reconstructed_at_sha"]
+    if not lock.excluded:  # ... and `excluded` only when the registry kept something out
+        del data["excluded"]
     out.write_text(yaml.safe_dump(data, sort_keys=False), encoding="utf-8")
     return out
 
@@ -179,6 +196,8 @@ def load_lock(path: str | Path, registry: Registry) -> ReleaseLock:
         raise ReleaseLockError(f"{path}: flavour {lock.flavour!r} is not one of {FLAVOURS}")
     if bad := [c for c in lock.configs if not _CONFIG_ID.fullmatch(c)] or not lock.configs:
         raise ReleaseLockError(f"{path}: missing or malformed config id(s) {bad or ''}")
+    if both := sorted(set(lock.excluded) & lock.source_ids()):
+        raise ReleaseLockError(f"{path}: source(s) both locked and excluded: {', '.join(both)}")
     for entry in lock.sources:
         try:
             src = registry.source(entry.id)
@@ -209,7 +228,7 @@ def check_build_against_lock(
     local_ids: Iterable[str] = (),
 ) -> None:
     """Refuse (one line, naming the source) a build the lock does not cover."""
-    from .flavours import ships_in
+    from .fetchers_remote import _is_pinned_staged_tree
 
     if lock.release_id != release_id or lock.flavour != flavour:
         raise ReleaseLockError(
@@ -217,12 +236,15 @@ def check_build_against_lock(
             f"not {release_id!r}/{flavour!r}"
         )
     prof, local = registry.profile(profile), set(local_ids)
+    # The same scope `release lock` writes and `_resolve_roots` fetches (release_scope.py): a
+    # `--local` tree or a pinned staged tree, minus what the registry skips.
     wanted = [
         s.id
         for s in registry
-        if evaluate(s, prof).allowed
-        and ships_in(registry, s.id, flavour)
-        and (s.id in local or _pin(registry, s.id))
+        if scope_problem(
+            registry, prof, s, flavour, rooted=s.id in local or _is_pinned_staged_tree(s)
+        )
+        is None
     ]
     if missing := sorted(set(wanted) - lock.source_ids()):
         raise ReleaseLockError(f"source not in the release lock: {', '.join(missing)}")

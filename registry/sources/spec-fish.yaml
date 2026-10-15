@@ -171,6 +171,7 @@ sources:
     citation: "HF dataset perona-lab/Huntington_and_Caltech_Koi_RGB_and_Sonar"
     notes: "Folded from registry/ingest-specs/koi-rgb-sonar.yaml on 2026-10-08 (P1.2). Spec license string, verbatim: 'mit'. Domain, modalities and capabilities are keyword inferences from the spec text."
     tags: [spec-folded]
+    release_skip_reason: "deferred to v1.2: not in the v1.1.0 fetch list (vm-build-plan 4.3, md-design 2); staged tree 212.7 GiB, more than twice the 100 GiB build-VM disk"
     checksums:
       version: "rev-4120e0f1b59d"
       root_digest: 61889c69d52b7a3edfb41bf4f7ba420ccc14ba1a3c2ecc27545339f281fbefe8

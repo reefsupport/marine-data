@@ -277,7 +277,7 @@ def test_release_split_map_cli_writes_once_and_never_overwrites(
     assert IMAGE_SUFFIXES  # imported for the walk-layout fixtures' suffix
 
 
-_REASONS = ("context-layer", "non-image-modality", "no-staged-images")
+_REASONS = ("context-layer", "non-image-modality", "no-staged-images", "deferred to v1.2")
 
 
 def test_every_releasable_registry_source_is_covered_or_carries_an_explicit_reason() -> None:
