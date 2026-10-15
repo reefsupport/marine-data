@@ -21,6 +21,18 @@ Nothing below is in a release yet. It is on `main` or on the Phase A branches na
 - Frozen exceptions (R5): `registry/flavours.yaml` lists the two v1.0 sources of the non-commercial flavour whose registry class is now internal-only. Their published files stay as they are; no source or new row is admitted. The licence gate raises `frozen_exception_new_row` for any row of those sources outside an allowlisted v1.0 shard (sha256), and RELEASE.json lists the exceptions.
 - Attribution terms (R6): `registry/licences.yaml` gains `WORMS-CC-BY-4.0` and `MEOW-WORKING-GROUP`. MEOW polygon geometry is never published, only the derived realm, province and ecoregion strings with the citation.
 
+### v1.1.0: `feat/v1.1-dedup-split` (D1, D2)
+
+- Inherited split map (D1): `marinedata release split-map --inherit PRIOR_SPLIT_MAP.json` embeds the v1.0 `SPLIT_MAP.json` verbatim and
+  allocates only the new groups around it. An image whose digest is in a v1.0 group keeps that split, and a new group that shares a
+  component with it (digest, dHash within 4 bits, or a `dedup run` group) takes it; a component the v1.0 map had split apart withholds its
+  new groups. New images 5 to 8 dHash bits from a v1.0 image are never-eval (near train) or never-train (near val/test). `--lock` (repeatable)
+  scopes the enumeration to the sources the locks name. v1.0 assignments are never moved (an append-only check raises).
+- `test_ood` (D2): the holdouts in `registry/splits/v2.yaml` route matching new groups, with their whole component, to a fourth split
+  outside the 70/15/15 quota (`--ood-rules`, `--no-ood`, `--ood-metadata`); the map header records the rules sha256, each holdout's outcome
+  and the matching rule per group. Per-image geo/depth/platform/time fields come from an optional Parquet until SampleRow v3 carries them.
+- Docs: the exact flags for the VM run are in `docs/release-runbook.md` (step 2) and `docs/cli.md`.
+
 ### Phase A: `feat/card-croissant` (merged into `feat/phase-a`; includes `feat/join` and `feat/gates`)
 
 - Release gates (P1.6): `marinedata release gate BUILD --all --require-all` runs the licence, dedup, splits, masks, privacy (EXIF GPS), load, card and croissant gates and merges them into `GATES.json`; `--masks DIR` and `--metadata DIR --gates FILE` keep working in the same command (docs/GATES.md). The dedup gate no longer fails EXIF-transposed rows on `image_sha256`: it checks that the bytes decode and match the row's width/height.

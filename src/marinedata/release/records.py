@@ -75,3 +75,19 @@ class SplitMapStats:
     dedup_group_links: int = 0
     """Links added from the ``dedup run`` groups (WP-R6): every image of a dedup group in the
     enumeration is tied to the group's first image, so a near-dup group never straddles splits."""
+    inherited_groups: int = 0
+    """Groups of the inherited prior map: all kept verbatim (D1)."""
+    inherit_adopted_groups: int = 0
+    """New groups that took a prior split because a prior group shares their component."""
+    inherit_conflict_components: int = 0
+    """Components whose prior groups the prior map had split apart (new groups withheld)."""
+    inherit_band_pairs: int = 0
+    """New x prior image pairs inside the near-duplicate band (5..8): never-eval / never-train."""
+    withheld_groups: int = 0
+    """New groups with no entry, because no split can honour every prior neighbour."""
+    ood_components: int = 0
+    """Components routed to ``test_ood`` by the ``splits/v2.yaml`` holdouts (D2)."""
+    ood_groups: int = 0
+    """Split groups in those components."""
+    ood_blocked_components: int = 0
+    """Components an OOD rule matched but that precedence placed elsewhere (prior, band, ...)."""

@@ -10,11 +10,14 @@ from ..checksums import file_digest
 from ..licence_class import release_excluded
 from ..neardup import NearDupChainError, NearDupConfig, compute_dhashes, near_dup_record, near_pairs
 from ..registry import Registry
-from ..splitmap import MergeInfo, load_split_map, resolve_splits, rows_to_counts
+from ..splitmap import MergeInfo, SplitMap, load_split_map, resolve_splits, rows_to_counts
+from ..splitmap_inherit import resolve_inherited_splits
+from ..splitv2.rules import RulesConfig
 from ..strata import DEFAULT_MIN_GROUPS, TEST, TRAIN
 from ..upstream_split import honoured_test_groups
 from .entries import _admitted_source_ids, _never_eval_source_ids, enumerate_release_rows
 from .records import SplitMapStats
+from .split_map_inherit import plan_inheritance
 
 
 def dedup_group_links(
@@ -53,6 +56,10 @@ def generate_split_map(
     upstream_test_off: Iterable[str] = (),
     near_dup_groups: Mapping[str, str] | None = None,
     near_dup_header: Mapping[str, object] | None = None,
+    inherit: SplitMap | None = None,
+    inherit_sha256: str = "",
+    ood_rules: RulesConfig | None = None,
+    ood_metadata: Mapping[str, Mapping[str, object]] | None = None,
 ) -> SplitMapStats:
     """Enumerate every admitted staged tree in ``roots`` and write a fresh, stratified
     ``SPLIT_MAP.json`` at ``out`` — the "no hand-built TSV" path from staged trees straight
@@ -107,6 +114,17 @@ def generate_split_map(
     sources, never-eval included), so a near-duplicate group has one split and ``dedup gate``
     finds no spanning group. ``near_dup_header`` is recorded under the map's ``near_dup`` header
     (the groups file digest, or the explicit ``--no-near-dup`` opt-out).
+
+    ``inherit`` (D1/D2, a v1.1.0 map from the v1.0 one): the prior release's
+    :class:`~marinedata.splitmap.SplitMap` (``inherit_sha256`` = the digest of its bytes). Its
+    assignments are embedded verbatim and never reassigned; ``roots`` must hold the prior trees as
+    well as the new ones, because the near-duplicate search spans both. New groups are placed
+    around them by :func:`~marinedata.splitmap_inherit.resolve_inherited_splits`: a group sharing a
+    component with prior groups takes their split (and is withheld when the prior map split those
+    apart), and a new image within the near-duplicate band of a prior train image is never-eval,
+    of a prior evaluation image never-train. ``ood_rules`` (``splits/v2.yaml``) routes matching
+    groups to ``test_ood``, outside the 70/15/15 quota; ``ood_metadata`` supplies the per-image
+    geo, depth, platform and time fields. ``inherit=None`` is the unchanged v1.0 behaviour.
     """
     if load_split_map(out) is not None:
         raise ValueError(f"{out} already exists — remove it first to regenerate")
@@ -130,6 +148,7 @@ def generate_split_map(
         )
     )
     links: list[tuple[str, str]] = []
+    hashes: dict[str, int] = {}
     if near_dup is not None:
         eval_shas = sorted({sha for sha, _, source in rows if source not in never_eval_sources})
         hashes = compute_dhashes(
@@ -156,37 +175,74 @@ def generate_split_map(
         for group, sources in group_to_strata.items()
         if sources and sources <= never_eval_sources
     }
+    plan = (
+        plan_inheritance(
+            rows,
+            inherit=inherit,
+            never_eval_sources=never_eval_sources,
+            canonical=merge_info.canonical,
+            hashes=hashes,
+            near_dup=near_dup,
+            ood_rules=ood_rules,
+            ood_metadata=ood_metadata,
+        )
+        if inherit is not None
+        else None
+    )
+    if plan is not None:  # a prior-release neighbour binds a component; never-eval-only wins
+        forced = {**plan.forced, **forced}
     # WP-R2c: a group with an upstream-test row pulls its whole merged component to test.
     # `merge_info.canonical` already joins digest and near-dup components; the never-eval
-    # train rule above wins over it.
+    # train rule above wins over it, and (D2) so does a test_ood holdout.
     test_groups = honoured_test_groups(
         upstream_by_source, honour=honour_upstream_test, off=upstream_test_off
     )
     upstream_test_components = {merge_info.canonical.get(g, g) for g in test_groups}
     for canon in sorted(upstream_test_components):
-        forced.setdefault(canon, TEST)
+        if plan is None or canon not in plan.ood:
+            forced.setdefault(canon, TEST)
 
-    resolve_splits(
-        out,
-        counts,
-        ratios or dict(SUPERVISED_DEFAULT_RATIOS),
-        seed=seed,
-        by="group",
-        now=now,
-        release=release,
-        strata=strata,
-        stratify="source",
-        min_groups=min_groups,
-        merge_canonical=merge_info.canonical,
-        forced=forced,
-        near_dup=(
-            {
-                **(near_dup_record(near_dup) if near_dup is not None else {}),
-                **(near_dup_header or {}),
-            }
-            or None
-        ),
-    )
+    all_ratios = ratios or dict(SUPERVISED_DEFAULT_RATIOS)
+    near_dup_value = {
+        **(near_dup_record(near_dup) if near_dup is not None else {}),
+        **(near_dup_header or {}),
+    }
+    inherited = None
+    if inherit is None or plan is None:
+        resolve_splits(
+            out,
+            counts,
+            all_ratios,
+            seed=seed,
+            by="group",
+            now=now,
+            release=release,
+            strata=strata,
+            stratify="source",
+            min_groups=min_groups,
+            merge_canonical=merge_info.canonical,
+            forced=forced,
+            near_dup=near_dup_value or None,
+        )
+    else:
+        inherited = resolve_inherited_splits(
+            out,
+            counts,
+            all_ratios,
+            prior=inherit,
+            prior_sha256=inherit_sha256,
+            strata=strata or {},
+            merge_canonical=merge_info.canonical,
+            seed=seed,
+            now=now,
+            release=release,
+            min_groups=min_groups,
+            forced=forced,
+            withhold=plan.withhold,
+            ood=plan.ood,
+            ood_header=plan.ood_header,
+            near_dup=near_dup_value or None,
+        )
 
     members_of: dict[str, list[str]] = {}
     for group, canon in merge_info.canonical.items():
@@ -205,8 +261,22 @@ def generate_split_map(
         near_dup_unions=merge_info.near_dup_unions,
         near_dup_max_component=near_dup_max_component,
         upstream_test_groups=len(test_groups),
-        upstream_test_components=sum(1 for c in upstream_test_components if forced[c] == TEST),
+        upstream_test_components=sum(1 for c in upstream_test_components if forced.get(c) == TEST),
         dedup_group_links=len(dedup_links),
+        **(
+            {
+                "inherited_groups": inherited.inherited_groups,
+                "inherit_adopted_groups": inherited.adopted_groups,
+                "inherit_conflict_components": inherited.conflict_components,
+                "inherit_band_pairs": plan.band_pairs if plan is not None else 0,
+                "withheld_groups": len(inherited.withheld),
+                "ood_components": inherited.ood_components,
+                "ood_groups": inherited.ood_groups,
+                "ood_blocked_components": inherited.ood_blocked,
+            }
+            if inherited is not None
+            else {}
+        ),
     )
 
 

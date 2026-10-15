@@ -15,10 +15,12 @@ import json
 import sys
 from datetime import UTC, datetime
 from pathlib import Path
+from typing import Any
 
 from .checksums import file_digest
 from .cli_release_gate import add_gate_parser
 from .cli_release_gate import cmd_metadata_gate as _cmd_release_gate  # noqa: F401  (old name)
+from .cli_release_inherit import add_inherit_args, inherit_kwargs, lock_scope
 from .cli_splitmap import _parse_ratios
 from .decon import DeconError
 from .dedup.groups import DedupGateError
@@ -42,7 +44,7 @@ from .release_lock import (
 )
 from .release_publish import add_publish_parser, is_frozen
 from .release_scope import scope_problem
-from .splitmap import load_split_map
+from .splitmap import SplitMapError, load_split_map
 from .strata import DEFAULT_MIN_GROUPS
 
 _RELEASE_FETCH_LIMIT = 10_000_000
@@ -252,10 +254,13 @@ def _generate_global_split_map(
     near_dup: NearDupConfig,
     *,
     required_near_dup: bool = False,
+    only: set[str] | None = None,
+    extra: dict[str, Any] | None = None,
 ) -> int:
     """Generate the ONE frozen split map every flavour builds from (WP-R2d): enumerate the
     superset (open + nc sources under ``SPLIT_MAP_PROFILE``, never-released sources excluded),
-    so an image or near-dup group has the same split in both repos."""
+    so an image or near-dup group has the same split in both repos. ``only`` (the ``--lock``
+    source ids) scopes the enumeration; ``extra`` is the ``--inherit``/OOD keyword arguments."""
     try:
         ratios = _parse_ratios(args.ratios)
         dedup_groups, dedup_header = _near_dup_input(args, required=required_near_dup)
@@ -265,7 +270,9 @@ def _generate_global_split_map(
     skipped_sources: dict[str, str] = {}
     try:
         map_roots = (
-            dict(local) if args.local_only else _resolve_roots(registry, SPLIT_MAP_PROFILE, local)
+            dict(local)
+            if args.local_only
+            else _resolve_roots(registry, SPLIT_MAP_PROFILE, local, only=only)
         )
         stats = generate_split_map(
             registry,
@@ -282,8 +289,9 @@ def _generate_global_split_map(
             upstream_test_off=args.no_honour_upstream_test or (),
             near_dup_groups=dedup_groups,
             near_dup_header=dedup_header,
+            **(extra or {}),
         )
-    except (NearDupError, ReleaseFetchError) as exc:
+    except (NearDupError, ReleaseFetchError, ReleaseLockError, SplitMapError) as exc:
         print(f"release: {exc}", file=sys.stderr)
         return 1
     print(
@@ -296,6 +304,15 @@ def _generate_global_split_map(
         f"upstream_test_components={stats.upstream_test_components} "
         f"dedup_group_links={stats.dedup_group_links}"
     )
+    if getattr(args, "inherit", None) is not None:
+        print(
+            f"release: inherited {stats.inherited_groups} group(s) from {args.inherit} "
+            f"(kept verbatim) adopted={stats.inherit_adopted_groups} "
+            f"conflict_components={stats.inherit_conflict_components} "
+            f"band_pairs={stats.inherit_band_pairs} withheld={stats.withheld_groups} "
+            f"test_ood_components={stats.ood_components} test_ood_groups={stats.ood_groups} "
+            f"ood_blocked={stats.ood_blocked_components}"
+        )
     for source_id, reason in sorted(skipped_sources.items()):
         print(f"  skipped {source_id}: {reason}", file=sys.stderr)
     return 0
@@ -340,9 +357,22 @@ def _cmd_release_split_map(args: argparse.Namespace) -> int:
             file=sys.stderr,
         )
         return 1
+    try:
+        only = lock_scope(args, registry)
+        extra = inherit_kwargs(args, registry)
+    except (ValueError, OSError, ReleaseLockError) as exc:  # SplitMapError is a ValueError
+        print(f"release split-map: {exc}", file=sys.stderr)
+        return 1
     near_dup = NearDupConfig(cache_dir=cache_root() / "_dhash", workers=default_workers())
     return _generate_global_split_map(
-        registry, args, local, split_map_path, near_dup, required_near_dup=True
+        registry,
+        args,
+        local,
+        split_map_path,
+        near_dup,
+        required_near_dup=True,
+        only=only,
+        extra=extra,
     )
 
 
@@ -737,7 +767,9 @@ def add_release_subparser(sub: argparse._SubParsersAction) -> None:
         help="Generate the one global SPLIT_MAP.json (open + nc sources) both flavours build from",
     )
     p_map.add_argument("--release", required=True, help="Release id recorded in the map")
-    p_map.add_argument("--split-map", dest="split_map", required=True, help="Map to create")
+    p_map.add_argument(
+        "--split-map", "--out", dest="split_map", required=True, help="Map to create"
+    )
     p_map.add_argument("--ratios", default="70/15/15", help="'/'-separated train/val/test ratios")
     p_map.add_argument("--seed", type=int, default=0)
     p_map.add_argument("--min-groups", dest="min_groups", type=int, default=DEFAULT_MIN_GROUPS)
@@ -752,6 +784,7 @@ def add_release_subparser(sub: argparse._SubParsersAction) -> None:
     p_map.add_argument(
         "--local-only", dest="local_only", action="store_true", help="Exactly the --local trees"
     )
+    add_inherit_args(p_map)
     _add_near_dup_args(p_map, required_note="required unless --no-near-dup")
     p_map.set_defaults(func=_cmd_release_split_map)
 

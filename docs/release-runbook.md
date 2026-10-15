@@ -17,6 +17,39 @@ pinned-tree fetch). Nothing here uploads except step 9 with `--go`.
    group in each of train/val/test (val is taken from train, never from the upstream test). A source
    with no registry split rule takes its group from the `metadata_norm` chain at release time; a source
    with >= 100 rows in < 10 groups logs a warning and groups per image.
+   **v1.1.0 and later: inherit the previous map (D1, D2).** The v1.1.0 map embeds the v1.0 `SPLIT_MAP.json` verbatim
+   and allocates only the new groups around it. The VM run (exact flags):
+
+   ```
+   marinedata release split-map --release v1.1.0 \
+     --lock open.lock.yaml --lock nc.lock.yaml \
+     --inherit registry/SPLIT_MAP.json --seed <N> --out SPLIT_MAP.json \
+     (--near-dup dedup/groups.parquet | --no-near-dup) \
+     [--ood-rules splits/v2.yaml | --no-ood] [--ood-metadata ood-metadata.parquet] \
+     [--local ID=PATH ...] [--local-only]
+   ```
+
+   - `--lock` (repeatable, one per flavour) restricts the enumeration to exactly the sources the locks name; no
+     other source is resolved or fetched. `--inherit` is the v1.0 map. `--seed` and `--out` are as above; `--out`
+     refuses an existing file. `--ratios` must equal the prior map's (default `70/15/15`), and the prior map must be
+     group-keyed and stratified by source, or the command fails.
+   - An image whose digest is in a v1.0 group keeps that group's split, whatever its near-dup group says. A new
+     group in the same component (shared digest, dHash within 4 bits, or a `dedup run` group) takes that split.
+     If the v1.0 map had split a component apart, the new groups of that component are WITHHELD (listed under
+     `withheld` in the map, absent from `assignments`) and the v1.0 groups are untouched.
+   - A new image 5 to 8 dHash bits from a v1.0 train image is never-eval (forced into train); one 5 to 8 bits from a v1.0
+     val/test image is never-train (forced into that image's split). Both at once: withheld.
+   - OOD: the holdouts in `splits/v2.yaml` (default; `--ood-rules` overrides, `--no-ood` opts out) route matching new
+     groups, and their whole component, to the extra split `test_ood`, outside the 70/15/15 quota. Rows that need
+     per-image fields (geo realm/province, depth, platform, capture time) read them from `--ood-metadata`, a Parquet
+     with `image_sha256` plus any of `meow_realm`, `meow_province`, `depth_m`, `platform`, `capture_datetime`; the
+     yaml's per-source rules (e.g. DeepFish) need none. A holdout under the yaml's `min_images` / `min_groups` is recorded
+     as not constructible (empty, with a note under `ood.holdouts`); one over a ceiling (`max_holdout_share`,
+     `max_total_holdout_share`) fails the command. A v1.0 group, an inherited component or a band-forced image is
+     never moved to `test_ood`.
+   - The map header records `inherits` (prior release, seed, group count, sha256 of the prior file), `ood`
+     (rules sha256 and the per-holdout outcome) and `ood_rules` (group to rule names).
+
 3. `marinedata release build --flavour {open|nc} --release <id> --split-map SPLIT_MAP.json
    --out rel --local-only [--local=ID=PATH ...]` (run for each flavour, same `SPLIT_MAP.json`)
    Writes `rel/releases/<id>/<flavour>/` (`tasks/*.tsv`, `RELEASE.json`). With `--lock FILE` only the
