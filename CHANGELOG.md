@@ -33,6 +33,11 @@ Nothing below is in a release yet. It is on `main` or on the Phase A branches na
   and the matching rule per group. Per-image geo/depth/platform/time fields come from an optional Parquet until SampleRow v3 carries them.
 - Docs: the exact flags for the VM run are in `docs/release-runbook.md` (step 2) and `docs/cli.md`.
 
+### v1.1.0: `feat/v1.1-build` (PR-B, PR-B2)
+
+- Build stage (PR-B): `release build --tasks v2 --v11` writes the v1.1.0 task tables (`metadata`, `points`, `bleaching`, `boxes`, `semseg`, `instances`) stamped with `split`, `taxonomy_version`, `fidelity` and `bytes_config`, plus `task_layers/V11_TABLES.json`.
+- Split guard (PR-B2): the build now fails, naming the count and the first five `image_sha256`, when an admitted image has no split in the split map (`--allow-unsplit` keeps `split = null` for rehearsal builds and the report records it); `--v11 --generate-split-map` is refused in favour of `marinedata release split-map --inherit --lock <lock> --out <SPLIT_MAP_FILE>`.
+
 ### Phase A: `feat/card-croissant` (merged into `feat/phase-a`; includes `feat/join` and `feat/gates`)
 
 - Release gates (P1.6): `marinedata release gate BUILD --all --require-all` runs the licence, dedup, splits, masks, privacy (EXIF GPS), load, card and croissant gates and merges them into `GATES.json`; `--masks DIR` and `--metadata DIR --gates FILE` keep working in the same command (docs/GATES.md). The dedup gate no longer fails EXIF-transposed rows on `image_sha256`: it checks that the bytes decode and match the row's width/height.

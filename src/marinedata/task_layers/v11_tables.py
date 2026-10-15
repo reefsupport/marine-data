@@ -14,10 +14,12 @@
 
 Taxonomy 3.0.0 validates a row against its stamped release, so every row of a new table carries
 ``taxonomy_version`` = the build's release; the v1.0 tables stay under 2.9.0, never rebuilt.
-A row whose image has no split is written with ``split = null`` and counted (``unsplit``); an
-image of a withheld near-dup group is dropped from every table; a row of a source outside
-``V11Inputs.roots`` (the flavour's admitted set) is dropped, so an nc source cannot reach the
-open tables through this layer.
+An image with no split in the split map fails the build (:class:`UnsplitImagesError`: the count and
+the first five ``image_sha256``), because the Hub configs are per split. ``V11Inputs.allow_unsplit``
+(rehearsal builds only) writes its rows with ``split = null`` and counts them (``unsplit``,
+``unsplit_images``). An image of a withheld near-dup group is dropped from every table; a row of a
+source outside ``V11Inputs.roots`` (the flavour's admitted set) is dropped, so an nc source cannot
+reach the open tables through this layer.
 """
 
 from __future__ import annotations
@@ -76,6 +78,10 @@ def fidelity_of(match_type: str | None) -> str | None:
     return FIDELITY.get(match_type) if match_type else None
 
 
+class UnsplitImagesError(ValueError):
+    """The split map leaves admitted images without a split; a release build refuses."""
+
+
 @dataclass(frozen=True)
 class V11Inputs:
     """What the v1.1.0 layer needs besides the config rows: the build's taxonomy release, the
@@ -90,11 +96,13 @@ class V11Inputs:
     withheld_groups: frozenset[str] = frozenset()
     near_dup_group_of: Mapping[str, str] = field(default_factory=dict)
     """``image_sha256 -> dedup group`` (``groups.parquet``); else the image's ``split_group``."""
+    allow_unsplit: bool = False
+    """Rehearsal only: keep the rows of images the split map does not cover (``split = null``)."""
 
 
 def inputs_from_build(
     *, taxonomy_version: str | None, roots: Mapping[str, str | Path], manifests: Iterable[Any],
-    split_map: Any, dedup_groups: str | Path | None = None,
+    split_map: Any, dedup_groups: str | Path | None = None, allow_unsplit: bool = False,
 ) -> V11Inputs:  # fmt: skip
     """:class:`V11Inputs` from what ``build_release`` already holds."""
     near: Mapping[str, str] = {}
@@ -109,6 +117,7 @@ def inputs_from_build(
         assignments=dict(split_map.assignments),
         withheld_groups=frozenset(split_map.withheld),
         near_dup_group_of=dict(near),
+        allow_unsplit=allow_unsplit,
     )
 
 
@@ -292,12 +301,29 @@ def build_v11_tables(
         )
         tables[cid] = ConfigResult(cid, rows, dict(base.unmapped_by_source) if base else {})
     tables = {"metadata": ConfigResult("metadata", tuple(meta_rows), {}), **tables}
+    unsplit = sorted(
+        {
+            str(r.get("image_sha256") or "(no image_sha256)")
+            for res in tables.values()
+            for r in res.rows
+            if r.get("split") is None
+        }
+    )
+    if unsplit and not inputs.allow_unsplit:
+        raise UnsplitImagesError(
+            f"{len(unsplit)} admitted image(s) have no split in the split map (the Hub configs "
+            f"are per split); first {min(5, len(unsplit))} image_sha256: {', '.join(unsplit[:5])}. "
+            "Extend the map with `marinedata release split-map --inherit ... --lock ...`; "
+            "--allow-unsplit is for rehearsal builds only"
+        )
     for cid, res in tables.items():
         report["tables"][cid] = {
             "rows": len(res.rows), "images": res.n_images,
             "unsplit": sum(1 for r in res.rows if r.get("split") is None),
         }  # fmt: skip
     report["withheld_images"] = len(withheld)
+    report["unsplit_images"] = len(unsplit)
+    report["allow_unsplit"] = inputs.allow_unsplit
     notes = {"report": json.loads(json.dumps(report))}
     return {**tables, "metadata": ConfigResult("metadata", tuple(meta_rows), {}, notes=notes)}
 

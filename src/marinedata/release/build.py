@@ -54,6 +54,7 @@ def build_release(
     lock: ReleaseLock | None = None,
     lock_sha256: str | None = None,
     v11: bool = False,
+    allow_unsplit: bool = False,
 ) -> ReleaseResult:
     """Build every registry task against a frozen split map and write the release.
 
@@ -67,7 +68,9 @@ def build_release(
     ``taxonomy_version``, ``fidelity`` and ``bytes_config`` and typed by the WP-U1 schemas;
     ``metadata`` is the spine (:mod:`marinedata.task_layers.v11_tables`).
     ``task_layers/V11_TABLES.json`` records the row, image and unsplit counts. ``False``
-    (default) is byte-identical to before.
+    (default) is byte-identical to before. An admitted image with no split in the split map fails
+    the build (``UnsplitImagesError``) unless ``allow_unsplit`` (rehearsal only): its rows then
+    keep ``split = null`` and the report records ``unsplit``.
 
     ``tasks`` (WP-8c, charter D-X): ``"v1"`` (default) never touches the task-layer
     configs below and produces byte-identical output to before this parameter existed.
@@ -362,6 +365,7 @@ def build_release(
                 manifests=tasks,
                 split_map=load_split_map(split_map_path),
                 dedup_groups=dedup_v2_groups,
+                allow_unsplit=allow_unsplit,
             )
         results = build_all_configs(registry, base_dir, flavour, v11=v11_inputs)
         if v11_inputs is None:

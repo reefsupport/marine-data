@@ -21,6 +21,7 @@ from marinedata.task_layers.mask_classmap import palette_json, palette_rgb
 from marinedata.task_layers.mask_encode import palette_png
 from marinedata.task_layers.v11_tables import (
     V11_CONFIG_IDS,
+    UnsplitImagesError,
     V11Inputs,
     _arrow_type,
     build_v11_tables,
@@ -236,3 +237,28 @@ def test_v11_needs_the_v2_task_layers(registry, tmp_path) -> None:
             registry, release="v1.1.0", split_map=tmp_path / "SPLIT_MAP.json", roots={},
             out_dir=tmp_path, v11=True,
         )  # fmt: skip
+
+
+def test_unsplit_images_fail_the_build_naming_the_count_and_the_first_five(registry, tmp_path):
+    shas = sorted(f"{i:064x}" for i in range(10, 18))
+    staged = [(s, f"g{i}") for i, s in enumerate(shas, start=10)] + [(A, "g1")]
+    roots = _stage(tmp_path, {SONAR_SRC: staged})
+    with pytest.raises(UnsplitImagesError) as err:
+        build_v11_tables(registry, {}, _inputs(roots, assignments={"g1": "val"}))
+    msg = str(err.value)
+    assert msg.startswith("8 admitted image(s) have no split in the split map")
+    assert all(s in msg for s in shas[:5]) and not any(s in msg for s in shas[5:])
+
+
+def test_allow_unsplit_keeps_null_splits_and_the_report_records_them(registry, tmp_path) -> None:
+    roots = _stage(tmp_path, {SONAR_SRC: [(A, "g1"), (B, "g2")]})
+    boxes = ConfigResult("boxes", (_box(A, SONAR_SRC), _box(B, SONAR_SRC)), {})
+    inputs = _inputs(roots, assignments={"g1": "val"}, allow_unsplit=True)
+    out = build_v11_tables(registry, {"boxes": boxes}, inputs)
+    for cid in ("metadata", "boxes"):
+        assert {r["image_sha256"]: r["split"] for r in out[cid].rows} == {A: "val", B: None}
+    (tmp_path / "out").mkdir()
+    report = json.loads(write_v11_report(out, tmp_path / "out").read_text())
+    assert report["allow_unsplit"] is True and report["unsplit_images"] == 1
+    assert report["tables"]["metadata"]["unsplit"] == 1
+    assert report["tables"]["boxes"]["unsplit"] == 1
