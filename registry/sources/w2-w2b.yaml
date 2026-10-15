@@ -10,6 +10,7 @@ sources:
   domain: fish
   release_skip_reason: "no-staged-images: registry lists imagery, nothing staged under sources/ in rs-storage-open (U7/queue follow-up)"
   access_class: restricted-nc
+  licence_evidence: "legacy verification record (dataset-card, 2026-09-25): huggingface.co/datasets/imageomics/fish-vista — HF card states a CC-BY/CC-BY-NC mix per image"
   name: Fish-Vista
   version: unversioned
   description: Large fish-imagery collection for species classification, trait segmentation and identification
@@ -53,6 +54,7 @@ sources:
   - vlm
   - trait
   notes: 'access: pending-ingest — see registry/ingest-specs/fish-vista.yaml (S57/w2b sweep, 2026-09-25).'
+  n_images_method: "registry-prior"
 - id: wildfish
   domain: fish
   access_class: internal-only
@@ -94,10 +96,12 @@ sources:
   - fish
   - classification
   notes: 'access: pending-ingest — see registry/ingest-specs/wildfish.yaml (S57/w2b sweep, 2026-09-25).'
+  n_images_method: "registry-prior"
 - id: fish-length-stereo
   domain: imaging
   release_skip_reason: "no-staged-images: registry lists imagery, nothing staged under sources/ in rs-storage-open (U7/queue follow-up)"
   access_class: open
+  licence_evidence: "legacy verification record (dataset-card, 2026-09-25): Zenodo API record 19408363 — metadata.license cc-by-4.0, access_right open"
   name: Stereo fish-length dataset (Zenodo 19408363)
   version: unversioned
   description: Stereo-camera fish imagery with length measurements.
@@ -135,11 +139,13 @@ sources:
   - stereo
   - biomass
   notes: 'access: pending-ingest — see registry/ingest-specs/fish-length-stereo.yaml (S57/w2b sweep, 2026-09-25).'
+  n_images_method: "unavailable:no-count"
 - id: salmon-cage
   domain: fish
   access_class: open
+  licence_evidence: "legacy verification record (dataset-card, 2026-09-25): Zenodo API record 4931418 — metadata.license cc-zero, access_right open"
   name: Salmon cage video/GoPro dataset (Zenodo 4931418)
-  version: unversioned
+  version: "record-4931418"
   description: GoPro/diver video from salmon aquaculture cages — welfare and biomass monitoring.
   licence: CC0-1.0
   legal_basis: licence
@@ -174,10 +180,18 @@ sources:
   - aquaculture
   - video
   notes: 'access: pending-ingest — see registry/ingest-specs/salmon-cage.yaml (S57/w2b sweep, 2026-09-25).'
+  checksums:
+    version: "record-4931418"
+    root_digest: 92ae68595092d477424ffdf980f07529071e92fc5f166cbd30bfcfe649cd52a1
+    files: 4992
+    size_bytes: 327561171
+  n_images: 4988
+  n_images_method: "ingest-json"
 - id: luderick-seagrass
   domain: seagrass
   release_skip_reason: "no-staged-images: registry lists imagery, nothing staged under sources/ in rs-storage-open (U7/queue follow-up)"
   access_class: open
+  licence_evidence: "legacy verification record (dataset-card, 2026-09-25): Zenodo API record 7659203 — metadata.license cc-by-4.0, access_right open"
   name: Luderick/seagrass fish detection (Zenodo 7659203)
   version: unversioned
   description: Underwater video-derived fish-detection imagery over seagrass habitat.
@@ -211,10 +225,12 @@ sources:
   - fish
   - seagrass
   notes: 'access: pending-ingest — see registry/ingest-specs/luderick-seagrass.yaml (S57/w2b sweep, 2026-09-25).'
+  n_images_method: "unavailable:no-count"
 - id: med-fish
   domain: fish
   release_skip_reason: "no-staged-images: registry lists imagery, nothing staged under sources/ in rs-storage-open (U7/queue follow-up)"
   access_class: open
+  licence_evidence: "legacy verification record (dataset-card, 2026-09-25): Zenodo API record 7534425 — metadata.license cc-by-4.0, access_right open"
   name: DEEPECOMAR Mediterranean fish YOLO dataset (Zenodo 7534425)
   version: unversioned
   description: YOLO-format Mediterranean reef-fish detection imagery.
@@ -247,6 +263,7 @@ sources:
   - fish
   - mediterranean
   notes: 'access: pending-ingest — see registry/ingest-specs/med-fish.yaml (S57/w2b sweep, 2026-09-25).'
+  n_images_method: "unavailable:no-count"
 - id: mouss-seg
   domain: fish
   release_skip_reason: "no-staged-images: registry lists imagery, nothing staged under sources/ in rs-storage-open (U7/queue follow-up)"
@@ -255,15 +272,14 @@ sources:
   version: unversioned
   description: Grayscale stationary-camera fish SEGMENTATION masks from NOAA PIFSC MOUSS surveys — a different
     HF repo/modality from the existing mouss-detection (bbox) entry in fish.yaml.
-  licence: NO-LICENCE-STATED
-  legal_basis: unknown
-  redistribution: unknown
+  licence: US-GOV-PD
+  legal_basis: licence
+  redistribution: ok
   provenance: public
   verification:
-    verified_on: '2026-09-25'
-    verified_by: huggingface.co/datasets/akridge/MOUSS_fish_segment_dataset_grayscale — no licence field
-      on the HF card
-    method: absent
+    verified_on: 2026-10-05
+    verified_by: "LIC-B audit 2026-10-05 read https://huggingface.co/datasets/akridge/MOUSS_fish_segment_dataset_grayscale : License: Public Domain (NOAA Open Data)"
+    method: dataset-card
   access:
     method: huggingface
     uri: https://huggingface.co/datasets/akridge/MOUSS_fish_segment_dataset_grayscale
@@ -289,11 +305,15 @@ sources:
   tags:
   - fish
   - segmentation
-  notes: 'access: pending-ingest — see registry/ingest-specs/mouss-seg.yaml (S57/w2b sweep, 2026-09-25).'
+  notes: "access: pending-ingest — see registry/ingest-specs/mouss-seg.yaml (S57/w2b sweep, 2026-09-25). P1.2b (2026-10-08) restored the class to open: the LIC audit (2026-10-05) read the upstream licence (US-GOV-PD), see licence_evidence."
+  n_images_method: "registry-prior"
+  licence_evidence: "https://huggingface.co/datasets/akridge/MOUSS_fish_segment_dataset_grayscale : License: Public Domain (NOAA Open Data)"
+  related: [mouss]
 - id: urpc
   domain: fish
   release_skip_reason: "no-staged-images: registry lists imagery, nothing staged under sources/ in rs-storage-open (U7/queue follow-up)"
   access_class: open
+  licence_evidence: "legacy verification record (dataset-card, 2026-09-25): huggingface.co/datasets/fuhao7i/URPC — HF card states apache-2.0"
   name: URPC underwater robot competition dataset (HF mirror)
   version: unversioned
   description: Underwater Robot Professional Contest detection dataset (VOC/YOLO), HF mirror.
@@ -329,10 +349,12 @@ sources:
   - detection
   - urpc
   notes: 'access: pending-ingest — see registry/ingest-specs/urpc.yaml (S57/w2b sweep, 2026-09-25).'
+  n_images_method: "registry-prior"
 - id: marinelife16k
   domain: imaging
   release_skip_reason: "no-staged-images: registry lists imagery, nothing staged under sources/ in rs-storage-open (U7/queue follow-up)"
   access_class: open
+  licence_evidence: "legacy verification record (dataset-card, 2026-09-25): huggingface.co/datasets/MarineLife-16K/MarineLife-16K — HF card states cc-by-4.0"
   name: MarineLife-16K
   version: unversioned
   description: ~16k-image marine-life multimodal captioning collection.
@@ -370,10 +392,12 @@ sources:
   - vlm
   - captioning
   notes: 'access: pending-ingest — see registry/ingest-specs/marinelife16k.yaml (S57/w2b sweep, 2026-09-25).'
+  n_images_method: "registry-prior"
 - id: ocean-r1
   domain: imaging
   release_skip_reason: "no-staged-images: registry lists imagery, nothing staged under sources/ in rs-storage-open (U7/queue follow-up)"
   access_class: open
+  licence_evidence: "legacy verification record (dataset-card, 2026-09-25): huggingface.co/datasets/minglingfeng/Ocean_R1_collected_visual_data — HF card states apache-2.0"
   name: Ocean-R1 collected visual data
   version: unversioned
   description: 135,595-row ocean/marine visual-reasoning collection for VLM training.
@@ -409,10 +433,12 @@ sources:
   - vlm
   - captioning
   notes: 'access: pending-ingest — see registry/ingest-specs/ocean-r1.yaml (S57/w2b sweep, 2026-09-25).'
+  n_images_method: "registry-prior"
 - id: marine-animals-mm
   domain: fauna
   release_skip_reason: "no-staged-images: registry lists imagery, nothing staged under sources/ in rs-storage-open (U7/queue follow-up)"
   access_class: open
+  licence_evidence: "legacy verification record (dataset-card, 2026-09-25): huggingface.co/datasets/Hariprasath5128/marine-animals-multimodal-dataset — HF card states cc-by-4.0"
   name: Marine animals multimodal dataset
   version: unversioned
   description: ~24.9k-row marine-animal multimodal (image+text) dataset.
@@ -448,12 +474,14 @@ sources:
   - vlm
   - captioning
   notes: 'access: pending-ingest — see registry/ingest-specs/marine-animals-mm.yaml (S57/w2b sweep, 2026-09-25).'
+  n_images_method: "registry-prior"
 - id: oceaninstruct
   domain: imaging
   release_skip_reason: "non-image-modality: instruction text; 10000 label keys staged, 0 images"
   access_class: open
+  licence_evidence: "legacy verification record (dataset-card, 2026-09-25): huggingface.co/datasets/zjunlp/OceanInstruct-v0.1 — HF card states mit"
   name: OceanInstruct v0.1 (OceanGPT)
-  version: unversioned
+  version: "rev-9f5558a8c8f1"
   description: 10k-row instruction/caption JSON dataset for ocean-domain VLM instruction tuning (text
     referencing imagery, not embedded image files).
   licence: MIT
@@ -488,10 +516,17 @@ sources:
   - vlm
   - instruction-tuning
   notes: 'access: pending-ingest — see registry/ingest-specs/oceaninstruct.yaml (S57/w2b sweep, 2026-09-25).'
+  checksums:
+    version: "rev-9f5558a8c8f1"
+    root_digest: 2348545446d915951fb3796603669ab0191bb1576b6726e02d6ff598e2a28463
+    files: 10003
+    size_bytes: 13869330
+  n_images_method: "unavailable:no-count"
 - id: seathru
   domain: imaging
   release_skip_reason: "no-staged-images: registry lists imagery, nothing staged under sources/ in rs-storage-open (U7/queue follow-up)"
   access_class: restricted-nc
+  licence_evidence: "legacy verification record (dataset-card, 2026-09-25): huggingface.co/datasets/bhowmikabhimanyu/seathru-dataset — HF card states cc-by-nc-sa-4.0"
   name: Sea-thru dataset (HF mirror)
   version: unversioned
   description: RAW underwater imagery with registered depth maps for physics-based colour restoration
@@ -528,11 +563,12 @@ sources:
   - enhancement
   - depth
   notes: 'access: pending-ingest — see registry/ingest-specs/seathru.yaml (S57/w2b sweep, 2026-09-25).'
+  n_images_method: "registry-prior"
 - id: euvp
   domain: imaging
   access_class: internal-only
   name: EUVP paired/unpaired underwater enhancement (HF mirror, partial)
-  version: unversioned
+  version: "rev-e3c6d08a8b07"
   description: Paired/unpaired underwater image-enhancement dataset behind FUnIE-GAN (HF mirror is a partial
     5,550-row subset of the ~30k official release).
   licence: RESEARCH-ONLY-NO-REDIST
@@ -557,7 +593,8 @@ sources:
   - image
   capabilities:
   - image-enhancement
-  n_images: 1
+  n_images: 5550
+  n_images_method: "ingest-json"
   counts_note: dry-run measured 1 stageable file / 189 MB on the HF mirror on 2026-09-25 — far below the
     ~20k+10k paired/unpaired official count; confirm the mirror's actual content before relying on it.
   coverage:
@@ -573,10 +610,18 @@ sources:
   - kind: none
     notes: paired enhancement reference image (pairs); AnnotationKind has no pairs value
     supervises: []
+  checksums:
+    version: "rev-e3c6d08a8b07"
+    root_digest: 1fff37d5c581cf96fff2617448715dc08600db69c26c2f2b8a9e451cf27d9402
+    files: 5553
+    size_bytes: 93792049
+  n_images_upstream: 1
+  n_images_note: "measured 5550 in the staged tree (ingest-json); the registry held 1 before 2026-10-08 (card or paper figure, not re-verified)"
 - id: underwater-images-2542305
   domain: imaging
   release_skip_reason: "no-staged-images: raw mirror of 3850 images only, no INGEST.json/metadata.parquet (U7/queue follow-up)"
   access_class: open
+  licence_evidence: "legacy verification record (dataset-card, 2026-09-25): Zenodo API record 2542305 — metadata.license cc-by-4.0, access_right open"
   name: Underwater image collection (Zenodo 2542305)
   version: unversioned
   description: Underwater imagery archive; contents are RAR-packed and unconfirmed beyond the record's
@@ -613,10 +658,14 @@ sources:
   - enhancement
   notes: 'access: pending-ingest — see registry/ingest-specs/underwater-images-2542305.yaml (S57/w2b sweep,
     2026-09-25).'
+  n_images: 3850
+  n_images_method: "listing"
+  checksums_status: missing
 - id: marine-snow
   domain: imaging
   release_skip_reason: "no-staged-images: registry lists imagery, nothing staged under sources/ in rs-storage-open (U7/queue follow-up)"
   access_class: open
+  licence_evidence: "legacy verification record (dataset-card, 2026-09-25): Zenodo API record 6424752 — metadata.license cc-by-4.0, access_right open"
   name: Synthetic marine-snow overlay dataset (Zenodo 6424752)
   version: unversioned
   description: Synthetic marine-snow particle overlays for underwater image restoration/denoising research.
@@ -651,10 +700,12 @@ sources:
   - marine-snow
   - synthetic
   notes: 'access: pending-ingest — see registry/ingest-specs/marine-snow.yaml (S57/w2b sweep, 2026-09-25).'
+  n_images_method: "registry-prior"
 - id: rcaustic
   domain: imaging
   release_skip_reason: "no-staged-images: registry lists imagery, nothing staged under sources/ in rs-storage-open (U7/queue follow-up)"
   access_class: open
+  licence_evidence: "legacy verification record (dataset-card, 2026-09-25): Zenodo API record 10728861 — metadata.license cc-by-4.0, access_right open"
   name: R-CAUSTIC v2.0 (Zenodo 10728861)
   version: unversioned
   description: Underwater caustics/lighting restoration video and image dataset.
@@ -689,10 +740,12 @@ sources:
   - enhancement
   - caustics
   notes: 'access: pending-ingest — see registry/ingest-specs/rcaustic.yaml (S57/w2b sweep, 2026-09-25).'
+  n_images_method: "registry-prior"
 - id: sea-undistort
   domain: imaging
   release_skip_reason: "no-staged-images: registry lists imagery, nothing staged under sources/ in rs-storage-open (U7/queue follow-up)"
   access_class: restricted-nc
+  licence_evidence: "legacy verification record (dataset-card, 2026-09-25): Zenodo API record 15639838 — metadata.license cc-by-nc-sa-4.0, access_right open"
   name: Sea-Undistort (Zenodo 15639838)
   version: unversioned
   description: Underwater image undistortion/restoration dataset.
@@ -725,11 +778,12 @@ sources:
   tags:
   - enhancement
   notes: 'access: pending-ingest — see registry/ingest-specs/sea-undistort.yaml (S57/w2b sweep, 2026-09-25).'
+  n_images_method: "registry-prior"
 - id: lsui
   domain: imaging
   access_class: internal-only
   name: LSUI (U-shape Transformer underwater enhancement)
-  version: unversioned
+  version: "zip-e15c4a2203f4"
   description: 4,279 paired underwater images with enhanced ground truth.
   licence: RESEARCH-ONLY-NO-REDIST
   legal_basis: licence
@@ -750,7 +804,8 @@ sources:
   - image
   capabilities:
   - image-enhancement
-  n_images: 4279
+  n_images: 8558
+  n_images_method: "ingest-json"
   coverage:
     regions:
     - unknown
@@ -764,6 +819,13 @@ sources:
   - kind: none
     notes: paired enhancement reference image (pairs)
     supervises: []
+  checksums:
+    version: "zip-e15c4a2203f4"
+    root_digest: d8584e73bb7c7d12b8b27f275e2cab8a6d7cb41258f5402855c3d3915343a7c6
+    files: 8561
+    size_bytes: 506636504
+  n_images_upstream: 4279
+  n_images_note: "measured 8558 in the staged tree (ingest-json); the registry held 4279 before 2026-10-08 (card or paper figure, not re-verified)"
 - id: u45
   domain: imaging
   access_class: internal-only
@@ -803,6 +865,7 @@ sources:
   - enhancement
   - eval
   notes: 'access: pending-ingest — see registry/ingest-specs/u45.yaml (S57/w2b sweep, 2026-09-25).'
+  n_images_method: "registry-prior"
 - id: ruie
   domain: imaging
   access_class: internal-only
@@ -839,6 +902,7 @@ sources:
   - enhancement
   - benchmark
   notes: 'access: pending-ingest — see registry/ingest-specs/ruie.yaml (S57/w2b sweep, 2026-09-25).'
+  n_images_method: "registry-prior"
 - id: usr248
   domain: imaging
   access_class: internal-only
@@ -874,6 +938,7 @@ sources:
   - enhancement
   - super-resolution
   notes: 'access: pending-ingest — see registry/ingest-specs/usr248.yaml (S57/w2b sweep, 2026-09-25).'
+  n_images_method: "registry-prior"
 - id: ufo120
   domain: imaging
   access_class: internal-only
@@ -910,6 +975,7 @@ sources:
   - super-resolution
   - paired
   notes: 'access: pending-ingest — see registry/ingest-specs/ufo120.yaml (S57/w2b sweep, 2026-09-25).'
+  n_images_method: "registry-prior"
 - id: hicrd
   domain: imaging
   access_class: internal-only
@@ -946,11 +1012,12 @@ sources:
   - enhancement
   - restoration
   notes: 'access: pending-ingest — see registry/ingest-specs/hicrd.yaml (S57/w2b sweep, 2026-09-25).'
+  n_images_method: "registry-prior"
 - id: usod10k
   domain: imaging
   access_class: internal-only
   name: USOD10K underwater salient-object detection dataset
-  version: unversioned
+  version: "zip-f82114057c27"
   description: 10,255-image underwater salient-object detection dataset.
   licence: RESEARCH-ONLY-NO-REDIST
   legal_basis: licence
@@ -971,7 +1038,8 @@ sources:
   capabilities:
   - image-enhancement
   - invertebrate-detection
-  n_images: 10255
+  n_images: 39994
+  n_images_method: "ingest-json"
   coverage:
     regions:
     - unknown
@@ -987,6 +1055,13 @@ sources:
     supervises: []
   - kind: depth-map
     supervises: []
+  checksums:
+    version: "zip-f82114057c27"
+    root_digest: ca3a661b0c6eb8fbf1ab677c4be4f9d0e3f709ef9bbb0a63b35f9f66f10f23aa
+    files: 39997
+    size_bytes: 10155334719
+  n_images_upstream: 10255
+  n_images_note: "measured 39994 in the staged tree (ingest-json); the registry held 10255 before 2026-10-08 (card or paper figure, not re-verified)"
 - id: viame-public
   domain: fish
   access_class: unknown  # LICV 2026-10-05 (was open)
@@ -1031,11 +1106,14 @@ sources:
   - kind: depth-map
     notes: HabCam2019 disparity; stereo pairs
     supervises: []
+  n_images: 4174
+  n_images_method: "listing"
+  checksums_status: missing
 - id: duo
   domain: fauna
   access_class: internal-only
   name: DUO (Detecting Underwater Objects)
-  version: unversioned
+  version: "zip-5de58f03a09c"
   description: 7,782-image COCO-format underwater object detection dataset (sea cucumber, sea urchin,
     scallop, starfish).
   licence: RESEARCH-ONLY-NO-REDIST
@@ -1058,6 +1136,7 @@ sources:
   capabilities:
   - invertebrate-detection
   n_images: 7782
+  n_images_method: "ingest-json"
   coverage:
     regions:
     - unknown
@@ -1072,3 +1151,8 @@ sources:
     kind: bbox
     supervises:
     - taxon
+  checksums:
+    version: "zip-5de58f03a09c"
+    root_digest: a8f86440890ca79859152f8d679dbcd0aab01a80106bc89449f4569e9c7bc1e6
+    files: 14456
+    size_bytes: 3151064208

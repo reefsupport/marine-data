@@ -167,11 +167,15 @@ def test_blur_drops_the_verifiers_own_score_below_threshold(tmp_path) -> None:
     from marinedata.privacy.verify import FaceVerifier
 
     weights = tmp_path / "face_detection_yunet_2023mar.onnx"
+    # opencv_zoo keeps its weights in Git LFS: raw.githubusercontent.com serves the 131-byte
+    # pointer file (OpenCV then says "Failed to parse ONNX model"); github.com/.../raw
+    # redirects to the real 232 KB model.
     urllib.request.urlretrieve(
-        "https://raw.githubusercontent.com/opencv/opencv_zoo/main/models/"
+        "https://github.com/opencv/opencv_zoo/raw/main/models/"
         "face_detection_yunet/face_detection_yunet_2023mar.onnx",
         weights,
     )
+    assert weights.stat().st_size > 100_000, "downloaded a Git LFS pointer, not the weights"
     face_jpg = tmp_path / "lena.jpg"
     urllib.request.urlretrieve(
         "https://raw.githubusercontent.com/opencv/opencv/master/samples/data/lena.jpg",

@@ -12,6 +12,7 @@ from __future__ import annotations
 from datetime import date
 
 import pytest
+from pydantic import ValidationError
 
 from marinedata import LicenceViolation, Registry, evaluate
 from marinedata.enums import (
@@ -30,6 +31,7 @@ from marinedata.models import (
     Coverage,
     Licence,
     LicenceFlags,
+    Profile,
     Source,
     Verification,
 )
@@ -51,6 +53,7 @@ def make_source(
     flags: LicenceFlags | None = None,
     legal_basis: LegalBasis = LegalBasis.LICENCE,
     disputed: bool = False,
+    method: str = "licence-file",
     notes: str | None = "test entry",
     access_class: AccessClass | None = None,
 ) -> Source:
@@ -63,7 +66,7 @@ def make_source(
         verification=Verification(
             verified_on=date(2026, 8, 17),
             verified_by="fixture primary source",
-            method="licence-file",
+            method=method,
             disputed=disputed,
             dispute_note="conflicting sources" if disputed else None,
         ),
@@ -81,6 +84,39 @@ def make_source(
 @pytest.fixture(scope="module")
 def registry() -> Registry:
     return Registry.load()
+
+
+# ── deny_flags is a closed vocabulary ──────────────────────────────────────
+
+
+def test_deny_flags_rejects_unknown_flag_name() -> None:
+    """A typo'd flag must fail the load loudly, not silently resolve to `False`.
+
+    Regression for the case where ``gate.py``'s ``getattr(lic.flags, flag, False)``
+    made a misspelled deny_flags entry (e.g. ``no_derivitives``) load cleanly and
+    simply never fire — the profile would report "permitted" for ND material.
+    """
+    with pytest.raises(ValidationError) as exc:
+        Profile(
+            id="bad-profile",
+            description="test",
+            allow_tiers=(Tier.OWN,),
+            ships=True,
+            deny_flags=("no_derivitives",),
+        )
+    assert "no_derivitives" in str(exc.value)
+
+
+def test_deny_flags_accepts_every_real_licence_flag() -> None:
+    """The allowlist is ``LicenceFlags.model_fields`` itself, not a hand-copied list."""
+    profile = Profile(
+        id="all-flags",
+        description="test",
+        allow_tiers=(Tier.OWN,),
+        ships=True,
+        deny_flags=tuple(LicenceFlags.model_fields),
+    )
+    assert set(profile.deny_flags) == set(LicenceFlags.model_fields)
 
 
 # ── the core matrix: every profile × every tier ───────────────────────────
@@ -188,6 +224,47 @@ def test_disputed_permitted_for_research(registry: Registry) -> None:
     """Research does not ship, so an unresolved dispute is tolerable there."""
     source = make_source(tier=Tier.COPYLEFT, disputed=True)
     assert evaluate(source, registry.profile("research")).allowed
+
+
+def test_pretrain_eu_blocks_disputed_despite_nc_tier(registry: Registry) -> None:
+    """Regression: `ships` used to be inferred from tier composition —
+
+    ``pretrain-eu`` allows T3_NONCOMMERCIAL, which made the old inference
+    (``PERMISSIVE/COPYLEFT in allow_tiers and NONCOMMERCIAL not in allow_tiers``)
+    resolve to False, silently skipping the disputed check on the one profile whose
+    purpose is producing weights. `ships` is now declared explicitly (True), so a
+    disputed source must be blocked here just as on any other shipping profile.
+    """
+    source = make_source(tier=Tier.NONCOMMERCIAL, disputed=True)
+    decision = evaluate(source, registry.profile("pretrain-eu"))
+    assert not decision.allowed
+    assert "disputed" in decision.reason.lower()
+
+
+def test_pretrain_eu_blocks_secondary_verification(registry: Registry) -> None:
+    """Same regression, for the is_primary check the inferred `ships` also skipped."""
+    source = make_source(tier=Tier.NONCOMMERCIAL, method="secondary")
+    decision = evaluate(source, registry.profile("pretrain-eu"))
+    assert not decision.allowed
+    assert "secondary" in decision.reason.lower()
+
+
+# ── verification method ─────────────────────────────────────────────────
+
+
+def test_absent_method_is_not_primary() -> None:
+    """`method: absent` means no licence statement was found at all — it must not
+
+    satisfy the primary-verification shipping check. Not currently exploitable (every
+    ``absent`` entry in the registry carries NO-LICENCE-STATED → T4_TDM_ONLY, blocked
+    by tier) but nothing coupled the two fields before this.
+    """
+    verification = Verification(
+        verified_on=date(2026, 8, 17),
+        verified_by="no licence statement found anywhere",
+        method="absent",
+    )
+    assert not verification.is_primary
 
 
 # ── enforce() reports every violation at once ─────────────────────────────

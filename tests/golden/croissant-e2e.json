@@ -1,0 +1,283 @@
+{
+  "@context": {
+    "@language": "en",
+    "@vocab": "https://schema.org/",
+    "citeAs": "cr:citeAs",
+    "column": "cr:column",
+    "conformsTo": "dct:conformsTo",
+    "cr": "http://mlcommons.org/croissant/",
+    "rai": "http://mlcommons.org/croissant/RAI/",
+    "data": {
+      "@id": "cr:data",
+      "@type": "@json"
+    },
+    "dataType": {
+      "@id": "cr:dataType",
+      "@type": "@vocab"
+    },
+    "dct": "http://purl.org/dc/terms/",
+    "examples": {
+      "@id": "cr:examples",
+      "@type": "@json"
+    },
+    "extract": "cr:extract",
+    "field": "cr:field",
+    "fileProperty": "cr:fileProperty",
+    "fileObject": "cr:fileObject",
+    "fileSet": "cr:fileSet",
+    "format": "cr:format",
+    "includes": "cr:includes",
+    "isLiveDataset": "cr:isLiveDataset",
+    "jsonPath": "cr:jsonPath",
+    "key": "cr:key",
+    "md5": "cr:md5",
+    "parentField": "cr:parentField",
+    "path": "cr:path",
+    "recordSet": "cr:recordSet",
+    "references": "cr:references",
+    "regex": "cr:regex",
+    "repeated": "cr:repeated",
+    "replace": "cr:replace",
+    "sc": "https://schema.org/",
+    "separator": "cr:separator",
+    "source": "cr:source",
+    "subField": "cr:subField",
+    "transform": "cr:transform"
+  },
+  "@type": "sc:Dataset",
+  "conformsTo": "http://mlcommons.org/croissant/1.0",
+  "name": "marine-data",
+  "description": "2 configuration(s) built from 2 source(s); every row carries its licence and attribution. Code: https://github.com/reefsupport/marine-data.",
+  "url": "https://huggingface.co/datasets/reefsupport/marine-data",
+  "license": [
+    "CC0-1.0"
+  ],
+  "citeAs": "@misc{reef_support_marine_data_2026,\n  title = {marine-data},\n  author = {Reef Support},\n  year = {2026},\n  version = {1.0.0},\n  url = {https://huggingface.co/datasets/reefsupport/marine-data},\n}",
+  "creator": [
+    {
+      "@type": "sc:Person",
+      "name": "Reef Support"
+    },
+    {
+      "@type": "sc:Organization",
+      "name": "Reef Support",
+      "url": "https://reef.support"
+    }
+  ],
+  "datePublished": "2026-10-07",
+  "version": "wp4-e2e",
+  "distribution": [
+    {
+      "@type": "cr:FileObject",
+      "@id": "repo",
+      "name": "repo",
+      "description": "The dataset repository. sha256 is the digest of the sorted per-shard 'sha256  path' lines listed below.",
+      "contentUrl": "https://huggingface.co/datasets/reefsupport/marine-data/tree/main",
+      "encodingFormat": "git+https",
+      "sha256": "5cc917ad03f2012268b71a9da7f1c8ad959050d78419a053041934770a356818"
+    },
+    {
+      "@type": "cr:FileObject",
+      "@id": "images/train-00000-of-00001.parquet",
+      "name": "images/train-00000-of-00001.parquet",
+      "contentUrl": "https://huggingface.co/datasets/reefsupport/marine-data/resolve/main/data/images/train-00000-of-00001.parquet",
+      "contentSize": "35462 B",
+      "encodingFormat": "application/x-parquet",
+      "sha256": "c20ee71a549cc1427799fd4e80ea19e77de46b46e1cbe157ae5719e3bae006ee"
+    },
+    {
+      "@type": "cr:FileObject",
+      "@id": "images/validation-00000-of-00001.parquet",
+      "name": "images/validation-00000-of-00001.parquet",
+      "contentUrl": "https://huggingface.co/datasets/reefsupport/marine-data/resolve/main/data/images/validation-00000-of-00001.parquet",
+      "contentSize": "8904 B",
+      "encodingFormat": "application/x-parquet",
+      "sha256": "c120243a030be8b83dc9637b78db1e8267ea5e4168e888d48edd30504ba49aca"
+    },
+    {
+      "@type": "cr:FileObject",
+      "@id": "pretrain-set/train-00000-of-00001.parquet",
+      "name": "pretrain-set/train-00000-of-00001.parquet",
+      "contentUrl": "https://huggingface.co/datasets/reefsupport/marine-data/resolve/main/data/pretrain-set/train-00000-of-00001.parquet",
+      "contentSize": "3616 B",
+      "encodingFormat": "application/x-parquet",
+      "sha256": "27b4ec35913e97cb6b6cc48f95204e5060f10ed06ca06145b7ff53035648f49f"
+    },
+    {
+      "@type": "cr:FileObject",
+      "@id": "pretrain-set/validation-00000-of-00001.parquet",
+      "name": "pretrain-set/validation-00000-of-00001.parquet",
+      "contentUrl": "https://huggingface.co/datasets/reefsupport/marine-data/resolve/main/data/pretrain-set/validation-00000-of-00001.parquet",
+      "contentSize": "2267 B",
+      "encodingFormat": "application/x-parquet",
+      "sha256": "3010aa1c52437c2ecbac30e495af5da2479cbe3c22b92ddae1e57e6d8266ab79"
+    },
+    {
+      "@type": "cr:FileSet",
+      "@id": "images-parquet",
+      "name": "images-parquet",
+      "containedIn": {
+        "@id": "repo"
+      },
+      "encodingFormat": "application/x-parquet",
+      "includes": "data/images/*.parquet"
+    },
+    {
+      "@type": "cr:FileSet",
+      "@id": "pretrain-set-parquet",
+      "name": "pretrain-set-parquet",
+      "containedIn": {
+        "@id": "repo"
+      },
+      "encodingFormat": "application/x-parquet",
+      "includes": "data/pretrain-set/*.parquet"
+    }
+  ],
+  "recordSet": [
+    {
+      "@type": "cr:RecordSet",
+      "@id": "images",
+      "name": "images",
+      "description": "Image pixels: 26 rows from 2 source(s).",
+      "license": [
+        "CC0-1.0"
+      ],
+      "field": [
+        {
+          "@type": "cr:Field",
+          "@id": "images/image_sha256",
+          "name": "images/image_sha256",
+          "description": "SHA-256 of the image bytes. Stable id and join key across configs.",
+          "dataType": "sc:Text",
+          "source": {
+            "fileSet": {
+              "@id": "images-parquet"
+            },
+            "extract": {
+              "column": "image_sha256"
+            }
+          }
+        },
+        {
+          "@type": "cr:Field",
+          "@id": "images/image",
+          "name": "images/image",
+          "description": "RGB photo (embedded bytes).",
+          "dataType": "sc:ImageObject",
+          "source": {
+            "fileSet": {
+              "@id": "images-parquet"
+            },
+            "extract": {
+              "column": "image"
+            },
+            "transform": {
+              "jsonPath": "bytes"
+            }
+          }
+        },
+        {
+          "@type": "cr:Field",
+          "@id": "images/source_id",
+          "name": "images/source_id",
+          "description": "Source id; see the licensing table.",
+          "dataType": "sc:Text",
+          "source": {
+            "fileSet": {
+              "@id": "images-parquet"
+            },
+            "extract": {
+              "column": "source_id"
+            }
+          }
+        },
+        {
+          "@type": "cr:Field",
+          "@id": "images/source_ids",
+          "name": "images/source_ids",
+          "description": "Comma-separated ids of every source that published these image bytes.",
+          "dataType": "sc:Text",
+          "source": {
+            "fileSet": {
+              "@id": "images-parquet"
+            },
+            "extract": {
+              "column": "source_ids"
+            }
+          }
+        },
+        {
+          "@type": "cr:Field",
+          "@id": "images/split_group",
+          "name": "images/split_group",
+          "description": "Group that is never divided across splits (site, station, transect or upstream group).",
+          "dataType": "sc:Text",
+          "source": {
+            "fileSet": {
+              "@id": "images-parquet"
+            },
+            "extract": {
+              "column": "split_group"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "@type": "cr:RecordSet",
+      "@id": "pretrain-set",
+      "name": "pretrain-set",
+      "description": "pretrain-set: 26 rows from 2 source(s).",
+      "license": [
+        "CC0-1.0"
+      ],
+      "field": [
+        {
+          "@type": "cr:Field",
+          "@id": "pretrain-set/image_sha256",
+          "name": "pretrain-set/image_sha256",
+          "description": "SHA-256 of the image bytes. Stable id and join key across configs.",
+          "dataType": "sc:Text",
+          "source": {
+            "fileSet": {
+              "@id": "pretrain-set-parquet"
+            },
+            "extract": {
+              "column": "image_sha256"
+            }
+          }
+        },
+        {
+          "@type": "cr:Field",
+          "@id": "pretrain-set/source_id",
+          "name": "pretrain-set/source_id",
+          "description": "Source id; see the licensing table.",
+          "dataType": "sc:Text",
+          "source": {
+            "fileSet": {
+              "@id": "pretrain-set-parquet"
+            },
+            "extract": {
+              "column": "source_id"
+            }
+          }
+        },
+        {
+          "@type": "cr:Field",
+          "@id": "pretrain-set/sample_key",
+          "name": "pretrain-set/sample_key",
+          "description": "Key of one (image, source) sample.",
+          "dataType": "sc:Text",
+          "source": {
+            "fileSet": {
+              "@id": "pretrain-set-parquet"
+            },
+            "extract": {
+              "column": "sample_key"
+            }
+          }
+        }
+      ]
+    }
+  ]
+}

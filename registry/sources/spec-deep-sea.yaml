@@ -1,0 +1,292 @@
+# Entries folded from registry/ingest-specs/ by scripts/registry_fold_specs.py
+# (P1.2, 2026-10-08). Every field is the spec's own claim; edit freely, the script never
+# rewrites an id it did not add.
+
+sources:
+  - id: fathomnet-fgvc23
+    domain: deep-sea
+    access_class: restricted-nd
+    licence_evidence: "inherited from parent fathomnet: https://www.fathomnet.org/terms — 'Visual Content ... used only as training data for developing machine learning algorithms' (LIC-A audit 2026-10-05, confidence medium); subset recorded in registry/ingest-specs/fathomnet-fgvc23.yaml with measured.per_item_license 'CC-BY-4.0'"
+    name: "fathomnet fgvc23"
+    version: "rev-4636bed20b3b"
+    description: "fathomnet/fgvc-comp-2023 (GitHub); official Kaggle FGVC10 competition"
+    licence: PER-SOURCE-VARIES
+    legal_basis: unknown
+    redistribution: unknown
+    provenance: public
+    licence_per_row: true
+    verification:
+      verified_on: 2026-10-08
+      verified_by: "registry/ingest-specs/fathomnet-fgvc23.yaml: license field copied verbatim, not independently checked"
+      method: secondary
+    access:
+      method: s3
+      uri: s3://rs-storage-open/sources/fathomnet-fgvc23/rev-4636bed20b3b
+      notes: "rs-storage-open copy of the upstream dataset (staged tree rev-4636bed20b3b); upstream: https://github.com/fathomnet/fgvc-comp-2023"
+      params:
+        bucket: rs-storage-open
+        endpoint: hel1.your-objectstorage.com
+        region: hel1
+        prefix: sources/fathomnet-fgvc23/rev-4636bed20b3b/
+      size_bytes: 9940494443
+    modalities: [image]
+    capabilities: [general-pretraining]
+    loader: { layout: staged-tree }
+    n_images: 5950
+    n_images_method: "ingest-json"
+    coverage: { regions: [unknown] }
+    homepage: "https://github.com/fathomnet/fgvc-comp-2023"
+    citation: "fathomnet/fgvc-comp-2023 (GitHub); official Kaggle FGVC10 competition"
+    notes: "Folded from registry/ingest-specs/fathomnet-fgvc23.yaml on 2026-10-08 (P1.2). Spec license string, verbatim: 'CC-BY-4.0'. Domain, modalities and capabilities are keyword inferences from the spec text."
+    tags: [spec-folded]
+    checksums:
+      version: "rev-4636bed20b3b"
+      root_digest: c31b69e5da0bed6d74623b8b5479e8b6cc00ec280cd787fec3e61d7dc7e783f4
+      files: 5954
+      size_bytes: 9940494443
+    related: [fathomnet]
+
+  - id: fathomnet-fgvc25
+    domain: deep-sea
+    access_class: restricted-nd
+    licence_evidence: "inherited from parent fathomnet: https://www.fathomnet.org/terms — 'Visual Content ... used only as training data for developing machine learning algorithms' (LIC-A audit 2026-10-05, confidence medium); subset recorded in registry/ingest-specs/fathomnet-fgvc25.yaml with measured.per_item_license 'CC-BY-4.0'"
+    name: "fathomnet fgvc25"
+    version: "2025"
+    description: "FathomNet 2025 competition (Kaggle); FGVC12 workshop, CVPR 2025"
+    licence: PER-SOURCE-VARIES
+    legal_basis: unknown
+    redistribution: unknown
+    provenance: public
+    licence_per_row: true
+    verification:
+      verified_on: 2026-10-08
+      verified_by: "registry/ingest-specs/fathomnet-fgvc25.yaml: license field copied verbatim, not independently checked"
+      method: secondary
+    access:
+      method: s3
+      uri: s3://rs-storage-open/sources/fathomnet-fgvc25/2025
+      notes: "rs-storage-open copy of the upstream dataset (staged tree 2025); upstream: https://www.kaggle.com/competitions/fathomnet-2025"
+      params:
+        bucket: rs-storage-open
+        endpoint: hel1.your-objectstorage.com
+        region: hel1
+        prefix: sources/fathomnet-fgvc25/2025/
+      size_bytes: 25949554677
+    modalities: [image]
+    capabilities: [general-pretraining]
+    loader: { layout: staged-tree }
+    n_images: 9306
+    n_images_method: "ingest-json"
+    coverage: { regions: [unknown] }
+    homepage: "https://www.kaggle.com/competitions/fathomnet-2025"
+    citation: "FathomNet 2025 competition (Kaggle); FGVC12 workshop, CVPR 2025"
+    notes: "Folded from registry/ingest-specs/fathomnet-fgvc25.yaml on 2026-10-08 (P1.2). Spec license string, verbatim: 'CC-BY-4.0'. Domain, modalities and capabilities are keyword inferences from the spec text."
+    tags: [spec-folded]
+    checksums:
+      version: "2025"
+      root_digest: c577676e2e11cacb525d0b5eae22eec6c62c157648ef234a73f8cb6e6b676787
+      files: 9310
+      size_bytes: 25949554677
+    related: [fathomnet]
+
+  - id: fathomnet-vme
+    domain: deep-sea
+    access_class: restricted-nd
+    licence_evidence: "https://www.fathomnet.org/terms — 'select from one of four Creative Commons licenses: CC0, CC-BY, CC-BY-NC, and CC-BY-NC-ND' (LIC-B audit 2026-10-05, confidence medium)"
+    name: "fathomnet vme"
+    version: "unversioned"
+    description: "FathomNet/2024-vme-benchmark (HF)"
+    licence: PER-SOURCE-VARIES
+    legal_basis: unknown
+    redistribution: unknown
+    provenance: public
+    licence_per_row: true
+    verification:
+      verified_on: 2026-10-08
+      verified_by: "registry/ingest-specs/fathomnet-vme.yaml: license field copied verbatim, not independently checked"
+      method: secondary
+    access:
+      method: huggingface
+      uri: "https://huggingface.co/datasets/FathomNet/2024-vme-benchmark"
+      notes: "ingest adapter hf; see registry/ingest-specs/fathomnet-vme.yaml"
+    modalities: [image]
+    capabilities: [general-pretraining]
+    loader: { layout: metadata-only }
+    coverage: { regions: [unknown] }
+    homepage: "https://huggingface.co/datasets/FathomNet/2024-vme-benchmark"
+    citation: "FathomNet/2024-vme-benchmark (HF)"
+    notes: "Folded from registry/ingest-specs/fathomnet-vme.yaml on 2026-10-08 (P1.2). Spec license string, verbatim: 'other (HF card)'. Domain, modalities and capabilities are keyword inferences from the spec text."
+    tags: [spec-folded]
+    release_skip_reason: "no-staged-images: registry lists imagery, nothing staged under sources/ in rs-storage-open (U7/queue follow-up)"
+    n_images_method: "unavailable:no-count"
+    related: [fathomnet]
+
+  - id: galapagos-insas
+    domain: deep-sea
+    access_class: open
+    licence_evidence: "https://zenodo.org/api/records/17393662 — 'metadata.license: {\"id\": \"cc-by-4.0\"}; access_right: open' (WP-LICV audit 2026-10-05, confidence confirmed-open)"
+    name: "galapagos insas"
+    version: "record-17393662"
+    description: "doi:10.5281/zenodo.17393662 — Interferometric Synthetic Aperture Sonar data from the FKt231024 expedition to the Galapagos Spreading Center"
+    licence: CC-BY-4.0
+    legal_basis: licence
+    redistribution: ok
+    provenance: public
+    verification:
+      verified_on: 2026-10-08
+      verified_by: "registry/ingest-specs/galapagos-insas.yaml: license field copied verbatim, not independently checked"
+      method: secondary
+    access:
+      method: s3
+      uri: s3://rs-storage-open/sources/galapagos-insas/record-17393662
+      notes: "rs-storage-open copy of the upstream dataset (staged tree record-17393662); upstream: https://zenodo.org/records/17393662"
+      params:
+        bucket: rs-storage-open
+        endpoint: hel1.your-objectstorage.com
+        region: hel1
+        prefix: sources/galapagos-insas/record-17393662/
+      size_bytes: 16381522617
+    modalities: [image]
+    capabilities: [general-pretraining]
+    loader: { layout: staged-tree }
+    n_images: 21
+    n_images_method: "ingest-json"
+    coverage: { regions: [unknown] }
+    homepage: "https://zenodo.org/records/17393662"
+    citation: "doi:10.5281/zenodo.17393662 — Interferometric Synthetic Aperture Sonar data from the FKt231024 expedition to the Galapagos Spreading Center"
+    notes: "Folded from registry/ingest-specs/galapagos-insas.yaml on 2026-10-08 (P1.2). Spec license string, verbatim: 'cc-by-4.0'. Domain, modalities and capabilities are keyword inferences from the spec text."
+    tags: [spec-folded]
+    checksums:
+      version: "record-17393662"
+      root_digest: 4f344d4c2d59a29c922bd5837ebe1ac1a994c601de99157be4d20d75cb410036
+      files: 24
+      size_bytes: 16381522617
+
+  - id: jamstec-jedi
+    domain: deep-sea
+    access_class: internal-only
+    name: "jamstec jedi"
+    version: "unversioned"
+    description: "J-EDI (JAMSTEC E-library of Deep-sea Images)"
+    licence: NO-LICENCE-STATED
+    legal_basis: unknown
+    redistribution: unknown
+    provenance: public
+    verification:
+      verified_on: 2026-10-08
+      verified_by: "registry/ingest-specs/jamstec-jedi.yaml: license field copied verbatim, not independently checked"
+      method: secondary
+    access:
+      method: request
+      uri: "https://www.godac.jamstec.go.jp/jedi/e/"
+      notes: "ingest adapter needs:jamstec-request; see registry/ingest-specs/jamstec-jedi.yaml"
+    modalities: [image]
+    capabilities: [general-pretraining]
+    loader: { layout: metadata-only }
+    coverage: { regions: [unknown] }
+    homepage: "https://www.godac.jamstec.go.jp/jedi/e/"
+    citation: "J-EDI (JAMSTEC E-library of Deep-sea Images)"
+    notes: "Folded from registry/ingest-specs/jamstec-jedi.yaml on 2026-10-08 (P1.2). Spec license string, verbatim: 'JAMSTEC terms (request-based)'. Domain, modalities and capabilities are keyword inferences from the spec text."
+    tags: [spec-folded]
+    release_skip_reason: "no-staged-images: registry lists imagery, nothing staged under sources/ in rs-storage-open (U7/queue follow-up)"
+    n_images_method: "unavailable:no-count"
+
+  - id: pangaea-cvap-lander-bbox
+    domain: deep-sea
+    access_class: open
+    licence_evidence: "https://doi.pangaea.de/10.1594/PANGAEA.961314 — 'rightsIdentifier=\"CC-BY-4.0\" (DataCite4 via PANGAEA OAI)' (WP-LICV audit 2026-10-05, confidence confirmed-open)"
+    name: "pangaea cvap lander bbox"
+    version: "PANGAEA.961314"
+    description: "doi:10.1594/PANGAEA.961314"
+    licence: CC-BY-4.0
+    legal_basis: licence
+    redistribution: ok
+    provenance: public
+    verification:
+      verified_on: 2026-10-08
+      verified_by: "registry/ingest-specs/pangaea-cvap-lander-bbox.yaml: license field copied verbatim, not independently checked"
+      method: secondary
+    access:
+      method: s3
+      uri: s3://rs-storage-open/sources/pangaea-cvap-lander-bbox/PANGAEA.961314
+      notes: "rs-storage-open copy of the upstream dataset (staged tree PANGAEA.961314); upstream: https://doi.pangaea.de/10.1594/PANGAEA.961314"
+      params:
+        bucket: rs-storage-open
+        endpoint: hel1.your-objectstorage.com
+        region: hel1
+        prefix: sources/pangaea-cvap-lander-bbox/PANGAEA.961314/
+      size_bytes: 5976052317
+    modalities: [image]
+    capabilities: [general-pretraining]
+    loader: { layout: staged-tree }
+    n_images: 2509
+    n_images_method: "spec:measured.items"
+    coverage: { regions: [unknown] }
+    homepage: "https://doi.pangaea.de/10.1594/PANGAEA.961314"
+    citation: "doi:10.1594/PANGAEA.961314"
+    notes: "Folded from registry/ingest-specs/pangaea-cvap-lander-bbox.yaml on 2026-10-08 (P1.2). Spec license string, verbatim: 'CC-BY-4.0'. Domain, modalities and capabilities are keyword inferences from the spec text."
+    tags: [spec-folded]
+    checksums_status: missing
+
+  - id: pangaea-ps101-ofos-arctic
+    domain: deep-sea
+    access_class: open
+    name: "pangaea ps101 ofos arctic"
+    version: "unversioned"
+    description: "doi:10.1594/PANGAEA.871550"
+    licence: CC-BY-3.0
+    legal_basis: licence
+    redistribution: ok
+    provenance: public
+    verification:
+      verified_on: 2026-10-05
+      verified_by: "LIC-B audit 2026-10-05 read https://doi.pangaea.de/10.1594/PANGAEA.871550 : license: https://creativecommons.org/licenses/by/3.0/ (PANGAEA JSON-LD); one sampled child dataset (873046) exposed no licence field"
+      method: dataset-card
+    access:
+      method: http
+      uri: "https://doi.pangaea.de/10.1594/PANGAEA.871550"
+      notes: "ingest adapter pangaea-series; see registry/ingest-specs/pangaea-ps101-ofos-arctic.yaml"
+    modalities: [image]
+    capabilities: [general-pretraining]
+    loader: { layout: metadata-only }
+    n_images: 9764
+    n_images_method: "spec:measured.items"
+    coverage: { regions: [unknown] }
+    homepage: "https://doi.pangaea.de/10.1594/PANGAEA.871550"
+    citation: "doi:10.1594/PANGAEA.871550"
+    notes: "Folded from registry/ingest-specs/pangaea-ps101-ofos-arctic.yaml on 2026-10-08 (P1.2). Spec license string, verbatim: 'CC-BY (per child)'. Domain, modalities and capabilities are keyword inferences from the spec text. P1.2b (2026-10-08) restored the class to open: the LIC audit (2026-10-05) read the upstream licence (CC-BY-3.0), see licence_evidence."
+    tags: [spec-folded]
+    release_skip_reason: "no-staged-images: registry lists imagery, nothing staged under sources/ in rs-storage-open (U7/queue follow-up)"
+    licence_evidence: "https://doi.pangaea.de/10.1594/PANGAEA.871550 : license: https://creativecommons.org/licenses/by/3.0/ (PANGAEA JSON-LD); one sampled child dataset (873046) exposed no licence field"
+
+  - id: seanoe-eiffel-tower-vl
+    domain: deep-sea
+    access_class: unknown  # P1.2d: was open; no licence evidence
+    licence_evidence: "unverified: claimed as 'CC-BY-4.0 (SEANOE)' in registry/ingest-specs/seanoe-eiffel-tower-vl.yaml license (folded 2026-10-08, never checked against https://doi.org/10.17882/92226); measured.per_item_license 'CC-BY-4.0 (SEANOE)' (2026-09-25)"
+    name: "seanoe eiffel tower vl"
+    version: "unversioned"
+    description: "doi:10.17882/92226"
+    licence: CC-BY-4.0
+    legal_basis: licence
+    redistribution: ok
+    provenance: public
+    verification:
+      verified_on: 2026-10-08
+      verified_by: "registry/ingest-specs/seanoe-eiffel-tower-vl.yaml: license field copied verbatim, not independently checked"
+      method: secondary
+    access:
+      method: http
+      uri: "https://doi.org/10.17882/92226"
+      notes: "ingest adapter http; see registry/ingest-specs/seanoe-eiffel-tower-vl.yaml"
+    modalities: [image]
+    capabilities: [general-pretraining]
+    loader: { layout: metadata-only }
+    n_images: 18082
+    n_images_method: "spec:measured.items"
+    coverage: { regions: [unknown] }
+    homepage: "https://doi.org/10.17882/92226"
+    citation: "doi:10.17882/92226"
+    notes: "Folded from registry/ingest-specs/seanoe-eiffel-tower-vl.yaml on 2026-10-08 (P1.2). Spec license string, verbatim: 'CC-BY-4.0 (SEANOE)'. Domain, modalities and capabilities are keyword inferences from the spec text."
+    tags: [spec-folded]
+    release_skip_reason: "no-staged-images: registry lists imagery, nothing staged under sources/ in rs-storage-open (U7/queue follow-up)"
+

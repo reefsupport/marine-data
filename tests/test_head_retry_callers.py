@@ -95,7 +95,7 @@ def test_metadata_release_fallback_retries_405_and_only_404_means_not_staged(mon
     dest = tmp_path / "out" / "metadata.parquet"
 
     def run(client):
-        monkeypatch.setattr("marinedata.s3_upload.client_from_rclone", lambda *a, **k: client)
+        monkeypatch.setattr("marinedata.s3_client.get_client", lambda *a, **k: client)
         return mr._fetch_staged_metadata_from_s3(source, dest)
 
     ok = Client(fail=2)

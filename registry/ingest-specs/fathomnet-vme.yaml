@@ -22,3 +22,4 @@ measured:
   label_type: bbox
   n_concepts_note: VME indicator taxa (corals, sponges) — depth >200 m by definition
     of habitat
+bucket: rs-storage-private

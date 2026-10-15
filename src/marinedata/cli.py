@@ -10,7 +10,9 @@ from __future__ import annotations
 
 import argparse
 import sys
+from importlib import metadata
 
+from .cli_auth import add_auth_subparser  # D9: `marinedata auth check`
 from .cli_bench import add_bench_subparser  # WP-11 P1: registry/benchmarks.yaml validate+hash
 from .cli_decon import add_decon_subparser  # WP-12 P2: benchmark decontamination gate
 from .cli_dedup import add_dedup_subparser
@@ -25,6 +27,7 @@ from .cli_registry import add_registry_subparsers
 from .cli_release import add_release_subparser
 from .cli_splitmap import add_splitmap_subparser
 from .cli_splits import add_splits_subparser  # WP-11/12 P3: split v2 pools/OOD/allocator
+from .cli_tasks import add_tasks_subparser
 from .cli_verify import add_verify_subparsers
 from .eval.cli import add_eval_subparser
 
@@ -48,7 +51,6 @@ except ImportError as _captions_import_error:  # pragma: no cover — depends on
         p.set_defaults(func=_missing)
 
 
-from .gate import evaluate
 from .lineage import build_lineage
 from .query import find
 from .registry import Registry, RegistryError
@@ -94,22 +96,41 @@ def _cmd_show(args: argparse.Namespace) -> int:
 
 
 def _cmd_check(args: argparse.Namespace) -> int:
-    """Evaluate every source against a profile. Exit 1 if any would be denied."""
-    reg = Registry.load()
-    profile = reg.profile(args.profile)
-    denied = 0
-    for src in reg:
-        decision = evaluate(src, profile, legal_opinion_ref=args.legal_opinion_ref)
-        mark = "✓" if decision.allowed else "✗"
-        print(f"{mark} {src.id}")
-        if not decision.allowed:
-            denied += 1
-            print(f"    {' '.join(decision.reason.split())}")
-    print(f"\n{len(reg) - denied} permitted, {denied} denied under '{profile.id}'")
-    return 1 if denied and args.strict else 0
+    """Evaluate every source against a profile; fail closed on anything unexplained.
+
+    Denials are printed in two groups. EXPECTED: the entry's own ``access_class`` already
+    says it cannot ship under the profile (internal-only, unknown, restricted-nd,
+    restricted-nc under a profile that ships no nc, release-excluded). UNEXPECTED: the class
+    claims it ships and the gate refuses anyway. Exit 1 on any unexpected denial or a
+    malformed registry; exit 0 otherwise. Unconditional: there is no flag to make an
+    unexpected denial exit 0.
+    """
+    from .check_report import build_report
+
+    try:
+        reg = Registry.load()
+        profile = reg.profile(args.profile)
+    except (RegistryError, KeyError) as exc:
+        print(f"registry invalid: {exc}", file=sys.stderr)
+        return 1
+    report = build_report(reg, profile, legal_opinion_ref=args.legal_opinion_ref)
+    print("\n".join(report.lines()))
+    return report.exit_code
 
 
 def _cmd_lineage(args: argparse.Namespace) -> int:
+    """Emit a LINEAGE.json and exit 0 as long as it was written — a denial is the gate
+    working, not a failure.
+
+    ``ship-commercial`` denies most of the registry by construction; an exit code that
+    fires on nearly every normal run gets suppressed within a week, and then it protects
+    nothing. What matters is that a denial leaves a trace, and it does: every excluded
+    source is recorded loudly here (one ``✗ id: reason`` line on stderr) *and* in the
+    JSON (`excluded`), regardless of exit code. A non-zero exit is reserved for a source
+    that was allowed in and then failed to load — that is `build()`'s ``dropped``, a
+    different failure this command never sees, since it resolves the registry without
+    loading any samples.
+    """
     reg = Registry.load()
     result = find(
         profile=args.profile,
@@ -132,6 +153,13 @@ def _cmd_lineage(args: argparse.Namespace) -> int:
         print(lineage.attribution_text())
     else:
         print(payload)
+    if lineage.excluded:
+        print(
+            f"\n{len(lineage.excluded)} source(s) excluded from this lineage:",
+            file=sys.stderr,
+        )
+        for entry in lineage.excluded:
+            print(f"  ✗ {entry['id']}: {entry['reason']}", file=sys.stderr)
     return 0
 
 
@@ -151,8 +179,13 @@ def _cmd_fetch(args: argparse.Namespace) -> int:
 
 
 def _cmd_verify(args: argparse.Namespace) -> int:
-    """Fetch a small sample per source and confirm the declared layout reads it."""
-    from .verify import summarise, unverified, verify_all
+    """Fetch a small sample per source and confirm the declared layout reads it.
+
+    A ``verified`` result is written back to the source's YAML (``loader.verified_on``
+    / ``loader.verified_note``) — this is what makes the field mean something a human
+    checked, rather than a date nobody writes.
+    """
+    from .verify import summarise, unverified, verify_all, write_verification
 
     reg = Registry.load()
     if args.unverified_only:
@@ -165,6 +198,10 @@ def _cmd_verify(args: argparse.Namespace) -> int:
     results = verify_all(reg, limit=args.limit, only=args.source_id or None)
     for result in results:
         print(result.line())
+        if result.ok:
+            written = write_verification(reg, result)
+            if written is not None:
+                print(f"    wrote verified_on → {written}")
     print(f"\n{summarise(results)}")
     failed = [r for r in results if r.status == "failed"]
     return 1 if failed and args.strict else 0
@@ -329,10 +366,18 @@ def _cmd_labels(args: argparse.Namespace) -> int:
     return 1 if drops and args.strict else 0
 
 
+def _package_version() -> str:
+    try:
+        return metadata.version("marinedata")
+    except metadata.PackageNotFoundError:  # running from a source tree that was never installed
+        return "unknown"
+
+
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         prog="marinedata", description="Licence-aware marine dataset registry."
     )
+    parser.add_argument("--version", action="version", version=f"marinedata {_package_version()}")
     sub = parser.add_subparsers(dest="command", required=True)
 
     def add_common(p: argparse.ArgumentParser) -> None:
@@ -353,7 +398,6 @@ def build_parser() -> argparse.ArgumentParser:
 
     p_check = sub.add_parser("check", help="Evaluate every source against a profile")
     add_common(p_check)
-    p_check.add_argument("--strict", action="store_true", help="Exit 1 if anything is denied")
     p_check.set_defaults(func=_cmd_check)
 
     p_lin = sub.add_parser("lineage", help="Emit a LINEAGE.json for a build")
@@ -373,6 +417,7 @@ def build_parser() -> argparse.ArgumentParser:
     add_ingest_batch_subparser(sub)
     add_splitmap_subparser(sub)
     add_metadata_subparser(sub)
+    add_tasks_subparser(sub)  # P3.1: `tasks build-points`
     add_release_subparser(sub)
     add_privacy_subparser(sub)
     add_quality_subparser(sub)
@@ -479,6 +524,8 @@ def build_parser() -> argparse.ArgumentParser:
         help="check: also gate the sources named in this release manifest (repeatable)",
     )
     p_tax.set_defaults(func=_cmd_taxonomy)
+
+    add_auth_subparser(sub)
 
     return parser
 

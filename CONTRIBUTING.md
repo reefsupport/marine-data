@@ -140,6 +140,18 @@ CV.
 Measured drops (`known_drops`) need a real citation — a paper, or a reproducible
 measurement described specifically enough to check.
 
+## Reporting data problems
+
+Use the issue forms: [label error](https://github.com/reefsupport/marine-data/issues/new?template=label_error.yml),
+[licence question](https://github.com/reefsupport/marine-data/issues/new?template=licence_question.yml) and
+[new source](https://github.com/reefsupport/marine-data/issues/new?template=new_source.yml). Identify a row by `config`,
+`source`, `split` and `image_sha256`, and do not attach images that show people. Mask values are class ids, so a mask looks
+almost black in an image viewer: decode it with the row's `class_map` before reporting an error.
+
+Rights holders and people who appear in an image: follow the
+[takedown procedure](SECURITY.md#takedown-requests). Vulnerabilities and personal data go to the private route in
+[`SECURITY.md`](SECURITY.md), not to a public issue.
+
 ## Code
 
 - `ruff check . && ruff format --check .`
@@ -147,6 +159,25 @@ measurement described specifically enough to check.
   in `tests/test_gate.py` must change with it, deliberately and in the same commit.
 - Models are frozen (`ConfigDict(frozen=True)`). A registry is a set of assertions; code
   that mutates one in place can silently disagree with a lineage report it already emitted.
+
+### Setup and checks
+
+```bash
+git clone https://github.com/reefsupport/marine-data && cd marine-data
+uv venv && uv pip install -e ".[all,ingest,hf,dev]"   # the install CI uses
+make ci                                               # lint, registry and label checks, pytest, e2e fixture
+```
+
+`make ci` is the sequence the GitHub Actions `lint-and-test` job runs, so a CI failure can be reproduced locally. The
+tests that need the network or a local build are deselected by default (`integration`, `network`, `slow`).
+
+### Commits and pull requests
+
+- Start the commit message with a type and a colon: `feat:`, `fix:`, `docs:`, `test:`, `refactor:` or `chore:`.
+- Open the pull request against `main`. The template has a checklist, and `lint-and-test` must pass.
+- Under section 5 of the Apache License 2.0, a contribution you submit is licensed on the same terms as the rest of the
+  code ([`LICENSE`](LICENSE)), unless you state otherwise. Adding a source to the registry never changes that source's
+  own licence.
 
 ## Scope
 

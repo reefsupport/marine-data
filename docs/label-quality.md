@@ -161,7 +161,7 @@ task:
 Precedence is `conflict` > `ambiguous` > `flagged_hard` > `ok` (`classify_conflict`,
 `_STATUS_RANK`). **Non-`ok` rows are excluded from val/test scoring** (kept in
 train/pretrain); this module only labels the rows — the INT/merge wires the filter into
-`metadata` and the eval harness, and `hf_*`/`release.py`/`models.py` are not touched here.
+`metadata` and the eval harness, and `hf_*`/`release/`/`models.py` are not touched here.
 
 **only the reliable flag direction becomes `flagged_hard`.** §5b showed the
 CL probe's two directions have very different audited precision — 87.1% toward HEALTHY,

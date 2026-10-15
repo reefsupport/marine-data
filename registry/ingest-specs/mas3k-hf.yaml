@@ -22,3 +22,4 @@ measured:
   label_type: binary instance masks (camouflaged marine animals) + negatives
   wp6g_gaps:
   - 3
+bucket: rs-storage-private

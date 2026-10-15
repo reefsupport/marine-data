@@ -10,3 +10,4 @@ params:
   zenodo_record: 15639838
 
 disk_floor_gib: 36.0
+bucket: rs-storage-private

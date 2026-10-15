@@ -27,3 +27,4 @@ measured:
   label_type: binary salient-object segmentation masks (GT png) plus depth maps and boundary maps
   method: u15-label-kind-triage (registry-patch.yaml)
   date: '2026-10-05'
+bucket: rs-storage-private

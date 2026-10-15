@@ -1,0 +1,8 @@
+# Release-gate configuration, read by `marinedata release gate` (docs/GATES.md).
+privacy:
+  # EXIF GPS (privacy gate). An embedded image whose EXIF carries a GPSInfo IFD (tag 34853)
+  # fails its row, unless its source id is set to true here. Allow a source only when its
+  # licence and privacy review say the capture locations may be published with the pixels.
+  #   allow_exif_gps:
+  #     some-source-id: true
+  allow_exif_gps: {}

@@ -14,3 +14,4 @@ measured:
   label_type: bbox+cls+traits, 17,357 species
   bytes: null
   bytes_basis: 'unmeasured: access-gated'
+bucket: rs-storage-private

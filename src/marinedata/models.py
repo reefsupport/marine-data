@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import re
 from datetime import date
+from typing import Literal
 
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
@@ -77,7 +78,21 @@ VERIFICATION_METHODS = frozenset(
     }
 )
 
-PRIMARY_METHODS = VERIFICATION_METHODS - {"secondary"}
+PRIMARY_METHODS = frozenset(
+    {
+        "licence-file",
+        "dataset-card",
+        "written-permission",
+        "site-terms",
+    }
+)
+"""Explicit allowlist, not ``VERIFICATION_METHODS - {"secondary"}``.
+
+A set subtraction only excludes what it names — add a new non-primary method to
+``VERIFICATION_METHODS`` (as ``absent`` was) and it falls through to "primary" by
+default. An allowlist fails closed instead: a new method is non-primary until someone
+deliberately adds it here.
+"""
 
 
 class Verification(_Frozen):
@@ -156,11 +171,26 @@ class LoaderSpec(_Frozen):
         return self.verified_on is not None
 
 
+SHA256_PATTERN = re.compile(r"^(sha256:)?[0-9a-f]{64}$")
+
+
 class Access(_Frozen):
     method: AccessMethod
     uri: str | None = None
     gated: bool = False
     size_bytes: int | None = None
+    sha256: str | None = Field(
+        default=None,
+        description="Declared sha256 of the fetched artefact, e.g. 'sha256:<64 hex>' or "
+        "the bare 64-char hex digest. `fetch_sample` verifies the downloaded bytes "
+        "against this and raises on mismatch. Optional today — most of the 60 sources "
+        "don't declare one yet, and requiring it everywhere on day one would block "
+        "them all — but a plaintext `http://` source has nothing else vouching for "
+        "what arrived, so `fetch_sample` requires one there. See fetch.py's digest "
+        "handling for what this does and does not yet cover (only artefacts fetched "
+        "in full; a Range-read sample cannot check a whole-file digest without "
+        "downloading the whole file, which defeats the point of a bounded sample).",
+    )
     params: dict[str, str | int | bool] = Field(default_factory=dict)
     """Fetcher parameters — e.g. ``hf_id``, ``image_column``, ``sample_url``.
 
@@ -174,6 +204,15 @@ class Access(_Frozen):
     def _gated_needs_note(self) -> Access:
         if self.gated and not self.notes:
             raise ValueError("gated=true requires notes describing the gate")
+        return self
+
+    @model_validator(mode="after")
+    def _sha256_shape(self) -> Access:
+        if self.sha256 is not None and not SHA256_PATTERN.match(self.sha256):
+            raise ValueError(
+                f"sha256 {self.sha256!r} is not a 64-char hex digest "
+                f"(optionally prefixed 'sha256:')"
+            )
         return self
 
 
@@ -309,6 +348,20 @@ class SplitGroupRule(_Frozen):
         return self.template.format(group=match.group(1), source_id=source_id, partition=partition)
 
 
+class OtherVersion(_Frozen):
+    """A further staged tree of a source that the pinned ``Source.version`` does not name."""
+
+    version: str
+    root_digest: str | None = None
+    files: int | None = None
+    size_bytes: int | None = None
+
+
+ExpectLevel = Literal["required", "expected", "none"]
+"""PA-P2.4 metadata-gate expectation for one field: ``required`` (coverage floor 0.99),
+``expected`` (floor 0.90) or ``none`` (not checked)."""
+
+
 class Source(_Frozen):
     """A single dataset entry."""
 
@@ -347,6 +400,22 @@ class Source(_Frozen):
     default_platform: str | None = None
     default_habitat: str | None = None
     default_instrument: str | None = None
+    platform_evidence: str | None = None
+    """PA-P2.2: the card, paper or README sentence behind ``default_platform`` (for ``unknown``:
+    what was checked and found silent). One line; never a guess."""
+    expect_geo: ExpectLevel = "none"
+    expect_date: ExpectLevel = "none"
+    expect_site: ExpectLevel = "none"
+    expect_depth: ExpectLevel = "none"
+    """PA-P2.4 metadata gate: how much of ``lat``/``lon``, ``date``, ``site_id`` and ``depth_m`` the
+    resolvers must fill for this source. ``required`` = 0.99 of rows, ``expected`` = 0.90, ``none``
+    = not checked (the default: nothing is demanded until a source is measured)."""
+    per_row_license: dict[str, str] | None = None
+    """PA-P2.2: for a source whose licence is per item, ``{output column: staged metadata field}``
+    (``license``, ``license_url``, ``attribution``, ``rights_holder``, ``provenance_url``,
+    ``upstream_id``); the resolver reads each row's value instead of the registry default."""
+    rights_holder: str | None = None
+    """PA-P2.2: written to every row's ``rights_holder`` unless ``per_row_license`` overrides it."""
     split_group: SplitGroupRule = Field(default_factory=SplitGroupRule)
     """Required per-source rule for ``resolve_splits(by="group")``. Defaults to the
     explicit fallback (``<source_id>/<partition>``) so every source has one without
@@ -372,6 +441,30 @@ class Source(_Frozen):
     )
     counts_note: str | None = None
     """Provenance of the three counts above: what was counted, when, and how."""
+    n_images_method: str | None = None
+    """How ``n_images`` was obtained (P1.2): ``ingest-json`` | ``metadata-parquet`` | ``listing``
+    (read off the stored tree; re-checked nightly by ``tests/test_registry_counts.py``),
+    ``spec:<field>`` (an ingest spec's own claim) or ``registry-prior`` (the dataset card or paper).
+    ``None`` only while ``n_images`` is unknown."""
+    superseded_by: str | None = None
+    """Id of the canonical entry this one duplicates or renames (checked at registry load). The
+    entry stays so old references keep resolving; new work should use the target."""
+    related: tuple[str, ...] = ()
+    """Ids of entries that share an upstream but are NOT duplicates (a subset, a derivative, a
+    sibling release). A cross-reference only: nothing is merged. Checked at registry load."""
+    licence_evidence: str | None = None
+    """What ``licence`` and ``access_class`` rest on: a URL, or the quoted README/paper sentence.
+    Set whenever a class was taken from an audit rather than copied from an ingest spec."""
+    n_images_upstream: int | None = None
+    """The figure the registry held (dataset card, paper) before a tree was counted; kept when the
+    measured ``n_images`` replaced it. Never used for sizing."""
+    n_images_note: str | None = None
+    """Why the two figures differ; ``stub tree?`` when the measured count is under 10 % of it."""
+    checksums_status: str | None = None
+    """``missing``: a tree is staged but carries no CHECKSUMS.sha256 (its digest needs a VM job).
+    Valid only while ``checksums`` is unset."""
+    other_versions: tuple[OtherVersion, ...] = ()
+    """Further staged trees of this source, not the pinned version (which owns ``checksums``)."""
 
     @property
     def primary_count(self) -> int | None:
@@ -452,6 +545,18 @@ class Source(_Frozen):
         return self
 
     @model_validator(mode="after")
+    def _checksums_status_is_consistent(self) -> Source:
+        if self.checksums_status is None:
+            return self
+        if self.checksums_status != "missing":
+            raise ValueError(
+                f"{self.id}: checksums_status must be 'missing', got {self.checksums_status!r}"
+            )
+        if self.checksums is not None:
+            raise ValueError(f"{self.id}: checksums_status=missing but a checksums block is set")
+        return self
+
+    @model_validator(mode="after")
     def _unknown_basis_is_not_usable(self) -> Source:
         """An unknown legal basis must not masquerade as a usable tier."""
         if self.legal_basis is LegalBasis.UNKNOWN and self.licence.tier in (
@@ -472,6 +577,13 @@ class Profile(_Frozen):
     id: str
     description: str
     allow_tiers: tuple[Tier, ...]
+    ships: bool
+    """Does this profile produce something distributed outside the org (weights,
+    a public release)? Declared, not inferred from ``allow_tiers`` — the dispute and
+    primary-verification checks below key off this, and tier composition (e.g. adding
+    T3_NONCOMMERCIAL) must never silently flip it. Required, no default: every profile
+    author states it on purpose."""
+
     deny_flags: tuple[str, ...] = ()
     require_legal_opinion: bool = False
     """TDM-based profiles cannot be instantiated without a counsel opinion reference."""
@@ -488,3 +600,20 @@ class Profile(_Frozen):
     weights_licence: str | None = None
     """If set, derivative weights must be released under this licence for the profile
     to be honoured. Recorded in lineage so the obligation is not merely intended."""
+
+    @model_validator(mode="after")
+    def _deny_flags_are_known(self) -> Profile:
+        """A typo'd flag must fail the load, not silently resolve to "not denied".
+
+        ``gate.py`` reads a flag via ``getattr(lic.flags, flag, False)`` — an unknown
+        name defaults to ``False`` there, so a misspelled ``deny_flags`` entry would
+        otherwise load cleanly and simply never fire.
+        """
+        known = set(LicenceFlags.model_fields)
+        unknown = [f for f in self.deny_flags if f not in known]
+        if unknown:
+            raise ValueError(
+                f"profile '{self.id}': deny_flags names unknown flag(s) "
+                f"{unknown!r}. Known flags: {', '.join(sorted(known))}."
+            )
+        return self

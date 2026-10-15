@@ -17,6 +17,8 @@ from datetime import UTC, datetime
 from pathlib import Path
 
 from .checksums import file_digest
+from .cli_release_gate import add_gate_parser
+from .cli_release_gate import cmd_metadata_gate as _cmd_release_gate  # noqa: F401  (old name)
 from .cli_splitmap import _parse_ratios
 from .decon import DeconError
 from .dedup.groups import DedupGateError
@@ -28,6 +30,16 @@ from .manifest_identity import checksums_digest
 from .neardup import NearDupConfig, NearDupError, default_workers, pil_version
 from .registry import Registry
 from .release import ReleaseSkipError, build_release, generate_split_map
+from .release_lock import (
+    ReleaseLockError,
+    build_lock,
+    check_build_against_lock,
+    load_lock,
+    lock_required,
+    lock_sha256,
+    write_lock,
+)
+from .release_publish import add_publish_parser, is_frozen
 from .splitmap import load_split_map
 from .strata import DEFAULT_MIN_GROUPS
 
@@ -239,6 +251,26 @@ def _generate_global_split_map(
     return 0
 
 
+def _cmd_release_lock(args: argparse.Namespace) -> int:
+    registry = Registry.load()
+    try:
+        lock = build_lock(
+            registry,
+            release_id=args.release_id,
+            flavour=args.flavour,
+            configs=args.config,
+            source_ids=args.source,
+            code_sha=args.code_sha,
+            reconstructed_at_sha=args.reconstructed_at_sha,
+        )
+    except ReleaseLockError as exc:
+        print(f"release lock: {exc}", file=sys.stderr)
+        return 1
+    out = write_lock(lock, args.out)
+    print(f"release lock: {len(lock.sources)} source(s) -> {out} (sha256 {lock_sha256(out)})")
+    return 0
+
+
 def _cmd_release_split_map(args: argparse.Namespace) -> int:
     """``release split-map``: write the global split map once; both flavour builds read it."""
     registry = Registry.load()
@@ -258,6 +290,11 @@ def _cmd_release_split_map(args: argparse.Namespace) -> int:
     return _generate_global_split_map(
         registry, args, local, split_map_path, near_dup, required_near_dup=True
     )
+
+
+_FROZEN_BUILD = (
+    "release build: {what} is the frozen v1.0 (live on the Hub): building it needs --allow-frozen"
+)
 
 
 def _cmd_release_build(args: argparse.Namespace) -> int:
@@ -282,6 +319,36 @@ def _cmd_release_build(args: argparse.Namespace) -> int:
     except ValueError as exc:
         print(f"release build: {exc}", file=sys.stderr)
         return 1
+    if is_frozen(args.release) and not args.allow_frozen:
+        print(_FROZEN_BUILD.format(what=f"--release {args.release}"), file=sys.stderr)
+        return 1
+    lock = None
+    lock_digest = None
+    if args.lock is None and lock_required():
+        print(
+            "release build: --lock <release.lock.yaml> is required "
+            "(write one with 'marinedata release lock')",
+            file=sys.stderr,
+        )
+        return 1
+    if args.lock is not None:
+        try:
+            lock = load_lock(args.lock, registry)
+            if is_frozen(lock.release_id) and not args.allow_frozen:
+                print(_FROZEN_BUILD.format(what=f"the {lock.release_id} lock"), file=sys.stderr)
+                return 1
+            check_build_against_lock(
+                lock,
+                registry,
+                release_id=args.release,
+                flavour=flavour,
+                profile=args.profile,
+                local_ids=local,
+            )
+        except ReleaseLockError as exc:
+            print(f"release build: {exc}", file=sys.stderr)
+            return 1
+        lock_digest = lock_sha256(args.lock)
     digest = file_digest
     if args.sources_from and not args.manifest_only:
         print("release build: --sources-from needs --manifest-only", file=sys.stderr)
@@ -378,8 +445,10 @@ def _cmd_release_build(args: argparse.Namespace) -> int:
             digest=digest,
             flavour=flavour,
             allow_skip=args.allow_skip or (),
+            lock=lock,
+            lock_sha256=lock_digest,
         )
-    except (NearDupError, DedupGateError, DeconError, ReleaseSkipError) as exc:
+    except (NearDupError, DedupGateError, DeconError, ReleaseSkipError, ReleaseLockError) as exc:
         print(f"release build: {exc}", file=sys.stderr)
         return 1
 
@@ -415,6 +484,17 @@ def add_release_subparser(sub: argparse._SubParsersAction) -> None:
         "build", help="Build every registry task against a frozen SPLIT_MAP.json"
     )
     p_build.add_argument("--release", required=True, help="Release id")
+    p_build.add_argument(
+        "--allow-frozen",
+        action="store_true",
+        help="build the frozen v1.0 (live on the Hub) again; refused without this flag",
+    )
+    p_build.add_argument(
+        "--lock",
+        type=Path,
+        default=None,
+        help="release.lock.yaml from 'marinedata release lock' (required)",
+    )
     p_build.add_argument(
         "--dedup-v2",
         dest="dedup_v2",
@@ -569,6 +649,29 @@ def add_release_subparser(sub: argparse._SubParsersAction) -> None:
     )
     p_build.set_defaults(func=_cmd_release_build)
 
+    p_lock = release_sub.add_parser(
+        "lock", help="Write release.lock.yaml from the registry pins (no silent gaps)"
+    )
+    p_lock.add_argument("--release-id", dest="release_id", required=True)
+    p_lock.add_argument("--flavour", choices=("open", "nc"), required=True)
+    p_lock.add_argument("--config", nargs="+", action="extend", required=True, help="Config id(s)")
+    p_lock.add_argument(
+        "--source", action="append", default=None, help="Lock only this source (repeatable)"
+    )
+    p_lock.add_argument(
+        "--code-sha", dest="code_sha", default=None, help="Stamp this commit instead of HEAD"
+    )
+    p_lock.add_argument(
+        "--reconstructed-at-sha",
+        dest="reconstructed_at_sha",
+        default=None,
+        help="Flag a reconstructed lock: digests read from the registry pins at this commit",
+    )
+    p_lock.add_argument("--out", type=Path, default=Path("release.lock.yaml"))
+    p_lock.set_defaults(func=_cmd_release_lock)
+
+    add_gate_parser(release_sub)
+
     p_map = release_sub.add_parser(
         "split-map",
         help="Generate the one global SPLIT_MAP.json (open + nc sources) both flavours build from",
@@ -591,3 +694,9 @@ def add_release_subparser(sub: argparse._SubParsersAction) -> None:
     )
     _add_near_dup_args(p_map, required_note="required unless --no-near-dup")
     p_map.set_defaults(func=_cmd_release_split_map)
+
+    add_publish_parser(release_sub)
+
+    from .cli_release_card import add_card_commands
+
+    add_card_commands(release_sub)

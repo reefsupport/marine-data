@@ -440,6 +440,63 @@ def _roots(release_dir: Path, cache: Path) -> dict[str, Path]:
     return roots
 
 
+def load_mask_geo(path: Path) -> dict[str, tuple[float | None, float | None]]:
+    """``{image_sha256: (lat, lon)}`` from a parquet/csv/tsv; missing lat/lon columns or null
+    cells give ``None`` (never a made-up value); a file without the key column gives ``{}``."""
+    path = Path(path)
+    if path.suffix == ".parquet":
+        import pyarrow.parquet as pq
+
+        rows = pq.read_table(path).to_pylist()
+    else:
+        import csv
+
+        with path.open(newline="") as fh:
+            rows = list(csv.DictReader(fh, delimiter="\t" if path.suffix == ".tsv" else ","))
+
+    def num(v: object) -> float | None:
+        try:
+            return None if v in (None, "") else float(v)  # type: ignore[arg-type]
+        except (TypeError, ValueError):
+            return None
+
+    out: dict[str, tuple[float | None, float | None]] = {}
+    for r in rows:
+        sha = r.get("image_sha256") or r.get("sha256")
+        if sha:
+            out[str(sha)] = (num(r.get("lat")), num(r.get("lon")))
+    return out
+
+
+def _write_export_counts(release_json: Path, summary: dict) -> None:
+    """Add ``configs: {config: {split: rows}}`` to RELEASE.json: the counts the load and card
+    gates hold the export to. A ``--sample`` export writes one shard per config and skips this."""
+    data = json.loads(release_json.read_text())
+    configs = {
+        config: {split: entry["splits"][split]["rows"] for split in entry["splits"]}
+        for config, entry in sorted(summary["configs"].items())
+    }
+    release_json.write_text(
+        json.dumps({**data, "configs": configs}, indent=1, sort_keys=True) + "\n"
+    )
+
+
+def record_export_counts(release_json: Path, summary: dict) -> bool:
+    """Best effort: record the per-config split rows of ``summary`` in RELEASE.json.
+
+    Returns False and writes nothing when the summary carries no per-config rows or the file is
+    missing (stubbed exports); the load and card gates then report the absent ``configs`` block
+    instead of the export crashing."""
+    release_json = Path(release_json)
+    if not isinstance(summary, dict) or not summary.get("configs") or not release_json.is_file():
+        return False
+    try:
+        _write_export_counts(release_json, summary)
+    except (KeyError, TypeError, AttributeError):
+        return False
+    return True
+
+
 def main(argv: list[str] | None = None) -> int:
     from .fetch import cache_root
 
@@ -484,6 +541,27 @@ def main(argv: list[str] | None = None) -> int:
         help="local staged tree holding the mask PNGs at <root>/<bucket key> (MV-1 mask configs); "
         "a key not found there is fetched with the anonymous small-file GET",
     )
+    parser.add_argument(
+        "--metadata-dir",
+        type=Path,
+        default=None,
+        help="PA-P2.2/P2.6: resolver output dir (<dir>/<source>/<version>/samples.parquet); "
+        "its columns are joined into `metadata`, and 15 geo/date/licence columns into `points`, "
+        "by image_sha256, fill-only (no flag: `metadata` unchanged, the `points` columns null)",
+    )
+    parser.add_argument(
+        "--allow-resize",
+        action="store_true",
+        help="fixtures only: nearest-neighbour resize a mask whose size differs from its image "
+        "(default: refuse, so a misaligned mask cannot ship)",
+    )
+    parser.add_argument(
+        "--mask-geo",
+        type=Path,
+        default=None,
+        help="parquet/csv/tsv with image_sha256 (or sha256), lat, lon: the mask configs carry "
+        "whatever geo the metadata provides; absent = unchanged output",
+    )
     args = parser.parse_args(argv)
 
     registry = Registry.load()
@@ -512,6 +590,7 @@ def main(argv: list[str] | None = None) -> int:
         flavour=flavour,
         mask_fetch=_mc.make_fetch(args.mask_root),
         mask_source_meta=_mc.mask_source_meta(registry),
+        mask_geo=load_mask_geo(args.mask_geo) if args.mask_geo else None,
         mask_stats=mask_stats,
     )
     if not args.no_metadata:  # WP-R2b: licence_class / geo / split_group per image, same flavour
@@ -525,7 +604,17 @@ def main(argv: list[str] | None = None) -> int:
             quality_by_sha={r["image_sha256"]: r for r in quality},
             privacy_flags=privacy.flags,
         )  # fmt: skip
-    summary = export(layout, args.out, sample=args.sample)
+    from .metadata_norm.resolvers.join import join_layout, load_resolved, location_sensitive_sources
+    from .task_layers.mask_encode import allow_resize
+
+    # PA-P2.2/P2.6: fill-only join of the resolver output, by image_sha256, into `metadata` (only
+    # with --metadata-dir) and the `points` config (its geo/date/licence columns exist either way)
+    resolved = load_resolved(args.metadata_dir) if args.metadata_dir else {}
+    layout = join_layout(layout, resolved, location_sensitive_sources(registry))
+    with allow_resize(args.allow_resize):
+        summary = export(layout, args.out, sample=args.sample)
+    if not args.sample:
+        record_export_counts(release_json, summary)
     if flavour:
         summary["flavour"] = flavour
         summary["repo_id"] = release["repo_id"]

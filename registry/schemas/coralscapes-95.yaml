@@ -1,0 +1,129 @@
+# Coralscapes-95 — the CoralscapesV2 dataset's own label dictionary.
+#
+# Generated mechanically from `id2label.json` in the dataset's own HuggingFace repo:
+#   https://huggingface.co/datasets/josauder/coralscapesV2/blob/main/id2label.json
+# fetched 2026-09-11. Every id below is `CS95_<UPPER_SNAKE(name)>`; every `name` and
+# `aliases` entry is copied verbatim from that file — nothing here was read off Fig. 5
+# of the paper or hand-typed from the class table in the dataset card prose (that prose
+# is stale, copy-pasted from the V1 card, and still says "39 benthic classes" — id2label.json
+# is the only trustworthy source for this enumeration; see the coralscapes-v2 source entry's
+# notes for how that was caught).
+#
+# Like coralscapes-39, this is a FLAT vocabulary by design — the source has no hierarchy.
+# No crosswalk to coralscapes-39 exists here: the paper's Fig. 5a/5b shows the 95->39
+# remap as a graphic only, and no machine-readable version of it was found in the dataset
+# repo, the project homepage, the authors' training-code repos, or the production pipeline
+# repo (deepreefmap). See the coralscapes-v2 source entry's notes for the full list of
+# places checked. Hand-deriving that mapping from the figure would be exactly the fail-open
+# this registry exists to prevent, so it is not attempted here.
+#
+# NOTE the gain over coralscapes-39: this schema DOES carry soft-coral classes absent from
+# V1 — "leather coral alive", "nephtheidae alive", "xeniidae alive", a
+# "soft coral (malacalcyonacea) alive/bleached" catch-all, and "cirrhipathes" (black/wire
+# coral) — see the source entry's notes for why that still doesn't close the Caribbean gap.
+
+schemas:
+  - id: coralscapes-95
+    name: Coralscapes 95-class
+    description: >
+      The flat 95-class scheme from the CoralscapesV2 dataset (Red Sea), superseding
+      Coralscapes-39's 39 classes with finer taxon/form/condition splits and, new in V2,
+      several soft-coral classes. Not a taxonomy — see the header comment for why no
+      crosswalk to coralscapes-39 ships with this file.
+    axes: [taxon]
+    nodes:
+      - { id: CS95_ACANTHASTER_PLANCI, name: "acanthaster planci", axis: taxon, aliases: ["acanthaster planci"] }
+      - { id: CS95_ACROPORA_ALIVE, name: "acropora alive", axis: taxon, aliases: ["acropora alive"] }
+      - { id: CS95_ACROPORA_BLEACHED, name: "acropora bleached", axis: taxon, aliases: ["acropora bleached"] }
+      - { id: CS95_ACROPORA_DEAD, name: "acropora dead", axis: taxon, aliases: ["acropora dead"] }
+      - { id: CS95_ALGAE_COVERED_BRAIN_CORAL, name: "algae covered brain coral", axis: taxon, aliases: ["algae covered brain coral"] }
+      - { id: CS95_ALGAE_COVERED_BRANCHING_CORAL, name: "algae covered branching coral", axis: taxon, aliases: ["algae covered branching coral"] }
+      - { id: CS95_ALGAE_COVERED_LOBOPHYLLIIDAE, name: "algae covered lobophylliidae", axis: taxon, aliases: ["algae covered lobophylliidae"] }
+      - { id: CS95_ALGAE_COVERED_MASSIVE_CORAL, name: "algae covered massive coral", axis: taxon, aliases: ["algae covered massive coral"] }
+      - { id: CS95_ALGAE_COVERED_POCILLOPORA, name: "algae covered pocillopora", axis: taxon, aliases: ["algae covered pocillopora"] }
+      - { id: CS95_ALGAE_COVERED_PORITES, name: "algae covered porites", axis: taxon, aliases: ["algae covered porites"] }
+      - { id: CS95_ALGAE_COVERED_SUBSTRATE, name: "algae covered substrate", axis: taxon, aliases: ["algae covered substrate"] }
+      - { id: CS95_ALGAE_COVERED_TABLE_ACROPORA, name: "algae covered table acropora", axis: taxon, aliases: ["algae covered table acropora"] }
+      - { id: CS95_ANEMONE, name: "anemone", axis: taxon, aliases: ["anemone"] }
+      - { id: CS95_BACKGROUND, name: "background", axis: taxon, aliases: ["background"] }
+      - { id: CS95_BRAIN_CORAL_ALIVE, name: "brain coral alive", axis: taxon, aliases: ["brain coral alive"] }
+      - { id: CS95_BRAIN_CORAL_BLEACHED, name: "brain coral bleached", axis: taxon, aliases: ["brain coral bleached"] }
+      - { id: CS95_BRAIN_CORAL_DEAD, name: "brain coral dead", axis: taxon, aliases: ["brain coral dead"] }
+      - { id: CS95_BRANCHING_CORAL_ALIVE, name: "branching coral alive", axis: taxon, aliases: ["branching coral alive"] }
+      - { id: CS95_BRANCHING_CORAL_BLEACHED, name: "branching coral bleached", axis: taxon, aliases: ["branching coral bleached"] }
+      - { id: CS95_BRANCHING_CORAL_DEAD, name: "branching coral dead", axis: taxon, aliases: ["branching coral dead"] }
+      - { id: CS95_CIRRHIPATHES, name: "cirrhipathes", axis: taxon, aliases: ["cirrhipathes"] }
+      - { id: CS95_DARK, name: "dark", axis: taxon, aliases: ["dark"] }
+      - { id: CS95_DEAD_GIANT_CLAM, name: "dead giant clam", axis: taxon, aliases: ["dead giant clam"] }
+      - { id: CS95_FEATHER_WORM, name: "feather worm", axis: taxon, aliases: ["feather worm"] }
+      - { id: CS95_FISH, name: "fish", axis: taxon, aliases: ["fish"] }
+      - { id: CS95_FUNGIIDAE_ALIVE, name: "fungiidae alive", axis: taxon, aliases: ["fungiidae alive"] }
+      - { id: CS95_FUNGIIDAE_BLEACHED, name: "fungiidae bleached", axis: taxon, aliases: ["fungiidae bleached"] }
+      - { id: CS95_FUNGIIDAE_DEAD, name: "fungiidae dead", axis: taxon, aliases: ["fungiidae dead"] }
+      - { id: CS95_GALAXEA_ALIVE, name: "galaxea alive", axis: taxon, aliases: ["galaxea alive"] }
+      - { id: CS95_GALAXEA_BLEACHED, name: "galaxea bleached", axis: taxon, aliases: ["galaxea bleached"] }
+      - { id: CS95_GALAXEA_DEAD, name: "galaxea dead", axis: taxon, aliases: ["galaxea dead"] }
+      - { id: CS95_GIANT_CLAM, name: "giant clam", axis: taxon, aliases: ["giant clam"] }
+      - { id: CS95_GONIOPORA_ALIVE, name: "goniopora alive", axis: taxon, aliases: ["goniopora alive"] }
+      - { id: CS95_GONIOPORA_DEAD, name: "goniopora dead", axis: taxon, aliases: ["goniopora dead"] }
+      - { id: CS95_HARD_CORAL_ALIVE, name: "hard coral alive", axis: taxon, aliases: ["hard coral alive"] }
+      - { id: CS95_HARD_CORAL_BLEACHED, name: "hard coral bleached", axis: taxon, aliases: ["hard coral bleached"] }
+      - { id: CS95_HARD_CORAL_DEAD, name: "hard coral dead", axis: taxon, aliases: ["hard coral dead"] }
+      - { id: CS95_HARD_SUBSTRATE, name: "hard substrate", axis: taxon, aliases: ["hard substrate"] }
+      - { id: CS95_HUMAN, name: "human", axis: taxon, aliases: ["human"] }
+      - { id: CS95_HUMAN_MADE_STRUCTURE, name: "human-made structure", axis: taxon, aliases: ["human-made structure"] }
+      - { id: CS95_LEATHER_CORAL_ALIVE, name: "leather coral alive", axis: taxon, aliases: ["leather coral alive"] }
+      - { id: CS95_LOBOPHYLLIIDAE_ALIVE, name: "lobophylliidae alive", axis: taxon, aliases: ["lobophylliidae alive"] }
+      - { id: CS95_LOBOPHYLLIIDAE_BLEACHED, name: "lobophylliidae bleached", axis: taxon, aliases: ["lobophylliidae bleached"] }
+      - { id: CS95_LOBOPHYLLIIDAE_DEAD, name: "lobophylliidae dead", axis: taxon, aliases: ["lobophylliidae dead"] }
+      - { id: CS95_MASSIVE_ALIVE, name: "massive alive", axis: taxon, aliases: ["massive alive"] }
+      - { id: CS95_MASSIVE_BLEACHED, name: "massive bleached", axis: taxon, aliases: ["massive bleached"] }
+      - { id: CS95_MASSIVE_DEAD, name: "massive dead", axis: taxon, aliases: ["massive dead"] }
+      - { id: CS95_MEANDERING_CORAL_ALIVE, name: "meandering coral alive", axis: taxon, aliases: ["meandering coral alive"] }
+      - { id: CS95_MEANDERING_CORAL_BLEACHED, name: "meandering coral bleached", axis: taxon, aliases: ["meandering coral bleached"] }
+      - { id: CS95_MEANDERING_CORAL_DEAD, name: "meandering coral dead", axis: taxon, aliases: ["meandering coral dead"] }
+      - { id: CS95_MILLEPORA, name: "millepora", axis: taxon, aliases: ["millepora"] }
+      - { id: CS95_MILLEPORA_BLEACHED, name: "millepora bleached", axis: taxon, aliases: ["millepora bleached"] }
+      - { id: CS95_MILLEPORA_DEAD, name: "millepora dead", axis: taxon, aliases: ["millepora dead"] }
+      - { id: CS95_NEPHTHEIDAE_ALIVE, name: "nephtheidae alive", axis: taxon, aliases: ["nephtheidae alive"] }
+      - { id: CS95_OTHER_ANIMAL, name: "other animal", axis: taxon, aliases: ["other animal"] }
+      - { id: CS95_OTHER_CORAL_ALIVE, name: "other coral alive", axis: taxon, aliases: ["other coral alive"] }
+      - { id: CS95_OTHER_CORAL_BLEACHED, name: "other coral bleached", axis: taxon, aliases: ["other coral bleached"] }
+      - { id: CS95_OTHER_CORAL_DEAD, name: "other coral dead", axis: taxon, aliases: ["other coral dead"] }
+      - { id: CS95_PAVONA_ALIVE, name: "pavona alive", axis: taxon, aliases: ["pavona alive"] }
+      - { id: CS95_PAVONA_BLEACHED, name: "pavona bleached", axis: taxon, aliases: ["pavona bleached"] }
+      - { id: CS95_PAVONA_DEAD, name: "pavona dead", axis: taxon, aliases: ["pavona dead"] }
+      - { id: CS95_POCILLOPORA_ALIVE, name: "pocillopora alive", axis: taxon, aliases: ["pocillopora alive"] }
+      - { id: CS95_POCILLOPORA_BLEACHED, name: "pocillopora bleached", axis: taxon, aliases: ["pocillopora bleached"] }
+      - { id: CS95_POCILLOPORA_DEAD, name: "pocillopora dead", axis: taxon, aliases: ["pocillopora dead"] }
+      - { id: CS95_PORITES_ALIVE, name: "porites alive", axis: taxon, aliases: ["porites alive"] }
+      - { id: CS95_PORITES_BLEACHED, name: "porites bleached", axis: taxon, aliases: ["porites bleached"] }
+      - { id: CS95_PORITES_DEAD, name: "porites dead", axis: taxon, aliases: ["porites dead"] }
+      - { id: CS95_RUBBLE, name: "rubble", axis: taxon, aliases: ["rubble"] }
+      - { id: CS95_SAND, name: "sand", axis: taxon, aliases: ["sand"] }
+      - { id: CS95_SEA_CUCUMBER, name: "sea cucumber", axis: taxon, aliases: ["sea cucumber"] }
+      - { id: CS95_SEA_URCHIN, name: "sea urchin", axis: taxon, aliases: ["sea urchin"] }
+      - { id: CS95_SEAGRASS, name: "seagrass", axis: taxon, aliases: ["seagrass"] }
+      - { id: CS95_SERIATOPORA_ALIVE, name: "seriatopora alive", axis: taxon, aliases: ["seriatopora alive"] }
+      - { id: CS95_SERIATOPORA_BLEACHED, name: "seriatopora bleached", axis: taxon, aliases: ["seriatopora bleached"] }
+      - { id: CS95_SERIATOPORA_DEAD, name: "seriatopora dead", axis: taxon, aliases: ["seriatopora dead"] }
+      - { id: CS95_SOFT_CORAL_MALACALCYONACEA_ALIVE, name: "soft coral (malacalcyonacea) alive", axis: taxon, aliases: ["soft coral (malacalcyonacea) alive"] }
+      - { id: CS95_SOFT_CORAL_MALACALCYONACEA_BLEACHED, name: "soft coral (malacalcyonacea) bleached", axis: taxon, aliases: ["soft coral (malacalcyonacea) bleached"] }
+      - { id: CS95_SPONGE, name: "sponge", axis: taxon, aliases: ["sponge"] }
+      - { id: CS95_STYLOPHORA_ALIVE, name: "stylophora alive", axis: taxon, aliases: ["stylophora alive"] }
+      - { id: CS95_STYLOPHORA_BLEACHED, name: "stylophora bleached", axis: taxon, aliases: ["stylophora bleached"] }
+      - { id: CS95_STYLOPHORA_DEAD, name: "stylophora dead", axis: taxon, aliases: ["stylophora dead"] }
+      - { id: CS95_TABLE_ACROPORA_ALIVE, name: "table acropora alive", axis: taxon, aliases: ["table acropora alive"] }
+      - { id: CS95_TABLE_ACROPORA_BLEACHED, name: "table acropora bleached", axis: taxon, aliases: ["table acropora bleached"] }
+      - { id: CS95_TABLE_ACROPORA_DEAD, name: "table acropora dead", axis: taxon, aliases: ["table acropora dead"] }
+      - { id: CS95_THIN_PLATE_ENCRUSTING_CORAL_ALIVE, name: "thin plate/encrusting coral alive", axis: taxon, aliases: ["thin plate/encrusting coral alive"] }
+      - { id: CS95_THIN_PLATE_ENCRUSTING_CORAL_BLEACHED, name: "thin plate/encrusting coral bleached", axis: taxon, aliases: ["thin plate/encrusting coral bleached"] }
+      - { id: CS95_THIN_PLATE_ENCRUSTING_CORAL_DEAD, name: "thin plate/encrusting coral dead", axis: taxon, aliases: ["thin plate/encrusting coral dead"] }
+      - { id: CS95_TRANSECT_LINE, name: "transect line", axis: taxon, aliases: ["transect line"] }
+      - { id: CS95_TRANSECT_TOOLS, name: "transect tools", axis: taxon, aliases: ["transect tools"] }
+      - { id: CS95_TRASH, name: "trash", axis: taxon, aliases: ["trash"] }
+      - { id: CS95_TURBINARIA, name: "turbinaria", axis: taxon, aliases: ["turbinaria"] }
+      - { id: CS95_TURBINARIA_DEAD, name: "turbinaria dead", axis: taxon, aliases: ["turbinaria dead"] }
+      - { id: CS95_WATER_COLUMN, name: "water column", axis: taxon, aliases: ["water column"] }
+      - { id: CS95_WATER_SURFACE, name: "water surface", axis: taxon, aliases: ["water surface"] }
+      - { id: CS95_XENIIDAE_ALIVE, name: "xeniidae alive", axis: taxon, aliases: ["xeniidae alive"] }

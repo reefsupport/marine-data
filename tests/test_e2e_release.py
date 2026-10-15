@@ -13,10 +13,13 @@ dHash is stable across machines.
 
 from __future__ import annotations
 
+import hashlib
 import io
+import json
 import re
 import time
 import zipfile
+from dataclasses import dataclass
 from datetime import date
 from pathlib import Path
 
@@ -34,10 +37,11 @@ from marinedata.enums import (
     Region,
     Tier,
 )
-from marinedata.hf_export import build_layout, collect_rows, export
+from marinedata.hf_export import build_layout, collect_rows, export, record_export_counts
 from marinedata.ingest import ArchivePlan, _stage_with_plan
 from marinedata.models import (
     Access,
+    Checksums,
     Coverage,
     Licence,
     LoaderSpec,
@@ -47,9 +51,11 @@ from marinedata.models import (
     Verification,
 )
 from marinedata.registry import Registry
+from marinedata.release_lock import build_lock, write_lock
 from marinedata.schema import Axis, LabelSchema
 from marinedata.task import TaskKind, TaskSpec
 
+REQUIRES_RELEASE_LOCK = True  # the e2e run goes through release lock -> release build --lock
 FIXTURE_ROOT = Path(__file__).parent / "fixtures" / "e2e_release"
 SOURCES = ("e2e-src-a", "e2e-src-b")
 
@@ -93,6 +99,12 @@ def _source(source_id: str) -> Source:
         # builder's generic reader expects once a source is staged — see
         # ``release.py``'s own docstrings.
         loader=LoaderSpec(layout="staged-tree", params={}),
+        checksums=Checksums(
+            version="v1",
+            root_digest=hashlib.sha256(source_id.encode()).hexdigest(),
+            files=1,
+            size_bytes=1,
+        ),
         annotations=(),
         # One group per stem (not the default one-per-source) so the 15 fixture
         # images give the splitter enough groups for a real, non-empty split.
@@ -112,6 +124,7 @@ def _registry() -> Registry:
         description="fixture",
         allow_tiers=(Tier.OWN, Tier.PERMISSIVE, Tier.COPYLEFT),
         allow_access_classes=("open",),
+        ships=True,
     )
     return Registry(
         sources={sid: _source(sid) for sid in SOURCES},
@@ -124,6 +137,7 @@ def _registry() -> Registry:
                 allow_tiers=(Tier.OWN, Tier.PERMISSIVE, Tier.COPYLEFT, Tier.NONCOMMERCIAL),
                 allow_access_classes=("open", "restricted-nc"),
                 public_release=True,
+                ships=True,
             ),
         },
         schemas={"rs-benthic-v1": schema},
@@ -160,6 +174,7 @@ def _stage_all(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> dict[str, Pat
                 id="research",
                 description="fixture",
                 allow_tiers=(Tier.OWN, Tier.PERMISSIVE, Tier.COPYLEFT, Tier.NONCOMMERCIAL),
+                ships=False,
             ),
         )
         assert result.images == n
@@ -212,7 +227,7 @@ def _sha256_tree(root: Path) -> dict[str, str]:
 # change here means a release output changed — regenerate deliberately, never blindly.
 GOLDEN_RELEASE = {
     "releases/wp4-e2e/open/RELEASE.json": (
-        "b18b4eb8623dc7273c659cf708e607af3233d5f5cf0c53bb92d4b55d60d6aeea"
+        "3431f469f7b467b6577044e3e40a0fbb6b389c5fe1a24722aebd3fab187ea367"
     ),
     "SPLIT_MAP.json": "383a640ac3afec6cf8c961388261d1a4fe0306e3fd90b6c26e928e6a513a4a48",
     "releases/wp4-e2e/open/tasks/pretrain-set.tsv": (
@@ -236,54 +251,180 @@ GOLDEN_EXPORT = {
 }
 
 
+@dataclass(frozen=True)
+class Pipeline:
+    registry: Registry
+    out_dir: Path
+    release_dir: Path
+    export_dir: Path
+    summary: dict
+
+
+def _pipeline(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Pipeline:
+    """Stage -> release build -> HF export on the fixture corpus, network-free."""
+    registry = _registry()
+    monkeypatch.setattr(Registry, "load", classmethod(lambda cls, root=None: registry))
+    monkeypatch.setenv("MARINEDATA_CACHE", str(tmp_path / "dhash-cache"))
+    roots = _stage_all(tmp_path, monkeypatch)
+    out_dir = tmp_path / "release"
+    lock_path = write_lock(
+        build_lock(
+            registry,
+            release_id="wp4-e2e",
+            flavour="open",
+            configs=["coral-masks"],
+            created="2026-10-08T00:00:00+00:00",
+            code_sha="0" * 40,
+        ),
+        tmp_path / "release.lock.yaml",
+    )
+    argv = [
+        "release",
+        "build",
+        "--release",
+        "wp4-e2e",
+        "--split-map",
+        str(out_dir / "SPLIT_MAP.json"),
+    ]
+    argv += ["--out", str(out_dir), "--lock", str(lock_path), "--flavour", "open"]
+    argv += ["--profile", "ship-open", "--generate-split-map", "--no-near-dup", "--seed", "0"]
+    assert main([*argv, *[f"--local={sid}={root}" for sid, root in roots.items()]]) == 0
+    release_dir = out_dir / "releases" / "wp4-e2e" / "open"
+    export_dir = tmp_path / "hf_export"
+    summary = export(
+        build_layout(collect_rows(registry, roots, release_dir, "ship-open")), export_dir
+    )
+    return Pipeline(registry, out_dir, release_dir, export_dir, summary)
+
+
 def test_e2e_ingest_release_hf_export_is_reproducible(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     started = time.monotonic()
-    registry = _registry()
-    monkeypatch.setattr(Registry, "load", classmethod(lambda cls, root=None: registry))
-    monkeypatch.setenv("MARINEDATA_CACHE", str(tmp_path / "dhash-cache"))
+    run = _pipeline(tmp_path, monkeypatch)
 
-    roots = _stage_all(tmp_path, monkeypatch)
-
-    out_dir = tmp_path / "release"
-    split_map = out_dir / "SPLIT_MAP.json"
-    code = main(
-        [
-            "release",
-            "build",
-            "--release",
-            "wp4-e2e",
-            "--split-map",
-            str(split_map),
-            "--out",
-            str(out_dir),
-            "--flavour",
-            "open",
-            "--profile",
-            "ship-open",
-            "--generate-split-map",
-            "--no-near-dup",
-            "--seed",
-            "0",
-            *[f"--local={sid}={root}" for sid, root in roots.items()],
-        ]
-    )
-    assert code == 0
-
-    got_release = _sha256_tree(out_dir)
+    got_release = _sha256_tree(run.out_dir)
     for rel_path, expected in GOLDEN_RELEASE.items():
         assert rel_path in got_release, f"missing release output {rel_path}"
         assert got_release[rel_path] == expected, f"{rel_path} changed: {got_release[rel_path]}"
 
-    release_dir = out_dir / "releases" / "wp4-e2e" / "open"
-    rows = collect_rows(registry, roots, release_dir, "ship-open")
-    layout = build_layout(rows)
-    export_dir = tmp_path / "hf_export"
-    export(layout, export_dir)
-
-    got_export = _sha256_tree(export_dir)
+    got_export = _sha256_tree(run.export_dir)
     assert got_export == GOLDEN_EXPORT, f"hf_export output changed: {sorted(got_export)}"
 
     elapsed = time.monotonic() - started
     assert elapsed < 60, f"e2e fixture run took {elapsed:.1f}s, must stay under 60s"
+
+
+def test_e2e_release_gates_pass_on_the_fixture_build(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """P1.6: ``release gate --all --require-all`` exits 0 on the fixture export. The two
+    image-only fixture sources have no licence metadata and no masks, so a synthetic
+    ``metadata`` and ``coral-masks`` config is added next to the real ``images`` shards."""
+    import pyarrow.parquet as pq
+    from _gates_build import MASK_COLS, META_COLS, mask_rows, meta_row, write_config
+
+    run = _pipeline(tmp_path, monkeypatch)
+    export_dir = run.export_dir
+    meta: dict[str, list[dict]] = {}
+    for path in sorted((export_dir / "data" / "images").glob("*.parquet")):
+        shas = pq.read_table(path, columns=["image_sha256"]).column("image_sha256").to_pylist()
+        meta[path.name.split("-")[0]] = [
+            meta_row(sha, SOURCES[i % 2], license="CC0-1.0") for i, sha in enumerate(shas)
+        ]
+    write_config(export_dir, "metadata", meta, META_COLS)
+    write_config(export_dir, "coral-masks", {"train": mask_rows()}, MASK_COLS)
+    configs = {
+        c: {s: e["splits"][s]["rows"] for s in e["splits"]}
+        for c, e in run.summary["configs"].items()
+    }
+    configs["metadata"] = {s: len(rows) for s, rows in meta.items()}
+    configs["coral-masks"] = {"train": 4}
+    record_export_counts(
+        run.release_dir / "RELEASE.json",
+        {
+            "configs": {
+                c: {"splits": {s: {"rows": n} for s, n in sp.items()}} for c, sp in configs.items()
+            }
+        },
+    )
+    # P1.9b: the card and the Croissant are the ones `release card` / `release croissant` generate
+    # for this very build (not a hand-written stand-in); the card and croissant gates must PASS.
+    citation = Path(__file__).resolve().parent.parent / "CITATION.cff"
+    common = ["--release-dir", str(run.release_dir), "--citation", str(citation)]
+    readme, croissant = export_dir / "README.md", export_dir / "croissant.json"
+    assert main(["release", "card", str(export_dir), *common, "--out", str(readme)]) == 0
+    assert main(["release", "croissant", str(export_dir), *common, "--out", str(croissant)]) == 0
+
+    code = main(
+        [
+            "release",
+            "gate",
+            str(export_dir),
+            "--all",
+            "--require-all",
+            "--flavour",
+            "open",
+            "--release-dir",
+            str(run.release_dir),
+        ]
+    )
+    gates = json.loads((export_dir / "GATES.json").read_text())
+    assert code == 0, {k: v.get("failures") for k, v in gates.items() if k != "summary"}
+    assert set(gates) == {
+        "licence",
+        "dedup",
+        "splits",
+        "masks",
+        "privacy",
+        "load",
+        "card",
+        "croissant",
+        "summary",
+    }
+    assert gates["summary"]["failed"] == 0 and gates["summary"]["skipped"] == 0
+    assert gates["summary"]["passed"] == 8
+    for name in ("card", "croissant", "privacy"):  # PASSED, not skipped
+        assert gates[name]["passed"] is True and "skipped" not in gates[name], name
+    assert (export_dir / "phash.parquet").is_file()
+
+    # D1: the three provenance files, as `release publish` uploads them, are public-safe.
+    import os
+
+    import yaml
+
+    from marinedata.release_provenance import stage_provenance
+    from marinedata.s3_auth import (
+        DEFAULT_REMOTE,
+        ENV_RCLONE_CONF,
+        ENV_RCLONE_REMOTE,
+        OPEN_ENDPOINT,
+        creds_from_rclone,
+    )
+
+    staged = tmp_path / "provenance"
+    stage_provenance(
+        staged,
+        release=run.release_dir / "RELEASE.json",
+        gates=export_dir / "GATES.json",
+        lock=tmp_path / "release.lock.yaml",
+    )
+    texts = {p.name: p.read_text() for p in sorted(staged.iterdir())}
+    assert sorted(texts) == ["GATES.json", "RELEASE.json", "release.lock.yaml"]
+    lock_ids = {s["id"] for s in yaml.safe_load(texts["release.lock.yaml"])["sources"]}
+    outside = {s.id for s in Registry.load().sources} - lock_ids  # not in the lock
+    leaked = sorted(
+        {
+            f"{name}:{sid}"
+            for name, text in texts.items()
+            for sid in outside
+            if re.search(rf"(?<![\w.-]){re.escape(sid)}(?![\w.-])", text)
+        }
+    )
+    assert not leaked, leaked
+    remote = os.environ.get(ENV_RCLONE_REMOTE) or DEFAULT_REMOTE
+    creds = creds_from_rclone(remote, os.environ.get(ENV_RCLONE_CONF))
+    host = creds.endpoint_host if creds else ""  # the config path s3_auth reads; never printed
+    forbidden = ["rs-hel1", "/Users/", "/home/", OPEN_ENDPOINT, *([host] if host else [])]
+    hits = sorted({name for name, text in texts.items() if any(f in text for f in forbidden)})
+    assert not hits, f"private strings in: {hits}"

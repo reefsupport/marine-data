@@ -71,10 +71,12 @@ sources:
       verified_on: 2026-08-28
       verified_note: "Live HF fetch confirms paired raw/gt images, images/ + masks/ on disk."
     tags: [enhancement, noncommercial]
+    n_images_method: "registry-prior"
 
   - id: squid
     domain: imaging
     access_class: restricted-nc
+    licence_evidence: "legacy verification record (dataset-card, 2026-08-29): zenodo.org/api/records/5744037 (the dataset's own official host, Zenodo API metadata) — `\"license\": \"cc-by-nc-sa-4.0\"`. Corrected from CC-BY-4.0: this reproduces the exact NC+SA-missed pattern already caught once on MarineInst20M — a plain CC-BY reading would have let a NonCommercial, ShareAlike-restricted source through as if it were unrestricted.\n"
     name: SQUID (Stereo Quantitative Underwater Image Dataset)
     # habitat inferred (WP-2b) from this source's own description/notes, not independently verified
     habitat: [mixed]
@@ -111,11 +113,13 @@ sources:
     loader: { layout: image-mask-pairs, params: { images_dir: images, masks_dir: depth } }
     citation: 'Berman, Dana, Deborah Levy, Shai Avidan, and Tali Treibitz. "Underwater Single Image Color Restoration Using Haze-Lines and a New Quantitative Dataset." IEEE Transactions on Pattern Analysis and Machine Intelligence (2020).'
     tags: [stereo, physical-gt]
+    n_images_method: "registry-prior"
 
   - id: varos
     domain: imaging
     release_skip_reason: "no-staged-images: registry lists imagery, nothing staged under sources/ in rs-storage-open (U7/queue follow-up)"
     access_class: open
+    licence_evidence: "legacy verification record (dataset-card, 2026-08-17): Zenodo record 5567209 — CC-BY 4.0"
     name: VAROS synthetic underwater dataset
     # habitat inferred (WP-2b) from this source's own description/notes, not independently verified
     habitat: [mixed]
@@ -143,14 +147,16 @@ sources:
     loader: { layout: metadata-only }
     citation: "Peder Georg Olofsson Zwilgmeyer, Mauhing Yip, Andreas Langeland Teigen, Rudolf Mester, & Annette Stahl. (2021). The VAROS Synthetic Underwater Data Set: Towards realistic multi-sensor underwater data with ground truth (Version Varos - version 1 (currently only downloadable from windows systems)) [Dataset]. Zenodo. https://doi.org/10.5281/ZENODO.5567209"
     tags: [synthetic, permissive]
+    n_images_method: "unavailable:no-count"
 
   - id: flsea
     domain: imaging
     access_class: restricted-nc
+    licence_evidence: "legacy verification record (dataset-card, 2026-08-17): Kaggle viseaonlab/flsea-vi — CC BY-NC-SA 4.0"
     name: FLSea (visual-inertial and stereo)
     # habitat inferred (WP-2b) from this source's own description/notes, not independently verified
     habitat: [mixed]
-    version: "2022"
+    version: "rev-ae526f0a1251"
     description: Forward-looking underwater depth ground truth with IMU and poses.
     licence: CC-BY-NC-SA-4.0
     legal_basis: licence
@@ -169,10 +175,24 @@ sources:
     loader: { layout: staged-tree }
     citation: "Yelena Randall, Ori Lifschitz, Tali Treibitz. FLSea: Underwater Visual-Inertial and Stereo-Vision Forward-Looking Datasets. Authorea. DOI: 10.22541/au.175434035.54074686/v1. August 04, 2025. https://www.authorea.com/users/952772/articles/1322072-flsea-underwater-visual-inertial-and-stereo-vision-forward-looking-datasets"
     tags: [depth, benchmark, noncommercial]
+    n_images: 22451
+    n_images_method: "ingest-json"
+    checksums:
+      version: "rev-ae526f0a1251"
+      root_digest: 067c64dba74169e647b708ad4441f3abd782a79ae1fe68d1b04528f06e2e1f3d
+      files: 22454
+      size_bytes: 21769239484
 
   - id: suim
+    default_platform: unknown
+    platform_evidence: "Registry description lists \"diver\" only as a segmentation class; HF card SatwikKambham/suim names no collection platform (checked 2026-10-08); left unknown."
+    expect_geo: none
+    expect_date: none
+    expect_site: none
+    expect_depth: none
     domain: fish
     access_class: open
+    licence_evidence: "legacy verification record (licence-file, 2026-08-29): raw.githubusercontent.com/IRVLab/SUIM/master/LICENSE — the dataset's own repo LICENSE file, headed \"SUIM-Net: Semantic Segmentation of Underwater Imagery: Dataset and Benchmark\" (naming the dataset explicitly, not just generic \"Software\"), covering the whole repo including its `data/` directory. Corrected from CC-BY-4.0, which had no supporting primary source.\n"
     name: SUIM (Semantic Segmentation of Underwater Imagery)
     # habitat inferred (WP-2b) from this source's own description/notes, not independently verified
     habitat: [mixed]
@@ -186,7 +206,7 @@ sources:
       version: "2020"
       root_digest: f7a9ea260f37ead52c20990bfc88b11c10b20dce96faa84a8f477e6f259aba95
       files: 3200
-      size_bytes: 178204379
+      size_bytes: 178515331
     verification:
       verified_on: 2026-08-29
       verified_by: >
@@ -227,6 +247,7 @@ sources:
     modalities: [image]
     capabilities: [benthic-segmentation, fish-detection, general-pretraining]
     n_images: 1598
+    n_images_method: "metadata-parquet"
     annotations: [{ kind: dense-mask, classes: 8, supervises: [taxon] }]
     coverage: { regions: [global] }
     domain_shift:

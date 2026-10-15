@@ -1,8 +1,9 @@
 """Read-only inputs for the normalisers: staged files on ``rs-storage-open`` + the registry.
 
-Nothing here writes to the bucket. Small files come through the public anonymous GET
-(:func:`marinedata.task_layers.s3_keyed.fetch_small`); listings and ranged parquet reads use a
-boto3 client whose credentials are read with ``configparser`` and never printed.
+Nothing here writes to the bucket. Small files come through
+:func:`marinedata.task_layers.s3_keyed.fetch_small`;
+listings and ranged parquet reads use a boto3 client from :mod:`marinedata.s3_auth` (env ->
+rclone remote -> anonymous); credentials are never printed.
 """
 
 from __future__ import annotations
@@ -18,6 +19,7 @@ from typing import Any
 from ..checksums import parse_checksums
 from ..licence_class import per_row_source, source_class
 from ..registry import _default_root
+from ..s3_auth import make_s3_client, resolve_s3_credentials
 from ..task_layers.s3_keyed import FetchFailed, fetch_small
 from .base import NormContext
 from .defaults import registry_entry, registry_fetch_date, validated_defaults
@@ -27,25 +29,8 @@ Fetch = Callable[..., bytes]
 
 
 def s3_client():
-    import configparser
-    import os
-
-    import boto3
-
-    sec = _cfg(configparser, os)
-    ep = sec["endpoint"]
-    return boto3.client(
-        "s3",
-        aws_access_key_id=sec["access_key_id"],
-        aws_secret_access_key=sec["secret_access_key"],
-        endpoint_url=ep if ep.startswith("http") else f"https://{ep}",
-    )
-
-
-def _cfg(configparser, os):
-    cfg = configparser.ConfigParser()
-    cfg.read(os.path.expanduser("~/.config/rclone/rclone.conf"))
-    return cfg["rs-hel1"]
+    """boto3 client from the one resolver: env -> rclone remote -> anonymous."""
+    return make_s3_client(resolve_s3_credentials())
 
 
 def spec_fields(source_id: str, root: str | Path | None = None) -> dict[str, str]:

@@ -18,3 +18,4 @@ measured:
   label_type: cls (debris types)
   bytes: null
   bytes_basis: 'unmeasured: unreachable'
+bucket: rs-storage-private

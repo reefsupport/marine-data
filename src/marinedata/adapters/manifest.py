@@ -16,6 +16,7 @@ from collections.abc import Iterator, Mapping
 from pathlib import Path
 from typing import Any
 
+from ..s3_auth import auth_headers_for, resolve_s3_credentials
 from . import BaseAdapter, Decoded, Fetched, RemoteItem
 
 REPO_ROOT = Path(__file__).resolve().parents[3]
@@ -23,7 +24,8 @@ REPO_ROOT = Path(__file__).resolve().parents[3]
 
 def _fetch_remote(url: str, sha256: str | None = None) -> Path:
     """WP-6f: manifests > 10 MB live on S3 (D-AC), so ``manifest`` may be an https URL
-    (anonymous GET on rs-storage-open). Cached per URL; ``manifest_sha256`` pins the bytes."""
+    (signed GET on rs-storage-open when a key resolves, else anonymous). Cached per URL;
+    ``manifest_sha256`` pins the bytes."""
     from ._http import download
 
     root = Path(os.environ.get("MARINEDATA_MANIFEST_CACHE", "~/.cache/marinedata/manifests"))
@@ -33,6 +35,17 @@ def _fetch_remote(url: str, sha256: str | None = None) -> Path:
     if dest.exists() and (not sha256 or hashlib.sha256(dest.read_bytes()).hexdigest() == sha256):
         return dest
     dest.parent.mkdir(parents=True, exist_ok=True)
+    creds = resolve_s3_credentials()
+    if creds is not None and auth_headers_for(url, creds):
+        # Our own bucket and we hold a key: read signed (D9), through `.part`, digest-checked
+        # before the rename. A refused signature drops to anonymous inside get_to_file.
+        from ..fetch import IntegrityError, get_to_file
+
+        try:
+            get_to_file(url, dest, expected_sha256=sha256, label=f"manifest {url}", creds=creds)
+        except IntegrityError as exc:
+            raise ValueError(str(exc)) from exc
+        return dest
     got, _md5, _size = download(url, dest)
     if sha256 and got != sha256:
         dest.unlink(missing_ok=True)

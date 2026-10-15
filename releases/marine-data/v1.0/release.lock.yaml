@@ -1,0 +1,53 @@
+release_id: v1.0
+created: '2026-10-08T21:44:33+00:00'
+code_sha: dc98562be238ad68e6b6177e9d15f69ebc5a699c
+# reconstructed lock: v1.0 was built by hand on 2026-10-07 from a commit that cannot be identified; its digests are the bucket-tree digests pinned in the registry (first pinned 2026-09-18 to 2026-10-08) and read on 2026-10-08, not recorded at build time; code_sha is not the build commit
+reconstructed: true
+reconstructed_at_sha: ce718736c6527124b90fa0b754023d61700ef7c1
+flavour: open
+configs:
+- coral-masks
+- scene-masks
+- instance-masks
+- fish-boxes
+sources:
+- id: coralscapes
+  version: '1.0'
+  root_digest: da0ed5b386664e73176cbde0654771509f5f208f22d63c26d2d1d42963826a3e
+  n_images: 2075
+  access_class: open
+- id: reef-support-benthic-own
+  version: '2026-10-06'
+  root_digest: 70f0b4516510f565320910477204faadf44bce68251b66d070821db1864e7a74
+  n_images: 1250
+  access_class: open
+- id: reef-support-seaview-labels
+  version: '2026-10-06'
+  root_digest: 7c97e309ae21b913d920606e461e9a663c97c9b660c45accd8c13a3ab4d2d011
+  n_images: 2707
+  access_class: open
+- id: roboflow-aquarium
+  version: zip-5d30fed3dd5a
+  root_digest: c9b4677f9e11329321c1f381e72bac08c1ec27e3b23a93858d83554efe8e28d1
+  n_images: 638
+  access_class: open
+- id: suim
+  version: '2020'
+  root_digest: f7a9ea260f37ead52c20990bfc88b11c10b20dce96faa84a8f477e6f259aba95
+  n_images: 1598
+  access_class: open
+- id: uiis
+  version: rev-44ca5db46599
+  root_digest: 665f217331362fb3f04f386e92ef9d764abad0b721d6c7c6c8f199d94feec119
+  n_images: 4628
+  access_class: open
+- id: uiis10k
+  version: rev-5c4316368a8e
+  root_digest: db2b3b8ad13723fdf32f57d7c9b9205de2ff151af95c97e15ae613662412e71d
+  n_images: 10048
+  access_class: open
+- id: usis10k
+  version: rev-b10f41ab819b
+  root_digest: b09022870191d59a08a260c2bbadd15f396f12dc9ff114fd13814f147708c513
+  n_images: 10632
+  access_class: open

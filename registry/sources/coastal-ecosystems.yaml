@@ -10,6 +10,7 @@ sources:
     domain: mangrove
     release_skip_reason: "context-layer: mangrove extent raster/vector; no imagery to train on"
     access_class: open
+    licence_evidence: "legacy verification record (dataset-card, 2026-08-17): Zenodo record 6894273 — CC-BY-4.0"
     name: Global Mangrove Watch v3.0
     # habitat inferred (WP-2b) from this source's own description/notes, not independently verified
     habitat: [mangrove]
@@ -39,11 +40,13 @@ sources:
     loader: { layout: metadata-only }
     citation: "Bunting, P., Rosenqvist, A., Hilarides, L., Lucas, R., Thomas, N., Tadono, T., Worthington, T., Spalding, M., Murray, N., & Rebelo, L.-M. (2022). Global Mangrove Watch (1996 - 2020) Version 3.0 Dataset (Version 3.0) [Dataset]. Zenodo. https://doi.org/10.5281/ZENODO.6894273"
     tags: [mangrove, extent, context-layer]
+    n_images_method: "unavailable:non-image"
 
   - id: global-seagrass-10m
     domain: seagrass
     release_skip_reason: "context-layer: seagrass extent raster; no imagery to train on"
     access_class: open
+    licence_evidence: "legacy verification record (dataset-card, 2026-08-17): Zenodo record 18612239 — CC-BY-4.0 (Nature 2026)"
     name: Global 10 m Seagrass Maps
     # habitat inferred (WP-2b) from this source's own description/notes, not independently verified
     habitat: [seagrass]
@@ -69,11 +72,13 @@ sources:
     loader: { layout: metadata-only }
     citation: "Peng, J., Li, J., Krause, J., Lyons, M., Murray, N., Schill, S., Roelfsema, C., & Asner, G. (2026). Global 10-meter seagrass maps [Dataset]. Zenodo. https://doi.org/10.5281/ZENODO.18612240"
     tags: [seagrass, extent, context-layer]
+    n_images_method: "unavailable:non-image"
 
   - id: allen-coral-atlas
     domain: coral
     release_skip_reason: "context-layer: satellite reef-habitat product; no imagery to train on"
     access_class: open
+    licence_evidence: "legacy verification record (site-terms, 2026-08-17): allencoralatlas.org terms — CC-BY 4.0; GEE asset ACA/reef_habitat/v2_0"
     name: Allen Coral Atlas — Reef Habitat v2.0
     # habitat inferred (WP-2b) from this source's own description/notes, not independently verified
     habitat: [coral_reef]
@@ -105,11 +110,13 @@ sources:
     loader: { layout: metadata-only }
     citation: "Allen Coral Atlas (2022). Imagery, maps and monitoring of the world's tropical coral reefs. https://doi.org/10.5281/zenodo.3833242"
     tags: [satellite, basemap, context-layer]
+    n_images_method: "unavailable:non-image"
 
   - id: noaa-nccos-benthic-habitat
     domain: coral
     release_skip_reason: "context-layer: habitat map polygons; no imagery to train on"
     access_class: open
+    licence_evidence: "legacy verification record (site-terms, 2026-08-17): coastalscience.noaa.gov — US Government work, public domain"
     name: NOAA NCCOS shallow-water benthic habitat maps
     # habitat inferred (WP-2b) from this source's own description/notes, not independently verified
     habitat: [mixed]
@@ -137,11 +144,13 @@ sources:
       assets for our region. Hierarchical classification schemes vary by mapping campaign.
     loader: { layout: metadata-only }
     tags: [caribbean, public-domain, habitat]
+    n_images_method: "unavailable:non-image"
 
   - id: gebco-2024
     domain: imaging
     release_skip_reason: "context-layer: bathymetry grid; no imagery to train on"
     access_class: open
+    licence_evidence: "legacy verification record (site-terms, 2026-08-17): gebco.net terms — public domain, attribution requested"
     name: GEBCO 2024 Grid
     # habitat inferred (WP-2b) from this source's own description/notes, not independently verified
     habitat: [mixed]
@@ -167,11 +176,13 @@ sources:
       caveats: ["~450 m resolution — a regional context layer, far too coarse for reef-scale depth."]
     loader: { layout: metadata-only }
     tags: [bathymetry, context-layer]
+    n_images_method: "unavailable:non-image"
 
   - id: icesat2-atl24
     domain: imaging
     release_skip_reason: "context-layer: satellite lidar bathymetry; no imagery to train on"
     access_class: open
+    licence_evidence: "legacy verification record (site-terms, 2026-08-17): NSIDC ATL24 v2 — NASA open data"
     name: ICESat-2 ATL24 coastal bathymetry
     # habitat inferred (WP-2b) from this source's own description/notes, not independently verified
     habitat: [soft_sediment]
@@ -192,10 +203,12 @@ sources:
     annotations: [{ kind: tabular, supervises: [] }]
     loader: { layout: metadata-only }
     tags: [bathymetry, lidar]
+    n_images_method: "unavailable:non-image"
 
   - id: seaclear-marine-debris
     domain: imaging
     access_class: open
+    licence_evidence: "legacy verification record (dataset-card, 2026-08-17): Nature Scientific Data s41597-024-03759-2 — CC-BY 4.0"
     name: SeaCLEAR Marine Debris
     # habitat inferred (WP-2b) from this source's own description/notes, not independently verified
     habitat: [mixed]
@@ -251,10 +264,13 @@ sources:
         instance-mask/40-class annotation.
     citation: "Đuraš, A., Wolf, B. J., Ilioudi, A., Palunko, I., & De Schutter, B. (2024). A Dataset for Detection and Segmentation of Underwater Marine Debris in Shallow Waters. Scientific Data, 11(1). https://doi.org/10.1038/s41597-024-03759-2"
     tags: [debris, permissive]
+    n_images_method: "registry-prior"
+    related: [seaclear]
 
   - id: floating-marine-debris
     domain: imaging
     access_class: open
+    licence_evidence: "legacy verification record (licence-file, 2026-09-25): github.com/miguelmendesduarte/Floating-Marine-Debris-Data — CC-BY 4.0"
     name: Floating Marine Debris spectral data
     # habitat inferred (WP-2b) from this source's own description/notes, not independently verified
     habitat: [pelagic]
@@ -271,8 +287,8 @@ sources:
     checksums:
       version: "git-427059e47f99"
       root_digest: 5f1dbef348ff69107de08e9b767df5a9b25388d9b8da579c1c30b6434656d1a8
-      files: 15
-      size_bytes: 5847793
+      files: 14
+      size_bytes: 5862731
     access:
       method: s3
       uri: s3://rs-storage-open/sources/floating-marine-debris/git-427059e47f99/
@@ -287,11 +303,14 @@ sources:
     loader: { layout: staged-tree, schema_id: dataset-native }
     citation: 'M. M. Duarte and L. Azevedo, "Automatic Detection and Identification of Floating Marine Debris Using Multispectral Satellite Imagery," in IEEE Transactions on Geoscience and Remote Sensing, vol. 61, pp. 1-15, 2023, Art no. 2002315, doi: 10.1109/TGRS.2023.3283607.'
     tags: [debris, spectral]
+    n_images: 11
+    n_images_method: "ingest-json"
 
   - id: copernicus-globcolour
     domain: imaging
     release_skip_reason: "context-layer: satellite ocean-colour covariate; no imagery to train on"
     access_class: open
+    licence_evidence: "legacy verification record (site-terms, 2026-08-17): Copernicus Marine Service data licence — free and open with attribution"
     name: Copernicus-GlobColour Ocean Colour L4
     # habitat inferred (WP-2b) from this source's own description/notes, not independently verified
     habitat: [pelagic]
@@ -316,11 +335,13 @@ sources:
     notes: "Environmental covariate layer — pairs with bleaching models rather than feeding vision directly."
     loader: { layout: metadata-only }
     tags: [environmental, covariate]
+    n_images_method: "unavailable:non-image"
 
   - id: obis
     domain: coral
     release_skip_reason: "context-layer: occurrence database / taxonomic prior; no imagery to train on"
     access_class: open
+    licence_evidence: "legacy verification record (site-terms, 2026-08-17): obis.org terms — CC-BY 4.0 for the standardised aggregate"
     name: OBIS — Ocean Biodiversity Information System
     # habitat inferred (WP-2b) from this source's own description/notes, not independently verified
     habitat: [mixed]
@@ -346,3 +367,4 @@ sources:
       biogeographically impossible predictions — e.g. Indo-Pacific genera on a Caribbean reef.
     loader: { layout: metadata-only }
     tags: [occurrence, prior, taxonomy]
+    n_images_method: "unavailable:non-image"

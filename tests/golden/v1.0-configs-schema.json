@@ -1,0 +1,180 @@
+{
+ "_provenance": "columns and dtypes of the 4 configs published in v1.0, from tests/data/v1.0-card-facts.json (P1.9); v1.1+ may only add columns",
+ "configs": {
+  "coral-masks": {
+   "annotation_licence": "string",
+   "annotator_type": "string",
+   "attribution": "string",
+   "class_map": {
+    "list": [
+     {
+      "dtype": "int64",
+      "name": "id"
+     },
+     {
+      "dtype": "string",
+      "name": "label_native"
+     },
+     {
+      "dtype": "string",
+      "name": "taxon_node"
+     },
+     {
+      "dtype": "string",
+      "name": "coarse"
+     }
+    ]
+   },
+   "height": "int64",
+   "image": "image",
+   "image_sha256": "string",
+   "lat": "float64",
+   "licence": "string",
+   "lon": "float64",
+   "mask": "image",
+   "source": "string",
+   "split": "string",
+   "split_group": "string",
+   "width": "int64"
+  },
+  "fish-boxes": {
+   "attribution": "string",
+   "boxes": {
+    "list": [
+     {
+      "dtype": "float32",
+      "name": "x_min"
+     },
+     {
+      "dtype": "float32",
+      "name": "y_min"
+     },
+     {
+      "dtype": "float32",
+      "name": "x_max"
+     },
+     {
+      "dtype": "float32",
+      "name": "y_max"
+     },
+     {
+      "dtype": "string",
+      "name": "label"
+     }
+    ]
+   },
+   "depth_m": "float64",
+   "habitat": "string",
+   "height": "int32",
+   "image": "image",
+   "image_sha256": "string",
+   "lat": "float64",
+   "licence_class": "string",
+   "license": "string",
+   "lon": "float64",
+   "meow_realm": "string",
+   "points": {
+    "list": [
+     {
+      "dtype": "float32",
+      "name": "x"
+     },
+     {
+      "dtype": "float32",
+      "name": "y"
+     },
+     {
+      "dtype": "string",
+      "name": "label"
+     },
+     {
+      "dtype": "string",
+      "name": "t1_class"
+     }
+    ]
+   },
+   "source_id": "string",
+   "split": "string",
+   "split_group": "string",
+   "upstream_id": "string",
+   "upstream_url": "string",
+   "width": "int32"
+  },
+  "instance-masks": {
+   "annotation_licence": "string",
+   "annotator_type": "string",
+   "attribution": "string",
+   "height": "int64",
+   "image": "image",
+   "image_sha256": "string",
+   "instances": {
+    "list": [
+     {
+      "dtype": "int64",
+      "name": "id"
+     },
+     {
+      "dtype": "string",
+      "name": "label_native"
+     },
+     {
+      "dtype": "string",
+      "name": "taxon_node"
+     },
+     {
+      "dtype": "string",
+      "name": "coarse"
+     },
+     {
+      "list": "float64",
+      "name": "bbox_xyxy_norm"
+     }
+    ]
+   },
+   "lat": "float64",
+   "licence": "string",
+   "lon": "float64",
+   "mask": "image",
+   "source": "string",
+   "split": "string",
+   "split_group": "string",
+   "width": "int64"
+  },
+  "scene-masks": {
+   "annotation_licence": "string",
+   "annotator_type": "string",
+   "attribution": "string",
+   "class_map": {
+    "list": [
+     {
+      "dtype": "int64",
+      "name": "id"
+     },
+     {
+      "dtype": "string",
+      "name": "label_native"
+     },
+     {
+      "dtype": "string",
+      "name": "taxon_node"
+     },
+     {
+      "dtype": "string",
+      "name": "coarse"
+     }
+    ]
+   },
+   "height": "int64",
+   "image": "image",
+   "image_sha256": "string",
+   "lat": "float64",
+   "licence": "string",
+   "lon": "float64",
+   "mask": "image",
+   "source": "string",
+   "split": "string",
+   "split_group": "string",
+   "width": "int64"
+  }
+ }
+}

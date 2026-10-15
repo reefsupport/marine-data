@@ -137,20 +137,11 @@ def _brackishmot(spec, registry, limit, fetch) -> TrackResult:
 
 def jpeg_size_reader(bucket: str = "rs-storage-open") -> Callable[[str], tuple[int, int] | None]:
     """``key -> (width, height)`` from the first 128 KiB of a JPEG (a ranged, read-only GET)."""
-    import configparser
-    import os
-
-    import boto3
     from PIL import Image
 
-    sec = configparser.ConfigParser()
-    sec.read(os.path.expanduser("~/.config/rclone/rclone.conf"))
-    sec = sec["rs-hel1"]
-    ep = sec["endpoint"]
-    client = boto3.client(
-        "s3", aws_access_key_id=sec["access_key_id"], aws_secret_access_key=sec["secret_access_key"],
-        endpoint_url=ep if ep.startswith("http") else f"https://{ep}",
-    )  # fmt: skip
+    from ..s3_client import get_client
+
+    client = get_client()
 
     def size(key: str) -> tuple[int, int] | None:
         head = client.get_object(Bucket=bucket, Key=key, Range="bytes=0-131071")["Body"].read()

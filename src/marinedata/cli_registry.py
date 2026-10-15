@@ -13,9 +13,9 @@ def _cmd_registry_verify(args: argparse.Namespace) -> int:
     reg = Registry.load()
     sources = [reg.source(i) for i in args.source_id] if args.source_id else list(reg.sources)
     if args.live:
-        from .s3_upload import client_from_rclone  # creds via configparser, never printed
+        from .s3_client import get_client  # creds via the s3_auth resolver, never printed
 
-        checks = verify_live(sources, client_from_rclone(), sample=args.sample)
+        checks = verify_live(sources, get_client(), sample=args.sample)
     else:
         if args.sample:
             raise ValueError("--sample needs --live")

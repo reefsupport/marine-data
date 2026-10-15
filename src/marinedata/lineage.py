@@ -52,6 +52,12 @@ class Lineage:
     built_at: str
     datasets: list[LineageEntry]
     excluded: list[dict[str, str]]
+    dropped: list[dict[str, str]] = field(default_factory=list)
+    """Sources that were permitted by the gate but did not contribute — the loader
+    raised (missing data, malformed layout) after the source was allowed in, which is
+    a different failure than ``excluded`` (denied before anything was read). Each entry
+    is ``{"id": ..., "reason": ...}``. A source appearing here never appears in
+    ``datasets``."""
     obligations: list[str] = field(default_factory=list)
     legal_opinion_ref: str | None = None
     registry_commit: str | None = None
@@ -113,6 +119,7 @@ def build_lineage(
     profile: Profile,
     *,
     excluded: list[Decision] | None = None,
+    dropped: dict[str, str] | None = None,
     legal_opinion_ref: str | None = None,
     registry_commit: str | None = None,
     items_consumed: dict[str, int] | None = None,
@@ -121,9 +128,14 @@ def build_lineage(
     """Build a lineage record for a completed dataset build.
 
     Args:
-        sources: The sources that actually contributed.
+        sources: The sources that actually contributed. A source that was permitted but
+            yielded nothing (see ``dropped``) must not be passed here — the audit record
+            cannot say a source "contributed" when it did not.
         profile: The profile the build ran under.
         excluded: Gate decisions for sources that were considered and rejected.
+        dropped: source id to the load failure's reason, for sources that were
+            permitted by the gate but never yielded a sample (a missing or malformed
+            root). Distinct from ``excluded``: these were allowed in, then failed.
         legal_opinion_ref: Counsel opinion id, where a TDM profile was used.
         registry_commit: Git SHA of the registry, for reproducibility.
         items_consumed: source id to the number of samples this build actually read.
@@ -154,15 +166,23 @@ def build_lineage(
         for d in sorted(excluded or [], key=lambda d: d.source_id)
     ]
 
+    dropped_records = [
+        {"id": source_id, "reason": reason} for source_id, reason in sorted((dropped or {}).items())
+    ]
+
     stamp = (now or datetime.now(timezone.utc)).isoformat()
 
     # Hash covers the substance of the build, not its timestamp, so identical builds
-    # at different times produce the same hash.
+    # at different times produce the same hash. `legal_opinion_ref` is included because
+    # it is the fact that makes a TDM-basis build lawful at all (gate.py requires it on
+    # record) — two builds differing only in which counsel opinion was relied on, or
+    # whether one was supplied at all, must not hash identically.
     payload = json.dumps(
         {
             "profile": profile.id,
             "datasets": [asdict(e) for e in entries],
             "excluded": excluded_records,
+            "legal_opinion_ref": legal_opinion_ref,
             "registry_commit": registry_commit,
         },
         sort_keys=True,
@@ -174,6 +194,7 @@ def build_lineage(
         built_at=stamp,
         datasets=entries,
         excluded=excluded_records,
+        dropped=dropped_records,
         obligations=_obligations(sources, profile),
         legal_opinion_ref=legal_opinion_ref,
         registry_commit=registry_commit,

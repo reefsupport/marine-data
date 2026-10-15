@@ -23,3 +23,4 @@ measured:
   wp6g_gaps:
   - 4
   overlay_of: treeoflife-10m
+bucket: rs-storage-private

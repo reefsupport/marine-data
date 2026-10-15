@@ -14,6 +14,7 @@ sample_url declared" even for sources whose real download IS a small zip.
 
 from __future__ import annotations
 
+import hashlib
 import http.server
 import io
 import tarfile
@@ -27,19 +28,23 @@ from conftest import make_source
 from marinedata.enums import AccessMethod
 from marinedata.fetch import MAX_DOWNLOAD_WITHOUT_RANGE, FetchError, FetchNotSupported, fetch_sample
 
+# Any syntactically valid digest works as a placeholder for tests that never reach a
+# full-download verification (Range-only reads, or a refusal that happens before any
+# bytes are fetched) — `_require_digest_for_plaintext_http` only checks that a `http://`
+# source declares *a* digest, not that it matches, so this unblocks the guard without
+# asserting anything about content.
+_DUMMY_SHA256 = "0" * 64
 
-def _http_source(sample_url: str, **extra_params: str):
+
+def _http_source(sample_url: str, *, sha256: str | None = None, **extra_params: str):
     base = make_source("image-mask-pairs")
-    return base.model_copy(
-        update={
-            "access": base.access.model_copy(
-                update={
-                    "method": AccessMethod.HTTP,
-                    "params": {"sample_url": sample_url, **extra_params},
-                }
-            )
-        }
-    )
+    access_update: dict[str, object] = {
+        "method": AccessMethod.HTTP,
+        "params": {"sample_url": sample_url, **extra_params},
+    }
+    if sha256 is not None:
+        access_update["sha256"] = sha256
+    return base.model_copy(update={"access": base.access.model_copy(update=access_update)})
 
 
 def _file_url(path: Path) -> str:
@@ -274,7 +279,9 @@ def test_remote_zip_reads_only_what_it_needs(range_server, tmp_path: Path) -> No
     fetch_module.MAX_DOWNLOAD_WITHOUT_RANGE = 1
     try:
         url = _serve(range_server, payload)
-        result = fetch_sample(_http_source(url), root=tmp_path / "dest", limit=3, force=True)
+        result = fetch_sample(
+            _http_source(url, sha256=_DUMMY_SHA256), root=tmp_path / "dest", limit=3, force=True
+        )
     finally:
         fetch_module._get_range = original
         fetch_module.MAX_DOWNLOAD_WITHOUT_RANGE = original_threshold
@@ -294,7 +301,13 @@ def test_remote_zip_extraction_matches_content(range_server, tmp_path: Path) -> 
         zf.writestr("masks/a.png", b"MMMM")
     url = _serve(range_server, buf.getvalue())
     dest = tmp_path / "dest"
-    result = fetch_sample(_http_source(url), root=dest, force=True)
+    # This zip is small enough to take the full-download branch (no threshold override
+    # here), so the declared digest must be the real one — `_verify_digest` checks it.
+    result = fetch_sample(
+        _http_source(url, sha256=hashlib.sha256(buf.getvalue()).hexdigest()),
+        root=dest,
+        force=True,
+    )
     assert result.items == 2
     assert (dest / "images" / "a.jpg").read_bytes() == b"AAAA"
     assert (dest / "masks" / "a.png").read_bytes() == b"MMMM"
@@ -331,7 +344,9 @@ def test_large_zip_without_range_support_is_refused(tmp_path: Path) -> None:
     try:
         url = f"http://127.0.0.1:{server.server_port}/huge.zip"
         with pytest.raises(FetchNotSupported, match="does not support Range"):
-            fetch_sample(_http_source(url), root=tmp_path / "dest", force=True)
+            fetch_sample(
+                _http_source(url, sha256=_DUMMY_SHA256), root=tmp_path / "dest", force=True
+            )
     finally:
         server.shutdown()
         thread.join(timeout=5)
@@ -364,7 +379,9 @@ def test_remote_tar_reads_only_what_it_needs(range_server, tmp_path: Path) -> No
     fetch_module.MAX_DOWNLOAD_WITHOUT_RANGE = 1
     try:
         url = _serve_tar(range_server, payload)
-        result = fetch_sample(_http_source(url), root=tmp_path / "dest", limit=3, force=True)
+        result = fetch_sample(
+            _http_source(url, sha256=_DUMMY_SHA256), root=tmp_path / "dest", limit=3, force=True
+        )
     finally:
         fetch_module._get_range = original
         fetch_module.MAX_DOWNLOAD_WITHOUT_RANGE = original_threshold
@@ -386,7 +403,13 @@ def test_remote_tar_extraction_matches_content(range_server, tmp_path: Path) -> 
             tf.addfile(info, io.BytesIO(data))
     url = _serve_tar(range_server, buf.getvalue())
     dest = tmp_path / "dest"
-    result = fetch_sample(_http_source(url), root=dest, force=True)
+    # Small tar, no threshold override — full-download branch, so the digest must be
+    # the real one for `_verify_digest` to accept it.
+    result = fetch_sample(
+        _http_source(url, sha256=hashlib.sha256(buf.getvalue()).hexdigest()),
+        root=dest,
+        force=True,
+    )
     assert result.items == 2
     assert (dest / "images" / "a.jpg").read_bytes() == b"AAAA"
     assert (dest / "masks" / "a.png").read_bytes() == b"MMMM"
@@ -416,7 +439,9 @@ def test_large_tar_without_range_support_is_refused(tmp_path: Path) -> None:
     try:
         url = f"http://127.0.0.1:{server.server_port}/huge.tar"
         with pytest.raises(FetchNotSupported, match="does not support Range"):
-            fetch_sample(_http_source(url), root=tmp_path / "dest", force=True)
+            fetch_sample(
+                _http_source(url, sha256=_DUMMY_SHA256), root=tmp_path / "dest", force=True
+            )
     finally:
         server.shutdown()
         thread.join(timeout=5)
@@ -464,7 +489,9 @@ def test_tar_start_offset_skips_straight_to_it(range_server, tmp_path: Path) -> 
     try:
         url = _serve_tar(range_server, payload)
         result = fetch_sample(
-            _http_source(url, tar_start_offset=offset), root=tmp_path / "dest", force=True
+            _http_source(url, sha256=_DUMMY_SHA256, tar_start_offset=offset),
+            root=tmp_path / "dest",
+            force=True,
         )
     finally:
         fetch_module._get_range = original
@@ -562,6 +589,7 @@ def test_nested_archive_reads_inner_zip_without_full_download(tmp_path: Path) ->
                 "access": base.access.model_copy(
                     update={
                         "method": AccessMethod.HTTP,
+                        "sha256": _DUMMY_SHA256,
                         "params": {
                             "sample_url": f"http://127.0.0.1:{server.server_port}/outer.zip",
                             "nested_archive": "inner.zip",
@@ -602,6 +630,7 @@ def test_nested_archive_rejects_a_compressed_member(tmp_path: Path) -> None:
                 "access": base.access.model_copy(
                     update={
                         "method": AccessMethod.HTTP,
+                        "sha256": _DUMMY_SHA256,
                         "params": {
                             "sample_url": f"http://127.0.0.1:{server.server_port}/outer.zip",
                             "nested_archive": "inner.zip",

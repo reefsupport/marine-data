@@ -32,6 +32,14 @@ TASK_LAYER_IDS = (
 )
 
 
+# The public docs name the two buckets by role, never by name (docs: public documentation pass).
+BUCKET_ROLES = {"rs-storage-open": "<open-bucket>", "rs-storage-private": "<private-bucket>"}
+
+
+def _bucket(name: str) -> str:
+    return BUCKET_ROLES.get(name, name)
+
+
 def _n(v: int | None) -> str:
     return "—" if v is None else f"{v:,}"
 
@@ -45,7 +53,7 @@ def _where(s: Source) -> str:
         return "retired (no read path)"
     p = s.access.params or {}
     if s.access.method.value == "s3" and p.get("bucket") and p.get("prefix"):
-        return f"`s3://{p['bucket']}/{p['prefix']}`"
+        return f"`s3://{_bucket(p['bucket'])}/{p['prefix']}`"
     return f"{s.access.method.value}: {s.access.uri or '—'}"
 
 
@@ -72,7 +80,7 @@ def storage_table(reg: Registry) -> str:
         "### Canonical storage map (generated from `registry/sources/*.yaml`)\n\n"
         "One location per id: `sources/<id>/<version>/` (images under `images/<partition>/`, labels under\n"
         "`labels/{masks,instance_masks,exports,points}/`, then `metadata.parquet`, `CHECKSUMS.sha256`,\n"
-        "`INGEST.json`). Non-open sources live in `rs-storage-private`. `—` means unknown, never zero.\n"
+        "`INGEST.json`). Non-open sources live in `<private-bucket>`. `—` means unknown, never zero.\n"
         "Regenerate with `python scripts/gen_storage_docs.py`; check offline with\n"
         "`marinedata registry verify --listing <bucket listing>`.\n\n"
         + head
@@ -91,7 +99,7 @@ def task_layer_table(reg: Registry) -> str:
     return (
         "### Canonical locations (generated from the registry)\n\n"
         "Counts and pointers below come from `registry/sources/*.yaml` via `scripts/gen_storage_docs.py`;\n"
-        "the hand-written findings that follow are WP-8b history and may cite the pre-reorg layout.\n\n"
+        "the hand-written findings that follow are history and may cite the pre-reorg layout.\n\n"
         + head.replace("| id | `loader.layout` |", "| id | `loader.layout` |", 1)
         + "\n"
         + "\n".join(rows)

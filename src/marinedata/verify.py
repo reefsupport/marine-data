@@ -11,8 +11,13 @@ samples. Not enough to be a download.
 
 from __future__ import annotations
 
+import json
+import re
 from dataclasses import dataclass
+from datetime import date
 from pathlib import Path
+
+import yaml
 
 from .fetch import FetchError, FetchNotSupported, auto_fetchable, fetch_sample, sample_digest
 from .loaders import LoaderError, build_loader
@@ -113,6 +118,134 @@ def verify_all(
         )
         for src in sources
     ]
+
+
+def write_verification(registry: Registry, result: VerifyResult) -> Path | None:
+    """Persist a successful layout check back into the source's YAML.
+
+    Only ever called for ``result.status == "verified"`` — a failed or unfetchable
+    result records nothing, because there is nothing honest to write. This is a
+    targeted text edit of the two ``loader:`` fields, not a full YAML round-trip:
+    these files carry hand-written prose (module comments, folded descriptions) that
+    a load-then-dump cycle would silently reformat across every entry in the file,
+    not just the one being verified.
+
+    Returns the path written, or ``None`` if there was nothing to write to (no
+    filesystem root — e.g. a registry constructed directly rather than loaded — or
+    the source could not be found on disk).
+    """
+    if registry.root is None or not result.ok:
+        return None
+    sources_dir = registry.root / "sources"
+    if not sources_dir.is_dir():
+        return None
+
+    entry_pattern = re.compile(rf"^\s*- id:\s*{re.escape(result.source_id)}\s*$", re.MULTILINE)
+    note = f"marinedata verify — {result.items} item(s), {result.digest or 'no digest'}"
+    for path in sorted(sources_dir.rglob("*.yaml")):
+        text = path.read_text(encoding="utf-8")
+        if not entry_pattern.search(text):
+            continue
+        patched = _patch_loader_verification(text, result.source_id, date.today(), note)
+        if patched != text:
+            path.write_text(patched, encoding="utf-8")
+        return path
+    return None
+
+
+def _line_indent(line: str) -> int:
+    return len(line) - len(line.lstrip(" "))
+
+
+def _remove_key_block(
+    lines: list[str], lo: int, hi: int, indent: int, key: str
+) -> tuple[bool, int, int]:
+    """Remove ``key:`` — and any folded/continuation lines under it — at exactly
+    ``indent`` spaces within ``lines[lo:hi]``.
+
+    Returns ``(found, insertion_index, new_hi)``: where a replacement line should go,
+    and the block's new end once the old lines are gone.
+    """
+    pad = " " * indent
+    for i in range(lo, hi):
+        if lines[i][: len(pad)] == pad and lines[i][len(pad) :].startswith(f"{key}:"):
+            j = i + 1
+            while j < hi and (lines[j].strip() == "" or _line_indent(lines[j]) > indent):
+                j += 1
+            del lines[i:j]
+            return True, i, hi - (j - i)
+    return False, hi, hi
+
+
+def _patch_loader_verification(text: str, source_id: str, verified_on: date, note: str) -> str:
+    """Set ``loader.verified_on``/``loader.verified_note`` for one source entry.
+
+    Handles both shapes a ``loader:`` mapping takes in this registry: multi-line
+    block style, and single-line flow style (``loader: { layout: ..., ... }``).
+    """
+    lines = text.split("\n")
+    entry_re = re.compile(r"^(\s*)- id:\s*" + re.escape(source_id) + r"\s*$")
+    start = next((i for i, ln in enumerate(lines) if entry_re.match(ln)), None)
+    if start is None:
+        return text
+    entry_indent = _line_indent(lines[start])
+
+    end = len(lines)
+    for i in range(start + 1, len(lines)):
+        if lines[i].strip() and _line_indent(lines[i]) <= entry_indent:
+            end = i
+            break
+
+    loader_idx = loader_indent = None
+    flow_value: str | None = None
+    for i in range(start, end):
+        stripped = lines[i].strip()
+        if stripped.startswith("loader:"):
+            loader_idx = i
+            loader_indent = _line_indent(lines[i])
+            flow_value = stripped[len("loader:") :].strip() or None
+            break
+    if loader_idx is None or loader_indent is None:
+        return text  # no loader block to write into — nothing this function can do
+
+    if flow_value is not None:
+        parsed = yaml.safe_load(flow_value)
+        if not isinstance(parsed, dict):
+            return text  # not a mapping — unrecognised shape, leave it untouched
+        parsed = dict(parsed)
+        parsed["verified_on"] = verified_on
+        parsed["verified_note"] = note
+        rendered = yaml.safe_dump(
+            parsed, default_flow_style=True, sort_keys=False, width=1000, allow_unicode=True
+        ).strip()
+        lines[loader_idx] = f"{' ' * loader_indent}loader: {rendered}"
+        return "\n".join(lines)
+
+    block_end = end
+    for i in range(loader_idx + 1, end):
+        if lines[i].strip() and _line_indent(lines[i]) <= loader_indent:
+            block_end = i
+            break
+    child_indent = loader_indent + 2
+    for i in range(loader_idx + 1, block_end):
+        if lines[i].strip():
+            child_indent = _line_indent(lines[i])
+            break
+
+    new_vo = f"{' ' * child_indent}verified_on: {verified_on.isoformat()}"
+    _, ins, block_end = _remove_key_block(
+        lines, loader_idx + 1, block_end, child_indent, "verified_on"
+    )
+    lines.insert(ins, new_vo)
+    block_end += 1
+
+    new_vn = f"{' ' * child_indent}verified_note: {json.dumps(note)}"
+    _, ins, block_end = _remove_key_block(
+        lines, loader_idx + 1, block_end, child_indent, "verified_note"
+    )
+    lines.insert(ins, new_vn)
+
+    return "\n".join(lines)
 
 
 def unverified(registry: Registry) -> tuple[Source, ...]:

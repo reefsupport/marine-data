@@ -221,7 +221,7 @@ def test_sentinel_to_value_is_enrichment_only_where_listed() -> None:
 
 
 def test_manifest_only_refuses_generate_and_sources_from_alone(tmp_path: Path) -> None:
-    common = ["release", "build", "--release", "v1", "--out", str(tmp_path)]
+    common = ["release", "build", "--release", "v1", "--allow-frozen", "--out", str(tmp_path)]
     split_map = ["--split-map", str(tmp_path / "SPLIT_MAP.json")]
     assert (
         main([*common, *split_map, "--manifest-only", "--generate-split-map", "--no-near-dup"]) == 1

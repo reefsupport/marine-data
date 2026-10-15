@@ -462,9 +462,9 @@ def run_stream(
 ) -> IngestReport:
     """Stage ``items`` (already listed by ``run_ingest``) from memory straight to S3."""
     if client is None:
-        from .s3_upload import client_from_rclone
+        from .s3_client import get_client
 
-        client = client_from_rclone(spec.remote)
+        client = get_client(signed_required=True, remote=spec.remote)
     floor = int(spec.stream_disk_floor_gib * GiB)
     guard = guard or StreamGuard(work, int(spec.temp_cap_gb * GiB), floor)
     guard.check()

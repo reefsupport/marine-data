@@ -7,6 +7,7 @@ sources:
   domain: coral
   release_skip_reason: "no-staged-images: registry lists imagery, nothing staged under sources/ in rs-storage-open (U7/queue follow-up)"
   access_class: open
+  licence_evidence: "secondary: legacy verification record (secondary, 2026-09-25): S57 catalog reports/data/2026-09-25-5star-catalog.tsv row (HF/Zenodo API or DataCite, checked 2026-09-25)"
   name: wildflow soneva-corals
   version: unversioned
   description: Coral-reef imagery + 3D reconstructions from Soneva resort reefs (Maldives), from the wildflow
@@ -48,10 +49,12 @@ sources:
     repo''s ~2.97 MB/item average) for the first pass.'
   n_images: 22422
   counts_note: rows (HF viewer); full 66.68 GB, first-pass subset ~44.6 GB (max_images:15000)
+  n_images_method: "registry-prior"
 - id: benthoz15
   domain: coral
   release_skip_reason: "no-staged-images: registry lists imagery, nothing staged under sources/ in rs-storage-open (U7/queue follow-up)"
   access_class: open
+  licence_evidence: "secondary: legacy verification record (secondary, 2026-09-25): S57 catalog reports/data/2026-09-25-5star-catalog.tsv row (HF/Zenodo API or DataCite, checked 2026-09-25)"
   name: BENTHOZ-2015
   version: unversioned
   description: AUV benthic imagery + point annotations across Australian AUV survey campaigns (Bewley
@@ -96,6 +99,7 @@ sources:
     et al. 2015 supplementary) is not identifiable from the bucket alone'
   n_images: 9874
   counts_note: images (~407k point annotations)
+  n_images_method: "registry-prior"
 - id: noaa-coral-icra
   domain: coral
   release_skip_reason: "no-staged-images: registry lists imagery, nothing staged under sources/ in rs-storage-open (U7/queue follow-up)"
@@ -103,17 +107,13 @@ sources:
   name: NOAA PIFSC ESD-ESA coral ICRA
   version: unversioned
   description: NOAA PIFSC coral image classification/detection assessment (ICRA) dataset.
-  licence:
-    id: other-hf
-    name: other-hf
-    tier: T4_TDM_ONLY
+  licence: US-GOV-PD
   verification:
-    verified_on: '2026-09-25'
-    verified_by: S57 catalog reports/data/2026-09-25-5star-catalog.tsv row (HF/Zenodo API or DataCite,
-      checked 2026-09-25)
-    method: secondary
-  legal_basis: unknown
-  redistribution: unknown
+    verified_on: 2026-10-05
+    verified_by: "LIC-B audit 2026-10-05 read https://huggingface.co/datasets/NMFS-OSI/NOAA-PIFSC-ESD-ESA-CORAL-ICRA-Dataset : License: Public Domain (NOAA Open Data Public Access)"
+    method: dataset-card
+  legal_basis: licence
+  redistribution: ok
   provenance: public
   access:
     method: huggingface
@@ -132,9 +132,10 @@ sources:
     - central-pacific
   citation: NOAA PIFSC ESD-ESA CORAL-ICRA
   homepage: https://huggingface.co/datasets/NMFS-OSI/NOAA-PIFSC-ESD-ESA-CORAL-ICRA-Dataset
-  notes: 'Not yet ingested (access: pending-ingest per S57 catalog planning; checksums unset until staged).
-    queued for a dry-run ingest via the supported adapter.'
+  notes: "Not yet ingested (access: pending-ingest per S57 catalog planning; checksums unset until staged). queued for a dry-run ingest via the supported adapter. P1.2b (2026-10-08) restored the class to open: the LIC audit (2026-10-05) read the upstream licence (US-GOV-PD), see licence_evidence."
   counts_note: <1K (HF viewer)
+  n_images_method: "unavailable:no-count"
+  licence_evidence: "https://huggingface.co/datasets/NMFS-OSI/NOAA-PIFSC-ESD-ESA-CORAL-ICRA-Dataset : License: Public Domain (NOAA Open Data Public Access)"
 - id: coralnet-small
   domain: coral
   access_class: internal-only
@@ -173,6 +174,8 @@ sources:
     queued for a dry-run ingest via the supported adapter.'
   n_images: 450
   counts_note: rows (HF viewer)
+  n_images_method: "registry-prior"
+  related: [coralnet-public]
 - id: tascpc
   domain: coral
   access_class: internal-only
@@ -211,11 +214,12 @@ sources:
     queued for a dry-run ingest via the supported adapter.'
   n_images: 1300
   counts_note: est. (catalog)
+  n_images_method: "registry-prior"
 - id: eilat-rsmas
   domain: coral
   access_class: internal-only
   name: EILAT / RSMAS coral texture
-  version: unversioned
+  version: "eilat-rsmas-idx1"
   description: Coral texture-patch classification benchmark (Eilat + RSMAS collections).
   licence:
     id: research-use
@@ -253,16 +257,25 @@ sources:
     on this pass (host needed -k/-L, plain http 301s to https); the EILAT+RSMAS image archive itself is
     referenced from a same-page ''dataset'' anchor that needs a follow-up fetch to resolve to an exact
     file URL'
-  n_images: 1889
+  n_images: 410
+  n_images_method: "ingest-json"
   counts_note: patches
   annotations:
   - classes: 14
     kind: image-label
     supervises:
     - taxon
+  checksums:
+    version: "eilat-rsmas-idx1"
+    root_digest: b53a82521caea6386532e3793d0a2b510e267e53eaf4ab34bc5c00f3e4ef203a
+    files: 413
+    size_bytes: 138411297
+  n_images_upstream: 1889
+  n_images_note: "stub tree? measured 410 in the staged tree (ingest-json) against 1889 in the registry before 2026-10-08 (card or paper figure); re-count on the VM before trusting either"
 - id: fathomnet-coverage
   domain: fauna
   access_class: restricted-nd
+  licence_evidence: "secondary: legacy verification record (secondary, 2026-09-25): S57 catalog reports/data/2026-09-25-5star-catalog.tsv row (HF/Zenodo API or DataCite, checked 2026-09-25)"
   licence_per_row: true
   name: FathomNet full-coverage test sets
   version: unversioned
@@ -299,9 +312,11 @@ sources:
   notes: 'Not yet ingested (access: pending-ingest per S57 catalog planning; checksums unset until staged).
     queued for a dry-run ingest via the supported adapter.'
   counts_note: unknown (HF usedStorage ~0)
+  n_images_method: "unavailable:no-count"
 - id: fathomnet-megalodon
   domain: fauna
   access_class: restricted-nd
+  licence_evidence: "secondary: legacy verification record (secondary, 2026-09-25): S57 catalog reports/data/2026-09-25-5star-catalog.tsv row (HF/Zenodo API or DataCite, checked 2026-09-25)"
   licence_per_row: true
   name: FathomNet 2024 Megalodon benchmark
   version: unversioned
@@ -337,10 +352,12 @@ sources:
   notes: 'Not yet ingested (access: pending-ingest per S57 catalog planning; checksums unset until staged).
     queued for a dry-run ingest via the supported adapter.'
   counts_note: unknown
+  n_images_method: "unavailable:no-count"
 - id: noaa-dscrtp
   domain: deep-sea
   release_skip_reason: "no-staged-images: registry lists imagery, nothing staged under sources/ in rs-storage-open (U7/queue follow-up)"
   access_class: open
+  licence_evidence: "secondary: legacy verification record (secondary, 2026-09-25): S57 catalog reports/data/2026-09-25-5star-catalog.tsv row (HF/Zenodo API or DataCite, checked 2026-09-25)"
   name: NOAA Deep-Sea Coral & Sponge database
   version: unversioned
   description: 'NOAA DSCRTP national database: taxon-labelled deep-sea coral/sponge image records with
@@ -385,10 +402,12 @@ sources:
     an ImageURL column (no bulk archive); needs an adapter that streams the CSV, dedupes/filters to rows
     with a non-empty ImageURL, then fetches each URL individually. Endpoint: https://www.ncei.noaa.gov/erddap/tabledap/deep_sea_corals.csv?ImageURL,CatalogNumber,ScientificName,ObservationYear&ImageURL!=""'
   counts_note: '>100k records w/ images (est, catalog)'
+  n_images_method: "unavailable:no-count"
 - id: noaa-goa-2019
   domain: deep-sea
   release_skip_reason: "no-staged-images: registry lists imagery, nothing staged under sources/ in rs-storage-open (U7/queue follow-up)"
   access_class: open
+  licence_evidence: "secondary: legacy verification record (secondary, 2026-09-25): S57 catalog reports/data/2026-09-25-5star-catalog.tsv row (HF/Zenodo API or DataCite, checked 2026-09-25)"
   name: Gulf of Alaska corals/sponges/fishes 2019
   version: unversioned
   description: NOAA/NCEI 2019 Gulf of Alaska deep-sea coral, sponge and fish imagery (accession 0305766).
@@ -427,10 +446,12 @@ sources:
     landing page; needs a follow-up fetch of the resolved URL to find the file manifest (likely an NCEI
     archive info/download API, not a flat file list)'
   counts_note: unknown
+  n_images_method: "unavailable:no-count"
 - id: pangaea-ccz-gsr
   domain: fauna
   release_skip_reason: "no-staged-images: raw mirror of 40 images only, no INGEST.json/metadata.parquet (U7/queue follow-up)"
   access_class: open
+  licence_evidence: "secondary: legacy verification record (secondary, 2026-09-25): S57 catalog reports/data/2026-09-25-5star-catalog.tsv row (HF/Zenodo API or DataCite, checked 2026-09-25)"
   name: PANGAEA seafloor images GSR mining trial (CCZ)
   version: unversioned
   description: Seafloor photo images from a Global Sea Mineral Resources (GSR) mining trial in the Clarion-Clipperton
@@ -474,10 +495,14 @@ sources:
     resolves to a dataset page listing linked image files/collections, not a flat archive); needs a PANGAEA-dataset
     adapter that follows child datasets'
   counts_note: unknown
+  n_images: 40
+  n_images_method: "listing"
+  checksums_status: missing
 - id: pangaea-ofos-msm77
   domain: fauna
   release_skip_reason: "no-staged-images: registry lists imagery, nothing staged under sources/ in rs-storage-open (U7/queue follow-up)"
   access_class: open
+  licence_evidence: "secondary: legacy verification record (secondary, 2026-09-25): S57 catalog reports/data/2026-09-25-5star-catalog.tsv row (HF/Zenodo API or DataCite, checked 2026-09-25)"
   name: PANGAEA OFOS seabed photos MSM77
   version: unversioned
   description: Ocean Floor Observation System (OFOS) seabed photo profiles from RV Maria S. Merian cruise
@@ -520,10 +545,13 @@ sources:
     needs_adapter:pangaea — same PANGAEA-dataset adapter need as pangaea-ccz-gsr; this DOI is one of ~50
     sibling OFOS profile datasets under the MSM77 cruise series that a real ingest would need to enumerate'
   counts_note: unknown; ~50 linked OFOS profiles
+  n_images: 2114
+  n_images_method: "spec:measured.items"
 - id: bodc-smartex
   domain: fauna
   release_skip_reason: "no-staged-images: registry lists imagery, nothing staged under sources/ in rs-storage-open (U7/queue follow-up)"
   access_class: open
+  licence_evidence: "secondary: legacy verification record (secondary, 2026-09-25): S57 catalog reports/data/2026-09-25-5star-catalog.tsv row (HF/Zenodo API or DataCite, checked 2026-09-25)"
   name: BODC JC241/JC257 ROV/AUV benthic images (CCZ)
   version: unversioned
   description: ROV/AUV benthic seafloor images from SMARTEX cruises JC241/JC257 in the Clarion-Clipperton
@@ -564,10 +592,12 @@ sources:
     bulk files via its own download-manager/FTP rather than flat HTTP, needs a follow-up fetch of the
     resolved catalogue page to find the file access route'
   counts_note: unknown
+  n_images_method: "unavailable:no-count"
 - id: oceancv-rovtransect
   domain: imaging
   release_skip_reason: "no-staged-images: registry lists imagery, nothing staged under sources/ in rs-storage-open (U7/queue follow-up)"
   access_class: open
+  licence_evidence: "secondary: legacy verification record (secondary, 2026-09-25): S57 catalog reports/data/2026-09-25-5star-catalog.tsv row (HF/Zenodo API or DataCite, checked 2026-09-25)"
   name: OceanCV ROV transects
   version: unversioned
   description: Compressed ROV transect imagery from the OceanCV project.
@@ -607,10 +637,12 @@ sources:
     queued for a dry-run ingest via the supported adapter.'
   n_images: 2
   counts_note: rows (HF viewer)
+  n_images_method: "registry-prior"
 - id: deepsea-coral-cornerrise
   domain: deep-sea
   release_skip_reason: "no-staged-images: registry lists imagery, nothing staged under sources/ in rs-storage-open (U7/queue follow-up)"
   access_class: open
+  licence_evidence: "secondary: legacy verification record (secondary, 2026-09-25): S57 catalog reports/data/2026-09-25-5star-catalog.tsv row (HF/Zenodo API or DataCite, checked 2026-09-25)"
   name: Deep-sea coral+sponge Corner Rise
   version: unversioned
   description: Deep-sea coral and sponge count/classification records (with imagery) from the Corner Rise
@@ -649,6 +681,7 @@ sources:
   notes: 'Not yet ingested (access: pending-ingest per S57 catalog planning; checksums unset until staged).
     queued for a dry-run ingest via the supported adapter.'
   counts_note: unknown; mostly xlsx count tables, imagery unconfirmed
+  n_images_method: "unavailable:no-count"
 - id: oceandark
   domain: deep-sea
   access_class: internal-only
@@ -689,10 +722,12 @@ sources:
     URL; needs a Drive-aware fetcher (or a human export to a direct zip link)'
   n_images: 183
   counts_note: images
+  n_images_method: "registry-prior"
 - id: ntnu-arl-uw
   domain: imaging
   release_skip_reason: "non-image-modality: video/sequence, pose-slam"
   access_class: open
+  licence_evidence: "secondary: legacy verification record (secondary, 2026-09-25): S57 catalog reports/data/2026-09-25-5star-catalog.tsv row (HF/Zenodo API or DataCite, checked 2026-09-25)"
   name: NTNU ARL underwater datasets
   version: unversioned
   description: Multi-sensor (camera/IMU/sonar) underwater SLAM rosbag datasets from NTNU's Autonomous
@@ -736,10 +771,12 @@ sources:
     ~49 GB first-pass subset (mclab_1+mclab_2+fjord_5) is scoped in the ingest spec for when
     that lands.'
   counts_note: 8 rosbags, 148.68 GB total (confirmed via HF tree API)
+  n_images_method: "unavailable:no-count"
 - id: subpipe
   domain: imaging
   release_skip_reason: "no-staged-images: registry lists imagery, nothing staged under sources/ in rs-storage-open (U7/queue follow-up)"
   access_class: open
+  licence_evidence: "secondary: legacy verification record (secondary, 2026-09-25): S57 catalog reports/data/2026-09-25-5star-catalog.tsv row (HF/Zenodo API or DataCite, checked 2026-09-25)"
   name: SubPipe pipeline inspection
   version: unversioned
   description: Underwater pipeline-inspection dataset with semantic labels, SLAM ground truth and sonar.
@@ -778,10 +815,12 @@ sources:
   notes: 'Not yet ingested (access: pending-ingest per S57 catalog planning; checksums unset until staged).
     queued for a dry-run ingest via the supported adapter.'
   counts_note: unknown
+  n_images_method: "unavailable:no-count"
 - id: uw-img-imu-sonar
   domain: imaging
   release_skip_reason: "no-staged-images: registry lists imagery, nothing staged under sources/ in rs-storage-open (U7/queue follow-up)"
   access_class: open
+  licence_evidence: "secondary: legacy verification record (secondary, 2026-09-25): S57 catalog reports/data/2026-09-25-5star-catalog.tsv row (HF/Zenodo API or DataCite, checked 2026-09-25)"
   name: underwater img+IMU+sonar
   version: unversioned
   description: Multi-sensor underwater dataset combining imagery, IMU and sonar streams.
@@ -819,10 +858,12 @@ sources:
   notes: 'Not yet ingested (access: pending-ingest per S57 catalog planning; checksums unset until staged).
     queued for a dry-run ingest via the supported adapter.'
   counts_note: unknown
+  n_images_method: "unavailable:no-count"
 - id: galapagos-3d
   domain: imaging
   release_skip_reason: "no-staged-images: registry lists imagery, nothing staged under sources/ in rs-storage-open (U7/queue follow-up)"
   access_class: open
+  licence_evidence: "secondary: legacy verification record (secondary, 2026-09-25): S57 catalog reports/data/2026-09-25-5star-catalog.tsv row (HF/Zenodo API or DataCite, checked 2026-09-25)"
   name: Galapagos 3D
   version: unversioned
   description: 3D photogrammetry / geodesic-walk reef structure captures from the Galapagos.
@@ -861,10 +902,12 @@ sources:
   notes: 'Not yet ingested (access: pending-ingest per S57 catalog planning; checksums unset until staged).
     queued for a dry-run ingest via the supported adapter.'
   counts_note: unknown
+  n_images_method: "unavailable:no-count"
 - id: port-royal
   domain: coral
   release_skip_reason: "no-staged-images: registry lists imagery, nothing staged under sources/ in rs-storage-open (U7/queue follow-up)"
   access_class: open
+  licence_evidence: "secondary: legacy verification record (secondary, 2026-09-25): S57 catalog reports/data/2026-09-25-5star-catalog.tsv row (HF/Zenodo API or DataCite, checked 2026-09-25)"
   name: Port Royal Jamaica 2010 (NatGeo)
   version: unversioned
   description: Stereo/3D underwater archaeology imagery from the sunken city of Port Royal, Jamaica (2010
@@ -902,10 +945,12 @@ sources:
   notes: 'Not yet ingested (access: pending-ingest per S57 catalog planning; checksums unset until staged).
     queued for a dry-run ingest via the supported adapter.'
   counts_note: unknown
+  n_images_method: "unavailable:no-count"
 - id: aqualoc
   domain: imaging
   release_skip_reason: "no-staged-images: raw mirror of 16 images only, no INGEST.json/metadata.parquet (U7/queue follow-up)"
   access_class: restricted-nc
+  licence_evidence: "secondary: legacy verification record (secondary, 2026-09-25): S57 catalog reports/data/2026-09-25-5star-catalog.tsv row (HF/Zenodo API or DataCite, checked 2026-09-25)"
   name: AQUALOC
   version: unversioned
   description: Visual-inertial SLAM sequences (harbor + underwater archaeology) with ground-truth trajectories.
@@ -951,11 +996,13 @@ sources:
   annotations:
   - kind: camera-pose
     supervises: []
+  n_images_method: "registry-prior"
+  checksums_status: missing
 - id: seathru-nerf
   domain: imaging
   access_class: internal-only
   name: SeaThru-NeRF scenes
-  version: unversioned
+  version: "zip-ff97f52d5472"
   description: Posed underwater image sets (COLMAP) for NeRF reconstruction with backscatter removal.
   licence:
     id: unknown
@@ -991,14 +1038,23 @@ sources:
   notes: 'Not yet ingested (access: pending-ingest per S57 catalog planning; checksums unset until staged).
     needs_adapter:gdrive — project page links a Google Drive file id (1RzojBFvBWjUUhuJb95xJPSNP3nJwZWaT);
     needs a Drive-aware fetcher (large-file confirm-token handshake)'
-  n_images: 4
+  n_images: 88
+  n_images_method: "ingest-json"
   counts_note: scenes
   annotations:
   - kind: camera-pose
     supervises: []
+  checksums:
+    version: "zip-ff97f52d5472"
+    root_digest: 649c2231a663bd946f3e5a9d04c0ae2b1e29f36ecda0b0823735577f3492a1c4
+    files: 96
+    size_bytes: 639223036
+  n_images_upstream: 4
+  n_images_note: "measured 88 in the staged tree (ingest-json); the registry held 4 before 2026-10-08 (card or paper figure, not re-verified)"
 - id: seagrassfinder
   domain: seagrass
   access_class: restricted-nd
+  licence_evidence: "secondary: legacy verification record (secondary, 2026-09-25): S57 catalog reports/data/2026-09-25-5star-catalog.tsv row (HF/Zenodo API or DataCite, checked 2026-09-25)"
   name: SeagrassFinder eelgrass
   version: unversioned
   description: Eelgrass (seagrass) classification imagery for the SeagrassFinder project.
@@ -1036,10 +1092,12 @@ sources:
   notes: 'Not yet ingested (access: pending-ingest per S57 catalog planning; checksums unset until staged).
     queued for a dry-run ingest via the supported adapter.'
   counts_note: unknown
+  n_images_method: "unavailable:no-count"
 - id: posidonia
   domain: seagrass
   release_skip_reason: "no-staged-images: registry lists imagery, nothing staged under sources/ in rs-storage-open (U7/queue follow-up)"
   access_class: open
+  licence_evidence: "secondary: legacy verification record (secondary, 2026-09-25): S57 catalog reports/data/2026-09-25-5star-catalog.tsv row (HF/Zenodo API or DataCite, checked 2026-09-25)"
   name: Posidonia oceanica images
   version: unversioned
   description: Posidonia oceanica (Mediterranean seagrass) imagery for segmentation/classification.
@@ -1076,6 +1134,7 @@ sources:
   notes: 'Not yet ingested (access: pending-ingest per S57 catalog planning; checksums unset until staged).
     queued for a dry-run ingest via the supported adapter.'
   counts_note: unknown
+  n_images_method: "unavailable:no-count"
 - id: whoi-plankton
   domain: plankton
   access_class: internal-only
@@ -1114,10 +1173,12 @@ sources:
     queued for a dry-run ingest via the supported adapter.'
   n_images: 956867
   counts_note: rows (HF viewer)
+  n_images_method: "registry-prior"
 - id: openimages-marine
   domain: fish
   release_skip_reason: "no-staged-images: registry lists imagery, nothing staged under sources/ in rs-storage-open (U7/queue follow-up)"
   access_class: open
+  licence_evidence: "secondary: legacy verification record (secondary, 2026-09-25): S57 catalog reports/data/2026-09-25-5star-catalog.tsv row (HF/Zenodo API or DataCite, checked 2026-09-25)"
   name: Open Images V7 marine classes
   version: unversioned
   description: Curated marine-class subset (Fish, Jellyfish, Starfish, Sea turtle, Shark, ...) of Open
@@ -1162,6 +1223,7 @@ sources:
     the flat bucket — the bucket adapter alone would pull the whole ~1.9M-image corpus'
   n_images: 50000
   counts_note: est. (catalog, marine classes only)
+  n_images_method: "registry-prior"
 - id: liaci
   domain: imaging
   access_class: unknown
@@ -1203,10 +1265,12 @@ sources:
     fetch'
   n_images: 1893
   counts_note: images
+  n_images_method: "registry-prior"
 - id: smartbay
   domain: fauna
   release_skip_reason: "no-staged-images: registry lists imagery, nothing staged under sources/ in rs-storage-open (U7/queue follow-up)"
   access_class: open
+  licence_evidence: "secondary: legacy verification record (secondary, 2026-09-25): S57 catalog reports/data/2026-09-25-5star-catalog.tsv row (HF/Zenodo API or DataCite, checked 2026-09-25)"
   name: SmartBay marine types OD
   version: unversioned
   description: Object-detection dataset of marine organism types from SmartBay (Galway Bay, Ireland) camera
@@ -1245,6 +1309,7 @@ sources:
   notes: 'Not yet ingested (access: pending-ingest per S57 catalog planning; checksums unset until staged).
     queued for a dry-run ingest via the supported adapter.'
   counts_note: unknown
+  n_images_method: "unavailable:no-count"
 - id: plasticinwater
   domain: imaging
   release_skip_reason: "no-staged-images: registry lists imagery, nothing staged under sources/ in rs-storage-open (U7/queue follow-up)"
@@ -1252,17 +1317,13 @@ sources:
   name: OceanCV PlasticInWater
   version: unversioned
   description: Underwater marine-debris (plastic) detection imagery from the OceanCV project.
-  licence:
-    id: unknown
-    name: unknown
-    tier: T4_TDM_ONLY
+  licence: MIT
   verification:
-    verified_on: '2026-09-25'
-    verified_by: S57 catalog reports/data/2026-09-25-5star-catalog.tsv row (HF/Zenodo API or DataCite,
-      checked 2026-09-25)
-    method: secondary
-  legal_basis: unknown
-  redistribution: unknown
+    verified_on: 2026-10-05
+    verified_by: "LIC-B audit 2026-10-05 read https://huggingface.co/datasets/OceanCV/PlasticInWater : license: MIT (card claim only; upstream image provenance unstated, Roboflow-style export)"
+    method: dataset-card
+  legal_basis: licence
+  redistribution: ok
   provenance: public
   access:
     method: huggingface
@@ -1280,15 +1341,17 @@ sources:
     - unknown
   citation: OceanCV/PlasticInWater (HF)
   homepage: https://huggingface.co/datasets/OceanCV/PlasticInWater
-  notes: 'Not yet ingested (access: pending-ingest per S57 catalog planning; checksums unset until staged).
-    queued for a dry-run ingest via the supported adapter.'
+  notes: "Not yet ingested (access: pending-ingest per S57 catalog planning; checksums unset until staged). queued for a dry-run ingest via the supported adapter. P1.2b (2026-10-08) restored the class to open: the LIC audit (2026-10-05) read the upstream licence (MIT), see licence_evidence. Caveat: the images look like a Roboflow export and their provenance is unstated; the licence is the card's claim only."
   n_images: 1032
   counts_note: rows (HF viewer)
+  n_images_method: "registry-prior"
+  licence_evidence: "https://huggingface.co/datasets/OceanCV/PlasticInWater : license: MIT (card claim only; upstream image provenance unstated, Roboflow-style export)"
 - id: caddy
   domain: imaging
   access_class: restricted-nc
+  licence_evidence: "secondary: legacy verification record (secondary, 2026-09-25): S57 catalog reports/data/2026-09-25-5star-catalog.tsv row (HF/Zenodo API or DataCite, checked 2026-09-25)"
   name: CADDY underwater gestures/diver pose
-  version: unversioned
+  version: "caddy-idx1"
   description: Stereo underwater imagery of diver gestures/pose for human-robot interaction.
   licence:
     id: cc-by-nc-sa
@@ -1324,16 +1387,25 @@ sources:
   notes: 'Not yet ingested (access: pending-ingest per S57 catalog planning; checksums unset until staged).
     needs_adapter:site-scrape — caddian.eu root and a guessed /index.php/downloads path (404) exposed
     no direct zip links on this pass; the catalog''s ''zip links'' note implies a subpage not yet located. access_class restricted-nc is held until the authors confirm the licence (lic-A evidence says CC-BY-4.0, unconfirmed; WP-L1b decision 2026-10-05)'
-  n_images: 10000
+  n_images: 1
+  n_images_method: "ingest-json"
   counts_note: stereo pairs (est, catalog)
   annotations:
   - kind: image-label
     notes: diver-gesture classes; verify count
     supervises: []
+  checksums:
+    version: "caddy-idx1"
+    root_digest: 7d578ad6e64284d9ed4be6fecdf26d210139fa5d1ab4b5a1c6a2c33a21919db3
+    files: 4
+    size_bytes: 26666
+  n_images_upstream: 10000
+  n_images_note: "stub tree? measured 1 in the staged tree (ingest-json) against 10000 in the registry before 2026-10-08 (card or paper figure); re-count on the VM before trusting either"
 - id: vdd-c
   domain: imaging
   release_skip_reason: "no-staged-images: registry lists imagery, nothing staged under sources/ in rs-storage-open (U7/queue follow-up)"
   access_class: open
+  licence_evidence: "secondary: legacy verification record (secondary, 2026-09-25): S57 catalog reports/data/2026-09-25-5star-catalog.tsv row (HF/Zenodo API or DataCite, checked 2026-09-25)"
   name: VDD-C diver detection
   version: unversioned
   description: Large diver-detection bounding-box dataset (Virtual Diver Dataset - Combined).
@@ -1373,10 +1445,12 @@ sources:
     HTML landing page'
   n_images: 105000
   counts_note: est. (catalog)
+  n_images_method: "registry-prior"
 - id: sodd
   domain: imaging
   release_skip_reason: "no-staged-images: registry lists imagery, nothing staged under sources/ in rs-storage-open (U7/queue follow-up)"
   access_class: open
+  licence_evidence: "secondary: legacy verification record (secondary, 2026-09-25): S57 catalog reports/data/2026-09-25-5star-catalog.tsv row (HF/Zenodo API or DataCite, checked 2026-09-25)"
   name: SODD subaquatic object detection
   version: unversioned
   description: Subaquatic object-detection dataset (YOLO format).
@@ -1414,3 +1488,4 @@ sources:
   notes: 'Not yet ingested (access: pending-ingest per S57 catalog planning; checksums unset until staged).
     queued for a dry-run ingest via the supported adapter.'
   counts_note: unknown
+  n_images_method: "unavailable:no-count"

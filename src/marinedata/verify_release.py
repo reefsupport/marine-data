@@ -165,9 +165,9 @@ def verify(
             raise VerifyError("--manifest is required for an s3:// target")
         manifest = read_manifest(manifest_path)
         if s3_client_factory is None:
-            from .s3_client import client_from_rclone
+            from .s3_client import get_client
 
-            s3_client_factory = client_from_rclone
+            s3_client_factory = get_client
         return verify_s3(target, manifest, client=s3_client_factory(), deep=deep, scratch=scratch)
     root = Path(target)
     manifest = read_manifest(manifest_path or root / MANIFEST_NAME)

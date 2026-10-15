@@ -25,7 +25,6 @@ counts) or, failing that, the crosswalk's own edges. Status:
 from __future__ import annotations
 
 import argparse
-import configparser
 import csv
 import json
 from collections.abc import Callable, Iterable
@@ -166,21 +165,14 @@ def read_audit_cache(path: str | Path) -> dict[str, dict[str, str]]:
 def bucket_label_counts(client=None, bucket: str = OPEN_BUCKET) -> dict[str, int]:
     """Label-object count per source id, from ONE flat read-only listing of ``sources/``.
 
-    Credentials come from ``~/.config/rclone/rclone.conf`` ``[rs-hel1]`` through configparser
-    and are never printed. Any listing error aborts: an unverified bucket is not a pass.
+    Credentials come from the one resolver in :mod:`marinedata.s3_auth` (env, then the
+    ``[rs-hel1]`` rclone remote, else anonymous) and are never printed. Any listing error
+    aborts: an unverified bucket is not a pass.
     """
     if client is None:
-        import boto3
+        from .s3_client import get_client
 
-        cfg = configparser.ConfigParser()
-        cfg.read(Path.home() / ".config" / "rclone" / "rclone.conf")
-        sec = cfg["rs-hel1"]
-        client = boto3.client(
-            "s3",
-            endpoint_url=sec["endpoint"],
-            aws_access_key_id=sec["access_key_id"],
-            aws_secret_access_key=sec["secret_access_key"],
-        )
+        client = get_client()
     counts: dict[str, int] = {}
     try:
         for page in client.get_paginator("list_objects_v2").paginate(

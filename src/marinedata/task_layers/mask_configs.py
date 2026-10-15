@@ -49,6 +49,7 @@ _TAIL = (
     ("height", "int64"),
     ("lat", "double"),
     ("lon", "double"),
+    ("exif_transposed", "bool"),
 )
 SEMANTIC_COLUMNS = (*_COMMON, ("class_map", "class_map"), *_TAIL)
 INSTANCE_COLUMNS = (*_COMMON, ("instances", "instances"), *_TAIL)
@@ -102,6 +103,46 @@ def _size(path: Path) -> tuple[int, int]:
         return im.size
 
 
+EXIF_ORIENTATION = 0x0112
+
+
+def image_geometry(path: Path) -> tuple[tuple[int, int], int]:
+    """``((width, height), exif_orientation)`` of the image *as displayed*: EXIF orientations 5-8
+    swap the stored axes, so the size returned is the transposed one. Masks are drawn on, and
+    checked against, the displayed pixels; :func:`upright_bytes` exports those pixels."""
+    from PIL import Image
+
+    with Image.open(path) as im:
+        raw = im.getexif().get(EXIF_ORIENTATION, 1)
+        width, height = im.size
+    orientation = raw if isinstance(raw, int) and 2 <= raw <= 8 else 1
+    return ((height, width) if orientation >= 5 else (width, height)), orientation
+
+
+def upright_bytes(path: Path, orientation: int) -> bytes:
+    """The file's own bytes for orientation 1; otherwise ``ImageOps.exif_transpose`` of it,
+    re-encoded in the same format with the orientation tag gone, so no viewer turns the image
+    away from its mask (the row records ``exif_transposed``)."""
+    if orientation == 1:
+        return path.read_bytes()
+    import io
+
+    from PIL import Image, ImageOps
+
+    with Image.open(path) as im:
+        fmt = im.format or "PNG"
+        upright = ImageOps.exif_transpose(im)
+        extra: dict = {}
+        if fmt == "JPEG":
+            exif = upright.getexif()
+            if EXIF_ORIENTATION in exif:
+                del exif[EXIF_ORIENTATION]
+            extra = {"quality": 95, "exif": exif}
+        buf = io.BytesIO()
+        upright.save(buf, format=fmt, **extra)
+    return buf.getvalue()
+
+
 def _attrs(row: Mapping) -> dict:
     raw = row.get("attrs")
     return json.loads(raw) if isinstance(raw, str) else dict(raw or {})
@@ -116,7 +157,7 @@ def _bbox_norm(row: Mapping, size: tuple[int, int]) -> list[float] | None:
     return [clip(x / size[0]), clip(y / size[1]), clip((x + w) / size[0]), clip((y + h) / size[1])]
 
 
-def _common_values(row, info, sha, source_meta, geo, size) -> dict:
+def _common_values(row, info, sha, source_meta, geo, size, exif_transposed: bool = False) -> dict:
     meta = source_meta.get(row["source_id"]) or {}
     lat, lon = (geo or {}).get(sha, (None, None))
     return {
@@ -132,13 +173,19 @@ def _common_values(row, info, sha, source_meta, geo, size) -> dict:
         "height": size[1],
         "lat": lat,
         "lon": lon,
+        "exif_transposed": exif_transposed,
     }
 
 
-def _blobs(info: ImageInfo, sha: str, mask_name: str, make_mask: Callable[[], bytes]):
+def _blobs(
+    info: ImageInfo, sha: str, mask_name: str, make_mask: Callable[[], bytes], orientation: int = 1
+):
     return (
         EmbeddedBlob(
-            "image", f"{sha}{info.path.suffix}", info.path.stat().st_size, info.path.read_bytes
+            "image",
+            f"{sha}{info.path.suffix}",
+            info.path.stat().st_size,
+            lambda: upright_bytes(info.path, orientation),
         ),
         EmbeddedBlob("mask", mask_name, MASK_BYTES_ESTIMATE, make_mask),
     )
@@ -153,7 +200,7 @@ def semantic_row(
     parts = json.loads(rec["mask_parts"]) if rec.get("mask_parts") else None
     if not class_map or not (rec.get("mask_key") or parts):
         return None
-    size = _size(info.path)
+    size, orientation = image_geometry(info.path)
     ignore = rec.get("ignore_value")
     encoding = encoding_for(rec["source_id"], rec.get("mask_encoding"))
 
@@ -166,10 +213,10 @@ def semantic_row(
             fetch(rec["mask_key"]), encoding=encoding, ignore_value=ignore, size=size
         )
 
-    values = _common_values(rec, info, sha, source_meta, geo, size)
+    values = _common_values(rec, info, sha, source_meta, geo, size, orientation != 1)
     values["class_map"] = class_map
     name = f"{rec['source_id']}/{sha}.png"
-    return ExportRow(values=values, blobs=_blobs(info, sha, name, make))
+    return ExportRow(values=values, blobs=_blobs(info, sha, name, make, orientation))
 
 
 def instance_row(
@@ -182,7 +229,7 @@ def instance_row(
     """One instance export row for all instance records of one image (ids 1..N by upstream id)."""
     recs = sorted(recs, key=lambda r: (_int(r.get("instance_id")), r["ann_id"]))
     sha = recs[0]["image_sha256"]
-    size = _size(info.path)
+    size, orientation = image_geometry(info.path)
     attrs = _attrs(recs[0])
     canvas = (int(attrs["img_w"]), int(attrs["img_h"])) if attrs.get("img_w") else size
     ids = list(range(1, len(recs) + 1))
@@ -200,10 +247,11 @@ def instance_row(
     def make() -> bytes:
         return instance_png(recs, ids, canvas=canvas, size=size, fetch=fetch)
 
-    values = _common_values(recs[0], info, sha, source_meta, geo, size)
+    values = _common_values(recs[0], info, sha, source_meta, geo, size, orientation != 1)
     values["instances"] = instances
     return ExportRow(
-        values=values, blobs=_blobs(info, sha, f"{recs[0]['source_id']}/{sha}.png", make)
+        values=values,
+        blobs=_blobs(info, sha, f"{recs[0]['source_id']}/{sha}.png", make, orientation),
     )
 
 

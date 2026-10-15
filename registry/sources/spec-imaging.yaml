@@ -1,0 +1,798 @@
+# Entries folded from registry/ingest-specs/ by scripts/registry_fold_specs.py
+# (P1.2, 2026-10-08). Every field is the spec's own claim; edit freely, the script never
+# rewrites an id it did not add.
+
+sources:
+  - id: afrl-stereo-vi
+    domain: imaging
+    access_class: unknown  # P1.2d: was open; no licence evidence
+    licence_evidence: "unverified: claimed as 'mit' in registry/ingest-specs/afrl-stereo-vi.yaml license (folded 2026-10-08, never checked against https://huggingface.co/datasets/afrl-uw/stereo-vi-underwater-dataset)"
+    name: "afrl stereo vi"
+    version: "unversioned"
+    description: "afrl-uw/stereo-vi-underwater-dataset (HF)"
+    licence: MIT
+    legal_basis: licence
+    redistribution: ok
+    provenance: public
+    verification:
+      verified_on: 2026-10-08
+      verified_by: "registry/ingest-specs/afrl-stereo-vi.yaml: license field copied verbatim, not independently checked"
+      method: secondary
+    access:
+      method: huggingface
+      uri: "https://huggingface.co/datasets/afrl-uw/stereo-vi-underwater-dataset"
+      notes: "ingest adapter hf; see registry/ingest-specs/afrl-stereo-vi.yaml"
+    modalities: [image]
+    capabilities: [general-pretraining]
+    loader: { layout: metadata-only }
+    coverage: { regions: [unknown] }
+    homepage: "https://huggingface.co/datasets/afrl-uw/stereo-vi-underwater-dataset"
+    citation: "afrl-uw/stereo-vi-underwater-dataset (HF)"
+    notes: "Folded from registry/ingest-specs/afrl-stereo-vi.yaml on 2026-10-08 (P1.2). Spec license string, verbatim: 'mit'. Domain, modalities and capabilities are keyword inferences from the spec text."
+    tags: [spec-folded]
+    release_skip_reason: "no-staged-images: registry lists imagery, nothing staged under sources/ in rs-storage-open (U7/queue follow-up)"
+    n_images_method: "unavailable:no-count"
+
+  - id: aquascan-1k-sss
+    domain: imaging
+    access_class: open
+    licence_evidence: "https://zenodo.org/api/records/18771165 — 'metadata.license: {\"id\": \"mit-license\"}; access_right: open' (WP-LICV audit 2026-10-05, confidence confirmed-open)"
+    name: "aquascan 1k sss"
+    version: "record-18771165"
+    description: "doi:10.5281/zenodo.18771165 — AquaScan-1K Side Scan Sonar Dataset"
+    licence: MIT
+    legal_basis: licence
+    redistribution: ok
+    provenance: public
+    verification:
+      verified_on: 2026-10-08
+      verified_by: "registry/ingest-specs/aquascan-1k-sss.yaml: license field copied verbatim, not independently checked"
+      method: secondary
+    access:
+      method: s3
+      uri: s3://rs-storage-open/sources/aquascan-1k-sss/record-18771165
+      notes: "rs-storage-open copy of the upstream dataset (staged tree record-18771165); upstream: https://zenodo.org/records/18771165"
+      params:
+        bucket: rs-storage-open
+        endpoint: hel1.your-objectstorage.com
+        region: hel1
+        prefix: sources/aquascan-1k-sss/record-18771165/
+      size_bytes: 2702094137
+    modalities: [image]
+    capabilities: [general-pretraining]
+    loader: { layout: staged-tree }
+    n_images: 1033
+    n_images_method: "ingest-json"
+    coverage: { regions: [unknown] }
+    homepage: "https://zenodo.org/records/18771165"
+    citation: "doi:10.5281/zenodo.18771165 — AquaScan-1K Side Scan Sonar Dataset"
+    notes: "Folded from registry/ingest-specs/aquascan-1k-sss.yaml on 2026-10-08 (P1.2). Spec license string, verbatim: 'mit-license'. Domain, modalities and capabilities are keyword inferences from the spec text."
+    tags: [spec-folded]
+    checksums:
+      version: "record-18771165"
+      root_digest: fb8da2a0bf5eef49f91058e7dac9f7755a95d219900ba5e06307251305047ca8
+      files: 1037
+      size_bytes: 2702094137
+
+  - id: auv-flc-fls-sunboat
+    domain: imaging
+    access_class: open
+    licence_evidence: "https://zenodo.org/api/records/10544811 — 'metadata.license: {\"id\": \"cc-by-4.0\"}; access_right: open' (WP-LICV audit 2026-10-05, confidence confirmed-open)"
+    name: "auv flc fls sunboat"
+    version: "record-10544811"
+    description: "doi:10.5281/zenodo.10544811 — AUV-Based Multi-Sensor Dataset: Forward-Looking Camera (FLC) and Forward-Looking Sonar (FLS) Observations in t"
+    licence: CC-BY-4.0
+    legal_basis: licence
+    redistribution: ok
+    provenance: public
+    verification:
+      verified_on: 2026-10-08
+      verified_by: "registry/ingest-specs/auv-flc-fls-sunboat.yaml: license field copied verbatim, not independently checked"
+      method: secondary
+    access:
+      method: s3
+      uri: s3://rs-storage-open/sources/auv-flc-fls-sunboat/record-10544811
+      notes: "rs-storage-open copy of the upstream dataset (staged tree record-10544811); upstream: https://zenodo.org/records/10544811"
+      params:
+        bucket: rs-storage-open
+        endpoint: hel1.your-objectstorage.com
+        region: hel1
+        prefix: sources/auv-flc-fls-sunboat/record-10544811/
+      size_bytes: 37675629219
+    modalities: [image]
+    capabilities: [general-pretraining]
+    loader: { layout: staged-tree }
+    n_images: 17676
+    n_images_method: "ingest-json"
+    coverage: { regions: [unknown] }
+    homepage: "https://zenodo.org/records/10544811"
+    citation: "doi:10.5281/zenodo.10544811 — AUV-Based Multi-Sensor Dataset: Forward-Looking Camera (FLC) and Forward-Looking Sonar (FLS) Observations in t"
+    notes: "Folded from registry/ingest-specs/auv-flc-fls-sunboat.yaml on 2026-10-08 (P1.2). Spec license string, verbatim: 'cc-by-4.0'. Domain, modalities and capabilities are keyword inferences from the spec text."
+    tags: [spec-folded]
+    checksums:
+      version: "record-10544811"
+      root_digest: 56b301381b83d4463d6d9e41f7cdc80d4aa0b189764f625a2888e1bd447c53c6
+      files: 17680
+      size_bytes: 37675629219
+
+  - id: estonefish-scenes-real
+    domain: imaging
+    access_class: open
+    licence_evidence: "https://zenodo.org/api/records/18473013 — 'metadata.license: {\"id\": \"cc-by-4.0\"}; access_right: open' (WP-LICV audit 2026-10-05, confidence confirmed-open)"
+    name: "estonefish scenes real"
+    version: "1.0"
+    description: "doi:10.5281/zenodo.18473013 — eStonefish-Scenes: A Sim-to-Real Validated and Robot-Centric Event-based Optical Flow Dataset for Underwater V"
+    licence: CC-BY-4.0
+    legal_basis: licence
+    redistribution: ok
+    provenance: public
+    verification:
+      verified_on: 2026-10-08
+      verified_by: "registry/ingest-specs/estonefish-scenes-real.yaml: license field copied verbatim, not independently checked"
+      method: secondary
+    access:
+      method: s3
+      uri: s3://rs-storage-open/sources/estonefish-scenes-real/1.0
+      notes: "rs-storage-open copy of the upstream dataset (staged tree 1.0); upstream: https://zenodo.org/records/18473013"
+      params:
+        bucket: rs-storage-open
+        endpoint: hel1.your-objectstorage.com
+        region: hel1
+        prefix: sources/estonefish-scenes-real/1.0/
+      size_bytes: 8990
+    modalities: [image]
+    capabilities: [general-pretraining]
+    loader: { layout: staged-tree }
+    coverage: { regions: [unknown] }
+    homepage: "https://zenodo.org/records/18473013"
+    citation: "doi:10.5281/zenodo.18473013 — eStonefish-Scenes: A Sim-to-Real Validated and Robot-Centric Event-based Optical Flow Dataset for Underwater V"
+    notes: "Folded from registry/ingest-specs/estonefish-scenes-real.yaml on 2026-10-08 (P1.2). Spec license string, verbatim: 'cc-by-4.0'. Domain, modalities and capabilities are keyword inferences from the spec text."
+    tags: [spec-folded]
+    checksums:
+      version: "1.0"
+      root_digest: 193a11b0a92701b1a63287f17e285efb589d33d0e60bdbaa5e37848a6bd6c6ad
+      files: 4
+      size_bytes: 8990
+    n_images_method: "unavailable:no-count"
+
+  - id: gbif-marine
+    domain: imaging
+    access_class: restricted-nc
+    licence_evidence: "https://registry.opendata.aws/gbif/ — 'License CC-BY-NC under the GBIF terms of use' (LIC-B audit 2026-10-05, confidence medium)"
+    name: "gbif marine"
+    version: "unversioned"
+    description: "GBIF.org occurrence search, 2026-09-25"
+    licence: CC-BY-NC-4.0
+    legal_basis: licence
+    redistribution: unknown
+    provenance: public
+    verification:
+      verified_on: 2026-10-08
+      verified_by: "registry/ingest-specs/gbif-marine.yaml: license field copied verbatim, not independently checked"
+      method: secondary
+    access:
+      method: http
+      uri: "https://registry.opendata.aws/gbif/"
+      notes: "ingest adapter gbif-occurrence-media; see registry/ingest-specs/gbif-marine.yaml"
+    modalities: [image]
+    capabilities: [general-pretraining]
+    loader: { layout: metadata-only }
+    n_images: 346842
+    n_images_method: "spec:measured.items"
+    coverage: { regions: [unknown] }
+    homepage: "https://registry.opendata.aws/gbif/"
+    citation: "GBIF.org occurrence search, 2026-09-25"
+    notes: "Folded from registry/ingest-specs/gbif-marine.yaml on 2026-10-08 (P1.2). Spec license string, verbatim: 'per record: CC0-1.0 / CC-BY-4.0 / CC-BY-NC-4.0 (GBIF licence facet)'. Domain, modalities and capabilities are keyword inferences from the spec text."
+    tags: [spec-folded]
+    release_skip_reason: "no-staged-images: registry lists imagery, nothing staged under sources/ in rs-storage-open (U7/queue follow-up)"
+
+  - id: mimir-uw
+    domain: imaging
+    access_class: unknown  # P1.2d: was open; no licence evidence
+    licence_evidence: "unverified: claimed as 'cc-by-4.0' in registry/ingest-specs/mimir-uw.yaml license (folded 2026-10-08, never checked against https://zenodo.org/records/10406384); measured.per_item_license 'cc-by-4.0' (2026-09-25)"
+    name: "mimir uw"
+    version: "unversioned"
+    description: "doi:10.5281/zenodo.10406384 — MIMIR-UW: A Multipurpose Synthetic Dataset for Underwater Navigation and Inspection"
+    licence: CC-BY-4.0
+    legal_basis: licence
+    redistribution: ok
+    provenance: public
+    verification:
+      verified_on: 2026-10-08
+      verified_by: "registry/ingest-specs/mimir-uw.yaml: license field copied verbatim, not independently checked"
+      method: secondary
+    access:
+      method: zenodo
+      uri: "https://zenodo.org/records/10406384"
+      notes: "ingest adapter zenodo; see registry/ingest-specs/mimir-uw.yaml"
+    modalities: [image]
+    capabilities: [general-pretraining]
+    loader: { layout: metadata-only }
+    n_images: 44493
+    n_images_method: "spec:measured.items"
+    coverage: { regions: [unknown] }
+    homepage: "https://zenodo.org/records/10406384"
+    citation: "doi:10.5281/zenodo.10406384 — MIMIR-UW: A Multipurpose Synthetic Dataset for Underwater Navigation and Inspection"
+    notes: "Folded from registry/ingest-specs/mimir-uw.yaml on 2026-10-08 (P1.2). Spec license string, verbatim: 'cc-by-4.0'. Domain, modalities and capabilities are keyword inferences from the spec text."
+    tags: [spec-folded]
+    release_skip_reason: "no-staged-images: registry lists imagery, nothing staged under sources/ in rs-storage-open (U7/queue follow-up)"
+
+  - id: moud
+    domain: imaging
+    access_class: unknown  # P1.2d: was open; no licence evidence
+    licence_evidence: "unverified: claimed as 'cc-by-4.0' in registry/ingest-specs/moud.yaml license (folded 2026-10-08, never checked against https://zenodo.org/records/15836103); measured.per_item_license 'cc-by-4.0' (2026-09-25)"
+    name: "moud"
+    version: "unversioned"
+    description: "doi:10.5281/zenodo.15836103 — MOUD"
+    licence: CC-BY-4.0
+    legal_basis: licence
+    redistribution: ok
+    provenance: public
+    verification:
+      verified_on: 2026-10-08
+      verified_by: "registry/ingest-specs/moud.yaml: license field copied verbatim, not independently checked"
+      method: secondary
+    access:
+      method: zenodo
+      uri: "https://zenodo.org/records/15836103"
+      notes: "ingest adapter zenodo; see registry/ingest-specs/moud.yaml"
+    modalities: [image]
+    capabilities: [general-pretraining]
+    loader: { layout: metadata-only }
+    n_images: 3570
+    n_images_method: "spec:measured.items"
+    coverage: { regions: [unknown] }
+    homepage: "https://zenodo.org/records/15836103"
+    citation: "doi:10.5281/zenodo.15836103 — MOUD"
+    notes: "Folded from registry/ingest-specs/moud.yaml on 2026-10-08 (P1.2). Spec license string, verbatim: 'cc-by-4.0'. Domain, modalities and capabilities are keyword inferences from the spec text."
+    tags: [spec-folded]
+    release_skip_reason: "no-staged-images: registry lists imagery, nothing staged under sources/ in rs-storage-open (U7/queue follow-up)"
+
+  - id: pangaea-ps118-ofobs-peninsula
+    domain: imaging
+    access_class: open
+    name: "pangaea ps118 ofobs peninsula"
+    version: "unversioned"
+    description: "doi:10.1594/PANGAEA.911904"
+    licence: CC-BY-4.0
+    legal_basis: licence
+    redistribution: ok
+    provenance: public
+    verification:
+      verified_on: 2026-10-05
+      verified_by: "LIC-B audit 2026-10-05 read https://doi.pangaea.de/10.1594/PANGAEA.911904 : license: https://creativecommons.org/licenses/by/4.0/ (PANGAEA JSON-LD)"
+      method: dataset-card
+    access:
+      method: http
+      uri: "https://doi.pangaea.de/10.1594/PANGAEA.911904"
+      notes: "ingest adapter pangaea-series; see registry/ingest-specs/pangaea-ps118-ofobs-peninsula.yaml"
+    modalities: [image]
+    capabilities: [general-pretraining]
+    loader: { layout: metadata-only }
+    n_images: 12967
+    n_images_method: "spec:measured.items"
+    coverage: { regions: [unknown] }
+    homepage: "https://doi.pangaea.de/10.1594/PANGAEA.911904"
+    citation: "doi:10.1594/PANGAEA.911904"
+    notes: "Folded from registry/ingest-specs/pangaea-ps118-ofobs-peninsula.yaml on 2026-10-08 (P1.2). Spec license string, verbatim: 'CC-BY (per child)'. Domain, modalities and capabilities are keyword inferences from the spec text. P1.2b (2026-10-08) restored the class to open: the LIC audit (2026-10-05) read the upstream licence (CC-BY-4.0), see licence_evidence."
+    tags: [spec-folded]
+    release_skip_reason: "no-staged-images: registry lists imagery, nothing staged under sources/ in rs-storage-open (U7/queue follow-up)"
+    licence_evidence: "https://doi.pangaea.de/10.1594/PANGAEA.911904 : license: https://creativecommons.org/licenses/by/4.0/ (PANGAEA JSON-LD)"
+
+  - id: pangaea-ps81-ofos-antarctic
+    domain: imaging
+    access_class: open
+    name: "pangaea ps81 ofos antarctic"
+    version: "unversioned"
+    description: "doi:10.1594/PANGAEA.872719"
+    licence: CC-BY-3.0
+    legal_basis: licence
+    redistribution: ok
+    provenance: public
+    verification:
+      verified_on: 2026-10-05
+      verified_by: "LIC-B audit 2026-10-05 read https://doi.pangaea.de/10.1594/PANGAEA.872719 : license: https://creativecommons.org/licenses/by/3.0/ (PANGAEA JSON-LD)"
+      method: dataset-card
+    access:
+      method: http
+      uri: "https://doi.pangaea.de/10.1594/PANGAEA.872719"
+      notes: "ingest adapter pangaea-series; see registry/ingest-specs/pangaea-ps81-ofos-antarctic.yaml"
+    modalities: [image]
+    capabilities: [general-pretraining]
+    loader: { layout: metadata-only }
+    n_images: 14543
+    n_images_method: "spec:measured.items"
+    coverage: { regions: [unknown] }
+    homepage: "https://doi.pangaea.de/10.1594/PANGAEA.872719"
+    citation: "doi:10.1594/PANGAEA.872719"
+    notes: "Folded from registry/ingest-specs/pangaea-ps81-ofos-antarctic.yaml on 2026-10-08 (P1.2). Spec license string, verbatim: 'CC-BY (per child)'. Domain, modalities and capabilities are keyword inferences from the spec text. P1.2b (2026-10-08) restored the class to open: the LIC audit (2026-10-05) read the upstream licence (CC-BY-3.0), see licence_evidence."
+    tags: [spec-folded]
+    release_skip_reason: "no-staged-images: registry lists imagery, nothing staged under sources/ in rs-storage-open (U7/queue follow-up)"
+    licence_evidence: "https://doi.pangaea.de/10.1594/PANGAEA.872719 : license: https://creativecommons.org/licenses/by/3.0/ (PANGAEA JSON-LD)"
+
+  - id: pangaea-ps96-ofos-weddell
+    domain: imaging
+    access_class: open
+    name: "pangaea ps96 ofos weddell"
+    version: "unversioned"
+    description: "doi:10.1594/PANGAEA.862097"
+    licence: CC-BY-3.0
+    legal_basis: licence
+    redistribution: ok
+    provenance: public
+    verification:
+      verified_on: 2026-10-05
+      verified_by: "LIC-B audit 2026-10-05 read https://doi.pangaea.de/10.1594/PANGAEA.862097 : license: https://creativecommons.org/licenses/by/3.0/ (PANGAEA JSON-LD)"
+      method: dataset-card
+    access:
+      method: http
+      uri: "https://doi.pangaea.de/10.1594/PANGAEA.862097"
+      notes: "ingest adapter pangaea-series; see registry/ingest-specs/pangaea-ps96-ofos-weddell.yaml"
+    modalities: [image]
+    capabilities: [general-pretraining]
+    loader: { layout: metadata-only }
+    n_images: 2736
+    n_images_method: "spec:measured.items"
+    coverage: { regions: [unknown] }
+    homepage: "https://doi.pangaea.de/10.1594/PANGAEA.862097"
+    citation: "doi:10.1594/PANGAEA.862097"
+    notes: "Folded from registry/ingest-specs/pangaea-ps96-ofos-weddell.yaml on 2026-10-08 (P1.2). Spec license string, verbatim: 'CC-BY (per child)'. Domain, modalities and capabilities are keyword inferences from the spec text. P1.2b (2026-10-08) restored the class to open: the LIC audit (2026-10-05) read the upstream licence (CC-BY-3.0), see licence_evidence."
+    tags: [spec-folded]
+    release_skip_reason: "no-staged-images: registry lists imagery, nothing staged under sources/ in rs-storage-open (U7/queue follow-up)"
+    licence_evidence: "https://doi.pangaea.de/10.1594/PANGAEA.862097 : license: https://creativecommons.org/licenses/by/3.0/ (PANGAEA JSON-LD)"
+
+  - id: pingmapper-sss-seg
+    domain: imaging
+    access_class: open
+    licence_evidence: "https://zenodo.org/api/records/10119320 — 'metadata.license: {\"id\": \"cc-by-4.0\"}; access_right: open' (WP-LICV audit 2026-10-05, confidence confirmed-open)"
+    name: "pingmapper sss seg"
+    version: "v1.0.0"
+    description: "doi:10.5281/zenodo.10119320 — Sidescan Sonar Substrate, Depth, and Shadow Image-Label-Pairs"
+    licence: CC-BY-4.0
+    legal_basis: licence
+    redistribution: ok
+    provenance: public
+    verification:
+      verified_on: 2026-10-08
+      verified_by: "registry/ingest-specs/pingmapper-sss-seg.yaml: license field copied verbatim, not independently checked"
+      method: secondary
+    access:
+      method: s3
+      uri: s3://rs-storage-open/sources/pingmapper-sss-seg/v1.0.0
+      notes: "rs-storage-open copy of the upstream dataset (staged tree v1.0.0); upstream: https://zenodo.org/records/10119320"
+      params:
+        bucket: rs-storage-open
+        endpoint: hel1.your-objectstorage.com
+        region: hel1
+        prefix: sources/pingmapper-sss-seg/v1.0.0/
+      size_bytes: 13791818380
+    modalities: [image]
+    capabilities: [general-pretraining]
+    loader: { layout: staged-tree }
+    n_images: 31014
+    n_images_method: "ingest-json"
+    coverage: { regions: [unknown] }
+    homepage: "https://zenodo.org/records/10119320"
+    citation: "doi:10.5281/zenodo.10119320 — Sidescan Sonar Substrate, Depth, and Shadow Image-Label-Pairs"
+    notes: "Folded from registry/ingest-specs/pingmapper-sss-seg.yaml on 2026-10-08 (P1.2). Spec license string, verbatim: 'cc-by-4.0'. Domain, modalities and capabilities are keyword inferences from the spec text."
+    tags: [spec-folded]
+    checksums:
+      version: "v1.0.0"
+      root_digest: bd3ecb803d9efef49f705fdd7dbc44fde7879c4c672937cdb3eae7c88ab814d3
+      files: 31017
+      size_bytes: 13791818380
+
+  - id: sonar-rgb-diver-lake
+    domain: imaging
+    access_class: unknown  # P1.2d: was open; no licence evidence
+    licence_evidence: "unverified: claimed as 'cc-by-4.0' in registry/ingest-specs/sonar-rgb-diver-lake.yaml license (folded 2026-10-08, never checked against https://zenodo.org/records/7728089); measured.per_item_license 'cc-by-4.0' (2026-09-25)"
+    name: "sonar rgb diver lake"
+    version: "unversioned"
+    description: "doi:10.5281/zenodo.7728089 — Sonar-to-RGB Image Translation for Diver Monitoring in Poor Visibility Environments"
+    licence: CC-BY-4.0
+    legal_basis: licence
+    redistribution: ok
+    provenance: public
+    verification:
+      verified_on: 2026-10-08
+      verified_by: "registry/ingest-specs/sonar-rgb-diver-lake.yaml: license field copied verbatim, not independently checked"
+      method: secondary
+    access:
+      method: zenodo
+      uri: "https://zenodo.org/records/7728089"
+      notes: "ingest adapter zenodo; see registry/ingest-specs/sonar-rgb-diver-lake.yaml"
+    modalities: [image]
+    capabilities: [general-pretraining]
+    loader: { layout: metadata-only }
+    n_images: 6536
+    n_images_method: "spec:measured.items"
+    coverage: { regions: [unknown] }
+    homepage: "https://zenodo.org/records/7728089"
+    citation: "doi:10.5281/zenodo.7728089 — Sonar-to-RGB Image Translation for Diver Monitoring in Poor Visibility Environments"
+    notes: "Folded from registry/ingest-specs/sonar-rgb-diver-lake.yaml on 2026-10-08 (P1.2). Spec license string, verbatim: 'cc-by-4.0'. Domain, modalities and capabilities are keyword inferences from the spec text."
+    tags: [spec-folded]
+    release_skip_reason: "no-staged-images: registry lists imagery, nothing staged under sources/ in rs-storage-open (U7/queue follow-up)"
+
+  - id: sonarsweep
+    domain: imaging
+    access_class: internal-only
+    name: "sonarsweep"
+    version: "rev-350b20a9acaf"
+    description: "HF dataset Lingpenghaha/Sonarsweep_dataset"
+    licence: NO-LICENCE-STATED
+    legal_basis: unknown
+    redistribution: unknown
+    provenance: public
+    verification:
+      verified_on: 2026-10-08
+      verified_by: "registry/ingest-specs/sonarsweep.yaml: license field copied verbatim, not independently checked"
+      method: secondary
+    access:
+      method: s3
+      uri: s3://rs-storage-open/sources/sonarsweep/rev-350b20a9acaf
+      notes: "rs-storage-open copy of the upstream dataset (staged tree rev-350b20a9acaf); upstream: https://huggingface.co/datasets/Lingpenghaha/Sonarsweep_dataset"
+      params:
+        bucket: rs-storage-open
+        endpoint: hel1.your-objectstorage.com
+        region: hel1
+        prefix: sources/sonarsweep/rev-350b20a9acaf/
+      size_bytes: 8754460800
+    modalities: [image]
+    capabilities: [general-pretraining]
+    loader: { layout: staged-tree }
+    n_images: 127396
+    n_images_method: "ingest-json"
+    coverage: { regions: [unknown] }
+    homepage: "https://huggingface.co/datasets/Lingpenghaha/Sonarsweep_dataset"
+    citation: "HF dataset Lingpenghaha/Sonarsweep_dataset"
+    notes: "Folded from registry/ingest-specs/sonarsweep.yaml on 2026-10-08 (P1.2). Spec license string, verbatim: 'unstated'. Domain, modalities and capabilities are keyword inferences from the spec text."
+    tags: [spec-folded]
+    checksums:
+      version: "rev-350b20a9acaf"
+      root_digest: fd9f74e9b356daf806015b34030f358b994fe58b0fb2e64c8050ef91069cb415
+      files: 127401
+      size_bytes: 8754460800
+
+  - id: sss-mine-detection
+    domain: imaging
+    access_class: open
+    licence_evidence: "https://api.figshare.com/v2/articles/24574879 — 'license: {\"name\": \"CC BY 4.0\"}' (WP-LICV audit 2026-10-05, confidence confirmed-open)"
+    name: "sss mine detection"
+    version: "2"
+    description: "doi:10.6084/m9.figshare.24574879.v2 — <i>Side-scan sonar imaging for Mine detection</i>"
+    licence: CC-BY-4.0
+    legal_basis: licence
+    redistribution: ok
+    provenance: public
+    verification:
+      verified_on: 2026-10-08
+      verified_by: "registry/ingest-specs/sss-mine-detection.yaml: license field copied verbatim, not independently checked"
+      method: secondary
+    access:
+      method: s3
+      uri: s3://rs-storage-open/sources/sss-mine-detection/2
+      notes: "rs-storage-open copy of the upstream dataset (staged tree 2); upstream: https://doi.org/10.6084/m9.figshare.24574879.v2"
+      params:
+        bucket: rs-storage-open
+        endpoint: hel1.your-objectstorage.com
+        region: hel1
+        prefix: sources/sss-mine-detection/2/
+      size_bytes: 218683403
+    modalities: [image]
+    capabilities: [general-pretraining]
+    loader: { layout: staged-tree }
+    n_images: 1170
+    n_images_method: "ingest-json"
+    coverage: { regions: [unknown] }
+    homepage: "https://doi.org/10.6084/m9.figshare.24574879.v2"
+    citation: "doi:10.6084/m9.figshare.24574879.v2 — <i>Side-scan sonar imaging for Mine detection</i>"
+    notes: "Folded from registry/ingest-specs/sss-mine-detection.yaml on 2026-10-08 (P1.2). Spec license string, verbatim: 'CC BY 4.0'. Domain, modalities and capabilities are keyword inferences from the spec text."
+    tags: [spec-folded]
+    checksums:
+      version: "2"
+      root_digest: c8e0a9baa019030d0d84469aa1426494bc466a017598b5187ea91f22b0d8d3d2
+      files: 1174
+      size_bytes: 218683403
+
+  - id: sss-ssl-sediments
+    domain: imaging
+    access_class: unknown  # P1.2d: was open; no licence evidence
+    licence_evidence: "unverified: claimed as 'cc-by-4.0' in registry/ingest-specs/sss-ssl-sediments.yaml license (folded 2026-10-08, never checked against https://zenodo.org/records/10209445); measured.per_item_license 'cc-by-4.0' (2026-09-25)"
+    name: "sss ssl sediments"
+    version: "unversioned"
+    description: "doi:10.5281/zenodo.10209445 — A Large Scale Side-Scan Sonar Dataset of Seafloor Sediments for Self-Supervised Pretraining"
+    licence: CC-BY-4.0
+    legal_basis: licence
+    redistribution: ok
+    provenance: public
+    verification:
+      verified_on: 2026-10-08
+      verified_by: "registry/ingest-specs/sss-ssl-sediments.yaml: license field copied verbatim, not independently checked"
+      method: secondary
+    access:
+      method: zenodo
+      uri: "https://zenodo.org/records/10209445"
+      notes: "ingest adapter zenodo; see registry/ingest-specs/sss-ssl-sediments.yaml"
+    modalities: [image]
+    capabilities: [general-pretraining]
+    loader: { layout: metadata-only }
+    coverage: { regions: [unknown] }
+    homepage: "https://zenodo.org/records/10209445"
+    citation: "doi:10.5281/zenodo.10209445 — A Large Scale Side-Scan Sonar Dataset of Seafloor Sediments for Self-Supervised Pretraining"
+    notes: "Folded from registry/ingest-specs/sss-ssl-sediments.yaml on 2026-10-08 (P1.2). Spec license string, verbatim: 'cc-by-4.0'. Domain, modalities and capabilities are keyword inferences from the spec text."
+    tags: [spec-folded]
+    release_skip_reason: "no-staged-images: registry lists imagery, nothing staged under sources/ in rs-storage-open (U7/queue follow-up)"
+    n_images_method: "unavailable:no-count"
+
+  - id: swdd-sss-wall
+    domain: imaging
+    access_class: open
+    licence_evidence: "https://zenodo.org/api/records/13692547 — 'metadata.license: {\"id\": \"cc-by-4.0\"}; access_right: open' (WP-LICV audit 2026-10-05, confidence confirmed-open)"
+    name: "swdd sss wall"
+    version: "record-13692547"
+    description: "doi:10.5281/zenodo.13692547 — SWDD: Sonar Wall Detection Dataset"
+    licence: CC-BY-4.0
+    legal_basis: licence
+    redistribution: ok
+    provenance: public
+    verification:
+      verified_on: 2026-10-08
+      verified_by: "registry/ingest-specs/swdd-sss-wall.yaml: license field copied verbatim, not independently checked"
+      method: secondary
+    access:
+      method: s3
+      uri: s3://rs-storage-open/sources/swdd-sss-wall/record-13692547
+      notes: "rs-storage-open copy of the upstream dataset (staged tree record-13692547); upstream: https://zenodo.org/records/13692547"
+      params:
+        bucket: rs-storage-open
+        endpoint: hel1.your-objectstorage.com
+        region: hel1
+        prefix: sources/swdd-sss-wall/record-13692547/
+      size_bytes: 5249804498
+    modalities: [image]
+    capabilities: [general-pretraining]
+    loader: { layout: staged-tree }
+    n_images: 10771
+    n_images_method: "ingest-json"
+    coverage: { regions: [unknown] }
+    homepage: "https://zenodo.org/records/13692547"
+    citation: "doi:10.5281/zenodo.13692547 — SWDD: Sonar Wall Detection Dataset"
+    notes: "Folded from registry/ingest-specs/swdd-sss-wall.yaml on 2026-10-08 (P1.2). Spec license string, verbatim: 'cc-by-4.0'. Domain, modalities and capabilities are keyword inferences from the spec text."
+    tags: [spec-folded]
+    checksums:
+      version: "record-13692547"
+      root_digest: ea8e35fff66f9273c93163402492f52a59819e1131c627113006c162b9ded0c3
+      files: 10776
+      size_bytes: 5249804498
+
+  - id: uatd
+    domain: imaging
+    access_class: open
+    licence_evidence: "https://api.figshare.com/v2/articles/21331143 — 'license: {\"name\": \"CC BY 4.0\"}' (WP-LICV audit 2026-10-05, confidence confirmed-open)"
+    name: "uatd"
+    version: "3"
+    description: "doi:10.6084/m9.figshare.21331143.v3 — Underwater acoustic target detection (UATD) dataset"
+    licence: CC-BY-4.0
+    legal_basis: licence
+    redistribution: ok
+    provenance: public
+    verification:
+      verified_on: 2026-10-08
+      verified_by: "registry/ingest-specs/uatd.yaml: license field copied verbatim, not independently checked"
+      method: secondary
+    access:
+      method: s3
+      uri: s3://rs-storage-open/sources/uatd/3
+      notes: "rs-storage-open copy of the upstream dataset (staged tree 3); upstream: https://doi.org/10.6084/m9.figshare.21331143.v3"
+      params:
+        bucket: rs-storage-open
+        endpoint: hel1.your-objectstorage.com
+        region: hel1
+        prefix: sources/uatd/3/
+      size_bytes: 34280467488
+    modalities: [audio]
+    capabilities: [bioacoustics]
+    loader: { layout: metadata-only }
+    n_files: 9205
+    counts_note: "9205 clips per spec:measured.items"
+    coverage: { regions: [unknown] }
+    homepage: "https://doi.org/10.6084/m9.figshare.21331143.v3"
+    citation: "doi:10.6084/m9.figshare.21331143.v3 — Underwater acoustic target detection (UATD) dataset"
+    notes: "Folded from registry/ingest-specs/uatd.yaml on 2026-10-08 (P1.2). Spec license string, verbatim: 'CC BY 4.0'. Domain, modalities and capabilities are keyword inferences from the spec text."
+    tags: [spec-folded]
+    release_skip_reason: "non-image-modality: audio"
+    checksums:
+      version: "3"
+      root_digest: d86209e997c916f2bc8b5507c5733ff5fab518e0347380f95dbf12a97eee47cf
+      files: 9215
+      size_bytes: 34280467488
+    n_images: 9212
+    n_images_method: "ingest-json"
+
+  - id: usod
+    domain: imaging
+    access_class: unknown
+    name: "usod"
+    version: "zip-fb2a1c738fd7"
+    description: "Islam, Luo, Sattar 2020, RSS"
+    licence: NO-LICENCE-STATED
+    legal_basis: unknown
+    redistribution: unknown
+    provenance: public
+    verification:
+      verified_on: 2026-10-08
+      verified_by: "registry/ingest-specs/usod.yaml: license field copied verbatim, not independently checked"
+      method: secondary
+    access:
+      method: s3
+      uri: s3://rs-storage-open/sources/usod/zip-fb2a1c738fd7
+      notes: "rs-storage-open copy of the upstream dataset (staged tree zip-fb2a1c738fd7); upstream: https://github.com/xahidbuffon/SVAM-Net"
+      params:
+        bucket: rs-storage-open
+        endpoint: hel1.your-objectstorage.com
+        region: hel1
+        prefix: sources/usod/zip-fb2a1c738fd7/
+      size_bytes: 357892122
+    modalities: [image]
+    capabilities: [general-pretraining]
+    loader: { layout: staged-tree }
+    coverage: { regions: [unknown] }
+    homepage: "https://github.com/xahidbuffon/SVAM-Net"
+    citation: "Islam, Luo, Sattar 2020, RSS"
+    notes: "Folded from registry/ingest-specs/usod.yaml on 2026-10-08 (P1.2). Spec license string, verbatim: 'unknown (see homepage)'. Domain, modalities and capabilities are keyword inferences from the spec text."
+    tags: [spec-folded]
+    checksums:
+      version: "zip-fb2a1c738fd7"
+      root_digest: 30259c88e5ddd9b20444ed937b2d4c87495a43fc8eafd841f5795734cb4b2f2e
+      files: 14603
+      size_bytes: 357892122
+    n_images: 14600
+    n_images_method: "ingest-json"
+
+  - id: uw-stereodepth-40k
+    domain: imaging
+    access_class: internal-only
+    name: "uw stereodepth 40k"
+    version: "rev-6aa807c87f85"
+    description: "HF dataset AIGeeksGroup/UW-StereoDepth-40K"
+    licence: NO-LICENCE-STATED
+    legal_basis: unknown
+    redistribution: unknown
+    provenance: public
+    verification:
+      verified_on: 2026-10-08
+      verified_by: "registry/ingest-specs/uw-stereodepth-40k.yaml: license field copied verbatim, not independently checked"
+      method: secondary
+    access:
+      method: s3
+      uri: s3://rs-storage-open/sources/uw-stereodepth-40k/rev-6aa807c87f85
+      notes: "rs-storage-open copy of the upstream dataset (staged tree rev-6aa807c87f85); upstream: https://huggingface.co/datasets/AIGeeksGroup/UW-StereoDepth-40K"
+      params:
+        bucket: rs-storage-open
+        endpoint: hel1.your-objectstorage.com
+        region: hel1
+        prefix: sources/uw-stereodepth-40k/rev-6aa807c87f85/
+      size_bytes: 8676746637
+    modalities: [image]
+    capabilities: [general-pretraining]
+    loader: { layout: staged-tree }
+    n_images: 40000
+    n_images_method: "spec:measured.items"
+    coverage: { regions: [unknown] }
+    homepage: "https://huggingface.co/datasets/AIGeeksGroup/UW-StereoDepth-40K"
+    citation: "HF dataset AIGeeksGroup/UW-StereoDepth-40K"
+    notes: "Folded from registry/ingest-specs/uw-stereodepth-40k.yaml on 2026-10-08 (P1.2). Spec license string, verbatim: 'unstated'. Domain, modalities and capabilities are keyword inferences from the spec text."
+    tags: [spec-folded]
+    checksums_status: missing
+
+  - id: uw-transstereo
+    domain: imaging
+    access_class: unknown  # P1.2d: was open; no licence evidence
+    licence_evidence: "unverified: claimed as 'cc-by-4.0' in registry/ingest-specs/uw-transstereo.yaml license (folded 2026-10-08, never checked against https://zenodo.org/records/16753748); measured.per_item_license 'cc-by-4.0' (2026-09-25)"
+    name: "uw transstereo"
+    version: "unversioned"
+    description: "doi:10.5281/zenodo.16753748 — UW-TransStereo: Underwater Stereo Vision Dataset for Transparent Object Detection & Ranging"
+    licence: CC-BY-4.0
+    legal_basis: licence
+    redistribution: ok
+    provenance: public
+    verification:
+      verified_on: 2026-10-08
+      verified_by: "registry/ingest-specs/uw-transstereo.yaml: license field copied verbatim, not independently checked"
+      method: secondary
+    access:
+      method: zenodo
+      uri: "https://zenodo.org/records/16753748"
+      notes: "ingest adapter zenodo; see registry/ingest-specs/uw-transstereo.yaml"
+    modalities: [image]
+    capabilities: [general-pretraining]
+    loader: { layout: metadata-only }
+    coverage: { regions: [unknown] }
+    homepage: "https://zenodo.org/records/16753748"
+    citation: "doi:10.5281/zenodo.16753748 — UW-TransStereo: Underwater Stereo Vision Dataset for Transparent Object Detection & Ranging"
+    notes: "Folded from registry/ingest-specs/uw-transstereo.yaml on 2026-10-08 (P1.2). Spec license string, verbatim: 'cc-by-4.0'. Domain, modalities and capabilities are keyword inferences from the spec text."
+    tags: [spec-folded]
+    release_skip_reason: "no-staged-images: registry lists imagery, nothing staged under sources/ in rs-storage-open (U7/queue follow-up)"
+    n_images_method: "unavailable:no-count"
+
+  - id: uwturbidity-fnu
+    domain: imaging
+    access_class: unknown
+    name: "uwturbidity fnu"
+    version: "1.0.0"
+    description: "doi:10.5281/zenodo.10951021 — Underwater Image/Turbidity Dataset"
+    licence: NO-LICENCE-STATED
+    legal_basis: unknown
+    redistribution: unknown
+    provenance: public
+    verification:
+      verified_on: 2026-10-08
+      verified_by: "registry/ingest-specs/uwturbidity-fnu.yaml: license field copied verbatim, not independently checked"
+      method: secondary
+    access:
+      method: s3
+      uri: s3://rs-storage-open/sources/uwturbidity-fnu/1.0.0
+      notes: "rs-storage-open copy of the upstream dataset (staged tree 1.0.0); upstream: https://zenodo.org/records/10951021"
+      params:
+        bucket: rs-storage-open
+        endpoint: hel1.your-objectstorage.com
+        region: hel1
+        prefix: sources/uwturbidity-fnu/1.0.0/
+      size_bytes: 2964936065
+    modalities: [image]
+    capabilities: [general-pretraining]
+    loader: { layout: staged-tree }
+    n_images: 675
+    n_images_method: "ingest-json"
+    coverage: { regions: [unknown] }
+    homepage: "https://zenodo.org/records/10951021"
+    citation: "doi:10.5281/zenodo.10951021 — Underwater Image/Turbidity Dataset"
+    notes: "Folded from registry/ingest-specs/uwturbidity-fnu.yaml on 2026-10-08 (P1.2). Spec license string, verbatim: 'agpl-3.0-or-later'. Domain, modalities and capabilities are keyword inferences from the spec text."
+    tags: [spec-folded]
+    checksums:
+      version: "1.0.0"
+      root_digest: d2d42002c3506ec988fabb3fd7f47bf7d89f7768d0d1ebddf333aea48039dbeb
+      files: 678
+      size_bytes: 2964936065
+
+  - id: uxo-acoustic-optical
+    domain: imaging
+    access_class: unknown
+    name: "uxo acoustic optical"
+    version: "1.1"
+    description: "doi:10.5281/zenodo.13778485 — An Acoustic and Optical Dataset for the Perception of Underwater Unexploded Ordnance (UXO)"
+    licence: NO-LICENCE-STATED
+    legal_basis: unknown
+    redistribution: unknown
+    provenance: public
+    verification:
+      verified_on: 2026-10-08
+      verified_by: "registry/ingest-specs/uxo-acoustic-optical.yaml: license field copied verbatim, not independently checked"
+      method: secondary
+    access:
+      method: s3
+      uri: s3://rs-storage-open/sources/uxo-acoustic-optical/1.1
+      notes: "rs-storage-open copy of the upstream dataset (staged tree 1.1); upstream: https://zenodo.org/records/13778485"
+      params:
+        bucket: rs-storage-open
+        endpoint: hel1.your-objectstorage.com
+        region: hel1
+        prefix: sources/uxo-acoustic-optical/1.1/
+      size_bytes: 7381932
+    modalities: [audio]
+    capabilities: [bioacoustics]
+    loader: { layout: metadata-only }
+    coverage: { regions: [unknown] }
+    homepage: "https://zenodo.org/records/13778485"
+    citation: "doi:10.5281/zenodo.13778485 — An Acoustic and Optical Dataset for the Perception of Underwater Unexploded Ordnance (UXO)"
+    notes: "Folded from registry/ingest-specs/uxo-acoustic-optical.yaml on 2026-10-08 (P1.2). Spec license string, verbatim: 'bsd-3-clause'. Domain, modalities and capabilities are keyword inferences from the spec text."
+    tags: [spec-folded]
+    release_skip_reason: "non-image-modality: audio"
+    checksums:
+      version: "1.1"
+      root_digest: a1d4aa1c93a3fca569a0a00ba2266fa44f87473462a9e0f34b88e232360a923a
+      files: 6
+      size_bytes: 7381932
+    n_images: 3
+    n_images_method: "ingest-json"
+

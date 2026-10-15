@@ -79,7 +79,7 @@ The thresholds, the embedding model id and revision, and τ_dedup's calibration-
    `upstream_split.counts[eval_split]`, fails. That turns a silent skip into a failure.
 5. Review-band hits in train/val/train-only > max(5, 1% of the benchmark's eval n): fails (it means the thresholds are
    miscalibrated). Otherwise each review hit is listed, not failed.
-The gate runs inside `release.py` behind `--decon` (default off until P2 lands, then on for v2) and as a `make ci` step on the
+The gate runs inside `release/build.py` behind `--decon` (default off until P2 lands, then on for v2) and as a `make ci` step on the
 fixture release.
 
 ### 2.3 Overlap table (card section "Benchmark contamination"; also `decon/overlap.parquet`)
@@ -245,7 +245,7 @@ in the example row are illustrative only.
 | pkg | scope | files | tests / acceptance | needs merged first |
 |---|---|---|---|---|
 | P1 bench-registry | load + validate `registry/benchmarks.yaml`; confirm the 14 unverified splits (metadata only); build per-benchmark eval-image manifests (S0–S5 signals) for every `obtain` in {staged, w1} | `src/marinedata/benchmarks.py`, `cli_bench.py`, `registry/benchmarks/manifests/<id>.parquet`, yaml edits | schema test over all entries; manifest row count ≥ 99% of eval n for ≥ 5 benchmarks; `split_verified` flips only with a URL | dedup (`dedup/` hashes, embed cache), W1-A |
-| P2 decon-gate | `marinedata decon check` + overlap parquet/md; `--decon` flag in `release.py` (one line) | `src/marinedata/decon.py`, `cli_decon.py`, `tests/test_decon.py` | fixture: planted S1/S2/S3/S4/S5 hits each fail; clean fixture passes; exclude-policy hit in test fails; coverage < 99% fails; review-band limit | P1, dedup |
+| P2 decon-gate | `marinedata decon check` + overlap parquet/md; `--decon` flag in `release/build.py` (one line) | `src/marinedata/decon.py`, `cli_decon.py`, `tests/test_decon.py` | fixture: planted S1/S2/S3/S4/S5 hits each fail; clean fixture passes; exclude-policy hit in test fails; coverage < 99% fails; review-band limit | P1, dedup |
 | P3 split-v2 | pools, OOD rules, allocator, repair pass, SPLIT_MAP v2 + hashes, `marinedata splits check` | `src/marinedata/splitv2/{rules,holdouts,allocate,mapfile}.py`, `registry/splits/v2.yaml`, `tests/test_splitv2*.py` | §3.6 recomputed from a synthetic fixture to the same counts; v13i-like coarse stratum within tolerance; any-member-OOD group rule; missing metadata stays ID; byte-identical regeneration; v1 map untouched | dedup (`split_group_id`), metadata (meow/depth fields; fallbacks cover its absence), P1 (pins) |
 | P4 eval-core | `eval score`, metric registry, cluster bootstrap, prediction readers | `src/marinedata/eval/{cli,metrics,bootstrap,predictions}.py`, `tests/test_eval_metrics.py` | golden tests vs sklearn/pycocotools within 1e-6; bootstrap is seed-stable; group resampling proven by fixture | none (parallel-safe; split names from P3's yaml) |
 | P5 baselines | feature cache, probe, fine-tune, `eval reproduce`/`eval table`, card table (one-line hook in `hf_card.py`, disclosed) | `src/marinedata/eval/baselines/{features,probe,finetune}.py`, `configs/baselines/v2.yaml`, `results/v2/` | `eval reproduce` on a 2k fixture matches within ±0.5 pt twice; measured MPS/Job throughput recorded | P3, P4 (`hf_card` owner) |

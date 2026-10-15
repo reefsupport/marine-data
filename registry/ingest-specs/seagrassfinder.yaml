@@ -9,3 +9,4 @@ citation: Zenodo doi:10.5281/zenodo.13904604
 homepage: https://zenodo.org/records/13904604
 
 disk_floor_gib: 36.0
+bucket: rs-storage-private

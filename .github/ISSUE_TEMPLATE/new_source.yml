@@ -1,0 +1,88 @@
+name: New source
+description: Suggest a marine or coral-reef dataset for the registry.
+title: "[new source] "
+labels: [new-source]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        The most useful part of a suggestion is a verified licence. Link a primary source for it: a licence file, a dataset card,
+        written permission, or a terms-of-use page, and say when you read it. A paper's phrasing or a hosting platform's default
+        is not enough. See "Adding a source" in [CONTRIBUTING.md](https://github.com/reefsupport/marine-data/blob/main/CONTRIBUTING.md).
+        Do not upload or attach the data itself.
+  - type: input
+    id: name
+    attributes:
+      label: Dataset name
+    validations:
+      required: true
+  - type: input
+    id: url
+    attributes:
+      label: Where it lives
+      description: A URL or DOI for the dataset.
+    validations:
+      required: true
+  - type: dropdown
+    id: modality
+    attributes:
+      label: Modality
+      multiple: true
+      options:
+        - Images
+        - Video
+        - Geometry or 3D
+        - Audio
+        - Tabular or sensor data
+        - Remote sensing
+        - Other
+    validations:
+      required: true
+  - type: textarea
+    id: contents
+    attributes:
+      label: What it contains
+      description: Size, labels or annotations, geography, and how the data was collected.
+    validations:
+      required: true
+  - type: input
+    id: licence
+    attributes:
+      label: Licence as stated by the source
+      placeholder: CC BY 4.0
+    validations:
+      required: true
+  - type: input
+    id: licence_source
+    attributes:
+      label: Primary source for the licence
+      description: Link to the licence file, dataset card or terms page, and the date you read it.
+    validations:
+      required: true
+  - type: dropdown
+    id: redistribution
+    attributes:
+      label: Redistribution, as far as you can tell
+      options:
+        - Allowed
+        - Not allowed
+        - Unclear, or only on request
+    validations:
+      required: true
+  - type: dropdown
+    id: relationship
+    attributes:
+      label: Your relationship to the dataset
+      options:
+        - I am an author or maintainer
+        - I am a user
+        - Other
+  - type: checkboxes
+    id: checks
+    attributes:
+      label: Before you submit
+      options:
+        - label: I have read "Adding a source" in CONTRIBUTING.md.
+          required: true
+        - label: I am not attaching the data itself.
+          required: true

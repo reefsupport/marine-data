@@ -111,14 +111,28 @@ def row_licence_class(registry, source_id: str, licence: str | None) -> str:
     )
 
 
+def sample_verdict(registry, sample, flavour: str | None) -> str | None:
+    """Why one built sample may NOT ship in ``flavour`` (``None`` = it ships).
+
+    ``licence-null``: the row carries a ``license`` that is null or blank (never ships, whatever
+    the source). ``licence-outside-flavour``: a per-row-licence source's row class is not the
+    flavour's (CC0/CC-BY -> open, BY-NC -> nc, ND/unknown -> dropped). Every other row was
+    already decided whole by :func:`ships_in`; a research build (``flavour=None``) keeps all."""
+    if flavour is None:
+        return None
+    meta = sample.meta or {}
+    licence = meta.get("license")
+    if "license" in meta and not (licence and str(licence).strip()):
+        return "licence-null"
+    if not registry.source(sample.source_id).licence_per_row:
+        return None
+    cls = row_licence_class(registry, sample.source_id, licence)
+    return None if cls == FLAVOURS[flavour] else "licence-outside-flavour"
+
+
 def sample_ships(registry, sample, flavour: str | None) -> bool:
-    """Whether one built sample may ship in ``flavour``. Only per-row sources are decided here
-    (CC0/CC-BY -> open, BY-NC -> nc, ND/unknown -> dropped); every other source was already
-    decided whole by :func:`ships_in`."""
-    if flavour is None or not registry.source(sample.source_id).licence_per_row:
-        return True
-    cls = row_licence_class(registry, sample.source_id, (sample.meta or {}).get("license"))
-    return cls == FLAVOURS[flavour]
+    """Whether one built sample may ship in ``flavour`` (see :func:`sample_verdict`)."""
+    return sample_verdict(registry, sample, flavour) is None
 
 
 def flavour_source_ids(registry, source_ids: Iterable[str], flavour: str) -> list[str]:

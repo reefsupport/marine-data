@@ -1,6 +1,6 @@
 # WP-6l-B (2026-09-25) new source: candidate — WP-6l-B vqa+video: event-centric underwater video QA: temporal/causal reasoning labels
 id: marineevt
-access_class: open
+access_class: open  # P1.2b: restored from the LIC audit, see licence_evidence
 adapter: hf
 params:
   repo: AnTo2209/MarineEVT
@@ -8,7 +8,8 @@ params:
   remote_zip: true
   label_patterns:
   - '*.json'
-license: unstated
+license: MIT
+licence_evidence: "https://huggingface.co/datasets/AnTo2209/MarineEVT/resolve/main/README.md : This dataset is released under the MIT License"
 attribution: AnTo2209 (HF)
 citation: HF dataset AnTo2209/MarineEVT
 homepage: https://huggingface.co/datasets/AnTo2209/MarineEVT

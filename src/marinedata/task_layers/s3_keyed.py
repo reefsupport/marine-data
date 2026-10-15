@@ -5,7 +5,8 @@ gives a tiny build (5-55 images). These producers key every row from the staged 
 own ``CHECKSUMS.sha256`` on ``rs-storage-open`` (``images/<partition>/<stem>.<ext>`` ->
 sha256), joined to ``metadata.parquet`` and the tree's ``labels/`` files by
 ``(partition, stem)``. Nothing under ``images/`` is ever fetched: :func:`fetch_small`
-refuses those keys, and every read is an anonymous HTTPS GET held in memory (no disk).
+refuses those keys, and every read is an HTTPS GET held in memory (no disk), signed when a key
+resolves.
 
 Mask-derived payloads (Coralscapes semseg, Reef Support bleaching presence) decode the
 ``labels/masks/`` PNGs in memory — those are label files, never the imagery.
@@ -26,8 +27,10 @@ import urllib.request
 from collections.abc import Callable, Iterable
 from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path, PurePosixPath
+from typing import Any
 
 from ..checksums import parse_checksums
+from ..s3_auth import auth_headers_for, resolve_s3_credentials
 from ..tables import _require_pyarrow
 
 PUBLIC_HOST = "https://rs-storage-open.hel1.your-objectstorage.com"
@@ -35,6 +38,7 @@ SMALL_FILE_CAP = 64 * (1 << 20)
 IMAGE_PREFIX = "images/"
 
 Fetch = Callable[[str], bytes]
+_RESOLVE: Any = object()  # sentinel: resolve credentials on first use
 
 
 class ImageFetchRefused(ValueError):
@@ -67,8 +71,11 @@ def fetch_small(
     max_delay: float = 20.0,
     sleep: Callable[[float], None] = time.sleep,
     opener: Callable = urllib.request.urlopen,
+    creds: Any = _RESOLVE,
 ) -> bytes:
-    """Anonymous GET of one small non-image object on ``rs-storage-open`` (in memory).
+    """GET of one small non-image object on ``rs-storage-open`` (in memory): SigV4-signed when a
+    key resolves (env -> rclone remote), anonymous otherwise; a refused signature (401/403) drops
+    to anonymous for the remaining tries, never the reverse.
 
     Hetzner returns intermittent 403/5xx on this bucket, so every failure is retried with
     exponential backoff and full jitter (``uniform(0, min(max_delay, base_delay * 2**i))``)
@@ -77,15 +84,21 @@ def fetch_small(
     if f"/{IMAGE_PREFIX}" in f"/{key}":
         raise ImageFetchRefused(key)
     url = f"{PUBLIC_HOST}/{urllib.parse.quote(key)}"
+    resolved = resolve_s3_credentials() if creds is _RESOLVE else creds
+    signed = resolved is not None
     status = "none"
     for attempt in range(tries):
         if attempt:
             sleep(random.uniform(0.0, min(max_delay, base_delay * 2 ** (attempt - 1))))
+        auth = auth_headers_for(url, resolved) if signed else {}
+        target = urllib.request.Request(url, headers=auth) if auth else url
         try:
-            with opener(url, timeout=timeout) as resp:
+            with opener(target, timeout=timeout) as resp:
                 data = resp.read(SMALL_FILE_CAP + 1)
         except (OSError, TimeoutError) as exc:  # HTTPError/URLError are OSErrors
             status = _status(exc)
+            if auth and status in ("401", "403"):
+                signed = False
             continue
         if len(data) > SMALL_FILE_CAP:
             raise ValueError(f"{key}: larger than the {SMALL_FILE_CAP} B small-file cap")

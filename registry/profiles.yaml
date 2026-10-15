@@ -12,6 +12,7 @@ profiles:
       Closed or proprietary weights in a paid product. The most restrictive profile and
       the default for anything customer-facing.
     allow_tiers: [T0_OWN, T1_PERMISSIVE]
+    ships: true
     deny_flags: [no_derivatives, provenance_defective, contract_gated]
     allow_access_classes: [open]
 
@@ -20,6 +21,7 @@ profiles:
       Weights released publicly under a share-alike licence. Admits copyleft sources
       because the share-alike obligation is discharged by the release itself.
     allow_tiers: [T0_OWN, T1_PERMISSIVE, T2_COPYLEFT]
+    ships: true
     deny_flags: [no_derivatives, provenance_defective, contract_gated]
     allow_access_classes: [open]
     weights_licence: CC-BY-SA-4.0
@@ -35,12 +37,14 @@ profiles:
     deny_flags: [no_derivatives, provenance_defective, contract_gated]
     allow_access_classes: [open, restricted-nc]
     public_release: true
+    ships: true
 
   - id: research
     description: >
       Papers, benchmarks and internal evaluation. Never shipped, never sold, never
       embedded in a customer deliverable.
     allow_tiers: [T0_OWN, T1_PERMISSIVE, T2_COPYLEFT, T3_NONCOMMERCIAL]
+    ships: false
     deny_flags: [no_derivatives, provenance_defective]
 
   - id: pretrain-eu
@@ -49,6 +53,9 @@ profiles:
       (Art. 15o Auteurswet / DSM Art. 4). Weights are not distributed outside the EU
       without separate review. Requires a counsel opinion reference at build time.
     allow_tiers: [T0_OWN, T1_PERMISSIVE, T2_COPYLEFT, T3_NONCOMMERCIAL, T4_TDM_ONLY]
+    ships: true   # this profile's purpose IS producing weights — inferring `ships`
+                  # from tier composition used to make T3_NONCOMMERCIAL here silently
+                  # turn it False, skipping the disputed/is_primary checks. See gate.py.
     deny_flags: [no_derivatives, provenance_defective, contract_gated]
     require_legal_opinion: true
     retention_days: 180   # Art. 4(2): retain only as long as necessary for the mining

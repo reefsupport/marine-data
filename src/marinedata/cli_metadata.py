@@ -45,6 +45,12 @@ def _cmd_normalise(args: argparse.Namespace) -> int:
     return 0
 
 
+def _cmd_resolve(args: argparse.Namespace) -> int:
+    from .metadata_norm.resolvers.run import cmd_resolve
+
+    return cmd_resolve(args)
+
+
 def add_metadata_subparser(sub: argparse._SubParsersAction) -> None:
     """Wire the ``metadata`` sub-command onto ``sub`` (called from ``cli.build_parser``)."""
     p = sub.add_parser("metadata", help="Normalise staged metadata (local output only)")
@@ -57,3 +63,12 @@ def add_metadata_subparser(sub: argparse._SubParsersAction) -> None:
     n.add_argument("--events", help="Cached MERMAID sample-event JSON (see metadata_norm.geo)")
     n.add_argument("--meow", help="Local MEOW polygon file (lat/lon -> ecoregion; no download)")
     n.set_defaults(func=_cmd_normalise)
+    r = msub.add_parser(
+        "resolve",
+        help="Resolve per-row geo/date/site/quadrat metadata (local output only)",
+    )
+    r.add_argument("--source", required=True, help="Source id (seaview, noaa, own, coralscapes)")
+    r.add_argument("--version", help="Staged version (default: the registry's)")
+    r.add_argument("--out", required=True, help="Local output directory")
+    r.add_argument("--cache", help="Local directory caching the fetched tables (re-runs reuse it)")
+    r.set_defaults(func=_cmd_resolve)

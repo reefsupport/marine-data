@@ -272,4 +272,5 @@ def make_profile() -> Profile:
         id="research",
         description="fixture profile",
         allow_tiers=(Tier.OWN, Tier.PERMISSIVE, Tier.COPYLEFT, Tier.NONCOMMERCIAL),
+        ships=False,
     )

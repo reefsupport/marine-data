@@ -3,7 +3,7 @@
 Group near-duplicates first, then generate ONE global split map from those groups, then build each flavour from it (`open` ->
 `reefsupport/marine-data`). Where several flavours are built, an image or
 near-dup group must have the same split in every flavour. Dry runs always pass `--local-only` (no
-pinned-tree fetch). Nothing here uploads.
+pinned-tree fetch). Nothing here uploads except step 9 with `--go`.
 
 1. `marinedata dedup run --staged LABEL=DIR [...] --out dedup/` (once per release)
    Hashes and groups the staged corpus; writes `dedup/groups.parquet` (`sha256`, `split_group_id`,
@@ -49,8 +49,19 @@ pinned-tree fetch). Nothing here uploads.
    --quality ... --out hf-<flavour> --summary ... --coverage ...` rewrites the same `metadata`
    shards with the staged-version lookup and the coverage report. Its `--summary` holds only the
    metadata config: use a file of its own, never hf_export's summary (the card step reads that one).
-8. `marinedata hf-card` / upload stages per `docs/formats.md`; check that every config in the card has
+8. `marinedata release card` / upload stages per `docs/formats.md`; check that every config in the card has
    its `data_files` and that `metadata` is listed.
+9. `marinedata release publish --release-id <id> --flavour {open|nc} --dir hf-<flavour>
+   --release-dir rel/releases/<id>/<flavour>` is a DRY RUN: it prints the target repo, the configs with
+   their split rows, the file count and bytes, the card, the lock sha and the tag `v<id>`, and refuses
+   unless `GATES.json` shows every required gate passed and `RELEASE.json` matches the flavour, repo and
+   lock. `--go` (with `HF_TOKEN` set) uploads one commit and tags it; it refuses an existing tag and the
+   frozen `v1.0` without `--allow-frozen`. `RELEASE.json`, `GATES.json`, the lock, `SPLIT_MAP.json`,
+   `DEDUP_GATE.json` and `tasks/` are never uploaded. The build VM in `deploy/release-vm/README.md`
+   runs steps 3 and 6, the card part of 8, the gates and the dry run of this step; steps 1-2 are
+   replaced there by the frozen `registry/SPLIT_MAP.json`, and 4, 5 and 7 are not VM stages.
+
+After the export, run the gates: `marinedata release gate BUILD_DIR --all --require-all` (see [GATES.md](GATES.md)).
 
 ## Privacy policy (WP-R9)
 
@@ -61,3 +72,26 @@ same `--privacy`. A face score >= 0.85 excludes the image from every config and 
 it with `privacy_flag` = `possible_face` and `face_score` in `metadata`. The thresholds are the two
 constants in `src/marinedata/privacy/policy.py`; the dataset card prints them. Without `--privacy`
 nothing is excluded or flagged.
+
+## Dataset card and Croissant (offline, read the build folder only)
+
+After `release build` and the HF export, write the two metadata files next to the shards. Neither
+command touches the network or the Hub.
+
+```bash
+B=<build-dir>                       # holds data/<config>/*.parquet
+R=$B/releases/<release-id>/<open|nc> # RELEASE.json, GATES.json, release.lock.yaml, CHANGELOG.md
+uv run --frozen marinedata release card "$B" --release-dir "$R" --out "$B/README.md"
+uv run --frozen marinedata release croissant "$B" --release-dir "$R" --out "$B/croissant.json"
+```
+
+- `release card` renders `docs/card-template.md.tmpl`: the front-matter (`configs`, `dataset_info`,
+  licence, tags, size band) and the config/field/licence tables come from the shards and the registry;
+  a column without a one-line description in `card_fields.FIELD_DOCS` prints an en dash and a warning.
+  A source in `registry/sources` that lacks a field shows `–` instead of failing.
+- `release croissant` writes Croissant 1.0 JSON-LD (sha256 and size of every shard, one recordSet per
+  config) and validates it with `mlcroissant` when the extra `croissant` is installed; otherwise it says
+  `not-validated` and still writes the file.
+- Re-run the P1.6 `card` gate on the folder afterwards; it re-reads the shards and fails if the front-matter
+  counts, byte sizes or size band no longer match them.
+- Regenerate the test goldens with `UPDATE_GOLDEN=1 uv run --frozen pytest tests/test_release_card.py`.

@@ -6,10 +6,91 @@ git. The format loosely follows [Keep a Changelog](https://keepachangelog.com/en
 
 ## [Unreleased]
 
+Nothing below is in a release yet. It is on `main` or on the Phase A branches named in the headings.
+
+### On main
+
 - Docs: install requirements, standalone snippets, fish-boxes statistics.
 - Repository: security policy, code of conduct, issue and pull request templates; broader `.gitignore`; README install pinned to
   v1.0.0; annotator e-mails in the Labelbox test fixtures replaced by placeholders; neutral wording and placeholder paths in docs and
   script comments; the open dataset card no longer references the gated repository.
+
+### Phase A: `feat/card-croissant` (merged into `feat/phase-a`; includes `feat/join` and `feat/gates`)
+
+- Release gates (P1.6): `marinedata release gate BUILD --all --require-all` runs the licence, dedup, splits, masks, privacy (EXIF GPS), load, card and croissant gates and merges them into `GATES.json`; `--masks DIR` and `--metadata DIR --gates FILE` keep working in the same command (docs/GATES.md). The dedup gate no longer fails EXIF-transposed rows on `image_sha256`: it checks that the bytes decode and match the row's width/height.
+- Dataset card and Croissant (P1.9): `release card` and `release croissant` generate `README.md` and `croissant.json` from a build; `release_croissant.py` is the single Croissant emitter (the old `croissant.py` is gone) and the croissant gate validates the file it writes. Validation no longer alters the document or the shared context.
+- Per-row metadata resolvers (P2.1): `marinedata metadata resolve --source ID --out DIR` resolves geo, date, site and quadrat per image for four sources.
+- SampleRow v3, per-row licence layer and metadata gate (P2.2, P2.4): `release gate --metadata DIR` checks resolver coverage floors and per-row licences.
+- Seaview benthic points table (P3.1, P2.5): `marinedata tasks build-points` writes it keyed by `image_sha256`; `--metadata-dir` joins the resolved lat/lon/date/licence onto it (P2.5).
+- HF `points` config (P2.6): geo/date/licence columns joined by `image_sha256`; `metadata` and `points` agree on lat/lon/date/date_precision for every image and the resolver output wins over a staged value.
+
+### Phase A: `feat/repo-hygiene` (merged into `feat/phase-a`)
+
+#### Added
+
+- Takedown path: a "Takedown requests" section in `SECURITY.md` with a public form and a private e-mail route, and four
+  issue forms (new source, takedown request, label error, licence question). `.github/CODEOWNERS`.
+- `CONTRIBUTING.md`: data-problem section, development setup, `make ci`, commit and pull request conventions.
+- `README.md`: per-config loading table, a note on why label-index masks look black, takedown pointers.
+  `CITATION.cff`: version 1.0.0, contact, licence message and references for the dataset and its source papers.
+
+### Phase A: `feat/phase-a`
+
+#### Added
+
+- `marinedata release lock` and `release build --lock`: a committed `release.lock.yaml` pins every source by `root_digest`,
+  and a build refuses a source that is not in the lock.
+- Masks gate, `marinedata release gate --masks BUILD_DIR`: checks mask size, EXIF orientation, class ids, dtype, instance
+  ids and the empty-mask rate per source, and merges its result into `GATES.json`. Mask export no longer resizes silently.
+- One S3 credential resolver (`marinedata.s3_auth`) and one client factory (`marinedata.s3_client`); writers refuse to run
+  anonymously. A test (`tests/test_s3_auth_boundary.py`) keeps every other module away from the rclone config and from
+  boto3 client constructors.
+- `docs/sources.md` and `docs/configs.md`, generated from the registry by `scripts/gen_sources_docs.py`
+  (`make docs`; `make docs-check` runs in `make ci`). `make ci` also runs the gate tests and the masks gate on a committed
+  2-image fixture.
+- `.github/dependabot.yml`: weekly, grouped updates for pip and GitHub Actions.
+- Release build image: `Dockerfile` (python:3.12-slim by digest, uv, ffmpeg, git, non-root) and `.dockerignore`; `make
+  image` builds `marinedata:$(git describe)`, `make image-check` runs `--version` and `check --profile research` in
+  the container and enforces the 1.5 GB cap. `marinedata --version` is new.
+- `marinedata release publish --release-id ID --flavour open|nc [--go]`: the dry run prints the plan (repo, configs,
+  files and bytes, card, lock sha, tag `v<id>`) and refuses without a passing `GATES.json`; `--go` needs `HF_TOKEN`,
+  uploads one commit, tags it, and refuses an existing tag and the frozen v1.0 without `--allow-frozen`.
+- `deploy/release-vm/`: `create.sh` (prints the `hcloud` commands; `--run` is opt-in), `bootstrap.sh` (cloud-init
+  user-data: lock, build, export, gate, publish dry run; never `--go`) and a README with prerequisites, cost, teardown
+  and what to copy back.
+
+#### Changed
+
+- `marinedata check` separates expected denials from unexpected ones and exits 0 when only expected denials remain.
+  `marinedata lineage` exits 0 on denials.
+- Fetching verifies integrity (hash-pinned manifest, checksum markers, retries on truncated transfers). `fetch.py` is now the
+  `marinedata.fetch` package; behaviour is unchanged.
+- Lineage describes the build that happened, not the intent, and verification claims in the registry are computed instead of
+  typed by hand.
+- Three sources that were never ingested (`noaa-coral-icra`, `plasticinwater`, `mouss-seg`) moved from open to unknown until
+  their licence is stated.
+- The old "Data issue" form is retired; the label error, licence question and takedown forms cover its cases.
+
+#### Fixed
+
+- The licence gate failed open on three paths; it now fails closed.
+- Nightly `verify-layouts`: the job no longer swallows failures (a fetch outage skips, a layout mismatch fails). Its three
+  failing tests are repaired: the face-detector test downloaded a Git LFS pointer instead of the YuNet weights, and the
+  coralscapes tests assumed `items` counts images and a complete sample root.
+
+### Phase A: briefs integrated into `feat/phase-a` (P1.13)
+
+Every brief named here has a report (`reports/2026-10-08-PA-<id>.md`).
+
+- Registry as the single truth (P1.2, P1.2b, P1.2c, P1.2d): every ingest-spec id has an entry, licences carry evidence, root digests and the reconstructed v1.0 lock are pinned; `marinedata check` reports 174 permitted / 79 expected / 0 unexpected.
+- `marinedata check` separates expected from unexpected denials (P1.3); `release lock` and `release build --lock` (P1.5).
+- Signed bucket reads and fetch integrity (P1.4); every S3 constructor goes through the resolver and `fetch.py` is the `fetch/` package (P1.4b).
+- `release publish` dry run and the release build image (P1.7); one Croissant emitter and one `release gate` subparser (P1.9b); generated docs and CI gates (P1.10).
+- Mask configs gain exif_transposed and EXIF-rotated JPEGs are re-encoded from v1.1; v1.0 files unchanged.
+- `release build` refuses the frozen v1.0 (release id or lock) unless `--allow-frozen`; `tests/golden/v1.0-configs-schema.json` pins the 4 published configs as additive-only.
+- `release gate --require-all` runs every gate (an absent, skipped or failed gate refuses, privacy, card and croissant included); `release publish` takes its verdict from `marinedata.gates`, uploads with `upload_large_folder` and sends only data parquet, README.md, croissant.json and `provenance/{RELEASE.json,GATES.json,release.lock.yaml}`.
+- `release publish` is fail-closed (P1.13 delta 1): privacy and croissant are required whatever GATES.json lists and a gate absent from it is a failure; `provenance/RELEASE.json` goes up as a public-safe projection (`marinedata.release_provenance`: counts, config names, ids, digests and the lock's sources only, no excluded or skipped sources, buckets, remotes or local paths); the card gains a Provenance line.
+- Integration (P1.13): `docs/PHASE_A.md`, `docs/cli.md` generated from argparse, `task_layers/configs/` split into modules with re-exports.
 
 ## [1.0.0] - 2026-10-07
 
@@ -29,7 +110,7 @@ First public release.
 
 ### Published datasets (v1.0, October 2026)
 
-- Four Parquet configurations with images and masks embedded, 58,803 rows in total: `coral-masks` (5,997),
+- Four Parquet configurations with images and masks embedded, 58,803 rows and 15.5 GB in total: `coral-masks` (5,997),
   `scene-masks` (1,598), `instance-masks` (25,296) and `fish-boxes` (25,912).
 - Eight sources: Coralscapes, SUIM, UIIS, UIIS10K, USIS10K, Roboflow Aquarium Dataset, Reef Support's benthic
   surveys, and Seaview imagery with Reef Support masks.
@@ -75,3 +156,6 @@ First public release.
 See "Considerations and limitations" in the dataset card and section 5 of `docs/DATASHEET.md`. In brief: the mask
 configurations were not checked for near-duplicates across splits, the Seaview `split_group` is provisional, label
 vocabularies differ per source, and image provenance for the UIIS family is described in the licensing section.
+
+[Unreleased]: https://github.com/reefsupport/marine-data/compare/v1.0.0...HEAD
+[1.0.0]: https://github.com/reefsupport/marine-data/releases/tag/v1.0.0

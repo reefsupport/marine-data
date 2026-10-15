@@ -13,3 +13,4 @@ measured:
   method: GET biigle.de/api/v1/projects -> 302 redirect to /login (anonymous rejected)
   date: '2026-09-25'
   per_item_license: per-volume
+bucket: rs-storage-private

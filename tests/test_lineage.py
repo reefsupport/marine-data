@@ -11,15 +11,19 @@ used to catch a wrong declared layout could not see a content change at all.
 
 from __future__ import annotations
 
+import json
+import subprocess
 from datetime import datetime, timezone
 from pathlib import Path
 
 import pytest
 
 from marinedata import Registry
-from marinedata.builder import DatasetBuilder
+from marinedata.builder import DatasetBuilder, SourcesDroppedError
+from marinedata.cli import main as cli_main
 from marinedata.fetch import sample_digest
 from marinedata.lineage import build_lineage
+from marinedata.query import find
 
 
 @pytest.fixture
@@ -147,3 +151,153 @@ def test_sample_digest_is_stable_for_identical_content(tmp_path: Path) -> None:
     (a / "f.png").write_bytes(b"\x01\x02\x03")
     (b / "f.png").write_bytes(b"\x01\x02\x03")
     assert sample_digest(a) == sample_digest(b)
+
+
+# ── MD-3: four more defects — the record must describe the build that happened ──────
+#
+# `build_streaming` listed sources that contributed nothing (falling back to the
+# *declared* count), `content_hash` omitted the one input the TDM path demands, a dirty
+# registry tree could report a clean commit, and `sample_digest` was blind to a file
+# moving between subdirectories at the same size.
+
+
+def test_streaming_lineage_does_not_list_a_source_that_failed_to_load(
+    registry: Registry, tmp_path: Path
+) -> None:
+    """⭐ The defect: `build_streaming` passed the gate-*permitted* list to
+    `build_lineage`, not the list of sources that actually yielded a sample — a source
+    whose loader raised `DataNotAvailable` was silently dropped from the corpus yet
+    still appeared in `lineage.datasets`, falling back to its declared item count. D2:
+    this must also fail loud (raise) rather than return as if nothing had happened."""
+    from marinedata.tables import StagedImage, write_metadata_table
+
+    # coralscapes declares `loader.layout: staged-tree` on main, so the good source is a
+    # staged tree (images/ + labels/masks/ + metadata.parquet), as in test_builder.mixed_roots.
+    labelled = tmp_path / "coralscapes"
+    rows = []
+    for i in range(3):
+        stem = f"f{i}"
+        (labelled / "images" / "default").mkdir(parents=True, exist_ok=True)
+        (labelled / "labels" / "masks" / "default").mkdir(parents=True, exist_ok=True)
+        (labelled / "images" / "default" / f"{stem}.jpg").write_bytes(b"\x89PNG\r\n\x1a\n")
+        (labelled / "labels" / "masks" / "default" / f"{stem}.png").write_bytes(
+            b"\x89PNG\r\n\x1a\n"
+        )
+        rows.append(
+            StagedImage(
+                stem=stem,
+                partition="default",
+                upstream_path=f"orig/{stem}.jpg",
+                upstream_split=None,
+                width=10,
+                height=10,
+                split_group=f"coralscapes/site{i}",
+            )
+        )
+    write_metadata_table(labelled / "metadata.parquet", rows)
+    empty = tmp_path / "sweet-corals"  # exists, but empty → DataNotAvailable
+    empty.mkdir()
+
+    builder = DatasetBuilder(
+        registry,
+        profile="research",
+        roots={"coralscapes": labelled, "sweet-corals": empty},
+    )
+
+    with pytest.raises(SourcesDroppedError) as excinfo:
+        builder.build_streaming(tolerance=None)
+
+    assert set(excinfo.value.dropped) == {"sweet-corals"}
+    lineage = excinfo.value.dataset.lineage
+    assert [d.id for d in lineage.datasets] == ["coralscapes"], (
+        "the failed source must not be reported as a contributor"
+    )
+    assert lineage.dropped == [
+        {"id": "sweet-corals", "reason": excinfo.value.dropped["sweet-corals"]}
+    ]
+    assert "sweet-corals" in lineage.dropped[0]["reason"]  # a real reason, not a stub
+
+
+def test_content_hash_changes_when_legal_opinion_ref_does(registry: Registry, one_source) -> None:
+    """⭐ The defect: `content_hash` bound `{profile, datasets, excluded,
+    registry_commit}` but not `legal_opinion_ref` — the one fact `gate.py`'s TDM path
+    requires on record (source-level `legal_basis` is already inside `datasets`, but
+    *which* counsel opinion, or whether one was supplied at all, was not)."""
+    profile = registry.profile("research")
+    stamp = datetime(2026, 1, 1, tzinfo=timezone.utc)
+    with_ref_a = build_lineage(one_source, profile, legal_opinion_ref="opinion-1", now=stamp)
+    with_ref_b = build_lineage(one_source, profile, legal_opinion_ref="opinion-2", now=stamp)
+    without_ref = build_lineage(one_source, profile, legal_opinion_ref=None, now=stamp)
+
+    assert with_ref_a.content_hash != with_ref_b.content_hash
+    assert with_ref_a.content_hash != without_ref.content_hash
+
+
+def test_git_commit_detects_a_dirty_tree(tmp_path: Path) -> None:
+    """⭐ The defect: `_git_commit` never checked for uncommitted changes, so a dirty
+    registry (e.g. a locally edited licence YAML never committed) reported a
+    clean-looking hash. Uses a throwaway repo under `tmp_path` — never the real
+    registry — so this leaves nothing dirty behind."""
+    from marinedata.registry import _git_commit
+
+    repo = tmp_path / "repo"
+    repo.mkdir()
+
+    def run(*args: str) -> None:
+        subprocess.run(args, cwd=repo, check=True, capture_output=True)
+
+    run("git", "init", "-q")
+    run("git", "config", "user.email", "test@example.com")
+    run("git", "config", "user.name", "Test")
+    (repo / "licence.yaml").write_text("id: X\n")
+    run("git", "add", ".")
+    run("git", "commit", "-q", "-m", "initial")
+
+    clean = _git_commit(repo)
+    assert clean is not None
+    assert not clean.endswith("+dirty")
+
+    (repo / "licence.yaml").write_text("id: X\nno_derivatives: true\n")  # uncommitted edit
+    dirty = _git_commit(repo)
+    assert dirty is not None
+    assert dirty.endswith("+dirty")
+    assert dirty.removesuffix("+dirty") == clean, "same commit — only the caveat changes"
+
+
+def test_sample_digest_changes_when_a_file_moves_between_subdirectories(
+    tmp_path: Path,
+) -> None:
+    """⭐ The defect: `sample_digest` hashed `path.name` only, not the path relative to
+    `root` — moving `a/img.jpg` to `b/img.jpg` left the digest unchanged."""
+    root = tmp_path / "sample"
+    (root / "a").mkdir(parents=True)
+    (root / "a" / "img.jpg").write_bytes(b"\x01\x02\x03\x04")
+    before = sample_digest(root)
+
+    (root / "b").mkdir()
+    (root / "a" / "img.jpg").rename(root / "b" / "img.jpg")
+    after = sample_digest(root)
+
+    assert before != after
+
+
+def test_lineage_cli_exits_zero_on_denials_but_still_traces_them(
+    registry: Registry, capsys: pytest.CaptureFixture[str]
+) -> None:
+    """E7: a denial is the gate working, not a failure. `ship-commercial` denies most of
+    the registry by construction, so an exit code that fires on nearly every normal run
+    gets suppressed within a week — the CLI must exit 0 here. A test that only checks
+    `== 0` would also pass on a version that deleted the warning, so this pins the trace
+    too: the denied ids must still show up on stderr *and* in the JSON `excluded`."""
+    result = find(profile="ship-commercial", registry=registry)
+    denied_ids = [d.source_id for d in result.excluded]
+    assert denied_ids, "fixture assumption: ship-commercial denies at least one source"
+
+    code = cli_main(["lineage", "--profile", "ship-commercial"])
+    captured = capsys.readouterr()
+
+    assert code == 0
+    for source_id in denied_ids:
+        assert f"✗ {source_id}:" in captured.err
+    payload = json.loads(captured.out)
+    assert {e["id"] for e in payload["excluded"]} == set(denied_ids)

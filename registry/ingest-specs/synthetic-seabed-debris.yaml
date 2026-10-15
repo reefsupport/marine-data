@@ -22,3 +22,4 @@ measured:
   habitat_region: synthetic seabed
   dedup_chain: new; no registry/ingest-spec/WP-6g/S57 match on title, DOI or record id
   wp6l_gap: debris
+bucket: rs-storage-private

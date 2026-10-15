@@ -13,6 +13,8 @@ per-class binary PNGs (:func:`compose_parts`), COCO polygons and COCO RLE
 
 from __future__ import annotations
 
+import contextlib
+import contextvars
 import io
 import json
 from collections.abc import Callable, Mapping, Sequence
@@ -81,11 +83,34 @@ def png_bytes(arr) -> bytes:
     return buf.getvalue()
 
 
+_ALLOW_RESIZE: contextvars.ContextVar[bool] = contextvars.ContextVar(
+    "marinedata_mask_allow_resize", default=False
+)
+
+
+@contextlib.contextmanager
+def allow_resize(allowed: bool = True):
+    """Let :func:`_fit` resize label arrays inside the block. Off by default: a mask whose size
+    differs from its image is a defect to fix, not to interpolate away; ``hf_export
+    --allow-resize`` (fixtures only) switches it on."""
+    token = _ALLOW_RESIZE.set(bool(allowed))
+    try:
+        yield
+    finally:
+        _ALLOW_RESIZE.reset(token)
+
+
 def _fit(arr, size: tuple[int, int] | None):
-    """Nearest-neighbour resize of a label array to ``size = (width, height)`` when it differs
-    (labels are never interpolated); ``None`` keeps the array as is."""
+    """``arr`` as is when it already is ``size = (width, height)`` (or ``size`` is ``None``).
+    Any other size raises :class:`MaskEncodingError` unless :func:`allow_resize` is active, in
+    which case labels are nearest-neighbour resized (never interpolated)."""
     if size is None or (arr.shape[1], arr.shape[0]) == tuple(size):
         return arr
+    if not _ALLOW_RESIZE.get():
+        raise MaskEncodingError(
+            f"mask is {arr.shape[1]}x{arr.shape[0]} but the image is {size[0]}x{size[1]}: "
+            "refusing to resize a label array (hf_export --allow-resize is for fixtures only)"
+        )
     import numpy as np
     from PIL import Image
 

@@ -45,3 +45,4 @@ measured:
     0-1300: 5950
   n_concepts: 290
   label_type: bbox + multilabel
+bucket: rs-storage-private

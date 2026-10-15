@@ -2,9 +2,9 @@
 
 Offline (default): each source's ``access.params.bucket`` + ``prefix`` is looked up in a *listing
 snapshot* (a parquet/TSV/CSV of bucket keys, e.g. the reorg inventory) and must hold a
-``CHECKSUMS.sha256``. ``--live`` instead HEADs that one key per source with credentials read via
-:mod:`configparser` (never printed). Sources that are retired or not an s3 pointer are skipped and
-counted, never failed.
+``CHECKSUMS.sha256``. ``--live`` instead HEADs that one key per source with credentials from
+the one resolver (:mod:`marinedata.s3_auth`, never printed). Sources that are retired or not an
+s3 pointer are skipped and counted, never failed.
 
 A manifest that exists proves nothing about the tree under it: a tree whose data objects were
 deleted keeps its ``CHECKSUMS.sha256`` and still passes the check above. ``--live --sample N``

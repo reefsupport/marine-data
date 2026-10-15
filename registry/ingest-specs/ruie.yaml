@@ -12,3 +12,4 @@ candidate_endpoints:
 why_not_supported: ~4k images; no anonymous HTTP/GitHub-hosted payload found, data
   is behind a Baidu netdisk share that needs a Baidu-netdisk adapter (or a manual
   browser fetch).
+bucket: rs-storage-private

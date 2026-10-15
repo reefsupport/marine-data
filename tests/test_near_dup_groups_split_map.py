@@ -148,7 +148,7 @@ def _cli(tmp_path: Path, monkeypatch: pytest.MonkeyPatch, *extra: str) -> int:
         lambda **kw: NearDupConfig(chain_fraction=1.0, **kw),
     )
     monkeypatch.setattr(
-        "marinedata.release.compute_dhashes",
+        "marinedata.release.split_map.compute_dhashes",
         lambda paths, **kw: {sha: int(sha[:16], 16) for sha in paths},
     )
     argv = ["release", "split-map", "--release", "r1", "--local-only", "--min-groups", "3"]

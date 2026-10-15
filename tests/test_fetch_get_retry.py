@@ -15,6 +15,7 @@ from marinedata.fetch import FetchError
 class _Response:
     def __init__(self, body: bytes) -> None:
         self._body = body
+        self.headers: dict[str, str] = {}
 
     def __enter__(self) -> _Response:
         return self
@@ -22,8 +23,9 @@ class _Response:
     def __exit__(self, *exc: object) -> None:
         return None
 
-    def read(self) -> bytes:
-        return self._body
+    def read(self, amt: int | None = None) -> bytes:
+        body, self._body = self._body, b""  # chunked reads: the body once, then EOF
+        return body
 
 
 def _http_error(code: int) -> urllib.error.HTTPError:

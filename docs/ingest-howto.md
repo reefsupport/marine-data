@@ -41,6 +41,9 @@ Optional top-level keys:
 - `expected_images:`: set it when above 200k, so the run picks `shards`.
 - `max_images:`: for a trial run.
 - `naive_datetime_is_utc: true`: only if the card says so.
+- `licence_evidence:`: the URL plus the quote or field that backs `license:` (documentation only; the
+  runner ignores it). Set it whenever a licence id was restored or corrected, so the evidence stays
+  next to the id. Optional: a spec without it loads unchanged.
 
 Never invent lat/lon/depth.
 

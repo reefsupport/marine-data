@@ -22,3 +22,4 @@ measured:
   date: '2026-09-25'
   bytes_basis: annotation zips only; image bytes live upstream
   label_type: instance masks (COCO RLE) + instance captions
+bucket: rs-storage-private

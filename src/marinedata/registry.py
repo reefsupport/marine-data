@@ -61,6 +61,13 @@ def _git_commit(path: Path) -> str | None:
     expected case, not an error, so failures here are swallowed rather than raised.
     Scoped to ``path`` rather than bare ``HEAD``: a code-only commit elsewhere in the
     repo must not change what a lineage report claims about the registry's content.
+
+    A dirty working tree under ``path`` (staged, unstaged, or untracked changes — e.g.
+    a locally edited licence YAML that was never committed) means this hash no longer
+    describes what is actually on disk. Rather than silently returning a clean-looking
+    commit for content that is not what that commit contains, the return value is
+    suffixed with ``+dirty`` in that case, so any consumer — the lineage record, in
+    particular — carries the caveat without needing a second signal threaded through.
     """
     import subprocess
 
@@ -76,7 +83,23 @@ def _git_commit(path: Path) -> str | None:
     except (OSError, subprocess.SubprocessError):
         return None
     commit = result.stdout.strip()
-    return commit or None
+    if not commit:
+        return None
+
+    try:
+        status = subprocess.run(
+            ["git", "status", "--porcelain", "--", str(path)],
+            cwd=path,
+            capture_output=True,
+            text=True,
+            timeout=5,
+            check=False,
+        )
+    except (OSError, subprocess.SubprocessError):
+        return commit
+    if status.returncode == 0 and status.stdout.strip():
+        return f"{commit}+dirty"
+    return commit
 
 
 class Registry:
@@ -95,6 +118,7 @@ class Registry:
         crosswalks: dict[str, Crosswalk] | None = None,
         tasks: dict[str, TaskSpec] | None = None,
         commit: str | None = None,
+        root: Path | None = None,
     ) -> None:
         self._sources = dict(sources)
         self._licences = dict(licences)
@@ -106,6 +130,10 @@ class Registry:
         """The registry directory's last commit, or ``None`` outside a git checkout.
         Threaded into every :class:`~marinedata.lineage.Lineage` this registry builds,
         so the audit record can actually re-derive what it claims to bind."""
+        self.root = root
+        """The directory this registry was loaded from, or ``None`` if constructed
+        directly rather than via :meth:`load`. ``marinedata verify``'s write-back
+        uses this to find the YAML file a given source came from."""
 
     # ── construction ──────────────────────────────────────────────────────
 
@@ -140,7 +168,13 @@ class Registry:
         if not base.is_dir():
             return out
         for path in sorted(base.rglob("*.yaml")):
-            for entry in _read_yaml(path).get(key, []):
+            doc = _read_yaml(path)
+            if key not in doc:
+                raise RegistryError(
+                    f"{path}: expected top-level key '{key}', found {sorted(doc.keys())} — "
+                    f"a wrong or missing key loads as zero entries with no error otherwise"
+                )
+            for entry in doc[key]:
                 try:
                     obj = model.model_validate(entry)
                 except Exception as exc:
@@ -158,6 +192,19 @@ class Registry:
     ) -> None:
         """A loader pointing at a missing schema should fail at load, not at epoch 1."""
         for src in sources.values():
+            if src.superseded_by is not None and (
+                src.superseded_by == src.id or src.superseded_by not in sources
+            ):
+                raise RegistryError(
+                    f"source '{src.id}' superseded_by references '{src.superseded_by}', which is "
+                    "itself or not a registered source"
+                )
+            for related_id in src.related:
+                if related_id == src.id or related_id not in sources:
+                    raise RegistryError(
+                        f"source '{src.id}' related references '{related_id}', which is itself "
+                        "or not a registered source"
+                    )
             for images_source_id in src.images_from:
                 if images_source_id not in sources:
                     raise RegistryError(
@@ -220,7 +267,12 @@ class Registry:
         out: dict[str, Source] = {}
         for path in sorted(base.rglob("*.yaml")):
             doc = _read_yaml(path)
-            for entry in doc.get("sources", []):
+            if "sources" not in doc:
+                raise RegistryError(
+                    f"{path}: expected top-level key 'sources', found {sorted(doc.keys())} — "
+                    f"a wrong or missing key loads as zero entries with no error otherwise"
+                )
+            for entry in doc["sources"]:
                 resolved = Registry._resolve_licence(entry, licences, path)
                 try:
                     src = Source.model_validate(resolved)

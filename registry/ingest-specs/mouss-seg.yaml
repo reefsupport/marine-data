@@ -1,8 +1,9 @@
 # mouss-seg: NOAA PIFSC MOUSS
 id: mouss-seg
-access_class: open
+access_class: open  # P1.2b: restored from the LIC audit, see licence_evidence
 adapter: hf
-license: NOASSERTION (not stated on HF card; confirm with NOAA PIFSC MOUSS project)
+license: US-GOV-PD
+licence_evidence: "https://huggingface.co/datasets/akridge/MOUSS_fish_segment_dataset_grayscale : License: Public Domain (NOAA Open Data)"
 attribution: NOAA PIFSC MOUSS project
 citation: NOAA PIFSC MOUSS
 homepage: https://huggingface.co/datasets/akridge/MOUSS_fish_segment_dataset_grayscale

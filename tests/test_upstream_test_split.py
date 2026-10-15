@@ -63,7 +63,9 @@ def _registry(sources: dict[str, Source]) -> Registry:
         sources=sources,
         licences={},
         profiles={
-            "research": Profile(id="research", description="f", allow_tiers=(Tier.PERMISSIVE,))
+            "research": Profile(
+                id="research", description="f", allow_tiers=(Tier.PERMISSIVE,), ships=True
+            )
         },
         schemas={
             "rs-benthic-v1": LabelSchema(id="rs-benthic-v1", name="F", axes=(Axis.TAXON,), nodes=())

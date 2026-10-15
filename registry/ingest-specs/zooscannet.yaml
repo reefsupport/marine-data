@@ -13,3 +13,4 @@ measured:
   method: HF API usedStorage; item count not queried (budget)
   date: '2026-09-25'
   per_item_license: cc-by-nc-4.0
+bucket: rs-storage-private

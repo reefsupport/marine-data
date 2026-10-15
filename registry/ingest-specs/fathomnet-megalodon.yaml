@@ -15,3 +15,4 @@ measured:
   date: '2026-09-25'
   per_item_license: other
   label_type: bbox (1-class object)
+bucket: rs-storage-private

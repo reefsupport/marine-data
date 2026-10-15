@@ -1,0 +1,95 @@
+---
+${front_matter}
+---
+
+# ${pretty_name}
+
+**${tagline}**
+
+<p align="center">
+  <a href="${github}"><img alt="GitHub" src="https://img.shields.io/badge/GitHub-reefsupport%2Fmarine--data-181717?logo=github"></a>
+  <a href="https://reef.support"><img alt="reef.support" src="https://img.shields.io/badge/reef.support-0B6E99"></a>
+  <a href="https://huggingface.co/reefsupport"><img alt="Hugging Face organisation" src="https://img.shields.io/badge/Hugging%20Face-reefsupport-FFD21E?logo=huggingface&logoColor=black"></a>
+  <img alt="Licence: per source" src="https://img.shields.io/badge/licence-per%20source-blue">
+  <img alt="Rows: ${rows}" src="https://img.shields.io/badge/rows-${rows_badge}-2ea44f">
+</p>
+
+## Dataset summary
+
+${summary}
+
+${facts_table}
+
+## Supported tasks
+
+${tasks}
+
+## Quick start
+
+${quick_start}
+
+## Dataset structure
+
+### Configurations
+
+${configurations_table}
+
+Splits are the upstream splits where the source provides them, otherwise a deterministic 80/10/10 hash of `split_group`.
+
+Machine-readable metadata (Croissant) is served by the Hub at `https://huggingface.co/api/datasets/${repo_id}/croissant`. `marinedata release croissant` writes a richer file for a build, with per-field types and the sha256 of every shard.
+
+${masks_note}${config_sections}### Data fields
+
+Generated from the export layout of this build. A field with an en dash has no description yet.
+
+${data_fields}
+
+## Dataset creation
+
+### Sources
+
+Registry facts per source. An en dash means the registry does not record the field.
+
+${sources_table}
+
+### Build and verification
+
+${gates_table}
+
+${lock_line}
+
+Provenance: `provenance/RELEASE.json` (build facts, public-safe), `provenance/GATES.json` (gate
+results) and `provenance/release.lock.yaml` (pinned inputs) ship with the data.
+
+## Licensing
+
+${licensing_intro}
+
+${licensing_table}
+
+## Takedown requests and corrections
+
+If you hold rights in an image, appear in one, or find a wrong label or licence, tell us:
+
+- **Public:** open a [takedown request](${github}/issues/new?template=takedown_request.yml),
+  a [label error](${github}/issues/new?template=label_error.yml) or a
+  [licence question](${github}/issues/new?template=licence_question.yml) on GitHub.
+- **Private**, for example when the request involves personal data: write to ${contact} or use the
+  [contact page](https://www.reef.support/contact).
+
+Identify the rows by `image_sha256`, or by source and a description, and say what you ask for. We acknowledge a request
+within a few working days. An accepted request removes the rows from the next revision and from later builds. The
+[changelog](${github}/blob/main/CHANGELOG.md) records the change without naming the
+requester. The full procedure is in [SECURITY.md](${github}/blob/main/SECURITY.md).
+
+## Versions and changelog
+
+${versions}
+
+## Citation
+
+${citation}
+
+## Contact
+
+Questions about the data: [${contact}](mailto:${contact}) or the [GitHub repository](${github}).

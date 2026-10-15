@@ -24,3 +24,4 @@ subset:
   target_items: 206000
   stratify: [label]
   rule: 'D-AB: <= 2,000 images per label (~103 labels, so 206,000 is an upper bound; the mix/detritus classes dominate the 956,867). Runner ignores this block until a subset filter exists; queue row held at needs_adapter:subset-filter.'
+bucket: rs-storage-private

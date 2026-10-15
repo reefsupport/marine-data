@@ -404,7 +404,7 @@ Each anchored node freezes five fields at resolve time:
 Freezing the name, rank and status is not decoration. **Three of the first eight AphiaIDs
 entered here by hand were wrong** — one pointed at an unaccepted red-alga family, one at a
 bryozoan. A bare integer looks identical whether it is right or not. With the fields
-frozen, an error is visible in review and detectable by `marinedata taxa --drift`.
+frozen, an error is visible in review and detectable by `marinedata taxa`.
 
 Synonyms need no machinery of our own: WoRMS answers them. *Montastraea annularis*
 (207479) resolves to *Orbicella annularis* (758260), so two datasets labelled a decade
@@ -480,6 +480,6 @@ print(harm.coverage_report())  # how lossy this crosswalk is, before you trust i
 ```
 
 ```bash
-marinedata taxa --drift        # re-resolve every AphiaID, fail on any change
-marinedata taxa resolve Orbicella
+marinedata taxa                     # re-resolve every anchored AphiaID, fail on any drift
+marinedata taxa --show-unanchored   # also list nodes with no AphiaID yet
 ```

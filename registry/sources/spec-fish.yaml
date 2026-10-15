@@ -1,0 +1,477 @@
+# Entries folded from registry/ingest-specs/ by scripts/registry_fold_specs.py
+# (P1.2, 2026-10-08). Every field is the spec's own claim; edit freely, the script never
+# rewrites an id it did not add.
+
+sources:
+  - id: aris-didson-fish-td
+    domain: fish
+    access_class: open
+    licence_evidence: "https://zenodo.org/api/records/5046708 — 'metadata.license: {\"id\": \"cc-by-4.0\"}; access_right: open' (WP-LICV audit 2026-10-05, confidence confirmed-open)"
+    name: "aris didson fish td"
+    version: "record-5046708"
+    description: "doi:10.5281/zenodo.5046708 — Acoustic video cameras multi-species multi-cameras Training Dataset (TD) for Deep Learning applications"
+    licence: CC-BY-4.0
+    legal_basis: licence
+    redistribution: ok
+    provenance: public
+    verification:
+      verified_on: 2026-10-08
+      verified_by: "registry/ingest-specs/aris-didson-fish-td.yaml: license field copied verbatim, not independently checked"
+      method: secondary
+    access:
+      method: s3
+      uri: s3://rs-storage-open/sources/aris-didson-fish-td/record-5046708
+      notes: "rs-storage-open copy of the upstream dataset (staged tree record-5046708); upstream: https://zenodo.org/records/5046708"
+      params:
+        bucket: rs-storage-open
+        endpoint: hel1.your-objectstorage.com
+        region: hel1
+        prefix: sources/aris-didson-fish-td/record-5046708/
+      size_bytes: 4586075143
+    modalities: [image]
+    capabilities: [fish-detection]
+    loader: { layout: staged-tree }
+    n_images: 19226
+    n_images_method: "ingest-json"
+    coverage: { regions: [unknown] }
+    homepage: "https://zenodo.org/records/5046708"
+    citation: "doi:10.5281/zenodo.5046708 — Acoustic video cameras multi-species multi-cameras Training Dataset (TD) for Deep Learning applications"
+    notes: "Folded from registry/ingest-specs/aris-didson-fish-td.yaml on 2026-10-08 (P1.2). Spec license string, verbatim: 'cc-by-4.0'. Domain, modalities and capabilities are keyword inferences from the spec text."
+    tags: [spec-folded]
+    checksums:
+      version: "record-5046708"
+      root_digest: 73935d36ce7c64b771d13958ec6564402b919c3b324778c6e01d8c04b7f9c567
+      files: 19229
+      size_bytes: 4586075143
+
+  - id: caige-salmon-seg-reid
+    domain: fish
+    access_class: unknown  # P1.2d: was open; no licence evidence
+    licence_evidence: "unverified: claimed as 'cc-by-4.0' in registry/ingest-specs/caige-salmon-seg-reid.yaml license (folded 2026-10-08, never checked against https://zenodo.org/records/20280854); measured.per_item_license 'cc-by-4.0' (2026-09-25)"
+    name: "caige salmon seg reid"
+    version: "unversioned"
+    description: "doi:10.5281/zenodo.20280854 — cAIge Salmon Re-Identification Dataset, Segmentation Annotations, and Evaluation Results"
+    licence: CC-BY-4.0
+    legal_basis: licence
+    redistribution: ok
+    provenance: public
+    verification:
+      verified_on: 2026-10-08
+      verified_by: "registry/ingest-specs/caige-salmon-seg-reid.yaml: license field copied verbatim, not independently checked"
+      method: secondary
+    access:
+      method: zenodo
+      uri: "https://zenodo.org/records/20280854"
+      notes: "ingest adapter zenodo; see registry/ingest-specs/caige-salmon-seg-reid.yaml"
+    modalities: [image]
+    capabilities: [fish-classification]
+    loader: { layout: metadata-only }
+    n_images: 20317
+    n_images_method: "spec:measured.items"
+    coverage: { regions: [unknown] }
+    homepage: "https://zenodo.org/records/20280854"
+    citation: "doi:10.5281/zenodo.20280854 — cAIge Salmon Re-Identification Dataset, Segmentation Annotations, and Evaluation Results"
+    notes: "Folded from registry/ingest-specs/caige-salmon-seg-reid.yaml on 2026-10-08 (P1.2). Spec license string, verbatim: 'cc-by-4.0'. Domain, modalities and capabilities are keyword inferences from the spec text."
+    tags: [spec-folded]
+    release_skip_reason: "no-staged-images: registry lists imagery, nothing staged under sources/ in rs-storage-open (U7/queue follow-up)"
+
+  - id: habcam
+    domain: fish
+    access_class: internal-only
+    licence_evidence: "https://www.fisheries.noaa.gov/inport/item/22560 — 'InPort item 22560 is Fall Bottom Trawl Survey, not HabCam' (LIC-B audit 2026-10-05, confidence low)"
+    name: "habcam"
+    version: "unversioned"
+    description: "fisheries.noaa.gov InPort item 22560"
+    licence: US-GOV-PD
+    legal_basis: licence
+    redistribution: unknown
+    provenance: public
+    verification:
+      verified_on: 2026-10-08
+      verified_by: "registry/ingest-specs/habcam.yaml: license field copied verbatim, not independently checked"
+      method: secondary
+    access:
+      method: request
+      uri: "https://www.fisheries.noaa.gov/inport/item/22560"
+      notes: "ingest adapter needs:nefsc-request; see registry/ingest-specs/habcam.yaml"
+    modalities: [image]
+    capabilities: [fish-classification]
+    loader: { layout: metadata-only }
+    coverage: { regions: [unknown] }
+    homepage: "https://www.fisheries.noaa.gov/inport/item/22560"
+    citation: "fisheries.noaa.gov InPort item 22560"
+    notes: "Folded from registry/ingest-specs/habcam.yaml on 2026-10-08 (P1.2). Spec license string, verbatim: 'public domain (US government work, per NOAA norm), request-based access'. Domain, modalities and capabilities are keyword inferences from the spec text."
+    tags: [spec-folded]
+    release_skip_reason: "no-staged-images: registry lists imagery, nothing staged under sources/ in rs-storage-open (U7/queue follow-up)"
+    n_images_method: "unavailable:no-count"
+
+  - id: kakadu-fish-ai
+    domain: fish
+    access_class: unknown  # P1.2d: was open; no licence evidence
+    licence_evidence: "unverified: claimed as 'cc-by-4.0' in registry/ingest-specs/kakadu-fish-ai.yaml license (folded 2026-10-08, never checked against https://zenodo.org/records/7250921); measured.per_item_license 'cc-by-4.0' (2026-09-25)"
+    name: "kakadu fish ai"
+    version: "unversioned"
+    description: "doi:10.5281/zenodo.7250921 — A deep learning dataset for underwater object detection of tropical freshwater fish species in northern Austra"
+    licence: CC-BY-4.0
+    legal_basis: licence
+    redistribution: ok
+    provenance: public
+    verification:
+      verified_on: 2026-10-08
+      verified_by: "registry/ingest-specs/kakadu-fish-ai.yaml: license field copied verbatim, not independently checked"
+      method: secondary
+    access:
+      method: zenodo
+      uri: "https://zenodo.org/records/7250921"
+      notes: "ingest adapter zenodo; see registry/ingest-specs/kakadu-fish-ai.yaml"
+    modalities: [image]
+    capabilities: [fish-detection]
+    loader: { layout: metadata-only }
+    n_images: 43715
+    n_images_method: "spec:measured.items"
+    coverage: { regions: [unknown] }
+    homepage: "https://zenodo.org/records/7250921"
+    citation: "doi:10.5281/zenodo.7250921 — A deep learning dataset for underwater object detection of tropical freshwater fish species in northern Austra"
+    notes: "Folded from registry/ingest-specs/kakadu-fish-ai.yaml on 2026-10-08 (P1.2). Spec license string, verbatim: 'cc-by-4.0'. Domain, modalities and capabilities are keyword inferences from the spec text."
+    tags: [spec-folded]
+    release_skip_reason: "no-staged-images: registry lists imagery, nothing staged under sources/ in rs-storage-open (U7/queue follow-up)"
+
+  - id: koi-rgb-sonar
+    domain: fish
+    access_class: open
+    licence_evidence: "https://huggingface.co/datasets/perona-lab/Huntington_and_Caltech_Koi_RGB_and_Sonar — 'HF card front matter: license: mit' (WP-LICV audit 2026-10-05, confidence confirmed-open)"
+    name: "koi rgb sonar"
+    version: "rev-4120e0f1b59d"
+    description: "HF dataset perona-lab/Huntington_and_Caltech_Koi_RGB_and_Sonar"
+    licence: MIT
+    legal_basis: licence
+    redistribution: ok
+    provenance: public
+    verification:
+      verified_on: 2026-10-08
+      verified_by: "registry/ingest-specs/koi-rgb-sonar.yaml: license field copied verbatim, not independently checked"
+      method: secondary
+    access:
+      method: s3
+      uri: s3://rs-storage-open/sources/koi-rgb-sonar/rev-4120e0f1b59d
+      notes: "rs-storage-open copy of the upstream dataset (staged tree rev-4120e0f1b59d); upstream: https://huggingface.co/datasets/perona-lab/Huntington_and_Caltech_Koi_RGB_and_Sonar"
+      params:
+        bucket: rs-storage-open
+        endpoint: hel1.your-objectstorage.com
+        region: hel1
+        prefix: sources/koi-rgb-sonar/rev-4120e0f1b59d/
+      size_bytes: 228418738711
+    modalities: [image]
+    capabilities: [fish-classification]
+    loader: { layout: staged-tree }
+    n_images: 326076
+    n_images_method: "ingest-json"
+    coverage: { regions: [unknown] }
+    homepage: "https://huggingface.co/datasets/perona-lab/Huntington_and_Caltech_Koi_RGB_and_Sonar"
+    citation: "HF dataset perona-lab/Huntington_and_Caltech_Koi_RGB_and_Sonar"
+    notes: "Folded from registry/ingest-specs/koi-rgb-sonar.yaml on 2026-10-08 (P1.2). Spec license string, verbatim: 'mit'. Domain, modalities and capabilities are keyword inferences from the spec text."
+    tags: [spec-folded]
+    checksums:
+      version: "rev-4120e0f1b59d"
+      root_digest: 61889c69d52b7a3edfb41bf4f7ba420ccc14ba1a3c2ecc27545339f281fbefe8
+      files: 36201
+      size_bytes: 228418738711
+
+  - id: lfitw
+    domain: fish
+    access_class: unknown
+    name: "lfitw"
+    version: "unversioned"
+    description: "Cutter+ WACVW2015"
+    licence: NO-LICENCE-STATED
+    legal_basis: unknown
+    redistribution: unknown
+    provenance: public
+    verification:
+      verified_on: 2026-10-08
+      verified_by: "registry/ingest-specs/lfitw.yaml: license field copied verbatim, not independently checked"
+      method: secondary
+    access:
+      method: http
+      uri: "https://swfsc-fisheries.github.io/labeled-fishes-in-the-wild/"
+      notes: "ingest adapter http-index; see registry/ingest-specs/lfitw.yaml"
+    modalities: [image]
+    capabilities: [fish-classification]
+    loader: { layout: metadata-only }
+    coverage: { regions: [unknown] }
+    homepage: "https://swfsc-fisheries.github.io/labeled-fishes-in-the-wild/"
+    citation: "Cutter+ WACVW2015"
+    notes: "Folded from registry/ingest-specs/lfitw.yaml on 2026-10-08 (P1.2). Spec license string, verbatim: 'NOASSERTION'. Domain, modalities and capabilities are keyword inferences from the spec text."
+    tags: [spec-folded]
+    release_skip_reason: "no-staged-images: registry lists imagery, nothing staged under sources/ in rs-storage-open (U7/queue follow-up)"
+    n_images_method: "unavailable:no-count"
+
+  - id: malaysian-fish-turbid
+    domain: fish
+    access_class: unknown  # P1.2d: was open; no licence evidence
+    licence_evidence: "unverified: claimed as 'cc-by-4.0' in registry/ingest-specs/malaysian-fish-turbid.yaml license (folded 2026-10-08, never checked against https://zenodo.org/records/21875554); measured.per_item_license 'cc-by-4.0' (2026-09-25)"
+    name: "malaysian fish turbid"
+    version: "unversioned"
+    description: "doi:10.5281/zenodo.21875554 — 5 Malaysian Fish Species in Turbid Water"
+    licence: CC-BY-4.0
+    legal_basis: licence
+    redistribution: ok
+    provenance: public
+    verification:
+      verified_on: 2026-10-08
+      verified_by: "registry/ingest-specs/malaysian-fish-turbid.yaml: license field copied verbatim, not independently checked"
+      method: secondary
+    access:
+      method: zenodo
+      uri: "https://zenodo.org/records/21875554"
+      notes: "ingest adapter zenodo; see registry/ingest-specs/malaysian-fish-turbid.yaml"
+    modalities: [image]
+    capabilities: [fish-classification]
+    loader: { layout: metadata-only }
+    n_images: 5400
+    n_images_method: "spec:measured.items"
+    coverage: { regions: [unknown] }
+    homepage: "https://zenodo.org/records/21875554"
+    citation: "doi:10.5281/zenodo.21875554 — 5 Malaysian Fish Species in Turbid Water"
+    notes: "Folded from registry/ingest-specs/malaysian-fish-turbid.yaml on 2026-10-08 (P1.2). Spec license string, verbatim: 'cc-by-4.0'. Domain, modalities and capabilities are keyword inferences from the spec text."
+    tags: [spec-folded]
+    release_skip_reason: "no-staged-images: registry lists imagery, nothing staged under sources/ in rs-storage-open (U7/queue follow-up)"
+
+  - id: marineinst20m-web
+    domain: fish
+    access_class: internal-only
+    name: "marineinst20m web"
+    version: "manifest-c596e4376e6f"
+    description: "Zheng et al. 2024, ECCV, MarineInst"
+    licence: NO-LICENCE-STATED
+    legal_basis: unknown
+    redistribution: unknown
+    provenance: public
+    verification:
+      verified_on: 2026-10-08
+      verified_by: "registry/ingest-specs/marineinst20m-web.yaml: license field copied verbatim, not independently checked"
+      method: secondary
+    access:
+      method: s3
+      uri: s3://rs-storage-open/sources/marineinst20m-web/manifest-c596e4376e6f
+      notes: "rs-storage-open copy of the upstream dataset (staged tree manifest-c596e4376e6f); upstream: https://github.com/zhengziqiang/MarineInst20M"
+      params:
+        bucket: rs-storage-open
+        endpoint: hel1.your-objectstorage.com
+        region: hel1
+        prefix: sources/marineinst20m-web/manifest-c596e4376e6f/
+      size_bytes: 5480252473
+    modalities: [image]
+    capabilities: [fish-classification]
+    loader: { layout: staged-tree }
+    coverage: { regions: [unknown] }
+    homepage: "https://github.com/zhengziqiang/MarineInst20M"
+    citation: "Zheng et al. 2024, ECCV, MarineInst"
+    notes: "Folded from registry/ingest-specs/marineinst20m-web.yaml on 2026-10-08 (P1.2). Spec license string, verbatim: 'per upstream website (Corals of the World, EOL, FishDB, Meerwasser-Lexikon/Reeflex); recorded per sample, never a filter (D-C)'. Domain, modalities and capabilities are keyword inferences from the spec text."
+    tags: [spec-folded]
+    superseded_by: marineinst20m
+    n_images: 8217
+    n_images_method: "listing"
+    checksums_status: missing
+
+  - id: noaa-dsc-csv
+    domain: fish
+    access_class: unknown
+    name: "noaa dsc csv"
+    version: "zip-5257227aef7d"
+    description: "NOAA DSCRTP National Database for Deep-Sea Corals and Sponges"
+    licence: NO-LICENCE-STATED
+    legal_basis: unknown
+    redistribution: unknown
+    provenance: public
+    verification:
+      verified_on: 2026-10-08
+      verified_by: "registry/ingest-specs/noaa-dsc-csv.yaml: license field copied verbatim, not independently checked"
+      method: secondary
+    access:
+      method: s3
+      uri: s3://rs-storage-open/sources/noaa-dsc-csv/zip-5257227aef7d
+      notes: "rs-storage-open copy of the upstream dataset (staged tree zip-5257227aef7d); upstream: https://deepseacoraldata.noaa.gov/"
+      params:
+        bucket: rs-storage-open
+        endpoint: hel1.your-objectstorage.com
+        region: hel1
+        prefix: sources/noaa-dsc-csv/zip-5257227aef7d/
+      size_bytes: 146113857
+    modalities: [image]
+    capabilities: [fish-classification]
+    loader: { layout: staged-tree }
+    coverage: { regions: [unknown] }
+    homepage: "https://deepseacoraldata.noaa.gov/"
+    citation: "NOAA DSCRTP National Database for Deep-Sea Corals and Sponges"
+    notes: "Folded from registry/ingest-specs/noaa-dsc-csv.yaml on 2026-10-08 (P1.2). Spec license string, verbatim: 'public-domain (US federal government work)'. Domain, modalities and capabilities are keyword inferences from the spec text."
+    tags: [spec-folded]
+    checksums:
+      version: "zip-5257227aef7d"
+      root_digest: a169edefa01b9007043a79457c0cf514874ac72d235cebf607d29f59a61d1b16
+      files: 4
+      size_bytes: 146113857
+    n_images_method: "unavailable:no-count"
+
+  - id: noaa-oceaneyes
+    domain: fish
+    access_class: unknown
+    licence_evidence: "unverified: https://www.fisheries.noaa.gov/website-policies-and-disclaimers — 'Information created by the U.S. government ... not subject to copyright in the United States' (WP-LICV audit 2026-10-05, confidence unknown-evidence)"
+    name: "noaa oceaneyes"
+    version: "list-a11ed85b698b"
+    description: "NOAA OceanEyes (Zooniverse-labelled fish frames), NOAA NODD"
+    licence: US-GOV-PD
+    legal_basis: licence
+    redistribution: unknown
+    provenance: public
+    verification:
+      verified_on: 2026-10-08
+      verified_by: "registry/ingest-specs/noaa-oceaneyes.yaml: license field copied verbatim, not independently checked"
+      method: secondary
+    access:
+      method: s3
+      uri: s3://rs-storage-open/sources/noaa-oceaneyes/list-a11ed85b698b
+      notes: "rs-storage-open copy of the upstream dataset (staged tree list-a11ed85b698b); upstream: https://storage.googleapis.com/nmfs_odp_hq/nodd_tools/datasets/oceaneyes/"
+      params:
+        bucket: rs-storage-open
+        endpoint: hel1.your-objectstorage.com
+        region: hel1
+        prefix: sources/noaa-oceaneyes/list-a11ed85b698b/
+      size_bytes: 1848381043
+    modalities: [image]
+    capabilities: [fish-classification]
+    loader: { layout: staged-tree }
+    coverage: { regions: [unknown] }
+    homepage: "https://storage.googleapis.com/nmfs_odp_hq/nodd_tools/datasets/oceaneyes/"
+    citation: "NOAA OceanEyes (Zooniverse-labelled fish frames), NOAA NODD"
+    notes: "Folded from registry/ingest-specs/noaa-oceaneyes.yaml on 2026-10-08 (P1.2). Spec license string, verbatim: 'public domain (US government work) — NODD'. Domain, modalities and capabilities are keyword inferences from the spec text."
+    tags: [spec-folded]
+    checksums:
+      version: "list-a11ed85b698b"
+      root_digest: 3541e84c0e7d994c31b2d3edc07d10de736b01d908e75b91de58f1abe7ffa105
+      files: 20069
+      size_bytes: 1848381043
+    n_images: 20065
+    n_images_method: "ingest-json"
+
+  - id: pomerfish
+    domain: fish
+    access_class: unknown  # P1.2d: was open; no licence evidence
+    licence_evidence: "unverified: claimed as 'cc-by-4.0' in registry/ingest-specs/pomerfish.yaml license (folded 2026-10-08, never checked against https://zenodo.org/records/17432128); measured.per_item_license 'cc-by-4.0' (2026-09-25)"
+    name: "pomerfish"
+    version: "unversioned"
+    description: "doi:10.5281/zenodo.17432128 — PomerFish: A dataset for fishes across Pomerania freshwater waterbodies in-situ environments"
+    licence: CC-BY-4.0
+    legal_basis: licence
+    redistribution: ok
+    provenance: public
+    verification:
+      verified_on: 2026-10-08
+      verified_by: "registry/ingest-specs/pomerfish.yaml: license field copied verbatim, not independently checked"
+      method: secondary
+    access:
+      method: zenodo
+      uri: "https://zenodo.org/records/17432128"
+      notes: "ingest adapter zenodo; see registry/ingest-specs/pomerfish.yaml"
+    modalities: [image]
+    capabilities: [fish-detection]
+    loader: { layout: metadata-only }
+    coverage: { regions: [unknown] }
+    homepage: "https://zenodo.org/records/17432128"
+    citation: "doi:10.5281/zenodo.17432128 — PomerFish: A dataset for fishes across Pomerania freshwater waterbodies in-situ environments"
+    notes: "Folded from registry/ingest-specs/pomerfish.yaml on 2026-10-08 (P1.2). Spec license string, verbatim: 'cc-by-4.0'. Domain, modalities and capabilities are keyword inferences from the spec text."
+    tags: [spec-folded]
+    release_skip_reason: "no-staged-images: registry lists imagery, nothing staged under sources/ in rs-storage-open (U7/queue follow-up)"
+    n_images_method: "unavailable:no-count"
+
+  - id: salmon-trout-video
+    domain: fish
+    access_class: unknown  # P1.2d: was open; no licence evidence
+    licence_evidence: "unverified: claimed as 'cc-by-4.0' in registry/ingest-specs/salmon-trout-video.yaml license (folded 2026-10-08, never checked against https://zenodo.org/records/17249918); measured.per_item_license 'cc-by-4.0' (2026-09-25)"
+    name: "salmon trout video"
+    version: "unversioned"
+    description: "doi:10.5281/zenodo.17249918 — Video Data - Fish Species Classification"
+    licence: CC-BY-4.0
+    legal_basis: licence
+    redistribution: ok
+    provenance: public
+    verification:
+      verified_on: 2026-10-08
+      verified_by: "registry/ingest-specs/salmon-trout-video.yaml: license field copied verbatim, not independently checked"
+      method: secondary
+    access:
+      method: zenodo
+      uri: "https://zenodo.org/records/17249918"
+      notes: "ingest adapter zenodo; see registry/ingest-specs/salmon-trout-video.yaml"
+    modalities: [image]
+    capabilities: [fish-classification]
+    loader: { layout: metadata-only }
+    n_images: 2233
+    n_images_method: "spec:measured.items"
+    coverage: { regions: [unknown] }
+    homepage: "https://zenodo.org/records/17249918"
+    citation: "doi:10.5281/zenodo.17249918 — Video Data - Fish Species Classification"
+    notes: "Folded from registry/ingest-specs/salmon-trout-video.yaml on 2026-10-08 (P1.2). Spec license string, verbatim: 'cc-by-4.0'. Domain, modalities and capabilities are keyword inferences from the spec text."
+    tags: [spec-folded]
+    release_skip_reason: "no-staged-images: registry lists imagery, nothing staged under sources/ in rs-storage-open (U7/queue follow-up)"
+
+  - id: seaclef-lifeclef-fish
+    domain: fish
+    access_class: internal-only
+    name: "seaclef lifeclef fish"
+    version: "unversioned"
+    description: "imageclef.org/LifeCLEF2024"
+    licence: NO-LICENCE-STATED
+    legal_basis: unknown
+    redistribution: unknown
+    provenance: public
+    verification:
+      verified_on: 2026-10-08
+      verified_by: "registry/ingest-specs/seaclef-lifeclef-fish.yaml: license field copied verbatim, not independently checked"
+      method: secondary
+    access:
+      method: request
+      uri: "https://www.imageclef.org/LifeCLEF2024"
+      notes: "ingest adapter needs:aicrowd-login; see registry/ingest-specs/seaclef-lifeclef-fish.yaml"
+    modalities: [image]
+    capabilities: [fish-classification]
+    loader: { layout: metadata-only }
+    coverage: { regions: [unknown] }
+    homepage: "https://www.imageclef.org/LifeCLEF2024"
+    citation: "imageclef.org/LifeCLEF2024"
+    notes: "Folded from registry/ingest-specs/seaclef-lifeclef-fish.yaml on 2026-10-08 (P1.2). Spec license string, verbatim: 'unknown (challenge terms)'. Domain, modalities and capabilities are keyword inferences from the spec text."
+    tags: [spec-folded]
+    release_skip_reason: "no-staged-images: registry lists imagery, nothing staged under sources/ in rs-storage-open (U7/queue follow-up)"
+    n_images_method: "unavailable:no-count"
+
+  - id: sfishtrack
+    domain: fish
+    access_class: unknown  # P1.2d: was open; no licence evidence
+    licence_evidence: "unverified: claimed as 'cc-by-4.0' in registry/ingest-specs/sfishtrack.yaml license (folded 2026-10-08, never checked against https://zenodo.org/records/20617668); measured.per_item_license 'cc-by-4.0' (2026-09-25)"
+    name: "sfishtrack"
+    version: "unversioned"
+    description: "doi:10.5281/zenodo.20617668 — SFISHTRACK: A Dataset for Fish Segmentation and Tracking in Underwater Videos"
+    licence: CC-BY-4.0
+    legal_basis: licence
+    redistribution: ok
+    provenance: public
+    verification:
+      verified_on: 2026-10-08
+      verified_by: "registry/ingest-specs/sfishtrack.yaml: license field copied verbatim, not independently checked"
+      method: secondary
+    access:
+      method: zenodo
+      uri: "https://zenodo.org/records/20617668"
+      notes: "ingest adapter zenodo; see registry/ingest-specs/sfishtrack.yaml"
+    modalities: [image]
+    capabilities: [fish-classification]
+    loader: { layout: metadata-only }
+    n_images: 24115
+    n_images_method: "spec:measured.items"
+    coverage: { regions: [unknown] }
+    homepage: "https://zenodo.org/records/20617668"
+    citation: "doi:10.5281/zenodo.20617668 — SFISHTRACK: A Dataset for Fish Segmentation and Tracking in Underwater Videos"
+    notes: "Folded from registry/ingest-specs/sfishtrack.yaml on 2026-10-08 (P1.2). Spec license string, verbatim: 'cc-by-4.0'. Domain, modalities and capabilities are keyword inferences from the spec text."
+    tags: [spec-folded]
+    release_skip_reason: "no-staged-images: registry lists imagery, nothing staged under sources/ in rs-storage-open (U7/queue follow-up)"
+

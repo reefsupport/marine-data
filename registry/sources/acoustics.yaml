@@ -10,6 +10,7 @@ sources:
     domain: coral
     release_skip_reason: "non-image-modality: audio manifest labels: keep out of the v2 image release, candidate for a later audio config"
     access_class: open
+    licence_evidence: "legacy verification record (dataset-card, 2026-08-17): Zenodo record 11071202 — CC-BY 4.0"
     name: ReefSet v1.0
     # habitat inferred (WP-2b) from this source's own description/notes, not independently verified
     habitat: [coral_reef]
@@ -69,11 +70,13 @@ sources:
         filename parsing.
     citation: "Williams, B. (2024). Leveraging tropical reef, bird and unrelated sounds for superior transfer learning in marine bioacoustics. Zenodo. https://doi.org/10.5281/ZENODO.11071202"
     tags: [reef-audio, permissive]
+    n_images_method: "unavailable:non-image"
 
   - id: mbari-pacific-sound
     domain: imaging
     release_skip_reason: "non-image-modality: hydrophone audio"
     access_class: open
+    licence_evidence: "legacy verification record (dataset-card, 2026-08-17): AWS Open Data registry 'pacific-sound' — CC-BY 4.0"
     name: MBARI Pacific Sound (MARS hydrophone)
     # habitat inferred (WP-2b) from this source's own description/notes, not independently verified
     habitat: [pelagic]
@@ -106,11 +109,13 @@ sources:
       caveats: ["Temperate, unlabelled. Self-supervised pretraining material rather than a reef benchmark."]
     loader: { layout: metadata-only }
     tags: [unlabelled, pretraining]
+    n_images_method: "unavailable:no-count"
 
   - id: sanctsound
     domain: imaging
     release_skip_reason: "non-image-modality: hydrophone audio"
     access_class: open
+    licence_evidence: "legacy verification record (site-terms, 2026-08-17): NOAA NCEI passive acoustic data products — US Government, CC0"
     name: NOAA SanctSound passive acoustic archive
     # habitat inferred (WP-2b) from this source's own description/notes, not independently verified
     habitat: [mixed]
@@ -132,11 +137,13 @@ sources:
     coverage: { regions: [western-atlantic, central-pacific, temperate], years: [2018, 2021] }
     loader: { layout: metadata-only }
     tags: [public-domain, multi-site]
+    n_images_method: "unavailable:no-count"
 
   - id: curacao-reef-soundscape
     domain: imaging
     release_skip_reason: "non-image-modality: audio/video soundscape"
     access_class: open
+    licence_evidence: "legacy verification record (dataset-card, 2026-08-29): datadryad.org/dataset/doi:10.5061/dryad.mcvdnckcp — the dataset's own Dryad record — carries a `CC0` license field, and its page text states \"FishEye Collaborative approves using these videos, including this watermark, under the CC0 license waiver.\"\n"
     name: Curaçao reef soundscape with 360° video
     # habitat inferred (WP-2b) from this source's own description/notes, not independently verified
     habitat: [coral_reef]
@@ -171,6 +178,7 @@ sources:
       little else like it — worth verifying the licence properly.
     loader: { layout: metadata-only }
     tags: [caribbean, multimodal, needs-verification]
+    n_images_method: "unavailable:no-count"
 
   - id: watkins-marine-mammal
     domain: fauna
@@ -239,3 +247,4 @@ sources:
         Live fetch confirms watkins_best_of_whales/<species>/sound/*.wav (found via
         rglob; a sibling metadata/*.csv per species is correctly ignored by suffix).
     tags: [reference-library, noncommercial]
+    n_images_method: "unavailable:no-count"

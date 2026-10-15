@@ -231,6 +231,8 @@ def _s3():
     from botocore.config import Config
 
     cfg = Config(signature_version=UNSIGNED, retries={"max_attempts": 8, "mode": "adaptive"})
+    # Exempt from tests/test_s3_auth_boundary.py: this reads the public AWS IMOS bucket anonymously
+    # (unsigned, another endpoint), so it is not part of our storage credential path.
     return boto3.client("s3", region_name="ap-southeast-2", config=cfg)
 
 
@@ -416,9 +418,9 @@ def build(
 
 def upload(out: Path, prefix: str) -> dict:
     """PUT the manifest + stats to rs-storage-open ``prefix`` and HEAD both anonymously."""
-    from marinedata.s3_upload import client_from_rclone
+    from marinedata.s3_client import get_client
 
-    s3 = client_from_rclone("rs-hel1")
+    s3 = get_client(signed_required=True, remote="rs-hel1")
     res = {}
     for f in (out, out.with_suffix(".json")):
         key = prefix.rstrip("/") + "/" + f.name

@@ -158,6 +158,9 @@ class IngestSpec:
         ""  # WP-U14c: controlled vocabulary, metadata_norm.defaults.INSTRUMENTS
     )
     licence_per_row: bool = False  # every item carries its own licence string
+    # P1.2b: the quote/URL behind a restored licence id. Documentation-only (ignored by the
+    # runner); the registry Source carries the same string, see docs/ingest-howto.md.
+    licence_evidence: str | None = None
     citation: str = ""
     homepage: str = ""
     notes: str = ""
@@ -456,9 +459,9 @@ def run_ingest(
     guard = guard or DiskGuard(work, int(spec.temp_cap_gb * GiB), int(spec.disk_floor_gib * GiB))
     guard.check()
     if client is None:
-        from .s3_upload import client_from_rclone
+        from .s3_client import get_client
 
-        client = client_from_rclone(spec.remote)
+        client = get_client(signed_required=True, remote=spec.remote)
     root = work / "stage" / spec.id / version
     tmp = work / "tmp"
     writer = StagedWriter(root, writer_config(spec, version, layout, fetch_date or dt.date.today()))

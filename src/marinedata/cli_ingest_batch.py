@@ -57,14 +57,10 @@ def _spec_paths(specs_dir: Path, only: Iterable[str] | None) -> list[Path]:
 
 
 def _resolve_client(remote: str) -> Any:
-    """Env-var creds first (the cluster Job path), rclone.conf as the local fallback."""
-    import os
+    """Cluster Job env creds first, then the one resolver (env, rclone remote); never anonymous."""
+    from .s3_client import get_client
 
-    from .s3_upload import client_from_env, client_from_rclone
-
-    if os.environ.get("AWS_ACCESS_KEY_ID") and os.environ.get("AWS_SECRET_ACCESS_KEY"):
-        return client_from_env()
-    return client_from_rclone(remote)
+    return get_client(signed_required=True, remote=remote, job_env=True)
 
 
 def _marker_present(client: Any, spec: Any, version: str) -> bool:

@@ -30,6 +30,15 @@ upstream splits where a source defines them, and a deterministic 80/10/10 group 
 | [`instance-masks`](https://huggingface.co/datasets/reefsupport/marine-data/viewer/instance-masks) | Underwater instance segmentation | 25,296 | UIIS, UIIS10K, USIS10K |
 | [`fish-boxes`](https://huggingface.co/datasets/reefsupport/marine-data/viewer/fish-boxes) | Object detection (fish and fauna boxes) | 25,912 | UIIS, UIIS10K, USIS10K, Roboflow Aquarium Dataset |
 
+Every config loads the same way; only the config name changes. Splits are `train`, `validation` and `test`.
+
+| Config | Call | Download |
+|---|---|---|
+| `coral-masks` | `load_dataset("reefsupport/marine-data", "coral-masks", split="train")` | 12.6 GB |
+| `scene-masks` | `load_dataset("reefsupport/marine-data", "scene-masks", split="train")` | 0.2 GB |
+| `instance-masks` | `load_dataset("reefsupport/marine-data", "instance-masks", split="train")` | 1.4 GB |
+| `fish-boxes` | `load_dataset("reefsupport/marine-data", "fish-boxes", split="train")` | 1.4 GB |
+
 Load a config with the `datasets` library, in one of three ways.
 
 Quick look in a notebook: stream the split and read the first row.
@@ -66,6 +75,11 @@ ds = load_dataset(
 
 In a plain Python script, stopping a stream after a few rows can keep the process from exiting (an upstream issue in
 pyarrow's dataset scanner). Download the config or a single source instead.
+
+**Masks look black in the viewer.** Semantic masks (`coral-masks`, `scene-masks`) are `uint8` PNGs whose pixel values
+are class ids, not colours, and `255` marks pixels to ignore. Image viewers, including the Hugging Face viewer, show
+them as almost black with white ignore regions. Read them as arrays and look the ids up in the row's `class_map`.
+Instance masks (`instance-masks`) are `uint16` instance ids with `0` for background. `fish-boxes` has boxes and no mask.
 
 Licences differ per source. Keep the `attribution` column when you share or publish results, and see
 [Licensing](#licensing) below. The dataset card documents fields, splits, annotation process and known limitations.
@@ -344,6 +358,36 @@ print(lineage.attribution_text())  # for a model card or NOTICE file
 `marinedata mirror <source>` reports what may be copied into storage you control and what is refused, because copying
 a source is a redistribution decision as well as a technical one.
 
+Release gates (`marinedata release gate BUILD --all --require-all`): see [docs/GATES.md](docs/GATES.md).
+
+The full command and flag reference is [docs/cli.md](docs/cli.md). It is generated from the argument parser by
+`make docs`, and `make docs-check` fails when it is stale. Commands added in Phase A (see
+[docs/PHASE_A.md](docs/PHASE_A.md)):
+
+- `marinedata auth check` shows which identity bucket reads use (one `head_bucket`, one `head_object`, no listing)
+  and prints no secret.
+- `marinedata metadata resolve --source ID --version V --out DIR` resolves per-row geo, date, site and quadrat
+  metadata into local files only.
+- `marinedata tasks build-points --source ID --version V --out DIR [--metadata-dir DIR]` builds the benthic points
+  table of a staged source; `--metadata-dir` joins the resolved metadata onto it.
+- `marinedata release lock` writes `release.lock.yaml` from the registry pins; `marinedata release build --lock FILE`
+  builds against it.
+- `marinedata release gate BUILD [--masks] [--metadata] [--all] [--require-all]` runs the release gates and merges
+  the results into `GATES.json`.
+- `marinedata release card` and `marinedata release croissant` write the Hugging Face card (`README.md`) and the
+  Croissant JSON-LD of a built release.
+- `marinedata release publish` is a dry run unless `--go`; it uploads a gated release to its Hub repo and tags it.
+  The frozen v1.0 needs `--allow-frozen`.
+
+Registry maintenance (run from the repo root):
+
+- `marinedata.registry_probe` reads a staged tree with anonymous single-key requests (never a listing). It is shared
+  by `scripts/registry_sync_bucket.py` and the nightly drift test.
+- `uv run python scripts/registry_sync_bucket.py [--probe | --apply] [--parts checksums,counts]` writes `n_images`
+  and `root_digest` into `registry/sources/*.yaml`; with neither flag it prints what `--apply` would do.
+- `uv run python scripts/registry_fold_specs.py [--dry-run]` adds a registry entry for every ingest-spec id that has
+  none, in `registry/sources/spec-<domain>.yaml`.
+
 ## Licensing
 
 **Code.** The code in this repository is released under the Apache License 2.0 ([`LICENSE`](LICENSE)).
@@ -363,7 +407,8 @@ the `licence` and `attribution` columns of every published row. The sources in t
 Images in the UIIS, UIIS10K and USIS10K configurations originate from datasets distributed by their authors under the
 Apache License 2.0. The original publications state that the images were gathered from public sources and earlier
 datasets, so copyright in individual images may rest with third parties. Rights holders can request removal by opening
-an [issue](https://github.com/reefsupport/marine-data/issues) or through the [contact page](https://www.reef.support/contact).
+an [issue](https://github.com/reefsupport/marine-data/issues) or through the [contact page](https://www.reef.support/contact). The
+[takedown procedure](SECURITY.md#takedown-requests) says what to include and what happens next.
 
 Sources whose terms forbid redistribution are not part of the published datasets. The registry still records
 them, so that their status is visible and gated.
@@ -477,4 +522,13 @@ See [`CONTRIBUTING.md`](CONTRIBUTING.md) for the workflow and [`CHANGELOG.md`](C
 
 Questions, corrections to a licence entry and removal requests: open an
 [issue](https://github.com/reefsupport/marine-data/issues) or use the [contact page](https://www.reef.support/contact).
+
+- Problems with the data: the issue forms for a
+  [label error](https://github.com/reefsupport/marine-data/issues/new?template=label_error.yml), a
+  [licence question](https://github.com/reefsupport/marine-data/issues/new?template=licence_question.yml) or a
+  [new source](https://github.com/reefsupport/marine-data/issues/new?template=new_source.yml).
+- Rights holders and people who appear in an image: the [takedown procedure](SECURITY.md#takedown-requests).
+- Vulnerabilities and personal data: report privately, see [`SECURITY.md`](SECURITY.md).
+- Conduct: [`CODE_OF_CONDUCT.md`](CODE_OF_CONDUCT.md).
+
 Built by [Reef Support](https://reef.support).

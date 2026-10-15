@@ -31,6 +31,13 @@ jobs:
 
   # Layout verification hits the network, so it runs nightly rather than per-commit.
   # It is what catches a declared layout drifting from the real dataset.
+  #
+  # Failure policy: `test_declared_layout_matches_reality` (tests/test_integration.py)
+  # distinguishes the two ways a source can come back not-verified. A network/fetch
+  # failure (host unreachable, timeout, 5xx, DNS) skips — that is an upstream blip, not
+  # a declaration bug. A fetch that succeeds but whose declared layout does not match
+  # reality fails — that is exactly the signal this job exists to carry, so it is
+  # allowed to redden the scheduled run rather than being trained around.
   verify-layouts:
     if: github.event_name == 'schedule'
     runs-on: ubuntu-latest
