@@ -32,7 +32,11 @@ def test_canonical_entry_is_a_pinned_staged_tree_at_the_staged_prefix() -> None:
 
 def test_a_build_roots_it_and_its_licence_class_is_unchanged() -> None:
     source = Registry.load().source(CANONICAL)
-    assert release_skip_reason(source) is None  # staged-tree layout: the split map can cover it
+    # v1.1.0 leaves it out on purpose (PR-F2, vm-build-plan 4.3): the live row carries the deferral
+    assert (source.release_skip_reason or "").startswith("deferred to v1.2")
+    # the claim is about the layout, so it is proved on the row with the deferral cleared
+    rootable = source.model_copy(update={"release_skip_reason": None})
+    assert release_skip_reason(rootable) is None  # staged-tree layout: the split map can cover it
     assert source_class(CANONICAL) == "restricted-nc"
     assert source.access_class.value == "restricted-nc"
 

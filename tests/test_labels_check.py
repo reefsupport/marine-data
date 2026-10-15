@@ -109,17 +109,41 @@ def test_specs_only_id_with_class_labels_and_no_crosswalk_is_missing(reg, tmp_pa
     assert row.blocks and row.origin == "spec"
 
 
+def _undeferred(reg: Registry, sid: str) -> Registry:
+    """``reg`` with ``sid``'s registry ``release_skip_reason`` cleared: the same source, judged as
+    a release source. A registry deferral skips a source before any judgement, so this is the only
+    way to reach the verdict the live registry no longer gives it."""
+    return Registry(
+        sources={
+            s.id: s.model_copy(update={"release_skip_reason": None}) if s.id == sid else s
+            for s in reg.sources
+        },
+        licences={},
+        profiles={p.id: p for p in reg.profiles},
+        schemas={s.id: s for s in reg.schemas},
+        crosswalks={c.id: c for c in reg.crosswalks},
+        tasks={t.id: t for t in reg.tasks},
+        commit=reg.commit,
+        root=reg.root,
+    )
+
+
 def test_label_free_source_needs_no_crosswalk_but_labelled_one_still_fails(reg):
     """WP-R9: atlantis-synthetic-depth (depth maps, no class labels) is skipped with the reason
     ``label-free``; the same source with staged label rows, or a labelled source with no
-    crosswalk, still blocks."""
+    crosswalk, still blocks. The live registry defers it to v1.2 (PR-F2), which skips it first
+    (never a block), so the judgement is proved on a copy with the deferral cleared."""
     sid = "atlantis-synthetic-depth"
     cache = {"atlantis": {"id": "atlantis", "label_kinds": "none", "label_kinds_declared": "masks"}}
     kw = {"audit_cache": cache, "release": [sid], "only": [sid]}
-    (row,) = lc.evaluate(reg, reg.root, **kw)
+    (row,) = lc.evaluate(reg, reg.root, **kw)  # live: deferred -> skipped with the registry reason
+    assert row.status == lc.NA and not row.blocks and row.gated
+    assert any(r.startswith("skipped: deferred to v1.2") for r in row.reasons)
+    judged = _undeferred(reg, sid)
+    (row,) = lc.evaluate(judged, reg.root, **kw)
     assert row.status == lc.NA and not row.blocks and row.gated
     assert any(r.startswith("label-free") for r in row.reasons)
-    (row,) = lc.evaluate(reg, reg.root, bucket_labels={"atlantis": 5}, **kw)
+    (row,) = lc.evaluate(judged, reg.root, bucket_labels={"atlantis": 5}, **kw)
     assert row.status == lc.MISSING and row.blocks
     assert not lc._label_free(reg, "zz-not-in-registry", 0)
     labelled = next(s.id for s in reg.sources if s.id in set(lc.labelled_sources(reg)))
