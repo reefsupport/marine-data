@@ -15,6 +15,12 @@ Nothing below is in a release yet. It is on `main` or on the Phase A branches na
   v1.0.0; annotator e-mails in the Labelbox test fixtures replaced by placeholders; neutral wording and placeholder paths in docs and
   script comments; the open dataset card no longer references the gated repository.
 
+### v1.1.0 registry items (PR-R: R4, R5, R6)
+
+- Split ratio (R4): `registry/split_ratio.yaml` defaults to 70/15/15 for new configs and records the four v1.0 configs at their measured train/validation/test shares (coral-masks 76.5/9.5/14.1, instance-masks 76.7/9.0/14.2, scene-masks 73.9/10.2/15.9, fish-boxes 73.2/13.4/13.4). README, the v1.0 entry below and `docs/GATES.md` no longer say 80/10/10. Gate fixtures declare their own split map, and their synthetic mask config is now `fixture-masks`.
+- Frozen exceptions (R5): `registry/flavours.yaml` lists the two v1.0 sources of the non-commercial flavour whose registry class is now internal-only. Their published files stay as they are; no source or new row is admitted. The licence gate raises `frozen_exception_new_row` for any row of those sources outside an allowlisted v1.0 shard (sha256), and RELEASE.json lists the exceptions.
+- Attribution terms (R6): `registry/licences.yaml` gains `WORMS-CC-BY-4.0` and `MEOW-WORKING-GROUP`. MEOW polygon geometry is never published, only the derived realm, province and ecoregion strings with the citation.
+
 ### Phase A: `feat/card-croissant` (merged into `feat/phase-a`; includes `feat/join` and `feat/gates`)
 
 - Release gates (P1.6): `marinedata release gate BUILD --all --require-all` runs the licence, dedup, splits, masks, privacy (EXIF GPS), load, card and croissant gates and merges them into `GATES.json`; `--masks DIR` and `--metadata DIR --gates FILE` keep working in the same command (docs/GATES.md). The dedup gate no longer fails EXIF-transposed rows on `image_sha256`: it checks that the bytes decode and match the row's width/height.
@@ -115,7 +121,8 @@ First public release.
 - Eight sources: Coralscapes, SUIM, UIIS, UIIS10K, USIS10K, Roboflow Aquarium Dataset, Reef Support's benthic
   surveys, and Seaview imagery with Reef Support masks.
 - Every row carries its source `licence` and `attribution`. Splits follow the upstream splits where a source defines
-  them, and a deterministic 80/10/10 group hash otherwise.
+  them, and a deterministic group hash (70/15/15 target) otherwise. (Corrected in the v1.1.0 registry work: this entry
+  first said 80/10/10, which never described v1.0; the measured shares are in the README.)
 - Each configuration ships `README.md`, `LICENSE`, `NOTICE` and `CHECKSUMS.sha256`. The `fish-boxes` build runs a
   deduplication gate so that no image spans two splits.
 - Seaview images are recorded as CC BY 3.0, the licence stated by the University of Queensland. Masks drawn by Reef
