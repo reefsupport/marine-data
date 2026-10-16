@@ -97,7 +97,10 @@ class Dataset:
                 path, since the map is keyed by group only.
             frozen: require every group to already be in ``split_map`` — raise instead
                 of allocating and appending a new one. A release build passes this so
-                it can never grow the shared map; nothing is written to disk either way.
+                it can never grow the shared map; nothing is written to disk either way. A
+                group the map lists under ``withheld`` is known and has no split: its samples
+                are left out of every split (``self.splits``), as a pretraining ``test``
+                group's are.
 
         A self-supervised task reading a shared ``split_map`` never inherits its
         ``test`` split: those groups are excluded from ``self.splits`` outright, and a

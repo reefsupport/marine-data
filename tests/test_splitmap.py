@@ -14,7 +14,13 @@ from pathlib import Path
 import pytest
 
 from marinedata.scan import assign_splits
-from marinedata.splitmap import SplitMapError, load_split_map, resolve_splits
+from marinedata.splitmap import (
+    SplitMap,
+    SplitMapError,
+    load_split_map,
+    resolve_splits,
+    save_split_map,
+)
 
 RATIOS = {"train": 0.7, "val": 0.15, "test": 0.15}
 
@@ -174,3 +180,57 @@ def test_split_map_mismatched_ratios_raises(tmp_path: Path) -> None:
     other_ratios = {"train": 0.5, "val": 0.25, "test": 0.25}
     with pytest.raises(SplitMapError, match="ratios"):
         resolve_splits(path, {**counts, "g3": 3}, other_ratios, seed=0)
+
+
+def _map_with_withheld(tmp_path: Path, **withheld: str) -> Path:
+    path = tmp_path / "SPLIT_MAP.json"
+    save_split_map(
+        path,
+        SplitMap(
+            by="group", seed=0, ratios=RATIOS, generated_at="2026-10-16T00:00:00Z",
+            release="v1.1.0", assignments={"g0": "train", "g1": "val", "g2": "test"},
+            withheld=withheld,
+        ),
+    )  # fmt: skip
+    return path
+
+
+def test_frozen_map_knows_its_withheld_groups(tmp_path: Path) -> None:
+    """A group under the map's `withheld` header has no split on purpose: a frozen call
+    neither raises nor allocates it, returns no entry for it, and writes nothing."""
+    path = _map_with_withheld(tmp_path, w1="near-duplicate band", w2="near-duplicate band")
+    before = path.read_bytes()
+    counts = {"g0": 10, "g1": 20, "g2": 5, "w1": 3, "w2": 4}
+
+    resolved = resolve_splits(path, counts, RATIOS, seed=0, by="group", frozen=True)
+
+    assert resolved == {"g0": "train", "g1": "val", "g2": "test"}
+    assert path.read_bytes() == before, "a frozen call must never write, withheld groups included"
+    assert set(load_split_map(path).withheld) == {"w1", "w2"}
+
+
+def test_frozen_map_still_raises_for_a_group_in_neither_assignments_nor_withheld(
+    tmp_path: Path,
+) -> None:
+    path = _map_with_withheld(tmp_path, w1="near-duplicate band")
+    before = path.read_bytes()
+
+    with pytest.raises(SplitMapError) as err:
+        resolve_splits(path, {"g0": 10, "w1": 3, "x9": 2}, RATIOS, seed=0, by="group", frozen=True)
+
+    assert "is frozen: group(s) not in the map: x9. A frozen build never allocates" in str(
+        err.value
+    )
+    named = str(err.value).split("not in the map: ")[1].split(". A frozen build")[0]
+    assert named == "x9", "a withheld group is known, so the error must not name it"
+    assert path.read_bytes() == before
+
+
+def test_frozen_call_keeps_the_assignment_of_a_group_that_is_also_listed_as_withheld(
+    tmp_path: Path,
+) -> None:
+    path = _map_with_withheld(tmp_path, g1="stale entry")  # g1 is assigned: the assignment wins
+
+    resolved = resolve_splits(path, {"g0": 1, "g1": 2}, RATIOS, seed=0, by="group", frozen=True)
+
+    assert resolved == {"g0": "train", "g1": "val"}

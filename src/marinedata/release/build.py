@@ -73,7 +73,10 @@ def build_release(
     the build (``UnsplitImagesError``) unless ``allow_unsplit`` (rehearsal only): its rows then
     keep ``split = null`` and the report records ``unsplit``. The images the privacy review list
     (``privacy_review`` or ``registry/privacy/review.yaml``, :mod:`marinedata.privacy.review`)
-    marks ``withhold`` are dropped from every table and counted in ``withheld_images``.
+    marks ``withhold`` are dropped from every table and counted in ``withheld_images``. A group
+    the frozen split map lists under ``withheld`` is known, not missing: its samples are left out of
+    every task manifest and its images out of every table, counted in ``withheld_images``,
+    ``withheld_groups`` and ``withheld_by_source`` (never as ``unsplit``).
 
     ``tasks`` (WP-8c, charter D-X): ``"v1"`` (default) never touches the task-layer
     configs below and produces byte-identical output to before this parameter existed.
@@ -102,9 +105,10 @@ def build_release(
     Default off, so passing no flags stays byte-identical to before this preset existed.
 
     Raises if ``split_map`` does not exist yet (a release never allocates one — see
-    :mod:`marinedata.splitmap`), or if any admitted source contributes a group absent
-    from it (``SplitMapError``, propagated from ``Dataset.split(frozen=True)``) — both
-    left uncaught deliberately, since either means the release is not reproducible yet.
+    :mod:`marinedata.splitmap`), or if any admitted source contributes a group in neither its
+    ``assignments`` nor its ``withheld`` (``SplitMapError``, propagated from
+    ``Dataset.split(frozen=True)``) — both left uncaught deliberately, since either means the
+    release is not reproducible yet.
 
     ``near_dup`` (WS-D S47 rule A): every image of a ``never-eval`` source within
     ``near_dup.exclude_max`` dHash Hamming of any row of an eval-capable admitted source

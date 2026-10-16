@@ -102,6 +102,12 @@ sha256, and a "not checked" list with the reason for each benchmark. `status` �
 4. **train-only**: groups whose sources are all tagged `never-eval` (pseudo labels, unlabelled pretrain sources).
 5. **free**: everything else → the allocator (§3.3).
 
+**Withheld (outside the pools)**: a new group that cannot be placed without contradicting a prior-release split
+(its component was split apart in the prior map, or it is a near-duplicate of both prior train and prior val/test images)
+gets no `assignments` entry and is listed under the map's header `withheld`. A frozen release build treats it as known:
+never allocated or appended, its images dropped from every table and counted in `V11_TABLES.json` (`withheld_images`,
+`withheld_groups`, `withheld_by_source`), never as unsplit.
+
 ### 3.2 OOD holdouts (6). Rules live in `registry/splits/v2.yaml`; precedence = list order
 | # | split name | exact rule (per sample) | fallback when the field is null |
 |---|---|---|---|

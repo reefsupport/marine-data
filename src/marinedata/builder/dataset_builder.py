@@ -286,6 +286,8 @@ class DatasetBuilder:
 
         achieved: dict[SplitName, int] = {}
         for key, count in corpus.groups.items():
+            if key not in assignment:  # a group the frozen map withholds: no split, no samples
+                continue
             achieved[assignment[key]] = achieved.get(assignment[key], 0) + count
         check_ratios(
             achieved,
