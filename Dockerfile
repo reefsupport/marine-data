@@ -15,6 +15,10 @@
 # .dockerignore): the VM mounts the clone's data/ at /app/data read-only, which is where
 # `release build --tasks v2` looks.
 #
+# Classic-builder compatible: no BuildKit-only syntax (ADD/COPY --checksum/--chmod/--link,
+# RUN --mount/--network/--security, heredocs). The release VM builds with Debian's docker.io, which
+# has no buildx; tests/test_dockerfile_classic_builder.py fails on any of it.
+#
 # The base image is pinned by digest (multi-arch manifest list, resolved 2026-09-25, same pin as
 # deploy/ingest-job/Dockerfile); re-pin there and here together.
 ARG PYTHON_IMAGE=python:3.12-slim@sha256:2f17fc044b579bab302c2e8054d3a686e2cb9a83de48e70534b94cd8ebbe06a9
@@ -52,11 +56,15 @@ COPY . .
 RUN uv sync --frozen --no-dev $(for e in ${EXTRAS}; do printf -- '--extra %s ' "$e"; done)
 
 # The pinned YuNet face model (src/marinedata/gates/yunet_model.py): fetched here, at image build
-# time, and checked against its sha256 by `ADD --checksum` and again at load; it is never downloaded
-# at gate time. --chmod=0444: ADD from a URL is 0600 root, and the container runs as uid 10001.
-ADD --checksum=sha256:8f2383e4dd3cfbb4553ea8718107fc0423210dc964f9f4280604804ed2552fa4 --chmod=0444 \
-    https://github.com/opencv/opencv_zoo/raw/f12e12798e8314f7c074a6656816c048dcc95b7a/models/face_detection_yunet/face_detection_yunet_2023mar.onnx \
-    /opt/models/face_detection_yunet_2023mar.onnx
+# time, and checked against its sha256 by the fetch step (a mismatch fails the build) and again at
+# load; it is never downloaded at gate time. The slim base has no curl or wget, so the fetch runs on
+# the image's own python (deploy/release-vm/fetch-pinned.py), and the file is then made read-only
+# but world-readable for the container's uid 10001.
+RUN python3 deploy/release-vm/fetch-pinned.py \
+        https://github.com/opencv/opencv_zoo/raw/f12e12798e8314f7c074a6656816c048dcc95b7a/models/face_detection_yunet/face_detection_yunet_2023mar.onnx \
+        sha256:8f2383e4dd3cfbb4553ea8718107fc0423210dc964f9f4280604804ed2552fa4 \
+        /opt/models/face_detection_yunet_2023mar.onnx \
+    && chmod 0444 /opt/models/face_detection_yunet_2023mar.onnx
 ENV MARINEDATA_YUNET_MODEL=/opt/models/face_detection_yunet_2023mar.onnx
 
 RUN groupadd --system --gid 10001 marinedata \

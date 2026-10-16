@@ -19,6 +19,7 @@ Nothing below is in a release yet. It is on `main` or on the Phase A branches na
 
 - Release gates (PR-G): G1 join, G2 frozen v1.0 tree, G3 leak, G4 bytes once, G5 masks, G6 splits and G7 decontamination in `marinedata.gates`; `release publish` requires them on a v1.1.0 build (`V11_REQUIRED`) on top of the v1.0 gates, and a skipped gate never publishes. G8 packaging pins the YuNet model by sha256 (`verified_model_path`, never downloaded).
 - v1.1.0 gate CLI (PR-G2): `marinedata release gate BUILD --v11` runs G1-G9 (join, frozen, leak, bytes_once, masks, splits_v11, decon, privacy, labelmap) into `GATES.json` and ends with the `release publish` verdict; `--rehearsal` only skips, never passes (docs/GATES.md). New G9 labelmap gate (`registry/gates.yaml` `labelmap`, now in `V11_REQUIRED`) and an images-only G8 privacy pass that loads YuNet through `verified_model_path`; the v1.0 gate path is unchanged.
+- Release image on the classic Docker builder: the pinned YuNet model is fetched by `deploy/release-vm/fetch-pinned.py` (URL and sha256 pin; a mismatch fails the build) instead of `ADD --checksum`/`--chmod`, which only BuildKit has, so `docker build` works again on the release VM (no buildx). `tests/test_dockerfile_classic_builder.py` fails on BuildKit-only syntax in either Dockerfile.
 
 ### v1.1.0 registry items (PR-R: R4, R5, R6)
 

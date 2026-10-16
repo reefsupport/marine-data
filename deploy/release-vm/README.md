@@ -9,6 +9,7 @@ passes `--go`.
 |---|---|
 | `create.sh` | `--target hetzner` (the default): writes the cloud-init user-data and prints the `hcloud` commands (`--print-only`, the default: no token, no network); `--run` executes the same commands after a typed confirmation. `--target pve`: writes `out/<name>.yaml` and `out/vm-<VMID>.sh` for the Proxmox host and never runs anything. The host, the cloud-init user, the VM id, the address and the key names are yours to give (flags, `PVE_*` variables or `--env-file`); none is built in. |
 | `bootstrap.sh` | Run as root inside the VM, once or again for another ref (see Re-run with a new REF): docker, the data disk at `/data`, a clone of `MARINEDATA_REF`, the image, then the stages below. On Hetzner it is the user-data body; on Proxmox you start it by hand. |
+| `fetch-pinned.py` | Run by the `Dockerfile`, not by you: downloads the pinned YuNet model, checks its sha256 and fails the image build on a mismatch. It replaces `ADD --checksum`, which only BuildKit has; the VM builds with the classic builder, and `tests/test_dockerfile_classic_builder.py` keeps both Dockerfiles free of BuildKit-only syntax. |
 
 | Stage | What runs | Lands in |
 |---|---|---|
