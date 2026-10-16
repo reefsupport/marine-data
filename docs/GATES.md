@@ -74,13 +74,19 @@ review; exclude or blur a detected face or plate.
 ## load (required)
 Checks: RELEASE.json `configs` and the shards list the same configs and row counts; every shard's
 schema equals the card's `dataset_info.features` for the config (the first shard until the card has
-one); `datasets.load_dataset(BUILD, config, streaming=True)` loads and the first `--sample-rows` (50)
-rows per split decode. Fix: re-export, or correct the card.
+one); every card `configs:` entry is resolved against the build (a pattern that matches nothing there
+falls back to `--v1-dir`) and loaded with `datasets.load_dataset("parquet", data_files=..., streaming=True)`,
+and the first `--sample-rows` (50) rows per split decode. `datasets` infers the builder of a folder from
+the card's FIRST config, so that config must resolve in the build or `--v1-dir` (`first_config_unresolved`);
+a pattern that matches in neither is `config_files_missing`. Without `--v1-dir` a frozen v1.0 config absent
+from the build (coral-masks, scene-masks, instance-masks, fish-boxes) is counted `skipped_frozen`; every
+v1.1 config must still load. Fix: re-export, correct the card, or pass `--v1-dir`.
 `images/train count_mismatch: 16 rows in the shards, RELEASE.json says 99`
+`coral-masks/train config_files_missing: pattern 'data/coral-masks/train-*.parquet' matches no file in the build or --v1-dir`
 
 ## card (required)
 Checks: `README.md` parses (`huggingface_hub.DatasetCard`, `datasets` metadata configs); every config
-has a `configs:` entry with the build's splits and no config is extra; `dataset_info` split
+has a `configs:` entry with the build's splits and no config is extra (one under `--v1-dir` is not); `dataset_info` split
 `num_examples` equal the release rows and `download_size` the shard bytes; `size_categories` matches the
 row counts. The card is generated (P1.9); the gate only verifies. Fix: regenerate the card.
 `` coral-masks missing_config_section: README.md `configs:` has no entry for it ``
@@ -126,8 +132,9 @@ to `images`. The pinned YuNet model (`gates/yunet_model.py`) is baked into the i
 
 `marinedata release gate BUILD_DIR --v11` runs the nine gates below and merges each into
 `BUILD_DIR/GATES.json`; `release publish` reads that file (staged as `provenance/GATES.json`).
-`--v11` is implied by `--v1-dir`, `--only`, `--rehearsal`, `--hidden-test`, `--benchmark`,
-`--nc-id` and `--taxonomy-version`, and by a build with `task_layers/V11_TABLES.json` when no v1.0
+`--v11` is implied by `--only`, `--rehearsal`, `--hidden-test`, `--benchmark`, `--nc-id`,
+`--taxonomy-version` and, when no v1.0 gate flag is given, `--v1-dir` (with one, `--v1-dir` feeds the
+load, card and masks gates: configs and mask shards of the frozen v1.0 tree count as present), and by a build with `task_layers/V11_TABLES.json` when no v1.0
 gate flag is given; the v1.0 flags and their behaviour are unchanged. `--only GATE` (repeatable)
 runs a subset.
 

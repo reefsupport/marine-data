@@ -143,6 +143,13 @@ def v1_sha256s(v1_dir: str | Path) -> frozenset[str]:
 # ------------------------------------------------------------------------------ licence filter
 
 
+def row_class(registry, row: Mapping, class_by_sha: Mapping[str, str]) -> str:
+    """The licence class of one table row: its own, else its image's (the metadata row, by
+    ``image_sha256``), else its source's registry class. The export writes it into every row."""
+    raw = row.get("licence_class") or class_by_sha.get(row.get("image_sha256"))
+    return coerce_class(raw or registry.source(row.get("source_id")).access_class)
+
+
 def keep_for_flavour(
     registry, rows: Iterable[Mapping], flavour: str, class_by_sha: Mapping[str, str]
 ):
@@ -156,8 +163,7 @@ def keep_for_flavour(
         if sid and release_excluded(sid):
             dropped += 1
             continue
-        raw = row.get("licence_class") or class_by_sha.get(row.get("image_sha256"))
-        cls = coerce_class(raw or registry.source(sid).access_class)
+        cls = row_class(registry, row, class_by_sha)
         if cls not in shippable:
             raise V11ExportError(
                 f"{sid}: licence class {cls!r} can never ship; the build kept a row"
@@ -506,7 +512,9 @@ def build_v11_layout(
         built: list[tuple[str, ExportRow]] = []
         for r in rows:
             split = _split_of(r, split_by_sha)
-            row = _as_row(spec, r)
+            # the Hub split name and the resolved class, on every table that has those columns
+            stamped = {**r, "split": split, "licence_class": row_class(registry, r, class_by_sha)}
+            row = _as_row(spec, stamped)
             png = palette_mask(r, roots) if embedded else None
             if png is not None:
                 name = f"{r['source_id']}/{r['image_sha256']}.png"
@@ -598,7 +606,7 @@ def run(args) -> int:
     import yaml
 
     from .fetch import cache_root
-    from .hf_export import _roots
+    from .hf_export import _roots, record_export_counts
     from .registry import Registry
 
     release_dir = Path(args.release_dir)
@@ -624,6 +632,7 @@ def run(args) -> int:
         skip_sha256=skip, lock=lock,
     )  # fmt: skip
     summary = export_v11(layout, args.out)
+    record_export_counts(release_dir / "RELEASE.json", summary)  # what the load/card gates check
     summary |= {"flavour": flavour, "repo_id": release.get("repo_id"), "v11": report}
     Path(args.summary).parent.mkdir(parents=True, exist_ok=True)
     Path(args.summary).write_text(json.dumps(summary, indent=1, sort_keys=True))

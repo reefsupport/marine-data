@@ -10,6 +10,7 @@ Nothing below is in a release yet. It is on `main` or on the Phase A branches na
 
 ### On main
 
+- Fix (v1.1 rehearsal): the export writes the Hub split name (`validation`, not the build's `probe`) and a resolved `licence_class` on every table row and records the per-config row counts in RELEASE.json; the load gate reads the card's `configs:` patterns, resolves them against the build and `--v1-dir` and loads each config with the parquet builder; the card and masks gates accept the frozen v1.0 configs under `--v1-dir`.
 - Docs: install requirements, standalone snippets, fish-boxes statistics.
 - Repository: security policy, code of conduct, issue and pull request templates; broader `.gitignore`; README install pinned to
   v1.0.0; annotator e-mails in the Labelbox test fixtures replaced by placeholders; neutral wording and placeholder paths in docs and

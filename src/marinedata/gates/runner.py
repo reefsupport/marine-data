@@ -21,6 +21,7 @@ class GateOptions:
     detector: str | None = None
     privacy_threshold: float = 0.85
     sample_rows: int = 50
+    v1_dir: Path | None = None
 
 
 def _licence(b: Path, o: GateOptions) -> GateResult:
@@ -46,7 +47,7 @@ def _splits(b: Path, o: GateOptions) -> GateResult:
 def _masks(b: Path, o: GateOptions) -> GateResult:
     from .masks import run_masks_gate
 
-    return run_masks_gate(b, empty_threshold=o.empty_threshold)
+    return run_masks_gate(b, empty_threshold=o.empty_threshold, v1_dir=o.v1_dir)
 
 
 def _privacy(b: Path, o: GateOptions) -> GateResult:
@@ -59,13 +60,13 @@ def _privacy(b: Path, o: GateOptions) -> GateResult:
 def _load(b: Path, o: GateOptions) -> GateResult:
     from .load import run_load_gate
 
-    return run_load_gate(b, release_dir=o.release_dir, sample_rows=o.sample_rows)
+    return run_load_gate(b, release_dir=o.release_dir, sample_rows=o.sample_rows, v1_dir=o.v1_dir)
 
 
 def _card(b: Path, o: GateOptions) -> GateResult:
     from .card import run_card_gate
 
-    return run_card_gate(b, release_dir=o.release_dir)
+    return run_card_gate(b, release_dir=o.release_dir, v1_dir=o.v1_dir)
 
 
 def _croissant(b: Path, o: GateOptions) -> GateResult:

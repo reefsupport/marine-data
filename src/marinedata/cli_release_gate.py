@@ -200,6 +200,7 @@ def cmd_release_gate(args: argparse.Namespace) -> int:
         detector=args.detector,
         privacy_threshold=args.privacy_threshold,
         sample_rows=args.sample_rows,
+        v1_dir=args.v1_dir,
     )
     failed = metadata_rc != 0
     for name in names:

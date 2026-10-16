@@ -98,7 +98,7 @@ def _bytes_once(b: Path, o: V11Options) -> GateResult:
 def _masks(b: Path, o: V11Options) -> GateResult:
     from .masks import run_masks_gate
 
-    return run_masks_gate(b, empty_threshold=o.empty_threshold)
+    return run_masks_gate(b, empty_threshold=o.empty_threshold, v1_dir=o.v1_dir)
 
 
 def _splits(b: Path, o: V11Options) -> GateResult:

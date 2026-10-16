@@ -139,3 +139,60 @@ def test_croissant_validator_runs_when_installed(tmp_path):
     doc = {"@context": {}, "@type": "sc:Dataset", "name": "fx"}
     (tmp_path / "croissant.json").write_text(json.dumps(doc))
     assert run_croissant_gate(tmp_path).skipped is None
+
+
+FROZEN = {"coral-masks": {"train": 3}}
+
+
+def _v1_tree(root):
+    """A v1.0 tree holding the frozen config's shards (the shape of the Hub repo's data/ folder)."""
+    row = {
+        "image_sha256": "b" * 64,
+        "image": {"bytes": smooth_png(90), "path": None},
+        "split_group": "g1",
+    }
+    root.mkdir(parents=True, exist_ok=True)
+    write_config(root, "coral-masks", {"train": [row]}, IMAGE_COLS)
+    return root
+
+
+def test_load_skips_frozen_configs_the_build_lacks(tmp_path):
+    pytest.importorskip("datasets")
+    build = make_build(tmp_path, card_configs={**FROZEN, **CONFIGS})  # the frozen config is first
+    result = run_load_gate(build)
+    assert result.passed, result.failures
+    assert result.counts["skipped_frozen"] == 1 and result.counts["configs"] == 3
+    assert result.counts["rows_read"] == 44
+
+
+def test_load_reads_frozen_configs_from_v1_dir(tmp_path):
+    pytest.importorskip("datasets")
+    build = make_build(tmp_path / "b", card_configs={**FROZEN, **CONFIGS})
+    result = run_load_gate(build, v1_dir=_v1_tree(tmp_path / "v1"))
+    assert result.passed, result.failures
+    assert result.counts["configs"] == 4 and "skipped_frozen" not in result.counts
+
+
+@pytest.mark.parametrize(
+    ("card_configs", "v1_dir_given"),
+    [({**FROZEN, **CONFIGS}, True), ({"ghost": {"train": 1}, **CONFIGS}, False)],
+)
+def test_load_fails_when_a_pattern_matches_in_neither_tree(tmp_path, card_configs, v1_dir_given):
+    pytest.importorskip("datasets")
+    build = make_build(tmp_path / "b", card_configs=card_configs)
+    result = run_load_gate(build, v1_dir=tmp_path / "v1" if v1_dir_given else None)
+    assert _has(result, "config_files_missing") and _has(result, "first_config_unresolved")
+
+
+def test_card_counts_configs_under_v1_dir_as_present(tmp_path):
+    pytest.importorskip("datasets")
+    cards = {**CONFIGS, **FROZEN}
+    build = make_build(tmp_path / "b", card_configs=cards)
+    assert _has(run_card_gate(build), "extra_config_section")  # a rehearsal has no v1.0 tree
+    v1 = _v1_tree(tmp_path / "v1")
+    assert run_card_gate(build, v1_dir=v1).passed
+    ghost = make_build(tmp_path / "c", card_configs={**cards, "ghost": {"train": 1}})
+    result = run_card_gate(ghost, v1_dir=v1)
+    assert _has(result, "extra_config_section") and [f.split()[0] for f in result.failures] == [
+        "ghost"
+    ]
