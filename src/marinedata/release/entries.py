@@ -56,19 +56,20 @@ def _admitted_source_ids(
 
 
 def _partition_stem_index(partition_dir: Path) -> dict[str, list[Path]]:
-    """``{stem: sorted candidate paths}`` for every file directly under ``partition_dir``,
-    built with one directory scan rather than one ``glob(f"{stem}.*")`` per row.
+    """``{stem: sorted candidate paths}`` for every file under ``partition_dir`` at any depth
+    (a partition may nest its images, e.g. Seaview's ``labelled_data/segments/``), built with
+    one directory walk rather than one ``glob(f"{stem}.*")`` per row.
 
     Keyed by ``Path(name).stem`` (split on the *last* dot) rather than a first-dot split:
     staging always appends exactly one extension to a stem that may itself contain dots
     (``Path(...).stem`` at staging time — see ``fetchers_remote``/``ingest_image_labels``),
     so this reconstructs the same key the glob-per-row pattern ``f"{stem}.*"`` matched
     against. A stem with two candidate files (e.g. ``a0.jpg`` and ``a0.png``) keeps the
-    same tie-break as before: the caller sorts and takes the first.
+    same tie-break as before: the candidates are sorted and the caller takes the first.
     """
     index: dict[str, list[Path]] = {}
     if partition_dir.is_dir():
-        for path in partition_dir.iterdir():
+        for path in partition_dir.rglob("*"):
             if path.is_file():
                 index.setdefault(path.stem, []).append(path)
         for paths in index.values():
@@ -170,9 +171,27 @@ def _staged_meta(path: Path) -> bool:
     return "stem" in names and bool(names & {"partition", "image_path"})
 
 
+def _image_path_file(root: Path, record: dict) -> Path | None:
+    """The image file a staged record's own ``image_path`` names under ``root``, else ``None``
+    (the caller then falls back to the ``images/<partition>/`` stem index).
+
+    ``image_path`` is relative to the source root and names the file exactly, however deep its
+    partition nests it. Only an image file counts: in shard layout ``image_path`` is the shard
+    ``.tar`` (``image_member`` names the member), and digesting that would give every row of a
+    shard the same sha256.
+    """
+    rel = record.get("image_path")
+    if not rel:
+        return None
+    path = root / str(rel)
+    return path if path.suffix.lower() in IMAGE_SUFFIXES and path.is_file() else None
+
+
 def _staged_entries(
     source: Source, root: Path, digest: Callable[[Path], str]
 ) -> list[ReleaseEntry]:
+    """One entry per ``metadata.parquet`` row. A row's image is the file its own ``image_path``
+    names when that exists; else the partition's stem index finds it; a row neither finds raises."""
     import pyarrow.parquet as pq
 
     metadata_path = root / "metadata.parquet"
@@ -186,19 +205,22 @@ def _staged_entries(
     entries: list[tuple[str, str, str | None, Path]] = []
     for record in pq.read_table(metadata_path).to_pylist():
         partition, stem = staged_partition(record), record["stem"]
-        index = partition_indexes.get(partition)
-        if index is None:
-            index = _partition_stem_index(root / "images" / partition)
-            partition_indexes[partition] = index
-        matches = index.get(stem, [])
-        if not matches:
-            raise ValueError(
-                f"{source.id}: metadata.parquet references image {stem!r} (partition "
-                f"{partition!r}) not found under {root / 'images' / partition}"
-            )
-        sha256 = digest(matches[0])
+        image = _image_path_file(root, record)
+        if image is None:
+            index = partition_indexes.get(partition)
+            if index is None:
+                index = _partition_stem_index(root / "images" / partition)
+                partition_indexes[partition] = index
+            matches = index.get(stem, [])
+            if not matches:
+                raise ValueError(
+                    f"{source.id}: metadata.parquet references image {stem!r} (partition "
+                    f"{partition!r}) not found under {root / 'images' / partition}"
+                )
+            image = matches[0]
+        sha256 = digest(image)
         group = _release_group(source, record, stem=stem, partition=partition, sha256=sha256)
-        entries.append((sha256, group, record.get("upstream_split") or None, matches[0]))
+        entries.append((sha256, group, record.get("upstream_split") or None, image))
     entries = _guard_degenerate_grouping(source.id, entries)
     return [ReleaseEntry(sha, g, u, p, str(p.relative_to(root))) for sha, g, u, p in entries]
 

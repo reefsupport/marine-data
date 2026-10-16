@@ -17,11 +17,13 @@ pytest test modules aren't meant to import each other's private helpers.
 
 from __future__ import annotations
 
+import re
 from datetime import date
 from pathlib import Path
 
 import pytest
 
+from marinedata.checksums import file_digest
 from marinedata.enums import (
     AccessMethod,
     Capability,
@@ -42,7 +44,7 @@ from marinedata.models import (
     Verification,
 )
 from marinedata.registry import Registry
-from marinedata.release import enumerate_release_rows, generate_split_map
+from marinedata.release import enumerate_release_rows, generate_split_map, source_release_entries
 from marinedata.splitmap import load_split_map
 from marinedata.tables import StagedImage, write_metadata_table
 
@@ -300,3 +302,136 @@ def test_generate_split_map_excludes_metadata_only_rows(tmp_path: Path) -> None:
     assert "shared/v3i" not in split_map.assignments
     assert "shared/a" in split_map.assignments
     assert skipped == {}
+
+
+# -- nested partitions: Seaview's ``labelled_data/segments/`` (v1.1 rehearsal) -----------------
+
+_PARTITION_RULE = SplitGroupRule(
+    pattern=r"^(\w+)$", match_field="stem", template="{source_id}/{partition}/{group}"
+)
+"""The group shows the row's partition (the staged ``split_group`` below is null), so a test can
+tell that a nested image still belongs to its partition and not to the sub-directory."""
+
+
+def _write_index(root: Path, rows: list[dict]) -> None:
+    """A ``metadata.parquet`` straight from dict rows: ``write_metadata_table`` has no
+    ``image_path`` column, and a row must be able to carry one or leave it out."""
+    import pyarrow as pa
+    import pyarrow.parquet as pq
+
+    root.mkdir(parents=True, exist_ok=True)
+    pq.write_table(pa.Table.from_pylist(rows), root / "metadata.parquet")
+
+
+def _index_row(stem: str, partition: str, image_path: str | None = None) -> dict:
+    row = {
+        "stem": stem,
+        "partition": partition,
+        "upstream_path": f"orig/{stem}.jpg",
+        "upstream_split": None,
+        "width": 4,
+        "height": 4,
+        "split_group": None,
+    }
+    return row if image_path is None else {**row, "image_path": image_path}
+
+
+def _write_image(root: Path, rel: str, data: bytes) -> Path:
+    path = root / rel
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_bytes(data)
+    return path
+
+
+def test_nested_partition_resolves_through_image_path(tmp_path: Path) -> None:
+    """The row's own ``image_path`` names a file nested under its partition
+    (``images/p/sub/a.jpg``): the entry resolves to it, and the partition stays ``p``."""
+    root = tmp_path / "staged"
+    nested = _write_image(root, "images/p/sub/a.jpg", b"NESTED")
+    _write_index(root, [_index_row("a", "p", "images/p/sub/a.jpg")])
+    source = _source("staged-src", "staged-tree", split_group=_PARTITION_RULE)
+
+    (entry,) = source_release_entries(source, root)
+
+    assert entry.path == nested
+    assert entry.key == "images/p/sub/a.jpg"
+    assert entry.sha256 == file_digest(nested)
+    assert entry.group == "staged-src/p/a"
+
+
+def test_nested_partition_resolves_through_the_recursive_index(tmp_path: Path) -> None:
+    """The same tree with no ``image_path`` column: the partition's stem index walks its
+    sub-directories, so the row still resolves to ``images/p/sub/a.jpg``."""
+    root = tmp_path / "staged"
+    nested = _write_image(root, "images/p/sub/a.jpg", b"NESTED")
+    _write_index(root, [_index_row("a", "p")])
+    source = _source("staged-src", "staged-tree", split_group=_PARTITION_RULE)
+
+    (entry,) = source_release_entries(source, root)
+
+    assert entry.path == nested
+    assert entry.key == "images/p/sub/a.jpg"
+    assert entry.sha256 == file_digest(nested)
+    assert entry.group == "staged-src/p/a"
+
+
+@pytest.mark.parametrize("with_image_path", [True, False])
+def test_same_stem_in_two_partitions_stays_two_entries(
+    tmp_path: Path, with_image_path: bool
+) -> None:
+    """Seaview: a ``labelled_data`` quadrat (nested under ``segments/``) is also a region row
+    with the same stem and other bytes. Two partitions, two files, two sha256 values: one stem
+    is never collapsed onto one file, with or without ``image_path``."""
+    root = tmp_path / "staged"
+    segment_rel, region_rel = "images/labelled_data/segments/q1.jpg", "images/REGION/q1.jpg"
+    segment = _write_image(root, segment_rel, b"SEGMENT-BYTES")
+    region = _write_image(root, region_rel, b"REGION-BYTES")
+    _write_index(
+        root,
+        [
+            _index_row("q1", "labelled_data", segment_rel if with_image_path else None),
+            _index_row("q1", "REGION", region_rel if with_image_path else None),
+        ],
+    )
+    source = _source("staged-src", "staged-tree", split_group=_PARTITION_RULE)
+
+    entries = source_release_entries(source, root)
+
+    assert {e.key: e.sha256 for e in entries} == {
+        segment_rel: file_digest(segment),
+        region_rel: file_digest(region),
+    }
+    assert len({e.sha256 for e in entries}) == 2
+    assert {e.group for e in entries} == {"staged-src/labelled_data/q1", "staged-src/REGION/q1"}
+
+
+@pytest.mark.parametrize("image_path", [None, "images/p/sub/ghost.jpg"])
+def test_missing_file_still_raises_the_existing_error(
+    tmp_path: Path, image_path: str | None
+) -> None:
+    """A row whose file is nowhere (``image_path`` unset, or naming a file that is not there) in
+    a partition that does nest other images raises the same ``ValueError`` as before."""
+    root = tmp_path / "staged"
+    _write_image(root, "images/p/sub/other.jpg", b"OTHER")
+    _write_index(root, [_index_row("ghost", "p", image_path)])
+    source = _source("staged-src", "staged-tree")
+    expected = (
+        "staged-src: metadata.parquet references image 'ghost' (partition 'p') "
+        f"not found under {root / 'images' / 'p'}"
+    )
+
+    with pytest.raises(ValueError, match=re.escape(expected)):
+        source_release_entries(source, root)
+
+
+def test_shard_tar_image_path_is_not_taken_for_an_image(tmp_path: Path) -> None:
+    """In shard layout ``image_path`` is the shard ``.tar`` (``image_member`` names the member).
+    It is never digested as a row's image, which would give every row of a shard one sha256:
+    the row falls back to the partition index and fails loudly, as it did before."""
+    root = tmp_path / "staged"
+    _write_image(root, "shards/s0.tar", b"TAR-BYTES")
+    _write_index(root, [{**_index_row("a", "p", "shards/s0.tar"), "image_member": "a.jpg"}])
+    source = _source("staged-src", "staged-tree")
+
+    with pytest.raises(ValueError, match="not found under"):
+        source_release_entries(source, root)
