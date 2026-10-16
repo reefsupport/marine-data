@@ -794,3 +794,80 @@ def test_wrapper_mounts_the_checkouts_releases_read_only_at_app_releases(tmp_pat
     assert subprocess.run([str(wrapper), "release", "gate"], env=env, check=False).returncode == 0
     assert "/app/releases" not in calls.read_text()
     assert not (repo / "releases").exists()
+
+
+EXPORT, REL = "/data/export/v1.1/open", "/data/releases/v1.1/open"
+YUNET = "/opt/models/face_detection_yunet_2023mar.onnx"
+
+
+def fake_wrapper(tmp_path, *, fail_all=False):
+    """Prints its arguments; answers ``release gate --help``; can fail the ``--all`` gate."""
+    wrapper = tmp_path / "wrapper"
+    fail = "  *--all*) printf '%s\\n' \"$*\"; exit 1 ;;\n" if fail_all else ""
+    wrapper.write_text(
+        '#!/bin/sh\ncase "$*" in\n'
+        '  "release gate --help") echo "usage: release gate --all --require-all --v11" ;;\n'
+        f"{fail}  *) printf '%s\\n' \"$*\" ;;\nesac\n"
+    )
+    wrapper.chmod(0o755)
+    return wrapper
+
+
+def run_stage(tmp_path, stage, extra=None, **kwargs):
+    wrapper = fake_wrapper(tmp_path, **kwargs)
+    return bootstrap(f"RUN_WRAPPER={wrapper}; derive_paths; {stage}", {**GOOD, **(extra or {})})
+
+
+def test_card_stage_cites_the_exports_citation_file(tmp_path):
+    done = run_stage(tmp_path, "stage_card")
+    assert done.returncode == 0, done.stderr
+    assert done.stdout.strip() == (
+        f"--py -m marinedata.hf_card --release-dir {REL}"
+        " --summary /data/export/v1.1/open.summary.json"
+        f" --out {EXPORT} --flavour open --citation {EXPORT}/CITATION.cff"
+    )
+    assert "stage_card\n}" in (DEPLOY / "bootstrap.sh").read_text()  # stage_export ends with it
+
+
+def test_gate_stage_runs_all_then_v11_on_the_same_release_dir(tmp_path):
+    done = run_stage(tmp_path, "stage_gate", {"GATE_V11_ARGS": "--v1-dir /data/v1.0"})
+    assert done.returncode == 0, done.stderr
+    assert done.stdout.splitlines() == [
+        f"release gate {EXPORT} --all --require-all --flavour open --release-dir {REL}",
+        f"release gate {EXPORT} --v11 --flavour open --release-dir {REL} --v1-dir /data/v1.0",
+    ]
+
+
+def test_gate_stage_still_runs_v11_when_the_v1_0_gates_fail(tmp_path):
+    done = run_stage(tmp_path, "stage_gate", fail_all=True)
+    assert done.returncode != 0
+    assert [line.split()[3] for line in done.stdout.splitlines()] == ["--all", "--v11"]
+
+
+def test_plan_stage_forwards_the_plan_args(tmp_path):
+    plain = run_stage(tmp_path, "stage_plan")
+    assert plain.stdout.strip() == (
+        f"release publish --release-id v1.1 --flavour open --dir {EXPORT} --release-dir {REL}"
+        " --lock /app/release.lock.yaml"
+    )
+    delta = run_stage(tmp_path, "stage_plan", {"PLAN_ARGS": "--v1-dir /data/v1.0-repo"})
+    assert delta.stdout.strip().endswith("--lock /app/release.lock.yaml --v1-dir /data/v1.0-repo")
+
+
+def test_wrapper_passes_the_verified_yunet_model_path_and_the_image_has_it(tmp_path):
+    wrapper = tmp_path / "marinedata-run"
+    done = bootstrap(
+        f"RUN_WRAPPER={wrapper}; IMAGE=marinedata:t; write_wrapper; cat {wrapper}", GOOD
+    )
+    assert done.returncode == 0, done.stderr
+    assert f"-e MARINEDATA_YUNET_MODEL={YUNET}" in done.stdout
+    assert YUNET in (DEPLOY.parents[1] / "Dockerfile").read_text()
+
+
+def test_next_steps_print_the_per_part_publish_loop():
+    done = bootstrap("COMMIT=abc; LOG_DIR=/data/logs; derive_paths; print_next_steps", GOOD)
+    assert done.returncode == 0, done.stderr
+    out = done.stdout
+    assert "for part in $(marinedata-run release publish --release-id v1.1" in out
+    assert "--list-parts); do" in out and '--go --part "$part" || break' in out
+    assert out.count("--go") == 1 and "done\n" in out

@@ -5,10 +5,19 @@ release publish: DRY RUN (nothing is uploaded; add --go to upload)
   tag         : v1.1
   folder      : <DIR>
   files       : 4 (1,512 bytes, 1.5 KB)
-  upload set  : data/**/*.parquet, README.md, croissant.json, provenance/ (RELEASE.json, GATES.json, release.lock.yaml)
+  upload set  : data/**/*.parquet, README.md, croissant.json, LICENSE, NOTICE, CITATION.cff, assets/*, docs/**, provenance/ (RELEASE.json, GATES.json, release.lock.yaml)
   configs     : 2
     coral-masks: test 15, train 120, val 15 = 150 rows
     scene-masks: test 1, train 8, val 1 = 10 rows
   card        : <DIR>/README.md
   lock sha256 : <LOCK>
   gates       : 8 required, all passed (licence, dedup, splits, masks, load, card, privacy, croissant)
+  parts       : 5 (data:coral-masks, data:scene-masks, provenance, card, tag)
+  this run    : every part, in this order
+    data:coral-masks: 2 files, 1,200 bytes
+    data:scene-masks: 1 file, 303 bytes
+    provenance: 3 files, 918 bytes: provenance/GATES.json, provenance/RELEASE.json, provenance/release.lock.yaml
+    card: 1 file, 9 bytes: README.md
+    tag: v1.1 on the sha of the card commit (read from PUBLISH_STATE.json)
+  visibility  : never changed by this command
+  v1.0 tree   : not given (--v1-dir DIR, a checkout of the v1.0 repo): no delta

@@ -14,10 +14,10 @@ passes `--go`.
 |---|---|---|
 | lock | host check: the lock and the split map are in the checkout; prints their sha256 | `/data/logs/lock.log` |
 | build | `marinedata release build --release ID --flavour F --lock ... --split-map ... --out /data` | `/data/releases/ID/F/` (`RELEASE.json`, `tasks/`) |
-| export | `python -m marinedata.hf_export`, then `python -m marinedata.hf_card` | `/data/export/ID/F/` (`data/`, `README.md`, `LICENSE`) and `/data/export/ID/F.summary.json` |
+| export | `python -m marinedata.hf_export`, then `python -m marinedata.hf_card ... --citation DIR/CITATION.cff` | `/data/export/ID/F/` (`data/`, `README.md`, `LICENSE`) and `/data/export/ID/F.summary.json` |
 | croissant | `marinedata release croissant DIR --release-dir ... --citation /app/CITATION.cff --repo-id R` (R is read from `registry/flavours.yaml`) | `croissant.json` in the export folder |
-| gate | `marinedata release gate DIR --all --require-all` (only `--masks` until the gates branch is merged) | `GATES.json` in the export folder |
-| plan | `marinedata release publish ...` without `--go` | `/data/logs/plan.log` |
+| gate | `marinedata release gate DIR --all --require-all`, then `marinedata release gate DIR --v11` (G1..G9; `GATE_V11_ARGS` carries `--v1-dir` and the manifests; the wrapper passes the pinned YuNet model path) | `GATES.json` in the export folder |
+| plan | `marinedata release publish ...` without `--go` (`PLAN_ARGS`, e.g. `--v1-dir`, adds the v1.0 delta) | `/data/logs/plan.log` |
 
 `STAGES` defaults to `lock build export croissant gate plan`. Without `croissant` there is no
 `croissant.json`, the croissant gate skips and `--require-all` cannot pass. An **empty** `STAGES=""` is
@@ -177,20 +177,29 @@ Read `pvesm status` before and after.
 
 ## Steps on both: publish, copy back, tear down
 
-6. **Publish by hand**, after reading `/data/logs/plan.log` and `GATES.json`. The plan is a dry run; `--go` is yours to add:
+6. **Publish by hand**, after reading `/data/logs/plan.log` and `GATES.json`. The plan is a dry run; `--go` is yours to add,
+   one part per call so a failure stops at a known part (`--list-parts` prints them: one `data:<config>` each, `provenance`,
+   `card`, `tag`):
    ```bash
    rm -f /root/marinedata.env             # the upload needs no S3 secrets
    read -rs HF_TOKEN && export HF_TOKEN
-   marinedata-run release publish --release-id v1.1 --flavour open \
-     --dir /data/export/v1.1/open --release-dir /data/releases/v1.1/open --lock /app/release.lock.yaml --go
+   for part in $(marinedata-run release publish --release-id v1.1 --flavour open \
+       --dir /data/export/v1.1/open --release-dir /data/releases/v1.1/open --lock /app/release.lock.yaml --list-parts); do
+     marinedata-run release publish --release-id v1.1 --flavour open \
+       --dir /data/export/v1.1/open --release-dir /data/releases/v1.1/open --lock /app/release.lock.yaml \
+       --go --part "$part" || break
+   done
    unset HF_TOKEN
    ```
-   It refuses unless every required gate passed, refuses an existing tag, and refuses `v1.0` without
-   `--allow-frozen` (v1.0 is frozen while the hackathon runs). The upload is `upload_large_folder`: resumable,
-   in batched commits (not one commit), over an allow-list only: `data/**/*.parquet`, the card (`README.md`),
-   `croissant.json` and `provenance/*`. `provenance/` is written at upload time: `RELEASE.json` as its public-safe
-   projection, `GATES.json` and the lock as they are. The tag (`v1.1`) is created on the head of the branch after the
-   last batch and is never moved. `SPLIT_MAP.json`, `DEDUP_GATE.json` and `tasks/` are not uploaded.
+   It refuses unless every required gate passed (`--all` and `--v11` both ran), refuses an existing tag, and refuses `v1.0`
+   without `--allow-frozen` (v1.0 is frozen while the hackathon runs). Data parts are `upload_large_folder` (resumable, batched
+   commits) over `data/<config>/*.parquet`; `provenance` and `card` are one commit each. The allow-list is `UPLOAD_PATTERNS`
+   (listed in `docs/release-runbook.md`): `data/**/*.parquet`, `README.md`, `croissant.json`, `provenance/*`, `LICENSE`, `NOTICE`,
+   `CITATION.cff`, `assets/*` and `docs/**`. `provenance/` is written at upload time: `RELEASE.json` as its public-safe
+   projection, `GATES.json` and the lock as they are. `card` sends `README.md` alone and only after every other part; `tag`
+   creates `v1.1` on the sha of the card commit (kept in `PUBLISH_STATE.json` in the release dir), never on the head of the
+   branch, and is never moved. `nc` refuses unless its repo is already private; nothing here changes visibility.
+   `SPLIT_MAP.json`, `DEDUP_GATE.json`, `tasks/` and `PUBLISH_STATE.json` are not uploaded. Rollback: `docs/release-runbook.md`.
 7. **Copy back** before deleting anything (`scp -r root@$IP:<path> .` on Hetzner; on Proxmox
    `ssh -J root@<host> <ci-user>@<vm-ip> 'sudo tar -C / -cf - <paths without the leading />' > copy-back.tar`):
    `/data/releases/ID/F/RELEASE.json`, `/data/export/ID/F/GATES.json`, `/data/export/ID/F/README.md` (the card),

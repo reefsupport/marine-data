@@ -138,7 +138,7 @@ runs a subset.
 | G3 | `leak` | G3 leak: the open upload set names no nc source id, no nc repo and no private bucket. |
 | G4 | `bytes_once` | G4 bytes once: an image's bytes are embedded once, in ``images``, and referenced elsewhere. |
 | G5 | `masks` | Masks gate (Phase A, P1.5): refuse a build whose masks do not line up with their images. |
-| G6 | `splits_v11` | G6 splits (v1.1.0): the split columns keep the frozen v1.0 assignment and the split policy. |
+| G6 | `splits_v11` | G6 splits (v1.1.0): the split columns keep the frozen v1.0 assignment and the split policy. The dHash bands are not recomputed: the v1.0 `dedup` gate covers cross-split near-duplicates. |
 | G7 | `decon` | G7 decontamination: no release image is a hackathon hidden-test or benchmark image. |
 | G8 | `privacy` | G8 privacy (v1.1.0 gate side): EXIF GPS and faces over the ``images`` config only (every new image lives there once; the v1.0 configs were checked in v1.0 and are frozen). |
 | G9 | `labelmap` | G9 labelmap (v1.1.0): every class id the exported label tables carry resolves in the pinned taxonomy and in the per-source crosswalk, and every fidelity word is one of the four. |
