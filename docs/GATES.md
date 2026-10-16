@@ -123,7 +123,9 @@ can only skip, never pass.
 | G4 `bytes_once` | `gates/bytes_once.py` | image bytes twice, a v1.0 image re-uploaded, a bytes column outside `images` |
 | G5 `masks` | `gates/masks_palette.py` | a `semseg` mask is not mode P with its declared palette |
 | G6 `splits_v11` | `gates/splits_v11.py` | unsplit / `--allow-unsplit` build, v1.0 reassignment, straddling group, OOD guards, +/-5 pt ratio |
-| G7 `decon` | `gates/decon_gate.py` | a release sha256 is in a hidden-test or benchmark manifest; either input is missing |
+| G7 `decon` | `gates/decon_gate.py` | a release sha256 is in a hidden-test manifest, an `exclude` or unknown benchmark manifest, or a `route-to-our-test` manifest while outside `test`/`ood-*`; either input is missing |
+
+G7 reads `registry/benchmarks.yaml`: each `--benchmark` manifest resolves to its entry by the `benchmark_id` column (else the file stem). A `route-to-our-test` image in `test`, `test_ood` or `ood-*` counts as `pinned_ok`; in any other split it fails, as does any overlap with an `exclude` benchmark, a hidden-test manifest or a manifest with no registry entry (`unknown_benchmark`, fail closed). `GATES.json` `decon.counts.manifests` lists `{benchmark_id, policy, manifest_shas, overlap, pinned_ok, failed}` per manifest and `failing` the first 20 failing images.
 
 Not wired yet: the `release gate` CLI entry for these, G9 `labelmap`, and the G8 privacy pass scoped
 to `images`. The pinned YuNet model (`gates/yunet_model.py`) is baked into the image by the Dockerfile.
