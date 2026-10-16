@@ -83,6 +83,11 @@ sources:
     access:
       method: s3
       uri: s3://rs-storage-open/sources/qut-fish/zip-ce6985436f9b/
+      params:
+        bucket: rs-storage-open
+        endpoint: hel1.your-objectstorage.com
+        region: hel1
+        prefix: sources/qut-fish/zip-ce6985436f9b/
     modalities: [image]
     capabilities: [fish-classification]
     coverage: { regions: [global] }

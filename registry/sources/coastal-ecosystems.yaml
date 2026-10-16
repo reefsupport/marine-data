@@ -293,7 +293,13 @@ sources:
       method: s3
       uri: s3://rs-storage-open/sources/floating-marine-debris/git-427059e47f99/
       size_bytes: 5847793
-      params: { upstream: github, git_ref: 427059e47f99 }
+      params:
+        bucket: rs-storage-open
+        endpoint: hel1.your-objectstorage.com
+        region: hel1
+        prefix: sources/floating-marine-debris/git-427059e47f99/
+        upstream: github
+        git_ref: 427059e47f99
     modalities: [satellite]
     capabilities: [marine-debris]
     # legacy items=60680 (unit unspecified: tabular/satellite records) -> n_* left null
