@@ -56,6 +56,13 @@ def spatiotemporal_group(source_id: str, values: Mapping[str, Any]) -> str | Non
     return f"{source_id}:{lat},{lon}:{when.date().isoformat()}"
 
 
+def sha_split_group(source_id: str, sha256: str) -> str:
+    """``<source_id>/sha:<sha256>``: the per-image group (rule 6, and the release enumeration's
+    degenerate-grouping guard). The one place the key is spelled, so the split-map stage, the
+    build and their tests cannot disagree on it."""
+    return f"{source_id}/sha:{sha256}"
+
+
 def derive_split_group(
     source_id: str, row: Mapping[str, Any], values: Mapping[str, Any], rule: Any = None
 ) -> tuple[str, str]:
@@ -83,5 +90,5 @@ def derive_split_group(
         return spatiotemporal, "spatiotemporal:0.01deg+utc_date"
     sha = _text(values.get("image_sha256"))
     if sha:
-        return f"{source_id}/sha:{sha}", "image_sha256"
+        return sha_split_group(source_id, sha), "image_sha256"
     return f"{source_id}/{partition}", "registry-fallback"

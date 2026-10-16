@@ -64,6 +64,7 @@ from .build_helpers import (  # noqa: F401
     _skipped_sources,
     _split_ratio_record,
     _with_release_group,
+    release_group_index,
     require_split_groups,
 )
 from .entries import (  # noqa: F401

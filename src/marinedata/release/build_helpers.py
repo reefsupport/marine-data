@@ -2,14 +2,14 @@
 
 from __future__ import annotations
 
-from collections.abc import Callable, Iterable
+from collections.abc import Callable, Iterable, Mapping
 from dataclasses import replace
 from pathlib import Path
 
 from ..loaders.generic import IMAGE_SUFFIXES
 from ..models import Source
 from ..registry import Registry
-from .entries import release_skip_reason
+from .entries import release_skip_reason, source_release_entries
 
 
 class ReleaseSkipError(ValueError):
@@ -18,6 +18,33 @@ class ReleaseSkipError(ValueError):
 
 def _loader_layout(source: Source) -> str | None:
     return source.loader.layout if source.loader is not None else None
+
+
+def _needs_release_group(source: Source) -> bool:
+    """True when ``source``'s loader can hand a sample over without a ``split_group``: a layout
+    other than ``staged-tree`` never sets one, and a ``staged-tree`` source with no registry
+    pattern keeps a null staged column null (``StagedTreeLoader._split_group``). The release
+    enumeration derives the group for both, so the build must read it from there. A
+    ``staged-tree`` source with a pattern always gets one from its loader (the column, else the
+    pattern; a pattern miss raises)."""
+    return _loader_layout(source) != "staged-tree" or source.split_group.pattern is None
+
+
+def release_group_index(
+    registry: Registry, roots: Mapping[str, Path], digest: Callable[[Path], str]
+) -> dict[str, dict[str, str]]:
+    """``{source_id: {image path relative to the root: release group}}`` for every source in
+    ``roots`` whose loader can leave a sample's ``split_group`` unset
+    (:func:`_needs_release_group`), from
+    :func:`~marinedata.release.entries.source_release_entries`: the enumeration
+    ``release split-map`` generated the map from, so a row gets the very key the map holds (for
+    a source the chain groups per image, ``<source>/sha:<sha256>``). The lookup
+    :func:`_with_release_group` applies; ``build_release`` and ``hf_export`` share it."""
+    return {
+        sid: {e.key: e.group for e in source_release_entries(registry.source(sid), root, digest)}
+        for sid, root in roots.items()
+        if _needs_release_group(registry.source(sid))
+    }
 
 
 def _memoized(digest: Callable[[Path], str]) -> Callable[[Path], str]:
@@ -38,7 +65,9 @@ def _with_release_group(  # type: ignore[no-untyped-def]
     sample, groups: dict[str, dict[str, str]], roots: dict[str, Path]
 ):
     """``sample`` with ``meta["split_group"]`` set from the enumeration the split map was
-    generated from (a loader that is not ``staged-tree`` never sets one). A pair is one
+    generated from (:func:`release_group_index`), when its loader set none: a loader that is not
+    ``staged-tree`` never sets one, a ``staged-tree`` loader none for a null staged column on a
+    source with no registry pattern (v1.1.0's suim). A loader-set group wins. A pair is one
     sample: its mask/depth file rides along with the primary image's group. The lookup is by
     image path relative to the source root, because ``Sample.key`` is layout-specific (a COCO
     ``file_name`` or a CSV image name is relative to ``images_dir``, not to the root); the key

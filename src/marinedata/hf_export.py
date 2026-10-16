@@ -35,11 +35,10 @@ from .release import (
     DEFAULT_SCHEMA_ID,
     SplitGroupError,
     _admitted_source_ids,
-    _loader_layout,
     _never_eval_source_ids,
     _with_release_group,
+    release_group_index,
     require_split_groups,
-    source_release_entries,
 )
 from .strata import TRAIN
 from .task_layers import hf_wiring as _tl
@@ -203,13 +202,8 @@ def collect_rows(
     never_eval = _never_eval_source_ids(registry, admitted)
     pseudo = {sid for sid in admitted if PSEUDO_TAG in registry.source(sid).tags}
     digests: dict[Path, str] = {}
-    walk_groups = {  # the same group lookup build_release applies to non-staged-tree layouts
-        sid: {
-            e.key: e.group for e in source_release_entries(registry.source(sid), root, file_digest)
-        }
-        for sid, root in admitted.items()
-        if _loader_layout(registry.source(sid)) != "staged-tree"
-    }
+    # the same group lookup build_release applies, so both place a row under the same key
+    walk_groups = release_group_index(registry, admitted, file_digest)
     out: dict[str, list[SampleRow]] = {}
     for task_id in release["tasks"]:
         task = registry.task(task_id)

@@ -13,7 +13,7 @@ from ..licence_class import spec_for
 from ..loaders.generic import IMAGE_SUFFIXES
 from ..metadata_norm.base import NormContext
 from ..metadata_norm.default import attribution_text
-from ..metadata_norm.split_group import derive_split_group
+from ..metadata_norm.split_group import derive_split_group, sha_split_group
 from ..models import Source
 from ..registry import Registry
 from ..sample_schema import staged_partition
@@ -111,7 +111,7 @@ def _guard_degenerate_grouping(
         n_groups,
         GUARD_MIN_GROUPS,
     )
-    return [(sha, f"{source_id}/sha:{sha}", split, path) for sha, _, split, path in entries]
+    return [(sha, sha_split_group(source_id, sha), split, path) for sha, _, split, path in entries]
 
 
 WALK_LAYOUTS = ("flat-images", "image-mask-pairs")

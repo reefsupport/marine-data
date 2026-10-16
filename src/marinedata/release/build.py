@@ -19,14 +19,14 @@ from ..splitmap import load_split_map
 from ..strata import TRAIN
 from .build_helpers import (
     _has_rows,
-    _loader_layout,
     _memoized,
     _skipped_sources,
     _split_ratio_record,
     _with_release_group,
+    release_group_index,
     require_split_groups,
 )
-from .entries import _admitted_source_ids, _never_eval_source_ids, source_release_entries
+from .entries import _admitted_source_ids, _never_eval_source_ids
 from .records import DEFAULT_SCHEMA_ID, ReleaseResult, TaskManifest
 from .split_map import _never_eval_near_dups
 
@@ -168,11 +168,7 @@ def build_release(
     )
     admitted_roots = {source_id: Path(roots[source_id]) for source_id in admitted}
     never_eval_sources = _never_eval_source_ids(registry, admitted)
-    walk_groups = {
-        sid: {e.key: e.group for e in source_release_entries(registry.source(sid), root, digest)}
-        for sid, root in admitted_roots.items()
-        if _loader_layout(registry.source(sid)) != "staged-tree"
-    }
+    walk_groups = release_group_index(registry, admitted_roots, digest)
 
     release_root = Path(out_dir) / "releases" / release / (flavour or "")
     manifests_dir = release_root / "tasks"
