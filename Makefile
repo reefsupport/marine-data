@@ -65,7 +65,11 @@ e2e:
 # `ci`: it needs a Docker daemon. `image-check` fails when the image is over IMAGE_MAX_BYTES.
 IMAGE ?= marinedata
 IMAGE_TAG ?= $(shell git describe --tags --always --dirty)
-IMAGE_MAX_BYTES ?= 1500000000
+# The cap was 1.5 GB before the `privacy` extra (CPU torch, torchvision, opencv) joined the image:
+# the locked wheels grow from 213 to 419 MB compressed, about 1.7 GB installed on the 455 MB base
+# (2.5x expansion, 3.3x for torch), so it is 2 GB. The first real `make image-check` is the
+# authority; tighten the cap to what it reports.
+IMAGE_MAX_BYTES ?= 2000000000
 
 image:
 	docker build -t $(IMAGE):$(IMAGE_TAG) .

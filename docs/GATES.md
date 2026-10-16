@@ -100,3 +100,64 @@ like any other extra gate. `GATES.json` is one dict keyed by gate name plus `sum
 ## Dedup gate and EXIF-transposed rows
 
 `image_sha256` is the identity of the upstream bytes. A row with `exif_transposed` true stores bytes re-encoded after the EXIF rotation, so the dedup gate does not compare their sha256 with `image_sha256`; it requires that the bytes decode and that their width/height equal the row's (`size_mismatch`). Rows with `exif_transposed` false keep the `sha256_mismatch` check.
+
+## v1.1.0 gates (library level)
+
+`publish_verdict` also requires `V11_REQUIRED` for a v1.1.0 release (`task_layers/V11_TABLES.json` or
+`data/images` in the release directory, or any of these in GATES.json), next to `masks`, `croissant`
+and `privacy`. A gate that is absent or only `skipped` blocks `release publish`; a `--rehearsal` run
+can only skip, never pass.
+
+| Gate | Module | Fails when |
+|---|---|---|
+| G1 `join` | `gates/join.py` | a table row has no `metadata` row; an open row joins a non-open image |
+| G2 `frozen` | `gates/frozen.py` | a v1.0 file other than README.md differs by one byte; a v1.0 `configs:` entry changes |
+| G3 `leak` | `gates/leak.py` | an nc id, the nc repo name or a private bucket appears in the open set (never echoed) |
+| G4 `bytes_once` | `gates/bytes_once.py` | image bytes twice, a v1.0 image re-uploaded, a bytes column outside `images` |
+| G5 `masks` | `gates/masks_palette.py` | a `semseg` mask is not mode P with its declared palette |
+| G6 `splits_v11` | `gates/splits_v11.py` | unsplit / `--allow-unsplit` build, v1.0 reassignment, straddling group, OOD guards, +/-5 pt ratio |
+| G7 `decon` | `gates/decon_gate.py` | a release sha256 is in a hidden-test or benchmark manifest; either input is missing |
+
+Not wired yet: the `release gate` CLI entry for these, G9 `labelmap`, and the G8 privacy pass scoped
+to `images`. The pinned YuNet model (`gates/yunet_model.py`) is baked into the image by the Dockerfile.
+
+
+## v1.1.0 gates (G1-G9)
+
+`marinedata release gate BUILD_DIR --v11` runs the nine gates below and merges each into
+`BUILD_DIR/GATES.json`; `release publish` reads that file (staged as `provenance/GATES.json`).
+`--v11` is implied by `--v1-dir`, `--only`, `--rehearsal`, `--hidden-test`, `--benchmark`,
+`--nc-id` and `--taxonomy-version`, and by a build with `task_layers/V11_TABLES.json` when no v1.0
+gate flag is given; the v1.0 flags and their behaviour are unchanged. `--only GATE` (repeatable)
+runs a subset.
+
+| Gate | GATES.json key | What it checks (first sentence of the module docstring) |
+|---|---|---|
+| G1 | `join` | G1 join coverage: every row of every v1.1.0 table joins to ``metadata`` on ``image_sha256``. |
+| G2 | `frozen` | G2 frozen v1.0: the v1.1.0 build never rewrites the v1.0 tree. |
+| G3 | `leak` | G3 leak: the open upload set names no nc source id, no nc repo and no private bucket. |
+| G4 | `bytes_once` | G4 bytes once: an image's bytes are embedded once, in ``images``, and referenced elsewhere. |
+| G5 | `masks` | Masks gate (Phase A, P1.5): refuse a build whose masks do not line up with their images. |
+| G6 | `splits_v11` | G6 splits (v1.1.0): the split columns keep the frozen v1.0 assignment and the split policy. |
+| G7 | `decon` | G7 decontamination: no release image is a hackathon hidden-test or benchmark image. |
+| G8 | `privacy` | G8 privacy (v1.1.0 gate side): EXIF GPS and faces over the ``images`` config only (every new image lives there once; the v1.0 configs were checked in v1.0 and are frozen). |
+| G9 | `labelmap` | G9 labelmap (v1.1.0): every class id the exported label tables carry resolves in the pinned taxonomy and in the per-source crosswalk, and every fidelity word is one of the four. |
+
+Exit code: 1 when a gate failed or, outside `--rehearsal`, was skipped (a gate that did not look has
+not passed); 2 on a usage error. `--rehearsal` reaches only `splits_v11` (an unsplit-only failure)
+and `decon` (missing manifests): they become `skipped`, never `passed`, and `release publish` still
+refuses a build with a skipped gate.
+
+The publish verdict also needs the v1.0 gates (`licence`, `dedup`, `splits`, `load`, `card`,
+`croissant`): run `marinedata release gate BUILD_DIR --all` for them first, then `--v11` (a later run
+overwrites only the entries it ran). The command ends with `publish verdict: OK|BLOCKED`, the check
+`release publish` makes.
+
+G8 scans the `images` config only (every new image lives there once; the v1.0 configs are frozen).
+The face detector is the pinned YuNet model, loaded through `verified_model_path` (sha256 checked,
+never downloaded; `MARINEDATA_YUNET_MODEL` overrides the path); `--detector MODULE:ATTR` replaces
+it. A model that cannot be verified, an unreadable image or a detector error FAILS the gate, and a
+detection lists the full `image_sha256`.
+
+G9 reads the `labelmap` section of `registry/gates.yaml`: `taxonomy_version` (null = the current
+registry taxonomy) and `fidelities` (exact, coarsened, approximate, unmappable).

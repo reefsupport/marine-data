@@ -9,6 +9,7 @@ import argparse
 import sys
 from pathlib import Path
 
+from .cli_release_gate_v11 import add_v11_options, cmd_release_gate_v11, wants_v11
 from .gates import GATES_FILE, GateResult, gate_status, verdict, write_gates
 from .gates.dedup import DEFAULT_PHASH_BITS
 from .gates.load import SAMPLE_ROWS
@@ -110,6 +111,7 @@ def add_gate_parser(release_sub) -> None:
         help="exit 1 unless all eight gates in GATES.json ran and passed: an absent, "
         "skipped or failed gate (privacy, card and croissant included) refuses",
     )
+    add_v11_options(p)
     p.set_defaults(func=cmd_release_gate)
 
 
@@ -161,6 +163,8 @@ def cmd_metadata_gate(args: argparse.Namespace) -> int:
 
 
 def cmd_release_gate(args: argparse.Namespace) -> int:
+    if wants_v11(args, v10_selected=bool(args.require_all or args.metadata or _selected(args))):
+        return cmd_release_gate_v11(args)
     metadata_rc = 0
     if args.metadata:
         metadata_rc = cmd_metadata_gate(args)

@@ -16,6 +16,9 @@ checks each row:
 * ``empty_rate``       per source, the share of masks with no labelled pixel above the threshold
   (5 % default: the registry has no per-source field for it yet).
 
+* v1.1.0 ``semseg`` shards (``mask`` + ``palette``, no ``image``) are checked by
+  :mod:`.masks_palette`: a mode-P PNG whose values and colours are the declared palette.
+
 A build without mask rows fails: a gate that checked nothing must not pass."""
 
 from __future__ import annotations
@@ -26,23 +29,29 @@ from collections.abc import Iterator
 from pathlib import Path
 
 from . import MAX_FAILURES, GateResult
+from .masks_palette import check_palette_row
 
 NAME = "masks"
 IGNORE = 255
 DEFAULT_EMPTY_THRESHOLD = 0.05
 EXIF_ORIENTATION = 0x0112
-_COLUMNS = ("image_sha256", "source", "image", "mask", "class_map", "instances", "exif_transposed")
+_COLUMNS = (
+    "image_sha256", "source", "source_id", "image", "mask", "class_map", "instances",
+    "exif_transposed", "palette", "mask_bytes_sha256", "mask_config",
+)  # fmt: skip
 
 
 def _shard_rows(path: Path) -> tuple[str | None, Iterator[dict]]:
-    """``("semantic" | "instance" | None, rows)`` of one shard; ``None``: not a mask config."""
+    """``(kind, rows)`` of a shard: semantic, instance, palette, or ``None`` (not a mask config)."""
     import pyarrow.parquet as pq
 
     shard = pq.ParquetFile(path)
     names = set(shard.schema_arrow.names)
-    if not {"image", "mask"} <= names:
+    if {"mask", "palette"} <= names and "image" not in names:
+        kind = "palette"
+    elif not {"image", "mask"} <= names:
         return None, iter(())
-    if "instances" in names:
+    elif "instances" in names:
         kind = "instance"
     elif "class_map" in names:
         kind = "semantic"
@@ -70,6 +79,8 @@ def _decode(cell):
 
 def _check_row(kind: str, row: dict) -> tuple[list[tuple[str, str]], bool]:
     """``([(failure kind, message)], mask_is_empty)`` for one row."""
+    if kind == "palette":
+        return check_palette_row(row)
     import numpy as np
 
     try:
@@ -133,7 +144,7 @@ def run_masks_gate(
         where = shard.relative_to(build_dir)
         for index, row in enumerate(rows):
             problems, empty = _check_row(kind, row)
-            source = str(row.get("source") or "?")
+            source = str(row.get("source") or row.get("source_id") or "?")
             counts["rows"] += 1
             counts[f"{kind}_rows"] += 1
             counts["exif_transposed_rows"] += int(bool(row.get("exif_transposed")))

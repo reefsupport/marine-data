@@ -92,6 +92,19 @@ Source = "https://github.com/reefsupport/marine-data"
 [project.scripts]
 marinedata = "marinedata.cli:main"
 
+# CPU-only torch for Linux (the release image, CI): download.pytorch.org/whl/cpu ships no CUDA
+# wheels, so uv.lock carries no `nvidia-*` / `triton` packages and the `privacy` extra fits the
+# image cap (Makefile IMAGE_MAX_BYTES). macOS keeps the PyPI wheels, which are CPU builds already.
+# The index is `explicit`: only the two packages named under [tool.uv.sources] ever use it.
+[tool.uv.sources]
+torch = [{ index = "pytorch-cpu", marker = "sys_platform != 'darwin'" }]
+torchvision = [{ index = "pytorch-cpu", marker = "sys_platform != 'darwin'" }]
+
+[[tool.uv.index]]
+name = "pytorch-cpu"
+url = "https://download.pytorch.org/whl/cpu"
+explicit = true
+
 [build-system]
 requires = ["hatchling"]
 build-backend = "hatchling.build"

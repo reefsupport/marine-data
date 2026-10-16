@@ -6,3 +6,11 @@ privacy:
   #   allow_exif_gps:
   #     some-source-id: true
   allow_exif_gps: {}
+
+labelmap:
+  # G9 (v1.1.0): every class id in the exported label tables (label-map, points, bleaching, boxes,
+  # semseg, instances) must resolve in this taxonomy release (registry/taxonomy/releases/<v>.json)
+  # and in the per-source crosswalk, and every fidelity must be one of the words below.
+  # taxonomy_version: null = the current registry taxonomy (registry/taxonomy/taxonomy.yaml).
+  taxonomy_version: null
+  fidelities: [exact, coarsened, approximate, unmappable]
