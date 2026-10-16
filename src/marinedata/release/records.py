@@ -67,6 +67,12 @@ class SplitMapStats:
     """Of those pairs, how many joined two still-separate components."""
     near_dup_max_component: int = 0
     """Images in the largest component a near-dup union formed — the chain guard's input."""
+    near_dup_candidates: int = 0
+    """dHash pairs within the union radius before rule B's confirm-hash (v1.1.0)."""
+    near_dup_rejected_phash: int = 0
+    """Candidates the confirm-hash rejected: pHash-256 too far apart (different scenes)."""
+    near_dup_rejected_entropy: int = 0
+    """Candidates the confirm-hash rejected: a flat frame, where no hash proves anything."""
     upstream_test_groups: int = 0
     """Raw split groups holding an upstream-test row that the "honour upstream test" rule
     (WP-R2c) pulled to ``test``; their merged components are counted below."""
