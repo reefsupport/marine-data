@@ -180,6 +180,7 @@ Regenerate with `python scripts/gen_storage_docs.py`; check offline with
 | `estonefish-scenes-real` | `s3://<open-bucket>/sources/estonefish-scenes-real/1.0/` | 1.0 | open | — | — | — | pinned |
 | `fathomnet-fgvc23` | `s3://<open-bucket>/sources/fathomnet-fgvc23/rev-4636bed20b3b/` | rev-4636bed20b3b | restricted-nd | 5,950 | — | — | pinned |
 | `fathomnet-fgvc25` | `s3://<open-bucket>/sources/fathomnet-fgvc25/2025/` | 2025 | restricted-nd | 9,306 | — | — | pinned |
+| `floating-marine-debris` | `s3://<open-bucket>/sources/floating-marine-debris/git-427059e47f99/` | git-427059e47f99 | open | 11 | — | — | pinned |
 | `galapagos-insas` | `s3://<open-bucket>/sources/galapagos-insas/record-17393662/` | record-17393662 | open | 21 | — | — | pinned |
 | `ibf` | `s3://<private-bucket>/sources/ibf/2026-10-06/` | 2026-10-06 | internal-only | 496 | — | 579 | pinned |
 | `kaggle-healthy-bleached-corals` | `s3://<private-bucket>/coral_bleaching/others.tar.gz` | zip-5e15452254a9 | internal-only | 923 | — | — | pinned |
@@ -201,11 +202,13 @@ Regenerate with `python scripts/gen_storage_docs.py`; check offline with
 | `pangaea-cvap-lander-bbox` | `s3://<open-bucket>/sources/pangaea-cvap-lander-bbox/PANGAEA.961314/` | PANGAEA.961314 | open | 2,509 | — | — | unpinned |
 | `pingmapper-sss-seg` | `s3://<open-bucket>/sources/pingmapper-sss-seg/v1.0.0/` | v1.0.0 | open | 31,014 | — | — | pinned |
 | `plankton-interaction-videos` | `s3://<open-bucket>/sources/plankton-interaction-videos/rev-f7d40238215e/` | rev-f7d40238215e | open | 21,221 | — | — | pinned |
+| `qut-fish` | `s3://<open-bucket>/sources/qut-fish/zip-ce6985436f9b/` | zip-ce6985436f9b | restricted-nc | 13,231 | — | — | pinned |
 | `reef-support-benthic-own` | `s3://<open-bucket>/sources/reef-support-benthic-own/2026-10-06/` | 2026-10-06 | open | 1,250 | 14,517 | 18,276 | pinned |
 | `reef-support-bleaching` | `s3://<open-bucket>/sources/reef-support-bleaching/2026-09-24/` | 2026-09-24 | open | 658 | — | — | pinned |
 | `reef-support-seaview-labels` | `s3://<open-bucket>/sources/reef-support-seaview-labels/2026-10-06/` | 2026-10-06 | open | 2,707 | 50,603 | 56,025 | pinned |
 | `reefolution` | `s3://<private-bucket>/sources/reefolution/2026-09-23-2c84cb0c9cda/` | 2026-09-23-2c84cb0c9cda | internal-only | 870 | — | 872 | pinned |
 | `rmas-hf` | `s3://<open-bucket>/sources/rmas-hf/rev-7eed10d36cd0/` | rev-7eed10d36cd0 | internal-only | 3,014 | — | — | pinned |
+| `roboflow-aquarium` | `s3://<open-bucket>/sources/roboflow-aquarium/zip-5d30fed3dd5a/` | zip-5d30fed3dd5a | open | 638 | — | — | pinned |
 | `roboflow-coral-bleaching-final-v6i` | `s3://<open-bucket>/sources/roboflow-coral-bleaching-final-v6i/v6i-image-labels-r2/` | v6i-image-labels-r2 | open | 2,551 | — | — | pinned |
 | `roboflow-coral-bleaching-general-v1-yolov8s` | `s3://<open-bucket>/sources/roboflow-coral-bleaching-general-v1-yolov8s/v1-yolov8s-image-labels-r2/` | v1-yolov8s-image-labels-r2 | open | 2,543 | — | — | pinned |
 | `roboflow-coral-classification-copy-changed-v13i` | `s3://<open-bucket>/sources/roboflow-coral-classification-copy-changed-v13i/v13i-image-labels/` | v13i-image-labels | open | 2,789 | — | — | pinned |
@@ -222,6 +225,9 @@ Regenerate with `python scripts/gen_storage_docs.py`; check offline with
 | `swdd-sss-wall` | `s3://<open-bucket>/sources/swdd-sss-wall/record-13692547/` | record-13692547 | open | 10,771 | — | — | pinned |
 | `synthetic-seabed-debris` | `s3://<open-bucket>/sources/synthetic-seabed-debris/1.0.0/` | 1.0.0 | restricted-nc | 4,830 | — | — | pinned |
 | `uatd` | `s3://<open-bucket>/sources/uatd/3/` | 3 | open | 9,212 | — | 9,205 | pinned |
+| `uiis` | `s3://<open-bucket>/sources/uiis/rev-44ca5db46599/` | rev-44ca5db46599 | open | 4,628 | — | — | pinned |
+| `uiis10k` | `s3://<open-bucket>/sources/uiis10k/rev-5c4316368a8e/` | rev-5c4316368a8e | open | 10,048 | — | — | pinned |
+| `usis10k` | `s3://<open-bucket>/sources/usis10k/rev-b10f41ab819b/` | rev-b10f41ab819b | open | 10,632 | — | — | pinned |
 | `usod` | `s3://<open-bucket>/sources/usod/zip-fb2a1c738fd7/` | zip-fb2a1c738fd7 | unknown | 14,600 | — | — | pinned |
 | `uw-stereodepth-40k` | `s3://<open-bucket>/sources/uw-stereodepth-40k/rev-6aa807c87f85/` | rev-6aa807c87f85 | internal-only | 40,000 | — | — | unpinned |
 | `uwbench` | `s3://<open-bucket>/sources/uwbench/rev-84af94500308/` | rev-84af94500308 | internal-only | 3,819 | — | — | unpinned |

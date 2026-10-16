@@ -801,7 +801,14 @@ sources:
     access:
       method: s3
       uri: s3://rs-storage-open/sources/uiis/rev-44ca5db46599/
-      params: { upstream: hf, hf_repo: LiamLian0727/UIIS, hf_revision: 44ca5db46599f14faf8e57643014664435823738 }
+      params:
+        bucket: rs-storage-open
+        endpoint: hel1.your-objectstorage.com
+        region: hel1
+        prefix: sources/uiis/rev-44ca5db46599/
+        upstream: hf
+        hf_repo: LiamLian0727/UIIS
+        hf_revision: 44ca5db46599f14faf8e57643014664435823738
     modalities: [image]
     capabilities: [fish-detection, megafauna-id]
     n_images: 4628
@@ -854,7 +861,14 @@ sources:
     access:
       method: s3
       uri: s3://rs-storage-open/sources/uiis10k/rev-5c4316368a8e/
-      params: { upstream: hf, hf_repo: LiamLian0727/UIIS10K, hf_revision: 5c4316368a8e420db754d1ab37c205a42985ba47 }
+      params:
+        bucket: rs-storage-open
+        endpoint: hel1.your-objectstorage.com
+        region: hel1
+        prefix: sources/uiis10k/rev-5c4316368a8e/
+        upstream: hf
+        hf_repo: LiamLian0727/UIIS10K
+        hf_revision: 5c4316368a8e420db754d1ab37c205a42985ba47
     modalities: [image]
     capabilities: [fish-detection, megafauna-id]
     n_images: 10048
@@ -908,7 +922,14 @@ sources:
     access:
       method: s3
       uri: s3://rs-storage-open/sources/usis10k/rev-b10f41ab819b/
-      params: { upstream: hf, hf_repo: LiamLian0727/USIS10K, hf_revision: b10f41ab819bcdd78459621aedae8ffb5cab3c59 }
+      params:
+        bucket: rs-storage-open
+        endpoint: hel1.your-objectstorage.com
+        region: hel1
+        prefix: sources/usis10k/rev-b10f41ab819b/
+        upstream: hf
+        hf_repo: LiamLian0727/USIS10K
+        hf_revision: b10f41ab819bcdd78459621aedae8ffb5cab3c59
     modalities: [image]
     capabilities: [fish-detection, megafauna-id]
     n_images: 10632
@@ -960,7 +981,12 @@ sources:
     access:
       method: s3
       uri: s3://rs-storage-open/sources/roboflow-aquarium/zip-5d30fed3dd5a/
-      params: { upstream: local_dir }
+      params:
+        bucket: rs-storage-open
+        endpoint: hel1.your-objectstorage.com
+        region: hel1
+        prefix: sources/roboflow-aquarium/zip-5d30fed3dd5a/
+        upstream: local_dir
     modalities: [image]
     capabilities: [fish-detection, megafauna-id]
     n_images: 638
