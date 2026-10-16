@@ -10,6 +10,7 @@ Nothing below is in a release yet. It is on `main` or on the Phase A branches na
 
 ### On main
 
+- Fix (v1.1 gates): G7 `decon` follows `registry/benchmarks.yaml`. Each `--benchmark` manifest resolves to its entry (`benchmark_id` column, else file stem); a `route-to-our-test` eval image in `test` or an OOD split is `pinned_ok`, in any other split it fails; `exclude`, hidden-test and unknown-benchmark (`unknown_benchmark`) manifests fail on any overlap. `GATES.json` lists `{benchmark_id, policy, manifest_shas, overlap, pinned_ok, failed}` per manifest and the first 20 failing images.
 - Fix (v1.1 rehearsal): `release split-map` and `release build` resolve a staged row's image from its own `image_path` when that file exists, and the partition stem index now walks sub-directories, so a partition that nests its images (Seaview `labelled_data/segments/`) no longer fails with "not found under".
 - Fix (v1.1 rehearsal): the export writes the Hub split name (`validation`, not the build's `probe`) and a resolved `licence_class` on every table row and records the per-config row counts in RELEASE.json; the load gate reads the card's `configs:` patterns, resolves them against the build and `--v1-dir` and loads each config with the parquet builder; the card and masks gates accept the frozen v1.0 configs under `--v1-dir`.
 - Docs: install requirements, standalone snippets, fish-boxes statistics.
