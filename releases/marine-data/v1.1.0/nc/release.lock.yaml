@@ -1,0 +1,25 @@
+release_id: v1.1.0
+created: '2026-10-16T01:49:52+00:00'
+code_sha: 962384e04bb47d8e3c9004784bfcf636aa477979
+flavour: nc
+configs:
+- coral-masks
+- coral-masks-machine
+- images
+- metadata
+- boxes
+sources:
+- id: synthetic-seabed-debris
+  version: 1.0.0
+  root_digest: 3ae10a0f8a0d3670a7aacde156a415f7054bcfed679e49114a98d569fb74761c
+  n_images: 4830
+  access_class: restricted-nc
+excluded:
+  coralvqa: 'deferred to v1.2: not in the v1.1.0 fetch list (vm-build-plan 4.3, md-design
+    2)'
+  mermaid-aws: 'deferred to v1.2: MERMAID is a v1.2 source (md-design, vm-build-plan
+    4.3); not in the v1.1.0 fetch list'
+  flsea: 'deferred to v1.2: not in the v1.1.0 fetch list (vm-build-plan 4.3, md-design
+    2)'
+  atlantis-synthetic-depth: 'deferred to v1.2: not in the v1.1.0 fetch list (vm-build-plan
+    4.3, md-design 2)'
