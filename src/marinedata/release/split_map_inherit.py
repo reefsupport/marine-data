@@ -8,7 +8,7 @@ stays readable.
 
 from __future__ import annotations
 
-from collections.abc import Collection, Mapping, Sequence
+from collections.abc import Collection, Iterable, Mapping, Sequence
 from dataclasses import dataclass, field
 
 from ..neardup import NearDupConfig, v1_band_pairs
@@ -31,6 +31,19 @@ class InheritPlan:
     ood_header: dict[str, object] = field(default_factory=dict)
 
 
+def unconfirmed_band_pairs(
+    unconfirmed: Iterable[tuple[str, str, int]], prior_split: Mapping[str, SplitName]
+) -> list[tuple[str, str, int]]:
+    """Rule-B candidates the confirm-hash rejected (``ConfirmedPairs.rejected``) that pair a new
+    image with a prior-release one, as band pairs ``(new_sha, prior_sha, hamming)``: closer than
+    the band yet unconfirmed, so they keep the band's never-eval / never-train constraint."""
+    return [
+        (a, b, d) if b in prior_split else (b, a, d)
+        for a, b, d in unconfirmed
+        if (a in prior_split) != (b in prior_split)
+    ]
+
+
 def plan_inheritance(
     rows: Sequence[tuple[str, str, str]],
     *,
@@ -41,6 +54,7 @@ def plan_inheritance(
     near_dup: NearDupConfig | None,
     ood_rules: RulesConfig | None,
     ood_metadata: Mapping[str, Mapping[str, object]] | None,
+    unconfirmed: Iterable[tuple[str, str, int]] = (),
 ) -> InheritPlan:
     """``rows`` are ``(image_sha256, split_group, source_id)``; ``hashes`` the dHash of every
     eval-capable image (empty without ``near_dup``); ``canonical`` maps a group to its component.
@@ -62,6 +76,7 @@ def plan_inheritance(
             union_max=near_dup.union_max,
             band_max=near_dup.exclude_max,
         )
+        band = sorted([*band, *unconfirmed_band_pairs(unconfirmed, prior_split)])
         component_of = {sha: canonical.get(group, group) for sha, group, _ in rows}
         forced, withhold = band_constraints(band, v1_split=prior_split, component_of=component_of)
     ood: dict[str, list[str]] = {}

@@ -50,6 +50,19 @@ def _fake_dhashes(near: dict[bytes, tuple[bytes, int]]):  # type: ignore[no-unty
     return compute
 
 
+def _fake_confirm(near: dict[bytes, tuple[bytes, int]]):  # type: ignore[no-untyped-def]
+    """The confirm-hash ``release split-map`` turns on: a near-duplicate shares its base's pHash."""
+
+    def compute(paths, *, cache_dir, workers=1):  # type: ignore[no-untyped-def]
+        out = {}
+        for sha, path in paths.items():
+            base = near.get(Path(path).read_bytes(), (Path(path).read_bytes(), 0))[0]
+            out[sha] = (hashlib.sha256(base).digest(), 8.0)
+        return out
+
+    return compute
+
+
 def _relaxed_rules(tmp_path: Path) -> Path:
     """The repository's splits/v2.yaml with the size guards scaled down to the fixture."""
     text = SPLIT_V2.read_text()
@@ -127,6 +140,9 @@ def _world(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> SimpleNamespace:
     )
     prior, digest = load_inherited(prior_path)
     monkeypatch.setattr("marinedata.release.split_map.compute_dhashes", _fake_dhashes(near))
+    monkeypatch.setattr(
+        "marinedata.release.split_map.compute_confirm_features", _fake_confirm(near)
+    )
     registry = _registry(
         [_src("src-old", "open"), _src("src-new", "open"), _src("deepfish", "open")]
     )
@@ -296,6 +312,7 @@ def test_cli_accepts_lock_inherit_seed_out_and_scopes_to_the_lock(
     assert seen["only"] == {"src-old", "src-new", "deepfish"}
     got = load_split_map(out)
     assert got is not None and got.seed == 11 and got.inherits["release"] == "v1.0.0"
+    assert got.near_dup["union_confirm"]["phash256_max"] == 32  # the v1.1.0 rule B is recorded
     assert all(got.assignments[g] == s for g, s in world.prior.assignments.items())
     assert "test_ood" in got.assignments.values()
     again = build_parser().parse_args(_argv(world, out))

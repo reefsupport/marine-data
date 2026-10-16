@@ -30,7 +30,7 @@ from .flavours import SPLIT_MAP_PROFILE, check_profile, flavour_spec, ships_in
 from .gate import evaluate
 from .manifest_identity import checksums_digest
 from .models import Profile, Source
-from .neardup import NearDupConfig, NearDupError, default_workers, pil_version
+from .neardup import NearDupConfig, NearDupError, UnionConfirm, default_workers, pil_version
 from .registry import Registry, RegistryError
 from .release import ReleaseSkipError, build_release, generate_split_map
 from .release_lock import (
@@ -304,6 +304,12 @@ def _generate_global_split_map(
         f"upstream_test_components={stats.upstream_test_components} "
         f"dedup_group_links={stats.dedup_group_links}"
     )
+    if near_dup.union_confirm is not None:
+        print(
+            f"release: near-dup confirm-hash candidates={stats.near_dup_candidates} "
+            f"rejected_phash={stats.near_dup_rejected_phash} "
+            f"rejected_entropy={stats.near_dup_rejected_entropy}"
+        )
     if getattr(args, "inherit", None) is not None:
         print(
             f"release: inherited {stats.inherited_groups} group(s) from {args.inherit} "
@@ -363,7 +369,9 @@ def _cmd_release_split_map(args: argparse.Namespace) -> int:
     except (ValueError, OSError, ReleaseLockError) as exc:  # SplitMapError is a ValueError
         print(f"release split-map: {exc}", file=sys.stderr)
         return 1
-    near_dup = NearDupConfig(cache_dir=cache_root() / "_dhash", workers=default_workers())
+    near_dup = NearDupConfig(  # v1.1.0: rule B's dHash candidates must pass the confirm-hash
+        cache_dir=cache_root() / "_dhash", workers=default_workers(), union_confirm=UnionConfirm()
+    )
     return _generate_global_split_map(
         registry,
         args,
@@ -481,7 +489,11 @@ def _cmd_release_build(args: argparse.Namespace) -> int:
             )
         return 1
 
-    near_dup = NearDupConfig(cache_dir=cache_root() / "_dhash", workers=default_workers())
+    near_dup = NearDupConfig(  # a --v11 map is `release split-map`'s: record its rule B
+        cache_dir=cache_root() / "_dhash",
+        workers=default_workers(),
+        union_confirm=UnionConfirm() if getattr(args, "v11", False) else None,
+    )
     split_map_path = Path(args.split_map)
     split_map_exists = load_split_map(split_map_path) is not None
 

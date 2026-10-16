@@ -8,7 +8,16 @@ from pathlib import Path
 from ..builder import SUPERVISED_DEFAULT_RATIOS, SplitName
 from ..checksums import file_digest
 from ..licence_class import release_excluded
-from ..neardup import NearDupChainError, NearDupConfig, compute_dhashes, near_dup_record, near_pairs
+from ..neardup import (
+    ConfirmedPairs,
+    NearDupChainError,
+    NearDupConfig,
+    compute_confirm_features,
+    compute_dhashes,
+    confirm_pairs,
+    near_dup_record,
+    near_pairs,
+)
 from ..registry import Registry
 from ..splitmap import MergeInfo, SplitMap, load_split_map, resolve_splits, rows_to_counts
 from ..splitmap_inherit import resolve_inherited_splits
@@ -37,6 +46,22 @@ def dedup_group_links(
         for ordered in (sorted(group_members),)
         for other in ordered[1:]
     ]
+
+
+def near_dup_links(
+    hashes: Mapping[str, int], paths: Mapping[str, Path], config: NearDupConfig
+) -> ConfirmedPairs:
+    """Rule B's links: every dHash pair within ``config.union_max`` (v1.0), or — with
+    ``config.union_confirm`` (v1.1.0) — only the candidates the confirm-hash keeps (see
+    :class:`~marinedata.neardup.UnionConfirm`). Only images in a candidate pair are decoded."""
+    candidates = near_pairs(hashes, config.union_max)
+    if config.union_confirm is None:
+        return ConfirmedPairs(links=[(a, b) for a, b, _ in candidates], candidates=len(candidates))
+    touched = sorted({sha for a, b, _ in candidates for sha in (a, b)})
+    features = compute_confirm_features(
+        {sha: paths[sha] for sha in touched}, cache_dir=config.cache_dir, workers=config.workers
+    )
+    return confirm_pairs(candidates, features, config.union_confirm)
 
 
 def generate_split_map(
@@ -99,7 +124,10 @@ def generate_split_map(
     re-encoded copy can never land on the other side of a split. Raises
     :class:`~marinedata.neardup.NearDupChainError` before anything is written if the
     largest component a near-dup union formed exceeds ``near_dup.chain_fraction`` of all
-    images (dHash links chain; the thresholds are policy, never auto-retuned).
+    images (dHash links chain; the thresholds are policy, never auto-retuned). With
+    ``near_dup.union_confirm`` (v1.1.0) a dHash pair is only a candidate: it is unioned when the
+    pair's pHash-256 agree and neither image is flat (:func:`near_dup_links`); a rejected pair
+    links nothing, and the rule is recorded in the map's ``near_dup.union_confirm`` header.
 
     ``honour_upstream_test`` (WP-R2c, default on): every split group holding at least one row
     whose upstream split normalises to ``test`` (:mod:`marinedata.upstream_split`) is forced
@@ -149,6 +177,7 @@ def generate_split_map(
     )
     links: list[tuple[str, str]] = []
     hashes: dict[str, int] = {}
+    union = ConfirmedPairs(links=[], candidates=0)
     if near_dup is not None:
         eval_shas = sorted({sha for sha, _, source in rows if source not in never_eval_sources})
         hashes = compute_dhashes(
@@ -156,7 +185,8 @@ def generate_split_map(
             cache_dir=near_dup.cache_dir,
             workers=near_dup.workers,
         )
-        links = [(a, b) for a, b, _ in near_pairs(hashes, near_dup.union_max)]
+        union = near_dup_links(hashes, paths, near_dup)
+        links = list(union.links)
     dedup_links: list[tuple[str, str]] = []
     if near_dup_groups is not None:
         dedup_links = dedup_group_links(near_dup_groups, {sha for sha, _, _ in rows})
@@ -183,6 +213,7 @@ def generate_split_map(
             canonical=merge_info.canonical,
             hashes=hashes,
             near_dup=near_dup,
+            unconfirmed=union.rejected,
             ood_rules=ood_rules,
             ood_metadata=ood_metadata,
         )
@@ -260,6 +291,9 @@ def generate_split_map(
         near_dup_pairs=len(links),
         near_dup_unions=merge_info.near_dup_unions,
         near_dup_max_component=near_dup_max_component,
+        near_dup_candidates=union.candidates,
+        near_dup_rejected_phash=union.rejected_phash,
+        near_dup_rejected_entropy=union.rejected_entropy,
         upstream_test_groups=len(test_groups),
         upstream_test_components=sum(1 for c in upstream_test_components if forced.get(c) == TEST),
         dedup_group_links=len(dedup_links),

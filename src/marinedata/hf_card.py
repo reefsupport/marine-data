@@ -119,6 +119,28 @@ def render_card(
     takedown_url: str | None = None,
 ) -> str:
     near = release["near_dup"]
+    confirm = near.get("union_confirm")  # v1.1.0's rule B confirm-hash; v1.0 records lack it
+    rule_b_scope = (
+        f"whose pHash-256 differ in at most {confirm['phash256_max']} bits and that both carry "
+        f"at least {confirm['min_entropy_bits']} bits of grey entropy "
+        if confirm
+        else ""
+    )
+    limitation = (
+        "**Known limitation.** A 64-bit dHash sees structure, not content: low-texture frames "
+        "(flat sand against open water, blue-water shots) hash close together. Rule B only "
+        "merges a dHash pair that a content-aware pHash-256 confirms, so different scenes are no "
+        "longer merged; rule A and the prior-release band still act on dHash alone, so a different "
+        "low-texture scene can be excluded or kept out of one side of the split. Those errors are "
+        "conservative — they never leak an image across splits."
+        if confirm
+        else "**Known limitation.** A 64-bit dHash sees structure, not content: low-texture frames "
+        "(flat sand against open water, blue-water shots) hash close together and can be "
+        "merged though they are different scenes. The error is conservative — it only ever "
+        "moves images into the same split, never leaks one across splits — but it can shrink "
+        "evaluation sets. A confirm-hash (second, content-aware check on each merge) is "
+        "planned for v2."
+    )
     empty_note = [
         f"- `{c}` has **no supervision in this release**: every `label` and every "
         "`mask_class_map` value is null. It is published for split membership only."
@@ -235,17 +257,12 @@ def render_card(
         f"- Rule A: a never-eval image within Hamming {near['never_eval_exclude_max_hamming']} "
         f"of any eval-capable image is excluded from every task "
         f"({release['never_eval_near_dup_excluded']['count']} images).",
-        f"- Rule B: images within Hamming {near['union_max_hamming']} are unioned into one "
-        "split group before the split, so near-copies cannot straddle train and test.",
+        f"- Rule B: images within Hamming {near['union_max_hamming']} {rule_b_scope}are unioned "
+        "into one split group before the split, so near-copies cannot straddle train and test.",
         f"- Chain guard: a union component larger than {near['chain_guard_fraction']:.0%} "
         "of the corpus fails the build.",
         "",
-        "**Known limitation.** A 64-bit dHash sees structure, not content: low-texture frames "
-        "(flat sand against open water, blue-water shots) hash close together and can be "
-        "merged though they are different scenes. The error is conservative — it only ever "
-        "moves images into the same split, never leaks one across splits — but it can shrink "
-        "evaluation sets. A confirm-hash (second, content-aware check on each merge) is "
-        "planned for v2.",
+        limitation,
         "",
         "## Label notes",
         "",
