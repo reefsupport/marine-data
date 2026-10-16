@@ -208,7 +208,7 @@ class SplitMap:
     prior-release split it neighbours (GATES.json lists it). Written only when set."""
     pins: dict[str, object] = field(default_factory=dict)
     """How the benchmark manifests pinned eval and held-out images (rule, per-benchmark counts,
-    v1-continuity conflicts); empty, and absent from the file, for a map written without pins."""
+    v1-continuity overrides); empty, and absent from the file, for a map written without pins."""
 
 
 def load_split_map(path: str | Path) -> SplitMap | None:

@@ -13,6 +13,11 @@ The split map matches a release row by its image sha256, whatever the staged ``u
 says; the manifest's ``image_sha256`` and ``bytes_sha256`` columns pin too (a release image's
 ``bytes_sha256`` equals its ``image_sha256``). Gate G7 judges the same two roles through
 :func:`split_role`, so the map and the gate cannot disagree about which images are held-out.
+
+A pin wins over an inherited v1.0 assignment (design 3.1 rule 3: pinned first, then v1
+continuity): the whole component moves to the pinned split and the moved v1.0 groups are recorded in
+the ``pins.v1_continuity_overridden`` header block. Only an OOD claim and a never-eval-only
+component still win over a pin.
 """
 
 from __future__ import annotations
@@ -38,10 +43,11 @@ POLICY = "route-to-our-test"
 VAL_NAMES = frozenset({"val", "valid", "validation"})
 SHA_COLUMNS = ("sha256", "image_sha256", "bytes_sha256")
 SPLIT_COLUMN = "upstream_split"
-MAX_CONFLICT_ROWS = 200
+MAX_OVERRIDE_IDS = 200
 PIN_RULE = (
     "route-to-our-test manifests: eval split -> test, second held-out split -> validation; "
-    "never-eval train, OOD claims and v1.0 continuity win over a pin; test beats validation"
+    "never-eval train and OOD claims win over a pin; a pin wins over an inherited v1.0 split "
+    "(recorded in v1_continuity_overridden); test beats validation"
 )
 Row = tuple[str, str, str]  # image sha256, split group, source id
 _HEX64 = re.compile(r"[0-9a-f]{64}")
@@ -168,45 +174,41 @@ def _component_priors(
     return priors
 
 
-def v1_conflicts(
+def v1_overridden(
     rows: Sequence[Row],
     canonical: Mapping[str, str],
     pins: BenchmarkPins,
-    targets: Mapping[str, str],
+    overrides: Mapping[str, str],
     priors: Mapping[str, set[str]],
+    prior: Mapping[str, str],
 ) -> dict[str, Any]:
-    """Pinned images whose component the v1.0 map already placed elsewhere.
+    """The ``pins.v1_continuity_overridden`` block: what the pins moved off their v1.0 split.
 
-    The v1.0 split wins (continuity), so these are counted and reported, never moved.
-    ``would_fail_g7`` counts those gate G7 rejects: an eval image outside test/OOD, a held-out
-    image outside validation/test/OOD."""
-    found: dict[str, dict[str, Any]] = {}
-    for sha, group, source in sorted(r for r in rows if r[0] in pins.by_sha):
-        canon = canonical.get(group, group)
-        have, want = priors.get(canon), MAP_NAME[targets[canon]]
-        if not have or have == {want} or sha in found:
+    ``images`` counts the pinned release images in an overridden component, ``by_source`` the same
+    per source as ``"<v1.0 split> -> <pin>"``, and ``groups`` the inherited (v1.0) groups whose
+    split changed. ``group_ids`` lists those groups when there are at most ``MAX_OVERRIDE_IDS``;
+    the gates accept exactly these groups as changed since v1.0 (see ``gates/splits_v11.py``)."""
+    images: dict[str, tuple[str, str]] = {}
+    moved: set[str] = set()
+    for sha, group, source in sorted(rows):
+        want = overrides.get(canon := canonical.get(group, group))
+        if want is None:
             continue
-        pin, label = pins.by_sha[sha]
-        found[sha] = {
-            "sha256": sha,
-            "source": source,
-            "benchmark": label,
-            "v1_split": "+".join(sorted(have)),
-            "pin": want,
-            "g7_fails": not all(accepted(pin, split) for split in have),
-        }
-    items = list(found.values())
-    by_benchmark: dict[str, Counter[str]] = {}
-    for item in items:
-        key = f"{item['v1_split']} -> {item['pin']}"
-        by_benchmark.setdefault(item["benchmark"], Counter())[key] += 1
-    return {
-        "count": len(items),
-        "would_fail_g7": sum(item["g7_fails"] for item in items),
-        "by_benchmark": {k: dict(sorted(v.items())) for k, v in sorted(by_benchmark.items())},
-        "rows": items[:MAX_CONFLICT_ROWS],
-        "rows_truncated": len(items) > MAX_CONFLICT_ROWS,
+        if prior.get(group, want) != want:
+            moved.add(group)
+        if sha in pins.by_sha and sha not in images:
+            images[sha] = (source, f"{'+'.join(sorted(priors[canon]))} -> {want}")
+    by_source: dict[str, Counter[str]] = {}
+    for source, change in images.values():
+        by_source.setdefault(source, Counter())[change] += 1
+    block: dict[str, Any] = {
+        "images": len(images),
+        "groups": len(moved),
+        "by_source": {k: dict(sorted(v.items())) for k, v in sorted(by_source.items())},
     }
+    if len(moved) <= MAX_OVERRIDE_IDS:
+        block["group_ids"] = sorted(moved)
+    return block
 
 
 def apply_benchmark_pins(
@@ -217,26 +219,34 @@ def apply_benchmark_pins(
     *,
     prior: Mapping[str, str] | None = None,
     ood: Collection[str] = (),
-) -> tuple[dict[str, str], dict[str, Any]]:
-    """``(forced plus the manifest pins, the SPLIT_MAP ``pins`` header block)``.
+    train_only: Collection[str] = (),
+) -> tuple[dict[str, str], dict[str, Any], dict[str, str]]:
+    """``(forced plus the manifest pins, the SPLIT_MAP ``pins`` header block, the v1.0 overrides)``.
 
-    A pinned component yields to an OOD claim, to a v1.0 assignment (``prior``) and to any earlier
-    ``forced`` entry (never-eval train, band, upstream test); the header counts each. A v1.0
-    conflict is only reported here: ``resolve_inherited_splits`` keeps the prior split itself.
-    ``(dict(forced), {})`` when no release row is pinned, so an unpinned map is unchanged."""
+    A pinned component yields to an OOD claim, to a never-eval-only component (``train_only``) and
+    to any earlier ``forced`` entry (band, upstream test); the header counts each. It wins over a
+    v1.0 assignment (``prior``): such a component is returned in ``overrides`` (component -> map
+    split) for :func:`~marinedata.splitmap_inherit.resolve_inherited_splits` to move whole, and the
+    moved groups are recorded in the header's ``v1_continuity_overridden`` block (present whenever
+    ``prior`` is). ``(dict(forced), {}, {})`` when no release row is pinned, so an unpinned map is
+    unchanged."""
     targets = component_pins(rows, canonical, pins)
     if not targets:
-        return dict(forced), {}
+        return dict(forced), {}, {}
     priors = _component_priors(rows, canonical, prior, targets) if prior is not None else {}
     merged = dict(forced)
+    overrides: dict[str, str] = {}
     placed: Counter[str] = Counter()
     skipped: Counter[str] = Counter()
     for canon, target in sorted(targets.items()):
         want, have = MAP_NAME[target], priors.get(canon)
         if canon in ood:
             skipped["ood"] += 1
+        elif canon in train_only:
+            skipped["earlier_rule"] += 1
         elif have and have != {want}:
-            skipped["v1_continuity"] += 1
+            overrides[canon] = want
+            placed[target] += 1
         elif merged.get(canon, want) != want:
             skipped["earlier_rule"] += 1
         else:
@@ -254,15 +264,24 @@ def apply_benchmark_pins(
         },
         "manifest_rows": {k: dict(v) for k, v in sorted(pins.manifest_rows.items())},
         "components": {pin: placed[pin] for pin in (PIN_TEST, PIN_VAL)},
-        "skipped_components": {
-            "ood": skipped["ood"],
-            "v1_continuity": skipped["v1_continuity"],
-            "earlier_rule": skipped["earlier_rule"],
-        },
+        "skipped_components": {"ood": skipped["ood"], "earlier_rule": skipped["earlier_rule"]},
     }
     if prior is not None:
-        header["v1_continuity_conflicts"] = v1_conflicts(rows, canonical, pins, targets, priors)
-    return merged, header
+        header["v1_continuity_overridden"] = v1_overridden(
+            rows, canonical, pins, overrides, priors, prior
+        )
+    return merged, header, overrides
+
+
+def check_overridden(header: Mapping[str, Any], moved: Collection[str]) -> None:
+    """Raise unless ``moved`` (the v1.0 groups the map changed) is what the ``pins`` header says."""
+    block = header.get("v1_continuity_overridden") or {}
+    listed = block.get("group_ids")
+    if (listed is not None and set(listed) != set(moved)) or len(moved) != block.get("groups", 0):
+        raise ValueError(
+            f"benchmark pins: {len(moved)} v1.0 group(s) changed split, but the pins header "
+            f"records {block.get('groups', 0)} (group_ids {listed})"
+        )
 
 
 def stamp_pins(out: Path, header: Mapping[str, Any]) -> None:

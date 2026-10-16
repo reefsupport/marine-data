@@ -14,10 +14,20 @@ Nothing below is in a release yet. It is on `main` or on the Phase A branches na
   `registry/benchmarks/manifests` (design eval-decontamination-split-v2, 2.2): the entry's eval split pins `test`,
   its second held-out split (`heldout_val`, else upstream `val` beside another eval split) pins `val`, matched by image
   sha256 or bytes_sha256. uiis's val-only eval, suim's `images` label, coralscapes `validation` and usis10k `val` no
-  longer fall to the allocator. OOD claims, never-eval train and an inherited v1.0 assignment still win; v1.0 conflicts
-  are counted in `SPLIT_MAP.json` `pins.v1_continuity_conflicts` and in the `release split-map` summary
-  (`--no-benchmark-pins` opts out). Gate G7 now accepts a held-out manifest row in validation, test or ood-* (train still
+  longer fall to the allocator. OOD claims and never-eval train still win over a pin; the `release split-map` summary counts
+  the pins (`--no-benchmark-pins` opts out). Gate G7 now accepts a held-out manifest row in validation, test or ood-* (train still
   fails) and counts {eval, heldout} x {pinned_ok, failed} per manifest.
+
+- Fix (split map, v1.1.0): a benchmark pin now wins over an inherited v1.0 split, the order design
+  eval-decontamination-split-v2 3.1 rule 3 gives (pinned first, then v1 continuity). The first v1.1.0 run kept v1.0
+  over 3 pinned images (uiis 2, uiis10k 1, all train -> test) and G7 failed on them. The pinned component now moves
+  whole, its v1.0 groups included, and `SPLIT_MAP.json` records it as `pins.v1_continuity_overridden`
+  (`images`, `groups`, `by_source`, `group_ids` listed up to 200) in place of `pins.v1_continuity_conflicts`. The
+  `release split-map` summary prints `benchmark pins override v1 continuity for N image(s) in M group(s)`. OOD
+  claims and never-eval train still win over a pin. Gate G6 `reassigned_v1` accepts exactly the listed groups and
+  fails any other changed v1.0 group, or a listed group that did not change. `registry/SPLIT_MAP.json` (v1.0) and
+  the v1.0 configs stay frozen: a v1.0 train image that moves to v1.1 test is a documented v1.0 -> v1.1 split
+  change, and the v1.1.0 card states the count. `--no-benchmark-pins` is unchanged and keeps v1.0 continuity.
 
 - Fix (v1.1 gates): G7 `decon` follows `registry/benchmarks.yaml`. Each `--benchmark` manifest resolves to its entry (`benchmark_id` column, else file stem); a `route-to-our-test` eval image in `test` or an OOD split is `pinned_ok`, in any other split it fails; `exclude`, hidden-test and unknown-benchmark (`unknown_benchmark`) manifests fail on any overlap. `GATES.json` lists `{benchmark_id, policy, manifest_shas, overlap, pinned_ok, failed}` per manifest and the first 20 failing images.
 - Fix (v1.1 rehearsal): `release split-map` and `release build` resolve a staged row's image from its own `image_path` when that file exists, and the partition stem index now walks sub-directories, so a partition that nests its images (Seaview `labelled_data/segments/`) no longer fails with "not found under".
