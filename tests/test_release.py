@@ -21,6 +21,7 @@ depend on task kind or label content, only on ``split_group``/sha256 identity.
 from __future__ import annotations
 
 import hashlib
+import re
 from datetime import date
 from pathlib import Path
 
@@ -36,6 +37,7 @@ from marinedata.enums import (
     Region,
     Tier,
 )
+from marinedata.metadata_norm.split_group import sha_split_group
 from marinedata.models import (
     Access,
     Annotation,
@@ -47,9 +49,9 @@ from marinedata.models import (
     Verification,
 )
 from marinedata.registry import Registry
-from marinedata.release import build_release
+from marinedata.release import build_release, generate_split_map
 from marinedata.schema import Axis, Crosswalk, CrosswalkEdge, LabelNode, LabelSchema
-from marinedata.splitmap import SplitMap, SplitMapError, save_split_map
+from marinedata.splitmap import SplitMap, SplitMapError, load_split_map, save_split_map
 from marinedata.tables import PointRow, StagedImage, write_metadata_table, write_points_table
 from marinedata.task import TaskKind, TaskSpec
 
@@ -77,7 +79,7 @@ def _source(source_id: str, version: str = "v1") -> Source:
     )
 
 
-def _stage(root: Path, rows: list[tuple[str, str, bytes]]) -> Path:
+def _stage(root: Path, rows: list[tuple[str, str | None, bytes]]) -> Path:
     """``rows``: ``(stem, split_group, image_bytes)``. Writes real image bytes and a
     real ``metadata.parquet`` via the repo's own writer — see the module docstring."""
     staged = []
@@ -286,6 +288,85 @@ def test_frozen_build_still_raises_for_a_group_in_neither_assignments_nor_withhe
         )
 
     assert split_map.read_bytes() == before
+
+
+# ── a source whose loader sets no split_group (v1.1.0 P7: suim) ─────────────────────
+
+LOADERLESS = {"a": b"LOADERLESS-A", "b": b"LOADERLESS-B", "c": b"LOADERLESS-C"}
+
+
+def _loaderless_fixture(tmp_path: Path) -> tuple[Registry, dict[str, Path], dict[str, str]]:
+    """One staged source whose loader hands every sample over without a ``split_group``: a null
+    staged column and no registry pattern, as suim's v1.1.0 tree. The release enumeration the
+    split map is generated from groups each image by its sha256; returns those keys by stem."""
+    root = _stage(tmp_path / "src-sha", [(stem, None, data) for stem, data in LOADERLESS.items()])
+    registry = _registry({"src-sha": _source("src-sha")})
+    keys = {
+        stem: sha_split_group("src-sha", hashlib.sha256(data).hexdigest())
+        for stem, data in LOADERLESS.items()
+    }
+    return registry, {"src-sha": root}, keys
+
+
+def test_frozen_build_places_a_loaderless_source_by_the_split_maps_sha_groups(
+    tmp_path: Path,
+) -> None:
+    """The v1.1.0 P7 abort: the split-map stage keyed suim's rows ``suim/sha:<sha256>``, the build
+    took a staged-tree row's group from its loader alone and raised ``SplitGroupError``. It takes
+    the release enumeration's group now: assigned rows ship, a withheld group's row is dropped."""
+    registry, roots, keys = _loaderless_fixture(tmp_path)
+    split_map = tmp_path / "SPLIT_MAP.json"
+    _write_map(split_map, {keys["a"]: "train", keys["b"]: "val"}, {keys["c"]: WHY})
+    before = split_map.read_bytes()
+
+    result = build_release(
+        registry, release="r7k", split_map=split_map, roots=roots, out_dir=tmp_path / "out"
+    )
+
+    sha_a, sha_b = (hashlib.sha256(LOADERLESS[stem]).hexdigest() for stem in ("a", "b"))
+    assert {t.task_id for t in result.tasks} == {"segmentation-set", "points-set", "pretrain-set"}
+    for task in result.tasks:  # `c` is withheld: in no manifest; `val` reads `probe` here
+        assert sorted(task.rows) == sorted([(sha_a, "train"), (sha_b, "probe")])
+    assert split_map.read_bytes() == before, "a frozen release build must never write to the map"
+
+
+def test_frozen_build_still_raises_for_a_loaderless_sha_group_the_map_does_not_know(
+    tmp_path: Path,
+) -> None:
+    registry, roots, keys = _loaderless_fixture(tmp_path)
+    split_map = tmp_path / "SPLIT_MAP.json"
+    _write_map(split_map, {keys["a"]: "train"}, {keys["c"]: WHY})  # `b`: in neither
+
+    with pytest.raises(SplitMapError, match=rf"not in the map: {re.escape(keys['b'])}\. A frozen"):
+        build_release(
+            registry, release="r7k", split_map=split_map, roots=roots, out_dir=tmp_path / "out"
+        )
+
+
+def test_the_map_generated_for_a_loaderless_source_places_every_row_of_the_build(
+    tmp_path: Path,
+) -> None:
+    """Round trip: the map the split-map stage writes for a loader-less source holds exactly its
+    per-image sha keys, and a frozen build that reads it places every row (no key is guessed:
+    both sides take the group from the same release enumeration)."""
+    images = {f"s{i:02d}": f"LOADERLESS-{i:02d}".encode() for i in range(12)}
+    root = _stage(tmp_path / "src-sha", [(stem, None, data) for stem, data in images.items()])
+    registry = _registry({"src-sha": _source("src-sha")})
+    roots = {"src-sha": root}
+    split_map = tmp_path / "SPLIT_MAP.json"
+    generate_split_map(registry, out=split_map, roots=roots, release="r7k")
+    shas = {hashlib.sha256(data).hexdigest() for data in images.values()}
+    generated = load_split_map(split_map)
+    assert generated is not None
+    assert set(generated.assignments) == {sha_split_group("src-sha", sha) for sha in shas}
+
+    result = build_release(
+        registry, release="r7k", split_map=split_map, roots=roots, out_dir=tmp_path / "out"
+    )
+
+    assert result.tasks
+    for task in result.tasks:
+        assert task.rows and {sha for sha, _ in task.rows} <= shas
 
 
 # ── Part B DoD: a real SUPERVISED task alongside a pretrain task (WS-D S7m) ─────────

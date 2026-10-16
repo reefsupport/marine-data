@@ -44,7 +44,9 @@ def _build(tmp_path: Path, sources, monkeypatch=None, **kw):  # type: ignore[no-
 
 
 class _NoGroup(DatasetBuilder):
-    """A loader whose samples carry no ``split_group`` (and no release enumeration entry)."""
+    """A loader whose samples carry no ``split_group``; the test also empties the release
+    enumeration lookup (``release_group_index``), else a source with no registry pattern would
+    get its group back from there."""
 
     def build(self, **kw):  # type: ignore[no-untyped-def]
         dataset = super().build(**kw)
@@ -64,10 +66,12 @@ def test_build_and_hf_export_fail_closed_naming_the_source(
     release_dir = tmp_path / "rel" / "releases" / "r1" / "open"
 
     monkeypatch.setattr("marinedata.hf_export.DatasetBuilder", _NoGroup)
+    monkeypatch.setattr("marinedata.hf_export.release_group_index", lambda *a, **k: {})
     with pytest.raises(HFExportError, match="src-open"):
         collect_rows(registry, roots, release_dir, "ship-open")
 
     monkeypatch.setattr("marinedata.release.build.DatasetBuilder", _NoGroup)
+    monkeypatch.setattr("marinedata.release.build.release_group_index", lambda *a, **k: {})
     with pytest.raises(SplitGroupError, match="src-open"):
         build_release(
             registry,

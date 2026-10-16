@@ -10,6 +10,18 @@ Nothing below is in a release yet. It is on `main` or on the Phase A branches na
 
 ### On main
 
+- Frozen v1.1 build places the rows of a source whose loader sets no `split_group`. `marinedata release build --tasks
+  v2 --v11` aborted in `benthic-l2` with `no split_group for source(s) suim (1598 sample(s))`. `release split-map`
+  groups every row through `source_release_entries` (the staged column, else the registry pattern, else the
+  `metadata_norm` chain, which for suim ends at the image: `suim/sha:<sha256>`), but the build and `hf_export` read that
+  enumeration only for layouts other than `staged-tree`, and the `staged-tree` loader leaves a null column null on a
+  source with no registry pattern. Both now take the enumeration's group for every source whose loader can leave one
+  unset (`release_group_index`: a layout other than `staged-tree`, or a `staged-tree` source with no pattern); a
+  loader-set group still wins. In the v1.1.0 locks that is `suim` (open) and `synthetic-seabed-debris` (nc). The
+  per-image key is spelled in one place (`sha_split_group`). Withheld groups are still dropped and counted, and a group
+  in neither `assignments` nor `withheld` still raises the frozen error. The gap dates from the release-time groups of
+  WP-R2d (2026-10-05), not from the withheld change; the p4 rehearsals built only `reef-support-bleaching`, whose
+  staged column is set.
 - Frozen v1.1 build accepts the split map's header `withheld` groups. `marinedata release build --tasks v2 --v11`
   against `releases/marine-data/v1.1.0/SPLIT_MAP.json` aborted with `... is frozen: group(s) not in the map: ...` on
   the 459 groups the map withholds. A withheld group is now known: `resolve_splits(frozen=True)` neither allocates nor
