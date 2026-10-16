@@ -67,7 +67,8 @@ score)]`) every embedded image is also scanned and a face or plate scoring at le
 `--privacy-threshold` (0.85) fails. `skipped` only when the build holds no image bytes.
 Fix: strip the GPS tags before export (for example `exiftool -gps:all=`), or allow the source in
 `registry/gates.yaml` (`privacy: {allow_exif_gps: {<source_id>: true}}`) after its licence and privacy
-review; exclude or blur a detected face or plate.
+review; exclude or blur a detected face or plate. This v1.0 gate cannot record a human review of a
+false positive; the v1.1.0 gate G8 (`--v11`) reads one, see "v1.1.0 gates" below.
 `images/train-00000-of-00001.parquet[1] image_sha256=<64 hex> source=src-b exif_gps_present: GPSInfo (tag 34853)`
 `images/test 92d07e13ade4 face_detected: score 0.90 >= 0.85 (fake 1)`
 
@@ -127,7 +128,8 @@ to `images`. The pinned YuNet model (`gates/yunet_model.py`) is baked into the i
 `marinedata release gate BUILD_DIR --v11` runs the nine gates below and merges each into
 `BUILD_DIR/GATES.json`; `release publish` reads that file (staged as `provenance/GATES.json`).
 `--v11` is implied by `--v1-dir`, `--only`, `--rehearsal`, `--hidden-test`, `--benchmark`,
-`--nc-id` and `--taxonomy-version`, and by a build with `task_layers/V11_TABLES.json` when no v1.0
+`--nc-id`, `--privacy-review` and `--taxonomy-version`, and by a build with
+`task_layers/V11_TABLES.json` when no v1.0
 gate flag is given; the v1.0 flags and their behaviour are unchanged. `--only GATE` (repeatable)
 runs a subset.
 
@@ -158,6 +160,18 @@ The face detector is the pinned YuNet model, loaded through `verified_model_path
 never downloaded; `MARINEDATA_YUNET_MODEL` overrides the path); `--detector MODULE:ATTR` replaces
 it. A model that cannot be verified, an unreadable image or a detector error FAILS the gate, and a
 detection lists the full `image_sha256`.
+
+A detector scores some non-faces over the threshold (a close-up of bleached coral scored 0.86), so G8
+reads a human review list, `registry/privacy/review.yaml` (`--privacy-review FILE` replaces it):
+`schema_version: 1` and `entries`, each with `image_sha256` (64 hex, unique), `verdict` (`cleared` or
+`withhold`), `source_id`, `detector`, `score`, `reason`, `reviewer` and `reviewed_at` (YYYY-MM-DD).
+- `cleared`: a detection on that image is not a failure. It is counted under `cleared_reviewed` and
+  listed (sha, reviewer, date) in `cleared_reviewed_entries`. EXIF GPS on the image still fails.
+- `withhold`: the build drops the image from every table (`V11_TABLES.json` `withheld_images`, the
+  privacy ones also in `withheld_images_privacy`); one still in the build fails as
+  `withheld_image_present`.
+- A detection no entry covers fails as above. A list that does not validate (unknown verdict, bad or
+  repeated sha256, missing field) or an explicit `--privacy-review` file that is missing FAILS the gate.
 
 G9 reads the `labelmap` section of `registry/gates.yaml`: `taxonomy_version` (null = the current
 registry taxonomy) and `fidelities` (exact, coarsened, approximate, unmappable).
