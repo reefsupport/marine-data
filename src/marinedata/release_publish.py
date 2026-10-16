@@ -7,9 +7,11 @@ when the build is not the flavour asked for, or when a gate required for publish
 
 ``--go`` adds three guards before anything leaves the machine: ``HF_TOKEN`` in the environment,
 the frozen v1.0 release stays untouched unless ``--allow-frozen``, and the tag must not exist on
-the repo yet. It then makes runs ``upload_large_folder`` over :data:`UPLOAD_PATTERNS` only (data
-parquet, the card, croissant.json and ``provenance/``), then tags the head of the branch. It never
-creates a repo: both exist already and their visibility is set by hand.
+the repo yet. It then uploads :data:`UPLOAD_PATTERNS` only, as the parts of
+:mod:`marinedata.release_publish_parts` (one per ``data/<config>``, then ``provenance``, then the
+card; ``--part`` runs one per call), and tags the commit the card upload made, never the head of
+the branch. It never creates a repo or changes its visibility: both exist already and their
+visibility is set by hand.
 
 The gate verdict mirrors ``gates.verdict`` (P1.6): a gate counts as required when
 ``summary.required_for_publish`` lists it, or when its entry says ``required: true``; with no
@@ -42,10 +44,23 @@ FROZEN_VERSION = (1,)
 """The v1.0 release (``1``, ``1.0``, ``v1.0``, ``v1.0.0``): live on the Hub and frozen."""
 PROVENANCE_DIR = "provenance"
 PROVENANCE_FILES = (RELEASE_FILE, GATES_FILE, LOCK_FILE)
-UPLOAD_PATTERNS = ("data/**/*.parquet", CARD_FILE, "croissant.json", f"{PROVENANCE_DIR}/*")
-"""The whole upload set (``allow_patterns``): data parquet, the card, croissant.json and the
-three provenance files, which are copied to ``provenance/`` at upload time. Nothing else is sent."""
-PLAN_PATTERNS = UPLOAD_PATTERNS[:3]
+DATA_PATTERN = "data/**/*.parquet"
+PROVENANCE_PATTERNS = (
+    "croissant.json",
+    f"{PROVENANCE_DIR}/*",
+    "LICENSE",
+    "NOTICE",
+    "CITATION.cff",
+    "assets/*",
+    "docs/**",
+)
+"""What the ``provenance`` part sends: croissant.json, the three provenance files (copied to
+``provenance/`` at upload time), the export's LICENSE, NOTICE and CITATION.cff, and the card's
+``assets/`` and ``docs/``: everything the card links to."""
+UPLOAD_PATTERNS = (DATA_PATTERN, CARD_FILE, *PROVENANCE_PATTERNS)
+"""The whole upload set (``allow_patterns``). Nothing else is sent. docs/release-runbook.md lists
+it between the ``upload-patterns`` markers and a test keeps the two equal."""
+PLAN_PATTERNS = tuple(p for p in UPLOAD_PATTERNS if p != f"{PROVENANCE_DIR}/*")
 """What exists in the release folder before the upload; the provenance copies are made by it."""
 
 _VERSION = re.compile(r"v?(\d+(?:\.\d+)*)")
@@ -282,43 +297,6 @@ def _stage_provenance(plan: PublishPlan) -> None:
     )
 
 
-def upload(plan: PublishPlan, token: str, *, api=None) -> str:
-    """``upload_large_folder`` over :data:`UPLOAD_PATTERNS` (resumable, parallel), then
-    ``create_tag`` on the head of the branch; returns the tag.
-
-    Never creates a repo (``list_repo_refs`` fails on a missing one, and so does the upload's own
-    check first) and never moves a tag: an existing tag stops the run before anything is sent."""
-    api = api if api is not None else _hf_api(token)
-    tags = {ref.name for ref in api.list_repo_refs(plan.repo_id, repo_type="dataset").tags}
-    if plan.tag in tags:
-        raise PublishRefused(
-            [f"tag {plan.tag} already exists on {plan.repo_id}: not published twice"]
-        )
-    _stage_provenance(plan)
-    api.upload_large_folder(
-        repo_id=plan.repo_id,
-        repo_type="dataset",
-        folder_path=str(plan.folder),
-        allow_patterns=list(UPLOAD_PATTERNS),
-    )
-    try:
-        api.create_tag(
-            plan.repo_id,
-            tag=plan.tag,
-            revision=None,
-            tag_message=f"marinedata release {plan.release_id} ({plan.flavour}), "
-            f"lock {plan.lock_sha256}",
-            repo_type="dataset",
-            exist_ok=False,
-        )
-    except Exception as exc:
-        raise PublishRefused(
-            [f"uploaded {plan.repo_id} but tagging {plan.tag} failed "
-             f"({type(exc).__name__}): tag it by hand"]
-        ) from exc  # fmt: skip
-    return plan.tag
-
-
 def _refuse(problems: list[str]) -> int:
     for line in problems:
         print(f"release publish: refused: {line}", file=sys.stderr)
@@ -326,27 +304,41 @@ def _refuse(problems: list[str]) -> int:
 
 
 def cmd_release_publish(args: argparse.Namespace) -> int:
+    from . import release_publish_parts as parts
+
     token = os.environ.get(TOKEN_ENV, "")
+    folder = args.folder or args.out / "releases" / args.release_id / args.flavour
+    if args.list_parts:
+        if not parts.data_configs(folder):
+            return _refuse([f"no parquet shard under {folder}/data/<config>/"])
+        print("\n".join(parts.all_parts(folder)))
+        return 0
     if args.go:
         guards = go_problems(args.release_id, allow_frozen=args.allow_frozen, token=token)
         if guards:
             return _refuse(guards)
-    folder = args.folder or args.out / "releases" / args.release_id / args.flavour
     try:
         plan = build_plan(args.release_id, args.flavour, folder, args.release_dir, args.lock)
+        selected = parts.select_parts(plan, args.part)
+        delta = parts.v1_delta(plan, args.v1_dir) if args.v1_dir else None
     except PublishRefused as exc:
-        return _refuse(exc.problems)
+        code = _refuse(exc.problems)
+        for line in parts.gate_lines(folder, only_if_run=True):
+            print(line, file=sys.stderr)
+        return code
     print(render_plan(plan, go=args.go))
+    print(parts.render_parts_plan(plan, selected, delta=delta))
     if not args.go:
         return 0
     try:
-        tag = upload(plan, token)
+        done = parts.publish(plan, token, selected)
     except PublishRefused as exc:
         return _refuse(exc.problems)
     except Exception as exc:  # network and Hub errors: say which, never echo the token
         print(f"release publish: upload failed: {type(exc).__name__}: {exc}", file=sys.stderr)
         return 1
-    print(f"release publish: uploaded {plan.repo_id} and tagged {tag}")
+    tagged = f", tagged {plan.tag}" if parts.PART_TAG in done else ""
+    print(f"release publish: {plan.repo_id}: done {', '.join(done)}{tagged}")
     return 0
 
 
@@ -354,7 +346,8 @@ def add_publish_parser(release_sub: argparse._SubParsersAction) -> None:
     """Wire ``release publish`` onto the ``release`` sub-parser (called from ``cli_release``)."""
     p = release_sub.add_parser(
         "publish",
-        help="Upload a gated release to its Hub repo and tag it (dry run unless --go). "
+        help="Upload a gated release to its Hub repo and tag it (dry run unless --go), "
+        "all at once or one --part per call. "
         "Fail-closed: refuses unless GATES.json passes all eight gates",
     )
     p.add_argument("--release-id", dest="release_id", required=True)
@@ -373,6 +366,20 @@ def add_publish_parser(release_sub: argparse._SubParsersAction) -> None:
         "--lock", type=Path, default=None,
         help=f"{LOCK_FILE} to hash against {RELEASE_FILE} (default: <release-dir>/{LOCK_FILE} "
         "when present)",
+    )  # fmt: skip
+    p.add_argument(
+        "--part", default=None, metavar="PART",
+        help="upload one part only: data:<config> (see --list-parts), provenance (croissant.json, "
+        "provenance/, LICENSE, NOTICE, CITATION.cff, assets/, docs/), card (README.md, last) or "
+        "tag (the tag, on the sha the card upload made). Default: every part, in that order",
+    )  # fmt: skip
+    p.add_argument(
+        "--list-parts", dest="list_parts", action="store_true",
+        help="print the part names of --dir, one per line, and exit (no gates, no network)",
+    )  # fmt: skip
+    p.add_argument(
+        "--v1-dir", dest="v1_dir", type=Path, default=None, metavar="DIR",
+        help="a checkout of the v1.0 repo: the plan lists the paths this publish adds and replaces",
     )  # fmt: skip
     p.add_argument(
         "--go", action="store_true", help=f"upload for real; needs {TOKEN_ENV} in the environment"

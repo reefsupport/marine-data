@@ -90,15 +90,87 @@ pinned-tree fetch). Nothing here uploads except step 9 with `--go`.
    its `data_files` and that `metadata` is listed.
 9. `marinedata release publish --release-id <id> --flavour {open|nc} --dir hf-<flavour>
    --release-dir rel/releases/<id>/<flavour>` is a DRY RUN: it prints the target repo, the configs with
-   their split rows, the file count and bytes, the card, the lock sha and the tag `v<id>`, and refuses
-   unless `GATES.json` shows every required gate passed and `RELEASE.json` matches the flavour, repo and
-   lock. `--go` (with `HF_TOKEN` set) uploads one commit and tags it; it refuses an existing tag and the
-   frozen `v1.0` without `--allow-frozen`. `RELEASE.json`, `GATES.json`, the lock, `SPLIT_MAP.json`,
-   `DEDUP_GATE.json` and `tasks/` are never uploaded. The build VM in `deploy/release-vm/README.md`
-   runs steps 3 and 6, the card part of 8, the gates and the dry run of this step; steps 1-2 are
-   replaced there by the frozen `registry/SPLIT_MAP.json`, and 4, 5 and 7 are not VM stages.
+   their split rows, the file count and bytes, the parts (below), the card, the lock sha and the tag
+   `v<id>`, and refuses unless `GATES.json` shows every required gate passed and `RELEASE.json` matches
+   the flavour, repo and lock. `--v1-dir <v1.0 checkout>` adds the delta against the v1.0 tree (the paths
+   this publish adds and replaces) and the plan reports G2 (frozen v1.0) and G3 (leak) as PASS or FAIL.
+   `--go` (with `HF_TOKEN` set) uploads the parts and tags the card commit; it refuses an existing tag and
+   the frozen `v1.0` without `--allow-frozen`. It never creates a repo or changes visibility, and for `nc`
+   it refuses unless the repo is already private. What is uploaded is the list under "What `release
+   publish` uploads". The build VM in `deploy/release-vm/README.md` runs steps 3 and 6, the card part of
+   8, the gates and the dry run of this step; steps 1-2 are replaced there by the frozen
+   `registry/SPLIT_MAP.json`, and 4, 5 and 7 are not VM stages.
 
-After the export, run the gates: `marinedata release gate BUILD_DIR --all --require-all` (see [GATES.md](GATES.md)).
+## Gates: `--all`, then `--v11`, on the same release dir
+
+After the export run both gate sets against the same build and release dir (see [GATES.md](GATES.md)):
+
+```bash
+marinedata release gate "$B" --all --require-all --flavour "$F" --release-dir "$R"   # v1.0 gates
+marinedata release gate "$B" --v11 --flavour "$F" --release-dir "$R" --v1-dir <v1.0 release dir>  # G1..G9
+```
+
+`--v11` does not chain the v1.0 gates: it merges G1..G9 into `GATES.json` and keeps the entries `--all`
+wrote, so `release publish` stays BLOCKED until both have run (`--v11` prints `publish verdict:
+OK|BLOCKED`). G6 does not recompute the dHash bands: the v1.0 dedup gate covers cross-split
+near-duplicates. The privacy gate (G8) runs real YuNet on the pinned model the image bakes at
+`/opt/models/face_detection_yunet_2023mar.onnx`; pass that path as `MARINEDATA_YUNET_MODEL` (the VM
+wrapper does). The gates verify it by sha256 and never download it.
+
+## What `release publish` uploads
+
+`--go` sends `UPLOAD_PATTERNS` (`src/marinedata/release_publish.py`) and nothing else; a test keeps this
+list equal to the code:
+
+<!-- upload-patterns:start -->
+- `data/**/*.parquet`
+- `README.md`
+- `croissant.json`
+- `provenance/*`
+- `LICENSE`
+- `NOTICE`
+- `CITATION.cff`
+- `assets/*`
+- `docs/**`
+<!-- upload-patterns:end -->
+
+`provenance/` holds `RELEASE.json` (its public-safe projection), `GATES.json` and the lock, copied there at
+upload time: they are uploaded. `SPLIT_MAP.json`, `DEDUP_GATE.json`, `tasks/`, `PUBLISH_STATE.json` and the
+build's other bookkeeping files stay on the VM.
+
+The parts, in this order (`release publish ... --list-parts` prints them for a build): one `data:<config>`
+per `data/<config>/`, then `provenance` (croissant.json, `provenance/*`, LICENSE, NOTICE, CITATION.cff,
+`assets/*`, `docs/**`: everything the card links to), then `card` (README.md alone, last), then `tag`.
+`--part PART` runs one; without it all run in that order. Each upload's commit sha is recorded in
+`PUBLISH_STATE.json` next to `RELEASE.json`. `card` refuses until every other part is up, and `--part tag`
+creates `v<id>` on the sha of the card commit, never on the head of the branch; it refuses if anything was
+uploaded after the card. The VM loop (`marinedata-run` on the VM; a failed part stops it):
+
+```bash
+for part in data:<config>... provenance card tag; do   # or $(marinedata release publish ... --list-parts)
+  marinedata release publish --release-id v1.1.0 --flavour open --dir /data/export/v1.1.0/open \
+    --release-dir /data/releases/v1.1.0/open --lock "/app/$LOCK_FILE" --go --part "$part" || break
+done
+```
+
+### Rollback
+
+Nothing is force-pushed. To take a bad release off the Hub, delete the tag and restore the v1.0 tree in one
+commit (the `v1.0` tag keeps pointing at the untouched v1.0 commit):
+
+```python
+from huggingface_hub import HfApi
+
+api = HfApi()  # HF_TOKEN in the environment
+api.delete_tag("reefsupport/marine-data", tag="v1.1.0", repo_type="dataset")
+api.upload_folder(
+    repo_id="reefsupport/marine-data",
+    repo_type="dataset",
+    folder_path="<checkout of the v1.0 tag>",
+    delete_patterns=["*"],
+    commit_message="rollback: restore the v1.0 tree",
+)
+```
 
 ## Privacy policy (WP-R9)
 
@@ -129,6 +201,11 @@ uv run --frozen marinedata release croissant "$B" --release-dir "$R" --out "$B/c
 - `release croissant` writes Croissant 1.0 JSON-LD (sha256 and size of every shard, one recordSet per
   config) and validates it with `mlcroissant` when the extra `croissant` is installed; otherwise it says
   `not-validated` and still writes the file.
+- The export writes `LICENSE`, `NOTICE` and `CITATION.cff` next to the shards. The VM's card stage renders the
+  card with `python -m marinedata.hf_card --release-dir "$R" --summary <export summary> --out "$B"
+  --flavour <f> --citation "$B/CITATION.cff"`, so it cites the export's CITATION.cff. The v1.1 card links
+  `provenance/GATES.json` and `release.lock.yaml`: the `provenance` part ships both, with LICENSE, NOTICE
+  and CITATION.cff, before the card.
 - Re-run the P1.6 `card` gate on the folder afterwards; it re-reads the shards and fails if the front-matter
   counts, byte sizes or size band no longer match them.
 - Regenerate the test goldens with `UPDATE_GOLDEN=1 uv run --frozen pytest tests/test_release_card.py`.

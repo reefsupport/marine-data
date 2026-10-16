@@ -66,8 +66,9 @@ def make_release(root: Path, *, flavour="open", release_id="v1.1", gates=..., re
 class FakeApi:
     """Records the calls ``upload`` makes; stands in for ``huggingface_hub.HfApi``."""
 
-    def __init__(self, tags=(), fail_on=None):
-        self.calls, self.tags, self.fail_on = [], list(tags), fail_on
+    def __init__(self, tags=(), fail_on=None, private=True):
+        self.calls, self.tags, self.fail_on, self.private = [], list(tags), fail_on, private
+        self.commits = []
 
     def _call(self, name, *args, **kwargs):
         self.calls.append((name, args, kwargs))
@@ -78,9 +79,17 @@ class FakeApi:
         self._call("list_repo_refs", *args, **kwargs)
         return SimpleNamespace(tags=[SimpleNamespace(name=t) for t in self.tags])
 
+    def repo_info(self, *args, **kwargs):
+        self._call("repo_info", *args, **kwargs)
+        return SimpleNamespace(private=self.private)
+
     def upload_large_folder(self, *args, **kwargs):
-        self._call("upload_large_folder", *args, **kwargs)
-        return SimpleNamespace(oid="c0ffee")
+        self._call("upload_large_folder", *args, **kwargs)  # the real one returns None
+
+    def upload_folder(self, *args, **kwargs):
+        self._call("upload_folder", *args, **kwargs)
+        self.commits.append(f"{len(self.commits) + 1:040x}")
+        return SimpleNamespace(oid=self.commits[-1])
 
     def create_tag(self, *args, **kwargs):
         self._call("create_tag", *args, **kwargs)
@@ -265,26 +274,37 @@ def test_go_never_uploads_a_failing_release(tmp_path, capsys, hub, monkeypatch):
     assert hub.made == []
 
 
-def test_go_uploads_one_commit_then_tags_it(tmp_path, capsys, hub, monkeypatch):
+def test_go_uploads_every_part_then_tags_the_card_commit(tmp_path, capsys, hub, monkeypatch):
     monkeypatch.setenv("HF_TOKEN", TOKEN)
     hub.api = FakeApi(tags=["v1.0"])
     d = make_release(tmp_path)
     assert publish("--dir", str(d), "--go") == 0
     assert hub.made == [TOKEN]
-    assert hub.api.names() == ["list_repo_refs", "upload_large_folder", "create_tag"]
+    assert hub.api.names() == [
+        "list_repo_refs",
+        "upload_large_folder",  # data:coral-masks
+        "upload_large_folder",  # data:scene-masks
+        "upload_folder",  # provenance
+        "upload_folder",  # card
+        "create_tag",
+    ]
     _, refs_args, refs_kwargs = hub.api.calls[0]
     assert (refs_args, refs_kwargs) == (("reefsupport/marine-data",), {"repo_type": "dataset"})
-    _, up_args, up_kwargs = hub.api.calls[1]
-    assert up_args == ()
-    assert up_kwargs == {
-        "repo_id": "reefsupport/marine-data",
-        "repo_type": "dataset",
-        "folder_path": str(d),
-        "allow_patterns": list(rp.UPLOAD_PATTERNS),
-    }
-    _, tag_args, tag_kwargs = hub.api.calls[2]
+    base = {"repo_id": "reefsupport/marine-data", "repo_type": "dataset", "folder_path": str(d)}
+    sent = [kwargs for _, _, kwargs in hub.api.calls[1:5]]
+    assert [{k: v for k, v in kw.items() if k != "allow_patterns" and k != "commit_message"}
+            for kw in sent] == [base] * 4  # fmt: skip
+    assert [kw["allow_patterns"] for kw in sent] == [
+        ["data/coral-masks/*.parquet"],
+        ["data/scene-masks/*.parquet"],
+        list(rp.PROVENANCE_PATTERNS),
+        ["README.md"],
+    ]
+    assert [name for name, args, _ in hub.api.calls if args] == ["list_repo_refs", "create_tag"]
+    _, tag_args, tag_kwargs = hub.api.calls[5]
     assert tag_args == ("reefsupport/marine-data",)
-    assert tag_kwargs["tag"] == "v1.1" and tag_kwargs["revision"] is None
+    assert tag_kwargs["tag"] == "v1.1" and tag_kwargs["revision"] == hub.api.commits[-1]
+    assert hub.api.commits[-1] != hub.api.commits[0]  # the card commit, not the provenance one
     assert tag_kwargs["repo_type"] == "dataset" and tag_kwargs["exist_ok"] is False
     captured = capsys.readouterr()
     assert "UPLOAD (--go)" in captured.out and "tagged v1.1" in captured.out
@@ -295,7 +315,7 @@ def test_go_allow_frozen_reaches_the_upload(tmp_path, capsys, hub, monkeypatch):
     monkeypatch.setenv("HF_TOKEN", TOKEN)
     d = make_release(tmp_path, release_id="v1.0")
     assert publish("--dir", str(d), "--go", "--allow-frozen", release_id="v1.0") == 0
-    assert hub.api.calls[2][2]["tag"] == "v1.0"
+    assert hub.api.calls[-1][2]["tag"] == "v1.0"
 
 
 def test_go_stops_before_uploading_when_the_tag_exists(tmp_path, capsys, hub, monkeypatch):

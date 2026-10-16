@@ -48,6 +48,14 @@ LOCK_FILE=${LOCK_FILE:-release.lock.yaml}
 SPLIT_MAP_FILE=${SPLIT_MAP_FILE:-registry/SPLIT_MAP.json}
 RELEASE_BUILD_ARGS=${RELEASE_BUILD_ARGS:-}
 EXPORT_ARGS=${EXPORT_ARGS:-}
+# 'release gate --v11' options (docs/GATES.md), a plain word list: --v1-dir DIR (the frozen v1.0
+# release dir, G2), --hidden-test MANIFEST, --benchmark MANIFEST, --nc-id ID.
+GATE_V11_ARGS=${GATE_V11_ARGS:-}
+# Extra 'release publish' options for the plan, e.g. "--v1-dir /data/v1.0-repo" (the delta against v1.0).
+PLAN_ARGS=${PLAN_ARGS:-}
+# The privacy gates (G8) run real YuNet: the pinned, sha256-verified model baked into the image.
+# The wrapper passes this path; the gates never download a model.
+YUNET_MODEL=${YUNET_MODEL:-/opt/models/face_detection_yunet_2023mar.onnx}
 SECRETS_FILE=${SECRETS_FILE:-/root/marinedata.env}
 SECRETS_WAIT_SECONDS=${SECRETS_WAIT_SECONDS:-3600}
 # `-` not `:-`: STAGES set but empty means set-up only; only an unset STAGES runs every stage.
@@ -307,7 +315,7 @@ write_wrapper() {
 #!/usr/bin/env bash
 # Written by bootstrap.sh. Usage: marinedata-run release publish ... | marinedata-run --py -m MODULE ...
 set -euo pipefail
-args=(--rm -e HF_TOKEN -e TMPDIR=${DATA_DIR}/tmp -e TORCH_HOME=${DATA_DIR}/torch --memory 14g -v ${DATA_DIR}:${DATA_DIR} -v ${REPO_DIR}/data:/app/data:ro --workdir ${DATA_DIR})
+args=(--rm -e HF_TOKEN -e MARINEDATA_YUNET_MODEL=${YUNET_MODEL} -e TMPDIR=${DATA_DIR}/tmp -e TORCH_HOME=${DATA_DIR}/torch --memory 14g -v ${DATA_DIR}:${DATA_DIR} -v ${REPO_DIR}/data:/app/data:ro --workdir ${DATA_DIR})
 if [[ -d ${REPO_DIR}/releases ]]; then
   args+=(-v ${REPO_DIR}/releases:/app/releases:ro)
 fi
@@ -366,8 +374,14 @@ stage_export() {
   install -d -o 10001 -g 10001 "$(dirname "$EXPORT_DIR")" || return 1
   "$RUN_WRAPPER" --py -m marinedata.hf_export --release-dir "$REL_DIR" --out "$EXPORT_DIR" \
     --summary "$SUMMARY" --flavour "$FLAVOUR" ${flags[@]+"${flags[@]}"} || return 1
+  stage_card
+}
+
+# The card cites the CITATION.cff the export wrote next to it, never the repo's copy. The path is
+# the same on the host and in the container: the data disk is mounted at its own path.
+stage_card() {
   "$RUN_WRAPPER" --py -m marinedata.hf_card --release-dir "$REL_DIR" --summary "$SUMMARY" \
-    --out "$EXPORT_DIR" --flavour "$FLAVOUR"
+    --out "$EXPORT_DIR" --flavour "$FLAVOUR" --citation "$EXPORT_DIR/CITATION.cff"
 }
 
 # The Hub repo id of $FLAVOUR, read from the checkout's registry/flavours.yaml (the host has no yaml tool).
@@ -390,22 +404,38 @@ stage_croissant() {
     --citation /app/CITATION.cff --repo-id "$repo_id"
 }
 
-# The gate suite (--all, --require-all) arrives with the gates branch; before that only the
-# masks gate exists, and 'release publish' then refuses for the missing required gates.
+# Both gate sets, against the same release dir: --all (the v1.0 gates, --require-all) and then
+# --v11 (G1..G9). --v11 does not chain the v1.0 gates: it merges its entries into GATES.json, so
+# 'release publish' stays BLOCKED until both ran. Both run even when the first fails, so GATES.json
+# lists every failure. The privacy gate (G8, and the v1.0 one) loads the pinned YuNet model that
+# the wrapper passes in MARINEDATA_YUNET_MODEL; the gates never download it.
 stage_gate() {
-  local help
+  local help rc=0 v11=()
+  # shellcheck disable=SC2206  # the extra flags are a deliberate word list
+  v11=($GATE_V11_ARGS)
   help=$("$RUN_WRAPPER" release gate --help) || return 1
   if [[ $help == *--require-all* ]]; then
-    "$RUN_WRAPPER" release gate "$EXPORT_DIR" --all --require-all --flavour "$FLAVOUR" --release-dir "$REL_DIR"
+    "$RUN_WRAPPER" release gate "$EXPORT_DIR" --all --require-all --flavour "$FLAVOUR" \
+      --release-dir "$REL_DIR" || rc=1
   else
     say "WARNING: this ref's 'release gate' has no --all/--require-all; only the masks gate runs"
-    "$RUN_WRAPPER" release gate --masks "$EXPORT_DIR"
+    "$RUN_WRAPPER" release gate --masks "$EXPORT_DIR" || rc=1
   fi
+  if [[ $help == *--v11* ]]; then
+    "$RUN_WRAPPER" release gate "$EXPORT_DIR" --v11 --flavour "$FLAVOUR" \
+      --release-dir "$REL_DIR" ${v11[@]+"${v11[@]}"} || rc=1
+  else
+    say "WARNING: this ref's 'release gate' has no --v11: G1..G9 are not written, a v1.1.0 publish stays BLOCKED"
+  fi
+  return "$rc"
 }
 
 stage_plan() {
+  local flags=()
+  # shellcheck disable=SC2206  # the extra flags are a deliberate word list
+  flags=($PLAN_ARGS)
   "$RUN_WRAPPER" release publish --release-id "$RELEASE_ID" --flavour "$FLAVOUR" \
-    --dir "$EXPORT_DIR" --release-dir "$REL_DIR" --lock "/app/$LOCK_FILE"
+    --dir "$EXPORT_DIR" --release-dir "$REL_DIR" --lock "/app/$LOCK_FILE" ${flags[@]+"${flags[@]}"}
 }
 
 print_next_steps() {
@@ -413,11 +443,16 @@ print_next_steps() {
 
 bootstrap: dry run finished for $RELEASE_ID ($FLAVOUR) at $COMMIT.
   plan   : $LOG_DIR/plan.log     stage outcomes: $LOG_DIR/STATUS
-  Read the plan and $EXPORT_DIR/GATES.json, copy the evidence back (README step 7), then publish by hand (README step 6):
+  Read the plan and $EXPORT_DIR/GATES.json, copy the evidence back (README step 7), then publish by hand (README step 6),
+  one part per call (data:<config>, provenance, card, tag; the tag lands on the card commit). A failed part
+  stops the loop: fix it and run the loop again, finished data parts upload nothing new:
     rm -f $SECRETS_FILE
     read -rs HF_TOKEN && export HF_TOKEN
-    marinedata-run release publish --release-id $RELEASE_ID --flavour $FLAVOUR \\
-      --dir $EXPORT_DIR --release-dir $REL_DIR --lock /app/$LOCK_FILE --go
+    for part in \$(marinedata-run release publish --release-id $RELEASE_ID --flavour $FLAVOUR \\
+        --dir $EXPORT_DIR --release-dir $REL_DIR --lock /app/$LOCK_FILE --list-parts); do
+      marinedata-run release publish --release-id $RELEASE_ID --flavour $FLAVOUR \\
+        --dir $EXPORT_DIR --release-dir $REL_DIR --lock /app/$LOCK_FILE --go --part "\$part" || break
+    done
 EOF
 }
 
