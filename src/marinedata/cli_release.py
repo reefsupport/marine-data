@@ -21,6 +21,7 @@ from .checksums import file_digest
 from .cli_release_gate import add_gate_parser
 from .cli_release_gate import cmd_metadata_gate as _cmd_release_gate  # noqa: F401  (old name)
 from .cli_release_inherit import add_inherit_args, inherit_kwargs, lock_scope
+from .cli_release_pins import add_pin_args, pin_kwargs, pins_summary
 from .cli_splitmap import _parse_ratios
 from .decon import DeconError
 from .dedup.groups import DedupGateError
@@ -310,6 +311,10 @@ def _generate_global_split_map(
             f"rejected_phash={stats.near_dup_rejected_phash} "
             f"rejected_entropy={stats.near_dup_rejected_entropy}"
         )
+    if stats.pins:
+        print(pins_summary(stats.pins))
+    elif (extra or {}).get("benchmark_pins") is not None:
+        print("release: benchmark pins matched no release image")
     if getattr(args, "inherit", None) is not None:
         print(
             f"release: inherited {stats.inherited_groups} group(s) from {args.inherit} "
@@ -365,7 +370,7 @@ def _cmd_release_split_map(args: argparse.Namespace) -> int:
         return 1
     try:
         only = lock_scope(args, registry)
-        extra = inherit_kwargs(args, registry)
+        extra = {**inherit_kwargs(args, registry), **pin_kwargs(args, registry)}
     except (ValueError, OSError, ReleaseLockError) as exc:  # SplitMapError is a ValueError
         print(f"release split-map: {exc}", file=sys.stderr)
         return 1
@@ -840,6 +845,7 @@ def add_release_subparser(sub: argparse._SubParsersAction) -> None:
         "--local-only", dest="local_only", action="store_true", help="Exactly the --local trees"
     )
     add_inherit_args(p_map)
+    add_pin_args(p_map)
     _add_near_dup_args(p_map, required_note="required unless --no-near-dup")
     p_map.set_defaults(func=_cmd_release_split_map)
 

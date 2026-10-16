@@ -81,7 +81,7 @@ The thresholds, the embedding model id and revision, and τ_dedup's calibration-
    miscalibrated). Otherwise each review hit is listed, not failed.
 The gate runs inside `release/build.py` behind `--decon` (default off until P2 lands, then on for v2) and as a `make ci` step on the
 fixture release.
-The v1.1.0 release gate G7 (`marinedata release gate --v11`, exact sha256 only) applies rules 1-3 per manifest from the registry `policy`: a `route-to-our-test` overlap in `test`, `test_ood` or `ood-*` is `pinned_ok` and one in any other split fails; `exclude`, hidden-test and unknown-benchmark manifests fail on any overlap.
+The v1.1.0 release gate G7 (`marinedata release gate --v11`, exact sha256 only) applies rules 1-3 per manifest from the registry `policy`: a `route-to-our-test` overlap in `test`, `test_ood` or `ood-*` is `pinned_ok` and one in any other split fails; `exclude`, hidden-test and unknown-benchmark manifests fail on any overlap. The split map applies the same pins before G7 runs: `marinedata release split-map` pins every sha256 of a route-to-our-test manifest's eval split to `test` and of its second held-out split to `val` (the release's `validation`), records the rule, the per-benchmark counts and the v1.0-continuity conflicts in the SPLIT_MAP header `pins` block, and G7 accepts a held-out image in `validation` too.
 
 ### 2.3 Overlap table (card section "Benchmark contamination"; also `decon/overlap.parquet`)
 ```

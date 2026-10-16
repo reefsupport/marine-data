@@ -206,6 +206,9 @@ class SplitMap:
     withheld: dict[str, str] = field(default_factory=dict)
     """``split_group`` -> why it has no assignment: it cannot be placed without contradicting a
     prior-release split it neighbours (GATES.json lists it). Written only when set."""
+    pins: dict[str, object] = field(default_factory=dict)
+    """How the benchmark manifests pinned eval and held-out images (rule, per-benchmark counts,
+    v1-continuity conflicts); empty, and absent from the file, for a map written without pins."""
 
 
 def load_split_map(path: str | Path) -> SplitMap | None:
@@ -237,6 +240,7 @@ def load_split_map(path: str | Path) -> SplitMap | None:
         inherits=dict(raw.get("inherits", {})),
         ood=dict(raw.get("ood", {})),
         ood_rules={key: list(tags) for key, tags in raw.get("ood_rules", {}).items()},
+        pins=dict(raw.get("pins", {})),
         withheld=dict(raw.get("withheld", {})),
     )
 
@@ -259,6 +263,7 @@ def save_split_map(path: str | Path, split_map: SplitMap) -> None:
         **({"inherits": dict(sorted(split_map.inherits.items()))} if split_map.inherits else {}),
         **({"ood": dict(sorted(split_map.ood.items()))} if split_map.ood else {}),
         **({"ood_rules": dict(sorted(split_map.ood_rules.items()))} if split_map.ood_rules else {}),
+        **({"pins": dict(split_map.pins)} if split_map.pins else {}),
         **({"withheld": dict(sorted(split_map.withheld.items()))} if split_map.withheld else {}),
         "assignments": dict(sorted(split_map.assignments.items())),
     }
