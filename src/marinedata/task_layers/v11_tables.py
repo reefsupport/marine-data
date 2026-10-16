@@ -2,8 +2,14 @@
 
 ``release build --tasks v2 --v11`` turns the task-layer configs into the v1.1.0 task tables:
 
-* ``metadata`` (B7): one row per ``image_sha256`` of every admitted source's staged
-  ``metadata.parquet`` (v1.0 images included): the ``metadata`` Hub-config columns plus
+* ``metadata`` (B7): one row per staged image of every admitted source (v1.0 images included),
+  keyed on the build's digest of the staged file. Both staged ``metadata.parquet`` schemas count
+  (PR-M): the narrow image-labels index (no ``image_sha256``) and the wide ``sample_schema``
+  (its stored ``image_sha256`` is compared, never trusted). Rows come from the v1.0 ``metadata``
+  machinery (:func:`marinedata.metadata_release.build_rows`) over the split map's own enumeration
+  (:func:`marinedata.release.entries.source_release_entries`), the tree's provenance columns fill
+  the gaps, and an admitted source with images or task rows but no row fails the build
+  (:class:`MetadataSpineError`). Each row has the ``metadata`` Hub-config columns plus
   ``bytes_config`` (the config holding the pixels: the v1.0 config that embeds the image, else
   ``images``), ``bytes_sha256`` (null here; the export fills it when it rewrites bytes),
   ``split`` and ``taxonomy_version``. A row never carries bytes.
@@ -26,8 +32,9 @@ from __future__ import annotations
 
 import datetime as dt
 import json
-from collections import defaultdict
-from collections.abc import Iterable, Mapping, Sequence
+import logging
+from collections import Counter, defaultdict
+from collections.abc import Callable, Iterable, Mapping, Sequence
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
@@ -39,6 +46,8 @@ from ..registry import Registry
 from .configs.common import ConfigResult, _attrs
 from .configs.constants import MASK_CONFIG_BY_SOURCE
 from .mask_classmap import palette_json
+
+logger = logging.getLogger(__name__)
 
 IMAGES_CONFIG = "images"
 V1_BYTES_CONFIG: dict[str, str] = {**MASK_CONFIG_BY_SOURCE, "roboflow-aquarium": "fish-boxes"}
@@ -82,6 +91,10 @@ class UnsplitImagesError(ValueError):
     """The split map leaves admitted images without a split; a release build refuses."""
 
 
+class MetadataSpineError(ValueError):
+    """An admitted source has staged images or task rows but no ``metadata`` row (PR-M)."""
+
+
 @dataclass(frozen=True)
 class V11Inputs:
     """What the v1.1.0 layer needs besides the config rows: the build's taxonomy release, the
@@ -98,11 +111,15 @@ class V11Inputs:
     """``image_sha256 -> dedup group`` (``groups.parquet``); else the image's ``split_group``."""
     allow_unsplit: bool = False
     """Rehearsal only: keep the rows of images the split map does not cover (``split = null``)."""
+    digest: Callable[[Path], str] | None = None
+    """The build's (memoized) file digest, else :func:`marinedata.checksums.file_digest`: the spine
+    keys every staged image on it, as the task manifests do."""
 
 
 def inputs_from_build(
     *, taxonomy_version: str | None, roots: Mapping[str, str | Path], manifests: Iterable[Any],
     split_map: Any, dedup_groups: str | Path | None = None, allow_unsplit: bool = False,
+    digest: Callable[[Path], str] | None = None,
 ) -> V11Inputs:  # fmt: skip
     """:class:`V11Inputs` from what ``build_release`` already holds."""
     near: Mapping[str, str] = {}
@@ -118,6 +135,7 @@ def inputs_from_build(
         withheld_groups=frozenset(split_map.withheld),
         near_dup_group_of=dict(near),
         allow_unsplit=allow_unsplit,
+        digest=digest,
     )
 
 
@@ -189,33 +207,125 @@ def _plain(value: Any) -> Any:
     return value.isoformat() if isinstance(value, (dt.date, dt.datetime)) else value
 
 
-def _metadata_rows(registry: Registry, inputs: V11Inputs) -> dict[str, dict]:
+_NOT_FROM_TREE = frozenset(
+    {
+        "image_sha256", "source_id", "split", "lat", "lon", "location_generalized",
+        "licence_class", "bytes_config", "bytes_sha256", "taxonomy_version",
+    }
+)  # fmt: skip
+"""Columns a staged record never fills: the key, the build's stamps, and the location columns the
+v1.0 rows already resolved under the location rule (geo backfill, generalisation)."""
+
+
+def _spine_row(base: Mapping[str, Any], rec: Mapping[str, Any], source_id: str, inputs) -> dict:
+    """A v1.0 ``build_rows`` row on the ``metadata`` columns; the staged record fills what it left
+    null (the v1.0 join's fill-only rule): a wide tree's upstream_url, camera, capture time..."""
+    names = [n for n, _ in metadata_columns()]
+    row = {n: _plain(base.get(n)) for n in names}
+    for n in names:
+        if row[n] is None and n not in _NOT_FROM_TREE and rec.get(n) is not None:
+            row[n] = _plain(rec[n])
+    row.update(
+        source_id=source_id, bytes_config=bytes_config_of(source_id), split=None,
+        taxonomy_version=inputs.taxonomy_version, bytes_sha256=None,
+    )  # fmt: skip
+    return row
+
+
+def _sha_keyed_row(rec: Mapping[str, Any], source: Any, source_id: str, inputs) -> dict:
+    """A bare ``image_sha256``-keyed index (no ``stem`` + ``partition`` / ``image_path``, so no
+    file to hash): the record as stored, the pre-PR-M behaviour."""
+    names = [n for n, _ in metadata_columns()]
+    row = {n: _plain(rec.get(n)) for n in names}
+    row.update(
+        image_sha256=rec["image_sha256"], source_id=source_id,
+        bytes_config=bytes_config_of(source_id), taxonomy_version=inputs.taxonomy_version,
+        bytes_sha256=None, location_generalized=bool(rec.get("location_generalized")),
+        licence_class=resolve_row_class(
+            coerce_class(source.access_class), rec.get("license"),
+            per_row=bool(source.licence_per_row),
+        ),
+    )  # fmt: skip
+    return row
+
+
+def _tree_rows(
+    registry: Registry, source_id: str, root: Path, inputs: V11Inputs
+) -> tuple[list[dict], dict[str, str], dict[str, int]]:
+    """One admitted tree: its spine rows, ``sha -> walk group`` and its counts. A staged sample
+    index (narrow or wide) is enumerated as the split map enumerates it and hashed with the
+    build's digest; a stored ``image_sha256`` that differs from the bytes is counted."""
     import pyarrow.parquet as pq
 
-    names = [n for n, _ in metadata_columns()]
+    from ..checksums import file_digest
+    from ..metadata_release import ImageRef, build_rows
+    from ..release.entries import _staged_meta, source_release_entries
+
+    counts = {"images": 0, "sha256_mismatches": 0, "licence_dropped": 0}
+    path = Path(root) / "metadata.parquet"
+    if not path.is_file():
+        return [], {}, counts
+    source = registry.source(source_id)
+    records = pq.read_table(path).to_pylist()
+    if not _staged_meta(path):
+        rows = [
+            _sha_keyed_row(r, source, source_id, inputs) for r in records if r.get("image_sha256")
+        ]
+        counts["images"] = len(rows)
+        return rows, {}, counts
+    entries = source_release_entries(source, root, inputs.digest or file_digest)
+    if len(entries) != len(records) or any(
+        e.path.stem != r["stem"] for e, r in zip(entries, records, strict=True)
+    ):
+        raise MetadataSpineError(
+            f"{source_id}: the staged enumeration and metadata.parquet disagree"
+        )
+    refs = [ImageRef(e.sha256, source_id, e.path, "", e.group) for e in entries]
+    base = {
+        r["image_sha256"]: r
+        for r in build_rows(refs, registry, Path(root), {}, source_roots={source_id: Path(root)})
+    }
+    rows, mismatched = [], []
+    for entry, rec in zip(entries, records, strict=True):
+        stored = str(rec.get("image_sha256") or "").lower()
+        if stored and stored != entry.sha256:
+            mismatched.append(str(rec["stem"]))
+        if entry.sha256 not in base:  # the release licence rule dropped it (v1.0 rows alike)
+            counts["licence_dropped"] += 1
+            continue
+        rows.append(_spine_row(base[entry.sha256], rec, source_id, inputs))
+    counts.update(images=len(entries), sha256_mismatches=len(mismatched))
+    if mismatched:
+        logger.warning(
+            "%s: %d stored image_sha256 value(s) differ from the staged bytes (keyed on the bytes);"
+            " first: %s", source_id, len(mismatched), ", ".join(mismatched[:5]),
+        )  # fmt: skip
+    return rows, {e.sha256: e.group for e in entries}, counts
+
+
+def _metadata_rows(
+    registry: Registry, inputs: V11Inputs
+) -> tuple[dict[str, dict], dict[str, str], dict[str, dict[str, int]]]:
+    """``(sha -> row, sha -> walk group, source -> counts)``; an image staged by two sources is
+    described once, by the first (``shared`` counts it for the other)."""
     seen: dict[str, dict] = {}
+    walk: dict[str, str] = {}
+    by_source: dict[str, dict[str, int]] = {}
     order = sorted(inputs.roots, key=lambda s: (bytes_config_of(s) == IMAGES_CONFIG, s))
     for source_id in order:  # v1.0-embedded sources first: their config holds the bytes
-        path = Path(inputs.roots[source_id]) / "metadata.parquet"
-        if not path.is_file():
-            continue
-        source = registry.source(source_id)
-        src_class = coerce_class(source.access_class)
-        for rec in pq.read_table(path).to_pylist():
-            sha = rec.get("image_sha256")
-            if not sha or sha in seen:
-                continue
-            row = {n: _plain(rec.get(n)) for n in names}
-            row.update(
-                image_sha256=sha, source_id=source_id, bytes_config=bytes_config_of(source_id),
-                taxonomy_version=inputs.taxonomy_version, bytes_sha256=None,
-                location_generalized=bool(rec.get("location_generalized")),
-                licence_class=resolve_row_class(
-                    src_class, rec.get("license"), per_row=bool(source.licence_per_row)
-                ),
-            )  # fmt: skip
-            seen[sha] = row
-    return seen
+        rows, groups, counts = _tree_rows(
+            registry, source_id, Path(inputs.roots[source_id]), inputs
+        )
+        for sha, group in groups.items():
+            walk.setdefault(sha, group)
+        added = 0
+        for row in rows:
+            if row["image_sha256"] not in seen:
+                seen[row["image_sha256"]] = row
+                added += 1
+        shared = len({r["image_sha256"] for r in rows}) - added
+        by_source[source_id] = {**counts, "rows": added, "shared": shared}
+    return seen, walk, by_source
 
 
 def mark_near_dup_conflicts(
@@ -271,7 +381,7 @@ def build_v11_tables(
 ) -> dict[str, ConfigResult]:
     """The six v1.1.0 tables (``metadata`` plus the five stamped configs) from the built
     ``results``; the metadata result's ``notes`` carries the build report."""
-    meta = _metadata_rows(registry, inputs)
+    meta, walk, by_source = _metadata_rows(registry, inputs)
     split_of = dict(inputs.split_of)
     withheld: set[str] = set()
     meta_rows: list[dict] = []
@@ -280,7 +390,10 @@ def build_v11_tables(
         if group in inputs.withheld_groups:
             withheld.add(sha)
             continue
-        split = split_of.get(sha) or inputs.assignments.get(group)
+        split = (
+            split_of.get(sha) or inputs.assignments.get(group)
+            or inputs.assignments.get(walk.get(sha))
+        )  # fmt: skip
         if split:
             split_of[sha] = split
         meta_rows.append({**row, "split": split})
@@ -288,19 +401,34 @@ def build_v11_tables(
     group_of.update(inputs.near_dup_group_of)
     tables: dict[str, ConfigResult] = {}
     report: dict[str, Any] = {"taxonomy_version": inputs.taxonomy_version, "tables": {}}
+    task_rows: Counter = Counter()
     for cid in V11_CONFIG_IDS[1:]:
         base = results.get(cid)
         rows = base.rows if base else ()
         if cid == "bleaching":
             rows = mark_near_dup_conflicts(rows, group_of)
         rows = tuple(_stamp_row(cid, r, inputs, split_of) for r in rows)
-        rows = tuple(
-            r
-            for r in rows
-            if r["image_sha256"] not in withheld and r.get("source_id") in inputs.roots
-        )
+        rows = tuple(r for r in rows if r.get("source_id") in inputs.roots)
+        task_rows.update(r.get("source_id") for r in rows)
+        rows = tuple(r for r in rows if r["image_sha256"] not in withheld)
         tables[cid] = ConfigResult(cid, rows, dict(base.unmapped_by_source) if base else {})
     tables = {"metadata": ConfigResult("metadata", tuple(meta_rows), {}), **tables}
+    by_source = {s: {**c, "task_rows": task_rows.get(s, 0)} for s, c in sorted(by_source.items())}
+    missing = [
+        s
+        for s, c in by_source.items()
+        if (c["images"] or c["task_rows"]) and not (c["rows"] or c["shared"])
+    ]
+    if missing:
+        detail = "; ".join(
+            f"{s}: {by_source[s]['images']} staged image(s), "
+            f"{by_source[s]['task_rows']} task row(s)"
+            for s in missing
+        )
+        raise MetadataSpineError(
+            f"admitted source(s) with no metadata row: {detail}. The images / sources configs and "
+            "gate G1 join on metadata; check the tree's metadata.parquet against its images/"
+        )
     unsplit = sorted(
         {
             str(r.get("image_sha256") or "(no image_sha256)")
@@ -321,6 +449,7 @@ def build_v11_tables(
             "rows": len(res.rows), "images": res.n_images,
             "unsplit": sum(1 for r in res.rows if r.get("split") is None),
         }  # fmt: skip
+    report["metadata_by_source"] = by_source
     report["withheld_images"] = len(withheld)
     report["unsplit_images"] = len(unsplit)
     report["allow_unsplit"] = inputs.allow_unsplit

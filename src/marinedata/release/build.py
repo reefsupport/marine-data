@@ -366,6 +366,7 @@ def build_release(
                 split_map=load_split_map(split_map_path),
                 dedup_groups=dedup_v2_groups,
                 allow_unsplit=allow_unsplit,
+                digest=digest,
             )
         results = build_all_configs(registry, base_dir, flavour, v11=v11_inputs)
         if v11_inputs is None:

@@ -240,3 +240,36 @@ and are null, so the schema does not depend on the flag. A value the config alre
 - `license_url` (string): URL of the licence text; the registry default unless the source sets it per row.
 - `attribution` (string): the credit line to reproduce with the image.
 - `rights_holder` (string): rights holder of the image where known, else null.
+
+## v1.1.0 `metadata` spine: the two staged schemas (PR-M, 2026-10-16)
+
+`release build --tasks v2 --v11` writes one `metadata` row per staged image of every admitted source
+(`task_layers/v11_tables.py`). The bucket holds two `metadata.parquet` schemas, and both count:
+
+| Schema | Written by | Columns | Trees (bucket, 2026-10-16) |
+|---|---|---|---|
+| narrow image-labels index | `ingest_image_labels` (`tables.StagedImage`) | `stem, partition, upstream_path, upstream_split, width, height` (+ `split_group` on some trees); no `image_sha256` | `noaa-pifsc-bleaching`, `coralscapes`, `reef-support-bleaching`, `suim`, `roboflow-coral-*` |
+| wide `sample_schema` | the sample-schema stagers (`docs/STORAGE.md`) | 37 columns incl. `image_sha256`, `image_path` and the provenance columns (+ trailing `partition`) | `reef-support-benthic-own`, `reef-support-seaview-labels`, `seaview-survey-imagery`, `synthetic-seabed-debris` |
+
+Derivation, per admitted tree:
+
+- **Images:** the split map's own enumeration, `release.entries.source_release_entries` (one per record).
+- **`image_sha256`:** the build's digest of the staged file bytes, the key the task manifests use. A wide
+  tree's stored `image_sha256` is compared, never trusted: mismatches are counted and logged.
+- **Columns:** the v1.0 `metadata` rows (`metadata_release.build_rows`): `source_version`, `license`
+  (registry; the row's own on a `licence_per_row` source), `licence_class`, `attribution`, `fetch_date`,
+  `lineage_root_digest`, the geo backfill and the location rule, `upstream_id` (= `upstream_path`). The
+  tree's own columns then fill what is still null (the v1.0 join's fill-only rule), e.g. a wide tree's
+  `upstream_url`, `camera`, `capture_datetime`. Location columns are never filled from the tree.
+- **`split_group`:** the tree's column, else the walk group the split map was generated from. **`split`:**
+  the task manifests, else the frozen map's assignment of that group.
+- A `metadata.parquet` with neither `stem` + `partition` nor `image_path` is read as a bare
+  `image_sha256`-keyed index (the pre-PR-M behaviour).
+
+Fail closed: an admitted source with staged images or task rows but no `metadata` row raises
+`MetadataSpineError` naming it. `task_layers/V11_TABLES.json` records `metadata_by_source` (`images`,
+`rows`, `shared`, `task_rows`, `sha256_mismatches`, `licence_dropped`), and gate G6 (`splits_v11`)
+fails `metadata_missing` for a source recorded with none. Before PR-M a narrow tree's images left
+`metadata`, `images` and `sources` silently while their task rows stayed. The export (`hf_export_v11`)
+finds an image's file through `CHECKSUMS.sha256`, else (a build fetch leaves none) through the same
+enumeration.

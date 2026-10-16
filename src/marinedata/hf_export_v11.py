@@ -23,7 +23,7 @@ from __future__ import annotations
 import hashlib
 import json
 from collections import Counter, defaultdict
-from collections.abc import Collection, Iterable, Mapping
+from collections.abc import Callable, Collection, Iterable, Mapping
 from pathlib import Path
 from typing import Any
 
@@ -236,12 +236,25 @@ def _split_rank(stem: str) -> int:
 # ------------------------------------------------------------------------------ E1: images
 
 
+def staged_index(registry, source_id: str, root: str | Path) -> dict[str, str]:
+    """``sha256 -> relative path`` of one staged tree: its ``CHECKSUMS.sha256``, else (a build
+    fetch leaves none) the split map's enumeration hashed, the same key the build gave the image."""
+    if (Path(root) / CHECKSUM_FILE).is_file():
+        return read_checksums(root)
+    from .release.entries import source_release_entries
+
+    entries = source_release_entries(registry.source(source_id), root, file_digest)
+    return {e.sha256: e.key for e in entries}
+
+
 def image_rows(
     meta_rows: Iterable[Mapping], roots: Mapping[str, Path], *,
     skip_sha256: Collection[str] = frozenset(), stats: Counter | None = None,
+    locate: Callable[[str], Mapping[str, str]] | None = None,
 ) -> tuple[list[tuple[str, ExportRow]], dict[str, str]]:  # fmt: skip
     """``([(split, row)], {image_sha256: bytes_sha256})``: one row per image whose bytes no v1.0
-    config holds, each hashed from the bytes about to be embedded (and checked against the key)."""
+    config holds, each hashed from the bytes about to be embedded (and checked against the key).
+    ``locate(source_id)`` (``sha256 -> relative path``) replaces the ``CHECKSUMS.sha256`` lookup."""
     stats = Counter() if stats is None else stats
     skip = {s.lower() for s in skip_sha256}
     members: dict[str, list[Mapping]] = defaultdict(list)
@@ -261,7 +274,8 @@ def image_rows(
         sid = primary["source_id"]
         if sid not in roots:
             raise V11ExportError(f"{sid}: no staged tree for image {sha}")
-        index.setdefault(sid, read_checksums(roots[sid]))
+        if sid not in index:
+            index[sid] = dict(locate(sid) if locate else read_checksums(roots[sid]))
         rel = index[sid].get(sha)
         path = Path(roots[sid]) / rel if rel else None
         if path is None or not path.is_file():
@@ -461,7 +475,10 @@ def build_v11_layout(
         )
     meta = tables["metadata"]
     split_by_sha = {m["image_sha256"]: m.get("split") for m in meta}
-    images, bytes_sha = image_rows(meta, roots, skip_sha256=skip_sha256, stats=stats)
+    images, bytes_sha = image_rows(
+        meta, roots, skip_sha256=skip_sha256, stats=stats,
+        locate=lambda sid: staged_index(registry, sid, roots[sid]),
+    )  # fmt: skip
     layout: Layout = {}
     spec = ConfigSpec(
         IMAGES, IMAGE_COLUMNS, "Image bytes, once per image_sha256.", shard_target_bytes

@@ -4,6 +4,8 @@
   test_ood, or ``task_layers/V11_TABLES.json`` records ``unsplit_images > 0`` / ``allow_unsplit``
   (a ``--allow-unsplit`` build). With ``rehearsal`` a build whose only problem is that is
   ``skipped``, never ``passed``: ``release publish`` still refuses it. A missing report fails.
+* ``metadata_missing`` ``V11_TABLES.json`` records an admitted source with staged images or task
+  rows and no metadata row (PR-M: a narrow tree once vanished silently from ``metadata``);
 * ``split_shard``      a row's ``split`` is not the split of its shard file;
 * ``group_straddles``  one ``split_group`` in two splits (near-copies must not straddle);
 * ``reassigned_v1``    an image of a v1.0 config in a split v1.0 did not give it (``v1_dir``);
@@ -85,6 +87,13 @@ def run_splits_v11_gate(
             unsplit.append("V11_TABLES.json: allow_unsplit=true (the build used --allow-unsplit)")
         if int(report.get("unsplit_images") or 0) > 0:
             unsplit.append(f"V11_TABLES.json: unsplit_images={report['unsplit_images']}")
+        for sid, c in sorted((report.get("metadata_by_source") or {}).items()):
+            if (c.get("images") or c.get("task_rows")) and not (c.get("rows") or c.get("shared")):
+                out.fail(
+                    "metadata_missing",
+                    f"V11_TABLES.json: {sid} has {c.get('images', 0)} staged image(s) and "
+                    f"{c.get('task_rows', 0)} task row(s) but no metadata row",
+                )
     v1 = v1_splits(Path(v1_dir)) if v1_dir else None
     if v1 is None:
         out.fail("no_v1_set", "no v1.0 tree (--v1-dir): a v1.0 reassignment cannot be ruled out")
