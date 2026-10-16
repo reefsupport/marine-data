@@ -377,11 +377,13 @@ stage_export() {
   stage_card
 }
 
-# The card cites the CITATION.cff the export wrote next to it, never the repo's copy. The path is
-# the same on the host and in the container: the data disk is mounted at its own path.
+# hf_export writes the shards and the summary only. This stage is what renders README.md and writes
+# LICENSE, NOTICE and CITATION.cff into the export folder, so the export holds no CITATION.cff yet and
+# the card cannot cite one. It cites the repo's CITATION.cff inside the image, the same input as
+# stage_croissant. --citation is absolute: the wrapper's workdir is /data, not /app.
 stage_card() {
   "$RUN_WRAPPER" --py -m marinedata.hf_card --release-dir "$REL_DIR" --summary "$SUMMARY" \
-    --out "$EXPORT_DIR" --flavour "$FLAVOUR" --citation "$EXPORT_DIR/CITATION.cff"
+    --out "$EXPORT_DIR" --flavour "$FLAVOUR" --citation /app/CITATION.cff
 }
 
 # The Hub repo id of $FLAVOUR, read from the checkout's registry/flavours.yaml (the host has no yaml tool).

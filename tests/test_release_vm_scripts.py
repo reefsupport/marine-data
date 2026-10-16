@@ -818,14 +818,16 @@ def run_stage(tmp_path, stage, extra=None, **kwargs):
     return bootstrap(f"RUN_WRAPPER={wrapper}; derive_paths; {stage}", {**GOOD, **(extra or {})})
 
 
-def test_card_stage_cites_the_exports_citation_file(tmp_path):
+def test_card_stage_cites_the_repo_citation_file(tmp_path):
     done = run_stage(tmp_path, "stage_card")
     assert done.returncode == 0, done.stderr
     assert done.stdout.strip() == (
         f"--py -m marinedata.hf_card --release-dir {REL}"
         " --summary /data/export/v1.1/open.summary.json"
-        f" --out {EXPORT} --flavour open --citation {EXPORT}/CITATION.cff"
+        f" --out {EXPORT} --flavour open --citation /app/CITATION.cff"
     )
+    # hf_export writes no CITATION.cff (hf_card renders it): the card cannot cite one in the export
+    assert f"{EXPORT}/CITATION.cff" not in done.stdout
     assert "stage_card\n}" in (DEPLOY / "bootstrap.sh").read_text()  # stage_export ends with it
 
 

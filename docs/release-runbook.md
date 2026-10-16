@@ -201,9 +201,11 @@ uv run --frozen marinedata release croissant "$B" --release-dir "$R" --out "$B/c
 - `release croissant` writes Croissant 1.0 JSON-LD (sha256 and size of every shard, one recordSet per
   config) and validates it with `mlcroissant` when the extra `croissant` is installed; otherwise it says
   `not-validated` and still writes the file.
-- The export writes `LICENSE`, `NOTICE` and `CITATION.cff` next to the shards. The VM's card stage renders the
-  card with `python -m marinedata.hf_card --release-dir "$R" --summary <export summary> --out "$B"
-  --flavour <f> --citation "$B/CITATION.cff"`, so it cites the export's CITATION.cff. The v1.1 card links
+- The export writes the shards and the summary only. The VM's card stage then renders the card and writes
+  `LICENSE`, `NOTICE` and `CITATION.cff` into the export folder, with `python -m marinedata.hf_card
+  --release-dir "$R" --summary <export summary> --out "$B" --flavour <f> --citation /app/CITATION.cff`.
+  The input is the repository's `CITATION.cff` inside the image, the same file the croissant stage reads;
+  the export's `CITATION.cff` is that file with the release's version and date. The v1.1 card links
   `provenance/GATES.json` and `release.lock.yaml`: the `provenance` part ships both, with LICENSE, NOTICE
   and CITATION.cff, before the card.
 - Re-run the P1.6 `card` gate on the folder afterwards; it re-reads the shards and fails if the front-matter
