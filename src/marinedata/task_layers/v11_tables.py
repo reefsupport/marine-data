@@ -23,9 +23,11 @@ Taxonomy 3.0.0 validates a row against its stamped release, so every row of a ne
 An image with no split in the split map fails the build (:class:`UnsplitImagesError`: the count and
 the first five ``image_sha256``), because the Hub configs are per split. ``V11Inputs.allow_unsplit``
 (rehearsal builds only) writes its rows with ``split = null`` and counts them (``unsplit``,
-``unsplit_images``). An image of a withheld near-dup group is dropped from every table; a row of a
-source outside ``V11Inputs.roots`` (the flavour's admitted set) is dropped, so an nc source cannot
-reach the open tables through this layer.
+``unsplit_images``). An image of a withheld near-dup group is dropped from every table, and so is
+an image a person withheld in ``registry/privacy/review.yaml`` (``V11Inputs.privacy_withheld``,
+:mod:`marinedata.privacy.review`); ``withheld_images`` counts both and ``withheld_images_privacy``
+the privacy ones. A row of a source outside ``V11Inputs.roots`` (the flavour's admitted set) is
+dropped, so an nc source cannot reach the open tables through this layer.
 """
 
 from __future__ import annotations
@@ -114,12 +116,15 @@ class V11Inputs:
     digest: Callable[[Path], str] | None = None
     """The build's (memoized) file digest, else :func:`marinedata.checksums.file_digest`: the spine
     keys every staged image on it, as the task manifests do."""
+    privacy_withheld: frozenset[str] = frozenset()
+    """``image_sha256`` of the images the privacy review list says to withhold: dropped from every
+    table, whatever their split group."""
 
 
 def inputs_from_build(
     *, taxonomy_version: str | None, roots: Mapping[str, str | Path], manifests: Iterable[Any],
     split_map: Any, dedup_groups: str | Path | None = None, allow_unsplit: bool = False,
-    digest: Callable[[Path], str] | None = None,
+    digest: Callable[[Path], str] | None = None, privacy_withheld: Iterable[str] = (),
 ) -> V11Inputs:  # fmt: skip
     """:class:`V11Inputs` from what ``build_release`` already holds."""
     near: Mapping[str, str] = {}
@@ -133,6 +138,7 @@ def inputs_from_build(
         split_of={sha: split for m in manifests for sha, split in m.rows},
         assignments=dict(split_map.assignments),
         withheld_groups=frozenset(split_map.withheld),
+        privacy_withheld=frozenset(privacy_withheld),
         near_dup_group_of=dict(near),
         allow_unsplit=allow_unsplit,
         digest=digest,
@@ -384,9 +390,14 @@ def build_v11_tables(
     meta, walk, by_source = _metadata_rows(registry, inputs)
     split_of = dict(inputs.split_of)
     withheld: set[str] = set()
+    privacy: set[str] = set()
     meta_rows: list[dict] = []
     for sha, row in meta.items():
         group = row.get("split_group")
+        if sha in inputs.privacy_withheld:  # a person said: this image does not ship
+            withheld.add(sha)
+            privacy.add(sha)
+            continue
         if group in inputs.withheld_groups:
             withheld.add(sha)
             continue
@@ -402,6 +413,7 @@ def build_v11_tables(
     tables: dict[str, ConfigResult] = {}
     report: dict[str, Any] = {"taxonomy_version": inputs.taxonomy_version, "tables": {}}
     task_rows: Counter = Counter()
+    dropped = withheld | inputs.privacy_withheld  # also a task row the spine does not hold
     for cid in V11_CONFIG_IDS[1:]:
         base = results.get(cid)
         rows = base.rows if base else ()
@@ -410,7 +422,7 @@ def build_v11_tables(
         rows = tuple(_stamp_row(cid, r, inputs, split_of) for r in rows)
         rows = tuple(r for r in rows if r.get("source_id") in inputs.roots)
         task_rows.update(r.get("source_id") for r in rows)
-        rows = tuple(r for r in rows if r["image_sha256"] not in withheld)
+        rows = tuple(r for r in rows if r["image_sha256"] not in dropped)
         tables[cid] = ConfigResult(cid, rows, dict(base.unmapped_by_source) if base else {})
     tables = {"metadata": ConfigResult("metadata", tuple(meta_rows), {}), **tables}
     by_source = {s: {**c, "task_rows": task_rows.get(s, 0)} for s, c in sorted(by_source.items())}
@@ -451,6 +463,7 @@ def build_v11_tables(
         }  # fmt: skip
     report["metadata_by_source"] = by_source
     report["withheld_images"] = len(withheld)
+    report["withheld_images_privacy"] = len(privacy)
     report["unsplit_images"] = len(unsplit)
     report["allow_unsplit"] = inputs.allow_unsplit
     notes = {"report": json.loads(json.dumps(report))}
@@ -459,7 +472,7 @@ def build_v11_tables(
 
 def write_v11_report(results: Mapping[str, ConfigResult], out_dir: str | Path) -> Path:
     """``V11_TABLES.json`` next to the tables: taxonomy version, rows / images / unsplit rows per
-    table and the withheld-image count (the build's own accounting for release gate G6)."""
+    table and the withheld-image counts (the build's own accounting for release gate G6)."""
     meta = results.get("metadata")
     report = dict(meta.notes.get("report", {})) if meta is not None else {}
     path = Path(out_dir) / "V11_TABLES.json"

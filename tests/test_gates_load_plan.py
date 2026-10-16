@@ -94,7 +94,7 @@ def test_plan_keeps_readme_order_and_flags_frozen_configs(tmp_path):
 def test_v1_dir_selects_the_v11_gates_only_without_a_v10_gate_flag():
     flags = {
         "v11": False, "only": None, "hidden_test": None, "benchmark": None, "nc_id": None,
-        "taxonomy_version": None, "rehearsal": False, "build_dir": None, "v1_dir": "/v1",
+        "privacy_review": None, "taxonomy_version": None, "rehearsal": False, "build_dir": None, "v1_dir": "/v1",
     }  # fmt: skip
     assert wants_v11(Namespace(**flags), v10_selected=False)
     assert not wants_v11(Namespace(**flags), v10_selected=True)

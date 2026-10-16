@@ -41,6 +41,7 @@ class V11Options:
     empty_threshold: float = 0.05
     detector: str | None = None
     privacy_threshold: float = 0.85
+    privacy_review: Path | None = None
     taxonomy_version: str | None = None
 
 
@@ -120,7 +121,9 @@ def _privacy(b: Path, o: V11Options) -> GateResult:
     from .privacy_v11 import run_privacy_v11_gate
 
     detector = load_detector(o.detector) if o.detector else None  # None: pinned YuNet
-    return run_privacy_v11_gate(b, detector=detector, threshold=o.privacy_threshold)
+    return run_privacy_v11_gate(
+        b, detector=detector, threshold=o.privacy_threshold, review_path=o.privacy_review
+    )
 
 
 def _labelmap(b: Path, o: V11Options) -> GateResult:
