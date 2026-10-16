@@ -299,3 +299,61 @@ def test_hf_export_main_delegates_a_v11_release(build, monkeypatch, tmp_path):
     argv += ["--summary", str(tmp_path / "s.json"), "--v1-dir", str(tmp_path / "v1")]
     assert hf_export.main(argv) == 0
     assert seen == {"release_dir": build[0], "v1_dir": tmp_path / "v1"}
+
+
+def test_exported_rows_carry_the_hub_split_and_a_licence_class(registry, build, tmp_path):
+    """The build calls the validation split `probe`; every exported row names the Hub split of its
+    shard, and a task table whose licence_class is empty takes its image's class (VM rehearsal)."""
+    rel, _, sha = build
+    meta = pq.read_table(rel / "task_layers" / "metadata.parquet").to_pylist()
+    probe = [{**m, "split": "probe"} if m["image_sha256"] == sha["a2"] else m for m in meta]
+    _write(rel, "metadata", probe)
+    task = {
+        "taxonomy_version": TAX,
+        "licence_class": None,
+        "label_native": "x",
+        "taxon_node_id": "HC",
+    }
+    _write(rel, "bleaching", [
+        {
+            **task,
+            "image_sha256": sha["a2"],
+            "source_id": "seaview-survey-imagery",
+            "split": "probe",
+        },
+        {**task, "image_sha256": sha["b"], "source_id": "noaa-pifsc-bleaching", "split": "test"},
+    ])  # fmt: skip
+    layout, _ = _layout(registry, build)
+    out = tmp_path / "out"
+    export_v11(layout, out)
+    for config in ("metadata", "images", "bleaching"):
+        shards = sorted((out / "data" / config).glob("*.parquet"))
+        assert shards, config
+        for shard in shards:
+            splits = {r["split"] for r in pq.read_table(shard).to_pylist()}
+            assert splits == {shard.name.split("-")[0]}, (shard.name, splits)
+    assert {r["split"] for r in _rows(out, "bleaching")} == {"validation", "test"}
+    assert {r["licence_class"] for r in _rows(out, "bleaching")} == {"open"}
+
+
+def test_run_records_the_export_counts_in_release_json(registry, build, monkeypatch, tmp_path):
+    import argparse
+
+    from marinedata import hf_export
+    from marinedata.hf_export_v11 import run
+
+    rel, roots, _ = build
+    monkeypatch.setattr(hf_export, "_roots", lambda release_dir, cache: roots)
+    skip = tmp_path / "v1.sha256"
+    skip.write_text(f"{SKIP_IMG}\n")
+    args = argparse.Namespace(
+        release_dir=rel, flavour="open", out=tmp_path / "out", summary=tmp_path / "s.json",
+        v1_sha256=skip, v1_dir=None,
+    )  # fmt: skip
+    assert run(args) == 0
+    configs = json.loads((rel / "RELEASE.json").read_text())["configs"]
+    exported = json.loads((tmp_path / "s.json").read_text())["configs"]
+    assert configs == {
+        c: {s: e["rows"] for s, e in v["splits"].items()} for c, v in exported.items()
+    }
+    assert configs["images"] and configs["metadata"]

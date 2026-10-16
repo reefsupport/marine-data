@@ -19,7 +19,8 @@ checks each row:
 * v1.1.0 ``semseg`` shards (``mask`` + ``palette``, no ``image``) are checked by
   :mod:`.masks_palette`: a mode-P PNG whose values and colours are the declared palette.
 
-A build without mask rows fails: a gate that checked nothing must not pass."""
+A build without mask rows fails: a gate that checked nothing must not pass. With ``v1_dir``
+(an additive release) the v1.0 tree's mask shards are scanned when the build has none."""
 
 from __future__ import annotations
 
@@ -129,31 +130,43 @@ def _check_row(kind: str, row: dict) -> tuple[list[tuple[str, str]], bool]:
 
 
 def run_masks_gate(
-    build_dir: Path, *, empty_threshold: float = DEFAULT_EMPTY_THRESHOLD
+    build_dir: Path,
+    *,
+    empty_threshold: float = DEFAULT_EMPTY_THRESHOLD,
+    v1_dir: Path | None = None,
 ) -> GateResult:
     build_dir = Path(build_dir)
     counts: Counter = Counter()
     found: list[str] = []
     per_source: dict[str, list[int]] = defaultdict(lambda: [0, 0])
-    for shard in sorted(build_dir.rglob("*.parquet")):
-        kind, rows = _shard_rows(shard)
-        if kind is None:
-            counts["shards_skipped"] += 1
-            continue
-        counts["shards"] += 1
-        where = shard.relative_to(build_dir)
-        for index, row in enumerate(rows):
-            problems, empty = _check_row(kind, row)
-            source = str(row.get("source") or row.get("source_id") or "?")
-            counts["rows"] += 1
-            counts[f"{kind}_rows"] += 1
-            counts["exif_transposed_rows"] += int(bool(row.get("exif_transposed")))
-            per_source[source][0] += 1
-            per_source[source][1] += int(empty)
-            sha = str(row.get("image_sha256"))[:12]
-            for failure, message in problems:
-                counts[f"failed_{failure}"] += 1
-                found.append(f"{where}[{index}] {sha} {failure}: {message}")
+
+    def scan(root: Path) -> None:
+        for shard in sorted(root.rglob("*.parquet")):
+            kind, rows = _shard_rows(shard)
+            if kind is None:
+                counts["shards_skipped"] += 1
+                continue
+            counts["shards"] += 1
+            where = shard.relative_to(root)
+            for index, row in enumerate(rows):
+                problems, empty = _check_row(kind, row)
+                source = str(row.get("source") or row.get("source_id") or "?")
+                counts["rows"] += 1
+                counts[f"{kind}_rows"] += 1
+                counts["exif_transposed_rows"] += int(bool(row.get("exif_transposed")))
+                per_source[source][0] += 1
+                per_source[source][1] += int(empty)
+                sha = str(row.get("image_sha256"))[:12]
+                for failure, message in problems:
+                    counts[f"failed_{failure}"] += 1
+                    found.append(f"{where}[{index}] {sha} {failure}: {message}")
+
+    scan(build_dir)
+    if (
+        not counts["rows"] and v1_dir is not None
+    ):  # an additive release: the mask configs are v1.0's
+        counts["v1_dir_scanned"] = 1
+        scan(Path(v1_dir))
     by_source = {
         s: {"rows": n, "empty": e, "rate": round(e / n, 4)}
         for s, (n, e) in sorted(per_source.items())
@@ -167,7 +180,8 @@ def run_masks_gate(
                 f"pixel ({stat['rate']:.1%} > {empty_threshold:.1%})"
             )
     if not counts["rows"]:
-        head.append(f"no mask rows found under {build_dir}")
+        searched = f"{build_dir} or {v1_dir}" if v1_dir is not None else f"{build_dir}"
+        head.append(f"no mask rows found under {searched}")
     failures = [*head, *found]
     counts["failures_total"] = len(failures)
     out = {**dict(sorted(counts.items())), "empty_by_source": by_source}

@@ -253,3 +253,32 @@ def test_load_mask_geo_reads_a_csv(tmp_path):
     path = tmp_path / "geo.csv"
     path.write_text("image_sha256,lat,lon\nabc,1.5,2.5\n")
     assert load_mask_geo(path)["abc"] == (1.5, 2.5)
+
+
+def test_v1_dir_masks_count_when_the_build_has_none(tmp_path):
+    build, v1 = tmp_path / "build", tmp_path / "v1"
+    build.mkdir()
+    _build(v1, _good_semantic(), _good_instance())
+    rehearsal = run_masks_gate(build)
+    assert not rehearsal.passed and "no mask rows found" in rehearsal.failures[0]
+    result = run_masks_gate(build, v1_dir=v1)
+    assert result.passed and result.counts["rows"] == 5 and result.counts["v1_dir_scanned"] == 1
+    neither = run_masks_gate(build, v1_dir=tmp_path / "empty")
+    assert not neither.passed and "no mask rows found" in neither.failures[0]
+
+
+def test_v1_dir_is_not_scanned_when_the_build_has_mask_rows(tmp_path):
+    build, v1 = tmp_path / "build", tmp_path / "v1"
+    _build(build, _good_semantic())
+    _build(v1, _good_semantic(), _good_instance())
+    result = run_masks_gate(build, v1_dir=v1)
+    assert result.passed and result.counts["rows"] == 3 and "v1_dir_scanned" not in result.counts
+
+
+def test_runner_passes_v1_dir_to_the_masks_gate(tmp_path):
+    from marinedata.gates.runner import GateOptions, run_gate
+
+    build = tmp_path / "build"
+    build.mkdir()
+    v1 = _build(tmp_path / "v1", _good_semantic())
+    assert run_gate("masks", build, GateOptions(v1_dir=v1)).passed

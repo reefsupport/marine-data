@@ -93,7 +93,6 @@ def wants_v11(args: argparse.Namespace, *, v10_selected: bool) -> bool:
     if (
         args.v11
         or args.only
-        or args.v1_dir
         or args.hidden_test
         or args.benchmark
         or args.nc_id
@@ -101,6 +100,8 @@ def wants_v11(args: argparse.Namespace, *, v10_selected: bool) -> bool:
         or args.taxonomy_version
         or args.rehearsal
     ):
+        return True
+    if args.v1_dir and not v10_selected:  # with a v1.0 gate flag it feeds load, card and masks
         return True
     if v10_selected or not args.build_dir:
         return False

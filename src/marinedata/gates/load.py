@@ -1,8 +1,12 @@
 # ruff: noqa: E501
 """Load gate (P1.6): the build loads through ``datasets`` and agrees with RELEASE.json + the card.
 
-For every config of the build: ``datasets.load_dataset(build_dir, config, streaming=True)``, the first
-50 rows of each split are read (decoding every image), and
+``datasets`` infers the builder of a local folder from the FIRST ``configs:`` entry of the README and
+ignores the config asked for, and an additive release's build dir lacks the frozen v1.0 configs, so the
+gate reads the card: every ``configs:`` entry is resolved against the build (a pattern that matches
+nothing there falls back to ``--v1-dir``, see :mod:`.load_plan`) and loaded with
+``load_dataset("parquet", data_files=..., streaming=True)``; the first 50 rows of each split are read
+(decoding every image), and
 
 * ``missing_config`` / ``unlisted_config``  RELEASE.json ``configs`` and the shards disagree on the config set;
 * ``release_without_configs`` / ``no_release``  RELEASE.json has no ``configs`` block (hf_export writes it
@@ -10,7 +14,13 @@ For every config of the build: ``datasets.load_dataset(build_dir, config, stream
 * ``count_mismatch``   rows in the shards (parquet footers) != RELEASE.json ``configs[config][split]``;
 * ``schema_mismatch``  the feature schema of a shard or of the loaded dataset != the card's
   ``dataset_info.features`` for the config (the first shard's embedded schema until the card has one);
-* ``load_error`` / ``split_mismatch`` / ``iterate_error`` / ``empty_split``  ``datasets`` cannot load or read it."""
+* ``config_files_missing``  a pattern of a card ``configs:`` entry matches no file in the build or ``--v1-dir``;
+* ``first_config_unresolved``  the card's FIRST config resolves to no files there (the Hub infers the loader from it);
+* ``load_error`` / ``split_mismatch`` / ``iterate_error`` / ``empty_split``  ``datasets`` cannot load or read it,
+  the card has no entry for a built config, or it lists other splits than the shards.
+
+A frozen v1.0 config (coral-masks, scene-masks, instance-masks, fish-boxes) that resolves nowhere while
+no ``--v1-dir`` was given is counted ``skipped_frozen`` and does not fail; every other config must load."""
 
 from __future__ import annotations
 
@@ -18,6 +28,7 @@ from collections import Counter
 from pathlib import Path
 
 from . import GateResult, finish
+from .load_plan import ConfigFiles, plan_configs
 from .shards import CardError, config_shards, norm_split, read_card, read_release, split_counts
 
 NAME = "load"
@@ -46,17 +57,29 @@ def card_features(front: dict, config: str):
     return None
 
 
+def _footer_rows(paths) -> int:
+    import pyarrow.parquet as pq
+
+    return sum(pq.ParquetFile(p).metadata.num_rows for p in paths)
+
+
 def run_load_gate(
-    build_dir: Path, *, release_dir: Path | None = None, sample_rows: int = SAMPLE_ROWS
+    build_dir: Path,
+    *,
+    release_dir: Path | None = None,
+    sample_rows: int = SAMPLE_ROWS,
+    v1_dir: Path | None = None,
 ) -> GateResult:
     from datasets import load_dataset
 
     build_dir = Path(build_dir)
+    v1_dir = Path(v1_dir) if v1_dir else None
     shards = config_shards(build_dir)
     if not shards:
         return finish(NAME, {}, [f"no_data: no data/<config>/*.parquet under {build_dir}"])
     counts: Counter = Counter()
     failures: list[str] = []
+    skipped: list[str] = []
 
     def fail(kind: str, where: str, message: str) -> None:
         counts[f"failed_{kind}"] += 1
@@ -84,25 +107,46 @@ def run_load_gate(
         for config in sorted(set(shards) - set(expected)):
             fail("unlisted_config", config, "the build has shards RELEASE.json does not list")
     try:
-        front = read_card(build_dir)[0]
+        front, card_configs, _ = read_card(build_dir)
     except CardError:
-        front = {}  # the card gate reports an unreadable card
-    for config, files in sorted(shards.items()):
+        front, card_configs = {}, {}  # the card gate reports an unreadable card
+    plan = plan_configs(card_configs, build_dir, v1_dir)
+
+    def check(item: ConfigFiles) -> None:
+        config, files = item.config, shards.get(item.config) or []
         counts["configs"] += 1
-        have = split_counts(files)
+        for split, pattern in item.missing:
+            fail(
+                "config_files_missing",
+                f"{config}/{split}",
+                f"pattern {pattern!r} matches no file in the build or --v1-dir",
+            )
+        if not item.splits:
+            return
+        have = split_counts(files) if files else {}
         want = {norm_split(s): int(n) for s, n in ((expected or {}).get(config) or {}).items()}
-        for split in sorted(set(have) | set(want)) if want else ():
+        for split in sorted(set(have) | set(want)) if want and files else ():
             if have.get(split, 0) != want.get(split, 0):
                 fail(
                     "count_mismatch",
                     f"{config}/{split}",
                     f"{have.get(split, 0)} rows in the shards, RELEASE.json says {want.get(split, 0)}",
                 )
+        listed = {norm_split(s) for s in item.splits}
+        if files and listed != set(have):
+            fail(
+                "split_mismatch",
+                config,
+                f"the card lists splits {sorted(listed)}, the shards have {sorted(have)}",
+            )
         declared = card_features(front, config)
         reference, origin = (
             (declared, "card")
             if declared is not None
-            else (embedded_features(files[0]), "first shard")
+            else (
+                embedded_features(files[0] if files else next(iter(item.splits.values()))[0]),
+                "first shard",
+            )
         )
         for path in files:
             if embedded_features(path).to_dict() != reference.to_dict():
@@ -111,17 +155,12 @@ def run_load_gate(
                     f"{config}/{path.name}",
                     f"parquet features differ from the {origin}",
                 )
+        data_files = {s: [str(p) for p in paths] for s, paths in item.splits.items()}
         try:
-            loaded = load_dataset(str(build_dir), config, streaming=True)
+            loaded = load_dataset("parquet", data_files=data_files, streaming=True)
         except Exception as exc:
             fail("load_error", config, f"{type(exc).__name__}: {str(exc)[:160]}")
-            continue
-        if set(loaded) != set(have):
-            fail(
-                "split_mismatch",
-                config,
-                f"datasets sees splits {sorted(loaded)}, the shards have {sorted(have)}",
-            )
+            return
         for split, stream in sorted(loaded.items()):
             where, read = f"{config}/{split}", 0
             try:
@@ -140,6 +179,22 @@ def run_load_gate(
                 )
                 continue
             counts["rows_read"] += read
-            if not read and have.get(norm_split(split), 0):
+            if not read and _footer_rows(item.splits[split]):
                 fail("empty_split", where, "datasets returned no rows")
-    return finish(NAME, {**counts, "sample_rows": sample_rows}, failures)
+
+    if plan and not plan[0].splits and not (plan[0].frozen and v1_dir is None):
+        fail(
+            "first_config_unresolved",
+            plan[0].config,
+            "the card's first `configs:` entry resolves to no files in the build or --v1-dir; the Hub infers the loader from it",
+        )
+    for config in sorted(set(shards) - {item.config for item in plan}):
+        fail("load_error", config, "the card's `configs:` has no entry for it")
+    for item in plan:
+        if item.frozen and not item.splits and v1_dir is None:
+            counts["skipped_frozen"] += 1
+            skipped.append(item.config)
+        else:
+            check(item)
+    extra = {"skipped_frozen_configs": skipped} if skipped else {}
+    return finish(NAME, {**counts, "sample_rows": sample_rows, **extra}, failures)

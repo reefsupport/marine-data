@@ -6,7 +6,7 @@ The card itself is generated (hf_card / P1.9); this gate only verifies it. Parse
 
 * ``unparseable_card``      README.md missing or not a dataset card;
 * ``missing_config_section`` a config of the build / RELEASE.json has no ``configs:`` entry;
-  ``extra_config_section`` the reverse; ``split_mismatch`` the entry's splits differ from the build;
+  ``extra_config_section`` the reverse (a config under ``--v1-dir`` is not extra); ``split_mismatch`` the entry's splits differ from the build;
 * ``count_mismatch``        ``dataset_info[config].splits[].num_examples`` != the release rows;
 * ``size_mismatch``         ``dataset_info[config].download_size`` != the bytes of the config's shards;
 * ``size_category``         ``size_categories`` missing, or no listed band matches the row counts."""
@@ -50,13 +50,16 @@ def _listed_splits(config: dict) -> set[str]:
     return {norm_split(str(d["split"])) for d in files if isinstance(d, dict) and d.get("split")}
 
 
-def run_card_gate(build_dir: Path, *, release_dir: Path | None = None) -> GateResult:
+def run_card_gate(
+    build_dir: Path, *, release_dir: Path | None = None, v1_dir: Path | None = None
+) -> GateResult:
     build_dir = Path(build_dir)
     try:
         front, card_configs, _ = read_card(build_dir)
     except CardError as exc:
         return finish(NAME, {"failed_unparseable_card": 1}, [f"README.md unparseable_card: {exc}"])
     shards = config_shards(build_dir)
+    v1_configs = set(config_shards(Path(v1_dir))) if v1_dir else set()  # frozen v1.0 configs
     expected = (read_release(build_dir, release_dir) or {}).get("configs") or {}
     info = _info(front)
     counts: Counter = Counter(card_configs=len(card_configs))
@@ -98,8 +101,13 @@ def run_card_gate(build_dir: Path, *, release_dir: Path | None = None) -> GateRe
                     config,
                     f"card download_size {entry['download_size']}, shards total {actual} bytes",
                 )
-    for config in sorted(set(card_configs) - set(shards) - set(expected)):
-        fail("extra_config_section", config, "the card lists a config the build does not have")
+    counts["configs_from_v1_dir"] = len((set(card_configs) & v1_configs) - set(shards))
+    for config in sorted(set(card_configs) - set(shards) - set(expected) - v1_configs):
+        fail(
+            "extra_config_section",
+            config,
+            "the card lists a config the build (and --v1-dir) does not have",
+        )
     listed_bands = front.get("size_categories") or []
     listed_bands = [listed_bands] if isinstance(listed_bands, str) else list(listed_bands)
     accepted = {size_category(n) for n in totals} | {size_category(sum(totals))}
