@@ -55,6 +55,7 @@ def build_release(
     lock_sha256: str | None = None,
     v11: bool = False,
     allow_unsplit: bool = False,
+    privacy_review: str | Path | None = None,
 ) -> ReleaseResult:
     """Build every registry task against a frozen split map and write the release.
 
@@ -70,7 +71,9 @@ def build_release(
     ``task_layers/V11_TABLES.json`` records the row, image and unsplit counts. ``False``
     (default) is byte-identical to before. An admitted image with no split in the split map fails
     the build (``UnsplitImagesError``) unless ``allow_unsplit`` (rehearsal only): its rows then
-    keep ``split = null`` and the report records ``unsplit``.
+    keep ``split = null`` and the report records ``unsplit``. The images the privacy review list
+    (``privacy_review`` or ``registry/privacy/review.yaml``, :mod:`marinedata.privacy.review`)
+    marks ``withhold`` are dropped from every table and counted in ``withheld_images``.
 
     ``tasks`` (WP-8c, charter D-X): ``"v1"`` (default) never touches the task-layer
     configs below and produces byte-identical output to before this parameter existed.
@@ -357,8 +360,10 @@ def build_release(
         base_dir = resolve_tasklabels_root(registry, tasklabels_root)
         v11_inputs = None
         if v11:
+            from ..privacy.review import load_review
             from ..task_layers.v11_tables import inputs_from_build
 
+            review = load_review(privacy_review, registry_root=registry.root)
             v11_inputs = inputs_from_build(
                 taxonomy_version=taxonomy_stamp.get("taxonomy_version"),
                 roots=admitted_roots,
@@ -367,6 +372,7 @@ def build_release(
                 dedup_groups=dedup_v2_groups,
                 allow_unsplit=allow_unsplit,
                 digest=digest,
+                privacy_withheld=review.withheld,
             )
         results = build_all_configs(registry, base_dir, flavour, v11=v11_inputs)
         if v11_inputs is None:

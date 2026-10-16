@@ -1,0 +1,28 @@
+# Human review of automatic face detections (release gate G8; docs/GATES.md "privacy").
+# Validated by marinedata.privacy.review: a bad verdict, a malformed or repeated image_sha256 or a
+# missing field fails the gate and the build. One entry per image; change it in a merge request, so the history is the audit trail.
+#
+#   image_sha256  64 hex characters (the key everywhere in the v1.1.0 tables)
+#   verdict       cleared:  a person looked, no person is visible; the detection is a false
+#                           positive and G8 counts it under `cleared_reviewed` instead of failing.
+#                 withhold: the image must not ship; the v1.1.0 build drops it from every table
+#                           (counted in V11_TABLES.json `withheld_images`) and G8 fails
+#                           `withheld_image_present` if it is still in the build.
+#   source_id     the registry source the image came from
+#   detector      the detector and version that fired, as G8 prints it (name + version)
+#   score         the detector's score for the image
+#   reason        what was seen, in a sentence
+#   reviewer      who looked (and any confirmation still pending)
+#   reviewed_at   YYYY-MM-DD
+schema_version: 1
+entries:
+  - image_sha256: d47bcff3348010b94ccb8adc339f6354ad8d5b813cff3efb370f8a721e917733
+    verdict: cleared
+    source_id: noaa-pifsc-bleaching
+    detector: yunet f12e12798e83
+    score: 0.86
+    reason: >-
+      manual review 2026-10-16: 224x224 close-up of bleached coral tissue (NOAA PIFSC bleaching
+      crop), no person visible; YuNet 0.86 false positive
+    reviewer: "Claude Fable 5.1 (session 4ced45c3) — pending confirmation by yrunhaar"
+    reviewed_at: "2026-10-16"

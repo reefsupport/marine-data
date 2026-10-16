@@ -66,6 +66,14 @@ def add_v11_options(p: argparse.ArgumentParser) -> None:
         "registry's own are always checked)",
     )
     group.add_argument(
+        "--privacy-review",
+        type=Path,
+        default=None,
+        metavar="FILE",
+        help="privacy: the human review list of face detections (default: registry/privacy/"
+        "review.yaml); a cleared image is counted, a withheld one still in the build fails",
+    )
+    group.add_argument(
         "--taxonomy-version",
         default=None,
         metavar="X.Y.Z",
@@ -89,6 +97,7 @@ def wants_v11(args: argparse.Namespace, *, v10_selected: bool) -> bool:
         or args.hidden_test
         or args.benchmark
         or args.nc_id
+        or args.privacy_review
         or args.taxonomy_version
         or args.rehearsal
     ):
@@ -110,6 +119,7 @@ def _options(args: argparse.Namespace) -> V11Options:
         empty_threshold=args.empty_threshold,
         detector=args.detector,
         privacy_threshold=args.privacy_threshold,
+        privacy_review=args.privacy_review,
         taxonomy_version=args.taxonomy_version,
     )
 
