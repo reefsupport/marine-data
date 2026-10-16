@@ -331,7 +331,7 @@ def test_dockerfile_carries_the_privacy_extra_and_the_pinned_yunet_model():
     extras = re.search(r'ARG EXTRAS="([^"]*)"', docker)[1].split()
     assert "privacy" in extras
     assert yunet_model.YUNET_URL in docker and f"sha256:{yunet_model.YUNET_SHA256}" in docker
-    assert f"{yunet_model.ENV_VAR}=" in docker and "--chmod=0444" in docker
+    assert f"{yunet_model.ENV_VAR}=" in docker and "chmod 0444 /opt/models/" in docker
 
 
 def test_lock_has_no_cuda_wheels():
