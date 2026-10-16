@@ -19,7 +19,8 @@ def add_pin_args(parser: argparse.ArgumentParser) -> None:
         action="store_true",
         help=(
             "do not pin the benchmark manifests' upstream eval images to test and their second "
-            "held-out split to val (default: pin them; a v1.0 assignment under --inherit wins)"
+            "held-out split to val (default: pin them; a pin wins over a v1.0 assignment under "
+            "--inherit and the override is recorded in the map)"
         ),
     )
 
@@ -42,7 +43,7 @@ def pin_kwargs(args: argparse.Namespace, registry: Registry | None) -> dict[str,
 
 
 def pins_summary(header: Mapping[str, Any]) -> str:
-    """The CLI lines for a ``pins`` header: counts per benchmark, then the v1.0 conflicts."""
+    """The CLI lines for a ``pins`` header: counts per benchmark, then the v1.0 overrides."""
     per = "; ".join(
         f"{label} test={c.get(PIN_TEST, 0)} validation={c.get(PIN_VAL, 0)}"
         for label, c in (header.get("benchmarks") or {}).items()
@@ -51,12 +52,12 @@ def pins_summary(header: Mapping[str, Any]) -> str:
     lines = [
         f"release: benchmark pins {per or 'none'} | components test={components.get(PIN_TEST, 0)} "
         f"validation={components.get(PIN_VAL, 0)} | yielded ood={skipped.get('ood', 0)} "
-        f"v1={skipped.get('v1_continuity', 0)} earlier-rule={skipped.get('earlier_rule', 0)}"
+        f"earlier-rule={skipped.get('earlier_rule', 0)}"
     ]
-    conflicts = header.get("v1_continuity_conflicts")
-    if conflicts is not None:
-        lines.append(
-            f"release: v1 continuity kept over {conflicts['count']} pinned images "
-            f"({conflicts['would_fail_g7']} fail G7): {conflicts['by_benchmark']}"
-        )
+    over = header.get("v1_continuity_overridden")
+    if over is not None:
+        line = f"release: benchmark pins override v1 continuity for {over['images']} image(s)"
+        if over["images"]:
+            line += f" in {over['groups']} group(s): {over['by_source']}"
+        lines.append(line)
     return "\n".join(lines)

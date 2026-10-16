@@ -8,7 +8,10 @@
   rows and no metadata row (PR-M: a narrow tree once vanished silently from ``metadata``);
 * ``split_shard``      a row's ``split`` is not the split of its shard file;
 * ``group_straddles``  one ``split_group`` in two splits (near-copies must not straddle);
-* ``reassigned_v1``    an image of a v1.0 config in a split v1.0 did not give it (``v1_dir``);
+* ``reassigned_v1``    an image of a v1.0 config in a split v1.0 did not give it (``v1_dir``). The
+  exception is a group a benchmark pin moved: the release's ``SPLIT_MAP.json`` lists them in
+  ``pins.v1_continuity_overridden.group_ids`` (count-only above 200) and exactly those are accepted;
+* ``override_unchanged``  that list names a group none of whose images left its v1.0 split;
 * ``ood_size`` / ``ood_share``  ``test_ood`` under the registry size guards (min images / groups) or
   over ``max_total_holdout_share`` of the release (registry/splits/v2.yaml ``size_guards``);
 * ``ratio_off``        images no label row gives an ``upstream_split`` are not 70/15/15 within
@@ -55,6 +58,21 @@ def read_report(build_dir: Path, release_dir: Path | None) -> dict | None:
     return None
 
 
+def read_overridden(build_dir: Path, release_dir: Path | None) -> dict | None:
+    """``pins.v1_continuity_overridden`` of ``SPLIT_MAP.json`` (release dir, else build dir)."""
+    for base in (release_dir, build_dir):
+        path = Path(base) / "SPLIT_MAP.json" if base else None
+        if path is not None and path.is_file():
+            try:
+                data = json.loads(path.read_text())
+            except ValueError:
+                return None
+            pins = data.get("pins") if isinstance(data, dict) else None
+            block = pins.get("v1_continuity_overridden") if isinstance(pins, dict) else None
+            return block if isinstance(block, dict) else None
+    return None
+
+
 def _upstream_images(build: Path) -> set:
     found = set()
     for table in LABEL_TABLES:
@@ -70,6 +88,7 @@ def run_splits_v11_gate(
     release_dir: Path | None = None,
     v1_dir: Path | None = None,
     rehearsal: bool = False,
+    overridden: dict | None = None,
     ood_guards: dict | None = None,
     ratio_min_images: int = 100,
     tolerance_pt: float = TOLERANCE_PT,
@@ -94,6 +113,11 @@ def run_splits_v11_gate(
                     f"V11_TABLES.json: {sid} has {c.get('images', 0)} staged image(s) and "
                     f"{c.get('task_rows', 0)} task row(s) but no metadata row",
                 )
+    if overridden is None:
+        overridden = read_overridden(build, release_dir)
+    listed = overridden.get("group_ids") if overridden else None
+    accepted = None if listed is None else {str(g) for g in listed}
+    changed_groups: set[str] = set()
     v1 = v1_splits(Path(v1_dir)) if v1_dir else None
     if v1 is None:
         out.fail("no_v1_set", "no v1.0 tree (--v1-dir): a v1.0 reassignment cannot be ruled out")
@@ -115,10 +139,28 @@ def run_splits_v11_gate(
         if row.get("split_group") is not None:
             group_splits[row["split_group"]].add(split)
         if v1 is not None and sha in v1 and split not in v1[sha]:
-            out.fail("reassigned_v1", f"{str(sha)[:12]}: v1.0 {sorted(v1[sha])} -> {split}")
+            group = str(row.get("split_group"))
+            if overridden is not None and (accepted is None or group in accepted):
+                changed_groups.add(group)  # a pin moved this group (pins.v1_continuity_overridden)
+            else:
+                out.fail("reassigned_v1", f"{str(sha)[:12]}: v1.0 {sorted(v1[sha])} -> {split}")
     for group, splits in sorted(group_splits.items(), key=lambda kv: str(kv[0])):
         if len(splits) > 1:
             out.fail("group_straddles", f"split_group {str(group)[:24]} is in {sorted(splits)}")
+    if overridden is not None:
+        if accepted is not None:
+            for group in sorted(accepted - changed_groups):
+                out.fail(
+                    "override_unchanged",
+                    f"pins.v1_continuity_overridden names split_group {group[:24]}, "
+                    "but no image of it left its v1.0 split",
+                )
+        elif len(changed_groups) != int(overridden.get("groups") or 0):
+            out.fail(
+                "override_unchanged",
+                f"pins.v1_continuity_overridden counts {overridden.get('groups')} group(s), "
+                f"{len(changed_groups)} left their v1.0 split",
+            )
     total, per_split = len(by_image), Counter(by_image.values())
     ood_groups = {g for g, s in group_splits.items() if "test_ood" in s}
     if per_split["test_ood"]:
@@ -142,6 +184,8 @@ def run_splits_v11_gate(
                     f"non-upstream {split}: {got:.1f}% vs {want:.0f}% +/-{tolerance_pt:g}",
                 )
     extra = {"images": total, "non_upstream_images": n_free, "unsplit": len(unsplit)}
+    if overridden is not None:
+        extra["v1_override_groups"] = len(changed_groups)
     extra.update({f"images_{k}": v for k, v in sorted(per_split.items())})
     if unsplit and rehearsal and not out.lines:
         return skip(NAME, f"rehearsal build: {unsplit[0]}", {**out.counts, **extra})

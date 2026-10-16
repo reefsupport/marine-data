@@ -15,6 +15,10 @@ members a prior map already split apart. A new release needs a different contrac
 Precedence for a component of new groups, first match wins: inherited (a prior group in the
 component), the prior-release neighbour band (:func:`band_constraints`), forced (a never-eval-only
 component is train), OOD (``test_ood``), upstream test (``test``), then the stratified group hash.
+A benchmark pin outranks the inherited split (design 3.1 rule 3): a component named in ``override``
+moves whole to the pinned split, its prior groups included. Those moved groups, and no others, may
+differ from the prior map: the append-only guard raises for any other, and
+:attr:`InheritResult.overridden` lists them.
 The caller (:func:`marinedata.release.generate_split_map`) builds the inputs; this module decides.
 """
 
@@ -50,6 +54,8 @@ class InheritResult:
     forced_components: int = 0
     ood_blocked: int = 0
     """Components an OOD rule matched that precedence placed elsewhere (prior, band, never-eval)."""
+    overridden: tuple[str, ...] = ()
+    """Prior groups whose split a benchmark pin changed (``override``), sorted."""
 
 
 def load_inherited(path: str | Path) -> tuple[SplitMap, str]:
@@ -147,6 +153,7 @@ def resolve_inherited_splits(
     ood: Mapping[str, Sequence[str]] | None = None,
     ood_header: Mapping[str, object] | None = None,
     near_dup: Mapping[str, object] | None = None,
+    override: Mapping[str, SplitName] | None = None,
 ) -> InheritResult:
     """Write a fresh map at ``path`` that embeds ``prior`` and assigns the new components.
 
@@ -155,8 +162,11 @@ def resolve_inherited_splits(
     with no prior group (never-eval, band, upstream test). ``withhold``: component -> reason, a new
     component that must get no entry. ``ood``: component -> OOD rule names; those components go to
     ``test_ood`` unless a prior group or a ``forced``/``withhold`` entry placed them first.
-    ``seed`` seeds the allocation of new groups only; the prior seed is kept in ``inherits``.
-    Raises ``SplitMapError`` if ``path`` exists or the prior map cannot be the base."""
+    ``override``: component -> split for components a benchmark pin moves off their prior split
+    (:func:`marinedata.benchmark_pins.apply_benchmark_pins`): every group of the component, prior
+    ones included, takes it. ``seed`` seeds the allocation of new groups only; the prior seed is
+    kept in ``inherits``. Raises ``SplitMapError`` if ``path`` exists or the prior map cannot be
+    the base."""
     if load_split_map(path) is not None:
         raise SplitMapError(f"{path} already exists: an inheriting map is generated fresh once")
     _check_compatible(prior, ratios)
@@ -170,17 +180,24 @@ def resolve_inherited_splits(
     persisted = prior.assignments
     forced = dict(forced or {})
     withhold = dict(withhold or {})
+    override = {canon: split for canon, split in (override or {}).items() if canon in counts}
 
     adopted: dict[str, SplitName] = {}
     conflicts: dict[str, list[str]] = {}
     for canon in counts:
+        if canon in override:
+            continue
         group_members = members.get(canon, [canon])
         found = sorted({persisted[m] for m in group_members if m in persisted})
         if len(found) == 1:
             adopted[canon] = found[0]
         elif found:
             conflicts[canon] = group_members
-    fresh = [canon for canon in counts if canon not in adopted and canon not in conflicts]
+    fresh = [
+        canon
+        for canon in counts
+        if canon not in adopted and canon not in conflicts and canon not in override
+    ]
 
     withheld: dict[str, str] = {}
     for _canon, group_members in sorted(conflicts.items()):
@@ -205,7 +222,7 @@ def resolve_inherited_splits(
         canon: split for canon, split in forced.items() if canon in fresh and canon not in aside
     }
 
-    fixed = {**adopted, **forced_new}
+    fixed = {**adopted, **forced_new, **override}
     in_quota = {canon: split for canon, split in fixed.items() if split in ratios}
     outside = set(fixed) - set(in_quota)  # e.g. a prior test_ood group: not part of the quota
     alloc_strata = {
@@ -230,17 +247,24 @@ def resolve_inherited_splits(
             continue
         split = fixed[canon] if canon in fixed else allocated[canon]
         for member in members.get(canon, [canon]):
-            assignments.setdefault(member, split)
+            if canon in override:
+                assignments[member] = split  # a benchmark pin moves the whole component
+            else:
+                assignments.setdefault(member, split)
     ood_rules: dict[str, list[str]] = {}
     for canon, tags in ood_components.items():
         for member in members.get(canon, [canon]):
             assignments[member] = TEST_OOD  # no prior group is in an OOD component
             ood_rules[member] = tags
+    overridden: list[str] = []
     for key, split in persisted.items():
-        if assignments[key] != split:  # the "raise, don't warn" guard of the append-only contract
+        if assignments[key] == split:
+            continue
+        if merge_canonical.get(key, key) not in override:  # the append-only contract's guard
             raise SplitMapError(
                 f"prior assignment moved: {key!r} {split!r} -> {assignments[key]!r}"
             )
+        overridden.append(key)
 
     save_split_map(
         path,
@@ -271,4 +295,5 @@ def resolve_inherited_splits(
         ood_groups=len(ood_rules),
         forced_components=len(forced_new),
         ood_blocked=len(ood or {}) - len(ood_components),
+        overridden=tuple(sorted(overridden)),
     )

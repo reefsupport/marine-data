@@ -266,6 +266,39 @@ def test_splits_fail_a_v1_reassignment_and_a_straddling_group(tmp_path):
     assert failed(result, "reassigned_v1") == 1 and failed(result, "group_straddles") == 1
 
 
+def write_map(build: Path, overridden: dict | None) -> None:
+    pins = {} if overridden is None else {"v1_continuity_overridden": overridden}
+    (build / "SPLIT_MAP.json").write_text(json.dumps({"pins": pins, "assignments": {}}))
+
+
+def test_splits_accept_exactly_the_groups_a_pin_moved_off_their_v1_split(tmp_path):
+    v1 = write_v1(tmp_path)
+    build = build_release(tmp_path, split_of={0: "test"})  # img0, group g0: v1.0 train -> test
+    assert failed(run_splits_v11_gate(build, v1_dir=v1), "reassigned_v1") == 1  # no SPLIT_MAP.json
+    write_map(build, {"images": 1, "groups": 1, "by_source": {}, "group_ids": ["g0"]})
+    listed = run_splits_v11_gate(build, v1_dir=v1)
+    assert listed.passed, listed.failures
+    assert listed.counts["v1_override_groups"] == 1
+    write_map(build, {"images": 1, "groups": 1, "by_source": {}, "group_ids": ["g9"]})
+    other = run_splits_v11_gate(build, v1_dir=v1)  # g0 changed unlisted; the listed g9 did not
+    assert failed(other, "reassigned_v1") == 1 and failed(other, "override_unchanged") == 1
+
+
+def test_splits_fail_a_listed_group_that_did_not_change_and_check_the_count_when_ids_are_cut(
+    tmp_path,
+):
+    v1, build = write_v1(tmp_path), build_release(tmp_path)  # nothing left its v1.0 split
+    write_map(build, {"images": 1, "groups": 1, "by_source": {}, "group_ids": ["g0"]})
+    assert failed(run_splits_v11_gate(build, v1_dir=v1), "override_unchanged") == 1
+    write_map(build, {"images": 0, "groups": 0, "by_source": {}, "group_ids": []})
+    assert run_splits_v11_gate(build, v1_dir=v1).passed
+    moved = build_release(tmp_path / "moved", split_of={0: "test"})
+    write_map(moved, {"images": 1, "groups": 1, "by_source": {}})  # over 200 groups: count only
+    assert run_splits_v11_gate(moved, v1_dir=v1).passed
+    write_map(moved, {"images": 1, "groups": 2, "by_source": {}})
+    assert failed(run_splits_v11_gate(moved, v1_dir=v1), "override_unchanged") == 1
+
+
 def test_splits_fail_unsplit_and_allow_unsplit_builds_unless_rehearsal(tmp_path):
     build, v1 = build_release(tmp_path), write_v1(tmp_path)
     write_report(build, unsplit_images=2, allow_unsplit=True)

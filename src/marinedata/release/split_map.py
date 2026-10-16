@@ -5,7 +5,7 @@ from __future__ import annotations
 from collections.abc import Callable, Iterable, Mapping
 from pathlib import Path
 
-from ..benchmark_pins import BenchmarkPins, apply_benchmark_pins, stamp_pins
+from ..benchmark_pins import BenchmarkPins, apply_benchmark_pins, check_overridden, stamp_pins
 from ..builder import SUPERVISED_DEFAULT_RATIOS, SplitName
 from ..checksums import file_digest
 from ..licence_class import release_excluded
@@ -160,8 +160,10 @@ def generate_split_map(
     the route-to-our-test manifests pin their upstream eval images to ``test`` and the second
     held-out split to ``val`` by sha256, whatever the staged ``upstream_split`` column says. A
     component takes the pin of any member (test beats val). A pin yields to a never-eval train
-    component, an OOD claim and a v1.0 assignment; the pins and the v1.0 conflicts are counted in
-    the map's ``pins`` header. ``None`` is the unchanged behaviour.
+    component and an OOD claim, and wins over a v1.0 assignment: the whole component moves, and the
+    moved v1.0 groups are recorded in the map's ``pins.v1_continuity_overridden`` header block
+    (the v1.0 configs stay frozen, so this is a documented v1.0 -> v1.1 split change). The pins are
+    counted in the same header. ``None`` is the unchanged behaviour.
     """
     if load_split_map(out) is not None:
         raise ValueError(f"{out} already exists — remove it first to regenerate")
@@ -229,6 +231,7 @@ def generate_split_map(
         if inherit is not None
         else None
     )
+    train_only = frozenset(forced)  # never-eval-only components: a pin never moves them
     if plan is not None:  # a prior-release neighbour binds a component; never-eval-only wins
         forced = {**plan.forced, **forced}
     # WP-R2c: a group with an upstream-test row pulls its whole merged component to test.
@@ -242,17 +245,20 @@ def generate_split_map(
         if plan is None or canon not in plan.ood:
             forced.setdefault(canon, TEST)
     # Design 2.2 rule 1: the benchmark manifests pin upstream eval -> test and the second held-out
-    # split -> val by sha256, whatever the staged `upstream_split` says. Never-eval train, an OOD
-    # claim and (in `resolve_inherited_splits`) a v1.0 assignment all win over a pin.
+    # split -> val by sha256, whatever the staged `upstream_split` says. Never-eval train and an OOD
+    # claim win over a pin; a pin wins over a v1.0 assignment (`override` below moves the whole
+    # component, and `pins.v1_continuity_overridden` records it).
     pins_header: dict[str, object] = {}
+    pin_overrides: dict[str, str] = {}
     if benchmark_pins is not None:
-        forced, pins_header = apply_benchmark_pins(
+        forced, pins_header, pin_overrides = apply_benchmark_pins(
             forced,
             rows,
             merge_info.canonical,
             benchmark_pins,
             prior=inherit.assignments if inherit is not None else None,
             ood=plan.ood if plan is not None else (),
+            train_only=train_only,
         )
 
     all_ratios = ratios or dict(SUPERVISED_DEFAULT_RATIOS)
@@ -295,7 +301,10 @@ def generate_split_map(
             ood=plan.ood,
             ood_header=plan.ood_header,
             near_dup=near_dup_value or None,
+            override=pin_overrides,
         )
+        if pins_header:
+            check_overridden(pins_header, inherited.overridden)
 
     members_of: dict[str, list[str]] = {}
     for group, canon in merge_info.canonical.items():
