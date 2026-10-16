@@ -5,6 +5,7 @@ from __future__ import annotations
 from collections.abc import Callable, Iterable, Mapping
 from pathlib import Path
 
+from ..benchmark_pins import BenchmarkPins, apply_benchmark_pins, stamp_pins
 from ..builder import SUPERVISED_DEFAULT_RATIOS, SplitName
 from ..checksums import file_digest
 from ..licence_class import release_excluded
@@ -85,6 +86,7 @@ def generate_split_map(
     inherit_sha256: str = "",
     ood_rules: RulesConfig | None = None,
     ood_metadata: Mapping[str, Mapping[str, object]] | None = None,
+    benchmark_pins: BenchmarkPins | None = None,
 ) -> SplitMapStats:
     """Enumerate every admitted staged tree in ``roots`` and write a fresh, stratified
     ``SPLIT_MAP.json`` at ``out`` — the "no hand-built TSV" path from staged trees straight
@@ -153,6 +155,13 @@ def generate_split_map(
     of a prior evaluation image never-train. ``ood_rules`` (``splits/v2.yaml``) routes matching
     groups to ``test_ood``, outside the 70/15/15 quota; ``ood_metadata`` supplies the per-image
     geo, depth, platform and time fields. ``inherit=None`` is the unchanged v1.0 behaviour.
+
+    ``benchmark_pins`` (:func:`marinedata.benchmark_pins.load_benchmark_pins`, design 2.2 rule 1):
+    the route-to-our-test manifests pin their upstream eval images to ``test`` and the second
+    held-out split to ``val`` by sha256, whatever the staged ``upstream_split`` column says. A
+    component takes the pin of any member (test beats val). A pin yields to a never-eval train
+    component, an OOD claim and a v1.0 assignment; the pins and the v1.0 conflicts are counted in
+    the map's ``pins`` header. ``None`` is the unchanged behaviour.
     """
     if load_split_map(out) is not None:
         raise ValueError(f"{out} already exists — remove it first to regenerate")
@@ -232,6 +241,19 @@ def generate_split_map(
     for canon in sorted(upstream_test_components):
         if plan is None or canon not in plan.ood:
             forced.setdefault(canon, TEST)
+    # Design 2.2 rule 1: the benchmark manifests pin upstream eval -> test and the second held-out
+    # split -> val by sha256, whatever the staged `upstream_split` says. Never-eval train, an OOD
+    # claim and (in `resolve_inherited_splits`) a v1.0 assignment all win over a pin.
+    pins_header: dict[str, object] = {}
+    if benchmark_pins is not None:
+        forced, pins_header = apply_benchmark_pins(
+            forced,
+            rows,
+            merge_info.canonical,
+            benchmark_pins,
+            prior=inherit.assignments if inherit is not None else None,
+            ood=plan.ood if plan is not None else (),
+        )
 
     all_ratios = ratios or dict(SUPERVISED_DEFAULT_RATIOS)
     near_dup_value = {
@@ -285,7 +307,10 @@ def generate_split_map(
         and len({split for g in members for split in upstream_splits.get(g, set())}) > 1
     )
 
+    if pins_header:
+        stamp_pins(out, pins_header)
     return SplitMapStats(
+        pins=pins_header or None,
         merged_components=merge_info.merged_components,
         merged_cross_partition=merged_cross_partition,
         near_dup_pairs=len(links),

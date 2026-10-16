@@ -11,7 +11,7 @@ pinned-tree fetch). Nothing here uploads except step 9 with `--go`.
 2. `marinedata release split-map --release <id> --split-map SPLIT_MAP.json --near-dup dedup/groups.parquet
    --local-only [--local=ID=PATH ...]` (once per release; refuses to overwrite)
    Enumerates every open and restricted-licence source (never-released sources excluded), merges shared images
-   and the dedup near-dup groups into one component, honours an upstream test set, and writes the frozen
+   and the dedup near-dup groups into one component, honours an upstream test set, pins the benchmark manifests' eval images to test and their second held-out split to val (`pins` header; a v1.0 assignment wins and is counted), and writes the frozen
    map. It FAILS without a near-dup input; `--no-near-dup` is the explicit opt-out (recorded in the map
    header). Pass the `--local` trees of BOTH flavours. Every source with >= 3 groups gets at least one
    group in each of train/val/test (val is taken from train, never from the upstream test). A source

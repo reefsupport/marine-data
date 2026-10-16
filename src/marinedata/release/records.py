@@ -97,3 +97,5 @@ class SplitMapStats:
     """Split groups in those components."""
     ood_blocked_components: int = 0
     """Components an OOD rule matched but that precedence placed elsewhere (prior, band, ...)."""
+    pins: dict[str, object] | None = None
+    """The SPLIT_MAP ``pins`` header (benchmark pins, v1.0 conflicts); ``None`` without pins."""

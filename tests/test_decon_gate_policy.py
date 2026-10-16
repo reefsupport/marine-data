@@ -208,3 +208,63 @@ def test_every_shipped_manifest_resolves_to_a_registry_entry():
     assert {i for i, p in policy.items() if p == "exclude"} == {"marineeval", "u45"}
     for in_scope in ("coralscapes", "suim", "uiis", "uiis10k", "usis10k"):
         assert policy[in_scope] == PIN
+
+
+def _labelled(path: Path, benchmark_id: str, labels: dict[str, str]) -> Path:
+    table = pa.table(
+        {
+            "benchmark_id": [benchmark_id] * len(labels),
+            "sha256": [sha(name) for name in labels],
+            "upstream_split": list(labels.values()),
+        }
+    )
+    pq.write_table(table, path)
+    return path
+
+
+def _heldout_run(folder: Path, benchmark_id: str, labels: dict[str, str], splits: dict[str, str]):
+    bench = _labelled(folder / f"{benchmark_id}.parquet", benchmark_id, labels)
+    result = run(build(folder, splits), bench, hidden(folder, "other"))
+    return result, record(result, bench.name)
+
+
+def test_heldout_rows_pass_in_validation_test_and_ood(tmp_path):
+    # coralscapes: eval split test, held-out split validation
+    labels = {"e1": "test", "h1": "validation", "h2": "validation", "h3": "validation"}
+    splits = {"e1": "test", "h1": "validation", "h2": "test", "h3": "ood-geo-mediterranean"}
+    result, rec = _heldout_run(tmp_path, "coralscapes", labels, splits)
+    assert result.passed, result.failures
+    assert (rec["eval_pinned_ok"], rec["eval_failed"]) == (1, 0)
+    assert (rec["heldout_pinned_ok"], rec["heldout_failed"]) == (3, 0)
+    assert (result.counts["heldout_pinned_ok"], result.counts["failed"]) == (3, 0)
+
+
+def test_heldout_row_in_train_fails(tmp_path):
+    labels = {"e1": "test", "h1": "validation"}
+    result, rec = _heldout_run(tmp_path, "coralscapes", labels, {"e1": "test", "h1": "train"})
+    assert not result.passed
+    assert (rec["heldout_pinned_ok"], rec["heldout_failed"], rec["eval_failed"]) == (0, 1, 0)
+    assert any("heldout_failed=1" in failure for failure in result.failures)
+
+
+def test_eval_row_in_validation_or_train_still_fails(tmp_path):
+    labels = {"e1": "test", "e2": "test", "h1": "validation"}
+    splits = {"e1": "validation", "e2": "train", "h1": "validation"}
+    result, rec = _heldout_run(tmp_path, "coralscapes", labels, splits)
+    assert not result.passed
+    assert (rec["eval_failed"], rec["heldout_pinned_ok"], rec["heldout_failed"]) == (2, 1, 0)
+
+
+def test_val_only_eval_and_unmatched_label_read_as_eval(tmp_path):
+    # uiis evaluates on val (no upstream test split); suim's manifest labels its eval rows "images"
+    for benchmark_id, label in (("uiis", "val"), ("suim", "images")):
+        bad = tmp_path / benchmark_id / "bad"
+        bad.mkdir(parents=True)
+        result, rec = _heldout_run(bad, benchmark_id, {"e1": label}, {"e1": "validation"})
+        assert not result.passed
+        assert (rec["eval_failed"], rec["heldout_failed"]) == (1, 0)
+        good = tmp_path / benchmark_id / "good"
+        good.mkdir(parents=True)
+        result, rec = _heldout_run(good, benchmark_id, {"e1": label}, {"e1": "test"})
+        assert result.passed, result.failures
+        assert rec["eval_pinned_ok"] == 1
