@@ -17,7 +17,7 @@ passes `--go`.
 | build | `marinedata release build --release ID --flavour F --lock ... --split-map ... --out /data` | `/data/releases/ID/F/` (`RELEASE.json`, `tasks/`) |
 | export | `python -m marinedata.hf_export` writes the shards and the summary only; `python -m marinedata.hf_card ... --citation /app/CITATION.cff` then renders the card and writes `LICENSE`, `NOTICE` and `CITATION.cff` (the repo's file, the same input as the croissant stage) | `/data/export/ID/F/` (`data/`, `README.md`, `LICENSE`, `NOTICE`, `CITATION.cff`) and `/data/export/ID/F.summary.json` |
 | croissant | `marinedata release croissant DIR --release-dir ... --citation /app/CITATION.cff --repo-id R` (R is read from `registry/flavours.yaml`) | `croissant.json` in the export folder |
-| gate | `marinedata release gate DIR --all --require-all`, then `marinedata release gate DIR --v11` (G1..G9; `GATE_V11_ARGS` carries `--v1-dir` and the manifests; the wrapper passes the pinned YuNet model path) | `GATES.json` in the export folder |
+| gate | `marinedata release gate DIR --all --require-all [--v1-dir V]`, then `marinedata release gate DIR --v11` (G1..G9; `GATE_V11_ARGS` carries `--v1-dir V` and the manifests, and the `--v1-dir V` in it also goes to the `--all` call so its card, load and masks gates count the frozen v1.0 configs; the wrapper passes the pinned YuNet model path) | `GATES.json` in the export folder |
 | plan | `marinedata release publish ...` without `--go` (`PLAN_ARGS`, e.g. `--v1-dir`, adds the v1.0 delta) | `/data/logs/plan.log` |
 
 `STAGES` defaults to `lock build export croissant gate plan`. Without `croissant` there is no
