@@ -10,6 +10,16 @@ Nothing below is in a release yet. It is on `main` or on the Phase A branches na
 
 ### On main
 
+- Frozen v1.1 build accepts the split map's header `withheld` groups. `marinedata release build --tasks v2 --v11`
+  against `releases/marine-data/v1.1.0/SPLIT_MAP.json` aborted with `... is frozen: group(s) not in the map: ...` on
+  the 459 groups the map withholds. A withheld group is now known: `resolve_splits(frozen=True)` neither allocates nor
+  appends it and returns no split for it (an `assignments` entry wins if a group is in both), `Dataset.split` and the
+  streaming plan leave its samples out, and `build_v11_tables` drops its images from the metadata spine and every task
+  table, so nothing of it reaches export, croissant, the v1.1 configs or the stats. `V11_TABLES.json` keeps
+  `withheld_images` and adds `withheld_groups` and `withheld_by_source` (`{source: {images, groups}}`);
+  `unsplit_images` stays 0 and `allow_unsplit` is unchanged, so G6 counts the images as dropped, never as unsplit. A
+  group in neither `assignments` nor `withheld` still raises the frozen error. The card generator does not read
+  `V11_TABLES.json`: the hand-finished v1.1.0 card must state the withheld counts.
 - Split map pins each `route-to-our-test` benchmark's upstream eval and held-out images from
   `registry/benchmarks/manifests` (design eval-decontamination-split-v2, 2.2): the entry's eval split pins `test`,
   its second held-out split (`heldout_val`, else upstream `val` beside another eval split) pins `val`, matched by image

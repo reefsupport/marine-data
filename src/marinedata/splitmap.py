@@ -354,7 +354,10 @@ def resolve_splits(
     already be recorded at ``path``. A group that is not raises ``SplitMapError``
     instead of being allocated and appended — a frozen build touches nothing on disk,
     successful or not, so a release can never quietly grow the shared map that other
-    tasks depend on.
+    tasks depend on. A group the map lists under ``withheld`` (a v1.1.0 group that cannot be
+    placed without contradicting a prior-release split) is known too: it is never allocated
+    or appended, and it is absent from the returned mapping, so the caller drops its rows. A
+    group in neither ``assignments`` nor ``withheld`` still raises.
 
     ``release``: recorded on the map the first time it is written (``existing is
     None``) — ``marinedata splitmap generate --release <id>`` passes this through so the
@@ -397,6 +400,7 @@ def resolve_splits(
                 "name a group absent from counts"
             )
     existing = load_split_map(path)
+    withheld: frozenset[str] = frozenset()
     if existing is not None:
         if existing.by != by or existing.seed != seed or existing.ratios != dict(ratios):
             raise SplitMapError(
@@ -412,6 +416,8 @@ def resolve_splits(
                 "groups against a different quota than the one it was built with."
             )
         persisted = dict(existing.assignments)
+        if frozen:  # a withheld group is known: it has no split on purpose (an assignment wins)
+            withheld = frozenset(key for key in existing.withheld if key not in persisted)
         generated_at = existing.generated_at
         release_value = existing.release
         near_dup_value = dict(existing.near_dup)
@@ -430,7 +436,9 @@ def resolve_splits(
     if existing is not None and member_groups:
         persisted = _inherit_merged_splits(persisted, member_groups, counts)
 
-    new_counts = {key: count for key, count in counts.items() if key not in persisted}
+    new_counts = {
+        key: count for key, count in counts.items() if key not in persisted and key not in withheld
+    }
 
     if frozen and new_counts:
         missing = ", ".join(sorted(new_counts))
@@ -506,4 +514,4 @@ def resolve_splits(
             ),
         )
 
-    return {key: merged[key] for key in counts}
+    return {key: merged[key] for key in counts if key not in withheld}

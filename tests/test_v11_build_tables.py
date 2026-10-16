@@ -262,3 +262,67 @@ def test_allow_unsplit_keeps_null_splits_and_the_report_records_them(registry, t
     assert report["allow_unsplit"] is True and report["unsplit_images"] == 1
     assert report["tables"]["metadata"]["unsplit"] == 1
     assert report["tables"]["boxes"]["unsplit"] == 1
+
+
+def test_withheld_groups_are_recorded_by_source_and_never_counted_as_unsplit(
+    registry, tmp_path
+) -> None:
+    e = f"{5:064x}"
+    roots = _stage(
+        tmp_path,
+        {SONAR_SRC: [(A, "g1"), (B, "g2"), (C, "g3"), (e, "g1")], CORAL: [(D, "g4")]},
+    )
+    shas = ((A, SONAR_SRC), (B, SONAR_SRC), (C, SONAR_SRC), (D, CORAL), (e, SONAR_SRC))
+    boxes = ConfigResult("boxes", tuple(_box(s, src) for s, src in shas), {})
+    inputs = _inputs(
+        roots, assignments={"g1": "val"},
+        withheld_groups=frozenset({"g2", "g3", "g4", "g9"}),  # g9: no staged image sits in it
+        privacy_withheld=frozenset({e}),
+    )  # fmt: skip
+
+    out = build_v11_tables(registry, {"boxes": boxes}, inputs)
+
+    for cid in ("metadata", "boxes"):
+        assert {r["image_sha256"] for r in out[cid].rows} == {A}
+    report = out["metadata"].notes["report"]
+    assert report["withheld_images"] == 4 and report["withheld_images_privacy"] == 1
+    assert report["withheld_groups"] == 3
+    assert report["withheld_by_source"] == {
+        SONAR_SRC: {"images": 2, "groups": 2}, CORAL: {"images": 1, "groups": 1},
+    }  # fmt: skip
+    assert sum(c["images"] for c in report["withheld_by_source"].values()) == 3  # split-map ones
+    assert report["unsplit_images"] == 0 and report["allow_unsplit"] is False
+    assert (
+        report["tables"]["metadata"]["unsplit"] == 0 and report["tables"]["boxes"]["unsplit"] == 0
+    )
+
+
+def test_a_build_without_withheld_groups_reports_zero(registry, tmp_path) -> None:
+    roots = _stage(tmp_path, {SONAR_SRC: [(A, "g1")]})
+    out = build_v11_tables(registry, {}, _inputs(roots, assignments={"g1": "val"}))
+    report = out["metadata"].notes["report"]
+    assert report["withheld_images"] == 0 and report["withheld_groups"] == 0
+    assert report["withheld_by_source"] == {}
+
+
+def test_a_withheld_group_is_found_by_the_release_walk_group_too(
+    registry, tmp_path, monkeypatch
+) -> None:
+    """The split lookup tries the row's `split_group`, then the walk group; so does withheld."""
+    from marinedata.task_layers import v11_tables
+
+    row = {"image_sha256": A, "source_id": SONAR_SRC, "split_group": "staged-site"}
+    counts = {"images": 1, "rows": 1, "shared": 0}
+    monkeypatch.setattr(
+        v11_tables, "_metadata_rows",
+        lambda reg, inp: ({A: row}, {A: "walk/w1"}, {SONAR_SRC: counts}),
+    )  # fmt: skip
+    boxes = ConfigResult("boxes", (_box(A, SONAR_SRC),), {})
+    inputs = _inputs({SONAR_SRC: tmp_path}, withheld_groups=frozenset({"walk/w1"}))
+
+    out = build_v11_tables(registry, {"boxes": boxes}, inputs)
+
+    assert out["metadata"].rows == () and out["boxes"].rows == ()
+    assert out["metadata"].notes["report"]["withheld_by_source"] == {
+        SONAR_SRC: {"images": 1, "groups": 1}
+    }

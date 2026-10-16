@@ -140,7 +140,9 @@ def _two_source_fixture(tmp_path: Path) -> tuple[Registry, dict[str, Path]]:
     return registry, {"src-a": root_a, "src-b": root_b}
 
 
-def _write_map(path: Path, assignments: dict[str, str]) -> None:
+def _write_map(
+    path: Path, assignments: dict[str, str], withheld: dict[str, str] | None = None
+) -> None:
     save_split_map(
         path,
         SplitMap(
@@ -150,6 +152,7 @@ def _write_map(path: Path, assignments: dict[str, str]) -> None:
             assignments=assignments,
             generated_at="2026-09-23T00:00:00Z",
             release="r7k",
+            withheld=dict(withheld or {}),
         ),
     )
 
@@ -244,6 +247,45 @@ def test_frozen_map_raises_on_new_group(tmp_path: Path) -> None:
         )
 
     assert split_map.read_text() == before, "a frozen release build must never write to the map"
+
+
+WHY = "within the near-duplicate band of prior-release train and evaluation images"
+
+
+def test_frozen_build_drops_the_groups_the_map_withholds(tmp_path: Path) -> None:
+    """A group in the map's `withheld` header is known, not missing: the frozen build puts
+    none of its images in any task manifest, writes nothing to the map, and ships the rest."""
+    registry, roots = _two_source_fixture(tmp_path)
+    split_map = tmp_path / "SPLIT_MAP.json"
+    _write_map(split_map, {"src-a/only": "train", "src-b/only": "val"}, {"shared/dup": WHY})
+    before = split_map.read_bytes()
+
+    result = build_release(
+        registry, release="r7k", split_map=split_map, roots=roots, out_dir=tmp_path / "out"
+    )
+
+    only_a = hashlib.sha256(b"AAAA-UNIQUE").hexdigest()
+    only_b = hashlib.sha256(b"BBBB-UNIQUE").hexdigest()
+    assert {t.task_id for t in result.tasks} == {"segmentation-set", "points-set", "pretrain-set"}
+    for task in result.tasks:  # the withheld duplicate is in none; `val` reads `probe` here
+        assert sorted(task.rows) == sorted([(only_a, "train"), (only_b, "probe")])
+    assert split_map.read_bytes() == before, "a frozen release build must never write to the map"
+
+
+def test_frozen_build_still_raises_for_a_group_in_neither_assignments_nor_withheld(
+    tmp_path: Path,
+) -> None:
+    registry, roots = _two_source_fixture(tmp_path)
+    split_map = tmp_path / "SPLIT_MAP.json"
+    _write_map(split_map, {"src-a/only": "train"}, {"shared/dup": WHY})  # src-b/only: neither
+    before = split_map.read_bytes()
+
+    with pytest.raises(SplitMapError, match=r"not in the map: src-b/only\. A frozen build"):
+        build_release(
+            registry, release="r7k", split_map=split_map, roots=roots, out_dir=tmp_path / "out"
+        )
+
+    assert split_map.read_bytes() == before
 
 
 # ── Part B DoD: a real SUPERVISED task alongside a pretrain task (WS-D S7m) ─────────

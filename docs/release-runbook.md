@@ -37,6 +37,12 @@ pinned-tree fetch). Nothing here uploads except step 9 with `--go`.
      group in the same component (shared digest, dHash within 4 bits, or a `dedup run` group) takes that split.
      If the v1.0 map had split a component apart, the new groups of that component are WITHHELD (listed under
      `withheld` in the map, absent from `assignments`) and the v1.0 groups are untouched.
+   - A frozen build (`release build --v11`) treats every group under `withheld` as known: it is never allocated or
+     appended, and its images are dropped from the metadata spine and every v1.1 table, so nothing of them reaches
+     export, croissant, the configs or the stats. `V11_TABLES.json` records `withheld_images`, `withheld_groups` and
+     `withheld_by_source` (`{source: {images, groups}}`); `unsplit_images` stays 0. A group in neither `assignments` nor
+     `withheld` still aborts the build with `is frozen: group(s) not in the map`: regenerate the map to include it.
+     The card generator does not read `V11_TABLES.json`, so the hand-finished card states the withheld counts.
    - A new image 5 to 8 dHash bits from a v1.0 train image is never-eval (forced into train); one 5 to 8 bits from a v1.0
      val/test image is never-train (forced into that image's split). Both at once: withheld.
    - OOD: the holdouts in `splits/v2.yaml` (default; `--ood-rules` overrides, `--no-ood` opts out) route matching new

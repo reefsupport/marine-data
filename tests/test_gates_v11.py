@@ -299,6 +299,17 @@ def test_splits_fail_a_listed_group_that_did_not_change_and_check_the_count_when
     assert failed(run_splits_v11_gate(moved, v1_dir=v1), "override_unchanged") == 1
 
 
+def test_splits_count_withheld_images_as_dropped_not_unsplit(tmp_path):
+    build, v1 = build_release(tmp_path), write_v1(tmp_path)
+    write_report(
+        build, withheld_images=3, withheld_groups=2,
+        withheld_by_source={"usis10k": {"images": 3, "groups": 2}},
+    )  # fmt: skip
+    result = run_splits_v11_gate(build, v1_dir=v1)
+    assert result.passed, result.failures
+    assert result.counts["unsplit"] == 0
+
+
 def test_splits_fail_unsplit_and_allow_unsplit_builds_unless_rehearsal(tmp_path):
     build, v1 = build_release(tmp_path), write_v1(tmp_path)
     write_report(build, unsplit_images=2, allow_unsplit=True)

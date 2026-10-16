@@ -122,7 +122,7 @@ can only skip, never pass.
 | G3 `leak` | `gates/leak.py` | an nc id, the nc repo name or a private bucket appears in the open set (never echoed) |
 | G4 `bytes_once` | `gates/bytes_once.py` | image bytes twice, a v1.0 image re-uploaded, a bytes column outside `images` |
 | G5 `masks` | `gates/masks_palette.py` | a `semseg` mask is not mode P with its declared palette |
-| G6 `splits_v11` | `gates/splits_v11.py` | unsplit / `--allow-unsplit` build, v1.0 reassignment (other than the groups a benchmark pin moved), straddling group, OOD guards, +/-5 pt ratio |
+| G6 `splits_v11` | `gates/splits_v11.py` | unsplit / `--allow-unsplit` build (images of split-map `withheld` groups are dropped from the tables, so they never count as unsplit), v1.0 reassignment (other than the groups a benchmark pin moved), straddling group, OOD guards, +/-5 pt ratio |
 | G7 `decon` | `gates/decon_gate.py` | a release sha256 is in a hidden-test manifest, an `exclude` or unknown benchmark manifest, a `route-to-our-test` eval image outside `test`/`ood-*`, or a held-out image outside `validation`/`test`/`ood-*`; either input is missing |
 
 G7 reads `registry/benchmarks.yaml`: each `--benchmark` manifest resolves to its entry by the `benchmark_id` column (else the file stem). A `route-to-our-test` eval image in `test`, `test_ood` or `ood-*` counts as `pinned_ok`, and so does a held-out image (the entry's `heldout_val`, else the upstream `val`) in `validation` too (counts per manifest: {eval, heldout} x {pinned_ok, failed}); in any other split it fails, as does any overlap with an `exclude` benchmark, a hidden-test manifest or a manifest with no registry entry (`unknown_benchmark`, fail closed). `GATES.json` `decon.counts.manifests` lists `{benchmark_id, policy, manifest_shas, overlap, pinned_ok, failed}` per manifest and `failing` the first 20 failing images. The split map applies the pins first and a pin outranks an inherited v1.0 split: the moved groups are recorded in the SPLIT_MAP header (`pins.v1_continuity_overridden`: `images`, `groups`, `by_source`, `group_ids`), the v1.0 configs stay frozen (a documented v1.0 -> v1.1 split change), and G6 accepts exactly those groups as the only v1.0 reassignment.
@@ -186,7 +186,9 @@ reads a human review list, `registry/privacy/review.yaml` (`--privacy-review FIL
   listed (sha, reviewer, date) in `cleared_reviewed_entries`. EXIF GPS on the image still fails.
 - `withhold`: the build drops the image from every table (`V11_TABLES.json` `withheld_images`, the
   privacy ones also in `withheld_images_privacy`); one still in the build fails as
-  `withheld_image_present`.
+  `withheld_image_present`. Images of the groups the split map withholds are dropped the same way and
+  counted in `withheld_images`; `withheld_groups` and `withheld_by_source` count those groups, and G6
+  reads them as dropped rows, not `unsplit_images`.
 - A detection no entry covers fails as above. A list that does not validate (unknown verdict, bad or
   repeated sha256, missing field) or an explicit `--privacy-review` file that is missing FAILS the gate.
 

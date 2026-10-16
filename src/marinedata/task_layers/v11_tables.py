@@ -26,8 +26,12 @@ the first five ``image_sha256``), because the Hub configs are per split. ``V11In
 ``unsplit_images``). An image of a withheld near-dup group is dropped from every table, and so is
 an image a person withheld in ``registry/privacy/review.yaml`` (``V11Inputs.privacy_withheld``,
 :mod:`marinedata.privacy.review`); ``withheld_images`` counts both and ``withheld_images_privacy``
-the privacy ones. A row of a source outside ``V11Inputs.roots`` (the flavour's admitted set) is
-dropped, so an nc source cannot reach the open tables through this layer.
+the privacy ones. A frozen build knows the split map's withheld groups (``resolve_splits`` leaves
+them out of every task manifest): the report adds ``withheld_groups`` (how many distinct groups
+the drop covered) and ``withheld_by_source`` (``{source: {images, groups}}``, by the source that
+described the image); they never count as ``unsplit``. A row of a source outside
+``V11Inputs.roots`` (the flavour's admitted set) is dropped, so an nc source cannot reach the open
+tables through this layer.
 """
 
 from __future__ import annotations
@@ -363,6 +367,15 @@ def mark_near_dup_conflicts(
     return tuple(out)
 
 
+def _withheld_group(
+    group: str | None, walk_group: str | None, withheld: frozenset[str]
+) -> str | None:
+    """The split-map-withheld group an image sits in, else ``None``: its ``metadata`` row's
+    ``split_group``, then the group the release walk gave it (the two keys the split lookup
+    tries)."""
+    return next((g for g in (group, walk_group) if g is not None and g in withheld), None)
+
+
 def _stamp_row(config_id: str, row: Mapping[str, Any], inputs: V11Inputs, split_of) -> dict:
     sha = row.get("image_sha256") or row.get("sha256")
     source_id = row.get("source_id")
@@ -391,6 +404,8 @@ def build_v11_tables(
     split_of = dict(inputs.split_of)
     withheld: set[str] = set()
     privacy: set[str] = set()
+    held_images: dict[str, set[str]] = defaultdict(set)  # source -> images of withheld groups
+    held_groups: dict[str, set[str]] = defaultdict(set)  # source -> those withheld groups
     meta_rows: list[dict] = []
     for sha, row in meta.items():
         group = row.get("split_group")
@@ -398,8 +413,11 @@ def build_v11_tables(
             withheld.add(sha)
             privacy.add(sha)
             continue
-        if group in inputs.withheld_groups:
+        held = _withheld_group(group, walk.get(sha), inputs.withheld_groups)
+        if held is not None:  # the split map withholds its group: no split, so no row anywhere
             withheld.add(sha)
+            held_images[str(row.get("source_id"))].add(sha)
+            held_groups[str(row.get("source_id"))].add(held)
             continue
         split = (
             split_of.get(sha) or inputs.assignments.get(group)
@@ -464,6 +482,11 @@ def build_v11_tables(
     report["metadata_by_source"] = by_source
     report["withheld_images"] = len(withheld)
     report["withheld_images_privacy"] = len(privacy)
+    report["withheld_groups"] = len(set().union(*held_groups.values()))
+    report["withheld_by_source"] = {
+        s: {"images": len(held_images[s]), "groups": len(held_groups[s])}
+        for s in sorted(held_images)
+    }
     report["unsplit_images"] = len(unsplit)
     report["allow_unsplit"] = inputs.allow_unsplit
     notes = {"report": json.loads(json.dumps(report))}
@@ -472,7 +495,8 @@ def build_v11_tables(
 
 def write_v11_report(results: Mapping[str, ConfigResult], out_dir: str | Path) -> Path:
     """``V11_TABLES.json`` next to the tables: taxonomy version, rows / images / unsplit rows per
-    table and the withheld-image counts (the build's own accounting for release gate G6)."""
+    table and the withheld counts: images (split-map and privacy), split-map groups and images by
+    source (the build's own accounting for release gate G6)."""
     meta = results.get("metadata")
     report = dict(meta.notes.get("report", {})) if meta is not None else {}
     path = Path(out_dir) / "V11_TABLES.json"
