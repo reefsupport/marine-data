@@ -267,6 +267,22 @@ def test_v1_dir_masks_count_when_the_build_has_none(tmp_path):
     assert not neither.passed and "no mask rows found" in neither.failures[0]
 
 
+def test_masks_cli_fails_without_mask_rows_and_passes_with_the_v1_dir(tmp_path, capsys):
+    """The release VM's --all call, masks gate only: failures=1 ('no mask rows found') without
+    --v1-dir (additive build, no mask configs of its own), PASS from the v1.0 tree with it."""
+    build, v1 = tmp_path / "build", tmp_path / "v1"
+    build.mkdir()
+    _build(v1, _good_semantic(), _good_instance())
+    assert main(["release", "gate", str(build), "--masks"]) == 1
+    assert "release gate masks: FAIL failures=1" in capsys.readouterr().out  # the rehearsal log
+    entry = json.loads((build / "GATES.json").read_text())["masks"]
+    assert entry["passed"] is False and entry["counts"]["failures_total"] == 1
+    assert "no mask rows found" in entry["failures"][0]
+    assert main(["release", "gate", str(build), "--masks", "--v1-dir", str(v1)]) == 0
+    entry = json.loads((build / "GATES.json").read_text())["masks"]
+    assert entry["passed"] and entry["counts"]["v1_dir_scanned"] == 1
+
+
 def test_v1_dir_is_not_scanned_when_the_build_has_mask_rows(tmp_path):
     build, v1 = tmp_path / "build", tmp_path / "v1"
     _build(build, _good_semantic())

@@ -49,7 +49,8 @@ SPLIT_MAP_FILE=${SPLIT_MAP_FILE:-registry/SPLIT_MAP.json}
 RELEASE_BUILD_ARGS=${RELEASE_BUILD_ARGS:-}
 EXPORT_ARGS=${EXPORT_ARGS:-}
 # 'release gate --v11' options (docs/GATES.md), a plain word list: --v1-dir DIR (the frozen v1.0
-# release dir, G2), --hidden-test MANIFEST, --benchmark MANIFEST, --nc-id ID.
+# release dir, G2), --hidden-test MANIFEST, --benchmark MANIFEST, --nc-id ID. stage_gate also hands
+# --v1-dir DIR (and only that flag) to the --all call: see the comment above stage_gate.
 GATE_V11_ARGS=${GATE_V11_ARGS:-}
 # Extra 'release publish' options for the plan, e.g. "--v1-dir /data/v1.0-repo" (the delta against v1.0).
 PLAN_ARGS=${PLAN_ARGS:-}
@@ -411,14 +412,25 @@ stage_croissant() {
 # 'release publish' stays BLOCKED until both ran. Both run even when the first fails, so GATES.json
 # lists every failure. The privacy gate (G8, and the v1.0 one) loads the pinned YuNet model that
 # the wrapper passes in MARINEDATA_YUNET_MODEL; the gates never download it.
+# --v1-dir DIR from GATE_V11_ARGS goes to BOTH calls. An additive release's export holds only the
+# new configs; the --all call's card, load and masks gates count the frozen v1.0 configs and mask
+# shards under DIR as present (without it: card extra_config_section for every frozen config and
+# masks 'no mask rows found'). It is the only GATE_V11_ARGS flag the --all call gets: --hidden-test,
+# --benchmark, --privacy-review, --nc-id, --taxonomy-version and --rehearsal send a call to the
+# --v11 gate set (cli_release_gate_v11.wants_v11) and the v1.0 gates would not run.
 stage_gate() {
-  local help rc=0 v11=()
+  local help rc=0 v11=() v1dir=() prev='' word
   # shellcheck disable=SC2206  # the extra flags are a deliberate word list
   v11=($GATE_V11_ARGS)
+  for word in ${v11[@]+"${v11[@]}"}; do
+    case $prev in --v1-dir) v1dir=(--v1-dir "$word") ;; esac
+    case $word in --v1-dir=*) v1dir=(--v1-dir "${word#--v1-dir=}") ;; esac
+    prev=$word
+  done
   help=$("$RUN_WRAPPER" release gate --help) || return 1
   if [[ $help == *--require-all* ]]; then
     "$RUN_WRAPPER" release gate "$EXPORT_DIR" --all --require-all --flavour "$FLAVOUR" \
-      --release-dir "$REL_DIR" || rc=1
+      --release-dir "$REL_DIR" ${v1dir[@]+"${v1dir[@]}"} || rc=1
   else
     say "WARNING: this ref's 'release gate' has no --all/--require-all; only the masks gate runs"
     "$RUN_WRAPPER" release gate --masks "$EXPORT_DIR" || rc=1

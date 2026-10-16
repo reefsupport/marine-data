@@ -162,6 +162,14 @@ The publish verdict also needs the v1.0 gates (`licence`, `dedup`, `splits`, `lo
 overwrites only the entries it ran). The command ends with `publish verdict: OK|BLOCKED`, the check
 `release publish` makes.
 
+An additive release's build holds only the new configs, so give the `--all` call the same `--v1-dir DIR`
+as the `--v11` call: `card` counts the frozen configs under DIR as present (`configs_from_v1_dir`, no
+`extra_config_section`), `load` reads them from DIR and `masks` scans DIR's mask shards when the build has
+none (`v1_dir_scanned`). Without it the card gate fails once per frozen config and `masks` fails with
+`no mask rows found`. The release VM's `bootstrap.sh` does this from `GATE_V11_ARGS`, and passes only
+`--v1-dir` to the `--all` call: `--hidden-test`, `--benchmark`, `--privacy-review`, `--nc-id`,
+`--taxonomy-version` and `--rehearsal` would send that call to the `--v11` gate set.
+
 G8 scans the `images` config only (every new image lives there once; the v1.0 configs are frozen).
 The face detector is the pinned YuNet model, loaded through `verified_model_path` (sha256 checked,
 never downloaded; `MARINEDATA_YUNET_MODEL` overrides the path); `--detector MODULE:ATTR` replaces

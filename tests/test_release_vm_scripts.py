@@ -835,7 +835,8 @@ def test_gate_stage_runs_all_then_v11_on_the_same_release_dir(tmp_path):
     done = run_stage(tmp_path, "stage_gate", {"GATE_V11_ARGS": "--v1-dir /data/v1.0"})
     assert done.returncode == 0, done.stderr
     assert done.stdout.splitlines() == [
-        f"release gate {EXPORT} --all --require-all --flavour open --release-dir {REL}",
+        f"release gate {EXPORT} --all --require-all --flavour open --release-dir {REL}"
+        " --v1-dir /data/v1.0",
         f"release gate {EXPORT} --v11 --flavour open --release-dir {REL} --v1-dir /data/v1.0",
     ]
 
@@ -844,6 +845,54 @@ def test_gate_stage_still_runs_v11_when_the_v1_0_gates_fail(tmp_path):
     done = run_stage(tmp_path, "stage_gate", fail_all=True)
     assert done.returncode != 0
     assert [line.split()[3] for line in done.stdout.splitlines()] == ["--all", "--v11"]
+
+
+P7_GATE_ARGS = (
+    "--v1-dir /data/v1.0-repo --privacy-review /app/registry/privacy/review.yaml"
+    " --hidden-test /data/checks/hidden-test-manifest.parquet"
+    " --benchmark /app/registry/benchmarks/manifests"
+)
+ALL_CALL = f"release gate {EXPORT} --all --require-all --flavour open --release-dir {REL}"
+
+
+def test_gate_stage_gives_the_all_call_the_v1_dir_and_no_other_v11_flag(tmp_path):
+    """The rehearsal's --all call lacked --v1-dir (card: 4 extra_config_section, masks: no mask
+    rows). Any other v1.1.0 flag would route that call to the --v11 gate set, so the v1.0 gates
+    would not run."""
+    done = run_stage(tmp_path, "stage_gate", {"GATE_V11_ARGS": P7_GATE_ARGS})
+    assert done.returncode == 0, done.stderr
+    assert done.stdout.splitlines() == [
+        f"{ALL_CALL} --v1-dir /data/v1.0-repo",
+        f"release gate {EXPORT} --v11 --flavour open --release-dir {REL} {P7_GATE_ARGS}",
+    ]
+
+
+@pytest.mark.parametrize(
+    "args",
+    [
+        "--v1-dir=/data/v1.0",
+        "--rehearsal --v1-dir /data/v1.0 --nc-id x",
+        "--nc-id x --v1-dir=/old --v1-dir /data/v1.0",
+    ],
+)
+def test_gate_stage_finds_the_v1_dir_in_any_position_and_spelling(tmp_path, args):
+    done = run_stage(tmp_path, "stage_gate", {"GATE_V11_ARGS": args})
+    assert done.stdout.splitlines()[0] == f"{ALL_CALL} --v1-dir /data/v1.0"
+
+
+@pytest.mark.parametrize("args", ["", "--hidden-test /m.parquet --benchmark /b", "--v1-dir"])
+def test_gate_stage_without_a_v1_dir_keeps_the_all_call_as_it_was(tmp_path, args):
+    done = run_stage(tmp_path, "stage_gate", {"GATE_V11_ARGS": args})
+    assert done.stdout.splitlines()[0] == ALL_CALL
+
+
+def test_both_gate_calls_in_bootstrap_carry_the_v1_dir():
+    text = (DEPLOY / "bootstrap.sh").read_text()
+    body = text.split("\nstage_gate() {", 1)[1].split("\nstage_plan() {", 1)[0]
+    calls = [c for c in body.split("|| rc=1") if '"$RUN_WRAPPER" release gate "$EXPORT_DIR"' in c]
+    assert len(calls) == 2
+    assert "--all --require-all" in calls[0] and '"${v1dir[@]}"' in calls[0]
+    assert "--v11" in calls[1] and '"${v11[@]}"' in calls[1]  # GATE_V11_ARGS, --v1-dir DIR included
 
 
 def test_plan_stage_forwards_the_plan_args(tmp_path):

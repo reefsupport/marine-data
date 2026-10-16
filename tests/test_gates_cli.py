@@ -43,6 +43,28 @@ def test_all_require_all_passes_on_a_clean_build_and_lists_every_gate(tmp_path):
     assert gates["privacy"]["passed"] and gates["croissant"]["passed"]
 
 
+def test_all_require_all_with_a_v1_dir_stays_on_the_v1_0_path_and_hands_it_to_the_gates(
+    tmp_path, monkeypatch
+):
+    """The release VM's --all call: --v1-dir feeds load, card and masks (an additive release)."""
+    seen: dict[str, object] = {}
+
+    def spy(name):
+        def run(build, options):
+            seen[name] = options.v1_dir
+            return GateResult(name, True, {"rows": 1})
+
+        return run
+
+    for name in ALL_GATES:
+        monkeypatch.setitem(runner.RUNNERS, name, spy(name))
+    build, v1 = tmp_path / "build", tmp_path / "v1"
+    build.mkdir()
+    assert _gate(build, "--all", "--require-all", "--v1-dir", str(v1)) == 0
+    assert set(seen) == ALL_GATES  # not the --v11 gate set
+    assert set(seen.values()) == {v1}
+
+
 def test_require_all_refuses_a_build_without_croissant_json_that_plain_all_accepts(tmp_path):
     build = make_build(tmp_path)
     assert _gate(build, "--all") == 0
