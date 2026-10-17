@@ -5,7 +5,12 @@ privacy:
   # licence and privacy review say the capture locations may be published with the pixels.
   #   allow_exif_gps:
   #     some-source-id: true
-  allow_exif_gps: {}
+  # 2026-10-17 (D-EXIF default, reversible before publish; pending confirmation by yrunhaar):
+  # seaview-survey-imagery publishes per-image lat/lon by design, so the one GPSInfo hit in the run-3
+  # G8 scan (seaview image fc188688...) discloses nothing the source does not already publish.
+  # Remove this line to make the gate fail such images again.
+  allow_exif_gps:
+    seaview-survey-imagery: true
 
 labelmap:
   # G9 (v1.1.0): every class id in the exported label tables (label-map, points, bleaching, boxes,

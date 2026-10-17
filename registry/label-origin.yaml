@@ -88,6 +88,8 @@ entries:
     evidence: >-
       Roboflow Universe upload (coralreef, "Coral Reef Bleach Detection" v2), detection project;
       image labels are the per-image class set from Roboflow's classes CSV export.
+      EXCLUDED from v1.1.0 (2026-10-17): the images are augmented broadcast-video frames and the
+      licence is not verifiable; the label provenance above is kept for the record.
 
   - source: roboflow-coral-reef-classification-v3i
     label_set: image_labels (Healthy, Unhealthy; folder layout)

@@ -68,9 +68,10 @@ def test_allow_list_comes_from_registry_gates_yaml(tmp_path):
         run_privacy_gate(build, registry_root=root)
 
 
-def test_the_shipped_registry_allows_no_source():
-    assert load_gates_config()["privacy"]["allow_exif_gps"] == {}
-    assert exif_gps_allowed() == frozenset()
+def test_the_shipped_registry_allows_exif_gps_only_for_seaview():
+    # D-EXIF (2026-10-17): the Seaview survey publishes per-image lat/lon by design.
+    assert load_gates_config()["privacy"]["allow_exif_gps"] == {"seaview-survey-imagery": True}
+    assert exif_gps_allowed() == frozenset({"seaview-survey-imagery"})
 
 
 @pytest.mark.parametrize("fmt", ["PNG", "JPEG"])
