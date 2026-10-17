@@ -119,6 +119,7 @@ def _decon(b: Path, o: V11Options) -> GateResult:
         rehearsal=o.rehearsal,
         hidden_test_published_exception=o.hidden_test_published_exception,
         v1_dir=o.v1_dir,
+        redact_ids=_nc(o) if o.flavour == "open" else frozenset(),  # GATES.json is public
     )
 
 

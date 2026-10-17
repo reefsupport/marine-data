@@ -332,6 +332,7 @@ def render_v11_card(
     facts: dict, infos: Mapping[str, dict], sources: list[dict], label_rows: list[dict], *,
     flavour: str, repo_id: str, pretty_name: str = PRETTY_NAME, cff: dict | None = None,
     takedown_url: str | None = None, lock_sha: str | None = None, built: str | None = None,
+    hidden_test_withheld: int | None = None,
 ) -> str:  # fmt: skip
     configs = facts["configs"]
     names = ordered_configs(configs)
@@ -343,6 +344,8 @@ def render_v11_card(
         if s.get("mapped_pct") is not None and s["mapped_pct"] < MAPPED_FLOOR
     ]
     limits = [f"- {t}" for t in txt.LIMITATIONS]
+    if flavour == "open" and hidden_test_withheld is not None:
+        limits.append("- " + txt.HIDDEN_TEST_WITHHELD.format(n=f"{hidden_test_withheld:,}"))
     if low:
         limits.append(f"- Sources below the {MAPPED_FLOOR:.0f} % mapped floor: {', '.join(low)}.")
     summary = (
@@ -427,7 +430,7 @@ def render_v11_card(
 def write_card_files(
     export: Path, registry, *, flavour: str, repo_id: str, pretty_name: str | None = None,
     cff: dict | None = None, takedown_url: str | None = None, lock_sha: str | None = None,
-    released: str | None = None,
+    released: str | None = None, hidden_test_withheld: int | None = None,
 ) -> list[str]:  # fmt: skip
     """Write ``README.md``, ``LICENSE``, ``NOTICE`` and ``CITATION.cff`` into ``export``; nothing is
     written when any of them names a private resource."""
@@ -451,6 +454,7 @@ def write_card_files(
             takedown_url=takedown_url,
             lock_sha=lock_sha,
             built=released,
+            hidden_test_withheld=hidden_test_withheld,
         ),
         "LICENSE": render_license(sources, pretty_name=name, flavour=flavour),
         "NOTICE": render_notice(sources, pretty_name=name),
@@ -486,6 +490,9 @@ def run(args, summary: dict) -> int:
         takedown_url=release.get("takedown_url"),
         lock_sha=hashlib.sha256(lock.read_bytes()).hexdigest() if lock.is_file() else None,
         released=str(release.get("built") or release.get("created") or date.today())[:10],
+        hidden_test_withheld=(
+            ((summary.get("v11") or {}).get("hidden_test_excluded") or {}).get("images")
+        ),
     )  # fmt: skip
     print(json.dumps({"layout": "v1.1", "written": written}))
     return 0

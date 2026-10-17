@@ -575,11 +575,30 @@ def main(argv: list[str] | None = None) -> int:
         help="v1.1.0 builds: a local copy of the v1.0 export; its shards are scanned for the "
         "image_sha256 they embed (same effect as --v1-sha256)",
     )
+    parser.add_argument(
+        "--hidden-test",
+        type=Path,
+        default=None,
+        help="v1.1.0 open flavour: hidden-test manifest (file or folder; parquet/json/text). "
+        "Every row of every table keyed by a digest it lists is removed before the export "
+        "counts or embeds anything, unless the v1.0 export (--hidden-test-exempt-v1) already "
+        "publishes the digest. Counts only are logged; needs --hidden-test-exempt-v1",
+    )
+    parser.add_argument(
+        "--hidden-test-exempt-v1",
+        type=Path,
+        default=None,
+        metavar="V1_DIR",
+        help="v1.1.0 open flavour: a local copy of the v1.0 export; the hidden-test digests its "
+        "shards hold stay in. Separate from --v1-dir, which only skips re-uploading bytes",
+    )
     args = parser.parse_args(argv)
     from . import hf_export_v11 as _v11
 
     if _v11.is_v11_release(args.release_dir):  # task_layers/V11_TABLES.json: the v1.1.0 export
         return _v11.run(args)
+    if args.hidden_test or args.hidden_test_exempt_v1:
+        parser.error("--hidden-test and --hidden-test-exempt-v1 are for v1.1.0 builds")
 
     registry = Registry.load()
     release_json = args.release_dir / "RELEASE.json"

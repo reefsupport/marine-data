@@ -237,3 +237,97 @@ def test_release_croissant_cli_contract(registry, build, tmp_path):
     doc = json.loads((out / "croissant.json").read_text())
     assert doc["version"] == "1.1.0"
     assert "metadata_splits" in {r["@id"] for r in doc["recordSet"]}
+
+
+# Run 6: an id-free card, and the count of hidden-test images the open release withholds
+
+
+def _card(registry, build, root: Path, flavour="open", **kw) -> str:
+    layout, _ = _layout(registry, build, flavour=flavour, shard_target_bytes=2000)
+    export_v11(layout, root)
+    write_card_files(
+        root, registry, flavour=flavour, repo_id=REPO[flavour], cff=CFF, released="2026-10-16", **kw
+    )
+    return (root / "README.md").read_text()
+
+
+def _limitations(readme: str) -> str:
+    return readme.split("## Limitations and known defects", 1)[1].split("\n## ", 1)[0]
+
+
+def _strings(value):
+    if isinstance(value, str):
+        yield value
+    elif isinstance(value, dict):
+        for item in (*value.keys(), *value.values()):
+            yield from _strings(item)
+    elif isinstance(value, (tuple, list)):
+        for item in value:
+            yield from _strings(item)
+
+
+def test_the_open_card_states_the_withheld_hidden_test_count_in_limitations(
+    registry, build, tmp_path
+):
+    text = _card(registry, build, tmp_path / "open", hidden_test_withheld=1234)
+    sentence = txt.HIDDEN_TEST_WITHHELD.format(n="1,234")
+    assert sentence.startswith("1,234 hidden-test images")
+    assert text.count(sentence) == 1 and f"- {sentence}" in _limitations(text)
+
+
+def test_the_withheld_sentence_needs_a_count_and_the_open_flavour(registry, build, tmp_path):
+    marker = "hidden-test images that v1.0 does not already publish"
+    assert marker in txt.HIDDEN_TEST_WITHHELD
+    assert marker not in _card(registry, build, tmp_path / "none")
+    assert marker not in _card(registry, build, tmp_path / "nc", "nc", hidden_test_withheld=24)
+
+
+def test_card_stage_reads_the_withheld_count_from_the_export_summary(registry, build, tmp_path):
+    digest = build[2]["a"]
+    layout, report = _layout(registry, build, shard_target_bytes=2000, hidden_test_drop={digest})
+    out = tmp_path / "export"
+    summary = tmp_path / "summary.json"
+    summary.write_text(json.dumps({**export_v11(layout, out), "v11": report}))
+    argv = ["--release-dir", str(build[0]), "--summary", str(summary), "--out", str(out)]
+    argv += ["--citation", str(_cff_file(tmp_path))]
+    assert hf_card.main(argv) == 0
+    text = (out / "README.md").read_text()
+    assert txt.HIDDEN_TEST_WITHHELD.format(n="1") in text and digest not in text
+
+
+def test_the_six_lines_say_what_they_exclude_without_naming_it():
+    assert "one benchmark not distributed in the open release" in txt.SPLITS_TEXT
+    assert "A fifth Roboflow fork is excluded from this release" in " ".join(txt.LIMITATIONS)
+    assert {"A fifth Roboflow fork", "A fish-market photo source"} <= dict(txt.NOT_INCLUDED).keys()
+    assert "One non-commercial source" in dict(txt.NOT_INCLUDED_OPEN)
+    assert "**Excluded:** a fifth Roboflow fork (see Excluded sources)." in txt.CHANGELOG
+
+
+def test_the_shared_card_text_names_no_source_that_stays_out_of_the_open_release():
+    from marinedata.gates.leak import id_tags
+    from marinedata.gates.v11_runner import nc_source_ids
+
+    ids = nc_source_ids()
+    assert len(ids) > 20  # the registry's real non-open sources: without them the test is vacuous
+    constants = {name: value for name, value in vars(txt).items() if name.isupper()}
+    assert constants
+    named = {
+        name: labels
+        for name, value in constants.items()
+        if (labels := sorted({t for s in _strings(value) for t in id_tags(s, ids)}))
+    }
+    assert named == {}  # a label is a hash: nothing here echoes an id
+
+
+def test_the_open_files_are_id_free_while_the_nc_card_lists_its_own_sources(
+    registry, build, tmp_path
+):
+    from marinedata.gates.leak import id_tags
+    from marinedata.gates.v11_runner import nc_source_ids
+
+    ids = nc_source_ids()
+    out = _export(registry, build, tmp_path)
+    assert [n for n in FILES if id_tags((out / n).read_text(), ids)] == []
+    nc_card = (_export(registry, build, tmp_path, "nc") / "README.md").read_text()
+    # the nc card does list them, so the open-flavour check above is not vacuous
+    assert id_tags(nc_card, ids)

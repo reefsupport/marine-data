@@ -3,7 +3,9 @@
 Kept apart from :mod:`marinedata.cli_release_gate` so the v1.0 gate path stays as it was: that
 module only forwards here (:func:`wants_v11`). ``--v11``, any v1.1.0-only flag, or a v1.1.0 build
 with no v1.0 gate flag runs :data:`V11_ALL`; ``--only GATE`` narrows it. Every result is merged
-into ``BUILD_DIR/GATES.json`` (the other gates' entries are kept). The exit code is 1 when a gate
+into ``BUILD_DIR/GATES.json`` (the other gates' entries are kept), and the merged file is then
+scanned once more for a private name (G3 only sees the file of the call before): a hit rewrites
+the ``leak`` entry as failed. The exit code is 1 when a gate
 failed and, outside ``--rehearsal``, when a gate was skipped: a gate that did not look has not
 passed. ``--rehearsal`` reaches only the gates that define it (splits_v11, decon), turns their
 unsplit-only / missing-manifest failure into ``skipped``, and a skip never publishes. The v1.0
@@ -15,7 +17,8 @@ import argparse
 import sys
 from pathlib import Path
 
-from .gates import GATES_FILE, gate_status, merge_gates_json, publish_verdict
+from .gates import GATES_FILE, GateResult, gate_status, merge_gates_json, publish_verdict
+from .gates.leak import rescan_gates_json
 from .gates.v11_runner import V11_ALL, V11Options, run_v11_gate
 
 
@@ -135,6 +138,13 @@ def _options(args: argparse.Namespace) -> V11Options:
     )
 
 
+def _replace(results: list[GateResult], late: GateResult) -> list[GateResult]:
+    """``results`` with the gate of ``late`` swapped for it (appended when it did not run)."""
+    if not any(r.name == late.name for r in results):
+        return [*results, late]
+    return [late if r.name == late.name else r for r in results]
+
+
 def cmd_release_gate_v11(args: argparse.Namespace) -> int:
     if args.build_dir is None:
         print(
@@ -152,6 +162,10 @@ def cmd_release_gate_v11(args: argparse.Namespace) -> int:
     results = [run_v11_gate(name, build, options) for name in names]
     try:
         merge_gates_json(path, results)
+        late = rescan_gates_json(path, flavour=options.flavour, extra_nc_ids=options.extra_nc_ids)
+        if late is not None:
+            merge_gates_json(path, [late])
+            results = _replace(results, late)
     except (OSError, ValueError) as exc:
         print(f"release gate: cannot update GATES.json: {exc}", file=sys.stderr)
         return 1

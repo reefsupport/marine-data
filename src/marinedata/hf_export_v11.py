@@ -22,6 +22,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+import sys
 from collections import Counter, defaultdict
 from collections.abc import Callable, Collection, Iterable, Mapping
 from pathlib import Path
@@ -97,9 +98,16 @@ def hf_split(name: str | None) -> str:
 
 def assert_public_safe(text: str, flavour: str, *, where: str = "text") -> None:
     """Raise when ``text`` names a private repo or bucket: the open card, croissant and tables may
-    not name the nc repo or any bucket; the nc card may not name a bucket or bucket URI."""
+    not name the nc repo or any bucket; the nc card may not name a bucket or bucket URI. The open
+    flavour also refuses the id of a source that does not ship in it (a whole token, as the leak
+    gate reads it); only the id's ``nc_id#`` label is echoed."""
     banned = PRIVATE_NAMES if flavour == "open" else PRIVATE_NAMES[1:]
     hit = [n for n in banned if n in text]
+    if flavour == "open":
+        from .gates.leak import id_tags
+        from .gates.v11_runner import nc_source_ids
+
+        hit += id_tags(text, nc_source_ids())
     if hit:
         raise V11ExportError(f"{where} ({flavour}) names a private resource: {', '.join(hit)}")
 
@@ -138,6 +146,43 @@ def v1_sha256s(v1_dir: str | Path) -> frozenset[str]:
         if "image_sha256" in pq.ParquetFile(shard).schema_arrow.names:
             found.update(pq.read_table(shard, columns=["image_sha256"]).column(0).to_pylist())
     return frozenset(s for s in found if s)
+
+
+def hidden_test_drop(manifest: str | Path, exempt_v1_dir: str | Path) -> frozenset[str]:
+    """The digests the open release withholds: every sha256 the hidden-test ``manifest`` lists
+    that the v1.0 shards under ``exempt_v1_dir`` do not already publish (lower-cased)."""
+    from .gates.decon_gate import manifest_shas
+
+    if not Path(manifest).exists():
+        raise V11ExportError(f"--hidden-test {Path(manifest).name}: not found")
+    listed = {s.lower() for s in manifest_shas(Path(manifest))}
+    if not listed:
+        raise V11ExportError(f"--hidden-test {Path(manifest).name}: no sha256 found")
+    public = {s.lower() for s in v1_sha256s(exempt_v1_dir)}
+    if not public:
+        raise V11ExportError(f"--hidden-test-exempt-v1 {exempt_v1_dir}: no v1.0 shard rows found")
+    return frozenset(listed - public)
+
+
+def drop_hidden_test(
+    tables: Mapping[str, list[Mapping]], drop: Collection[str]
+) -> tuple[dict[str, list[Mapping]], dict]:
+    """``(tables without the rows keyed by a digest in drop, counts)``: a row goes when its
+    ``image_sha256`` or ``bytes_sha256`` is listed. ``counts`` holds numbers only: the digests
+    asked for, the distinct ones found, and the rows removed per table (never a digest)."""
+    wanted, found = frozenset(drop), set()
+    kept: dict[str, list[Mapping]] = {}
+    rows_removed: dict[str, int] = {}
+    for config, rows in tables.items():
+        kept[config] = []
+        for row in rows:
+            keys = {str(row.get(k) or "").lower() for k in ("image_sha256", "bytes_sha256")}
+            if keys & wanted:
+                found |= keys & wanted
+            else:
+                kept[config].append(row)
+        rows_removed[config] = len(rows) - len(kept[config])
+    return kept, {"requested": len(wanted), "images": len(found), "rows": rows_removed}
 
 
 # ------------------------------------------------------------------------------ licence filter
@@ -497,8 +542,11 @@ def build_v11_layout(
     registry, release_dir: str | Path, roots: Mapping[str, Path], *, flavour: str,
     skip_sha256: Collection[str] = frozenset(), lock: Mapping[str, Mapping] | None = None,
     shard_target_bytes: int = SHARD_TARGET_BYTES, registry_root: str | Path | None = None,
+    hidden_test_drop: Collection[str] | None = None,
 ) -> tuple[Layout, dict]:  # fmt: skip
-    """``({config: (spec, {<split>[-<source>]: rows})}, report)`` for ``flavour``'s new configs."""
+    """``({config: (spec, {<split>[-<source>]: rows})}, report)`` for ``flavour``'s new configs.
+    ``hidden_test_drop`` (open flavour only): digests whose rows in every table are removed before
+    anything is counted or embedded; ``report["hidden_test_excluded"]`` records the counts."""
     if flavour not in FLAVOURS:
         raise V11ExportError(f"unknown flavour {flavour!r}")
     report = json.loads((Path(release_dir) / "task_layers" / V11_TABLES_FILE).read_text())
@@ -513,6 +561,11 @@ def build_v11_layout(
         tables[config], dropped[config] = keep_for_flavour(
             registry, tables[config], flavour, class_by_sha
         )
+    hidden = None
+    if hidden_test_drop is not None:
+        if flavour != "open":
+            raise V11ExportError("the hidden-test drop is for the open flavour; nc ships them")
+        tables, hidden = drop_hidden_test(tables, hidden_test_drop)
     meta = tables["metadata"]
     split_by_sha = {m["image_sha256"]: m.get("split") for m in meta}
     images, bytes_sha = image_rows(
@@ -607,6 +660,8 @@ def build_v11_layout(
         "taxonomy_version": version, "flavour": flavour, "licence_rows_dropped": dropped,
         "images": dict(stats), "sources": source_ids,
     }  # fmt: skip
+    if hidden is not None:
+        out_report["hidden_test_excluded"] = hidden
     return layout, out_report
 
 
@@ -631,6 +686,20 @@ def export_v11(layout: Layout, out_dir: str | Path) -> dict:
     summary["files_per_folder"] = files_per_folder([*summary["files"], *extra])
     summary["layout"] = "v1.1"
     return summary
+
+
+def _hidden_test_drop(args, flavour: str | None) -> frozenset[str] | None:
+    """The digests ``--hidden-test`` withholds, ``None`` without the flag. The flags come as a
+    pair and are for the open flavour (the nc release ships the hidden-test images)."""
+    manifest = getattr(args, "hidden_test", None)
+    exempt = getattr(args, "hidden_test_exempt_v1", None)
+    if not manifest and not exempt:
+        return None
+    if flavour != "open":
+        raise V11ExportError(f"--hidden-test is for the open flavour, not {flavour!r}")
+    if not (manifest and exempt):
+        raise V11ExportError("--hidden-test needs --hidden-test-exempt-v1 DIR, and the reverse")
+    return hidden_test_drop(manifest, exempt)
 
 
 def run(args) -> int:
@@ -659,10 +728,19 @@ def run(args) -> int:
         if lock_path.is_file()
         else {}
     )
+    drop = _hidden_test_drop(args, flavour)
     layout, report = build_v11_layout(
         Registry.load(), release_dir, _roots(release_dir, cache_root()), flavour=flavour,
-        skip_sha256=skip, lock=lock,
+        skip_sha256=skip, lock=lock, hidden_test_drop=drop,
     )  # fmt: skip
+    if "hidden_test_excluded" in report:
+        h = report["hidden_test_excluded"]
+        tables = ", ".join(f"{c}={n}" for c, n in h["rows"].items() if n)
+        print(
+            f"hidden_test_excluded={h['images']} images, {sum(h['rows'].values())} rows "
+            f"({tables or 'none'}); {h['requested']} not in v1.0",
+            file=sys.stderr,
+        )
     summary = export_v11(layout, args.out)
     record_export_counts(release_dir / "RELEASE.json", summary)  # what the load/card gates check
     summary |= {"flavour": flavour, "repo_id": release.get("repo_id"), "v11": report}

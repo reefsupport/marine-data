@@ -19,7 +19,7 @@ from marinedata.gates.bytes_once import run_bytes_once_gate
 from marinedata.gates.decon_gate import run_decon_gate
 from marinedata.gates.frozen import run_frozen_gate
 from marinedata.gates.join import run_join_gate
-from marinedata.gates.leak import run_leak_gate
+from marinedata.gates.leak import id_tags, redact, rescan_gates_json, run_leak_gate
 from marinedata.gates.masks import run_masks_gate
 from marinedata.gates.splits_v11 import run_splits_v11_gate
 from marinedata.task_layers.mask_classmap import palette_json, palette_rgb
@@ -407,3 +407,83 @@ def test_yunet_loader_verifies_the_sha256_and_never_downloads(tmp_path, monkeypa
         yunet_model.verified_model_path()
     monkeypatch.setattr(yunet_model, "YUNET_SHA256", hashlib.sha256(b"not the model").hexdigest())
     assert yunet_model.verified_model_path(model) == model
+
+
+# G3 leak: the id labels, and the scan of the merged GATES.json (run 6)
+
+
+@pytest.fixture
+def ncsrc(monkeypatch):
+    """The registry's non-open sources replaced by one synthetic id."""
+    from marinedata.gates import v11_runner
+
+    monkeypatch.setattr(v11_runner, "nc_source_ids", lambda *_: frozenset({"ncsrc"}))
+
+
+def write_gates(path: Path, **entries) -> Path:
+    path.write_text(json.dumps(entries))
+    return path
+
+
+def test_id_tags_and_redact_read_whole_tokens_and_echo_only_labels():
+    tag = id_tags("see NcSrc here", {"ncsrc"})[0]
+    assert tag.startswith("nc_id#") and "ncsrc" not in tag.lower()
+    assert id_tags("ncsrc.parquet, ncsrc/x and (ncsrc)", {"ncsrc"}) == [tag]
+    assert id_tags("ncsrc2 xncsrc my-ncsrc ncsrc_v1", {"ncsrc"}) == []
+    assert redact("ncsrc.parquet vs ncsrc", {"ncsrc"}) == f"{tag}.parquet vs {tag}"
+    assert id_tags("ncsrc", set()) == [] and redact("ncsrc", set()) == "ncsrc"
+
+
+def test_rescan_passes_a_gates_json_that_names_nothing_private(tmp_path, ncsrc):
+    leak = {"passed": True, "counts": {"leaks": 0}, "failures": []}
+    assert rescan_gates_json(write_gates(tmp_path / "GATES.json", leak=leak)) is None
+
+
+def test_rescan_fails_leak_on_a_planted_id_and_echoes_only_its_label(tmp_path, ncsrc):
+    path = write_gates(
+        tmp_path / "GATES.json",
+        decon={"passed": False, "counts": {"manifests": [{"file": "ncsrc.parquet"}]}},
+        privacy={"passed": True, "counts": {"note": "ncother"}, "failures": []},
+        leak={"passed": True, "counts": {"files": 3, "leaks": 0}, "failures": []},
+    )
+    result = rescan_gates_json(path, extra_nc_ids={"ncother"})
+    assert result is not None and result.name == "leak" and not result.passed
+    assert (result.counts["leaks"], result.counts["gates_json_leaks"]) == (2, 2)
+    assert result.counts["files"] == 3  # the leak entry's own counts are kept
+    tags = id_tags("ncsrc ncother", {"ncsrc", "ncother"})
+    assert result.failures == [f"GATES.json leak: {t} in the open upload set" for t in tags]
+    assert not [
+        i for i in ("ncsrc", "ncother") if i in json.dumps(result.counts) + str(result.failures)
+    ]
+
+
+def test_rescan_keeps_what_the_leak_gate_found_and_works_without_a_leak_entry(tmp_path, ncsrc):
+    before = {"passed": False, "counts": {"leaks": 1}, "failures": ["README.md leak: tag#1"]}
+    result = rescan_gates_json(write_gates(tmp_path / "a.json", leak=before, decon={"n": "ncsrc"}))
+    assert result.counts["leaks"] == 2 and len(result.failures) == 2
+    assert result.failures[-1] == "README.md leak: tag#1"  # the new line comes first
+    only = rescan_gates_json(write_gates(tmp_path / "b.json", decon={"note": "ncsrc"}))
+    assert not only.passed and only.counts["leaks"] == 1
+
+
+def test_rescan_reads_a_private_bucket_in_both_flavours_and_nc_ids_in_the_open_one_only(
+    tmp_path, ncsrc
+):
+    from marinedata.hf_export_v11 import PRIVATE_NAMES
+
+    ids = write_gates(tmp_path / "ids.json", decon={"note": "ncsrc"})
+    bucket = write_gates(tmp_path / "bucket.json", decon={"note": f"s3://{PRIVATE_NAMES[1]}/x"})
+    assert rescan_gates_json(ids, flavour="open") is not None
+    assert rescan_gates_json(ids, flavour="nc") is None  # the nc release ships those sources
+    assert rescan_gates_json(bucket, flavour="nc") is not None
+    assert PRIVATE_NAMES[1] not in str(rescan_gates_json(bucket, flavour="open").failures)
+
+
+def test_rescan_fails_closed_when_the_file_cannot_be_read_or_parsed(tmp_path, ncsrc):
+    missing = rescan_gates_json(tmp_path / "missing.json")
+    assert not missing.passed and missing.counts["failed_gate_error"] == 1
+    broken = tmp_path / "GATES.json"
+    broken.write_text('{"decon": ncsrc')  # names an id and is not JSON
+    result = rescan_gates_json(broken)
+    assert not result.passed and result.counts["failed_gate_error"] == 1
+    assert "ncsrc" not in " ".join(result.failures)
