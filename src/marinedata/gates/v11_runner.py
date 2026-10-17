@@ -35,6 +35,7 @@ class V11Options:
     release_dir: Path | None = None
     v1_dir: Path | None = None
     hidden_test: tuple[Path, ...] = ()
+    hidden_test_published_exception: bool = False
     benchmarks: tuple[Path, ...] = ()
     rehearsal: bool = False
     extra_nc_ids: frozenset[str] = frozenset()
@@ -112,7 +113,12 @@ def _decon(b: Path, o: V11Options) -> GateResult:
     from .decon_gate import run_decon_gate
 
     return run_decon_gate(
-        b, hidden_test=o.hidden_test, benchmarks=o.benchmarks, rehearsal=o.rehearsal
+        b,
+        hidden_test=o.hidden_test,
+        benchmarks=o.benchmarks,
+        rehearsal=o.rehearsal,
+        hidden_test_published_exception=o.hidden_test_published_exception,
+        v1_dir=o.v1_dir,
     )
 
 

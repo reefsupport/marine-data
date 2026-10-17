@@ -39,7 +39,8 @@ def add_v11_options(p: argparse.ArgumentParser) -> None:
         type=Path,
         default=None,
         metavar="DIR",
-        help="the frozen v1.0 release directory (join, frozen, bytes_once, splits_v11)",
+        help="the frozen v1.0 release directory (join, frozen, bytes_once, splits_v11, "
+        "decon with --hidden-test-published-exception)",
     )
     group.add_argument(
         "--hidden-test",
@@ -48,6 +49,13 @@ def add_v11_options(p: argparse.ArgumentParser) -> None:
         default=[],
         metavar="MANIFEST",
         help="decon: hidden-test manifest (repeatable)",
+    )
+    group.add_argument(
+        "--hidden-test-published-exception",
+        action="store_true",
+        help="decon: a hidden-test image already public in the v1.0 tree (--v1-dir) is exempt "
+        "(counted as hidden_test_already_published); the others still fail as hidden_test_new. "
+        "Benchmark overlaps are unchanged. Default off: any hidden-test overlap fails",
     )
     group.add_argument(
         "--benchmark",
@@ -94,6 +102,7 @@ def wants_v11(args: argparse.Namespace, *, v10_selected: bool) -> bool:
         args.v11
         or args.only
         or args.hidden_test
+        or args.hidden_test_published_exception
         or args.benchmark
         or args.nc_id
         or args.privacy_review
@@ -114,6 +123,7 @@ def _options(args: argparse.Namespace) -> V11Options:
         release_dir=Path(args.release_dir) if args.release_dir else None,
         v1_dir=args.v1_dir,
         hidden_test=tuple(args.hidden_test),
+        hidden_test_published_exception=args.hidden_test_published_exception,
         benchmarks=tuple(args.benchmark),
         rehearsal=args.rehearsal,
         extra_nc_ids=frozenset(args.nc_id),

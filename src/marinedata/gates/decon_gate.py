@@ -6,7 +6,12 @@ Exact ``sha256`` overlap between the release (``image_sha256`` and ``bytes_sha25
 ``--hidden-test`` and ``--benchmark`` (a file or a folder of parquet / json / jsonl / csv / tsv /
 txt manifests: any 64-hex digest in them counts). Each manifest file is judged on its own:
 
-* hidden-test manifest: any overlap fails, in any split;
+* hidden-test manifest: any overlap fails, in any split. With
+  ``--hidden-test-published-exception`` (off by default; it needs the v1.0 tree, ``--v1-dir``)
+  an overlap whose digest is an ``image_sha256`` of the frozen v1.0 tree is exempt, because that
+  image is public already (``counts.hidden_test_already_published`` and a sample of 20); the
+  others keep failing as ``hidden_test_new`` (``counts.hidden_test_new``). A benchmark overlap
+  is never exempt;
 * benchmark manifest: resolved to its registry entry (the ``benchmark_id`` column of a parquet
   manifest, else the file stem), then judged by that entry's ``policy`` (design §2.2):
   ``route-to-our-test`` passes an overlap as ``pinned_ok`` when the image is in ``test`` or an OOD
@@ -26,7 +31,7 @@ from __future__ import annotations
 
 import re
 from collections import Counter, defaultdict
-from collections.abc import Mapping, Sequence
+from collections.abc import Collection, Mapping, Sequence
 from dataclasses import dataclass, field
 from pathlib import Path
 
@@ -46,6 +51,11 @@ HIDDEN, BENCHMARK = "hidden_test", "benchmark"
 PIN_POLICY, HIDDEN_POLICY, UNKNOWN_POLICY = "route-to-our-test", "hidden-test", "unknown"
 PIN_HOMES = frozenset({"test", "test_ood", "test-ood"})
 MAX_FAILING = 20
+HIDDEN_NEW, HIDDEN_PUBLISHED = "hidden_test_new", "hidden_test_already_published"
+NO_V1_SET = (
+    "--hidden-test-published-exception: no v1.0 sha256 set; pass --v1-dir DIR, the frozen v1.0 "
+    "release dir with image_sha256 under data/<config>/*.parquet"
+)
 ROLE_KEYS = ("eval_pinned_ok", "eval_failed", "heldout_pinned_ok", "heldout_failed")
 _HEX = re.compile(r"(?<![0-9a-fA-F])[0-9a-fA-F]{64}(?![0-9a-fA-F])")
 
@@ -179,6 +189,16 @@ def scan_release(build_dir: Path, wanted: frozenset[str]) -> tuple[int, dict[str
     return len(seen), hits
 
 
+def _v1_published(v1_sha256: Collection[str] | None, v1_dir: Path | None) -> frozenset[str]:
+    """The ``image_sha256`` set of the frozen v1.0 tree: what G4 calls a ``v1_reupload``. The
+    given set wins, else ``<v1_dir>/data/*/*.parquet`` is read; empty when neither is there."""
+    if v1_sha256 is None and v1_dir is not None:
+        from ..hf_export_v11 import v1_sha256s
+
+        v1_sha256 = v1_sha256s(v1_dir)
+    return frozenset(filter(None, map(_clean, v1_sha256 or ())))
+
+
 def _policy(manifest: Manifest, registry: BenchmarkRegistry) -> str:
     if manifest.kind == HIDDEN:
         return HIDDEN_POLICY
@@ -205,23 +225,44 @@ def _heldout(manifest: Manifest, registry: BenchmarkRegistry) -> frozenset[str]:
     )
 
 
+def _example(sha: str, hit: ReleaseHit, manifest: Manifest) -> dict:
+    return {
+        "sha256": sha,
+        "source": ",".join(sorted(hit.sources)),
+        "split": ",".join(sorted(hit.splits)),
+        "benchmark_id": manifest.benchmark_id,
+    }
+
+
 def _judge(
     manifest: Manifest,
     policy: str,
     hits: dict[str, ReleaseHit],
     failing: list,
     heldout: frozenset[str] = frozenset(),
+    published: frozenset[str] | None = None,
+    exempt: list | None = None,
 ) -> dict:
     """The manifest's GATES.json record; adds failing images to ``failing`` (up to 20).
 
-    Counts are split by role (``eval`` / ``heldout``) and verdict (``pinned_ok`` / ``failed``)."""
+    Counts are split by role (``eval`` / ``heldout``) and verdict (``pinned_ok`` / ``failed``).
+    ``published`` (the v1.0 tree's ``image_sha256`` set) turns the published exception on for a
+    hidden-test manifest: an overlap in it is not judged but counted as ``already_published`` and
+    listed in ``exempt`` (up to 20); every other overlap fails as ``hidden_test_new``."""
     overlap = sorted(manifest.shas & hits.keys())
+    exempting = published if manifest.kind == HIDDEN else None
     by_split: Counter = Counter()
     failed_by_split: Counter = Counter()
     verdicts: Counter = Counter()
+    already_published = 0
     for sha in overlap:
         hit = hits[sha]
         by_split.update(hit.splits)
+        if exempting is not None and sha in exempting:
+            already_published += 1
+            if exempt is not None and len(exempt) < MAX_FAILING:
+                exempt.append(_example(sha, hit, manifest))
+            continue
         role = HELDOUT if policy == PIN_POLICY and sha in heldout else EVAL
         outside = {s for s in hit.splits if not is_accepted_home(s, role)}
         if policy == PIN_POLICY and not outside:
@@ -230,14 +271,8 @@ def _judge(
         verdicts[role, "failed"] += 1
         failed_by_split.update(outside or hit.splits)
         if len(failing) < MAX_FAILING:
-            failing.append(
-                {
-                    "sha256": sha,
-                    "source": ",".join(sorted(hit.sources)),
-                    "split": ",".join(sorted(hit.splits)),
-                    "benchmark_id": manifest.benchmark_id,
-                }
-            )
+            kind = {"kind": HIDDEN_NEW} if exempting is not None else {}
+            failing.append({**_example(sha, hit, manifest), **kind})
     pinned_ok = verdicts[EVAL, "pinned_ok"] + verdicts[HELDOUT, "pinned_ok"]
     return {
         "kind": manifest.kind,
@@ -247,13 +282,14 @@ def _judge(
         "manifest_shas": len(manifest.shas),
         "overlap": len(overlap),
         "pinned_ok": pinned_ok,
-        "failed": len(overlap) - pinned_ok,
+        "failed": len(overlap) - pinned_ok - already_published,
         "eval_pinned_ok": verdicts[EVAL, "pinned_ok"],
         "eval_failed": verdicts[EVAL, "failed"],
         "heldout_pinned_ok": verdicts[HELDOUT, "pinned_ok"],
         "heldout_failed": verdicts[HELDOUT, "failed"],
         "by_split": dict(sorted(by_split.items())),
         "failed_by_split": dict(sorted(failed_by_split.items())),
+        **({"already_published": already_published} if exempting is not None else {}),
     }
 
 
@@ -268,6 +304,12 @@ def _failure(record: dict) -> str:
             f"ship outside test/ood ({outside}); eval_failed={record.get('eval_failed', n)}, "
             f"heldout_failed={record.get('heldout_failed', 0)} "
             "(a held-out image may also ship in validation)"
+        )
+    if "already_published" in record:
+        return (
+            f"{where} ({ident}, {policy}): {HIDDEN_NEW}: {n} of {record['overlap']} overlapping "
+            f"image(s) are not in the v1.0 tree ({record['already_published']} already published "
+            "are exempt); no split may ship them"
         )
     if policy == UNKNOWN_POLICY:
         return (
@@ -284,6 +326,9 @@ def run_decon_gate(
     benchmarks: Sequence[Path] = (),
     rehearsal: bool = False,
     registry: BenchmarkRegistry | None = None,
+    hidden_test_published_exception: bool = False,
+    v1_sha256: Collection[str] | None = None,
+    v1_dir: Path | None = None,
 ) -> GateResult:
     required = (("hidden-test manifest", hidden_test), ("benchmark manifests", benchmarks))
     missing = [label for label, paths in required if not paths]
@@ -294,6 +339,11 @@ def run_decon_gate(
         registry = registry or BenchmarkRegistry.load()
     except BenchmarksError as exc:
         return finish(NAME, {}, [f"benchmark registry unreadable: {str(exc)[:200]}"])
+    published: frozenset[str] | None = None
+    if hidden_test_published_exception:
+        published = _v1_published(v1_sha256, v1_dir)
+        if not published:
+            return finish(NAME, {}, [NO_V1_SET])
     failures: list[str] = []
     manifests: list[Manifest] = []
     for kind, paths in ((HIDDEN, hidden_test), (BENCHMARK, benchmarks)):
@@ -316,13 +366,21 @@ def run_decon_gate(
             "failed": 0,
             "unknown_benchmark": 0,
             **dict.fromkeys(ROLE_KEYS, 0),
+            **({HIDDEN_PUBLISHED: 0, HIDDEN_NEW: 0} if published is not None else {}),
         }
     )
     failing: list[dict] = []
+    exempt: list[dict] = []
     records: list[dict] = []
     for manifest in manifests:
         record = _judge(
-            manifest, _policy(manifest, registry), hits, failing, _heldout(manifest, registry)
+            manifest,
+            _policy(manifest, registry),
+            hits,
+            failing,
+            _heldout(manifest, registry),
+            published,
+            exempt,
         )
         records.append(record)
         counts[f"{manifest.kind}_manifests"] += 1
@@ -332,10 +390,14 @@ def run_decon_gate(
         counts["failed"] += record["failed"]
         for key in ROLE_KEYS:
             counts[key] += record[key]
+        if "already_published" in record:
+            counts[HIDDEN_PUBLISHED] += record["already_published"]
+            counts[HIDDEN_NEW] += record["failed"]
         if record["failed"]:
             failures.append(_failure(record))
     for kind in (HIDDEN, BENCHMARK):
         counts[f"{kind}_shas"] = len(
             frozenset().union(*(m.shas for m in manifests if m.kind == kind))
         )
-    return finish(NAME, {**counts, "manifests": records, "failing": failing}, failures)
+    sample = {f"{HIDDEN_PUBLISHED}_sample": exempt} if published is not None else {}
+    return finish(NAME, {**counts, "manifests": records, "failing": failing, **sample}, failures)
