@@ -452,6 +452,12 @@ class Source(_Frozen):
     related: tuple[str, ...] = ()
     """Ids of entries that share an upstream but are NOT duplicates (a subset, a derivative, a
     sibling release). A cross-reference only: nothing is merged. Checked at registry load."""
+    family: str | None = Field(default=None, pattern=r"^[a-z0-9][a-z0-9\-_]*$")
+    """Slug naming the sources that republish one upstream image set (the Roboflow Universe forks of
+    one web-scraped set). Optional. The dedup gate reports, and does not fail, a near-duplicate pair
+    of two sources of one family inside one split; a pair across splits still fails (D-FORK B).
+    Never a licence, flavour or release filter. :func:`marinedata.licence_class.source_families`
+    reads it without pydantic and applies the same slug rule."""
     licence_evidence: str | None = None
     """What ``licence`` and ``access_class`` rest on: a URL, or the quoted README/paper sentence.
     Set whenever a class was taken from an audit rather than copied from an ingest spec."""
