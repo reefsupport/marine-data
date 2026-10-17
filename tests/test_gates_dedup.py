@@ -2,14 +2,18 @@ from __future__ import annotations
 
 import hashlib
 import io
+from pathlib import Path
 
 import pyarrow.parquet as pq
 import pytest
 from _gates_build import Img, default_images, make_build, smooth_png
 from PIL import Image
 
+from marinedata import licence_class
+from marinedata.gates import MAX_FAILURES
 from marinedata.gates.dedup import run_dedup_gate
 from marinedata.gates.phash import phash
+from marinedata.gates.runner import run_gate
 
 
 def _has(result, kind: str) -> bool:
@@ -100,3 +104,122 @@ def test_exif_transposed_row_must_decode_and_match_its_size(tmp_path):
     broken = Img(41, sha="0" * 64, png=b"not an image", exif_transposed=True)
     result = run_dedup_gate(_build(tmp_path / "b", broken))
     assert _has(result, "undecodable_image") and not _has(result, "sha256_mismatch")
+
+
+# -- D-FORK B: family-aware reporting of same-split cross-source near pairs --------------------
+
+IN_FAMILY = "near_pairs_across_sources_in_family"
+FAMILY = {"src-a": "universe", "src-b": "universe"}
+"""What ``source_families()`` returns for two forks of one upstream set."""
+
+
+def _fork_of_image_0(split: str = "train") -> Img:
+    """A brightened copy of default image 0 (train, src-a) published by the other source."""
+    return Img(0, split, "src-b", shift=6, group="gf")
+
+
+def test_same_split_near_pair_inside_a_family_is_reported_and_passes(tmp_path):
+    build = _build(tmp_path, _fork_of_image_0())
+    assert _has(run_dedup_gate(build), "near_dup_across_sources")  # no family declared: v1.0 rule
+    result = run_dedup_gate(build, families=FAMILY)
+    assert result.passed, result.failures
+    assert result.counts[IN_FAMILY] >= 1
+    assert "failed_near_dup_across_sources" not in result.counts
+    sample = result.to_dict()["counts"][f"{IN_FAMILY}_sample"]
+    assert 1 <= len(sample) <= result.counts[IN_FAMILY]
+    assert all("near_dup_in_family" in line and "family universe" in line for line in sample)
+    assert any("src-a vs src-b" in line or "src-b vs src-a" in line for line in sample)
+
+
+def test_in_family_pair_across_splits_still_fails(tmp_path):
+    result = run_dedup_gate(_build(tmp_path, _fork_of_image_0("test")), families=FAMILY)
+    assert not result.passed and _has(result, "near_dup_across_splits"), result.failures
+    assert IN_FAMILY not in result.counts
+
+
+@pytest.mark.parametrize(
+    "families",
+    [
+        {"src-a": "universe", "src-b": "other"},
+        {"src-a": "universe"},
+        {"src-b": "universe"},
+        {},
+        None,
+    ],
+    ids=["two-families", "only-a-declared", "only-b-declared", "empty", "none"],
+)
+def test_same_split_near_pair_outside_a_family_still_fails(tmp_path, families):
+    result = run_dedup_gate(_build(tmp_path, _fork_of_image_0()), families=families)
+    assert not result.passed and _has(result, "near_dup_across_sources"), result.failures
+    assert IN_FAMILY not in result.counts
+
+
+def test_family_does_not_excuse_an_exact_duplicate_across_sources(tmp_path):
+    extra = Img(0, "train", "src-b", group="gy")
+    result = run_dedup_gate(_build(tmp_path, extra), families=FAMILY)
+    assert not result.passed and _has(result, "exact_dup_across_sources"), result.failures
+
+
+def test_in_family_sample_is_capped_while_the_count_is_complete(tmp_path):
+    forks = [Img(0, "train", "src-a", shift=s, group="ga") for s in range(1, 9)]
+    forks += [Img(0, "train", "src-b", shift=s, group="gb") for s in range(11, 19)]
+    result = run_dedup_gate(_build(tmp_path, *forks), families=FAMILY)
+    assert result.passed, result.failures
+    assert result.counts[IN_FAMILY] > MAX_FAILURES
+    assert len(result.counts[f"{IN_FAMILY}_sample"]) == MAX_FAILURES
+    assert result.counts[f"{IN_FAMILY}_sample"] == sorted(result.counts[f"{IN_FAMILY}_sample"])
+
+
+def test_a_build_without_family_pairs_adds_no_family_keys(tmp_path):
+    result = run_dedup_gate(_build(tmp_path), families=FAMILY)
+    assert result.passed and IN_FAMILY not in result.counts
+    assert f"{IN_FAMILY}_sample" not in result.counts
+
+
+def test_release_gate_runner_hands_the_registry_family_map_to_the_gate(tmp_path, monkeypatch):
+    build = _build(tmp_path, _fork_of_image_0())
+    assert not run_gate("dedup", build).passed  # src-a / src-b belong to no registry family
+    monkeypatch.setattr(licence_class, "source_families", lambda root=None: FAMILY)
+    result = run_gate("dedup", build)
+    assert result.passed, result.failures
+    assert result.counts[IN_FAMILY] >= 1
+
+
+# -- the two Seaview sources share the registry family `seaview-survey` --------------------------
+
+REGISTRY = Path(__file__).resolve().parents[1] / "registry"
+SEAVIEW = ("seaview-survey-imagery", "reef-support-seaview-labels")
+ROBOFLOW_FORK = "roboflow-coral-bleaching-final-v6i"
+
+
+def _seaview_copy_build(tmp_path, copy_split: str = "train", copy_source: str = SEAVIEW[1]):
+    """A Seaview frame (train) and a re-encoded copy of it: same pHash, other sha256."""
+    images = [
+        Img(0, "train", SEAVIEW[0], group="sv-imagery"),
+        Img(0, copy_split, copy_source, shift=6, group="sv-copy"),
+    ]
+    return make_build(tmp_path, images=images, masks=False)
+
+
+def test_seaview_copy_in_the_same_split_is_disclosed_through_the_registry_family(tmp_path):
+    build = _seaview_copy_build(tmp_path)
+    assert _has(run_dedup_gate(build), "near_dup_across_sources")  # no family declared: v1.0 rule
+    result = run_dedup_gate(build, families=licence_class.source_families(REGISTRY))
+    assert result.passed, result.failures
+    assert result.counts[IN_FAMILY] == 1
+    (line,) = result.to_dict()["counts"][f"{IN_FAMILY}_sample"]
+    assert "family seaview-survey" in line and all(source in line for source in SEAVIEW)
+
+
+def test_seaview_copy_across_splits_still_fails(tmp_path):
+    build = _seaview_copy_build(tmp_path, copy_split="test")
+    result = run_dedup_gate(build, families=licence_class.source_families(REGISTRY))
+    assert not result.passed and _has(result, "near_dup_across_splits"), result.failures
+    assert IN_FAMILY not in result.counts
+
+
+def test_a_seaview_source_shares_no_family_with_a_roboflow_fork(tmp_path):
+    build = _seaview_copy_build(tmp_path, copy_source=ROBOFLOW_FORK)
+    result = run_dedup_gate(build, families=licence_class.source_families(REGISTRY))
+    assert not result.passed and _has(result, "near_dup_across_sources"), result.failures
+    assert IN_FAMILY not in result.counts

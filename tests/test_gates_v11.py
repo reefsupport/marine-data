@@ -266,20 +266,33 @@ def test_splits_fail_a_v1_reassignment_and_a_straddling_group(tmp_path):
     assert failed(result, "reassigned_v1") == 1 and failed(result, "group_straddles") == 1
 
 
-def write_map(build: Path, overridden: dict | None) -> None:
-    pins = {} if overridden is None else {"v1_continuity_overridden": overridden}
-    (build / "SPLIT_MAP.json").write_text(json.dumps({"pins": pins, "assignments": {}}))
+def write_map(
+    build: Path,
+    overridden: dict | None,
+    *,
+    benchmarks: tuple[str, ...] = ("srcA",),
+    assignments: dict | None = None,
+) -> None:
+    pins = {} if overridden is None else {
+        "v1_continuity_overridden": overridden,
+        "benchmarks": {b: {"test": 1} for b in benchmarks},
+    }  # fmt: skip
+    (build / "SPLIT_MAP.json").write_text(
+        json.dumps({"pins": pins, "assignments": assignments or {}})
+    )
 
 
 def test_splits_accept_exactly_the_groups_a_pin_moved_off_their_v1_split(tmp_path):
-    v1 = write_v1(tmp_path)
+    v1, to_test = write_v1(tmp_path), {"g0": "test"}
     build = build_release(tmp_path, split_of={0: "test"})  # img0, group g0: v1.0 train -> test
     assert failed(run_splits_v11_gate(build, v1_dir=v1), "reassigned_v1") == 1  # no SPLIT_MAP.json
-    write_map(build, {"images": 1, "groups": 1, "by_source": {}, "group_ids": ["g0"]})
+    write_map(build, {"images": 1, "groups": 1, "by_source": {}, "group_ids": ["g0"]},
+              assignments=to_test)  # fmt: skip
     listed = run_splits_v11_gate(build, v1_dir=v1)
     assert listed.passed, listed.failures
     assert listed.counts["v1_override_groups"] == 1
-    write_map(build, {"images": 1, "groups": 1, "by_source": {}, "group_ids": ["g9"]})
+    write_map(build, {"images": 1, "groups": 1, "by_source": {}, "group_ids": ["g9"]},
+              assignments=to_test)  # fmt: skip
     other = run_splits_v11_gate(build, v1_dir=v1)  # g0 changed unlisted; the listed g9 did not
     assert failed(other, "reassigned_v1") == 1 and failed(other, "override_unchanged") == 1
 
@@ -292,11 +305,11 @@ def test_splits_fail_a_listed_group_that_did_not_change_and_check_the_count_when
     assert failed(run_splits_v11_gate(build, v1_dir=v1), "override_unchanged") == 1
     write_map(build, {"images": 0, "groups": 0, "by_source": {}, "group_ids": []})
     assert run_splits_v11_gate(build, v1_dir=v1).passed
-    moved = build_release(tmp_path / "moved", split_of={0: "test"})
-    write_map(moved, {"images": 1, "groups": 1, "by_source": {}})  # over 200 groups: count only
+    moved, to_test = build_release(tmp_path / "moved", split_of={0: "test"}), {"g0": "test"}
+    write_map(moved, {"images": 1, "groups": 1, "by_source": {}}, assignments=to_test)  # count only
     assert run_splits_v11_gate(moved, v1_dir=v1).passed
-    write_map(moved, {"images": 1, "groups": 2, "by_source": {}})
-    assert failed(run_splits_v11_gate(moved, v1_dir=v1), "override_unchanged") == 1
+    write_map(moved, {"images": 1, "groups": 0, "by_source": {}}, assignments=to_test)
+    assert failed(run_splits_v11_gate(moved, v1_dir=v1), "override_unchanged") == 1  # 1 > 0 counted
 
 
 def test_splits_count_withheld_images_as_dropped_not_unsplit(tmp_path):

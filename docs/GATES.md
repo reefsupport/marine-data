@@ -34,7 +34,12 @@ source or rows, or build the right flavour.
 Checks: sha256 of the bytes equals `image_sha256`; no exact duplicate across splits, across sources or
 inside a split; no 64-bit DCT pHash within `--phash-bits` (default 8) across splits or sources; every
 image decodes; `DEDUP_GATE.json` from `release build`, when present, is ok. Near pairs inside one
-split and one source (burst frames) are counted only. Writes `BUILD/phash.parquet`
+split and one source (burst frames) are counted only. Near pairs inside one split between two
+sources that declare the same registry `family` (`registry/sources/*.yaml`: `roboflow-coral-universe`,
+the four Roboflow Universe forks; `seaview-survey`, the Seaview survey imagery and our labels on it)
+are disclosed, not failed: `counts.near_pairs_across_sources_in_family`,
+with a capped sample in `counts.near_pairs_across_sources_in_family_sample`; across splits they still
+fail. Writes `BUILD/phash.parquet`
 (`image_sha256, config, split, source_id, phash`) for later reuse. An image-free build is `skipped`.
 Fix: remove the duplicates from the source selection and rebuild.
 `images/test 886a59f87818 near_dup_across_splits: hamming 0 <= 8 to images/train 839186194c6d (src-a vs src-a)`
@@ -49,6 +54,20 @@ shares, because upstream splits dominate them and no nominal ratio describes v1.
 train, validation and test are only ratio-checked when the registry names them. Fix: regenerate the
 split map, or set the target in the registry.
 `images/test ratio_off_target: 10.0% of 20 rows, target 25% +/- 5 (release:split_ratio)`
+
+The ratio is taken over the rows of the **non-pinned** sources. A source the split map pins to its
+upstream test manifest (a key of `pins.benchmarks` in `SPLIT_MAP.json`, read from `--release-dir`, else
+the build dir) follows that manifest, so its test share is structural: its rows leave the ratio and never
+fail it. Rows are matched by the table's `source_id` column (else `source`); the benchmark label is the
+`source_id` of its rows. `counts.ratio_pinned_sources` holds the pinned sources' train/validation/test rows
+per table, `counts.ratio_excluding_pinned` the ratio the rule judged (`rows` and a percent per split) and
+`counts.ratio_pins` the map used (`release_dir`, `build_dir`, `unreadable` or none) and the pinned ids.
+Tolerance, targets and finding kinds are unchanged. A finding that left rows out says so:
+`images/test ratio_off_target: 5.0% of 20 non-pinned rows (excl. 20 rows of pinned src-p), target 15% +/- 5 (registry:default)`
+No map, one that does not parse, or one without `pins.benchmarks` pins nothing: every row counts, as
+before. A table without a source column keeps every row (`counts.ratio_unsourced_configs`). A table whose
+rows are all pinned (`ratio_all_pinned_configs`), or whose non-pinned rows lack a split, is not
+ratio-checked, like a table that never had that split (`ratio_skipped_configs`).
 
 ## masks (required)
 Checks (P1.5): mask size equals image size, no leftover EXIF orientation, uint8 semantic and uint16
@@ -123,9 +142,38 @@ can only skip, never pass.
 | G4 `bytes_once` | `gates/bytes_once.py` | image bytes twice, a v1.0 image re-uploaded, a bytes column outside `images` |
 | G5 `masks` | `gates/masks_palette.py` | a `semseg` mask is not mode P with its declared palette |
 | G6 `splits_v11` | `gates/splits_v11.py` | unsplit / `--allow-unsplit` build (images of split-map `withheld` groups are dropped from the tables, so they never count as unsplit), v1.0 reassignment (other than the groups a benchmark pin moved), straddling group, OOD guards, +/-5 pt ratio |
-| G7 `decon` | `gates/decon_gate.py` | a release sha256 is in a hidden-test manifest, an `exclude` or unknown benchmark manifest, a `route-to-our-test` eval image outside `test`/`ood-*`, or a held-out image outside `validation`/`test`/`ood-*`; either input is missing |
+| G7 `decon` | `gates/decon_gate.py` | a release sha256 is in a hidden-test manifest (unless `--hidden-test-published-exception` exempts an image the v1.0 tree already publishes), an `exclude` or unknown benchmark manifest, a `route-to-our-test` eval image outside `test`/`ood-*`, or a held-out image outside `validation`/`test`/`ood-*`; either input is missing |
 
 G7 reads `registry/benchmarks.yaml`: each `--benchmark` manifest resolves to its entry by the `benchmark_id` column (else the file stem). A `route-to-our-test` eval image in `test`, `test_ood` or `ood-*` counts as `pinned_ok`, and so does a held-out image (the entry's `heldout_val`, else the upstream `val`) in `validation` too (counts per manifest: {eval, heldout} x {pinned_ok, failed}); in any other split it fails, as does any overlap with an `exclude` benchmark, a hidden-test manifest or a manifest with no registry entry (`unknown_benchmark`, fail closed). `GATES.json` `decon.counts.manifests` lists `{benchmark_id, policy, manifest_shas, overlap, pinned_ok, failed}` per manifest and `failing` the first 20 failing images. The split map applies the pins first and a pin outranks an inherited v1.0 split: the moved groups are recorded in the SPLIT_MAP header (`pins.v1_continuity_overridden`: `images`, `groups`, `by_source`, `group_ids`), the v1.0 configs stay frozen (a documented v1.0 -> v1.1 split change), and G6 accepts exactly those groups as the only v1.0 reassignment.
+
+G7 hidden-test published exception (`--hidden-test-published-exception`, default off: any hidden-test overlap fails, as above). With the flag and the frozen v1.0 tree (`--v1-dir`; the `image_sha256` set G4 reads as `v1_reupload`), a hidden-test overlap whose digest is an `image_sha256` in that tree is exempt: the image is public already, so shipping it again publishes nothing new. The exempt overlaps are counted in `counts.hidden_test_already_published` (`hidden_test_already_published_sample` lists the first 20, and the manifest record's `already_published` and `overlap` count them; `failed` does not). Every other hidden-test overlap keeps failing: the failure line reads `hidden_test_new: N of M overlapping image(s) are not in the v1.0 tree`, `counts.hidden_test_new` holds N and the `failing` entries carry `kind: hidden_test_new`. Benchmark manifests (`route-to-our-test`, `exclude`, unknown) are judged exactly as before. The flag without a v1.0 sha256 set (no `--v1-dir`, or a tree with no `image_sha256` under `data/*/*.parquet`) fails the gate. On the release VM add the flag to `GATE_V11_ARGS`; only the `--v11` call receives it.
+
+### G6 and benchmark pins (D-STRADDLE)
+
+A benchmark pin wins over v1.0 split continuity (decision D-STRADDLE): the release's
+`SPLIT_MAP.json` moves whole near-duplicate components to the split a benchmark manifest asks for
+and records the groups it moved in `pins.v1_continuity_overridden` (`groups`, `images`,
+`by_source`, and `group_ids` up to 200 groups). Gate G6 (`splits_v11`) therefore accepts a v1.0
+image in a split v1.0 did not give it when
+
+- the map records an override and covers the image's group: it is listed in `group_ids` when the
+  record lists them, otherwise only the count is known; and
+- the build's split for the group equals the map's assignment for it (the map's `val` is
+  `validation` in the tables).
+
+These groups count in `pin_override_applied` (per source `pin_override_applied_<source>`); groups
+of a source outside `pins.benchmarks` are component-mates, which a pin moves with its component,
+and also count in `pin_override_mates`. A recorded group that did not leave its v1.0 split is a
+no-op when the map keeps it there (`pin_override_noop`; with a count-only record this is `groups`
+minus the groups seen moving) and passes. The gate fails `override_unchanged` when a pin was not
+applied (the map assigns a listed group, or a benchmark-source group, a split the build does not
+have) or when more groups moved than the record counts. Every other v1.0 image whose split
+changed still fails `reassigned_v1`, with the reason; so does every move when there is no map,
+the map is unreadable or it records no override.
+
+Caveat: a model trained on the v1.0 configs must not be evaluated on the v1.1.0 validation/test
+splits of the pinned sources (coralscapes, coralvqa, suim, uiis, uiis10k, usis10k): images it saw
+in its v1.0 training split may now sit in those splits.
 
 Not wired yet: the `release gate` CLI entry for these, G9 `labelmap`, and the G8 privacy pass scoped
 to `images`. The pinned YuNet model (`gates/yunet_model.py`) is baked into the image by the Dockerfile.
@@ -136,7 +184,7 @@ to `images`. The pinned YuNet model (`gates/yunet_model.py`) is baked into the i
 `marinedata release gate BUILD_DIR --v11` runs the nine gates below and merges each into
 `BUILD_DIR/GATES.json`; `release publish` reads that file (staged as `provenance/GATES.json`).
 `--v11` is implied by `--only`, `--rehearsal`, `--hidden-test`, `--benchmark`, `--nc-id`,
-`--privacy-review`, `--taxonomy-version` and, when no v1.0 gate flag is given, `--v1-dir` (with one,
+`--hidden-test-published-exception`, `--privacy-review`, `--taxonomy-version` and, when no v1.0 gate flag is given, `--v1-dir` (with one,
 `--v1-dir` feeds the load, card and masks gates: configs and mask shards of the frozen v1.0 tree
 count as present), and by a build with `task_layers/V11_TABLES.json` when no v1.0
 gate flag is given; the v1.0 flags and their behaviour are unchanged. `--only GATE` (repeatable)

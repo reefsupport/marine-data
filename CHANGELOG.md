@@ -22,6 +22,24 @@ Nothing below is in a release yet. It is on `main` or on the Phase A branches na
   chain guard, so `near_dup_across_splits` and `near_dup_leak` cannot fail across splits (run 5: 70 pairs). Acceptance
   is a VM run (run 8): no group withheld for the band reason, noaa withheld at most 400 images, splits `near_dup_leak`
   0, dedup `across_splits` 0.
+- Dedup gate discloses same-split near pairs between sources of one registry `family`, and the two Seaview sources now
+  share one. A source may declare `family: <slug>` (`Source.family`, read by `licence_class.source_families`); a near
+  pair (pHash within `--phash-bits`) between two sources of one family inside one split is counted as
+  `near_pairs_across_sources_in_family`, with a sample capped at 50, and no longer fails the dedup gate. The four
+  Roboflow Universe forks of one web-scraped set (`roboflow-coral-bleaching-final-v6i`,
+  `roboflow-coral-bleaching-general-v1-yolov8s`, `roboflow-coral-classification-copy-changed-v13i`,
+  `roboflow-coral-reef-classification-v3i`) declare `roboflow-coral-universe`; `seaview-survey-imagery` and
+  `reef-support-seaview-labels` declare `seaview-survey`, because run 5 still failed 11 same-split pairs between them
+  (10 at distance 0; 22 images with distinct sha256, re-encoded copies of the same Seaview photographs). The two
+  families are separate: a Seaview source against a Roboflow fork still fails. A pair across splits, a same-split pair
+  between sources that share no family and an exact duplicate still fail. The v1.1.0 card's "Build and gates"
+  paragraph and `docs/GATES.md` say so.
+- G7 `decon` gets `--hidden-test-published-exception` (default off, so the gate behaves as before until it is
+  used). A hidden-test overlap whose `image_sha256` the frozen v1.0 tree (`--v1-dir`) already publishes is exempt
+  and reported as `counts.hidden_test_already_published` (plus a sample of 20); every other hidden-test overlap
+  still fails as `hidden_test_new` (`counts.hidden_test_new`). Benchmark overlaps are never exempt, and the flag
+  without a v1.0 sha256 set fails the gate. Docs: `docs/GATES.md`.
+- **gates:** `splits_v11` (G6) accepts the moves of benchmark pins off the v1.0 split (D-STRADDLE): a group the split map records in `pins.v1_continuity_overridden` and the build puts in the map's split counts in `pin_override_applied` (`_<source>`, `pin_override_mates`), a recorded group that stayed is a `pin_override_noop`; other v1.0 moves still fail `reassigned_v1`. See `docs/GATES.md`.
 - Frozen v1.1 build places the rows of a source whose loader sets no `split_group`. `marinedata release build --tasks
   v2 --v11` aborted in `benthic-l2` with `no split_group for source(s) suim (1598 sample(s))`. `release split-map`
   groups every row through `source_release_entries` (the staged column, else the registry pattern, else the

@@ -320,6 +320,14 @@ def quick_start(repo_id: str, configs: Mapping[str, dict]) -> str:
 # ------------------------------------------------------------------------------ the card
 
 
+def excluded_section(flavour: str) -> str:
+    """Every registered source that is not in the release, by reason: the licence classes, the
+    named exclusions and, in the open flavour, the source of the non-commercial flavour."""
+    named = txt.NOT_INCLUDED + (txt.NOT_INCLUDED_OPEN if flavour == "open" else ())
+    lines = [f"- **{name}**: {why}" for name, why in (*EXCLUDED_CLASSES, *named)]
+    return "## Excluded sources\n\n" + txt.EXCLUDED_INTRO + "\n\n" + "\n".join(lines)
+
+
 def render_v11_card(
     facts: dict, infos: Mapping[str, dict], sources: list[dict], label_rows: list[dict], *,
     flavour: str, repo_id: str, pretty_name: str = PRETTY_NAME, cff: dict | None = None,
@@ -380,7 +388,8 @@ def render_v11_card(
         "recomputed from re-encoded bytes); `metadata.bytes_sha256` is the hash of the embedded "
         "bytes. The annotation key is `image_sha256` + `source_id` + `source_version` + `ann_id`. "
         "`metadata.bytes_config` names the config that holds each image's pixels: a v1.0 config "
-        "or `images`. The Hub splits are `train`, `validation`, `test` and `test_ood`.",
+        "or `images`. The Hub splits are `train`, `validation`, `test` and `test_ood`.\n\n"
+        + txt.MASKS,
         "## Label space\n\n" + txt.LABEL_SPACE + "\n\n### Label overlap\n\n"
         "Taxonomy nodes that more than one source reaches. Cross-source training should use "
         "these, or the coarse training views.\n\n" + overlap_table(label_rows)
@@ -390,7 +399,7 @@ def render_v11_card(
         + "\n\n### Build and gates\n\nBuilt with the " + f"[marine-data]({GITHUB}) registry; "
         "every source is admitted only after its licence is recorded, and the licence gate "
         "raises, never warns. " + lock_line + " Gate results are published as "
-        "`provenance/GATES.json`.",
+        "`provenance/GATES.json`. " + txt.DEDUP_FAMILY,
         "## Personal and sensitive information\n\n" + txt.PERSONAL,
         "## Limitations and known defects\n\n" + "\n".join(limits),
         "## Licensing\n\nThe data are not under one licence. Every row records its `licence`, "
@@ -399,7 +408,7 @@ def render_v11_card(
         "table records the licences as Reef Support read them from the primary sources and is "
         "not legal advice.\n\n" + licence_matrix(sources)
         + f"\n\nCredits: {txt.MEOW} {txt.WORMS}",
-        "## Excluded sources\n\n" + "\n".join(f"- **{n}**: {why}" for n, why in EXCLUDED_CLASSES),
+        excluded_section(flavour),
         "## Takedown\n\nRights holders and data subjects: open an issue at "
         f"{takedown_url or GITHUB + '/issues'}. Accepted requests are published as a new version.",
         "## Versions and changelog\n\n" + versions + "\n\n"

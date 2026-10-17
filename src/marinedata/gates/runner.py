@@ -31,9 +31,12 @@ def _licence(b: Path, o: GateOptions) -> GateResult:
 
 
 def _dedup(b: Path, o: GateOptions) -> GateResult:
+    from ..licence_class import source_families
     from .dedup import run_dedup_gate
 
-    return run_dedup_gate(b, release_dir=o.release_dir, phash_bits=o.phash_bits)
+    return run_dedup_gate(
+        b, release_dir=o.release_dir, phash_bits=o.phash_bits, families=source_families()
+    )
 
 
 def _splits(b: Path, o: GateOptions) -> GateResult:

@@ -168,6 +168,7 @@ sources:
         size_bytes: 4092140695
 
   - id: reef-support-seaview-labels
+    family: seaview-survey
     domain: coral
     access_class: open
     licence_evidence: "legacy verification record (licence-file, 2026-10-06): APPROVED 2026-10-06 (a maintainer): images CC-BY-3.0 - the researchdata.edu.au record of UQ eSpace UQ_734799 states Creative Commons Attribution 3.0 (the same record `seaview-survey-imagery` cites; R1 external research 2026-09-24, high confidence); masks and labels CC-BY-4.0, Reef Support (own annotations). Supersedes the 2026-09-24 entry: no Seaview pixel terms confirmed, method absent. Corrected 2026-10-07: the UQ eSpace record states CC BY 3.0 International, not the Australia port."
