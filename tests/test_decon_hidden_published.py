@@ -206,3 +206,19 @@ def test_redact_ids_also_covers_a_manifest_that_cannot_be_read(tmp_path):
     tag = id_tags("ncbench", {"ncbench"})[0]
     assert not result.passed and "ncbench" not in " ".join(result.failures)
     assert f"{tag}.json: not found" in " ".join(result.failures)
+
+
+def test_redact_ids_drops_the_sha_samples_and_keeps_the_counts(tmp_path):
+    """Open flavour: GATES.json is uploaded, so the entry keeps its counts and ``by_split`` and
+    no image digest; without ``redact_ids`` (nc) the sample stays."""
+    import re
+
+    kw = {"hidden_test_published_exception": True}
+    nc = gate(tmp_path, "a1", **kw)
+    open_ = gate(tmp_path, "a1", redact_ids={"ncbench"}, **kw)
+    assert nc.passed and open_.passed
+    assert nc.counts["hidden_test_already_published_sample"][0]["sha256"] == sha("a1")
+    assert "hidden_test_already_published_sample" not in open_.counts
+    assert not re.search(r"[0-9a-fA-F]{64}", json.dumps(open_.counts))
+    assert open_.counts["hidden_test_already_published"] == 1
+    assert record(open_, "hidden.json")["by_split"] == record(nc, "hidden.json")["by_split"] != {}

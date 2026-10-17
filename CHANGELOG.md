@@ -10,6 +10,19 @@ Nothing below is in a release yet. It is on `main` or on the Phase A branches na
 
 ### On main
 
+- Hidden-test drop at export and an id-free open card (#50). `hf_export --hidden-test <manifest> --hidden-test-exempt-v1
+  <v1.0 export>` (open flavour only; `--flavour nc` refuses) removes every image the manifest lists that v1.0 does not
+  already publish from every table before anything is counted or embedded; stderr and `v11.hidden_test_excluded` hold
+  counts only, and the card states the count in Limitations. The open README, LICENSE, NOTICE and `GATES.json` name no
+  non-open source id (benchmark ids in the decon entry are leak labels), and `release gate` re-scans the merged
+  `GATES.json` for private names after the gates have written to it (`leak`).
+- Card hand-finish for 1.1.0. The open README states the split-map exclusions (215 band-excluded and 51 pHash-excluded
+  images, no withheld group), the 4,544 images whose v1.0 split a pin overrode, the per-stratum ratio check and the NOAA
+  whole-site assignment, the 6 cross-source pairs the pHash-256 confirm kept, the privacy review result and the diver
+  class, the 1,226 hidden-test images v1.0 already published, where the Seaview images are and the sixth Roboflow fork
+  dropped as a duplicate (`card_v11_text.py`; the numbers sit behind the open-flavour switch, the nc card gets only the
+  shared sentences). The decon entry of the open `GATES.json` drops its `*_sample` lists that carry image digests and
+  keeps every count and `by_split`.
 - Run-6 gates: dedup confirm-hash waiver and a split ratio per stratum. Dedup: a same-split pair between sources of
   different families at pHash-64 within `--phash-bits` is confirmed on pHash-256 (`dedup.features`) and grey entropy
   before it fails; it is waived only when the pHash-256 distance is above 32 and both entropies reach 4.0 bits

@@ -334,6 +334,10 @@ def render_v11_card(
     takedown_url: str | None = None, lock_sha: str | None = None, built: str | None = None,
     hidden_test_withheld: int | None = None,
 ) -> str:  # fmt: skip
+    def open_only(text: str, sep: str = " ") -> str:
+        """The v1.1.0 open-run statements (chain-7 gates) belong to the open card only."""
+        return sep + text if flavour == "open" else ""
+
     configs = facts["configs"]
     names = ordered_configs(configs)
     images = sum(e["num_examples"] for e in configs.get("metadata", {}).get("splits", {}).values())
@@ -397,13 +401,15 @@ def render_v11_card(
         "Taxonomy nodes that more than one source reaches. Cross-source training should use "
         "these, or the coarse training views.\n\n" + overlap_table(label_rows)
         + "\n\n### Mapped share per source\n\n" + mapped_table(sources),
-        "## Splits\n\n" + txt.SPLITS_TEXT + "\n\n" + splits_table(configs),
+        "## Splits\n\n" + txt.SPLITS_TEXT + open_only(txt.SPLITS_OPEN, "\n\n") + "\n\n"
+        + splits_table(configs),
         "## Dataset creation\n\n### Sources\n\n" + sources_table(sources)
         + "\n\n### Build and gates\n\nBuilt with the " + f"[marine-data]({GITHUB}) registry; "
         "every source is admitted only after its licence is recorded, and the licence gate "
         "raises, never warns. " + lock_line + " Gate results are published as "
-        "`provenance/GATES.json`. " + txt.DEDUP_FAMILY,
-        "## Personal and sensitive information\n\n" + txt.PERSONAL,
+        "`provenance/GATES.json`. " + txt.DEDUP_FAMILY + open_only(txt.DEDUP_OPEN),
+        "## Personal and sensitive information\n\n" + txt.PERSONAL
+        + open_only(txt.PERSONAL_OPEN),
         "## Limitations and known defects\n\n" + "\n".join(limits),
         "## Licensing\n\nThe data are not under one licence. Every row records its `licence`, "
         "`annotation_licence` and `attribution`; the matrix lists each source. Combine sources "
