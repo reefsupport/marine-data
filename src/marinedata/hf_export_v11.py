@@ -364,12 +364,46 @@ def _axis(edge, name: str) -> str | None:
     return next((v for k, v in edge.targets.items() if getattr(k, "value", str(k)) == name), None)
 
 
+def table_crosswalk_ids() -> dict[str, str]:
+    """``source -> crosswalk`` the task-layer table builders resolve its labels with (boxes, image
+    labels, semantic and instance masks). Some of these sources (the box and instance sets) declare
+    no ``loader.crosswalk_id`` in the registry, and their tables still carry the nodes."""
+    from .task_layers.boxes_table import BOX_SOURCES
+    from .task_layers.image_labels_table import LABEL_SOURCES
+    from .task_layers.masks_table import MASK_SOURCES
+    from .task_layers.sources.masks_instance import INSTANCE_SOURCES
+
+    out: dict[str, str] = {}
+    for specs in (BOX_SOURCES, LABEL_SOURCES, MASK_SOURCES, INSTANCE_SOURCES):
+        for sid, spec in specs.items():
+            if spec.crosswalk_id:
+                out.setdefault(sid, spec.crosswalk_id)
+    return out
+
+
+def source_crosswalk_id(
+    registry, source_id: str, bound: Mapping[str, str] | None = None
+) -> str | None:
+    """The crosswalk ``source_id``'s labels resolve with: its loader's, else the one its table
+    builder binds (``bound``, :func:`table_crosswalk_ids` by default)."""
+    loader = registry.source(source_id).loader
+    cid = loader.crosswalk_id if loader is not None else None
+    return cid or (table_crosswalk_ids() if bound is None else bound).get(source_id)
+
+
+def export_crosswalk_ids(registry, source_ids: Iterable[str]) -> set[str]:
+    """The crosswalks of ``source_ids``: the edges the label map and the taxonomy table carry."""
+    bound = table_crosswalk_ids()
+    return {c for s in source_ids if (c := source_crosswalk_id(registry, s, bound))}
+
+
 def label_map_rows(
     registry, source_ids: Iterable[str], version: str, label_rows: Iterable[Mapping] = ()
 ) -> list[dict]:  # fmt: skip
     """One row per ``(source, native label)``: every crosswalk edge (unmappable ones included) plus
     every label seen in ``label_rows`` with no edge, carried as ``mapped = false``. A mask
-    ``class_map`` fills ``pixel_value``."""
+    ``class_map`` fills ``pixel_value``. A source's crosswalk is its loader's, else the one its
+    table builder binds (:func:`table_crosswalk_ids`)."""
     pixels: dict[tuple[str, str], int] = {}
     seen: dict[str, set[str]] = defaultdict(set)
     for r in label_rows:
@@ -388,9 +422,9 @@ def label_map_rows(
             ):
                 pixels.setdefault((sid, str(c["label_native"])), int(c["id"]))
     out: list[dict] = []
+    bound = table_crosswalk_ids()
     for sid in sorted(source_ids):
-        loader = registry.source(sid).loader
-        cid = loader.crosswalk_id if loader is not None else None
+        cid = source_crosswalk_id(registry, sid, bound)
         edges = registry.crosswalk(cid).edges if cid else ()
         labels = set()
         for e in edges:
@@ -538,9 +572,7 @@ def build_v11_layout(
         if images and any(r.values["source_id"] == sid for _, r in images):
             counts[sid]["configs"].add(IMAGES)
     labels = [r for c in TABLE_CONFIGS if c != "metadata" for r in tables[c]]
-    crosswalks = {
-        registry.source(s).loader.crosswalk_id for s in source_ids if registry.source(s).loader
-    }
+    crosswalks = export_crosswalk_ids(registry, source_ids)
     extra: dict[str, list[dict]] = {
         LABEL_MAP: label_map_rows(registry, source_ids, version, labels),
         SOURCES: source_rows(registry, source_ids, version, lock=lock, counts=counts),

@@ -1,11 +1,14 @@
 """G9 labelmap (v1.1.0): every class id the exported label tables carry resolves in the pinned
-taxonomy and in the per-source crosswalk, and every fidelity word is one of the four.
+taxonomy (a bare id in any of its namespaces) and in the per-source crosswalk, and every fidelity
+word is one of the four.
 
 * ``label-map`` (the exported crosswalk, one row per ``(source, native label)``): each node id
-  (``taxon`` / ``form`` / ``condition``) is a node of taxonomy ``<version>`` (a bare id is an
-  ``rs-benthic-v1`` code); a mapped row is that release's edge ``<crosswalk_id>:<native_label>``
-  with
-  the same fidelity and targets; an unmapped row is ``unmappable`` and carries no node.
+  (``taxon`` / ``form`` / ``condition``) is a node of taxonomy ``<version>``. Node keys are
+  namespaced (``rs-taxa-v1:A137039``) while edges and table rows carry bare ids, so a bare id
+  resolves in every namespace the taxonomy's node keys have; one that resolves in more than one
+  is counted as ``ambiguous_bare_ids``, not failed. A mapped row is that release's edge
+  ``<crosswalk_id>:<native_label>`` with the same fidelity and targets; an unmapped row is
+  ``unmappable`` and carries no node.
 * label tables (``points``, ``bleaching``, ``boxes``, ``semseg``, ``instances``): node ids resolve,
   ``fidelity`` (when set; always, next to a node) is one of the four words, ``taxonomy_version`` is
   the gate's release, and a row with a node names a ``(source_id, label_native)`` that ``label-map``
@@ -18,7 +21,7 @@ from __future__ import annotations
 
 import json
 import re
-from collections.abc import Iterator, Sequence
+from collections.abc import Iterable, Iterator, Mapping, Sequence
 from pathlib import Path
 
 from ..task_layers.v11_tables import FIDELITY as EDGE_FIDELITY
@@ -31,7 +34,6 @@ LABEL_MAP = "label-map"
 FIDELITIES = ("exact", "coarsened", "approximate", "unmappable")
 AXES = ("taxon_node_id", "form_node_id", "condition_node_id")
 AXIS = {"taxon_node_id": "taxon", "form_node_id": "form", "condition_node_id": "condition"}
-BENTHIC = "rs-benthic-v1"
 _MAP_COLUMNS = (
     "source_id",
     "crosswalk_id",
@@ -68,6 +70,19 @@ def load_release(version: str, root: Path | None = None) -> dict:
     return {"nodes": data["nodes"], "edges": data["edges"]}
 
 
+def node_namespaces(node_keys: Iterable[str]) -> tuple[str, ...]:
+    """The namespaces of a taxonomy's node keys (``<namespace>:<id>``), read off the keys."""
+    return tuple(sorted({key.split(":", 1)[0] for key in node_keys if ":" in key}))
+
+
+def resolve_node(ident: str, nodes: Mapping[str, object], namespaces: Sequence[str]) -> list[str]:
+    """The node keys a table id names: itself when it is a node key (a qualified id), else
+    ``<namespace>:<ident>`` for each namespace of the taxonomy that has it."""
+    if ident in nodes:
+        return [ident]
+    return [key for ns in namespaces if (key := f"{ns}:{ident}") in nodes]
+
+
 def _distinct(
     files: Sequence[Path], columns: Sequence[str]
 ) -> Iterator[tuple[Path, int, list[dict]]]:
@@ -102,14 +117,20 @@ def run_labelmap_gate(
     except (OSError, ValueError, KeyError) as exc:
         return finish(NAME, {}, [f"taxonomy {version}: release file unusable ({exc})"])
     nodes, edges = release["nodes"], release["edges"]
+    namespaces, ambiguous = node_namespaces(nodes), set()
 
     def check(where: str, row: dict, *, need_fidelity: bool) -> tuple:
         for col in AXES:
             ident = row.get(col)
-            if ident is not None and ident not in nodes and f"{BENTHIC}:{ident}" not in nodes:
+            if ident is None:
+                continue
+            keys = resolve_node(ident, nodes, namespaces)
+            if not keys:
                 out.fail(
                     "unknown_node", f"{where} {col}={ident!r} is not a node of taxonomy {version}"
                 )
+            elif len(keys) > 1:
+                ambiguous.add(ident)
         fid = row.get("fidelity")
         if (fid is not None or need_fidelity) and fid not in words:
             out.fail("bad_fidelity", f"{where} fidelity {fid!r} is not one of {sorted(words)}")
@@ -179,4 +200,9 @@ def run_labelmap_gate(
                             "label_mismatch",
                             f"{where} nodes {found} differ from {LABEL_MAP} {known}",
                         )
-    return out.result(NAME, taxonomy_version=version, mapped_labels=len(mapped))
+    return out.result(
+        NAME,
+        taxonomy_version=version,
+        mapped_labels=len(mapped),
+        ambiguous_bare_ids=len(ambiguous),
+    )

@@ -152,7 +152,7 @@ runs a subset.
 | G6 | `splits_v11` | G6 splits (v1.1.0): the split columns keep the frozen v1.0 assignment and the split policy. The one exception is a benchmark-pin override: a v1.0 group that `SPLIT_MAP.json` `pins.v1_continuity_overridden.group_ids` names may differ (a listed group that did not change fails too); any other reassignment fails `reassigned_v1`. The dHash bands are not recomputed: the v1.0 `dedup` gate covers cross-split near-duplicates. |
 | G7 | `decon` | G7 decontamination: no release image is a hackathon hidden-test or benchmark image. |
 | G8 | `privacy` | G8 privacy (v1.1.0 gate side): EXIF GPS and faces over the ``images`` config only (every new image lives there once; the v1.0 configs were checked in v1.0 and are frozen). |
-| G9 | `labelmap` | G9 labelmap (v1.1.0): every class id the exported label tables carry resolves in the pinned taxonomy and in the per-source crosswalk, and every fidelity word is one of the four. |
+| G9 | `labelmap` | G9 labelmap (v1.1.0): every class id the exported label tables carry resolves in the pinned taxonomy (a bare id in any of its namespaces) and in the per-source crosswalk, and every fidelity word is one of the four. |
 
 Exit code: 1 when a gate failed or, outside `--rehearsal`, was skipped (a gate that did not look has
 not passed); 2 on a usage error. `--rehearsal` reaches only `splits_v11` (an unsplit-only failure)
@@ -194,3 +194,14 @@ reads a human review list, `registry/privacy/review.yaml` (`--privacy-review FIL
 
 G9 reads the `labelmap` section of `registry/gates.yaml`: `taxonomy_version` (null = the current
 registry taxonomy) and `fidelities` (exact, coarsened, approximate, unmappable).
+
+G9 resolves node ids the way the registry writes them. Taxonomy node keys are namespaced
+(`rs-taxa-v1:A137039`, `rs-benthic-v1:CCA`, `rs-fauna-v1:...`) while crosswalk edges and table rows
+carry bare ids (`A137039`). A bare id resolves when `<namespace>:<id>` is a node key of the pinned
+taxonomy; the namespaces are read off the node keys, never listed in the gate. An already-qualified
+id resolves as itself. An id no namespace has fails as `unknown_node`. A bare id that resolves in
+more than one namespace does not fail; the gate counts the distinct ones under
+`counts.ambiguous_bare_ids`. A `label-map` row is compared with its release edge as written (bare
+ids on both sides), and a label table row with a node must name a `(source_id, label_native)` that a
+mapped `label-map` row carries (`unresolved_label`); the export takes a source's crosswalk from its
+registry loader, else from the table builder that wrote its rows.

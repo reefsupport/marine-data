@@ -23,7 +23,9 @@ from marinedata.hf_export_v11 import (
     export_v11,
     image_rows,
     is_v11_release,
+    label_map_rows,
     read_checksums,
+    table_crosswalk_ids,
     v1_sha256s,
 )
 from marinedata.registry import Registry
@@ -274,6 +276,41 @@ def test_label_map_carries_unmapped_labels_and_stamps_taxonomy(registry, build):
     assert {r["kind"] for r in tax} == {"node", "edge"} and all(
         r["taxonomy_version"] == TAX for r in tax
     )
+
+
+def test_label_map_has_edges_for_box_sources_whose_loader_declares_no_crosswalk(registry):
+    rows = label_map_rows(registry, ["roboflow-aquarium", "usis10k"], TAX)
+    by = {(r["source_id"], r["native_label"]): r for r in rows}
+    puffin, reefs = by[("roboflow-aquarium", "puffin")], by[("usis10k", "reefs")]
+    assert puffin["crosswalk_id"] == "roboflow-aquarium" and puffin["mapped"] is True
+    assert puffin["taxon_node_id"] == "A137039"
+    assert reefs["crosswalk_id"] == "usis-uiis" and reefs["mapped"] is True
+    assert reefs["taxon_node_id"] == "NT_REEF"
+
+
+def test_table_crosswalks_agree_with_the_loaders_that_declare_one(registry):
+    for sid, cid in table_crosswalk_ids().items():
+        loader = registry.source(sid).loader
+        assert loader is None or loader.crosswalk_id in (None, cid), sid
+
+
+def test_taxonomy_carries_the_edges_of_box_sources_whose_loader_declares_no_crosswalk(
+    registry, build
+):
+    rel, roots, _ = build
+    rows = pq.read_table(rel / "task_layers" / "metadata.parquet").to_pylist()
+    boxes = (("e", "roboflow-aquarium"), ("d", "usis10k"))
+    rows += [_meta(h * 64, sid, config="boxes") for h, sid in boxes]
+    _write(rel, "metadata", rows)
+    layout, _ = build_v11_layout(registry, rel, roots, flavour="open", skip_sha256={SKIP_IMG})
+    edges = {
+        r.values["key"]: r.values
+        for rs in layout["taxonomy"][1].values()
+        for r in rs
+        if r.values["kind"] == "edge"
+    }
+    assert json.loads(edges["roboflow-aquarium:puffin"]["targets"]) == {"taxon": "A137039"}
+    assert json.loads(edges["usis-uiis:reefs"]["targets"]) == {"taxon": "NT_REEF"}
 
 
 def test_open_tables_never_name_a_private_resource(registry, build):
