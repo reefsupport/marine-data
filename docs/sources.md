@@ -180,7 +180,7 @@
 | `roboflow-coral-bleaching-final-v6i` | Coral Bleaching Final (Roboflow v6i) | open | CC-BY-4.0 | 2,551 | image-label | v6i-image-labels-r2 | ✓ | – |
 | `roboflow-coral-bleaching-general-v1-yolov8s` | Coral Bleaching_General (Roboflow v1, YOLOv8s) | open | CC-BY-4.0 | 2,543 | image-label | v1-yolov8s-image-labels-r2 | ✓ | – |
 | `roboflow-coral-classification-copy-changed-v13i` | Coral Classification Copy -Changed- (Roboflow v13i) | open | CC-BY-4.0 | 2,789 | image-label | v13i-image-labels | ✓ | – |
-| `roboflow-coral-reef-bleach-detection-v2i` | Coral Reef Bleach Detection (Roboflow v2i) | open | CC-BY-4.0 | 10,781 | image-label | v2i-image-labels | ✓ | – |
+| `roboflow-coral-reef-bleach-detection-v2i` | Coral Reef Bleach Detection (Roboflow v2i) [EXCLUDED from v1.1.0: video-derived frames, licence not verifiable] | open | CC-BY-4.0 | 10,781 | image-label | v2i-image-labels | ✓ | – |
 | `roboflow-coral-reef-classification-v3i` | Coral Reef Classification (Roboflow v3i) | open | CC-BY-4.0 | 4,556 | image-label | v3i-image-labels | ✓ | – |
 | `rs-labelled-masks` | rs-labelled segmentation masks (RETIRED duplicate annotation set over reef_support images) | internal-only | NO-LICENCE-STATED | 63,167 | none | unversioned | – | – |
 | `ruie` | RUIE real-world underwater image enhancement benchmark | internal-only | RESEARCH-ONLY-NO-REDIST | 4,000 | — | unversioned | – | – |

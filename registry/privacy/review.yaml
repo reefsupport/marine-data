@@ -26,3 +26,84 @@ entries:
       crop), no person visible; YuNet 0.86 false positive
     reviewer: "Claude Fable 5.1 (session 4ced45c3) — pending confirmation by yrunhaar"
     reviewed_at: "2026-10-16"
+  - image_sha256: 76b4014a2e67e69e47d10908f8b7b583b28a2d1e217d162b3bcd6c8cdad6c1ee
+    verdict: cleared
+    source_id: roboflow-coral-bleaching-final-v6i
+    detector: yunet f12e12798e83
+    score: 0.86
+    reason: >-
+      contact-sheet review 2026-10-17 (seed-0 sheet of the run-3 G8 hits): rotated stock reef photo, no person visible
+    reviewer: "Claude (session 4ced45c3, 2026-10-17 contact sheet) — pending confirmation by yrunhaar"
+    reviewed_at: "2026-10-17"
+  - image_sha256: ed5ad2f1966dc7c1a50f96ada9239f32a4ca590d473982a10c78a6c32bee4c73
+    verdict: cleared
+    source_id: roboflow-coral-bleaching-general-v1-yolov8s
+    detector: yunet f12e12798e83
+    score: 0.86
+    reason: >-
+      contact-sheet review 2026-10-17 (seed-0 sheet of the run-3 G8 hits): rotated stock reef photo, no person visible
+    reviewer: "Claude (session 4ced45c3, 2026-10-17 contact sheet) — pending confirmation by yrunhaar"
+    reviewed_at: "2026-10-17"
+  - image_sha256: 391052c54ed725a4bacf5156a722ff1421a6fcc438be4f12febbb843e0a86cd2
+    verdict: cleared
+    source_id: seaview-survey-imagery
+    detector: yunet f12e12798e83
+    score: 0.85
+    reason: >-
+      contact-sheet review 2026-10-17 (seed-0 sheet of the run-3 G8 hits): survey quadrat/transect frame; the detector fired on the quadrat frame and reef texture, no person visible; score is the 0.85 gate threshold, the exact value is not in the truncated run-3 log
+    reviewer: "Claude (session 4ced45c3, 2026-10-17 contact sheet) — pending confirmation by yrunhaar"
+    reviewed_at: "2026-10-17"
+  - image_sha256: 65a7fad6400729d3e9430853f7dbbaa057c5d8f282efad20e4699a0df589035a
+    verdict: cleared
+    source_id: seaview-survey-imagery
+    detector: yunet f12e12798e83
+    score: 0.85
+    reason: >-
+      contact-sheet review 2026-10-17 (seed-0 sheet of the run-3 G8 hits): survey quadrat/transect frame; the detector fired on the quadrat frame and reef texture, no person visible; score is the 0.85 gate threshold, the exact value is not in the truncated run-3 log
+    reviewer: "Claude (session 4ced45c3, 2026-10-17 contact sheet) — pending confirmation by yrunhaar"
+    reviewed_at: "2026-10-17"
+  - image_sha256: 76690fe8c4873378bf009a92029a1d3f6a641b4ddd301cf7f4076fba58db4c78
+    verdict: cleared
+    source_id: seaview-survey-imagery
+    detector: yunet f12e12798e83
+    score: 0.85
+    reason: >-
+      contact-sheet review 2026-10-17 (seed-0 sheet of the run-3 G8 hits): survey quadrat/transect frame; the detector fired on the quadrat frame and reef texture, no person visible; score is the 0.85 gate threshold, the exact value is not in the truncated run-3 log
+    reviewer: "Claude (session 4ced45c3, 2026-10-17 contact sheet) — pending confirmation by yrunhaar"
+    reviewed_at: "2026-10-17"
+  - image_sha256: a47fe042d39a2ae3f323f148b8ba7533fed62347e054809682a93b1a5bbdefdb
+    verdict: cleared
+    source_id: seaview-survey-imagery
+    detector: yunet f12e12798e83
+    score: 0.87
+    reason: >-
+      contact-sheet review 2026-10-17 (seed-0 sheet of the run-3 G8 hits): survey quadrat/transect frame; the detector fired on the quadrat frame and reef texture, no person visible
+    reviewer: "Claude (session 4ced45c3, 2026-10-17 contact sheet) — pending confirmation by yrunhaar"
+    reviewed_at: "2026-10-17"
+  - image_sha256: b923039d16ebd66cc2e879676bdaea4e61b0db18d79cf21cafe467173b94c8bf
+    verdict: cleared
+    source_id: seaview-survey-imagery
+    detector: yunet f12e12798e83
+    score: 0.85
+    reason: >-
+      contact-sheet review 2026-10-17 (seed-0 sheet of the run-3 G8 hits): survey quadrat/transect frame; the detector fired on the quadrat frame and reef texture, no person visible; score is the 0.85 gate threshold, the exact value is not in the truncated run-3 log
+    reviewer: "Claude (session 4ced45c3, 2026-10-17 contact sheet) — pending confirmation by yrunhaar"
+    reviewed_at: "2026-10-17"
+  - image_sha256: f6ec26cc7507b12ad210f2bec1704bb2b56ee4c53ffa4042e8471cc5e58dabd4
+    verdict: cleared
+    source_id: seaview-survey-imagery
+    detector: yunet f12e12798e83
+    score: 0.85
+    reason: >-
+      contact-sheet review 2026-10-17 (seed-0 sheet of the run-3 G8 hits): survey quadrat/transect frame; the detector fired on the quadrat frame and reef texture, no person visible; score is the 0.85 gate threshold, the exact value is not in the truncated run-3 log
+    reviewer: "Claude (session 4ced45c3, 2026-10-17 contact sheet) — pending confirmation by yrunhaar"
+    reviewed_at: "2026-10-17"
+  - image_sha256: fdbf2cd56fc5d238d97fa2b7251d657be9246688f99665c54027631685ac0cb2
+    verdict: cleared
+    source_id: seaview-survey-imagery
+    detector: yunet f12e12798e83
+    score: 0.85
+    reason: >-
+      contact-sheet review 2026-10-17 (seed-0 sheet of the run-3 G8 hits): survey quadrat/transect frame; the detector fired on the quadrat frame and reef texture, no person visible; score is the 0.85 gate threshold, the exact value is not in the truncated run-3 log
+    reviewer: "Claude (session 4ced45c3, 2026-10-17 contact sheet) — pending confirmation by yrunhaar"
+    reviewed_at: "2026-10-17"

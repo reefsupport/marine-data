@@ -60,11 +60,6 @@ sources:
   root_digest: 86da47568aa97a8326169fc173573b63987c16a08c32a1f4e315c6d516a5bdfb
   n_images: 2789
   access_class: open
-- id: roboflow-coral-reef-bleach-detection-v2i
-  version: v2i-image-labels
-  root_digest: f1335a1a4b729d5273d84b605ef61aa256f3de94e6d4729131e9be900a98f340
-  n_images: 10781
-  access_class: open
 - id: roboflow-coral-reef-classification-v3i
   version: v3i-image-labels
   root_digest: 17e31b15399c46dfd9816e7ab5ad7dded9599f464db9258e83f96e16402f9655

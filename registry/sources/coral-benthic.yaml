@@ -1401,7 +1401,7 @@ sources:
     domain: coral
     access_class: open
     licence_evidence: "legacy verification record (licence-file, 2026-09-24): README.dataset.txt sidecar: 'License: CC BY 4.0' (L1 report 2026-09-19). 2026-09-19 boto3 bucket listing (v4s-open-listing.tsv): 10,786 files / 790,572,339 bytes under coral_bleaching/others/Coral Reef Bleach Detection.v2i.multiclass/."
-    name: Coral Reef Bleach Detection (Roboflow v2i)
+    name: "Coral Reef Bleach Detection (Roboflow v2i) [EXCLUDED from v1.1.0: video-derived frames, licence not verifiable]"
     # habitat inferred (WP-2b) from this source's own description/notes, not independently verified
     habitat: [coral_reef]
     version: "v2i-image-labels"
@@ -1493,7 +1493,14 @@ sources:
         `staged-tree`, mirroring v6i/v1-yolov8s (WS-D S25/S28). `CHECKSUMS.sha256`
         pinned by `checksums.root_digest` above; `shasum -c` 0 fail. UPLOADED
         2026-09-24 (WS-D S37) — see `access.notes`.
-    tags: [bleaching, roboflow]
+    # EXCLUDED FROM v1.1.0 (2026-10-17, manager decision; Yohan can veto before publish).
+    # The `release-excluded` tag below makes licence_class.release_excluded() true: this source
+    # ships in no flavour. Why: the images are augmented broadcast-video frames (news chyrons,
+    # subtitles, presenters, interviewees; a seed-0 contact-sheet review found identifiable
+    # people, and 210 of the 219 v1.1 privacy-gate hits are this source); its CC-BY-4.0 tag
+    # comes only from the Roboflow README sidecar and cannot be verified. The record, the S3
+    # tree and the checksums stay for provenance; nothing in the bucket changes.
+    tags: [bleaching, roboflow, release-excluded]
 
   - id: roboflow-coral-reef-classification-v3i
     domain: coral
