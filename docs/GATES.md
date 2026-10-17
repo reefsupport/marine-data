@@ -148,6 +148,33 @@ G7 reads `registry/benchmarks.yaml`: each `--benchmark` manifest resolves to its
 
 G7 hidden-test published exception (`--hidden-test-published-exception`, default off: any hidden-test overlap fails, as above). With the flag and the frozen v1.0 tree (`--v1-dir`; the `image_sha256` set G4 reads as `v1_reupload`), a hidden-test overlap whose digest is an `image_sha256` in that tree is exempt: the image is public already, so shipping it again publishes nothing new. The exempt overlaps are counted in `counts.hidden_test_already_published` (`hidden_test_already_published_sample` lists the first 20, and the manifest record's `already_published` and `overlap` count them; `failed` does not). Every other hidden-test overlap keeps failing: the failure line reads `hidden_test_new: N of M overlapping image(s) are not in the v1.0 tree`, `counts.hidden_test_new` holds N and the `failing` entries carry `kind: hidden_test_new`. Benchmark manifests (`route-to-our-test`, `exclude`, unknown) are judged exactly as before. The flag without a v1.0 sha256 set (no `--v1-dir`, or a tree with no `image_sha256` under `data/*/*.parquet`) fails the gate. On the release VM add the flag to `GATE_V11_ARGS`; only the `--v11` call receives it.
 
+### G6 and benchmark pins (D-STRADDLE)
+
+A benchmark pin wins over v1.0 split continuity (decision D-STRADDLE): the release's
+`SPLIT_MAP.json` moves whole near-duplicate components to the split a benchmark manifest asks for
+and records the groups it moved in `pins.v1_continuity_overridden` (`groups`, `images`,
+`by_source`, and `group_ids` up to 200 groups). Gate G6 (`splits_v11`) therefore accepts a v1.0
+image in a split v1.0 did not give it when
+
+- the map records an override and covers the image's group: it is listed in `group_ids` when the
+  record lists them, otherwise only the count is known; and
+- the build's split for the group equals the map's assignment for it (the map's `val` is
+  `validation` in the tables).
+
+These groups count in `pin_override_applied` (per source `pin_override_applied_<source>`); groups
+of a source outside `pins.benchmarks` are component-mates, which a pin moves with its component,
+and also count in `pin_override_mates`. A recorded group that did not leave its v1.0 split is a
+no-op when the map keeps it there (`pin_override_noop`; with a count-only record this is `groups`
+minus the groups seen moving) and passes. The gate fails `override_unchanged` when a pin was not
+applied (the map assigns a listed group, or a benchmark-source group, a split the build does not
+have) or when more groups moved than the record counts. Every other v1.0 image whose split
+changed still fails `reassigned_v1`, with the reason; so does every move when there is no map,
+the map is unreadable or it records no override.
+
+Caveat: a model trained on the v1.0 configs must not be evaluated on the v1.1.0 validation/test
+splits of the pinned sources (coralscapes, coralvqa, suim, uiis, uiis10k, usis10k): images it saw
+in its v1.0 training split may now sit in those splits.
+
 Not wired yet: the `release gate` CLI entry for these, G9 `labelmap`, and the G8 privacy pass scoped
 to `images`. The pinned YuNet model (`gates/yunet_model.py`) is baked into the image by the Dockerfile.
 
