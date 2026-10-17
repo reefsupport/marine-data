@@ -204,7 +204,9 @@ def build_release(
     near_dup_rows = 0
     # schema 2: images in the prior-release band, on the side their component did not keep
     band_excluded = frozenset(load_split_map(split_map_path).band_excluded)
+    phash_excluded = frozenset(load_split_map(split_map_path).phash_excluded) - band_excluded
     band_rows = 0
+    phash_rows = 0
     partial_abstain_excluded: list[PartialAbstainExclusion] = []
     task_source_exclusions: list[dict[str, str]] = []
 
@@ -254,6 +256,9 @@ def build_release(
                     continue
                 if sha256 in band_excluded:  # per image: the group keeps its split
                     band_rows += 1
+                    continue
+                if sha256 in phash_excluded:  # per image: a cross-split pHash-64 pair (schema 2)
+                    phash_rows += 1
                     continue
                 if split_name != TRAIN and sample.source_id in never_eval_sources:
                     # A never-eval-only merged component is already forced to `train`
@@ -321,6 +326,11 @@ def build_release(
         release_json["prior_band_excluded"] = {
             "count": len(band_excluded),
             "sha256": sorted(band_excluded),
+        }
+    if phash_excluded:
+        release_json["phash_excluded"] = {
+            "count": len(phash_excluded),
+            "sha256": sorted(phash_excluded),
         }
     if dedup_v2_groups is not None:
         # WP-10 split-leak gate, OFF by default: when off nothing below changes, so v1
@@ -436,6 +446,8 @@ def build_release(
         never_eval_near_dup_rows=near_dup_rows,
         prior_band_excluded=tuple(sorted(band_excluded)),
         prior_band_rows=band_rows,
+        phash_excluded=tuple(sorted(phash_excluded)),
+        phash_rows=phash_rows,
         task_layer_configs=task_layer_configs,
         staged_layers=staged_layers,
     )

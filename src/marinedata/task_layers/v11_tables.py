@@ -206,6 +206,8 @@ class V11Inputs:
     privacy_withheld: frozenset[str] = frozenset()
     """``image_sha256`` of the images the privacy review list says to withhold: dropped from every
     table, whatever their split group."""
+    phash_excluded: frozenset[str] = frozenset()
+    """The map's ``phash_excluded`` images (schema 2): no row anywhere, like the band."""
     band_excluded: frozenset[str] = frozenset()
     """``image_sha256`` of the images the split map lists under ``band_excluded`` (schema 2): a new
     image inside the prior-release near-duplicate band, on the side its component did not keep.
@@ -242,6 +244,7 @@ def inputs_from_build(
         withheld_groups=frozenset(split_map.withheld),
         privacy_withheld=frozenset(privacy_withheld),
         band_excluded=frozenset(getattr(split_map, "band_excluded", ())),
+        phash_excluded=frozenset(getattr(split_map, "phash_excluded", ())),
         near_dup_group_of=dict(near),
         allow_unsplit=allow_unsplit,
         digest=digest,
@@ -508,6 +511,7 @@ def build_v11_tables(
     withheld: set[str] = set()
     privacy: set[str] = set()
     banded_images: dict[str, set[str]] = defaultdict(set)  # source -> images the band excludes
+    phashed_images: dict[str, set[str]] = defaultdict(set)  # source -> phash_excluded images
     banded_groups: dict[str, set[str]] = defaultdict(set)  # source -> their split groups
     held_images: dict[str, set[str]] = defaultdict(set)  # source -> images of withheld groups
     held_groups: dict[str, set[str]] = defaultdict(set)  # source -> those withheld groups
@@ -523,6 +527,9 @@ def build_v11_tables(
             withheld.add(sha)
             held_images[str(row.get("source_id"))].add(sha)
             held_groups[str(row.get("source_id"))].add(held)
+            continue
+        if sha in inputs.phash_excluded:  # one image of a cross-split pHash-64 pair: no row
+            phashed_images[str(row.get("source_id"))].add(sha)
             continue
         if sha in inputs.band_excluded:  # the per-image prior-release band: no row anywhere
             source = str(row.get("source_id"))
@@ -541,7 +548,8 @@ def build_v11_tables(
     tables: dict[str, ConfigResult] = {}
     report: dict[str, Any] = {"taxonomy_version": inputs.taxonomy_version, "tables": {}}
     task_rows: Counter = Counter()
-    dropped = withheld | inputs.privacy_withheld | inputs.band_excluded  # + task rows off the spine
+    # + task rows off the spine
+    dropped = withheld | inputs.privacy_withheld | inputs.band_excluded | inputs.phash_excluded
     for cid in V11_CONFIG_IDS[1:]:
         base = results.get(cid)
         rows = base.rows if base else ()
@@ -602,6 +610,8 @@ def build_v11_tables(
         s: {"images": len(banded_images[s]), "groups": len(banded_groups[s])}
         for s in sorted(banded_images)
     }
+    report["phash_excluded_images"] = sum(len(shas) for shas in phashed_images.values())
+    report["phash_excluded_by_source"] = {s: len(phashed_images[s]) for s in sorted(phashed_images)}
     report["unsplit_images"] = len(unsplit)
     report["allow_unsplit"] = inputs.allow_unsplit
     notes = {"report": json.loads(json.dumps(report))}

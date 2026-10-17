@@ -231,6 +231,11 @@ class SplitMap:
     the near-duplicate band of a prior-release image whose split its component cannot take. Its
     group keeps its split; only this image ships in no config (release build, hf export and the
     v1.1.0 tables all drop it). Written only when set."""
+    phash_excluded: dict[str, BandHit] = field(default_factory=dict)
+    """``image_sha256`` -> ``(distance, other_sha256, other_split)`` (schema 2): one image of a DCT
+    pHash-64 pair within the gates' radius that the generator did not union (unconfirmed, between
+    multi-image groups) and that landed across splits. Its group keeps its split; only this image
+    ships in no config, exactly like ``band_excluded``. Written only when set."""
 
 
 def load_split_map(path: str | Path) -> SplitMap | None:
@@ -268,6 +273,10 @@ def load_split_map(path: str | Path) -> SplitMap | None:
             sha: (int(hit[0]), str(hit[1]), hit[2])
             for sha, hit in raw.get("band_excluded", {}).items()
         },
+        phash_excluded={
+            sha: (int(hit[0]), str(hit[1]), hit[2])
+            for sha, hit in raw.get("phash_excluded", {}).items()
+        },
     )
 
 
@@ -283,6 +292,12 @@ def save_split_map(path: str | Path, split_map: SplitMap) -> None:
             f"{split_map.schema_version}"
         )
     band = {sha: list(hit) for sha, hit in sorted(split_map.band_excluded.items())}
+    if split_map.phash_excluded and split_map.schema_version < SCHEMA_VERSION:
+        raise SplitMapError(
+            f"phash_excluded needs schema_version {SCHEMA_VERSION}, this map is "
+            f"{split_map.schema_version}"
+        )
+    phash = {sha: list(hit) for sha, hit in sorted(split_map.phash_excluded.items())}
     payload = {
         "schema_version": split_map.schema_version,
         "by": split_map.by,
@@ -298,6 +313,7 @@ def save_split_map(path: str | Path, split_map: SplitMap) -> None:
         **({"pins": dict(split_map.pins)} if split_map.pins else {}),
         **({"withheld": dict(sorted(split_map.withheld.items()))} if split_map.withheld else {}),
         **({"band_excluded": band} if band else {}),
+        **({"phash_excluded": phash} if phash else {}),
         "assignments": dict(sorted(split_map.assignments.items())),
     }
     p = Path(path)

@@ -44,6 +44,11 @@ class ReleaseResult:
     task, train included: a re-encoded twin of an evaluation image must not train."""
     never_eval_near_dup_rows: int = 0
     """Task-manifest rows those images would have contributed, summed over tasks."""
+    phash_excluded: tuple[str, ...] = ()
+    """Sorted sha256 of every image the split map's ``phash_excluded`` lists (schema 2): one
+    image of a cross-split DCT pHash-64 pair the generator did not union; it ships in no config."""
+    phash_rows: int = 0
+    """Task-manifest rows those images would have contributed, summed over tasks."""
     prior_band_excluded: tuple[str, ...] = ()
     """Sorted sha256 of every image the split map's ``band_excluded`` lists (schema 2): a new image
     inside the prior-release near-duplicate band, on the side its component did not keep. Dropped
@@ -83,6 +88,11 @@ class SplitMapStats:
     """Candidates the confirm-hash rejected: pHash-256 too far apart (different scenes)."""
     near_dup_rejected_entropy: int = 0
     """Candidates the confirm-hash rejected: a flat frame, where no hash proves anything."""
+    near_dup_phash_unioned: int = 0
+    """pHash-64 pairs unioned: confirmed by rule B's confirm-hash, or both images alone in their
+    groups (every pair when ``union_confirm`` is unset, PR #45's rule)."""
+    near_dup_phash_prior_pairs: int = 0
+    """pHash-64 pairs of two prior-release images: never unioned (their splits are frozen)."""
     near_dup_phash_pairs: int = 0
     """Eval-capable image pairs within the gates' DCT pHash-64 radius, unioned like a dHash pair
     (v1.1.0: the dedup and splits gates' near-duplicate rule)."""
@@ -102,6 +112,10 @@ class SplitMapStats:
     """Components whose prior groups the prior map had split apart (new groups withheld)."""
     inherit_band_pairs: int = 0
     """New x prior image pairs inside the near-duplicate band (5..8): never-eval / never-train."""
+    phash_excluded_images: int = 0
+    """Images the map's ``phash_excluded`` lists: one per cross-split pHash-64 pair left apart."""
+    phash_frozen_pairs: int = 0
+    """Cross-split pHash-64 pairs of two prior-release images, kept: the v1.0 configs are frozen."""
     inherit_band_excluded: int = 0
     """Images the band excludes one by one (``SPLIT_MAP.json`` ``band_excluded``, schema 2)."""
     withheld_groups: int = 0

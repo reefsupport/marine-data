@@ -55,6 +55,12 @@ UNION_CONFIRM_PHASH256_MAX = 32
 """Rule B confirm-hash: a dHash candidate is unioned only when the pair's pHash-256 (64x64 DCT,
 :mod:`marinedata.dedup.features`) differs in at most this many of 256 bits — the S3 confirm
 threshold of eval decontamination (``registry/benchmarks.yaml``, decon design §2.1)."""
+PHASH_UNION_RULE = "union_confirm or single-image groups; never prior-prior; rest phash_excluded"
+"""How ``release split-map`` treats DCT pHash-64 pairs when ``union_confirm`` is set (run 9): union
+a pair rule B's confirm-hash accepts or whose two images each sit alone in their split groups,
+never a pair of two prior-release images, and drop one image of every pair the map still ships
+across splits (the map's ``phash_excluded``)."""
+
 UNION_CONFIRM_MIN_ENTROPY_BITS = 4.0
 """...and both images carry at least this much 8-bit grey entropy (S3's low-texture guard): on a
 flat frame neither hash says anything about content."""
@@ -150,7 +156,11 @@ def near_dup_record(config: NearDupConfig) -> dict[str, object]:
             else {}
         ),
         **(
-            {"phash_algorithm": PHASH_ALGORITHM, "phash_max_hamming": config.phash_max}
+            {
+                "phash_algorithm": PHASH_ALGORITHM,
+                "phash_max_hamming": config.phash_max,
+                **({"phash_union": PHASH_UNION_RULE} if config.union_confirm is not None else {}),
+            }
             if config.phash_max is not None
             else {}
         ),

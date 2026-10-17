@@ -38,7 +38,7 @@ def _no_phash_decode(monkeypatch):  # type: ignore[no-untyped-def]
     """The staged ``.img`` files are not decodable (the test fakes their dHashes), so the gates'
     pHash rule gets no links here; ``tests/test_neardup_phash.py`` stages real images."""
     module = importlib.import_module("marinedata.release.split_map")
-    monkeypatch.setattr(module, "phash_links", lambda *args, **kwargs: [])
+    monkeypatch.setattr(module, "phash_pairs", lambda *args, **kwargs: [])
 
 
 def _rows(source_id: str) -> list:  # type: ignore[type-arg]
