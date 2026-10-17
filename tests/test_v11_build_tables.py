@@ -79,7 +79,8 @@ def test_fidelity_of_match_type() -> None:
 
 def test_metadata_row_per_image_names_the_config_holding_the_bytes(registry, tmp_path) -> None:
     roots = _stage(tmp_path, {CORAL: [(A, "g1"), (B, "g2")], OPT: [(B, "g2"), (C, "g3")]})
-    inputs = _inputs(roots, split_of={A: "train", B: "val", C: "test"})
+    v1 = {"coral-masks": {A, B}}  # the frozen v1.0 tree holds A and B; C is new
+    inputs = _inputs(roots, split_of={A: "train", B: "val", C: "test"}, v1_config_shas=v1)
     rows = {r["image_sha256"]: r for r in build_v11_tables(registry, {}, inputs)["metadata"].rows}
     assert set(rows) == {A, B, C}  # one row per image_sha256, B once
     assert rows[A]["bytes_config"] == "coral-masks"  # v1.0 images reference the frozen config
@@ -179,7 +180,7 @@ def test_semseg_rows_reference_masks_and_never_carry_bytes(registry, tmp_path) -
     out = build_v11_tables(
         registry,
         {"semseg": ConfigResult("semseg", (row,), {})},
-        _inputs(roots, split_of={A: "train"}),
+        _inputs(roots, split_of={A: "train"}, v1_config_shas={"coral-masks": {A}}),
     )
     (got,) = out["semseg"].rows
     assert set(got) >= STAMP and got["split"] == "train" and got["taxonomy_version"] == "3.0.0"

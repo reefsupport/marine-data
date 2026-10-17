@@ -6,7 +6,7 @@ import hashlib
 import json
 import re
 from collections import Counter
-from collections.abc import Iterator, Sequence
+from collections.abc import Collection, Iterator, Sequence
 from pathlib import Path
 from typing import Any
 
@@ -80,6 +80,17 @@ def v1_splits(v1_dir: Path) -> dict[str, set[str]]:
                 if sha:
                     out.setdefault(str(sha), set()).add(split)
     return out
+
+
+def v1_config_shas(v1_dir: Path, configs: Collection[str] | None = None) -> dict[str, set[str]]:
+    """``{config: {image_sha256}}`` of the frozen v1.0 tree, from
+    ``<v1_dir>/data/<config>/*.parquet`` (only ``configs`` when given): the per-config twin of
+    :func:`v1_splits`."""
+    return {
+        config: {str(sha) for sha in column_values(files, "image_sha256") if sha}
+        for config, files in config_shards(Path(v1_dir)).items()
+        if configs is None or config in configs
+    }
 
 
 def front_matter(readme: Path) -> dict:

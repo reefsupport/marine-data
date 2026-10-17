@@ -57,6 +57,7 @@ def build_release(
     v11: bool = False,
     allow_unsplit: bool = False,
     privacy_review: str | Path | None = None,
+    v1_dir: str | Path | None = None,
 ) -> ReleaseResult:
     """Build every registry task against a frozen split map and write the release.
 
@@ -78,6 +79,12 @@ def build_release(
     the frozen split map lists under ``withheld`` is known, not missing: its samples are left out of
     every task manifest and its images out of every table, counted in ``withheld_images``,
     ``withheld_groups`` and ``withheld_by_source`` (never as ``unsplit``).
+
+    ``v1_dir`` (``v11`` only): the frozen v1.0 release dir (``data/<config>/*.parquet``, as for
+    ``release gate --v11 --v1-dir``). An admitted image keeps a v1.0 ``bytes_config`` only when
+    its ``image_sha256`` is in that config; any other image, a new image of a v1.0 source
+    included, is stamped ``images`` and exported with its bytes. A lock that admits a v1.0 source
+    needs it: without it the build fails at once (``MissingV1TreeError``, naming ``--v1-dir``).
 
     ``tasks`` (WP-8c, charter D-X): ``"v1"`` (default) never touches the task-layer
     configs below and produces byte-identical output to before this parameter existed.
@@ -159,6 +166,11 @@ def build_release(
         )
     if lock is not None and (unlocked := sorted(set(admitted) - lock.source_ids())):
         raise ReleaseLockError(f"source not in the release lock: {', '.join(unlocked)}")
+    v1_config_shas = None
+    if v11:  # before any digest walk: a missing v1.0 tree must not cost a whole build
+        from ..task_layers.v11_tables import load_v1_config_shas
+
+        v1_config_shas = load_v1_config_shas(v1_dir, admitted)
     # WP-7: the label gate — 0 silent drops, >= 95% mapped (or a documented exception),
     # every canonical taxon node anchored. Skipped for in-memory registries (no root).
     unstaged = (  # flavour builds already dropped rowless sources in _skipped_sources
@@ -377,6 +389,7 @@ def build_release(
                     allow_unsplit=allow_unsplit,
                     digest=digest,
                     privacy_withheld=review.withheld,
+                    v1_config_shas=v1_config_shas,
                 )
                 # The tasklabels root holds no points / boxes / instances annotations of the
                 # staged trees: build them from the admitted roots into an overlay of that root

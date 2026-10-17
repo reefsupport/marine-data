@@ -409,6 +409,9 @@ def _cmd_release_build(args: argparse.Namespace) -> int:
     if getattr(args, "allow_unsplit", False) and not getattr(args, "v11", False):
         print("release build: --allow-unsplit needs --v11", file=sys.stderr)
         return 1
+    if getattr(args, "v1_dir", None) and not getattr(args, "v11", False):
+        print("release build: --v1-dir needs --v11", file=sys.stderr)
+        return 1
     registry = Registry.load()
     flavour = getattr(args, "flavour", None)
     if flavour is None:
@@ -553,7 +556,7 @@ def _cmd_release_build(args: argparse.Namespace) -> int:
             )
             return 1
 
-    from .task_layers.v11_tables import UnsplitImagesError
+    from .task_layers.v11_tables import MissingV1TreeError, UnsplitImagesError
 
     try:
         result = build_release(
@@ -572,6 +575,7 @@ def _cmd_release_build(args: argparse.Namespace) -> int:
             v2=args.v2,
             v11=getattr(args, "v11", False),
             allow_unsplit=getattr(args, "allow_unsplit", False),
+            v1_dir=getattr(args, "v1_dir", None),
             tasklabels_root=args.tasklabels_root,
             digest=digest,
             flavour=flavour,
@@ -581,7 +585,7 @@ def _cmd_release_build(args: argparse.Namespace) -> int:
         )
     except (
         NearDupError, DedupGateError, DeconError, ReleaseSkipError, ReleaseLockError,
-        UnsplitImagesError,
+        UnsplitImagesError, MissingV1TreeError,
     ) as exc:  # fmt: skip
         print(f"release build: {exc}", file=sys.stderr)
         return 1
@@ -773,6 +777,17 @@ def add_release_subparser(sub: argparse._SubParsersAction) -> None:
         action="store_true",
         help="(rehearsal builds only, needs --v11) keep the rows of images the split map does not "
         "cover with split = null instead of failing; V11_TABLES.json records the unsplit counts",
+    )
+    p_build.add_argument(
+        "--v1-dir",
+        dest="v1_dir",
+        default=None,
+        metavar="DIR",
+        help="(needs --v11) The frozen v1.0 release dir (data/<config>/*.parquet), the same "
+        "flag as `release gate --v11 --v1-dir`. An image keeps a v1.0 bytes_config only when its "
+        "sha is in that v1.0 config; every other image, a new image of a v1.0 source included, "
+        "is stamped `images` and exported with its bytes. Required when the lock admits a v1.0 "
+        "source",
     )
     p_build.add_argument(
         "--v2",

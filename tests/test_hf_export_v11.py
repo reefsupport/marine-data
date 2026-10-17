@@ -6,6 +6,7 @@ import hashlib
 import io
 import json
 import re
+from collections import Counter
 from pathlib import Path
 
 import pyarrow as pa
@@ -13,15 +14,19 @@ import pyarrow.parquet as pq
 import pytest
 from PIL import Image
 
+from marinedata.gates.join import run_join_gate
 from marinedata.hf_export_v11 import (
     V11ExportError,
     assert_public_safe,
     build_v11_layout,
     export_v11,
+    image_rows,
     is_v11_release,
     read_checksums,
+    v1_sha256s,
 )
 from marinedata.registry import Registry
+from marinedata.task_layers.v11_tables import V11Inputs, build_v11_tables, load_v1_config_shas
 
 TAX = "3.0.0"
 OPEN_IMG, OPEN_IMG_B, V1_IMG, SKIP_IMG, MASK_IMG, NC_IMG = (f"{i:064x}" for i in range(1, 7))
@@ -357,3 +362,75 @@ def test_run_records_the_export_counts_in_release_json(registry, build, monkeypa
         c: {s: e["rows"] for s, e in v["splits"].items()} for c, v in exported.items()
     }
     assert configs["images"] and configs["metadata"]
+
+
+# PR-2: bytes_config follows the v1.0 tree, so a new image of a v1.0 source ships its bytes
+
+OWN = "reef-support-benthic-own"
+
+
+def _shard(root: Path, config: str, rows: list[dict], schema: pa.Schema | None = None) -> None:
+    path = root / "data" / config / "train-00000-of-00001.parquet"
+    path.parent.mkdir(parents=True, exist_ok=True)
+    pq.write_table(pa.Table.from_pylist(rows, schema=schema), path)
+
+
+def _own_tree(tmp_path: Path) -> tuple[Path, dict[str, str]]:
+    """benthic-own (a v1.0 source), staged with its checksums: w1 is in the frozen v1.0
+    ``coral-masks``, w2 joined after v1.0."""
+    root = tmp_path / "cache" / OWN
+    keys = _tree(
+        root, {f"images/SEAFLOWER/{s}.JPG": f"{s}-pixels".encode() * 30 for s in ("w1", "w2")}
+    )
+    shas = {s: keys[f"images/SEAFLOWER/{s}.JPG"] for s in ("w1", "w2")}
+    rows = [
+        {
+            "sample_id": f"{OWN}/{s}", "source_id": OWN, "source_version": "2026-10-06", "stem": s,
+            "image_path": f"images/SEAFLOWER/{s}.JPG", "image_sha256": shas[s],
+            "license": "CC-BY-4.0", "split_group": f"{OWN}/SEAFLOWER", "partition": "SEAFLOWER",
+        }
+        for s in ("w1", "w2")
+    ]  # fmt: skip
+    pq.write_table(pa.Table.from_pylist(rows), root / "metadata.parquet")
+    return root, shas
+
+
+def test_a_new_image_of_a_v1_source_ships_its_bytes_and_the_join_resolves(registry, tmp_path):
+    root, shas = _own_tree(tmp_path)
+    v1 = tmp_path / "v1"
+    _shard(
+        v1, "coral-masks", [{"image_sha256": shas["w1"], "image": {"bytes": b"v1", "path": None}}]
+    )
+    inputs = V11Inputs(
+        taxonomy_version=TAX, roots={OWN: root}, split_of=dict.fromkeys(shas.values(), "train"),
+        v1_config_shas=load_v1_config_shas(v1, [OWN]),
+    )  # fmt: skip
+    meta = build_v11_tables(registry, {}, inputs)["metadata"].rows
+    config_of = {r["image_sha256"]: r["bytes_config"] for r in meta}
+    assert config_of == {shas["w1"]: "coral-masks", shas["w2"]: "images"}  # v1.0 rows untouched
+
+    stats: Counter = Counter()
+    out, bytes_sha = image_rows(meta, {OWN: root}, skip_sha256=v1_sha256s(v1), stats=stats)
+    assert [row.values["image_sha256"] for _, row in out] == [shas["w2"]]
+    assert row_bytes(out[0][1]) == b"w2-pixels" * 30 and bytes_sha == {shas["w2"]: shas["w2"]}
+    assert (stats["skipped_v1_config"], stats["skipped_v1_sha256"]) == (1, 0)
+
+    def joined(build: Path, rows: list[dict], images: list[str]):
+        _shard(build, "metadata", [{**r, "licence_class": "open"} for r in rows])
+        sha_only = pa.schema([("image_sha256", pa.string())])
+        _shard(build, "images", [{"image_sha256": s} for s in images], sha_only)
+        return run_join_gate(
+            build, v1_sha256=v1_sha256s(v1), v1_configs={"coral-masks"}
+        )  # fmt: skip
+
+    keep = ("image_sha256", "source_id", "bytes_config")
+    ok = joined(tmp_path / "ok", [{k: r[k] for k in keep} for r in meta], [shas["w2"]])
+    assert ok.passed, ok.failures
+    assert ok.counts.get("failed_unresolved", 0) == 0
+    # the old source-keyed stamp: w2 named coral-masks, which has no row for it (36 in run 3)
+    old = [{k: r[k] for k in keep} | {"bytes_config": "coral-masks"} for r in meta]
+    assert joined(tmp_path / "old", old, []).counts["failed_unresolved"] == 1
+
+
+def row_bytes(row) -> bytes:
+    return Path(row.file).read_bytes()
