@@ -11,6 +11,8 @@ A *flavour* is a release repo: ``open`` ships class ``open`` only; ``nc`` ships 
 * :func:`licence_class_of` - one licence string -> class.
 * :func:`resolve_row_class` - source class + row licence string(s) + per-row flag -> class.
 * :func:`source_class` / :func:`per_row_source` - the registry's class per source id.
+* :func:`source_families` - the registry's optional ``family`` slug per source id (the dedup
+  gate reads it; it never changes what ships).
 * :func:`flavour_filter` - keep the rows a flavour may ship.
 """
 
@@ -127,6 +129,10 @@ def collapse_aliases(ids: Iterable[str], registry_ids: Iterable[str]) -> list[st
     return sorted(set(ids) - shadowed)
 
 
+_FAMILY = re.compile(r"[a-z0-9][a-z0-9\-_]*")
+"""The slug rule of ``models.Source.family``; ``tests/test_registry_family.py`` keeps them equal."""
+
+
 def _tagged_excluded(e: dict[str, Any]) -> bool:
     measured = e.get("measured")
     return "release-excluded" in (e.get("tags") or ()) or (
@@ -157,13 +163,15 @@ def spec_for(source_id: str, root: str | Path | None = None) -> dict[str, Any] |
 
 
 def _scan(base: Path) -> dict[str, dict[str, Any]]:
-    """``{id: {"access_class", "licence_per_row", "release_excluded"}}``: registry sources, with
-    the ingest spec of the same id (or its :data:`SPEC_ALIASES` alias) winning for
+    """``{id: {"access_class", "licence_per_row", "release_excluded", "family"}}``: registry
+    sources, with the ingest spec of the same id (or its :data:`SPEC_ALIASES` alias) winning for
     ``access_class`` and ``licence_per_row`` (WP-R2: ONE licence truth). ``release_excluded`` is
     true when any entry carries the ``release-excluded`` tag or ``measured.release_excluded``
-    (U11/U15 triage): such a source ships in no flavour."""
+    (U11/U15 triage): such a source ships in no flavour. ``family`` is the entry's ``family`` slug,
+    ``None`` when it declares none or the value is not a slug (the dedup gate then stays strict)."""
     out: dict[str, dict[str, Any]] = {}
     excluded: set[str] = set()
+    families: dict[str, str] = {}
     for path in sorted((base / "sources").glob("*.yaml")):
         data = yaml.safe_load(path.read_text()) or {}
         entries = data.get("sources", [])
@@ -172,6 +180,9 @@ def _scan(base: Path) -> dict[str, dict[str, Any]]:
                 continue
             if _tagged_excluded(e):
                 excluded.add(e["id"])
+            family = e.get("family")
+            if isinstance(family, str) and _FAMILY.fullmatch(family):
+                families.setdefault(e["id"], family)
             out.setdefault(
                 e["id"],
                 {
@@ -192,7 +203,10 @@ def _scan(base: Path) -> dict[str, dict[str, Any]]:
             entry["access_class"] = coerce_class(spec["access_class"])
         if "licence_per_row" in spec:
             entry["licence_per_row"] = bool(spec["licence_per_row"])
-    return {k: {**v, "release_excluded": k in excluded} for k, v in out.items()}
+    return {
+        k: {**v, "release_excluded": k in excluded, "family": families.get(k)}
+        for k, v in out.items()
+    }
 
 
 @functools.lru_cache(maxsize=4)
@@ -219,6 +233,19 @@ def release_excluded(source_id: str, root: str | Path | None = None) -> bool:
 def per_row_source(source_id: str, root: str | Path | None = None) -> bool:
     entry = _cached(str(_registry_root(root))).get(source_id)
     return bool(entry and entry["licence_per_row"])
+
+
+def source_family(source_id: str, root: str | Path | None = None) -> str | None:
+    """The ``family`` slug the registry declares for ``source_id``, else None."""
+    entry = _cached(str(_registry_root(root))).get(source_id)
+    return entry["family"] if entry else None
+
+
+def source_families(root: str | Path | None = None) -> Mapping[str, str]:
+    """``{source id: family}`` for the registry sources that declare a family. Sources that
+    republish one upstream image set share a slug; the dedup gate reports, and does not fail,
+    their same-split near-duplicates (a pair across splits still fails)."""
+    return {k: v["family"] for k, v in _cached(str(_registry_root(root))).items() if v["family"]}
 
 
 # -- the flavour filter ----------------------------------------------------------

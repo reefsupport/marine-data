@@ -12,19 +12,29 @@ hashed twice: sha256 of the bytes and a 64-bit DCT pHash (:mod:`.phash`, stored 
 * ``dedup_report``               ``DEDUP_GATE.json`` (the WP-10 split-leak report written by
   ``release build``) is present and not ok.
 
+Sources that republish one upstream image set (the Roboflow Universe forks of one web-scraped set)
+declare the same ``family`` in the registry (:func:`marinedata.licence_class.source_families`,
+passed in as ``families``). A near pair of two sources of one family inside one split is disclosed,
+not failed: it is counted as ``near_pairs_across_sources_in_family`` and a capped sample is listed
+as ``near_pairs_across_sources_in_family_sample``. The same pair across two splits is a leak and
+still fails (``near_dup_across_splits``), as does a same-split pair whose sources share no family.
+Without ``families`` every cross-source pair fails. Exact duplicates are not affected.
+
 A build with no image bytes (tsv-only) is ``skipped`` with the reason, never passed."""
 
 from __future__ import annotations
 
 import json
 from collections import Counter, defaultdict
+from collections.abc import Mapping
 from pathlib import Path
 
-from . import GateResult, finish, skip
+from . import MAX_FAILURES, GateResult, finish, skip
 from .phash import ImageRecord, near_pairs, scan_images, write_table
 
 NAME = "dedup"
 DEFAULT_PHASH_BITS = 8
+IN_FAMILY = "near_pairs_across_sources_in_family"
 _REPORT = "DEDUP_GATE.json"
 _REPORT_LISTS = ("spanning", "upstream_test_in_train", "ungrouped")
 
@@ -43,10 +53,22 @@ def _where(r: ImageRecord) -> str:
     return f"{r.config}/{r.split} {r.image_sha256[:12]}"
 
 
+def _shared_family(a: str, b: str, families: Mapping[str, str]) -> str | None:
+    """The family both sources declare, else None (an undeclared source shares none)."""
+    family = families.get(a)
+    return family if family is not None and family == families.get(b) else None
+
+
 def run_dedup_gate(
-    build_dir: Path, *, release_dir: Path | None = None, phash_bits: int = DEFAULT_PHASH_BITS
+    build_dir: Path,
+    *,
+    release_dir: Path | None = None,
+    phash_bits: int = DEFAULT_PHASH_BITS,
+    families: Mapping[str, str] | None = None,
 ) -> GateResult:
+    """``families`` maps a source id to its registry ``family``; ``None`` or empty declares none."""
     build_dir = Path(build_dir)
+    families = families or {}
     report, report_path = _report(build_dir, release_dir)
     records = scan_images(build_dir)
     if not records:
@@ -59,6 +81,7 @@ def run_dedup_gate(
     write_table(build_dir, records)
     counts: Counter = Counter(images=len(records))
     failures: list[str] = []
+    in_family: list[str] = []
 
     def fail(kind: str, where: str, message: str) -> None:
         counts[f"failed_{kind}"] += 1
@@ -111,6 +134,14 @@ def run_dedup_gate(
         if a.split != b.split:
             kind = "near_dup_across_splits"
         elif a.source != b.source:
+            family = _shared_family(a.source, b.source, families)
+            if family is not None:
+                counts[IN_FAMILY] += 1
+                in_family.append(
+                    f"{_where(a)} near_dup_in_family: hamming {dist} <= {phash_bits} to "
+                    f"{_where(b)} ({a.source} vs {b.source}, family {family})"
+                )
+                continue
             kind = "near_dup_across_sources"
         else:
             counts["near_pairs_same_split_source"] += 1
@@ -120,6 +151,7 @@ def run_dedup_gate(
             _where(a),
             f"hamming {dist} <= {phash_bits} to {_where(b)} ({a.source} vs {b.source})",
         )
-    return finish(
-        NAME, {**counts, "phash_bits": phash_bits, "dedup_gate_json": report}, sorted(failures)
-    )
+    out = {**counts, "phash_bits": phash_bits, "dedup_gate_json": report}
+    if in_family:
+        out[f"{IN_FAMILY}_sample"] = sorted(in_family)[:MAX_FAILURES]
+    return finish(NAME, out, sorted(failures))

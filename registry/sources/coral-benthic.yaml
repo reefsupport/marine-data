@@ -1080,6 +1080,7 @@ sources:
     n_images_method: "registry-prior"
 
   - id: roboflow-coral-bleaching-final-v6i
+    family: roboflow-coral-universe
     domain: coral
     access_class: open
     licence_evidence: "legacy verification record (licence-file, 2026-09-24): README.dataset.txt sidecar: 'License: CC BY 4.0' (L1 report 2026-09-19). 2026-09-19 boto3 bucket listing (v4s-open-listing.tsv): 2,556 files / 187,249,687 bytes under coral_bleaching/others/Coral Bleaching Final.v6i.multiclass/."
@@ -1183,6 +1184,7 @@ sources:
         size_bytes: 478498
 
   - id: roboflow-coral-bleaching-general-v1-yolov8s
+    family: roboflow-coral-universe
     domain: coral
     access_class: open
     licence_evidence: "legacy verification record (licence-file, 2026-09-24): README.dataset.txt sidecar: 'License: CC BY 4.0' (L1 report 2026-09-19). 2026-09-19 boto3 bucket listing (v4s-open-listing.tsv): 2,548 files / 186,654,672 bytes under coral_bleaching/others/Coral Bleaching_General.v1-yolov8s.multiclass/."
@@ -1291,6 +1293,7 @@ sources:
         size_bytes: 477240
 
   - id: roboflow-coral-classification-copy-changed-v13i
+    family: roboflow-coral-universe
     domain: coral
     access_class: open
     licence_evidence: "legacy verification record (licence-file, 2026-09-24): README.dataset.txt sidecar: 'License: CC BY 4.0' (L1 report 2026-09-19). 2026-09-19 boto3 bucket listing (v4s-open-listing.tsv): 2,794 files / 185,563,432 bytes under 'coral_bleaching/others/Coral Classification Copy -Changed-.v13i.multiclass/'."
@@ -1503,6 +1506,7 @@ sources:
     tags: [bleaching, roboflow, release-excluded]
 
   - id: roboflow-coral-reef-classification-v3i
+    family: roboflow-coral-universe
     domain: coral
     access_class: open
     licence_evidence: "legacy verification record (licence-file, 2026-09-24): README.dataset.txt sidecar: 'License: CC BY 4.0' (L1 report 2026-09-19). 2026-09-19 boto3 bucket listing (v4s-open-listing.tsv): 4,558 files / 238,924,096 bytes under coral_bleaching/others/Coral Reef Classification.v3i.folder/."
@@ -1706,6 +1710,7 @@ sources:
     tags: [needs-permission]
 
   - id: seaview-survey-imagery
+    family: seaview-survey
     default_platform: diver-photo-quadrat
     platform_evidence: "Registry citation (González-Rivero et al. 2019) titles the set \"Seaview Survey Photo-quadrat and Image Classification Dataset\"; the diver-operated camera comes from the survey method, not a registry sentence (confirm on the data card)."
     expect_geo: required

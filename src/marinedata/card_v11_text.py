@@ -84,6 +84,13 @@ PERSONAL = (
     "carries position at the precision the source provides (`coord_precision_m`) and no source "
     "is currently flagged location-sensitive in the registry."
 )
+DEDUP_FAMILY = (
+    "Near-duplicate images inside one split that come from different Roboflow Universe forks of "
+    "one image set, or from the Seaview survey imagery and our labelled copies of its "
+    "photographs, are disclosed, not removed: the dedup gate counts them as "
+    "`near_pairs_across_sources_in_family` in `provenance/GATES.json`, and a near-duplicate "
+    "across splits still fails it."
+)
 LIMITATIONS = (
     "Coralscapes has no soft-coral or octocoral class. `label-map` records the absent classes, "
     "so a model trained on Coralscapes alone cannot predict them and cover for them is "

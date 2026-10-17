@@ -34,7 +34,12 @@ source or rows, or build the right flavour.
 Checks: sha256 of the bytes equals `image_sha256`; no exact duplicate across splits, across sources or
 inside a split; no 64-bit DCT pHash within `--phash-bits` (default 8) across splits or sources; every
 image decodes; `DEDUP_GATE.json` from `release build`, when present, is ok. Near pairs inside one
-split and one source (burst frames) are counted only. Writes `BUILD/phash.parquet`
+split and one source (burst frames) are counted only. Near pairs inside one split between two
+sources that declare the same registry `family` (`registry/sources/*.yaml`: `roboflow-coral-universe`,
+the four Roboflow Universe forks; `seaview-survey`, the Seaview survey imagery and our labels on it)
+are disclosed, not failed: `counts.near_pairs_across_sources_in_family`,
+with a capped sample in `counts.near_pairs_across_sources_in_family_sample`; across splits they still
+fail. Writes `BUILD/phash.parquet`
 (`image_sha256, config, split, source_id, phash`) for later reuse. An image-free build is `skipped`.
 Fix: remove the duplicates from the source selection and rebuild.
 `images/test 886a59f87818 near_dup_across_splits: hamming 0 <= 8 to images/train 839186194c6d (src-a vs src-a)`

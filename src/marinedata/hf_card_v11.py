@@ -390,7 +390,7 @@ def render_v11_card(
         + "\n\n### Build and gates\n\nBuilt with the " + f"[marine-data]({GITHUB}) registry; "
         "every source is admitted only after its licence is recorded, and the licence gate "
         "raises, never warns. " + lock_line + " Gate results are published as "
-        "`provenance/GATES.json`.",
+        "`provenance/GATES.json`. " + txt.DEDUP_FAMILY,
         "## Personal and sensitive information\n\n" + txt.PERSONAL,
         "## Limitations and known defects\n\n" + "\n".join(limits),
         "## Licensing\n\nThe data are not under one licence. Every row records its `licence`, "
