@@ -16,7 +16,9 @@
 * ``points`` (B1), ``bleaching`` (B2), ``boxes`` (B5, B4), ``semseg`` and ``instances`` (B3, B4):
   the existing builders' rows stamped with ``split``, ``taxonomy_version``, ``fidelity`` (the
   crosswalk fidelity of ``match_type``) and ``bytes_config`` (``mask_config`` / ``mask_ref`` on
-  masks), typed by the WP-U1 table of the same name (:mod:`marinedata.annotation_schema`).
+  masks: ``mask_config`` names the frozen v1.0 mask config only when that config holds the
+  image, else null and the export embeds the mask), typed by the WP-U1 table of the same name
+  (:mod:`marinedata.annotation_schema`).
 
 Taxonomy 3.0.0 validates a row against its stamped release, so every row of a new table carries
 ``taxonomy_version`` = the build's release; the v1.0 tables stay under 2.9.0, never rebuilt.
@@ -100,6 +102,19 @@ def bytes_config_of(
         if config is not None and sha in v1_config_shas.get(config, ()):
             return config
     return IMAGES_CONFIG
+
+
+def mask_config_of(
+    source_id: str | None, sha: str | None, v1_config_shas: Mapping[str, Collection[str]]
+) -> str | None:
+    """The frozen v1.0 mask config holding one image's mask, else ``None`` (the v1.1 export embeds
+    the mask: :func:`marinedata.hf_export_v11.palette_mask`). The mask twin of
+    :func:`bytes_config_of`: v1.0 configs never gain a row, so a mask of an image the source's v1.0
+    mask config does not hold (a new image of a v1.0 source included) is not stamped with it. Only
+    the source's own mask config counts: a mask is that source's labels, not shared pixels, so
+    another config holding the sha says nothing about it."""
+    own = MASK_CONFIG_BY_SOURCE.get(source_id or "")
+    return own if own is not None and sha in v1_config_shas.get(own, ()) else None
 
 
 def source_bytes_config(
@@ -190,7 +205,8 @@ class V11Inputs:
     table, whatever their split group."""
     v1_config_shas: Mapping[str, Collection[str]] = field(default_factory=dict)
     """``v1.0 config -> image_sha256`` of the frozen v1.0 tree (``--v1-dir``): an image keeps a v1.0
-    ``bytes_config`` only when its sha is here; every other image goes to ``images``."""
+    ``bytes_config`` only when its sha is here; every other image goes to ``images``. A mask keeps
+    its v1.0 ``mask_config`` on the same test, else the export embeds it."""
 
 
 def inputs_from_build(
@@ -466,7 +482,7 @@ def _stamp_row(config_id: str, row: Mapping[str, Any], inputs: V11Inputs, split_
         out["modality"] = _attrs(row).get("modality") or row.get("modality")
     if config_id in ("semseg", "instances"):
         # mask_config: the v1.0 config embedding this mask (null: the export embeds it)
-        out["mask_config"] = MASK_CONFIG_BY_SOURCE.get(source_id or "")
+        out["mask_config"] = mask_config_of(source_id, sha, inputs.v1_config_shas)
         out["mask_ref"] = row.get("mask_ref") or row.get("mask_key")
     if config_id == "semseg":
         out["palette"] = palette_json(row.get("hf_class_map"))
