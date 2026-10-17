@@ -197,7 +197,9 @@ def collect_rows(
     release = json.loads((release_dir / "RELEASE.json").read_text())
     split_map = release_dir / "SPLIT_MAP.json"
     excluded = frozenset(release["never_eval_near_dup_excluded"]["sha256"])
-    band_excluded = frozenset(release.get("prior_band_excluded", {}).get("sha256", ()))
+    band_excluded = frozenset(release.get("prior_band_excluded", {}).get("sha256", ())) | frozenset(
+        release.get("phash_excluded", {}).get("sha256", ())
+    )  # + one image per cross-split pHash-64 pair
     flavour = release.get("flavour")
     admitted = {sid: Path(roots[sid]) for sid in _admitted_source_ids(registry, roots, profile)}
     never_eval = _never_eval_source_ids(registry, admitted)

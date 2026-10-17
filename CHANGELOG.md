@@ -10,6 +10,14 @@ Nothing below is in a release yet. It is on `main` or on the Phase A branches na
 
 ### On main
 
+- `release split-map` confirms the gates' pHash-64 pairs before it unions them (split-map run 8). Run 8 unioned all
+  53,835 pairs within 8 bits and the chain guard refused a 1,906-image component: 19 generic look-alikes (pHash-64 at 8
+  bits, pHash-256 76 to 112 bits apart) chained NOAA site groups of up to 923 images. A pair is now unioned when rule B's
+  confirm-hash accepts it or both images sit alone in their split groups, and never when both are v1.0 images. Every
+  pair the assigned map still ships across splits loses one image (never a v1.0 one) to the new SPLIT_MAP.json
+  `phash_excluded` (`{image_sha256: [distance, other sha256, other split]}`, schema 2, additive), which `release build`
+  (RELEASE.json `phash_excluded`), `hf_export` and the v1.1.0 tables drop like `band_excluded`. On run 8's hashes the
+  largest merged component is 62 images.
 - Prior-release band is per image; `release split-map` also unions the gates' pHash rule. Run 5 withheld noaa's 26
   sites (5,793 images, 72 % of its bleached images) because a few images of each site sat 5 to 8 dHash bits from a
   v1.0 image, in a release noaa was never part of. SPLIT_MAP.json is now `schema_version` 2 and adds `band_excluded`

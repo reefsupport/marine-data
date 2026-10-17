@@ -51,9 +51,15 @@ pinned-tree fetch). Nothing here uploads except step 9 with `--go`.
      every config (RELEASE.json `prior_band_excluded {count, sha256}`), and so do `hf_export` and the v1.1.0 tables
      (`V11_TABLES.json` `band_excluded_images`, `band_excluded_by_source`). A schema-1 map still loads and has no
      `band_excluded`.
-   - `release split-map` also unions the gates' own near-duplicate rule: images within 8 bits of the DCT pHash-64
-     (`gates/phash.py`, the dedup and splits gates' radius) form one component under the dHash union's chain guard, so
-     `near_dup_across_splits` and `near_dup_leak` cannot fail across splits.
+   - `release split-map` also covers the gates' own near-duplicate rule, images within 8 bits of the DCT pHash-64
+     (`gates/phash.py`, the dedup and splits gates' radius). A pair is unioned only when rule B's confirm-hash accepts
+     it (pHash-256 <= 32 bits, grey entropy >= 4 bits) or both images sit alone in their split groups, and never when
+     both are v1.0 images (their splits are frozen); run 8 unioned every pair and the chain guard refused a 1,906-image
+     component of whole NOAA sites chained by generic look-alikes. Every pair the assigned map still ships across
+     splits loses one image, the one with the most such partners and never a v1.0 image: SPLIT_MAP.json
+     `phash_excluded` (`{image_sha256: [distance, other sha256, other split]}`, schema 2), dropped by `release build`
+     (RELEASE.json `phash_excluded {count, sha256}`), `hf_export` and the v1.1.0 tables (`phash_excluded_images`,
+     `phash_excluded_by_source`). So `near_dup_across_splits` and `near_dup_leak` cannot fail across splits.
    - OOD: the holdouts in `splits/v2.yaml` (default; `--ood-rules` overrides, `--no-ood` opts out) route matching new
      groups, and their whole component, to the extra split `test_ood`, outside the 70/15/15 quota. Rows that need
      per-image fields (geo realm/province, depth, platform, capture time) read them from `--ood-metadata`, a Parquet

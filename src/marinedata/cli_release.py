@@ -310,7 +310,9 @@ def _generate_global_split_map(
             f"release: near-dup confirm-hash candidates={stats.near_dup_candidates} "
             f"rejected_phash={stats.near_dup_rejected_phash} "
             f"rejected_entropy={stats.near_dup_rejected_entropy} "
-            f"phash_pairs={stats.near_dup_phash_pairs}"
+            f"phash_pairs={stats.near_dup_phash_pairs} "
+            f"phash_unioned={stats.near_dup_phash_unioned} "
+            f"phash_prior_pairs={stats.near_dup_phash_prior_pairs}"
         )
     if stats.pins:
         print(pins_summary(stats.pins))
@@ -324,6 +326,8 @@ def _generate_global_split_map(
             f"conflict_components={stats.inherit_conflict_components} "
             f"band_pairs={stats.inherit_band_pairs} withheld={stats.withheld_groups} "
             f"band_excluded={stats.inherit_band_excluded} "
+            f"phash_excluded={stats.phash_excluded_images} "
+            f"phash_frozen_pairs={stats.phash_frozen_pairs} "
             f"test_ood_components={stats.ood_components} test_ood_groups={stats.ood_groups} "
             f"ood_blocked={stats.ood_blocked_components}"
         )
@@ -612,6 +616,11 @@ def _cmd_release_build(args: argparse.Namespace) -> int:
         print(
             f"release build: prior_band_excluded={len(result.prior_band_excluded)} "
             f"(rows {result.prior_band_rows}) per-image prior-release band, SPLIT_MAP band_excluded"
+        )
+    if result.phash_excluded:
+        print(
+            f"release build: phash_excluded={len(result.phash_excluded)} "
+            f"(rows {result.phash_rows}) per-image cross-split pHash-64, SPLIT_MAP phash_excluded"
         )
     for task in result.tasks:
         print(f"  {task.task_id}: {len(task.rows)} images")

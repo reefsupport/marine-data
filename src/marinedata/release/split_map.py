@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from collections.abc import Callable, Iterable, Mapping
+from dataclasses import replace
 from pathlib import Path
 
 from ..benchmark_pins import (
@@ -26,9 +27,24 @@ from ..neardup import (
     near_dup_record,
     near_pairs,
 )
-from ..neardup_phash import phash_links
+from ..neardup_phash import (
+    PhashSelection,
+    phash_confirm_shas,
+    phash_exclusions,
+    phash_pairs,
+    select_phash_links,
+)
 from ..registry import Registry
-from ..splitmap import MergeInfo, SplitMap, load_split_map, resolve_splits, rows_to_counts
+from ..splitmap import (
+    SCHEMA_VERSION,
+    BandHit,
+    MergeInfo,
+    SplitMap,
+    load_split_map,
+    resolve_splits,
+    rows_to_counts,
+    save_split_map,
+)
 from ..splitmap_inherit import resolve_inherited_splits
 from ..splitmap_tree import V1Tree
 from ..splitv2.rules import RulesConfig
@@ -197,7 +213,9 @@ def generate_split_map(
         )
     )
     links: list[tuple[str, str]] = []
-    phash_pairs: list[tuple[str, str]] = []
+    phash_found: list[tuple[str, str, int]] = []
+    phash_selection: PhashSelection | None = None
+    prior_shas = frozenset(inherit_tree.splits) if inherit_tree is not None else frozenset()
     hashes: dict[str, int] = {}
     union = ConfirmedPairs(links=[], candidates=0)
     if near_dup is not None:
@@ -210,13 +228,29 @@ def generate_split_map(
         union = near_dup_links(hashes, paths, near_dup)
         links = list(union.links)
         if near_dup.phash_max is not None:  # the gates' rule: DCT pHash-64 within their radius
-            phash_pairs = phash_links(
+            phash_found = phash_pairs(
                 {sha: paths[sha] for sha in eval_shas},
                 cache_dir=near_dup.cache_dir,
                 workers=near_dup.workers,
                 max_distance=near_dup.phash_max,
             )
-            links = [*links, *phash_pairs]
+            phash_union = [(a, b) for a, b, _ in phash_found]  # #45: every pair is a link
+            if near_dup.union_confirm is not None:  # run 8: unconfirmed links chained whole sites
+                single = _single_image_shas(rows)
+                need = phash_confirm_shas(phash_found, single=single, prior=prior_shas)
+                phash_selection = select_phash_links(
+                    phash_found,
+                    features=compute_confirm_features(
+                        {sha: paths[sha] for sha in sorted(need)},
+                        cache_dir=near_dup.cache_dir,
+                        workers=near_dup.workers,
+                    ),
+                    rule=near_dup.union_confirm,
+                    single=single,
+                    prior=prior_shas,
+                )
+                phash_union = phash_selection.links
+            links = [*links, *phash_union]
     dedup_links: list[tuple[str, str]] = []
     if near_dup_groups is not None:
         dedup_links = dedup_group_links(near_dup_groups, {sha for sha, _, _ in rows})
@@ -355,6 +389,7 @@ def generate_split_map(
 
     if pins_header:
         stamp_pins(out, pins_header)
+    phash_excluded, phash_frozen = _exclude_phash_pairs(out, rows, phash_selection, prior_shas)
     return SplitMapStats(
         pins=pins_header or None,
         merged_components=merge_info.merged_components,
@@ -365,7 +400,11 @@ def generate_split_map(
         near_dup_candidates=union.candidates,
         near_dup_rejected_phash=union.rejected_phash,
         near_dup_rejected_entropy=union.rejected_entropy,
-        near_dup_phash_pairs=len(phash_pairs),
+        near_dup_phash_pairs=len(phash_found),
+        near_dup_phash_unioned=len(phash_selection.links) if phash_selection else len(phash_found),
+        near_dup_phash_prior_pairs=phash_selection.prior_pairs if phash_selection else 0,
+        phash_excluded_images=len(phash_excluded),
+        phash_frozen_pairs=phash_frozen,
         upstream_test_groups=len(test_groups),
         upstream_test_components=sum(1 for c in upstream_test_components if forced.get(c) == TEST),
         dedup_group_links=len(dedup_links),
@@ -451,3 +490,58 @@ def _never_eval_near_dups(
         {sha: hashes[sha] for sha in eval_capable},
     )
     return sorted({sha for sha, _, _ in pairs})
+
+
+def _single_image_shas(rows: list[tuple[str, str, str]]) -> frozenset[str]:
+    """Images alone in every split group they belong to: a union between two of them moves two
+    images, never a site (the pHash-64 union's second clause)."""
+    members: dict[str, set[str]] = {}
+    groups_of: dict[str, set[str]] = {}
+    for sha, group, _ in rows:
+        members.setdefault(group, set()).add(sha)
+        groups_of.setdefault(sha, set()).add(group)
+    return frozenset(
+        sha for sha, groups in groups_of.items() if all(len(members[g]) == 1 for g in groups)
+    )
+
+
+def _image_splits(
+    rows: list[tuple[str, str, str]], split_map: SplitMap
+) -> dict[str, frozenset[str]]:
+    """``image_sha256 -> the splits it ships in``: its groups' splits, unless the map withholds the
+    group or band-excludes the image."""
+    splits: dict[str, set[str]] = {}
+    for sha, group, _ in rows:
+        split = split_map.assignments.get(group)
+        if split is None or group in split_map.withheld or sha in split_map.band_excluded:
+            continue
+        splits.setdefault(sha, set()).add(split)
+    return {sha: frozenset(found) for sha, found in splits.items()}
+
+
+def _exclude_phash_pairs(
+    out: str | Path,
+    rows: list[tuple[str, str, str]],
+    selection: PhashSelection | None,
+    prior: frozenset[str],
+) -> tuple[dict[str, BandHit], int]:
+    """Drop one image of every pHash-64 pair the written map ships across splits and record it
+    under the map's ``phash_excluded`` (schema 2); one pass, see
+    :func:`~marinedata.neardup_phash.phash_exclusions`. Returns the exclusions and the count of
+    frozen prior-prior pairs."""
+    written = load_split_map(out) if selection is not None else None
+    if written is None or selection is None:
+        return {}, 0
+    excluded, frozen = phash_exclusions(
+        selection.pairs, _image_splits(rows, written), protected=prior
+    )
+    if excluded:
+        save_split_map(
+            out,
+            replace(
+                written,
+                schema_version=max(written.schema_version, SCHEMA_VERSION),
+                phash_excluded=excluded,
+            ),
+        )
+    return excluded, frozen
