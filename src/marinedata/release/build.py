@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import contextlib
 import hashlib
 import json
 from collections.abc import Callable, Iterable
@@ -359,22 +360,30 @@ def build_release(
         # INT-core3c: never the cwd — explicit root, else derived from the registry.
         base_dir = resolve_tasklabels_root(registry, tasklabels_root)
         v11_inputs = None
-        if v11:
-            from ..privacy.review import load_review
-            from ..task_layers.v11_tables import inputs_from_build
+        with contextlib.ExitStack() as scope:
+            if v11:
+                from ..privacy.review import load_review
+                from ..task_layers.staged_annotations import staged_overlay
+                from ..task_layers.v11_tables import inputs_from_build
 
-            review = load_review(privacy_review, registry_root=registry.root)
-            v11_inputs = inputs_from_build(
-                taxonomy_version=taxonomy_stamp.get("taxonomy_version"),
-                roots=admitted_roots,
-                manifests=tasks,
-                split_map=load_split_map(split_map_path),
-                dedup_groups=dedup_v2_groups,
-                allow_unsplit=allow_unsplit,
-                digest=digest,
-                privacy_withheld=review.withheld,
-            )
-        results = build_all_configs(registry, base_dir, flavour, v11=v11_inputs)
+                review = load_review(privacy_review, registry_root=registry.root)
+                v11_inputs = inputs_from_build(
+                    taxonomy_version=taxonomy_stamp.get("taxonomy_version"),
+                    roots=admitted_roots,
+                    manifests=tasks,
+                    split_map=load_split_map(split_map_path),
+                    dedup_groups=dedup_v2_groups,
+                    allow_unsplit=allow_unsplit,
+                    digest=digest,
+                    privacy_withheld=review.withheld,
+                )
+                # The tasklabels root holds no points / boxes / instances annotations of the
+                # staged trees: build them from the admitted roots into an overlay of that root
+                # (same memoised digest as the spine, so the images are hashed once).
+                base_dir = scope.enter_context(
+                    staged_overlay(registry, base_dir, admitted_roots, digest=digest)
+                ).root
+            results = build_all_configs(registry, base_dir, flavour, v11=v11_inputs)
         if v11_inputs is None:
             write_configs(results, release_root / "task_layers")
         else:
