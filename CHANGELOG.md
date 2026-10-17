@@ -10,6 +10,19 @@ Nothing below is in a release yet. It is on `main` or on the Phase A branches na
 
 ### On main
 
+- Run-6 gates: dedup confirm-hash waiver and a split ratio per stratum. Dedup: a same-split pair between sources of
+  different families at pHash-64 within `--phash-bits` is confirmed on pHash-256 (`dedup.features`) and grey entropy
+  before it fails; it is waived only when the pHash-256 distance is above 32 and both entropies reach 4.0 bits
+  (`neardup.UNION_CONFIRM_*`, the split-map rule), counted in `near_pairs_across_sources_unconfirmed` with a capped
+  sample (split, distances, entropy, the two source ids, no shas). A failing pair now carries that evidence, and
+  unreadable bytes fail closed. Splits: the ratio is judged per stratum (registry family, else source id) over the
+  distinct images of the `images` config, because the split map allocates image groups stratified by source and
+  co-assigns near-duplicate groups across a fork family; row shares and per-config image shares are reported in
+  `ratio_by_config` and never fail. Pinned benchmark sources, images with an `upstream_split` label and strata under
+  100 images (`ratio_small_strata`) are left out. `ratio_pins.sources` lists only the pinned sources that have rows in
+  the build, plus an `absent` count, so GATES.json no longer names sources the open build leaves out. Tolerance (5
+  points) and the pHash threshold are unchanged. Acceptance is a VM run: dedup failed 0 (unconfirmed 6), splits
+  failures 0.
 - `release split-map` confirms the gates' pHash-64 pairs before it unions them (split-map run 8). Run 8 unioned all
   53,835 pairs within 8 bits and the chain guard refused a 1,906-image component: 19 generic look-alikes (pHash-64 at 8
   bits, pHash-256 76 to 112 bits apart) chained NOAA site groups of up to 923 images. A pair is now unioned when rule B's

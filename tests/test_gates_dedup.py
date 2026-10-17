@@ -9,8 +9,8 @@ import pytest
 from _gates_build import Img, default_images, make_build, smooth_png
 from PIL import Image
 
-from marinedata import licence_class
-from marinedata.gates import MAX_FAILURES
+from marinedata import licence_class, neardup
+from marinedata.gates import MAX_FAILURES, dedup
 from marinedata.gates.dedup import run_dedup_gate
 from marinedata.gates.phash import phash
 from marinedata.gates.runner import run_gate
@@ -223,3 +223,118 @@ def test_a_seaview_source_shares_no_family_with_a_roboflow_fork(tmp_path):
     result = run_dedup_gate(build, families=licence_class.source_families(REGISTRY))
     assert not result.passed and _has(result, "near_dup_across_sources"), result.failures
     assert IN_FAMILY not in result.counts
+
+
+# -- confirm-hash: a pHash-64 pair at the threshold only nominates a cross-source pair ----------
+
+UNCONFIRMED = "near_pairs_across_sources_unconfirmed"
+
+
+def _unrelated_pair(split: str = "train") -> tuple[Img, Img]:
+    """Two textured scenes of two sources that no registry family joins. Their pHash-64 differ in
+    4 bits by chance (within the gate's 8) while their pHash-256 differ in 56 and each carries
+    about 7 bits of grey entropy."""
+    return Img(665, split, "src-a", group="gu1"), Img(2736, split, "src-b", group="gu2")
+
+
+def _failure(result, kind: str) -> str:
+    return next(line for line in result.failures if f"{kind}:" in line)
+
+
+def test_threshold_pair_the_confirm_hash_tells_apart_is_waived_and_counted(tmp_path):
+    a, b = _unrelated_pair()
+    result = run_dedup_gate(_build(tmp_path, a, b))
+    assert result.passed, result.failures
+    assert result.counts[UNCONFIRMED] == 1
+    assert "failed_near_dup_across_sources" not in result.counts
+    (line,) = result.to_dict()["counts"][f"{UNCONFIRMED}_sample"]
+    assert line.startswith("images/train near_dup_unconfirmed: hamming 4 <= 8, pHash-256 56 ")
+    assert line.endswith("(src-a vs src-b)")
+    assert a.digest[:12] not in line and b.digest[:12] not in line
+
+
+def test_the_waiver_is_per_pair_a_rehost_next_to_it_still_fails(tmp_path):
+    rehost = Img(665, "train", "src-b", shift=6, group="gr")  # src-a's frame, brightened, by src-b
+    result = run_dedup_gate(_build(tmp_path, *_unrelated_pair(), rehost))
+    assert not result.passed and result.counts["failed_near_dup_across_sources"] >= 1
+    assert result.counts[UNCONFIRMED] == 1
+    assert "pHash-256 0 (waiver needs > 32)" in _failure(result, "near_dup_across_sources")
+
+
+def test_rehost_at_the_threshold_fails_and_says_why(tmp_path):
+    result = run_dedup_gate(_build(tmp_path, Img(0, "train", "src-b", shift=6, group="gm")))
+    assert not result.passed and UNCONFIRMED not in result.counts
+    line = _failure(result, "near_dup_across_sources")
+    assert "(src-a vs src-b); pHash-256 " in line and "(waiver needs > 32)" in line
+
+
+@pytest.mark.parametrize(("entropy", "waived"), [(3.9, False), (4.0, True)])
+def test_a_flat_frame_is_never_waived_the_entropy_floor_is_4_bits(
+    tmp_path, monkeypatch, entropy, waived
+):
+    monkeypatch.setattr(neardup, "grey_entropy_bits", lambda image: entropy)
+    result = run_dedup_gate(_build(tmp_path, *_unrelated_pair()))
+    assert result.passed is waived, result.failures
+    if not waived:
+        assert UNCONFIRMED not in result.counts
+        assert f"min grey entropy {entropy} (needs >= 4)" in _failure(
+            result, "near_dup_across_sources"
+        )
+
+
+def test_one_flat_frame_is_enough_to_keep_the_pair_failing(tmp_path, monkeypatch):
+    a, b = _unrelated_pair()
+    calls = iter([7.0, 1.0] * 40)
+    monkeypatch.setattr(neardup, "grey_entropy_bits", lambda image: next(calls))
+    result = run_dedup_gate(_build(tmp_path, a, b))
+    assert not result.passed and _has(result, "near_dup_across_sources")
+
+
+def test_a_pair_whose_bytes_cannot_be_re_read_fails_closed(tmp_path, monkeypatch):
+    monkeypatch.setattr(dedup, "_fingerprints", lambda build_dir, wanted: {})
+    result = run_dedup_gate(_build(tmp_path, *_unrelated_pair()))
+    assert not result.passed and UNCONFIRMED not in result.counts
+    assert "confirm-hash unavailable" in _failure(result, "near_dup_across_sources")
+
+
+def test_a_threshold_pair_across_splits_is_never_waived(tmp_path):
+    a, b = Img(665, "train", "src-a", group="gu1"), Img(2736, "test", "src-b", group="gu2")
+    result = run_dedup_gate(_build(tmp_path, a, b))
+    assert not result.passed and _has(result, "near_dup_across_splits"), result.failures
+    assert UNCONFIRMED not in result.counts
+
+
+def test_unconfirmed_sample_is_capped_while_the_count_is_complete(tmp_path):
+    a = [Img(665, "train", "src-a", shift=s, group="gu1") for s in range(1, 9)]
+    b = [Img(2736, "train", "src-b", shift=s, group="gu2") for s in range(11, 19)]
+    result = run_dedup_gate(_build(tmp_path, *a, *b))
+    assert result.passed, result.failures
+    assert result.counts[UNCONFIRMED] == 64 > MAX_FAILURES
+    sample = result.counts[f"{UNCONFIRMED}_sample"]
+    assert len(sample) == MAX_FAILURES and sample == sorted(sample)
+
+
+def test_a_build_without_threshold_pairs_adds_no_unconfirmed_keys(tmp_path):
+    result = run_dedup_gate(_build(tmp_path), families=FAMILY)
+    assert result.passed and UNCONFIRMED not in result.counts
+    assert f"{UNCONFIRMED}_sample" not in result.counts
+
+
+def test_in_family_pairs_are_not_confirmed_they_stay_in_family(tmp_path):
+    a, b = _unrelated_pair()
+    result = run_dedup_gate(_build(tmp_path, a, b), families=FAMILY)
+    assert result.passed and result.counts[IN_FAMILY] == 1
+    assert UNCONFIRMED not in result.counts
+
+
+def test_fingerprints_address_rows_across_row_groups(tmp_path):
+    images = [Img(s, "train") for s in (3, 5, 8, 13, 21, 34, 55)]
+    build = make_build(tmp_path, images=images, masks=False)
+    shard = build / "data" / "images" / "train-00000-of-00001.parquet"
+    pq.write_table(pq.read_table(shard), shard, row_group_size=3)
+    assert pq.ParquetFile(shard).num_row_groups == 3  # 3 + 3 + 1 rows
+    wanted = {f"images/{shard.name}[{i}]": i for i in (0, 2, 3, 6)}
+    found = dedup._fingerprints(build, [*wanted, "images/not-a-row", "phash.parquet"])
+    assert set(found) == set(wanted)
+    for where, row in wanted.items():
+        assert found[where] == dedup._fingerprint(images[row].data)
