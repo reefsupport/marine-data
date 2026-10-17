@@ -304,6 +304,12 @@ def _hide(entry: dict, ids: Collection[str]) -> dict:
     return {k: redact(v, ids) if k in ("file", "benchmark_id") else v for k, v in entry.items()}
 
 
+def _without_sha_samples(counts: dict) -> dict:
+    """``counts`` minus every ``*_sample`` list that carries an image digest. The open flavour
+    publishes the entry: every count and ``by_split`` stays, no 64-hex string does."""
+    return {k: v for k, v in counts.items() if not (k.endswith("_sample") and _HEX.search(repr(v)))}
+
+
 def _failure(record: dict) -> str:
     where = f"{record['kind']}/{record['file']}"
     ident, policy, n = record["benchmark_id"], record["policy"], record["failed"]
@@ -418,13 +424,10 @@ def run_decon_gate(
         )
     failing = [_hide(e, redact_ids) for e in failing]
     sample = {f"{HIDDEN_PUBLISHED}_sample": [_hide(e, redact_ids) for e in exempt]}
-    return finish(
-        NAME,
-        {
-            **counts,
-            "manifests": records,
-            "failing": failing,
-            **(sample if published is not None else {}),
-        },
-        failures,
-    )
+    entry = {
+        **counts,
+        "manifests": records,
+        "failing": failing,
+        **(sample if published is not None else {}),
+    }
+    return finish(NAME, _without_sha_samples(entry) if redact_ids else entry, failures)

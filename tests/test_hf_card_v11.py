@@ -300,7 +300,8 @@ def test_the_six_lines_say_what_they_exclude_without_naming_it():
     assert "A fifth Roboflow fork is excluded from this release" in " ".join(txt.LIMITATIONS)
     assert {"A fifth Roboflow fork", "A fish-market photo source"} <= dict(txt.NOT_INCLUDED).keys()
     assert "One non-commercial source" in dict(txt.NOT_INCLUDED_OPEN)
-    assert "**Excluded:** a fifth Roboflow fork (see Excluded sources)." in txt.CHANGELOG
+    excluded = "**Excluded:** a fifth Roboflow fork, and a sixth dropped as a duplicate "
+    assert excluded + "(see Excluded sources)." in txt.CHANGELOG
 
 
 def test_the_shared_card_text_names_no_source_that_stays_out_of_the_open_release():
@@ -331,3 +332,99 @@ def test_the_open_files_are_id_free_while_the_nc_card_lists_its_own_sources(
     nc_card = (_export(registry, build, tmp_path, "nc") / "README.md").read_text()
     # the nc card does list them, so the open-flavour check above is not vacuous
     assert id_tags(nc_card, ids)
+
+
+# v1.1.0 hand-finish: the open-only statements from the chain-7 gates and the committed split map
+
+SPLIT_MAP = Path(__file__).parents[1] / "releases" / "marine-data" / "v1.1.0" / "SPLIT_MAP.json"
+OPEN_ONLY = (
+    ("Splits", "SPLITS_OPEN"),
+    ("Dataset creation", "DEDUP_OPEN"),
+    ("Personal and sensitive information", "PERSONAL_OPEN"),
+)
+
+
+def _section(readme: str, title: str) -> str:
+    return readme.split(f"\n## {title}", 1)[1].split("\n## ", 1)[0]
+
+
+def test_the_splits_counts_are_the_ones_of_the_committed_split_map():
+    smap = json.loads(SPLIT_MAP.read_text())
+    sites: dict[str, int] = {}
+    for group, split in smap["assignments"].items():
+        if group.startswith("noaa-pifsc-bleaching/"):
+            sites[split] = sites.get(split, 0) + 1
+    band, phash = len(smap["band_excluded"]), len(smap["phash_excluded"])
+    pins = smap["pins"]["v1_continuity_overridden"]["images"]
+    assert not smap.get("withheld") and not set(smap["band_excluded"]) & set(smap["phash_excluded"])
+    for needle in (
+        f"{band:,} images that sit in the prior-release near-duplicate band",
+        f"{phash:,} images that each collide on the DCT pHash-64",
+        f"these {band + phash:,} images ship in no split of any config",
+        f"overrode the v1.0 split of {pins:,} images",
+        f"its {sum(sites.values())} sites went {sites['train']} to train, {sites['val']} to "
+        f"validation and {sites['test']} to test",
+    ):
+        assert needle in txt.SPLITS_OPEN
+    assert "No group was withheld" in txt.SPLITS_OPEN
+
+
+@pytest.mark.parametrize(("title", "name"), OPEN_ONLY)
+def test_the_open_card_adds_the_gate_statements_and_the_nc_card_does_not(
+    registry, build, tmp_path, title, name
+):
+    sentence = getattr(txt, name)
+    assert sentence in _section(_card(registry, build, tmp_path / "open"), title)
+    assert sentence not in _card(registry, build, tmp_path / "nc", "nc")
+
+
+@pytest.mark.parametrize(
+    ("name", "needles"),
+    [
+        (
+            "SPLITS_OPEN",
+            (
+                "70.8 / 14.6 / 14.6 %",
+                "68.5 / 15.7 / 15.8 %",
+                "67.6 / 12.6 / 19.8 %",
+                "`points` rows are 65.2 / 12.7 / 22.1 %",
+                "`semseg` rows 74.1 / 8.9 / 16.9 %",
+            ),
+        ),
+        ("DEDUP_OPEN", ("5,201 such pairs", "A further 6 pairs", "unconfirmed`")),
+        (
+            "PERSONAL_OPEN",
+            (
+                "scanned 32,200 images",
+                "10 flagged images",
+                "none was withheld",
+                "`NT_DIVER`",
+                "7 `label-map` rows",
+                "`coralscapes`, `uiis`, `uiis10k` and `usis10k`",
+            ),
+        ),
+    ],
+)
+def test_the_gate_figures_are_the_chain_7_ones(name, needles):
+    """GATES.json of chain 7 (open): splits.ratio_strata / ratio_by_config, dedup, privacy."""
+    assert all(n in getattr(txt, name) for n in needles)
+
+
+def test_the_hidden_test_sentence_also_counts_the_images_v1_already_published(
+    registry, build, tmp_path
+):
+    limits = _limitations(_card(registry, build, tmp_path / "open", hidden_test_withheld=24))
+    assert "- 24 hidden-test images that v1.0 does not already publish" in limits
+    assert "The 1,226 hidden-test images that v1.0 already published" in limits
+
+
+def test_the_sixth_fork_the_seaview_images_and_the_namespaces_are_stated(registry, build, tmp_path):
+    assert "dropped as a duplicate" in dict(txt.NOT_INCLUDED)["A sixth Roboflow fork"]
+    for flavour in ("open", "nc"):
+        text = _card(registry, build, tmp_path / flavour, flavour)
+        assert "- **A sixth Roboflow fork**: dropped as a duplicate" in _section(
+            text, "Excluded sources"
+        )
+        seaview = "The images of `seaview-survey-imagery` are in `images` and `metadata`"
+        assert seaview in _limitations(text)
+        assert "namespaced `<source>/<id>`" in _section(text, "Splits")

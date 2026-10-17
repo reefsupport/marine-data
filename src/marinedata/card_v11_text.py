@@ -82,7 +82,9 @@ SPLITS_TEXT = (
     "(deepfish, temperate-australasia, mediterranean, a data-driven tropical province, depth "
     "of 800 m or more, platform AUV, year 2025 or later) go to `test_ood`, which is never "
     "mixed into `test`; (3) the upstream split where defined; (4) a group hash on survey, "
-    "site or quadrat, else the near-duplicate group. Images of one group share a split.\n"
+    "site or quadrat, else the near-duplicate group. Images of one group share a split. Group "
+    "keys in `SPLIT_MAP.json` are namespaced `<source>/<id>`, so equal ids in two sources are "
+    "two groups.\n"
     "\n"
     "Version 1.1.0 inherits the v1.0 splits by `image_sha256` from the published v1.0 tree, "
     "with one exception: six benchmark sources (`coralscapes`, `suim`, `uiis`, `uiis10k`, "
@@ -152,9 +154,10 @@ LIMITATIONS = (
     "in the viewer because they hold class ids, not colours (new semantic masks carry a palette).",
     "Coordinates, dates and depths are as complete as each source made them; analytics resolvers "
     "exist for a subset of the sources.",
-    "The point labels of `seaview-survey-imagery` are in `points` only and are not part of "
-    "`benthic-cover`: the cover rollup reads the original point sources, and Seaview points "
-    "stay out of it until a cover decision is made for that source.",
+    "The images of `seaview-survey-imagery` are in `images` and `metadata`, and its point "
+    "labels are in `points` only; no Seaview row is part of `benthic-cover`: the cover rollup "
+    "reads the original point sources, and Seaview points stay out of it until a cover "
+    "decision is made for that source.",
     "**Licensing and provenance caveats.** Four sources are forks of Roboflow Universe projects "
     "(`roboflow-coral-bleaching-final-v6i`, `roboflow-coral-bleaching-general-v1-yolov8s`, "
     "`roboflow-coral-classification-copy-changed-v13i`, `roboflow-coral-reef-classification-v3i`). "
@@ -168,9 +171,11 @@ LIMITATIONS = (
 )
 HIDDEN_TEST_WITHHELD = (
     "{n} hidden-test images that v1.0 does not already publish are withheld from this release: "
-    "they appear in none of its configs."
+    "they appear in none of its configs. The 1,226 hidden-test images that v1.0 already "
+    "published are not withheld: they stay in v1.0 and in the new tables."
 )
-"""Open flavour: the count is the one ``hf_export`` recorded; no digest, no benchmark name."""
+"""Open flavour: the count is the one ``hf_export`` recorded; no digest, no benchmark name. The
+1,226 is ``decon.hidden_test_already_published`` of the v1.1.0 open run (``GATES.json``)."""
 MASKS = (
     "**Masks.** A `semseg` row names a v1.0 mask config in `mask_config` when that frozen config "
     "holds the image's mask, and the mask stays there; otherwise the mask is embedded in the row "
@@ -189,6 +194,11 @@ NOT_INCLUDED = (
         "tagged release-excluded. Its images are augmented broadcast-video frames that show "
         "identifiable people, and its licence tag comes from the uploader's sidecar and cannot "
         "be verified",
+    ),
+    (
+        "A sixth Roboflow fork",
+        "dropped as a duplicate of an image set already in this release; none of its images is "
+        "included",
     ),
     (
         "A fish-market photo source",
@@ -219,6 +229,44 @@ NOT_INCLUDED_OPEN = (
 )
 """Open flavour only: the one source of the non-commercial flavour (the open card never names
 the other repository)."""
+# Open flavour only, behind the flavour switch of ``render_v11_card``: numbers of the v1.1.0 open
+# run. The card is written before the gates run, so these cannot be read from ``GATES.json``;
+# tests/test_hf_card_v11.py pins the SPLIT_MAP ones to releases/marine-data/v1.1.0/SPLIT_MAP.json.
+SPLITS_OPEN = (
+    "**Left out and overridden (v1.1.0).** No group was withheld. The split map also leaves out "
+    "215 images that sit in the prior-release near-duplicate band (dHash distance 5 to 8) of "
+    "v1.0 train and evaluation images at once (their group keeps the side with more such "
+    "neighbours) and 51 images that each collide on the DCT pHash-64 with an image of another "
+    "split (one image of the pair goes, never a v1.0 image); these 266 images ship in no "
+    "split of any config. Where a benchmark pin and v1.0 continuity disagree the pin wins, and "
+    "it resolves the near-duplicate groups that straddle v1.0 splits: the pins overrode the "
+    "v1.0 split of 4,544 images (`pins.v1_continuity_overridden` in `SPLIT_MAP.json`).\n"
+    "\n"
+    "**Ratios.** The 70/15/15 target is checked per source family, over distinct images and "
+    "within 5 points, not per config. The NOAA bleaching images, the four Roboflow Coral "
+    "Universe forks and the Seaview sources measure 70.8 / 14.6 / 14.6 %, 68.5 / 15.7 / 15.8 % "
+    "and 67.6 / 12.6 / 19.8 % (train / validation / test); pinned benchmark sources and strata "
+    "under 100 images (`roboflow-aquarium`) are left out of the check. Row shares of a config "
+    "therefore deviate, as the table shows: `points` rows are 65.2 / 12.7 / 22.1 % (its 11,356 "
+    "distinct images 67.1 / 12.8 / 20.2 %) and `semseg` rows 74.1 / 8.9 / 16.9 %. "
+    "`noaa-pifsc-bleaching` is assigned by whole site: its 236 sites went 42 to train, 97 to "
+    "validation and 97 to test, so its image shares are not its site shares."
+)
+DEDUP_OPEN = (
+    "In v1.1.0, 5,201 such pairs are disclosed. A further 6 pairs from different sources fall "
+    "within the pHash-64 threshold (8 bits) but are kept: the pHash-256 of the two images "
+    "differs by more than 32 bits and both carry at least 4 bits of grey entropy, so the gate "
+    "waives them as look-alikes and counts them as `near_pairs_across_sources_unconfirmed`."
+)
+PERSONAL_OPEN = (
+    "In v1.1.0 the privacy gate scanned 32,200 images: 10 flagged images were reviewed and "
+    "cleared as false positives, none was withheld for an identifiable person and no "
+    "unreviewed detection remains. Divers are an annotated class, kept on purpose: "
+    "`coralscapes`, `uiis`, `uiis10k` and `usis10k` label them (`human` and `human divers`, "
+    "7 `label-map` rows). No face or person identification is intended or supported. To drop "
+    "the class, filter out the rows whose `taxon_node_id` ends in `NT_DIVER` (`label-map` "
+    "lists the labels that map to it) and send its value to `255` (ignore) in the masks."
+)
 RAI = {
     "rai:dataCollection": (
         "Compiled by Reef Support from the open image datasets listed in the `sources` config. "
@@ -260,7 +308,8 @@ CHANGELOG = (
     "six benchmark sources are pinned to their upstream manifests instead, which moved some "
     "images out of v1.0 `train` into `validation` and `test`; the frozen v1.0 configs keep "
     "their v1.0 splits (see Splits).",
-    "**Excluded:** a fifth Roboflow fork (see Excluded sources).",
+    "**Excluded:** a fifth Roboflow fork, and a sixth dropped as a duplicate (see Excluded "
+    "sources).",
     "**Licences:** new Seaview rows and `metadata.license` use `CC-BY-3.0` (v1.0 rows keep "
     "`CC-BY-3.0-AU`, declared above).",
 )

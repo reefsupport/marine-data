@@ -42,7 +42,7 @@ pinned-tree fetch). Nothing here uploads except step 9 with `--go`.
      export, croissant, the configs or the stats. `V11_TABLES.json` records `withheld_images`, `withheld_groups` and
      `withheld_by_source` (`{source: {images, groups}}`); `unsplit_images` stays 0. A group in neither `assignments` nor
      `withheld` still aborts the build with `is frozen: group(s) not in the map`: regenerate the map to include it.
-     The card generator does not read `V11_TABLES.json`, so the hand-finished card states the withheld counts.
+     The card generator does not read `V11_TABLES.json`, so the hand-finished card states the withheld counts (`SPLITS_OPEN` in `card_v11_text.py`).
    - A new image 5 to 8 dHash bits from a v1.0 train image is never-eval (forced into train); one 5 to 8 bits from a v1.0
      val/test image is never-train (forced into that image's split). The band is per image since SPLIT_MAP schema 2: a
      component with hit images on both sides keeps the side with more hit images (a tie keeps train), and every hit image
@@ -241,4 +241,9 @@ uv run --frozen marinedata release croissant "$B" --release-dir "$R" --out "$B/c
   and CITATION.cff, before the card.
 - Re-run the P1.6 `card` gate on the folder afterwards; it re-reads the shards and fails if the front-matter
   counts, byte sizes or size band no longer match them.
+- The v1.1.0 hand-finish lives in `card_v11_text.py`, never in the exported README: the open flavour appends
+  `SPLITS_OPEN`, `DEDUP_OPEN` and `PERSONAL_OPEN` (chain-7 open-run numbers from `GATES.json` and `SPLIT_MAP.json`; the
+  card is written before the gates run, so it cannot read them). `tests/test_hf_card_v11.py` pins the split-map ones to
+  `releases/marine-data/v1.1.0/SPLIT_MAP.json`; a rebuild that moves a gate count must edit the text. The open
+  `GATES.json` decon entry keeps its counts and `by_split` but drops the `*_sample` lists that carry image digests.
 - Regenerate the test goldens with `UPDATE_GOLDEN=1 uv run --frozen pytest tests/test_release_card.py`.
