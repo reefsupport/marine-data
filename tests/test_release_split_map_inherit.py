@@ -6,6 +6,7 @@ bits it differs by), so a near-duplicate is exact and the images need no decodin
 from __future__ import annotations
 
 import hashlib
+import importlib
 from pathlib import Path
 from types import SimpleNamespace
 
@@ -77,6 +78,14 @@ def _relaxed_rules(tmp_path: Path) -> Path:
     path = tmp_path / "v2.yaml"
     path.write_text(text)
     return path
+
+
+@pytest.fixture(autouse=True)
+def _no_phash_decode(monkeypatch):  # type: ignore[no-untyped-def]
+    """The staged ``.img`` files are not decodable (the world fakes their dHashes), so the gates'
+    pHash rule gets no links here; ``tests/test_neardup_phash.py`` stages real images."""
+    module = importlib.import_module("marinedata.release.split_map")
+    monkeypatch.setattr(module, "phash_links", lambda *args, **kwargs: [])
 
 
 def _world(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> SimpleNamespace:
@@ -192,7 +201,11 @@ def test_inherited_map_keeps_v1_splits_groups_near_dups_and_routes_ood(
     assert len({a["new/h03"], a["new/h04"], a["new/h05"]}) == 1
     # the 5..8 band: near a train image is never-eval, near an evaluation image never-train
     assert a["new/h06"] == "train" and a["new/h07"] == "test"
-    assert "new/h08" in got.withheld and "new/h08" not in a
+    # h08's two images sit 6 bits from a train image and from an evaluation image: per image
+    # since schema 2 the group stays (a tie keeps train), only the evaluation-side hit is excluded
+    assert "new/h08" not in got.withheld and a["new/h08"] == "train"
+    ((distance, _, side),) = got.band_excluded.values()
+    assert 5 <= distance <= 8 and side != "train" and got.schema_version == 2
     # (3) the splits/v2.yaml deepfish holdout is test_ood: it outranks the upstream test split
     deep = {f"deepfish/d{i}" for i in range(4)}
     assert {g for g, s in a.items() if s == "test_ood"} == deep
@@ -209,7 +222,8 @@ def test_inherited_map_keeps_v1_splits_groups_near_dups_and_routes_ood(
         4,
         1,
     )
-    assert stats.withheld_groups == 2 and stats.inherit_band_pairs >= 4
+    assert (stats.withheld_groups, stats.inherit_band_excluded) == (1, 1)
+    assert stats.inherit_band_pairs >= 4
 
 
 def test_ood_metadata_parquet_routes_groups_to_test_ood(

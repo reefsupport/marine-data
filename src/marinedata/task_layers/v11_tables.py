@@ -31,7 +31,10 @@ an image a person withheld in ``registry/privacy/review.yaml`` (``V11Inputs.priv
 the privacy ones. A frozen build knows the split map's withheld groups (``resolve_splits`` leaves
 them out of every task manifest): the report adds ``withheld_groups`` (how many distinct groups
 the drop covered) and ``withheld_by_source`` (``{source: {images, groups}}``, by the source that
-described the image); they never count as ``unsplit``. A row of a source outside
+described the image); they never count as ``unsplit``. An image the split map lists under
+``band_excluded`` (schema 2: the per-image prior-release band; its group keeps its split) is
+dropped the same way and reported as ``band_excluded_images`` and ``band_excluded_by_source``
+(``{source: {images, groups}}``). A row of a source outside
 ``V11Inputs.roots`` (the flavour's admitted set) is dropped, so an nc source cannot reach the open
 tables through this layer.
 """
@@ -203,6 +206,11 @@ class V11Inputs:
     privacy_withheld: frozenset[str] = frozenset()
     """``image_sha256`` of the images the privacy review list says to withhold: dropped from every
     table, whatever their split group."""
+    band_excluded: frozenset[str] = frozenset()
+    """``image_sha256`` of the images the split map lists under ``band_excluded`` (schema 2): a new
+    image inside the prior-release near-duplicate band, on the side its component did not keep.
+    Dropped from every table, as ``release build`` drops it from every config; its group keeps its
+    split and the group's other images ship."""
     v1_config_shas: Mapping[str, Collection[str]] = field(default_factory=dict)
     """``v1.0 config -> image_sha256`` of the frozen v1.0 tree (``--v1-dir``): an image keeps a v1.0
     ``bytes_config`` only when its sha is here; every other image goes to ``images``. A mask keeps
@@ -233,6 +241,7 @@ def inputs_from_build(
         assignments=dict(split_map.assignments),
         withheld_groups=frozenset(split_map.withheld),
         privacy_withheld=frozenset(privacy_withheld),
+        band_excluded=frozenset(getattr(split_map, "band_excluded", ())),
         near_dup_group_of=dict(near),
         allow_unsplit=allow_unsplit,
         digest=digest,
@@ -498,6 +507,8 @@ def build_v11_tables(
     split_of = dict(inputs.split_of)
     withheld: set[str] = set()
     privacy: set[str] = set()
+    banded_images: dict[str, set[str]] = defaultdict(set)  # source -> images the band excludes
+    banded_groups: dict[str, set[str]] = defaultdict(set)  # source -> their split groups
     held_images: dict[str, set[str]] = defaultdict(set)  # source -> images of withheld groups
     held_groups: dict[str, set[str]] = defaultdict(set)  # source -> those withheld groups
     meta_rows: list[dict] = []
@@ -513,6 +524,11 @@ def build_v11_tables(
             held_images[str(row.get("source_id"))].add(sha)
             held_groups[str(row.get("source_id"))].add(held)
             continue
+        if sha in inputs.band_excluded:  # the per-image prior-release band: no row anywhere
+            source = str(row.get("source_id"))
+            banded_images[source].add(sha)
+            banded_groups[source].add(str(group or walk.get(sha) or sha))
+            continue
         split = (
             split_of.get(sha) or inputs.assignments.get(group)
             or inputs.assignments.get(walk.get(sha))
@@ -525,7 +541,7 @@ def build_v11_tables(
     tables: dict[str, ConfigResult] = {}
     report: dict[str, Any] = {"taxonomy_version": inputs.taxonomy_version, "tables": {}}
     task_rows: Counter = Counter()
-    dropped = withheld | inputs.privacy_withheld  # also a task row the spine does not hold
+    dropped = withheld | inputs.privacy_withheld | inputs.band_excluded  # + task rows off the spine
     for cid in V11_CONFIG_IDS[1:]:
         base = results.get(cid)
         rows = base.rows if base else ()
@@ -580,6 +596,11 @@ def build_v11_tables(
     report["withheld_by_source"] = {
         s: {"images": len(held_images[s]), "groups": len(held_groups[s])}
         for s in sorted(held_images)
+    }
+    report["band_excluded_images"] = sum(len(shas) for shas in banded_images.values())
+    report["band_excluded_by_source"] = {
+        s: {"images": len(banded_images[s]), "groups": len(banded_groups[s])}
+        for s in sorted(banded_images)
     }
     report["unsplit_images"] = len(unsplit)
     report["allow_unsplit"] = inputs.allow_unsplit

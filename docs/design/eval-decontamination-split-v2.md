@@ -103,10 +103,19 @@ sha256, and a "not checked" list with the reason for each benchmark. `status` �
 5. **free**: everything else → the allocator (§3.3).
 
 **Withheld (outside the pools)**: a new group that cannot be placed without contradicting a prior-release split
-(its component was split apart in the prior map, or it is a near-duplicate of both prior train and prior val/test images)
+(its component was split apart in the prior map)
 gets no `assignments` entry and is listed under the map's header `withheld`. A frozen release build treats it as known:
 never allocated or appended, its images dropped from every table and counted in `V11_TABLES.json` (`withheld_images`,
 `withheld_groups`, `withheld_by_source`), never as unsplit.
+
+**Band, per image (SPLIT_MAP schema 2)**: a new image 5 to 8 dHash bits from a prior-release image is a band hit. A
+component whose hits are all on prior train images is never-eval; all on prior val/test images, never-train. A component
+with hits on both sides keeps the side with more hit images (a tie keeps train) and excludes the other side's hit images
+one by one, as it does any image that hits both sides: `band_excluded` maps each `image_sha256` to
+`[distance, prior sha256, prior split]`, its group keeps its split, and no config, export or v1.1.0 table ships the image
+(`RELEASE.json` `prior_band_excluded`, `V11_TABLES.json` `band_excluded_by_source`). Before schema 2 such a component was
+withheld whole: run 5 lost 5,793 noaa images (26 sites, 72 % of its bleached images) to chance hits into a release noaa
+was never part of.
 
 ### 3.2 OOD holdouts (6). Rules live in `registry/splits/v2.yaml`; precedence = list order
 | # | split name | exact rule (per sample) | fallback when the field is null |

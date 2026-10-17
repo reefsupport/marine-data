@@ -18,6 +18,12 @@ silently reinterpreting or overwriting a stale map.
 
 The map is keyed by :func:`marinedata.scan.group_key`'s output alone — it carries no
 task id — so a group lands in the same split under every task that scans it.
+
+Schema 2 (inheriting maps) adds ``band_excluded``: ``{image_sha256: [distance, prior_sha256,
+prior_split]}``, the new images within the near-duplicate band of a prior-release image on the
+side of the band their component did not keep. The group keeps its split; only the listed image
+ships in no config. ``withheld`` no longer carries the band reason (it still names whole groups a
+prior split or a pin forbids). Schema-1 maps load unchanged and never carry the key.
 """
 
 from __future__ import annotations
@@ -32,7 +38,17 @@ from pathlib import Path
 from .scan import SplitName, assign_splits
 from .strata import DEFAULT_MIN_GROUPS, assign_splits_stratified
 
-SCHEMA_VERSION = 1
+BASE_SCHEMA_VERSION = 1
+"""The version of every map written without ``band_excluded``: v1.0 maps stay byte-identical."""
+SCHEMA_VERSION = 2
+"""The version an inheriting map is written under (:mod:`marinedata.splitmap_inherit`): schema 1
+plus ``band_excluded``, the images the prior-release band excludes one by one. A schema-1 file
+still loads."""
+SUPPORTED_SCHEMA_VERSIONS = (BASE_SCHEMA_VERSION, SCHEMA_VERSION)
+
+BandHit = tuple[int, str, SplitName]
+"""``(dHash Hamming distance, prior-release image_sha256, that image's prior split)``: why
+``band_excluded`` lists an image."""
 
 Row = tuple[str, str, str | None]
 """``(image_sha256, split_group, stratum)`` — one row per (image, source) pair. See
@@ -191,7 +207,7 @@ class SplitMap:
     """What the map was stratified by (e.g. ``"source"``), or ``""`` for one pool. See
     :mod:`marinedata.strata`. Written only when set, so unstratified maps keep their
     exact bytes; checked like ``by``/``seed``/``ratios`` whenever a call allocates."""
-    schema_version: int = SCHEMA_VERSION
+    schema_version: int = BASE_SCHEMA_VERSION
     near_dup: dict[str, object] = field(default_factory=dict)
     """The near-duplicate check that shaped the map (WS-D S47): dHash definition, Pillow
     version, thresholds. Written only when set, like ``stratify``."""
@@ -205,10 +221,16 @@ class SplitMap:
     """``split_group`` -> the holdout names that sent it to ``test_ood``. Written only when set."""
     withheld: dict[str, str] = field(default_factory=dict)
     """``split_group`` -> why it has no assignment: it cannot be placed without contradicting a
-    prior-release split it neighbours (GATES.json lists it). Written only when set."""
+    prior-release split (or a pin) it neighbours (GATES.json lists it). Written only when set.
+    The prior-release dHash band is per image since schema 2: see ``band_excluded``."""
     pins: dict[str, object] = field(default_factory=dict)
     """How the benchmark manifests pinned eval and held-out images (rule, per-benchmark counts,
     v1-continuity overrides); empty, and absent from the file, for a map written without pins."""
+    band_excluded: dict[str, BandHit] = field(default_factory=dict)
+    """``image_sha256`` -> ``(distance, prior_sha256, prior_split)`` (schema 2): a new image inside
+    the near-duplicate band of a prior-release image whose split its component cannot take. Its
+    group keeps its split; only this image ships in no config (release build, hf export and the
+    v1.1.0 tables all drop it). Written only when set."""
 
 
 def load_split_map(path: str | Path) -> SplitMap | None:
@@ -222,10 +244,10 @@ def load_split_map(path: str | Path) -> SplitMap | None:
         return None
     raw = json.loads(p.read_text())
     version = raw.get("schema_version")
-    if version != SCHEMA_VERSION:
+    if version not in SUPPORTED_SCHEMA_VERSIONS:
         raise SplitMapError(
             f"{p} has schema_version={version!r}, this code understands "
-            f"{SCHEMA_VERSION!r} — migrate the file before extending it."
+            f"{SUPPORTED_SCHEMA_VERSIONS!r} — migrate the file before extending it."
         )
     return SplitMap(
         by=raw["by"],
@@ -242,6 +264,10 @@ def load_split_map(path: str | Path) -> SplitMap | None:
         ood_rules={key: list(tags) for key, tags in raw.get("ood_rules", {}).items()},
         pins=dict(raw.get("pins", {})),
         withheld=dict(raw.get("withheld", {})),
+        band_excluded={
+            sha: (int(hit[0]), str(hit[1]), hit[2])
+            for sha, hit in raw.get("band_excluded", {}).items()
+        },
     )
 
 
@@ -251,6 +277,12 @@ def save_split_map(path: str | Path, split_map: SplitMap) -> None:
     Field order matches the documented format; ``ratios`` and ``assignments`` are
     written with sorted keys so two runs over the same input are byte-identical.
     """
+    if split_map.band_excluded and split_map.schema_version < SCHEMA_VERSION:
+        raise SplitMapError(
+            f"band_excluded needs schema_version {SCHEMA_VERSION}, this map is "
+            f"{split_map.schema_version}"
+        )
+    band = {sha: list(hit) for sha, hit in sorted(split_map.band_excluded.items())}
     payload = {
         "schema_version": split_map.schema_version,
         "by": split_map.by,
@@ -265,6 +297,7 @@ def save_split_map(path: str | Path, split_map: SplitMap) -> None:
         **({"ood_rules": dict(sorted(split_map.ood_rules.items()))} if split_map.ood_rules else {}),
         **({"pins": dict(split_map.pins)} if split_map.pins else {}),
         **({"withheld": dict(sorted(split_map.withheld.items()))} if split_map.withheld else {}),
+        **({"band_excluded": band} if band else {}),
         "assignments": dict(sorted(split_map.assignments.items())),
     }
     p = Path(path)
@@ -511,6 +544,8 @@ def resolve_splits(
                 ood=dict(carried.ood),
                 ood_rules={key: list(tags) for key, tags in carried.ood_rules.items()},
                 withheld=dict(carried.withheld),
+                band_excluded=dict(carried.band_excluded),
+                schema_version=carried.schema_version,  # extending a map never re-versions it
             ),
         )
 

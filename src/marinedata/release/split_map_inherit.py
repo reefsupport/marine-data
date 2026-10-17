@@ -24,7 +24,7 @@ from dataclasses import dataclass, field, replace
 
 from ..neardup import NearDupConfig, v1_band_pairs
 from ..scan import SplitName
-from ..splitmap import SplitMap, SplitMapError
+from ..splitmap import BandHit, SplitMap, SplitMapError
 from ..splitmap_inherit import band_constraints, inherit_header
 from ..splitmap_tree import TreePrior, V1Tree, straddle_block, tree_prior
 from ..splitv2.release_ood import plan_ood, release_samples
@@ -37,8 +37,10 @@ Row = tuple[str, str, str]  # image sha256, split group, source id
 class InheritPlan:
     forced: dict[str, SplitName] = field(default_factory=dict)
     """Component -> split, from the prior-release neighbour band (never-eval / never-train)."""
-    withhold: dict[str, str] = field(default_factory=dict)
-    """Component -> reason: it neighbours prior train and prior evaluation images alike."""
+    band_excluded: dict[str, BandHit] = field(default_factory=dict)
+    """Image sha256 -> ``(distance, prior sha256, prior split)``: the new images the kept side of
+    their component's band cannot hold (:func:`~marinedata.splitmap_inherit.band_constraints`).
+    Only components without a prior group are listed: the others keep their prior split whole."""
     band_pairs: int = 0
     ood: dict[str, list[str]] = field(default_factory=dict)
     """Component -> the holdout names that matched one of its groups."""
@@ -90,8 +92,8 @@ def _band(
     near_dup: NearDupConfig | None,
     unconfirmed: Sequence[tuple[str, str, int]],
     canonical: Mapping[str, str],
-) -> tuple[dict[str, SplitName], dict[str, str], int]:
-    """``(forced, withhold, pairs)`` of the band around the ``anchors`` (prior images)."""
+) -> tuple[dict[str, SplitName], dict[str, BandHit], int]:
+    """``(forced, band_excluded, pairs)`` of the band around the ``anchors`` (prior images)."""
     if near_dup is None or not anchors:
         return {}, {}, 0
     band = v1_band_pairs(
@@ -102,8 +104,8 @@ def _band(
     )
     band = sorted([*band, *unconfirmed_band_pairs(unconfirmed, anchors)])
     component_of = {sha: canonical.get(group, group) for sha, group, _ in rows}
-    forced, withhold = band_constraints(band, v1_split=anchors, component_of=component_of)
-    return forced, withhold, len(band)
+    forced, excluded = band_constraints(band, v1_split=anchors, component_of=component_of)
+    return forced, excluded, len(band)
 
 
 def plan_inheritance(
@@ -135,17 +137,18 @@ def plan_inheritance(
         raise SplitMapError("an inheriting split map needs --inherit-tree or --inherit")
     pairs = list(unconfirmed)
     band_args = {"hashes": hashes, "near_dup": near_dup, "unconfirmed": pairs}
+    component_of = {sha: canonical.get(group, group) for sha, group, _ in rows}
     forced: dict[str, SplitName] = {}
-    withhold: dict[str, str] = {}
+    excluded: dict[str, BandHit] = {}
     band_pairs = 0
     persisted: dict[str, SplitName] = {}
     touched: set[str] = set()
     tree = None
     if v1_tree is not None:
         tree = tree_prior(rows, v1_tree, canonical, prefer)
-        forced, withhold, band_pairs = _band(rows, tree.anchors, canonical=canonical, **band_args)
+        forced, excluded, band_pairs = _band(rows, tree.anchors, canonical=canonical, **band_args)
         touched = {canonical.get(g, g) for g in (*tree.groups, *tree.straddles)}
-        touched |= set(forced) | set(withhold)
+        touched |= set(forced) | {component_of[sha] for sha in excluded}
         persisted = dict(tree.groups)
     map_header: dict[str, object] = {}
     if inherit is not None:
@@ -154,11 +157,14 @@ def plan_inheritance(
         for sha, group, source in sorted(rows):
             if group in kept and source not in never_eval_sources:
                 prior_split.setdefault(sha, kept[group])
-        map_forced, map_withhold, map_pairs = _band(
+        map_forced, map_excluded, map_pairs = _band(
             rows, prior_split, canonical=canonical, **band_args
         )
         forced = {**{c: s for c, s in map_forced.items() if c not in touched}, **forced}
-        withhold = {**{c: r for c, r in map_withhold.items() if c not in touched}, **withhold}
+        excluded = {
+            **{s: h for s, h in map_excluded.items() if component_of[s] not in touched},
+            **excluded,
+        }
         band_pairs += map_pairs
         persisted = {**kept, **persisted}
         if tree is not None:
@@ -190,9 +196,13 @@ def plan_inheritance(
             release="v1.0",
             stratify="source",
         )
+    # a component with a prior group keeps that group's split whole: the band never moves it
+    prior_groups = (*persisted, *(tree.straddles if tree is not None else ()))
+    prior_components = {canonical.get(g, g) for g in prior_groups}
+    excluded = {s: h for s, h in excluded.items() if component_of[s] not in prior_components}
     return InheritPlan(
         forced=forced,
-        withhold=withhold,
+        band_excluded=excluded,
         band_pairs=band_pairs,
         ood=ood,
         ood_header=header,

@@ -309,7 +309,8 @@ def _generate_global_split_map(
         print(
             f"release: near-dup confirm-hash candidates={stats.near_dup_candidates} "
             f"rejected_phash={stats.near_dup_rejected_phash} "
-            f"rejected_entropy={stats.near_dup_rejected_entropy}"
+            f"rejected_entropy={stats.near_dup_rejected_entropy} "
+            f"phash_pairs={stats.near_dup_phash_pairs}"
         )
     if stats.pins:
         print(pins_summary(stats.pins))
@@ -322,6 +323,7 @@ def _generate_global_split_map(
             f"(kept verbatim) adopted={stats.inherit_adopted_groups} "
             f"conflict_components={stats.inherit_conflict_components} "
             f"band_pairs={stats.inherit_band_pairs} withheld={stats.withheld_groups} "
+            f"band_excluded={stats.inherit_band_excluded} "
             f"test_ood_components={stats.ood_components} test_ood_groups={stats.ood_groups} "
             f"ood_blocked={stats.ood_blocked_components}"
         )
@@ -375,8 +377,13 @@ def _cmd_release_split_map(args: argparse.Namespace) -> int:
     except (ValueError, OSError, ReleaseLockError) as exc:  # SplitMapError is a ValueError
         print(f"release split-map: {exc}", file=sys.stderr)
         return 1
+    from .gates.dedup import DEFAULT_PHASH_BITS
+
     near_dup = NearDupConfig(  # v1.1.0: rule B's dHash candidates must pass the confirm-hash
-        cache_dir=cache_root() / "_dhash", workers=default_workers(), union_confirm=UnionConfirm()
+        cache_dir=cache_root() / "_dhash",
+        workers=default_workers(),
+        union_confirm=UnionConfirm(),
+        phash_max=DEFAULT_PHASH_BITS,  # and the gates' pHash rule joins the component too
     )
     return _generate_global_split_map(
         registry,
@@ -498,10 +505,13 @@ def _cmd_release_build(args: argparse.Namespace) -> int:
             )
         return 1
 
+    from .gates.dedup import DEFAULT_PHASH_BITS
+
     near_dup = NearDupConfig(  # a --v11 map is `release split-map`'s: record its rule B
         cache_dir=cache_root() / "_dhash",
         workers=default_workers(),
         union_confirm=UnionConfirm() if getattr(args, "v11", False) else None,
+        phash_max=DEFAULT_PHASH_BITS if getattr(args, "v11", False) else None,
     )
     split_map_path = Path(args.split_map)
     split_map_exists = load_split_map(split_map_path) is not None
@@ -598,6 +608,11 @@ def _cmd_release_build(args: argparse.Namespace) -> int:
         f"never_eval_near_dup_excluded={len(result.never_eval_near_dup_excluded)} "
         f"(rows {result.never_eval_near_dup_rows}) -> {result.out_dir}"
     )
+    if result.prior_band_excluded:
+        print(
+            f"release build: prior_band_excluded={len(result.prior_band_excluded)} "
+            f"(rows {result.prior_band_rows}) per-image prior-release band, SPLIT_MAP band_excluded"
+        )
     for task in result.tasks:
         print(f"  {task.task_id}: {len(task.rows)} images")
     for task_id, reason in result.skipped_tasks:

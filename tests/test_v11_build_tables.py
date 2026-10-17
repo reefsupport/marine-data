@@ -327,3 +327,16 @@ def test_a_withheld_group_is_found_by_the_release_walk_group_too(
     assert out["metadata"].notes["report"]["withheld_by_source"] == {
         SONAR_SRC: {"images": 1, "groups": 1}
     }
+
+
+def test_band_excluded_images_leave_every_table_and_are_reported(registry, tmp_path) -> None:
+    roots = _stage(tmp_path, {SONAR_SRC: [(A, "g1"), (B, "g1"), (C, "g2")]})
+    boxes = tuple(_box(s, SONAR_SRC) for s in (A, B, C))
+    inputs = _inputs(roots, assignments={"g1": "val", "g2": "train"}, band_excluded=frozenset({B}))
+    out = build_v11_tables(registry, {"boxes": ConfigResult("boxes", boxes, {})}, inputs)
+    assert {r["image_sha256"]: r["split"] for r in out["boxes"].rows} == {A: "val", C: "train"}
+    assert B not in {r["image_sha256"] for r in out["metadata"].rows}  # g1 keeps its split, A ships
+    report = out["metadata"].notes["report"]
+    assert report["band_excluded_images"] == 1 and report["unsplit_images"] == 0
+    assert report["band_excluded_by_source"] == {SONAR_SRC: {"images": 1, "groups": 1}}
+    assert report["withheld_images"] == 0 and report["withheld_groups"] == 0
