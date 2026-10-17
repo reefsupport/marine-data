@@ -10,6 +10,18 @@ Nothing below is in a release yet. It is on `main` or on the Phase A branches na
 
 ### On main
 
+- Prior-release band is per image; `release split-map` also unions the gates' pHash rule. Run 5 withheld noaa's 26
+  sites (5,793 images, 72 % of its bleached images) because a few images of each site sat 5 to 8 dHash bits from a
+  v1.0 image, in a release noaa was never part of. SPLIT_MAP.json is now `schema_version` 2 and adds `band_excluded`
+  (`{image_sha256: [distance, v1.0 sha256, v1.0 split]}`): a component with band hits on both sides keeps the side with
+  more hit images (a tie keeps train) and only the other side's hit images are excluded; `withheld` no longer carries
+  the band reason. `release build` drops those images from every config and writes RELEASE.json `prior_band_excluded
+  {count, sha256}`; `hf_export` and the v1.1.0 tables drop them too (`V11_TABLES.json` `band_excluded_images`,
+  `band_excluded_by_source`). Schema-1 maps still load. `generate_split_map` also unions DCT pHash-64 pairs within 8
+  bits (the dedup and splits gates' rule; `NearDupConfig.phash_max`, set by `release split-map`) under the existing
+  chain guard, so `near_dup_across_splits` and `near_dup_leak` cannot fail across splits (run 5: 70 pairs). Acceptance
+  is a VM run (run 8): no group withheld for the band reason, noaa withheld at most 400 images, splits `near_dup_leak`
+  0, dedup `across_splits` 0.
 - Frozen v1.1 build places the rows of a source whose loader sets no `split_group`. `marinedata release build --tasks
   v2 --v11` aborted in `benthic-l2` with `no split_group for source(s) suim (1598 sample(s))`. `release split-map`
   groups every row through `source_release_entries` (the staged column, else the registry pattern, else the

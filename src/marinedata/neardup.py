@@ -20,6 +20,9 @@ five at distance 1 — the same photos re-encoded). This module is the perceptua
 * :func:`compute_confirm_features` / :func:`confirm_pairs` — rule B's confirm-hash
   (:class:`UnionConfirm`, v1.1.0): a dHash pair within the union radius is only a candidate;
   it is unioned when the two images' pHash-256 agree and neither is a flat frame.
+* :func:`marinedata.neardup_phash.phash_links` — the gates' own rule (``NearDupConfig.phash_max``,
+  v1.1.0): DCT pHash-64 (:func:`marinedata.gates.phash.phash`) within the dedup gate's radius,
+  so no pair the dedup and splits gates would fail can straddle splits.
 
 The thresholds are release policy (manager decision, WS-D S47), recorded verbatim in
 ``SPLIT_MAP.json`` and ``RELEASE.json`` by :func:`near_dup_record`.
@@ -35,6 +38,8 @@ from dataclasses import dataclass, field
 from pathlib import Path
 
 DHASH_ALGORITHM = "dhash-64: grayscale L, LANCZOS resize 9x8, right>left, row-major, MSB first"
+PHASH_ALGORITHM = "dct-phash-64"
+"""The gates' perceptual hash (``gates.phash.ALGORITHM``): recorded when a map unions its pairs."""
 UNION_MAX_HAMMING = 4
 """Eval-capable rows this close are one component in split-map generation (rule B)."""
 NEVER_EVAL_EXCLUDE_MAX_HAMMING = 8
@@ -98,7 +103,9 @@ class NearDupConfig:
     """Turns rules (A) and (B) on for ``generate_split_map`` / ``build_release``.
 
     ``union_confirm=None`` is the v1.0 rule B (dHash alone, the frozen v1.0 map's rule);
-    ``release split-map`` (v1.1.0) passes :class:`UnionConfirm`."""
+    ``release split-map`` (v1.1.0) passes :class:`UnionConfirm`. ``phash_max`` (v1.1.0: the dedup
+    gate's radius) also ties eval-capable images within that DCT pHash-64 distance
+    (:mod:`marinedata.neardup_phash`); ``None`` skips it."""
 
     cache_dir: Path
     union_max: int = UNION_MAX_HAMMING
@@ -106,6 +113,7 @@ class NearDupConfig:
     chain_fraction: float = CHAIN_GUARD_FRACTION
     workers: int = 1
     union_confirm: UnionConfirm | None = None
+    phash_max: int | None = None
 
 
 @dataclass(frozen=True)
@@ -139,6 +147,11 @@ def near_dup_record(config: NearDupConfig) -> dict[str, object]:
         **(
             {"union_confirm": config.union_confirm.record()}
             if config.union_confirm is not None
+            else {}
+        ),
+        **(
+            {"phash_algorithm": PHASH_ALGORITHM, "phash_max_hamming": config.phash_max}
+            if config.phash_max is not None
             else {}
         ),
     }

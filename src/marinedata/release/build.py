@@ -202,6 +202,9 @@ def build_release(
         )
     near_dup_excluded_set = frozenset(near_dup_excluded)
     near_dup_rows = 0
+    # schema 2: images in the prior-release band, on the side their component did not keep
+    band_excluded = frozenset(load_split_map(split_map_path).band_excluded)
+    band_rows = 0
     partial_abstain_excluded: list[PartialAbstainExclusion] = []
     task_source_exclusions: list[dict[str, str]] = []
 
@@ -248,6 +251,9 @@ def build_release(
                 sha256 = digest(Path(sample.image))
                 if sample.source_id in never_eval_sources and sha256 in near_dup_excluded_set:
                     near_dup_rows += 1
+                    continue
+                if sha256 in band_excluded:  # per image: the group keeps its split
+                    band_rows += 1
                     continue
                 if split_name != TRAIN and sample.source_id in never_eval_sources:
                     # A never-eval-only merged component is already forced to `train`
@@ -310,6 +316,11 @@ def build_release(
         release_json["never_eval_near_dup_excluded"] = {
             "count": len(near_dup_excluded),
             "sha256": near_dup_excluded,
+        }
+    if band_excluded:
+        release_json["prior_band_excluded"] = {
+            "count": len(band_excluded),
+            "sha256": sorted(band_excluded),
         }
     if dedup_v2_groups is not None:
         # WP-10 split-leak gate, OFF by default: when off nothing below changes, so v1
@@ -423,6 +434,8 @@ def build_release(
         partial_abstain_excluded=tuple(partial_abstain_excluded),
         never_eval_near_dup_excluded=tuple(near_dup_excluded),
         never_eval_near_dup_rows=near_dup_rows,
+        prior_band_excluded=tuple(sorted(band_excluded)),
+        prior_band_rows=band_rows,
         task_layer_configs=task_layer_configs,
         staged_layers=staged_layers,
     )

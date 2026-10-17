@@ -4,6 +4,7 @@ to ``test_ood`` outside the 70/15/15 quota."""
 from __future__ import annotations
 
 import json
+from dataclasses import replace
 from pathlib import Path
 
 import pytest
@@ -144,19 +145,72 @@ def test_ratios_must_match_and_an_existing_map_is_never_overwritten(tmp_path: Pa
         resolve_inherited_splits(out, {"a": 1}, RATIOS, **kwargs)
 
 
-def test_band_neighbours_of_prior_images_are_never_eval_never_train_or_withheld() -> None:
-    v1 = {"t1": "train", "v1": "val", "e1": "test"}
-    component_of = {"n1": "A", "n2": "B", "n3": "C"}
-    pairs = [("n1", "t1", 6), ("n2", "e1", 7), ("n2", "v1", 5), ("n3", "t1", 8), ("n3", "v1", 6)]
-    forced, withheld = band_constraints(pairs, v1_split=v1, component_of=component_of)
-    assert forced == {"A": "train", "B": "val"}  # B: the nearest evaluation image decides
-    assert list(withheld) == ["C"]
+def test_band_is_per_image_and_the_side_with_more_hit_images_stays() -> None:
+    v1 = {"t1": "train", "t2": "train", "v1": "val", "e1": "test"}
+    component_of = {
+        "n1": "A", "n2": "B", "n3": "C", "n4": "C", "n5": "C", "n6": "D", "n7": "D",
+        "n8": "E", "n9": "E", "n10": "E", "n11": "F",
+    }  # fmt: skip
+    pairs = [
+        ("n1", "t1", 6),  # A: train hits only -> never-eval
+        ("n2", "e1", 7), ("n2", "v1", 5),  # B: evaluation hits only -> the nearest decides
+        ("n3", "t1", 8), ("n4", "t2", 6), ("n5", "v1", 5),  # C: 2 train hits vs 1 val hit
+        ("n6", "t1", 7), ("n7", "v1", 6),  # D: 1 train hit vs 1 val hit: a tie keeps train
+        ("n8", "e1", 5), ("n9", "v1", 7), ("n10", "t1", 6),  # E: 2 evaluation hits vs 1 train
+        ("n11", "t1", 5), ("n11", "v1", 4),  # F: its only hit image hits both sides
+    ]  # fmt: skip
+    forced, excluded = band_constraints(pairs, v1_split=v1, component_of=component_of)
+    assert forced == {"A": "train", "B": "val", "C": "train", "D": "train", "E": "test"}
+    assert excluded == {  # image -> (distance, prior sha, prior split) on the side that left
+        "n5": (5, "v1", "val"),
+        "n7": (6, "v1", "val"),
+        "n10": (6, "t1", "train"),
+        "n11": (4, "v1", "val"),
+    }
+    assert "F" not in forced  # every hit image of F is excluded: no anchor is left to force
+
+
+def test_an_eval_only_band_component_is_forced_to_the_nearest_split_and_loses_nothing() -> None:
+    forced, excluded = band_constraints(
+        [("n1", "e1", 7), ("n2", "v1", 5), ("n2", "e1", 6)],
+        v1_split={"e1": "test", "v1": "val"},
+        component_of={"n1": "A", "n2": "A"},
+    )
+    assert forced == {"A": "val"} and excluded == {}
+
+
+def test_a_schema_1_map_loads_and_band_excluded_needs_schema_2(tmp_path: Path) -> None:
+    old = tmp_path / "old.json"
+    plain = SplitMap(by="group", seed=0, ratios=dict(RATIOS), assignments={"a": "train"})
+    save_split_map(old, plain)
+    raw = json.loads(old.read_text())
+    assert raw["schema_version"] == 1 and "band_excluded" not in raw
+    loaded = load_split_map(old)
+    assert loaded.schema_version == 1 and loaded.band_excluded == {}
+    hit = {"s": (5, "p", "val")}
+    with pytest.raises(SplitMapError, match="band_excluded needs schema_version 2"):
+        save_split_map(tmp_path / "bad.json", replace(loaded, band_excluded=hit))
+    v2 = replace(loaded, schema_version=2, band_excluded=hit)
+    save_split_map(tmp_path / "v2.json", v2)
+    assert json.loads((tmp_path / "v2.json").read_text())["band_excluded"] == {"s": [5, "p", "val"]}
+    assert load_split_map(tmp_path / "v2.json") == v2
+
+
+def test_an_inheriting_map_is_schema_2_and_lists_the_excluded_images(tmp_path: Path) -> None:
+    hit = {"s1": (5, "p", "val")}
+    result, loaded, _ = _resolve(
+        tmp_path, {"a": "train", "c": "val"}, {"a": 3, "c": 2, "n": 1}, band_excluded=hit
+    )
+    assert result.band_excluded == 1 and not loaded.withheld
+    assert loaded.schema_version == 2 and loaded.band_excluded == hit
+    raw = json.loads((tmp_path / "v11.json").read_text())
+    assert raw["band_excluded"] == {"s1": [5, "p", "val"]}
 
 
 def test_new_header_fields_round_trip_and_a_v1_map_keeps_its_exact_keys(tmp_path: Path) -> None:
     plain = SplitMap(by="group", seed=0, ratios=dict(RATIOS), assignments={"a": "train"})
     save_split_map(tmp_path / "plain.json", plain)
-    assert not {"inherits", "ood", "ood_rules", "withheld"} & set(
+    assert not {"inherits", "ood", "ood_rules", "withheld", "band_excluded"} & set(
         json.loads((tmp_path / "plain.json").read_text())
     )
     full = SplitMap(
@@ -168,6 +222,8 @@ def test_new_header_fields_round_trip_and_a_v1_map_keeps_its_exact_keys(tmp_path
         ood={"holdouts": [{"name": "h"}]},
         ood_rules={"a": ["h"]},
         withheld={"b": "why"},
+        band_excluded={"s": (5, "p", "val")},
+        schema_version=2,
     )
     save_split_map(tmp_path / "full.json", full)
     assert load_split_map(tmp_path / "full.json") == full

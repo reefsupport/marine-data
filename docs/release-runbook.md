@@ -44,7 +44,16 @@ pinned-tree fetch). Nothing here uploads except step 9 with `--go`.
      `withheld` still aborts the build with `is frozen: group(s) not in the map`: regenerate the map to include it.
      The card generator does not read `V11_TABLES.json`, so the hand-finished card states the withheld counts.
    - A new image 5 to 8 dHash bits from a v1.0 train image is never-eval (forced into train); one 5 to 8 bits from a v1.0
-     val/test image is never-train (forced into that image's split). Both at once: withheld.
+     val/test image is never-train (forced into that image's split). The band is per image since SPLIT_MAP schema 2: a
+     component with hit images on both sides keeps the side with more hit images (a tie keeps train), and every hit image
+     on the other side, or hitting both sides, is listed under `band_excluded` (`{sha256: [distance, v1.0 sha256, v1.0
+     split]}`). Its group keeps its split and the group's other images ship. `release build` drops the listed images from
+     every config (RELEASE.json `prior_band_excluded {count, sha256}`), and so do `hf_export` and the v1.1.0 tables
+     (`V11_TABLES.json` `band_excluded_images`, `band_excluded_by_source`). A schema-1 map still loads and has no
+     `band_excluded`.
+   - `release split-map` also unions the gates' own near-duplicate rule: images within 8 bits of the DCT pHash-64
+     (`gates/phash.py`, the dedup and splits gates' radius) form one component under the dHash union's chain guard, so
+     `near_dup_across_splits` and `near_dup_leak` cannot fail across splits.
    - OOD: the holdouts in `splits/v2.yaml` (default; `--ood-rules` overrides, `--no-ood` opts out) route matching new
      groups, and their whole component, to the extra split `test_ood`, outside the 70/15/15 quota. Rows that need
      per-image fields (geo realm/province, depth, platform, capture time) read them from `--ood-metadata`, a Parquet

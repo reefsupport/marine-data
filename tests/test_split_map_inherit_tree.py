@@ -118,7 +118,12 @@ def test_every_v1_image_keeps_its_split_near_copies_follow_and_the_band_holds(
     assert a["deepfish/d0"] == "train"  # an upstream-test group v1.0 trained on stays train
     assert a["new/h00"] == "val" and a["new/h01"] == "test"  # same bytes / dHash <= 4 copy
     assert a["new/h06"] == "train" and a["new/h07"] == "test"  # band 5-8: never-eval / -train
-    assert {"new/h02", "new/h08", "old/g10"} <= set(got.withheld) and "old/g10" not in a
+    assert {"new/h02", "old/g10"} <= set(got.withheld) and "old/g10" not in a
+    # new/h08 sits 6 bits from a v1.0 train image and a v1.0 evaluation image: per image (schema 2)
+    # the group stays and only one hit ships nowhere
+    assert "new/h08" not in got.withheld and a["new/h08"] == "train"
+    assert len(got.band_excluded) == 1 and got.schema_version == 2
+    assert set(got.band_excluded) <= {_sha("new-h08-a"), _sha("new-h08-b")}
     straddles = got.inherits["v1_tree"]["straddles"]
     assert straddles == {
         "components": 1,

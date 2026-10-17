@@ -254,3 +254,33 @@ def test_never_eval_twin_is_dropped_from_every_split(tmp_path: Path) -> None:
     release_json = json.loads((result.out_dir / "RELEASE.json").read_text())
     assert release_json["never_eval_near_dup_excluded"] == {"count": 1, "sha256": [twin_sha]}
     assert release_json["near_dup"]["pil_version"] == pil_version()
+
+
+def test_band_excluded_images_are_dropped_from_every_split_and_recorded(tmp_path: Path) -> None:
+    keep, drop = _encode(_picture(1), "PNG"), _encode(_picture(2), "PNG")
+    root = _stage(tmp_path / "real", [("k", "real/keep", keep), ("d", "real/drop", drop)])
+    registry = _registry({"real-src": _source("real-src")})
+    keep_sha, drop_sha = hashlib.sha256(keep).hexdigest(), hashlib.sha256(drop).hexdigest()
+    split_map = tmp_path / "SPLIT_MAP.json"
+    save_split_map(
+        split_map,
+        SplitMap(
+            by="group",
+            seed=0,
+            ratios={"train": 0.7, "val": 0.15, "test": 0.15},
+            assignments={"real/keep": "train", "real/drop": "val"},
+            band_excluded={drop_sha: (6, "p" * 64, "train")},  # per image: schema 2
+            schema_version=2,
+        ),
+    )
+    result = build_release(
+        registry,
+        release="r48",
+        split_map=split_map,
+        out_dir=tmp_path / "out",
+        roots={"real-src": root},
+    )
+    assert {sha for sha, _ in result.tasks[0].rows} == {keep_sha}  # its group keeps its split
+    assert result.prior_band_excluded == (drop_sha,) and result.prior_band_rows == 1
+    release_json = json.loads((result.out_dir / "RELEASE.json").read_text())
+    assert release_json["prior_band_excluded"] == {"count": 1, "sha256": [drop_sha]}

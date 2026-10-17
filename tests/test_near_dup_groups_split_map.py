@@ -8,6 +8,7 @@ flavour builds finds no spanning group, and ``release split-map`` refuses to run
 from __future__ import annotations
 
 import hashlib
+import importlib
 from pathlib import Path
 
 import pytest
@@ -25,6 +26,14 @@ pa = pytest.importorskip("pyarrow")
 
 OPEN_IMG = b"near-dup-image-in-the-open-source"
 NC_IMG = b"near-dup-image-in-the-nc-source-reencoded"
+
+
+@pytest.fixture(autouse=True)
+def _no_phash_decode(monkeypatch):  # type: ignore[no-untyped-def]
+    """The staged ``.img`` files are not decodable (the test fakes their dHashes), so the gates'
+    pHash rule gets no links here; ``tests/test_neardup_phash.py`` stages real images."""
+    module = importlib.import_module("marinedata.release.split_map")
+    monkeypatch.setattr(module, "phash_links", lambda *args, **kwargs: [])
 
 
 def _sha(data: bytes) -> str:

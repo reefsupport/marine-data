@@ -26,6 +26,7 @@ from ..neardup import (
     near_dup_record,
     near_pairs,
 )
+from ..neardup_phash import phash_links
 from ..registry import Registry
 from ..splitmap import MergeInfo, SplitMap, load_split_map, resolve_splits, rows_to_counts
 from ..splitmap_inherit import resolve_inherited_splits
@@ -196,6 +197,7 @@ def generate_split_map(
         )
     )
     links: list[tuple[str, str]] = []
+    phash_pairs: list[tuple[str, str]] = []
     hashes: dict[str, int] = {}
     union = ConfirmedPairs(links=[], candidates=0)
     if near_dup is not None:
@@ -207,6 +209,14 @@ def generate_split_map(
         )
         union = near_dup_links(hashes, paths, near_dup)
         links = list(union.links)
+        if near_dup.phash_max is not None:  # the gates' rule: DCT pHash-64 within their radius
+            phash_pairs = phash_links(
+                {sha: paths[sha] for sha in eval_shas},
+                cache_dir=near_dup.cache_dir,
+                workers=near_dup.workers,
+                max_distance=near_dup.phash_max,
+            )
+            links = [*links, *phash_pairs]
     dedup_links: list[tuple[str, str]] = []
     if near_dup_groups is not None:
         dedup_links = dedup_group_links(near_dup_groups, {sha for sha, _, _ in rows})
@@ -321,7 +331,8 @@ def generate_split_map(
             release=release,
             min_groups=min_groups,
             forced=forced,
-            withhold={**plan.withhold, **pin_withheld},
+            withhold=pin_withheld,
+            band_excluded=plan.band_excluded,
             ood=plan.ood,
             ood_header=plan.ood_header,
             near_dup=near_dup_value or None,
@@ -354,6 +365,7 @@ def generate_split_map(
         near_dup_candidates=union.candidates,
         near_dup_rejected_phash=union.rejected_phash,
         near_dup_rejected_entropy=union.rejected_entropy,
+        near_dup_phash_pairs=len(phash_pairs),
         upstream_test_groups=len(test_groups),
         upstream_test_components=sum(1 for c in upstream_test_components if forced.get(c) == TEST),
         dedup_group_links=len(dedup_links),
@@ -363,6 +375,7 @@ def generate_split_map(
                 "inherit_adopted_groups": inherited.adopted_groups,
                 "inherit_conflict_components": inherited.conflict_components,
                 "inherit_band_pairs": plan.band_pairs if plan is not None else 0,
+                "inherit_band_excluded": inherited.band_excluded,
                 "withheld_groups": len(inherited.withheld),
                 "ood_components": inherited.ood_components,
                 "ood_groups": inherited.ood_groups,

@@ -195,8 +195,9 @@ def test_rejected_new_prior_pairs_keep_the_prior_release_band_constraint() -> No
         ("n-5", "p-train", 4),
         ("n-5", "p-test", 1),
     ]
-    forced, withheld = band_constraints(
+    forced, excluded = band_constraints(
         band, v1_split=prior, component_of={s: f"c-{s}" for s in ("n-1", "n-2", "n-5")}
     )
     assert forced == {"c-n-1": TRAIN, "c-n-2": "test"}
-    assert set(withheld) == {"c-n-5"}
+    # n-5 hits a prior train and a prior test image: it keeps no anchor, so it alone is excluded
+    assert excluded == {"n-5": (1, "p-test", "test")}

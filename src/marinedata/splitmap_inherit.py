@@ -13,7 +13,9 @@ members a prior map already split apart. A new release needs a different contrac
   out-of-distribution rule matched goes to ``test_ood`` and takes no part in the 70/15/15 quota.
 
 Precedence for a component of new groups, first match wins: inherited (a prior group in the
-component), the prior-release neighbour band (:func:`band_constraints`), forced (a never-eval-only
+component), the prior-release neighbour band (:func:`band_constraints`: per image, schema 2, the
+component keeps the side of the band with more hit images and ``SplitMap.band_excluded`` lists the
+other side's hit images, which ship in no config), forced (a never-eval-only
 component is train), OOD (``test_ood``), upstream test (``test``), then the stratified group hash.
 A benchmark pin outranks the inherited split (design 3.1 rule 3): a component named in ``override``
 moves whole to the pinned split, its prior groups included. Those moved groups, and no others, may
@@ -31,7 +33,14 @@ from datetime import UTC, datetime
 from pathlib import Path
 
 from .scan import SplitName
-from .splitmap import SplitMap, SplitMapError, load_split_map, save_split_map
+from .splitmap import (
+    SCHEMA_VERSION,
+    BandHit,
+    SplitMap,
+    SplitMapError,
+    load_split_map,
+    save_split_map,
+)
 from .strata import DEFAULT_MIN_GROUPS, TEST_OOD, TRAIN, assign_splits_stratified
 
 _RATIO_TOLERANCE = 1e-9
@@ -56,6 +65,8 @@ class InheritResult:
     """Components an OOD rule matched that precedence placed elsewhere (prior, band, never-eval)."""
     overridden: tuple[str, ...] = ()
     """Prior groups whose split a benchmark pin changed (``override``), sorted."""
+    band_excluded: int = 0
+    """Images the prior-release band excludes (``SplitMap.band_excluded``); no config ships them."""
 
 
 def load_inherited(path: str | Path) -> tuple[SplitMap, str]:
@@ -82,34 +93,36 @@ def band_constraints(
     *,
     v1_split: Mapping[str, SplitName],
     component_of: Mapping[str, str],
-) -> tuple[dict[str, SplitName], dict[str, str]]:
-    """Constraints from new images within the near-duplicate band of prior images.
+) -> tuple[dict[str, SplitName], dict[str, BandHit]]:
+    """Constraints from new images within the near-duplicate band of prior images, per image.
 
     ``pairs`` are ``(new_sha, prior_sha, hamming)`` beyond the union radius but inside the band
-    (:func:`marinedata.neardup.v1_band_pairs`). A component near a prior train image is
-    never-eval (forced ``train``); near a prior evaluation image it is never-train (forced to the
-    nearest such image's split); near both it is withheld. Returns ``(forced, withheld)`` keyed by
-    component."""
-    hits: dict[str, list[tuple[int, str, SplitName]]] = {}
+    (:func:`marinedata.neardup.v1_band_pairs`). A component whose hit images all sit near prior
+    train images is never-eval (forced ``train``); near prior evaluation images only, never-train
+    (forced to the nearest such image's split). A component with hit images on both sides keeps
+    the side with more hit images (a tie keeps ``train``) and excludes, one image at a time, the
+    other side's hit images and any image that hits both sides: they ship in no split. Returns
+    ``(forced, band_excluded)``: component -> split, and image -> ``(distance, prior sha, prior
+    split)`` of its nearest prior image on the excluded side. A component whose every hit image
+    hits both sides keeps no anchor and is not forced."""
+    hits: dict[str, dict[str, list[BandHit]]] = {}
     for new_sha, prior_sha, distance in pairs:
-        hits.setdefault(component_of[new_sha], []).append(
+        hits.setdefault(component_of[new_sha], {}).setdefault(new_sha, []).append(
             (distance, prior_sha, v1_split[prior_sha])
         )
     forced: dict[str, SplitName] = {}
-    withheld: dict[str, str] = {}
-    for canon, found in sorted(hits.items()):
-        train = [hit for hit in found if hit[2] == TRAIN]
-        evaluation = sorted(hit for hit in found if hit[2] != TRAIN)
-        if train and evaluation:
-            withheld[canon] = (
-                "within the near-duplicate band of prior-release train and evaluation images: "
-                "neither never-eval nor never-train can hold"
-            )
-        elif train:
-            forced[canon] = TRAIN
-        else:
-            forced[canon] = evaluation[0][2]
-    return forced, withheld
+    band_excluded: dict[str, BandHit] = {}
+    for canon, images in sorted(hits.items()):
+        on_train = {sha for sha, found in images.items() if any(h[2] == TRAIN for h in found)}
+        on_eval = {sha for sha, found in images.items() if any(h[2] != TRAIN for h in found)}
+        keep_train = len(on_train) >= len(on_eval)  # the side with more hit images stays
+        dropped = on_eval if keep_train else on_train
+        for sha in sorted(dropped):
+            band_excluded[sha] = min(h for h in images[sha] if (h[2] != TRAIN) == keep_train)
+        kept = [h for sha, found in sorted(images.items()) if sha not in dropped for h in found]
+        if kept:
+            forced[canon] = TRAIN if keep_train else min(kept)[2]
+    return forced, band_excluded
 
 
 def _members(merge_canonical: Mapping[str, str]) -> dict[str, list[str]]:
@@ -156,6 +169,7 @@ def resolve_inherited_splits(
     override: Mapping[str, SplitName] | None = None,
     straddles: Mapping[str, str] | None = None,
     inherits: Mapping[str, object] | None = None,
+    band_excluded: Mapping[str, BandHit] | None = None,
 ) -> InheritResult:
     """Write a fresh map at ``path`` that embeds ``prior`` and assigns the new components.
 
@@ -171,7 +185,10 @@ def resolve_inherited_splits(
     the base. ``straddles``: group -> reason, a group whose own v1.0 images sit in different v1.0
     splits (:mod:`marinedata.splitmap_tree`): it is never assigned, even when a pin moves the rest
     of its component, and the component's new groups are withheld. ``inherits`` replaces the
-    default ``inherits`` header (:func:`inherit_header`)."""
+    default ``inherits`` header (:func:`inherit_header`). ``band_excluded``: image sha256 ->
+    :data:`~marinedata.splitmap.BandHit`, the images the prior-release band excludes
+    (:func:`band_constraints`); the map is written as schema 2 and lists them, no config ships
+    them."""
     if load_split_map(path) is not None:
         raise SplitMapError(f"{path} already exists: an inheriting map is generated fresh once")
     _check_compatible(prior, ratios)
@@ -296,6 +313,8 @@ def resolve_inherited_splits(
             ood=dict(ood_header or {}),
             ood_rules=ood_rules,
             withheld=withheld,
+            band_excluded=dict(band_excluded or {}),
+            schema_version=SCHEMA_VERSION,
         ),
     )
     return InheritResult(
@@ -311,4 +330,5 @@ def resolve_inherited_splits(
         forced_components=len(forced_new),
         ood_blocked=len(ood or {}) - len(ood_components),
         overridden=tuple(sorted(overridden)),
+        band_excluded=len(band_excluded or {}),
     )

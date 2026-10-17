@@ -197,6 +197,7 @@ def collect_rows(
     release = json.loads((release_dir / "RELEASE.json").read_text())
     split_map = release_dir / "SPLIT_MAP.json"
     excluded = frozenset(release["never_eval_near_dup_excluded"]["sha256"])
+    band_excluded = frozenset(release.get("prior_band_excluded", {}).get("sha256", ()))
     flavour = release.get("flavour")
     admitted = {sid: Path(roots[sid]) for sid in _admitted_source_ids(registry, roots, profile)}
     never_eval = _never_eval_source_ids(registry, admitted)
@@ -233,6 +234,8 @@ def collect_rows(
                 sha = digests.get(image) or digests.setdefault(image, file_digest(image))
                 if sample.source_id in never_eval and (sha in excluded or split_name != TRAIN):
                     continue  # the two never-eval exclusions build_release applies
+                if sha in band_excluded:
+                    continue  # the per-image prior-release band build_release applies (schema 2)
                 root = admitted[sample.source_id]
                 mask = _resolve_mask(root, sample.mask)
                 if mask is None and sample.source_id in pseudo:
