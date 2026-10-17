@@ -15,7 +15,7 @@ from pathlib import Path
 
 import pytest
 from PIL import Image
-from test_gates_v11 import build_release, write_report, write_shard, write_v1
+from test_gates_v11 import SHAS, build_release, write_report, write_shard, write_v1
 
 from marinedata.cli import main
 from marinedata.gates import (
@@ -29,6 +29,7 @@ from marinedata.gates import (
     skip,
 )
 from marinedata.gates.labelmap import load_release, run_labelmap_gate
+from marinedata.gates.leak import id_tags
 from marinedata.gates.privacy_detectors import Detection
 from marinedata.gates.v11_runner import RUNNERS, V11_ALL, V11Options, run_v11_gate
 from marinedata.gates.yunet_model import YuNetModelError
@@ -345,3 +346,56 @@ def test_privacy_fails_closed_when_the_model_cannot_be_verified(tmp_path, monkey
     write_shard(build, "images", "train", [image_row(jpeg((1, 2, 3)))])
     result = privacy_v11.run_privacy_v11_gate(build)
     assert not result.passed and result.counts["detector"] == "unavailable"
+
+
+# Run 6: GATES.json is uploaded, so it names no source that stays out of the open release
+
+
+def plant(note):
+    """A passing decon whose entry carries ``note`` (what a gate that echoes an id would write)."""
+
+    def run(build, options):
+        return finish("decon", {"note": note}, [])
+
+    return run
+
+
+def test_the_merged_gates_json_is_rescanned_and_a_planted_id_fails_leak(
+    tmp_path, monkeypatch, capsys
+):
+    build, v1 = build_release(tmp_path), write_v1(tmp_path)
+    stub_gates(monkeypatch)
+    monkeypatch.setitem(RUNNERS, "decon", plant("ncsrc"))
+    call = ["release", "gate", str(build), "--v1-dir", str(v1)]
+    assert main(call) == 0  # ncsrc is not a non-open source here: there is nothing to find
+    assert entries(build)["leak"]["passed"] is True
+    capsys.readouterr()
+    (build / "GATES.json").unlink()  # G3 must not see the planted id in a file of an earlier call
+    assert main([*call, "--nc-id", "ncsrc"]) == 1
+    leak, shown = entries(build)["leak"], capsys.readouterr()
+    tag = id_tags("ncsrc", {"ncsrc"})[0]
+    assert leak["passed"] is False and leak["counts"]["gates_json_leaks"] == 1
+    assert leak["failures"][0] == f"GATES.json leak: {tag} in the open upload set"
+    assert "ncsrc" not in json.dumps(leak) + shown.out + shown.err
+    seed_v10(build)
+    assert any(p.startswith("gate leak: failed") for p in publish_verdict(build)[1])
+
+
+def test_open_decon_publishes_labels_for_non_open_benchmarks_and_the_nc_flavour_keeps_ids(
+    tmp_path, capsys
+):
+    build = build_release(tmp_path)
+    hidden, bench = tmp_path / "hidden.json", tmp_path / "ncbench.txt"
+    hidden.write_text(json.dumps({"sha256": [hashlib.sha256(b"other").hexdigest()]}))
+    bench.write_text(hashlib.sha256(b"x").hexdigest() + "\n" + SHAS[2] + "\n")
+    call = ["release", "gate", str(build), "--only", "decon", "--hidden-test", str(hidden)]
+    call += ["--benchmark", str(bench), "--nc-id", "ncbench"]
+    assert main(call) == 1  # a benchmark overlap with no registry entry fails closed
+    decon, shown = entries(build)["decon"], capsys.readouterr()
+    tag = id_tags("ncbench", {"ncbench"})[0]
+    assert decon["passed"] is False and tag in json.dumps(decon)
+    assert "ncbench" not in json.dumps(decon) + shown.out + shown.err
+    assert "leak" not in entries(build)  # the rescan found nothing to report
+    (build / "GATES.json").unlink()
+    assert main([*call, "--flavour", "nc"]) == 1
+    assert "ncbench" in json.dumps(entries(build)["decon"])  # the nc GATES.json stays private

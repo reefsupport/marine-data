@@ -85,8 +85,9 @@ SPLITS_TEXT = (
     "site or quadrat, else the near-duplicate group. Images of one group share a split.\n"
     "\n"
     "Version 1.1.0 inherits the v1.0 splits by `image_sha256` from the published v1.0 tree, "
-    "with one exception: six benchmark sources (`coralscapes`, `coralvqa`, `suim`, `uiis`, "
-    "`uiis10k` and `usis10k`) are pinned to their upstream manifests. A pin routes the "
+    "with one exception: six benchmark sources (`coralscapes`, `suim`, `uiis`, `uiis10k`, "
+    "`usis10k` and one benchmark not distributed in the open release) are pinned to their "
+    "upstream manifests. A pin routes the "
     "manifest's evaluation split to `test` and a second held-out split, where the source has "
     "one, to `validation`. A pin wins over an inherited v1.0 split; the out-of-distribution "
     "holdout and any rule that keeps an image out of evaluation win over a pin. The pins "
@@ -160,11 +161,16 @@ LIMITATIONS = (
     "They are web-scraped photo sets re-shared on Roboflow. Their CC-BY-4.0 tag is the "
     "uploader's claim, which Reef Support could not verify with the original photographers, and "
     "third-party watermarks appear sporadically. Near-duplicate images across these four "
-    "sources are reported by the dedup gate and are not removed. A fifth fork, "
-    "`roboflow-coral-reef-bleach-detection-v2i`, is excluded from this release: its images are "
+    "sources are reported by the dedup gate and are not removed. A fifth Roboflow fork "
+    "is excluded from this release: its images are "
     "augmented broadcast-video frames that show identifiable people, and its licence cannot be "
     "verified. Rights holders can use the takedown route below.",
 )
+HIDDEN_TEST_WITHHELD = (
+    "{n} hidden-test images that v1.0 does not already publish are withheld from this release: "
+    "they appear in none of its configs."
+)
+"""Open flavour: the count is the one ``hf_export`` recorded; no digest, no benchmark name."""
 MASKS = (
     "**Masks.** A `semseg` row names a v1.0 mask config in `mask_config` when that frozen config "
     "holds the image's mask, and the mask stays there; otherwise the mask is embedded in the row "
@@ -179,13 +185,13 @@ EXCLUDED_INTRO = (
 )
 NOT_INCLUDED = (
     (
-        "`roboflow-coral-reef-bleach-detection-v2i`",
+        "A fifth Roboflow fork",
         "tagged release-excluded. Its images are augmented broadcast-video frames that show "
         "identifiable people, and its licence tag comes from the uploader's sidecar and cannot "
         "be verified",
     ),
     (
-        "`large-scale-fish`",
+        "A fish-market photo source",
         "tagged release-excluded and quarantined: out-of-water market photographs of fish",
     ),
     (
@@ -205,7 +211,7 @@ NOT_INCLUDED = (
 count is written here: the sources that are in the release are the ``sources`` config."""
 NOT_INCLUDED_OPEN = (
     (
-        "`synthetic-seabed-debris`",
+        "One non-commercial source",
         "licensed for non-commercial use only; it ships in the separate non-commercial flavour "
         "of the release, not in this repository. No other non-commercial source is part of "
         "v1.1.0",
@@ -254,7 +260,7 @@ CHANGELOG = (
     "six benchmark sources are pinned to their upstream manifests instead, which moved some "
     "images out of v1.0 `train` into `validation` and `test`; the frozen v1.0 configs keep "
     "their v1.0 splits (see Splits).",
-    "**Excluded:** `roboflow-coral-reef-bleach-detection-v2i` (see Excluded sources).",
+    "**Excluded:** a fifth Roboflow fork (see Excluded sources).",
     "**Licences:** new Seaview rows and `metadata.license` use `CC-BY-3.0` (v1.0 rows keep "
     "`CC-BY-3.0-AU`, declared above).",
 )

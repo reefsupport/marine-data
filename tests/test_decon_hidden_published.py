@@ -12,6 +12,7 @@ from test_decon_gate_policy import REGISTRY, build, manifest, record, sha, write
 from marinedata.cli import build_parser, main
 from marinedata.cli_release_gate_v11 import wants_v11
 from marinedata.gates.decon_gate import run_decon_gate
+from marinedata.gates.leak import id_tags
 
 NAMES = {"a1": "train", "b2": "test", "c3": "validation"}
 """The 3-image fixture build: a1 is public in v1.0, b2 is new, c3 is not in the hidden test."""
@@ -172,3 +173,36 @@ def test_the_flag_alone_selects_the_v11_gates(tmp_path):
     assert not wants_v11(parse(["release", "gate", str(tmp_path)]), v10_selected=False)
     args = parse(["release", "gate", str(tmp_path), FLAG])
     assert args.hidden_test_published_exception is True and wants_v11(args, v10_selected=False)
+
+
+def test_redact_ids_replaces_a_benchmark_id_everywhere_the_gate_publishes_it(tmp_path):
+    """Open flavour: GATES.json is uploaded, so a benchmark that stays out of the open release is
+    an ``nc_id#`` label in the manifest records, the failing samples and the failure lines (the
+    id here is synthetic; the verdict is the same with and without the redaction)."""
+    bench = manifest(tmp_path / "ncbench.parquet", "ncbench", [sha("b2")])
+    kwargs = {"hidden_test": [hidden_list(tmp_path, "c3x")], "benchmarks": [bench]}
+    plain = run_decon_gate(build(tmp_path, NAMES), registry=REGISTRY, **kwargs)
+    hidden = run_decon_gate(
+        build(tmp_path, NAMES), registry=REGISTRY, redact_ids={"ncbench"}, **kwargs
+    )
+    tag = id_tags("ncbench", {"ncbench"})[0]
+    published = json.dumps(hidden.counts) + " ".join(hidden.failures)
+    assert "ncbench" in json.dumps(plain.counts) + " ".join(plain.failures)  # the control
+    assert "ncbench" not in published and tag in published
+    assert not plain.passed and not hidden.passed
+    assert (hidden.counts["overlaps"], hidden.counts["failed"]) == (1, 1)
+    assert record(hidden, f"{tag}.parquet")["benchmark_id"] == tag
+    assert [f["benchmark_id"] for f in hidden.counts["failing"]] == [tag]
+
+
+def test_redact_ids_also_covers_a_manifest_that_cannot_be_read(tmp_path):
+    result = run_decon_gate(
+        build(tmp_path, NAMES),
+        hidden_test=[hidden_list(tmp_path, "c3x")],
+        benchmarks=[tmp_path / "ncbench.json"],
+        registry=REGISTRY,
+        redact_ids={"ncbench"},
+    )
+    tag = id_tags("ncbench", {"ncbench"})[0]
+    assert not result.passed and "ncbench" not in " ".join(result.failures)
+    assert f"{tag}.json: not found" in " ".join(result.failures)

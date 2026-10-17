@@ -25,6 +25,9 @@ An image's split is the ``split`` column the build writes into its ``images`` an
 rows (the shard name when a shard has no such column); an image listed in several splits must be
 in a pin home in every one of them. Both inputs are required: without them the gate fails; with
 ``--rehearsal`` it is ``skipped`` instead, which ``release publish`` still refuses.
+``redact_ids`` (the open flavour passes the non-open source ids) replaces such an id in the
+published record (manifest ``file`` and ``benchmark_id``, failing samples, failure lines) with its
+``nc_id#`` label from the leak gate: GATES.json is uploaded under ``provenance/``.
 Near-duplicate and embedding decontamination stay with ``marinedata decon check`` (S0-S5)."""
 
 from __future__ import annotations
@@ -38,6 +41,7 @@ from pathlib import Path
 from ..benchmark_pins import EVAL, HELDOUT, split_role
 from ..benchmarks import BenchmarkRegistry, BenchmarksError
 from . import GateResult, finish, skip
+from .leak import redact
 from .shards import norm_split, shard_split
 from .v11_common import HEX64, IMAGES, METADATA, shards, tree_files
 
@@ -293,6 +297,13 @@ def _judge(
     }
 
 
+def _hide(entry: dict, ids: Collection[str]) -> dict:
+    """``entry`` with an id in its ``file`` / ``benchmark_id`` replaced by its leak label."""
+    if not ids:
+        return entry
+    return {k: redact(v, ids) if k in ("file", "benchmark_id") else v for k, v in entry.items()}
+
+
 def _failure(record: dict) -> str:
     where = f"{record['kind']}/{record['file']}"
     ident, policy, n = record["benchmark_id"], record["policy"], record["failed"]
@@ -329,6 +340,7 @@ def run_decon_gate(
     hidden_test_published_exception: bool = False,
     v1_sha256: Collection[str] | None = None,
     v1_dir: Path | None = None,
+    redact_ids: Collection[str] = (),
 ) -> GateResult:
     required = (("hidden-test manifest", hidden_test), ("benchmark manifests", benchmarks))
     missing = [label for label, paths in required if not paths]
@@ -349,11 +361,13 @@ def run_decon_gate(
     for kind, paths in ((HIDDEN, hidden_test), (BENCHMARK, benchmarks)):
         for path in map(Path, paths):
             if not path.exists():
-                failures.append(f"{kind} manifest {path.name}: not found")
+                failures.append(f"{kind} manifest {redact(path.name, redact_ids)}: not found")
                 continue
             found = read_manifests(path, kind)
             if not found:
-                failures.append(f"{kind} manifest {path.name}: empty (no sha256 found)")
+                failures.append(
+                    f"{kind} manifest {redact(path.name, redact_ids)}: empty (no sha256 found)"
+                )
             manifests.extend(found)
     total, hits = scan_release(Path(build_dir), frozenset().union(*(m.shas for m in manifests)))
     if not total:
@@ -373,14 +387,17 @@ def run_decon_gate(
     exempt: list[dict] = []
     records: list[dict] = []
     for manifest in manifests:
-        record = _judge(
-            manifest,
-            _policy(manifest, registry),
-            hits,
-            failing,
-            _heldout(manifest, registry),
-            published,
-            exempt,
+        record = _hide(
+            _judge(
+                manifest,
+                _policy(manifest, registry),
+                hits,
+                failing,
+                _heldout(manifest, registry),
+                published,
+                exempt,
+            ),
+            redact_ids,
         )
         records.append(record)
         counts[f"{manifest.kind}_manifests"] += 1
@@ -399,5 +416,15 @@ def run_decon_gate(
         counts[f"{kind}_shas"] = len(
             frozenset().union(*(m.shas for m in manifests if m.kind == kind))
         )
-    sample = {f"{HIDDEN_PUBLISHED}_sample": exempt} if published is not None else {}
-    return finish(NAME, {**counts, "manifests": records, "failing": failing, **sample}, failures)
+    failing = [_hide(e, redact_ids) for e in failing]
+    sample = {f"{HIDDEN_PUBLISHED}_sample": [_hide(e, redact_ids) for e in exempt]}
+    return finish(
+        NAME,
+        {
+            **counts,
+            "manifests": records,
+            "failing": failing,
+            **(sample if published is not None else {}),
+        },
+        failures,
+    )

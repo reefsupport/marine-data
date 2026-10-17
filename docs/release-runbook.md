@@ -103,6 +103,14 @@ pinned-tree fetch). Nothing here uploads except step 9 with `--go`.
    `lat`/`lon`, `capture_datetime`, `camera`, `split_group`, `split`, ...). `split` is the frozen-map
    split, so "upstream test honoured" can be checked from the export. The metadata rows are flavour
    filtered per row, so every row has a non-null `licence_class`. `--no-metadata` skips the config.
+   v1.1.0 open flavour: add `--hidden-test <hidden-test manifest> --hidden-test-exempt-v1 <v1.0
+   export dir>` (on the release VM they go in `EXPORT_ARGS`, which `deploy/release-vm/bootstrap.sh`
+   forwards to this call). Every image the manifest lists that the v1.0 export does not already
+   publish is removed from every table before anything is counted or embedded, so it is in no
+   config and not in `sources.n_images`. stderr logs counts only (`hidden_test_excluded=N images,
+   M rows`), the summary records them under `v11.hidden_test_excluded` and the card step states the
+   count in Limitations. The flags come as a pair, `--flavour nc` refuses them, and
+   `--hidden-test-exempt-v1` is not `--v1-dir` (that one only skips re-uploading v1.0 bytes).
 7. (optional refresh) `python -m marinedata.metadata_release --release-dir ... --stage-root ...
    --quality ... --out hf-<flavour> --summary ... --coverage ...` rewrites the same `metadata`
    shards with the staged-version lookup and the coverage report. Its `--summary` holds only the
@@ -130,6 +138,8 @@ After the export run both gate sets against the same build and release dir (see 
 marinedata release gate "$B" --all --require-all --flavour "$F" --release-dir "$R"   # v1.0 gates
 marinedata release gate "$B" --v11 --flavour "$F" --release-dir "$R" --v1-dir <v1.0 release dir>  # G1..G9
 ```
+
+`release gate` reads the merged `GATES.json` once more after the gates have written to it: a private name in it (an nc source id, the nc repo, a bucket) fails `leak` and exits 1, and in the open flavour `decon` shows a non-open benchmark as an `nc_id#` label (GATES.json is uploaded under `provenance/`).
 
 `--v11` does not chain the v1.0 gates: it merges G1..G9 into `GATES.json` and keeps the entries `--all`
 wrote, so `release publish` stays BLOCKED until both have run (`--v11` prints `publish verdict:

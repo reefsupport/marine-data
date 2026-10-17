@@ -5,11 +5,14 @@ plus the nc repo id from ``registry/flavours.yaml``) and the ids of every source
 open-class: file names, text files (card, croissant, NOTICE, provenance), parquet footers and every
 string column of every shard (the bytes columns are never read). The nc card may name the nc repo,
 never a bucket. A failure line carries a hash of the leaked name, never the name: GATES.json is
-uploaded under ``provenance/``."""
+uploaded under ``provenance/``. ``release gate`` scans GATES.json again once every gate of the run
+has written to it (:func:`rescan_gates_json`), and the open export refuses an nc id in any text it
+writes (:func:`id_tags`)."""
 
 from __future__ import annotations
 
 import hashlib
+import json
 import re
 from collections import Counter
 from collections.abc import Collection, Iterable
@@ -29,13 +32,35 @@ def _tag(kind: str, value: str) -> str:
     return f"{kind}#{hashlib.sha256(value.encode()).hexdigest()[:8]}"
 
 
+def _token(pattern: str) -> re.Pattern[str]:
+    """``pattern`` as a whole token: no letter, digit, ``_`` or ``-`` on either side."""
+    return re.compile(rf"(?<![A-Za-z0-9_-])(?:{pattern})(?![A-Za-z0-9_-])", re.I)
+
+
+def _id_regex(ids: Iterable[str]) -> tuple[re.Pattern[str], dict[str, str]]:
+    """One regex over all ``ids`` and ``{lower-cased id: its label}``."""
+    tags = {i.lower(): _tag("nc_id", i) for i in set(ids) if i}
+    names = "|".join(re.escape(i) for i in sorted(tags, key=len, reverse=True))
+    return _token(names or "(?!)"), tags
+
+
+def id_tags(text: str, ids: Iterable[str]) -> list[str]:
+    """The sorted ``nc_id#`` labels of the ``ids`` that occur in ``text`` as whole tokens."""
+    rx, tags = _id_regex(ids)
+    return sorted({tags[m.group(0).lower()] for m in rx.finditer(text)})
+
+
+def redact(text: str, ids: Iterable[str]) -> str:
+    """``text`` with every ``ids`` token replaced by its ``nc_id#`` label (what a failure line
+    carries): a published record keeps the shape of its text and loses the name."""
+    rx, tags = _id_regex(ids)
+    return rx.sub(lambda m: tags[m.group(0).lower()], text)
+
+
 class _Finder:
     def __init__(self, names: Iterable[str], ids: Iterable[str]) -> None:
         self.names = [(n, n.lower()) for n in names if n]
-        self.ids = [
-            (i, re.compile(rf"(?<![A-Za-z0-9_-]){re.escape(i)}(?![A-Za-z0-9_-])", re.I))
-            for i in sorted(set(ids))
-        ]
+        self.ids = [(i, _token(re.escape(i))) for i in sorted(set(ids))]
 
     def hits(self, text: str) -> list[str]:
         low = text.lower()
@@ -74,6 +99,20 @@ def _scan_parquet(path: Path, finder: _Finder) -> set[str]:
     return found
 
 
+def _finder(
+    nc_ids: Collection[str],
+    flavour: str,
+    private_names: Collection[str] | None = None,
+    nc_repo_names: Collection[str] | None = None,
+) -> _Finder:
+    from ..hf_export_v11 import PRIVATE_NAMES
+
+    privates = tuple(PRIVATE_NAMES[1:] if private_names is None else private_names)
+    repos = tuple(PRIVATE_NAMES[:1] if nc_repo_names is None else nc_repo_names)
+    open_flavour = flavour == "open"
+    return _Finder((*privates, *(repos if open_flavour else ())), nc_ids if open_flavour else ())
+
+
 def run_leak_gate(
     build_dir: Path,
     *,
@@ -84,13 +123,8 @@ def run_leak_gate(
 ) -> GateResult:
     """``nc_ids``: every source id that must not appear (open flavour only). ``private_names``
     (buckets, remotes) are banned in both flavours; ``nc_repo_names`` only in the open one."""
-    from ..hf_export_v11 import PRIVATE_NAMES
-
     build = Path(build_dir)
-    privates = tuple(PRIVATE_NAMES[1:] if private_names is None else private_names)
-    repos = tuple(PRIVATE_NAMES[:1] if nc_repo_names is None else nc_repo_names)
-    open_flavour = flavour == "open"
-    finder = _Finder((*privates, *(repos if open_flavour else ())), nc_ids if open_flavour else ())
+    finder = _finder(nc_ids, flavour, private_names, nc_repo_names)
     counts: Counter = Counter()
     failures: list[str] = []
     for path in tree_files(build):
@@ -111,3 +145,32 @@ def run_leak_gate(
     if not counts["files"]:
         failures.append(f"no files under {build}")
     return finish(NAME, counts, failures)
+
+
+def rescan_gates_json(
+    path: Path, *, flavour: str = "open", extra_nc_ids: Collection[str] = ()
+) -> GateResult | None:
+    """The ``leak`` result for a GATES.json that names a private resource, else ``None``.
+
+    G3 runs before the other gates of its ``release gate`` call write their entries, so it only
+    sees the file of an earlier call. This reads the merged file once the call is done, with the
+    ids G3 uses (the registry's non-open sources plus ``extra_nc_ids``); the result keeps the
+    ``leak`` entry's own counts and failures and adds, first, one line per leaked label (never
+    the name). A scan that cannot run fails closed."""
+    from .v11_runner import nc_source_ids
+
+    target = Path(path)
+    try:
+        finder = _finder(nc_source_ids() | frozenset(extra_nc_ids), flavour)
+        found = sorted(set(finder.hits(target.read_text(errors="ignore"))))
+        if not found:
+            return None
+        before = json.loads(target.read_text()).get(NAME)
+    except Exception as exc:
+        return finish(NAME, {"failed_gate_error": 1}, [f"{NAME} gate_error: {type(exc).__name__}"])
+    before = before if isinstance(before, dict) else {}
+    counts = {k: v for k, v in (before.get("counts") or {}).items() if k != "failures_total"}
+    counts["leaks"] = int(counts.get("leaks") or 0) + len(found)
+    counts["gates_json_leaks"] = len(found)
+    lines = [f"{target.name} leak: {tag} in the {flavour} upload set" for tag in found]
+    return finish(NAME, counts, [*lines, *(before.get("failures") or [])])

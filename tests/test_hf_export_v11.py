@@ -20,7 +20,9 @@ from marinedata.hf_export_v11 import (
     V11ExportError,
     assert_public_safe,
     build_v11_layout,
+    drop_hidden_test,
     export_v11,
+    hidden_test_drop,
     image_rows,
     is_v11_release,
     label_map_rows,
@@ -525,3 +527,209 @@ def test_a_new_image_of_a_v1_source_embeds_its_mask_and_a_v1_image_does_not(regi
         assert (row["mask"] is not None) != bool(row["mask_config"])
         assert check_palette_row(row) == ([], False)
     assert {r["image_sha256"] for r in rows.values() if r["mask_config"]} <= v1_sha256s(v1)
+
+
+# Run 6: the open export withholds the hidden-test images that v1.0 does not already publish
+
+HIDDEN_NEW, HIDDEN_V1 = "a" * 64, "b" * 64
+"""Synthetic digests: the first is new to the public release, the second v1.0 already ships."""
+
+
+def _hidden_manifest(tmp_path: Path, *digests: str) -> Path:
+    path = tmp_path / "hidden-test.json"
+    path.write_text(json.dumps({"images": [{"sha256": d} for d in digests]}))
+    return path
+
+
+def _v1_tree(tmp_path: Path, *digests: str) -> Path:
+    """A fake v1.0 export whose ``coral-masks`` shard holds the ``image_sha256`` of ``digests``."""
+    _shard(tmp_path / "v1", "coral-masks", [{"image_sha256": d} for d in digests])
+    return tmp_path / "v1"
+
+
+def _run_args(build, tmp_path: Path, **kw):
+    import argparse
+
+    skip = tmp_path / "v1.sha256"
+    skip.write_text(f"{SKIP_IMG}\n")
+    fields = {
+        "release_dir": build[0], "flavour": "open", "out": tmp_path / "out",
+        "summary": tmp_path / "s.json", "v1_sha256": skip, "v1_dir": None,
+        "hidden_test": None, "hidden_test_exempt_v1": None, **kw,
+    }  # fmt: skip
+    return argparse.Namespace(**fields)
+
+
+def test_drop_hidden_test_matches_either_key_in_any_case_and_records_counts_only():
+    tables = {
+        "metadata": [
+            {"image_sha256": "1" * 64, "bytes_sha256": None},
+            {"image_sha256": "2" * 64, "bytes_sha256": "3" * 64},
+            {"image_sha256": ("4" * 64).upper(), "bytes_sha256": None},
+            {"image_sha256": "5" * 64, "bytes_sha256": "5" * 64},
+        ],
+        "points": [{"image_sha256": "1" * 64}, {"image_sha256": "5" * 64}],
+        "sites": [{"site_id": "x"}],
+    }
+    drop = {"1" * 64, "3" * 64, "4" * 64, "9" * 64}
+    kept, counts = drop_hidden_test(tables, drop)
+    assert [r["image_sha256"] for r in kept["metadata"]] == [
+        "5" * 64
+    ]  # image_sha256 or bytes_sha256
+    assert kept["points"] == [{"image_sha256": "5" * 64}] and kept["sites"] == tables["sites"]
+    assert counts == {"requested": 4, "images": 3, "rows": {"metadata": 3, "points": 1, "sites": 0}}
+    assert len(tables["metadata"]) == 4 and len(tables["points"]) == 2  # the input is not mutated
+    assert not [d for d in drop if d in json.dumps(counts)]
+
+
+def test_the_drop_set_is_the_manifest_minus_what_v1_already_publishes(tmp_path):
+    manifest = _hidden_manifest(tmp_path, HIDDEN_NEW, HIDDEN_V1)
+    assert hidden_test_drop(manifest, _v1_tree(tmp_path, HIDDEN_V1, "c" * 64)) == {HIDDEN_NEW}
+
+
+def test_the_drop_set_fails_closed_on_a_wrong_path(tmp_path):
+    v1 = _v1_tree(tmp_path, HIDDEN_V1)
+    empty = tmp_path / "empty.json"
+    empty.write_text(json.dumps({"images": []}))
+    with pytest.raises(V11ExportError, match="not found"):
+        hidden_test_drop(tmp_path / "missing.json", v1)
+    with pytest.raises(V11ExportError, match="no sha256"):
+        hidden_test_drop(empty, v1)
+    with pytest.raises(V11ExportError, match=r"no v1\.0 shard rows"):
+        hidden_test_drop(_hidden_manifest(tmp_path, HIDDEN_NEW), tmp_path / "no-v1")
+
+
+def test_the_open_layout_drops_a_digest_from_every_table_before_counting(registry, build, tmp_path):
+    sha = build[2]
+    base, base_report = _layout(registry, build)
+    export_v11(base, tmp_path / "base")
+    drop = {sha["a"], sha["m"], "f" * 64}
+    layout, report = _layout(registry, build, hidden_test_drop=drop)
+    out = tmp_path / "out"
+    export_v11(layout, out)
+    assert "hidden_test_excluded" not in base_report
+    for config in ("images", "metadata", "points", "semseg"):
+        keys = {r["image_sha256"] for r in _rows(out, config)}
+        assert not keys & {sha["a"], sha["m"]}, config
+    assert {r["image_sha256"] for r in _rows(out, "images")} == {sha["a2"], sha["b"]}
+    hidden = report["hidden_test_excluded"]
+    assert (hidden["requested"], hidden["images"]) == (3, 2)
+    assert {c: n for c, n in hidden["rows"].items() if n} == {
+        "metadata": 2,
+        "points": 1,
+        "semseg": 1,
+    }
+    assert not [d for d in drop if d in json.dumps(report)]
+
+    # the sources config counts what is exported: the dropped image no longer counts
+    def n_images(path):
+        return {r["source_id"]: r["n_images"] for r in _rows(path, "sources")}
+
+    before, after = n_images(tmp_path / "base"), n_images(out)
+    assert before["seaview-survey-imagery"] == 3 and after["seaview-survey-imagery"] == 2
+    assert after == Counter(r["source_id"] for r in _rows(out, "metadata"))
+
+
+def test_the_hidden_test_drop_is_refused_for_the_nc_flavour(registry, build):
+    with pytest.raises(V11ExportError, match="open flavour"):
+        _layout(registry, build, flavour="nc", hidden_test_drop={HIDDEN_NEW})
+
+
+@pytest.mark.parametrize("flag", ["hidden_test", "hidden_test_exempt_v1"])
+def test_run_needs_the_two_hidden_test_flags_together(build, monkeypatch, tmp_path, flag):
+    from marinedata import hf_export
+    from marinedata.hf_export_v11 import run
+
+    monkeypatch.setattr(hf_export, "_roots", lambda release_dir, cache: build[1])
+    args = _run_args(build, tmp_path, **{flag: _hidden_manifest(tmp_path, HIDDEN_NEW)})
+    with pytest.raises(V11ExportError, match="--hidden-test-exempt-v1"):
+        run(args)
+    assert not (tmp_path / "out").exists()
+
+
+def test_run_refuses_hidden_test_for_a_release_built_as_nc(build, monkeypatch, tmp_path):
+    from marinedata import hf_export
+    from marinedata.hf_export_v11 import run
+
+    (build[0] / "RELEASE.json").write_text(json.dumps({"flavour": "nc", "release": "v1.1"}))
+    monkeypatch.setattr(hf_export, "_roots", lambda release_dir, cache: build[1])
+    args = _run_args(
+        build, tmp_path, flavour="nc", hidden_test=_hidden_manifest(tmp_path, HIDDEN_NEW),
+        hidden_test_exempt_v1=_v1_tree(tmp_path, HIDDEN_V1),
+    )  # fmt: skip
+    with pytest.raises(V11ExportError, match="open flavour"):
+        run(args)
+    assert not (tmp_path / "out").exists()
+
+
+def test_run_withholds_unpublished_hidden_test_images_and_logs_counts_only(
+    build, monkeypatch, tmp_path, capsys
+):
+    from marinedata import hf_export
+    from marinedata.hf_export_v11 import run
+
+    _, roots, sha = build
+    monkeypatch.setattr(hf_export, "_roots", lambda release_dir, cache: roots)
+    # a: new to the public release; b: v1.0 already publishes it; e: not in this build at all
+    listed = (sha["a"], sha["b"], "e" * 64)
+    args = _run_args(
+        build, tmp_path, hidden_test=_hidden_manifest(tmp_path, *listed),
+        hidden_test_exempt_v1=_v1_tree(tmp_path, sha["b"]),
+    )  # fmt: skip
+    assert run(args) == 0
+    seen = capsys.readouterr()
+    out = tmp_path / "out"
+    images = {r["image_sha256"] for r in _rows(out, "images")}
+    assert sha["a"] not in images and sha["b"] in images  # the exemption does not feed --v1-dir
+    for config in ("metadata", "points"):
+        assert sha["a"] not in {r["image_sha256"] for r in _rows(out, config)}, config
+    assert sha["b"] in {r["image_sha256"] for r in _rows(out, "metadata")}
+    summary = json.loads((tmp_path / "s.json").read_text())
+    assert summary["v11"]["hidden_test_excluded"]["images"] == 1
+    log = seen.out + seen.err
+    assert "hidden_test_excluded=1 images, 2 rows" in log and "2 not in v1.0" in log
+    assert "metadata=1" in log and "points=1" in log
+    assert not [d for d in listed if d in log or d in json.dumps(summary["v11"])]
+
+
+def test_hf_export_main_forwards_the_hidden_test_flags_to_a_v11_release(
+    build, monkeypatch, tmp_path
+):
+    from marinedata import hf_export
+    from marinedata import hf_export_v11 as v11
+
+    seen = {}
+
+    def fake_run(args):
+        seen.update(
+            hidden_test=args.hidden_test, exempt=args.hidden_test_exempt_v1, v1_dir=args.v1_dir
+        )
+        return 0
+
+    monkeypatch.setattr(v11, "run", fake_run)
+    argv = ["--release-dir", str(build[0]), "--out", str(tmp_path / "o")]
+    argv += ["--summary", str(tmp_path / "s.json")]
+    argv += ["--hidden-test", str(tmp_path / "ht"), "--hidden-test-exempt-v1", str(tmp_path / "v1")]
+    assert hf_export.main(argv) == 0
+    assert seen == {"hidden_test": tmp_path / "ht", "exempt": tmp_path / "v1", "v1_dir": None}
+
+
+def test_hf_export_main_refuses_the_hidden_test_flags_for_a_pre_v11_release(tmp_path, capsys):
+    from marinedata import hf_export
+
+    argv = ["--release-dir", str(tmp_path), "--out", str(tmp_path / "o")]
+    argv += ["--summary", str(tmp_path / "s.json"), "--hidden-test", str(tmp_path / "ht")]
+    with pytest.raises(SystemExit) as exc:
+        hf_export.main(argv)
+    assert exc.value.code == 2 and "v1.1.0 builds" in capsys.readouterr().err
+
+
+def test_assert_public_safe_refuses_a_non_open_source_id_in_the_open_flavour(monkeypatch):
+    from marinedata.gates import v11_runner
+
+    monkeypatch.setattr(v11_runner, "nc_source_ids", lambda *_: frozenset({"ncsrc"}))
+    with pytest.raises(V11ExportError, match="nc_id#") as exc:
+        assert_public_safe("sources: a, NCSRC, b", "open", where="README.md")
+    assert "ncsrc" not in str(exc.value).lower()  # only the label is echoed
+    assert_public_safe("ncsrc2, my-ncsrc and ncsrc_v1 are other names", "open")
+    assert_public_safe("the nc card names ncsrc", "nc")
