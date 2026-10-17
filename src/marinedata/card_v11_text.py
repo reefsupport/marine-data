@@ -111,6 +111,14 @@ LIMITATIONS = (
     "in the viewer because they hold class ids, not colours (new semantic masks carry a palette).",
     "Coordinates, dates and depths are as complete as each source made them; analytics resolvers "
     "exist for a subset of the sources.",
+    "**Licensing and provenance caveats.** Four sources are forks of Roboflow Universe projects "
+    "(`roboflow-coral-bleaching-final-v6i`, `roboflow-coral-bleaching-general-v1-yolov8s`, "
+    "`roboflow-coral-classification-copy-changed-v13i`, `roboflow-coral-reef-classification-v3i`). "
+    "They are web-scraped photo sets whose CC-BY-4.0 tag is the uploader's claim, which Reef "
+    "Support could not verify with the original photographers, and some images carry third-party "
+    "watermarks. A fifth fork, the Roboflow coral reef bleach detection set (v2i), was excluded "
+    "from this release: its images are video-derived frames, its licence cannot be verified and "
+    "it shows identifiable people. Rights holders can use the takedown route below.",
 )
 RAI = {
     "rai:dataCollection": (
