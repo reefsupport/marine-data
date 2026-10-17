@@ -55,6 +55,20 @@ train, validation and test are only ratio-checked when the registry names them. 
 split map, or set the target in the registry.
 `images/test ratio_off_target: 10.0% of 20 rows, target 25% +/- 5 (release:split_ratio)`
 
+The ratio is taken over the rows of the **non-pinned** sources. A source the split map pins to its
+upstream test manifest (a key of `pins.benchmarks` in `SPLIT_MAP.json`, read from `--release-dir`, else
+the build dir) follows that manifest, so its test share is structural: its rows leave the ratio and never
+fail it. Rows are matched by the table's `source_id` column (else `source`); the benchmark label is the
+`source_id` of its rows. `counts.ratio_pinned_sources` holds the pinned sources' train/validation/test rows
+per table, `counts.ratio_excluding_pinned` the ratio the rule judged (`rows` and a percent per split) and
+`counts.ratio_pins` the map used (`release_dir`, `build_dir`, `unreadable` or none) and the pinned ids.
+Tolerance, targets and finding kinds are unchanged. A finding that left rows out says so:
+`images/test ratio_off_target: 5.0% of 20 non-pinned rows (excl. 20 rows of pinned src-p), target 15% +/- 5 (registry:default)`
+No map, one that does not parse, or one without `pins.benchmarks` pins nothing: every row counts, as
+before. A table without a source column keeps every row (`counts.ratio_unsourced_configs`). A table whose
+rows are all pinned (`ratio_all_pinned_configs`), or whose non-pinned rows lack a split, is not
+ratio-checked, like a table that never had that split (`ratio_skipped_configs`).
+
 ## masks (required)
 Checks (P1.5): mask size equals image size, no leftover EXIF orientation, uint8 semantic and uint16
 instance masks, ids inside the class map, 255 never a class, instance ids 1..N, empty masks per source

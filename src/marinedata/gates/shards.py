@@ -1,4 +1,4 @@
-"""Shared readers for the gates: shard discovery, split names, RELEASE.json and card lookup."""
+"""Shared readers for the gates: shards, split names, RELEASE.json, SPLIT_MAP.json, the card."""
 
 from __future__ import annotations
 
@@ -53,6 +53,29 @@ def split_counts(files: Sequence[Path]) -> dict[str, int]:
     return dict(sorted(out.items()))
 
 
+SOURCE_COLUMNS = ("source_id", "source")
+
+
+def source_split_counts(files: Sequence[Path]) -> dict[str, dict[str, int]] | None:
+    """``{source: {split: rows}}`` of one config, from its ``source_id`` (else ``source``) column.
+
+    ``None`` when a shard has neither column. Only that column is read, never an image; a row
+    with no source counts under ``?``."""
+    import pyarrow.compute as pc
+    import pyarrow.parquet as pq
+
+    out: dict[str, Counter] = {}
+    for path in files:
+        shard = pq.ParquetFile(path)
+        column = next((c for c in SOURCE_COLUMNS if c in shard.schema_arrow.names), None)
+        if column is None:
+            return None
+        split = shard_split(path)
+        for item in pc.value_counts(shard.read(columns=[column]).column(0)).to_pylist():
+            out.setdefault(str(item["values"] or "?"), Counter())[split] += item["counts"]
+    return {source: dict(sorted(by.items())) for source, by in sorted(out.items())}
+
+
 def iter_rows(
     files: Sequence[Path], columns: Sequence[str], *, batch_size: int = 64
 ) -> Iterator[tuple[Path, int, str, dict]]:
@@ -75,6 +98,16 @@ def read_release(build_dir: Path, release_dir: Path | None = None) -> dict | Non
         path = Path(folder) / "RELEASE.json" if folder else None
         if path is not None and path.is_file():
             return json.loads(path.read_text())
+    return None
+
+
+def find_split_map(build_dir: Path, release_dir: Path | None = None) -> tuple[Path, str] | None:
+    """``(path, "release_dir" | "build_dir")`` of ``SPLIT_MAP.json``: the release dir's if it has
+    one, else the build directory's; ``None`` when neither does."""
+    for where, folder in (("release_dir", release_dir), ("build_dir", build_dir)):
+        path = Path(folder) / "SPLIT_MAP.json" if folder else None
+        if path is not None and path.is_file():
+            return path, where
     return None
 
 
