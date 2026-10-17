@@ -216,19 +216,23 @@ def test_bytes_sha256_column_pins_too(tmp_path):
 def test_a_component_takes_the_pin_of_any_member_and_test_beats_val():
     rows = [("s1", "g1", "a"), ("s2", "g1", "a"), ("s3", "g2", "a"), ("s4", "g3", "a")]
     by_sha = {"s2": ("validation", "b"), "s3": ("test", "b"), "s4": ("validation", "b")}
-    forced, header, _ = apply_benchmark_pins({}, rows, {"g2": "g1"}, BenchmarkPins(by_sha=by_sha))
+    forced, header, _, _ = apply_benchmark_pins(
+        {}, rows, {"g2": "g1"}, BenchmarkPins(by_sha=by_sha)
+    )
     assert forced == {"g1": "test", "g3": "val"}
     assert header["components"] == {"test": 1, "validation": 1}
     assert header["benchmarks"] == {"b": {"test": 1, "validation": 2}}
 
 
-def test_ood_claim_and_earlier_forced_rules_win_over_a_pin():
+def test_an_ood_claim_wins_over_a_pin_and_a_band_train_entry_withholds_it():
     rows = [("s1", "g1", "a"), ("s2", "g2", "a"), ("s3", "g3", "a")]
     by_sha = {"s1": ("test", "b"), "s2": ("validation", "b"), "s3": ("test", "b")}
     pins = BenchmarkPins(by_sha=by_sha)
-    forced, header, overrides = apply_benchmark_pins({"g3": "train"}, rows, {}, pins, ood={"g1"})
-    assert forced == {"g3": "train", "g2": "val"} and overrides == {}
-    assert header["skipped_components"] == {"ood": 1, "earlier_rule": 1}
+    forced, header, overrides, withheld = apply_benchmark_pins(
+        {"g3": "train"}, rows, {}, pins, ood={"g1"}
+    )
+    assert forced == {"g2": "val"} and overrides == {} and list(withheld) == ["g3"]
+    assert header["skipped_components"] == {"ood": 1, "earlier_rule": 0, "withheld": 1}
 
 
 def test_a_pin_overrides_v1_continuity_and_the_override_is_recorded():
@@ -236,7 +240,7 @@ def test_a_pin_overrides_v1_continuity_and_the_override_is_recorded():
     prior = {"g1": "train", "g2": "val", "g3": "test", "g4": "val", "g5": "test"}
     wanted = {"s1": "test", "s2": "validation", "s3": "test", "s4": "test", "s5": "validation"}
     pins = BenchmarkPins(by_sha={sha: (pin, "b") for sha, pin in wanted.items()})
-    forced, header, overrides = apply_benchmark_pins({}, rows, {}, pins, prior=prior)
+    forced, header, overrides, _ = apply_benchmark_pins({}, rows, {}, pins, prior=prior)
     assert forced == {"g2": "val", "g3": "test"}  # g2 and g3 already sit where their pin says
     assert overrides == {"g1": "test", "g4": "test", "g5": "val"}
     assert header["v1_continuity_overridden"] == {
@@ -245,7 +249,7 @@ def test_a_pin_overrides_v1_continuity_and_the_override_is_recorded():
         "by_source": {"a": {"test -> val": 1, "train -> test": 1, "val -> test": 1}},
         "group_ids": ["g1", "g4", "g5"],
     }
-    assert header["skipped_components"] == {"ood": 0, "earlier_rule": 0}
+    assert header["skipped_components"] == {"ood": 0, "earlier_rule": 0, "withheld": 0}
     assert header["components"] == {"test": 3, "validation": 2}
     assert "v1_continuity_conflicts" not in header and "never-eval" in header["rule"]
 
@@ -255,14 +259,14 @@ def test_override_moves_the_whole_component_but_ood_and_never_eval_still_win():
     canonical = {"g2": "g1"}  # g1 + g2 are one component: v1.0 put g1 in train and g2 in val
     prior = {"g1": "train", "g2": "val", "g3": "train", "g4": "train"}
     pins = BenchmarkPins(by_sha={sha: ("test", "b") for sha in ("s1", "s3", "s4")})
-    forced, header, overrides = apply_benchmark_pins(
+    forced, header, overrides, _ = apply_benchmark_pins(
         {"g4": "train"}, rows, canonical, pins, prior=prior, ood={"g3"}, train_only={"g4"}
     )
     assert overrides == {"g1": "test"} and forced == {"g4": "train"}
     over = header["v1_continuity_overridden"]
     assert (over["images"], over["groups"], over["group_ids"]) == (1, 2, ["g1", "g2"])
     assert over["by_source"] == {"a": {"train+val -> test": 1}}
-    assert header["skipped_components"] == {"ood": 1, "earlier_rule": 1}
+    assert header["skipped_components"] == {"ood": 1, "earlier_rule": 1, "withheld": 0}
 
 
 def test_group_ids_are_dropped_above_the_cap_and_the_counts_stay():
@@ -270,7 +274,7 @@ def test_group_ids_are_dropped_above_the_cap_and_the_counts_stay():
     rows = [(f"s{i}", f"g{i}", "a") for i in range(count)]
     pins = BenchmarkPins(by_sha={sha: ("test", "b") for sha, _, _ in rows})
     prior = {group: "train" for _, group, _ in rows}
-    _, header, _ = apply_benchmark_pins({}, rows, {}, pins, prior=prior)
+    _, header, _, _ = apply_benchmark_pins({}, rows, {}, pins, prior=prior)
     over = header["v1_continuity_overridden"]
     assert (over["images"], over["groups"]) == (count, count) and "group_ids" not in over
     with pytest.raises(ValueError, match="changed split"):
@@ -282,14 +286,14 @@ def test_cli_opt_out_and_summary():
     assert pin_kwargs(argparse.Namespace(no_benchmark_pins=True), None) == {}
     pins = BenchmarkPins(by_sha={"s1": ("test", "b")})
     rows = [("s1", "g1", "a")]
-    _, header, _ = apply_benchmark_pins({}, rows, {}, pins, prior={"g1": "train"})
+    _, header, _, _ = apply_benchmark_pins({}, rows, {}, pins, prior={"g1": "train"})
     text = pins_summary(header)
     assert "b test=1 validation=0" in text
     assert text.splitlines()[-1] == (
         "release: benchmark pins override v1 continuity for 1 image(s) in 1 group(s): "
         "{'a': {'train -> test': 1}}"
     )
-    _, quiet, _ = apply_benchmark_pins({}, rows, {}, pins, prior={"g1": "test"})
+    _, quiet, _, _ = apply_benchmark_pins({}, rows, {}, pins, prior={"g1": "test"})
     assert pins_summary(quiet).endswith(
         "release: benchmark pins override v1 continuity for 0 image(s)"
     )
@@ -358,7 +362,7 @@ def test_a_pin_beats_v1_continuity_and_the_whole_group_moves(tmp_path):
     over = stats.pins["v1_continuity_overridden"]
     assert (over["images"], over["groups"]) == (6, 3)
     assert over["by_source"] == {"old": {"train -> test": 6}} and over["group_ids"] == sorted(moved)
-    assert stats.pins["skipped_components"] == {"ood": 0, "earlier_rule": 0}
+    assert stats.pins["skipped_components"] == {"ood": 0, "earlier_rule": 0, "withheld": 0}
     assert "v1_continuity_conflicts" not in stats.pins
     v2 = load_split_map(tmp_path / "v2" / "SPLIT_MAP.json")
     assert v2 is not None and v2.pins == stats.pins

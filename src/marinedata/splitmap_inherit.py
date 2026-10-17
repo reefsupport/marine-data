@@ -154,6 +154,8 @@ def resolve_inherited_splits(
     ood_header: Mapping[str, object] | None = None,
     near_dup: Mapping[str, object] | None = None,
     override: Mapping[str, SplitName] | None = None,
+    straddles: Mapping[str, str] | None = None,
+    inherits: Mapping[str, object] | None = None,
 ) -> InheritResult:
     """Write a fresh map at ``path`` that embeds ``prior`` and assigns the new components.
 
@@ -166,7 +168,10 @@ def resolve_inherited_splits(
     (:func:`marinedata.benchmark_pins.apply_benchmark_pins`): every group of the component, prior
     ones included, takes it. ``seed`` seeds the allocation of new groups only; the prior seed is
     kept in ``inherits``. Raises ``SplitMapError`` if ``path`` exists or the prior map cannot be
-    the base."""
+    the base. ``straddles``: group -> reason, a group whose own v1.0 images sit in different v1.0
+    splits (:mod:`marinedata.splitmap_tree`): it is never assigned, even when a pin moves the rest
+    of its component, and the component's new groups are withheld. ``inherits`` replaces the
+    default ``inherits`` header (:func:`inherit_header`)."""
     if load_split_map(path) is not None:
         raise SplitMapError(f"{path} already exists: an inheriting map is generated fresh once")
     _check_compatible(prior, ratios)
@@ -181,6 +186,7 @@ def resolve_inherited_splits(
     forced = dict(forced or {})
     withhold = dict(withhold or {})
     override = {canon: split for canon, split in (override or {}).items() if canon in counts}
+    straddles = dict(straddles or {})
 
     adopted: dict[str, SplitName] = {}
     conflicts: dict[str, list[str]] = {}
@@ -189,7 +195,9 @@ def resolve_inherited_splits(
             continue
         group_members = members.get(canon, [canon])
         found = sorted({persisted[m] for m in group_members if m in persisted})
-        if len(found) == 1:
+        if any(m in straddles for m in group_members):
+            conflicts[canon] = group_members  # v1.0 split one of its groups: nothing joins it
+        elif len(found) == 1:
             adopted[canon] = found[0]
         elif found:
             conflicts[canon] = group_members
@@ -203,9 +211,12 @@ def resolve_inherited_splits(
     for _canon, group_members in sorted(conflicts.items()):
         splits = " and ".join(sorted({persisted[m] for m in group_members if m in persisted}))
         for member in group_members:
-            if member not in persisted:
+            if member in straddles:
+                withheld[member] = straddles[member]
+            elif member not in persisted:
                 withheld[member] = (
-                    f"near-duplicate of prior-release images the prior map put in {splits}: "
+                    "near-duplicate of prior-release images the prior map put in "
+                    f"{splits or 'several splits (a v1.0 group straddles them)'}: "
                     "no split can honour both"
                 )
     withheld_fresh = {canon for canon in fresh if canon in withhold}
@@ -247,7 +258,9 @@ def resolve_inherited_splits(
             continue
         split = fixed[canon] if canon in fixed else allocated[canon]
         for member in members.get(canon, [canon]):
-            if canon in override:
+            if member in straddles:
+                withheld[member] = straddles[member]  # never assigned, even under a pin
+            elif canon in override:
                 assignments[member] = split  # a benchmark pin moves the whole component
             else:
                 assignments.setdefault(member, split)
@@ -277,7 +290,9 @@ def resolve_inherited_splits(
             release=release or "",
             stratify=prior.stratify,
             near_dup=dict(near_dup or {}),
-            inherits=inherit_header(prior, prior_sha256),
+            inherits=dict(inherits)
+            if inherits is not None
+            else inherit_header(prior, prior_sha256),
             ood=dict(ood_header or {}),
             ood_rules=ood_rules,
             withheld=withheld,

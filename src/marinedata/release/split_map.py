@@ -5,7 +5,14 @@ from __future__ import annotations
 from collections.abc import Callable, Iterable, Mapping
 from pathlib import Path
 
-from ..benchmark_pins import BenchmarkPins, apply_benchmark_pins, check_overridden, stamp_pins
+from ..benchmark_pins import (
+    MAP_NAME,
+    BenchmarkPins,
+    apply_benchmark_pins,
+    check_overridden,
+    component_pins,
+    stamp_pins,
+)
 from ..builder import SUPERVISED_DEFAULT_RATIOS, SplitName
 from ..checksums import file_digest
 from ..licence_class import release_excluded
@@ -22,6 +29,7 @@ from ..neardup import (
 from ..registry import Registry
 from ..splitmap import MergeInfo, SplitMap, load_split_map, resolve_splits, rows_to_counts
 from ..splitmap_inherit import resolve_inherited_splits
+from ..splitmap_tree import V1Tree
 from ..splitv2.rules import RulesConfig
 from ..strata import DEFAULT_MIN_GROUPS, TEST, TRAIN
 from ..upstream_split import honoured_test_groups
@@ -84,6 +92,7 @@ def generate_split_map(
     near_dup_header: Mapping[str, object] | None = None,
     inherit: SplitMap | None = None,
     inherit_sha256: str = "",
+    inherit_tree: V1Tree | None = None,
     ood_rules: RulesConfig | None = None,
     ood_metadata: Mapping[str, Mapping[str, object]] | None = None,
     benchmark_pins: BenchmarkPins | None = None,
@@ -216,10 +225,24 @@ def generate_split_map(
         for group, sources in group_to_strata.items()
         if sources and sources <= never_eval_sources
     }
+    prefer = (  # a sha v1.0 published in several splits sits where its benchmark pin asks
+        {
+            canon: MAP_NAME[pin]
+            for canon, pin in component_pins(rows, merge_info.canonical, benchmark_pins).items()
+        }
+        if inherit_tree is not None and benchmark_pins is not None
+        else {}
+    )
     plan = (
         plan_inheritance(
             rows,
             inherit=inherit,
+            inherit_sha256=inherit_sha256,
+            v1_tree=inherit_tree,
+            prefer=prefer,
+            ratios=ratios or dict(SUPERVISED_DEFAULT_RATIOS),
+            seed=seed,
+            now=now or "",
             never_eval_sources=never_eval_sources,
             canonical=merge_info.canonical,
             hashes=hashes,
@@ -228,7 +251,7 @@ def generate_split_map(
             ood_rules=ood_rules,
             ood_metadata=ood_metadata,
         )
-        if inherit is not None
+        if inherit is not None or inherit_tree is not None
         else None
     )
     train_only = frozenset(forced)  # never-eval-only components: a pin never moves them
@@ -250,13 +273,14 @@ def generate_split_map(
     # component, and `pins.v1_continuity_overridden` records it).
     pins_header: dict[str, object] = {}
     pin_overrides: dict[str, str] = {}
+    pin_withheld: dict[str, str] = {}  # pinned components the v1.0 band forces to train
     if benchmark_pins is not None:
-        forced, pins_header, pin_overrides = apply_benchmark_pins(
+        forced, pins_header, pin_overrides, pin_withheld = apply_benchmark_pins(
             forced,
             rows,
             merge_info.canonical,
             benchmark_pins,
-            prior=inherit.assignments if inherit is not None else None,
+            prior=plan.prior.assignments if plan is not None and plan.prior is not None else None,
             ood=plan.ood if plan is not None else (),
             train_only=train_only,
         )
@@ -267,7 +291,7 @@ def generate_split_map(
         **(near_dup_header or {}),
     }
     inherited = None
-    if inherit is None or plan is None:
+    if plan is None or plan.prior is None:
         resolve_splits(
             out,
             counts,
@@ -288,7 +312,7 @@ def generate_split_map(
             out,
             counts,
             all_ratios,
-            prior=inherit,
+            prior=plan.prior,
             prior_sha256=inherit_sha256,
             strata=strata or {},
             merge_canonical=merge_info.canonical,
@@ -297,11 +321,13 @@ def generate_split_map(
             release=release,
             min_groups=min_groups,
             forced=forced,
-            withhold=plan.withhold,
+            withhold={**plan.withhold, **pin_withheld},
             ood=plan.ood,
             ood_header=plan.ood_header,
             near_dup=near_dup_value or None,
             override=pin_overrides,
+            straddles=plan.straddles,
+            inherits=plan.inherits(merge_info.canonical, pin_overrides),
         )
         if pins_header:
             check_overridden(pins_header, inherited.overridden)

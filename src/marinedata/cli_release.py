@@ -315,9 +315,10 @@ def _generate_global_split_map(
         print(pins_summary(stats.pins))
     elif (extra or {}).get("benchmark_pins") is not None:
         print("release: benchmark pins matched no release image")
-    if getattr(args, "inherit", None) is not None:
+    prior_path = getattr(args, "inherit_tree", None) or getattr(args, "inherit", None)
+    if prior_path is not None:
         print(
-            f"release: inherited {stats.inherited_groups} group(s) from {args.inherit} "
+            f"release: inherited {stats.inherited_groups} group(s) from {prior_path} "
             f"(kept verbatim) adopted={stats.inherit_adopted_groups} "
             f"conflict_components={stats.inherit_conflict_components} "
             f"band_pairs={stats.inherit_band_pairs} withheld={stats.withheld_groups} "
