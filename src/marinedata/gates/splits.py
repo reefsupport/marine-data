@@ -2,14 +2,21 @@
 """Splits gate (P1.6): groups stay in one split, ratios hit the target, no near-dup leaks to train.
 
 * ``group_straddles_splits`` one ``split_group`` appears in two splits (any config);
-* ``ratio_off_target``       a config whose train/validation/test share is more than 5 points
-  (``--split-tolerance``) from its target. Target, first match: the registry's per-config
-  entry, the ``split_ratio.target_pct`` the build recorded in RELEASE.json (the ratios of the
-  frozen split map it used), the registry default (80/10/10). Configs without all three splits
-  are only checked when the registry names them. The share is taken over the rows of the
-  NON-pinned sources: a source the split map pins to its upstream test manifest
-  (``pins.benchmarks`` of ``SPLIT_MAP.json``, in ``--release-dir`` else the build dir) has a
-  structural share, so it is reported (``ratio_pinned_sources``) and never fails;
+* ``ratio_off_target``       a STRATUM whose share of distinct images per split (``images`` config, by
+  ``image_sha256``) is more than 5 points (``--split-tolerance``) from its target. Why this
+  statistic: the split map allocates image GROUPS stratified by source and co-assigns near-duplicate
+  groups across a fork family (D-FORK), so the finest statistic it controls is a stratum's image
+  split; annotation rows and per-config subsets are projections it cannot steer, so
+  ``counts.ratio_by_config`` reports them (rows and distinct images per config) and never fails.
+  A stratum is the registry family of a source (``licence_class.source_families()``), else the
+  source id. Target, first match: the registry's entry for ``images``, the
+  ``split_ratio.target_pct`` the build recorded in RELEASE.json (the ratios of the frozen split map
+  it used), the registry default. ``images`` without all three splits is only checked when the
+  registry names it. Left out, and never failing: a source the split map pins to its upstream test
+  manifest (``pins.benchmarks`` of ``SPLIT_MAP.json``, in ``--release-dir`` else the build dir;
+  ``ratio_pinned_sources``), an image with an ``upstream_split`` label (the upstream partition
+  decided its split) and a stratum under ``ratio_min_images`` (100) images
+  (``ratio_small_strata``);
 * ``near_dup_leak``          a validation/test image within ``--phash-bits`` (pHash) of a train image;
 * ``no_split_group``         no config carries ``split_group`` (a vacuous check fails).
 
@@ -19,6 +26,7 @@ from __future__ import annotations
 
 import json
 from collections import Counter, defaultdict
+from collections.abc import Iterable, Mapping, Sequence
 from pathlib import Path
 
 import yaml
@@ -28,21 +36,28 @@ from . import GateResult, finish
 from .dedup import DEFAULT_PHASH_BITS
 from .phash import load_or_scan, near_pairs
 from .shards import (
+    SOURCE_COLUMNS,
     config_shards,
     find_split_map,
     iter_rows,
     norm_split,
     read_release,
     shard_columns,
+    shard_split,
     source_split_counts,
     split_counts,
 )
+from .v11_common import LABEL_TABLES, table_rows
 
 NAME = "splits"
 TOLERANCE_PT = 5.0
 DEFAULT_TARGET = {"train": 80.0, "validation": 10.0, "test": 10.0}
 TARGETS_FILE = "split_ratio.yaml"
 MAIN_SPLITS = ("train", "validation", "test")
+IMAGES = "images"
+RATIO_MIN_IMAGES = (
+    100  # under it one image moves a share by a point or more: reported, never failed
+)
 
 
 def _target(raw: dict) -> dict[str, float]:
@@ -66,7 +81,7 @@ def read_pinned_sources(
 
     The ids are the keys of ``pins.benchmarks``: a benchmark label (the registry id, else the
     benchmark id) is the ``source_id`` of its rows. No map, an unreadable one or one without pins
-    pins nothing, so the ratio is taken over every row as before; the second value is ``None``
+    pins nothing, so no source is left out of the ratio; the second value is ``None``
     for no map, ``"unreadable"`` for one that does not parse, else ``"release_dir"``/``"build_dir"``."""
     found = find_split_map(build_dir, release_dir)
     if found is None:
@@ -81,23 +96,59 @@ def read_pinned_sources(
     return (frozenset(str(k) for k in block) if isinstance(block, dict) else frozenset()), where
 
 
-def _without(have: dict[str, int], held: dict[str, dict[str, int]]) -> dict[str, int]:
-    """``have`` (rows per split) less the rows of the held (pinned) sources; a split that the
-    exclusion empties is dropped, so the table then lacks it like a table that never had it."""
-    if not held:
-        return dict(have)
-    left = {s: n - sum(c.get(s, 0) for c in held.values()) for s, n in have.items()}
-    return {s: n for s, n in left.items() if n or not have[s]}
+def _shares(sizes: Mapping[str, int], splits: Iterable[str] = ()) -> dict:
+    """``{"n": total, split: percent}`` of per-split sizes, plus the named splits that are empty."""
+    total = sum(sizes.values())
+    return {
+        "n": total,
+        **{s: round(100.0 * sizes.get(s, 0) / max(total, 1), 1) for s in sorted({*sizes, *splits})},
+    }
 
 
-def _basis(held: dict[str, dict[str, int]]) -> str:
-    """What a ratio finding counted: every row, or the non-pinned ones (and which were left out)."""
-    if not held:
-        return "rows"
-    rows = sum(sum(c.values()) for c in held.values())
-    names = sorted(held)
-    shown = ", ".join(names[:4]) + (f" +{len(names) - 4}" if len(names) > 4 else "")
-    return f"non-pinned rows (excl. {rows} rows of pinned {shown})"
+def _image_counts(files: Sequence[Path]) -> dict[str, int] | None:
+    """Distinct ``image_sha256`` per split of one config; only that column is read. ``None`` when
+    a shard lacks it."""
+    import pyarrow.compute as pc
+    import pyarrow.parquet as pq
+
+    seen: dict[str, set[str]] = defaultdict(set)
+    for path in files:
+        shard = pq.ParquetFile(path)
+        if "image_sha256" not in shard.schema_arrow.names:
+            return None
+        for batch in shard.iter_batches(batch_size=65536, columns=["image_sha256"]):
+            seen[shard_split(path)].update(pc.unique(batch.column(0)).to_pylist())
+    return {split: len(ids) for split, ids in sorted(seen.items())}
+
+
+def _upstream_images(shards: Mapping[str, Sequence[Path]]) -> set[str]:
+    """``image_sha256`` of every image with a non-empty ``upstream_split`` in a label table, as
+    ``splits_v11`` reads them: the upstream partition decided its split, not the split map."""
+    return {
+        row.get("image_sha256")
+        for table in LABEL_TABLES
+        for row in table_rows(shards.get(table, []), ("image_sha256", "upstream_split"))
+        if row.get("upstream_split")
+    }
+
+
+def _strata(
+    files: Sequence[Path], pinned: frozenset[str], upstream: set[str], families: Mapping[str, str]
+) -> tuple[dict[str, dict[str, set[str]]], dict[str, int]]:
+    """``({stratum: {split: {image_sha256}}}, {why: images left out})`` over the ``images`` rows.
+    A stratum is the source's registry family, else the source id."""
+    strata: dict[str, dict[str, set[str]]] = defaultdict(lambda: defaultdict(set))
+    left: dict[str, set[str]] = defaultdict(set)
+    for _, _, split, row in iter_rows(files, ("image_sha256", *SOURCE_COLUMNS), batch_size=4096):
+        source = str(row.get("source_id") or row.get("source") or "?")
+        sha = row.get("image_sha256")
+        if source in pinned:
+            left["pinned"].add(sha)
+        elif sha in upstream:
+            left["upstream_split"].add(sha)
+        else:
+            strata[families.get(source, source)][split].add(sha)
+    return strata, {why: len(ids) for why, ids in sorted(left.items())}
 
 
 def run_splits_gate(
@@ -107,6 +158,8 @@ def run_splits_gate(
     phash_bits: int = DEFAULT_PHASH_BITS,
     tolerance: float = TOLERANCE_PT,
     registry_root: str | Path | None = None,
+    families: Mapping[str, str] | None = None,
+    ratio_min_images: int = RATIO_MIN_IMAGES,
 ) -> GateResult:
     build_dir = Path(build_dir)
     shards = config_shards(build_dir)
@@ -145,43 +198,53 @@ def run_splits_gate(
 
     pinned, pins_from = read_pinned_sources(build_dir, release_dir)
     used: dict[str, str] = {}
+    target_of: dict[str, dict[str, float]] = {}
     pinned_rows: dict[str, dict] = {}
-    free_ratio: dict[str, dict] = {}
+    by_config: dict[str, dict] = {}
     for config, files in shards.items():
         by_source = source_split_counts(files) if pinned else None
         if pinned and by_source is None:
-            counts["ratio_unsourced_configs"] += 1  # no source column: every row stays counted
+            counts["ratio_unsourced_configs"] += 1  # no source column: pinned rows not listed
         held = {s: c for s, c in (by_source or {}).items() if s in pinned}
         if held:
             pinned_rows[config] = {
                 s: {**dict.fromkeys(MAIN_SPLITS, 0), **c} for s, c in held.items()
             }
-        have = _without(split_counts(files), held)
         if config in per_config:
-            target, used[config] = per_config[config], "registry:config"
+            target_of[config], used[config] = per_config[config], "registry:config"
         elif recorded:
-            target, used[config] = _target(recorded), "release:split_ratio"
+            target_of[config], used[config] = _target(recorded), "release:split_ratio"
         else:
-            target, used[config] = default, "registry:default"
-        if config not in per_config and not set(MAIN_SPLITS) <= set(have):
-            counts["ratio_skipped_configs"] += 1
-            continue
-        total = sum(have.values())
-        if held and not total:  # every row belongs to a pinned source: nothing to hold to a target
-            counts["ratio_all_pinned_configs"] += 1
-            continue
-        free_ratio[config] = {
-            "rows": total,
-            **{s: round(100.0 * have.get(s, 0) / total, 1) for s in sorted({*have, *target})},
-        }
-        for split, want in sorted(target.items()):
-            got = 100.0 * have.get(split, 0) / total
-            if abs(got - want) > tolerance:
-                fail(
-                    "ratio_off_target",
-                    f"{config}/{split}",
-                    f"{got:.1f}% of {total} {_basis(held)}, target {want:g}% +/- {tolerance:g} ({used[config]})",
-                )
+            target_of[config], used[config] = default, "registry:default"
+        rows, images = _shares(split_counts(files)), _image_counts(files)
+        by_config[config] = {"rows": rows, **({"images": _shares(images)} if images else {})}
+    present = {s for per in pinned_rows.values() for s in per}
+    checked: dict[str, dict] = {}
+    small: dict[str, int] = {}
+    left_out: dict[str, int] = {}
+    if IMAGES not in shards:
+        counts["ratio_check"] = f"skipped: no {IMAGES} config"
+    elif IMAGES not in per_config and not set(MAIN_SPLITS) <= set(split_counts(shards[IMAGES])):
+        counts["ratio_skipped_configs"] += 1
+    else:
+        strata, left_out = _strata(shards[IMAGES], pinned, _upstream_images(shards), families or {})
+        if not strata:  # every image is pinned or upstream-partitioned: nothing to hold to a target
+            counts["ratio_all_excluded_configs"] += 1
+        for stratum, by_split in sorted(strata.items()):
+            sizes = {s: len(ids) for s, ids in by_split.items()}
+            total = sum(sizes.values())
+            if total < ratio_min_images:
+                small[stratum] = total
+                continue
+            checked[stratum] = _shares(sizes, target_of[IMAGES])
+            for split, want in sorted(target_of[IMAGES].items()):
+                got = 100.0 * sizes.get(split, 0) / total
+                if abs(got - want) > tolerance:
+                    fail(
+                        "ratio_off_target",
+                        f"{IMAGES}/{split}",
+                        f"{got:.1f}% of {total} images of {stratum}, target {want:g}% +/- {tolerance:g} ({used[IMAGES]})",
+                    )
     records = [r for r in load_or_scan(build_dir) if r.phash is not None]
     if records:
         counts["near_dup_images"] = len(records)
@@ -201,8 +264,16 @@ def run_splits_gate(
         "phash_bits": phash_bits,
         "tolerance_pt": tolerance,
         "targets": used,
-        "ratio_pins": {"map": pins_from, "sources": sorted(pinned)},
+        "ratio_min_images": ratio_min_images,
+        "ratio_strata": checked,
+        "ratio_small_strata": small,
+        "ratio_left_out_images": left_out,
+        "ratio_by_config": by_config,
+        "ratio_pins": {
+            "map": pins_from,
+            "sources": sorted(present),
+            "absent": len(pinned - present),
+        },
         "ratio_pinned_sources": pinned_rows,
-        "ratio_excluding_pinned": free_ratio,
     }
     return finish(NAME, counts, sorted(failures))

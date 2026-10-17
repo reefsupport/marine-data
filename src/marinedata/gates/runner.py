@@ -40,10 +40,15 @@ def _dedup(b: Path, o: GateOptions) -> GateResult:
 
 
 def _splits(b: Path, o: GateOptions) -> GateResult:
+    from ..licence_class import source_families
     from .splits import run_splits_gate
 
     return run_splits_gate(
-        b, release_dir=o.release_dir, phash_bits=o.phash_bits, tolerance=o.split_tolerance
+        b,
+        release_dir=o.release_dir,
+        phash_bits=o.phash_bits,
+        tolerance=o.split_tolerance,
+        families=source_families(),
     )
 
 

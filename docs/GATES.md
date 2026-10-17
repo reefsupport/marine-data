@@ -44,30 +44,58 @@ fail. Writes `BUILD/phash.parquet`
 Fix: remove the duplicates from the source selection and rebuild.
 `images/test 886a59f87818 near_dup_across_splits: hamming 0 <= 8 to images/train 839186194c6d (src-a vs src-a)`
 
-## splits (required)
-Checks: no `split_group` in two splits; each config within `--split-tolerance` (5 points) of its target;
-no validation/test image within `--phash-bits` of a train image; some config carries `split_group`.
-Target, first match: `registry/split_ratio.yaml` `configs:` entry, the RELEASE.json
-`split_ratio.target_pct` (ratios of the frozen split map the build used), the registry `default` (70/15/15
-for new configs, as in `registry/splits/v2.yaml`; the four v1.0 configs sit under `configs:` at their measured
-shares, because upstream splits dominate them and no nominal ratio describes v1.0). Configs without
-train, validation and test are only ratio-checked when the registry names them. Fix: regenerate the
-split map, or set the target in the registry.
-`images/test ratio_off_target: 10.0% of 20 rows, target 25% +/- 5 (release:split_ratio)`
+A pair inside one split between two sources of different families that sits within `--phash-bits` is
+confirmed on a second fingerprint before it fails: the gate computes the 256-bit pHash
+(`marinedata.dedup.features`, as the union step does) and the grey-level entropy of both images from their
+bytes, and waives the pair only when the pHash-256 hamming distance is above 32 AND both entropies are
+at least 4.0 bits (`neardup.UNION_CONFIRM_PHASH256_MAX`, `UNION_CONFIRM_MIN_ENTROPY_BITS`): two
+different scenes whose coarse 64-bit hash collides, not a re-host and not a flat frame. A waived pair is
+counted in `counts.near_pairs_across_sources_unconfirmed`, with a capped sample in
+`counts.near_pairs_across_sources_unconfirmed_sample` (split, distances, entropy and the two source ids,
+no image shas):
+`images/train near_dup_unconfirmed: hamming 4 <= 8, pHash-256 56 (waiver needs > 32), min grey entropy 6.8 (needs >= 4) (src-a vs src-b)`
+Every other pair still fails, now with the evidence in the finding
+(`...; pHash-256 0 (waiver needs > 32), min grey entropy 7.0 (needs >= 4)`), and a pair whose bytes cannot be
+read or decoded fails closed. Pairs across splits and pairs inside a family are not affected.
 
-The ratio is taken over the rows of the **non-pinned** sources. A source the split map pins to its
-upstream test manifest (a key of `pins.benchmarks` in `SPLIT_MAP.json`, read from `--release-dir`, else
-the build dir) follows that manifest, so its test share is structural: its rows leave the ratio and never
-fail it. Rows are matched by the table's `source_id` column (else `source`); the benchmark label is the
-`source_id` of its rows. `counts.ratio_pinned_sources` holds the pinned sources' train/validation/test rows
-per table, `counts.ratio_excluding_pinned` the ratio the rule judged (`rows` and a percent per split) and
-`counts.ratio_pins` the map used (`release_dir`, `build_dir`, `unreadable` or none) and the pinned ids.
-Tolerance, targets and finding kinds are unchanged. A finding that left rows out says so:
-`images/test ratio_off_target: 5.0% of 20 non-pinned rows (excl. 20 rows of pinned src-p), target 15% +/- 5 (registry:default)`
-No map, one that does not parse, or one without `pins.benchmarks` pins nothing: every row counts, as
-before. A table without a source column keeps every row (`counts.ratio_unsourced_configs`). A table whose
-rows are all pinned (`ratio_all_pinned_configs`), or whose non-pinned rows lack a split, is not
-ratio-checked, like a table that never had that split (`ratio_skipped_configs`).
+## splits (required)
+Checks: no `split_group` in two splits; each stratum's image split within `--split-tolerance` (5 points)
+of its target; no validation/test image within `--phash-bits` of a train image; some config carries
+`split_group`. Fix: regenerate the split map, or set the target in the registry.
+`images/test ratio_off_target: 5.0% of 120 images of src-a, target 15% +/- 5 (release:split_ratio)`
+
+The ratio is judged per **stratum**, over its **distinct images** (`image_sha256`) in the `images`
+config. The split map allocates image groups stratified by source and co-assigns near-duplicate groups
+across a fork family (D-FORK), so the finest statistic it controls is a stratum's image split;
+annotation rows and per-config subsets are projections it cannot steer. A stratum is the registry
+`family` of a source (`licence_class.source_families()`), else the source id, so the Roboflow Universe
+forks are judged pooled and one fork the co-assignment dominates cannot fail on its own.
+Target, first match: `registry/split_ratio.yaml` `configs:` entry for `images`, the RELEASE.json
+`split_ratio.target_pct` (ratios of the frozen split map the build used), the registry `default` (70/15/15
+for new configs, as in `registry/splits/v2.yaml`). The `images` config is only judged when it carries
+train, validation and test, or the registry names it (`counts.ratio_skipped_configs`); a build without
+an `images` config skips the check (`counts.ratio_check`).
+
+Left out of the ratio, and never failing:
+- a source the split map pins to its upstream test manifest (a key of `pins.benchmarks` in
+  `SPLIT_MAP.json`, read from `--release-dir`, else the build dir): its test share is structural. Rows
+  are matched by the table's `source_id` column (else `source`); no map, one that does not parse, or one
+  without `pins.benchmarks` pins nothing;
+- an image with a non-empty `upstream_split` in a label table (`points`, `bleaching`, `boxes`, `semseg`,
+  `instances`): the upstream partition decided its split, as in the v1.1 split-map gate;
+- a stratum under 100 distinct images (`counts.ratio_min_images`): one image moves its share by a point
+  or more. It is listed with its image count in `counts.ratio_small_strata`.
+
+`counts.ratio_strata` holds each judged stratum's `n` and percent per split, `counts.ratio_left_out_images`
+the images left out per reason (`pinned`, `upstream_split`), `counts.ratio_by_config` the row shares and, where
+the table has `image_sha256`, the distinct-image shares of every config (informative only; they never
+fail), `counts.ratio_pinned_sources` the pinned sources' train/validation/test rows per table, and
+`counts.ratio_pins` the map used (`release_dir`, `build_dir`, `unreadable` or none), the pinned sources that
+have rows in the build (`sources`) and how many pinned sources the build does not carry (`absent`: a
+count only, the report never names a source the build leaves out). A table without a source column cannot
+list its pinned rows (`counts.ratio_unsourced_configs`); an `images` config whose images are all left out
+is not judged (`counts.ratio_all_excluded_configs`). `near_dup_leak`, `group_straddles_splits` and
+`no_split_group` are unchanged.
 
 ## masks (required)
 Checks (P1.5): mask size equals image size, no leftover EXIF orientation, uint8 semantic and uint16
