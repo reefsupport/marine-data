@@ -86,7 +86,8 @@ PERSONAL = (
 )
 DEDUP_FAMILY = (
     "Near-duplicate images inside one split that come from different Roboflow Universe forks of "
-    "one image set are disclosed, not removed: the dedup gate counts them as "
+    "one image set, or from the Seaview survey imagery and our labelled copies of its "
+    "photographs, are disclosed, not removed: the dedup gate counts them as "
     "`near_pairs_across_sources_in_family` in `provenance/GATES.json`, and a near-duplicate "
     "across splits still fails it."
 )

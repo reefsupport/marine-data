@@ -1703,6 +1703,7 @@ sources:
     tags: [needs-permission]
 
   - id: seaview-survey-imagery
+    family: seaview-survey
     default_platform: diver-photo-quadrat
     platform_evidence: "Registry citation (González-Rivero et al. 2019) titles the set \"Seaview Survey Photo-quadrat and Image Classification Dataset\"; the diver-operated camera comes from the survey method, not a registry sentence (confirm on the data card)."
     expect_geo: required

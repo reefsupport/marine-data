@@ -21,6 +21,8 @@ FORKS = (
     "roboflow-coral-classification-copy-changed-v13i",
     "roboflow-coral-reef-classification-v3i",
 )
+SEAVIEW_FAMILY = "seaview-survey"
+SEAVIEW = ("seaview-survey-imagery", "reef-support-seaview-labels")
 SLUGS = ("roboflow-coral-universe", "a", "a_b-c9", "9lives")
 NOT_SLUGS = ("", " ", "Roboflow", "-x", "_x", "a b", "a.b", "a/b", "ü")
 
@@ -38,6 +40,19 @@ def real_registry() -> Registry:
 def test_the_four_roboflow_forks_declare_one_family(real_registry):
     assert {sid: real_registry.source(sid).family for sid in FORKS} == dict.fromkeys(FORKS, FAMILY)
     assert {sid: lc.source_family(sid, REGISTRY) for sid in FORKS} == dict.fromkeys(FORKS, FAMILY)
+
+
+def test_the_two_seaview_sources_declare_one_family(real_registry):
+    expected = dict.fromkeys(SEAVIEW, SEAVIEW_FAMILY)
+    assert {sid: real_registry.source(sid).family for sid in SEAVIEW} == expected
+    assert {sid: lc.source_family(sid, REGISTRY) for sid in SEAVIEW} == expected
+
+
+def test_the_registry_has_exactly_the_roboflow_and_the_seaview_family():
+    members: dict[str, set[str]] = {}
+    for sid, family in lc.source_families(REGISTRY).items():
+        members.setdefault(family, set()).add(sid)
+    assert members == {FAMILY: set(FORKS), SEAVIEW_FAMILY: set(SEAVIEW)}
 
 
 def test_light_scan_and_validated_registry_declare_the_same_families(real_registry):

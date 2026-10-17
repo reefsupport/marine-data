@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import hashlib
 import io
+from pathlib import Path
 
 import pyarrow.parquet as pq
 import pytest
@@ -182,3 +183,43 @@ def test_release_gate_runner_hands_the_registry_family_map_to_the_gate(tmp_path,
     result = run_gate("dedup", build)
     assert result.passed, result.failures
     assert result.counts[IN_FAMILY] >= 1
+
+
+# -- the two Seaview sources share the registry family `seaview-survey` --------------------------
+
+REGISTRY = Path(__file__).resolve().parents[1] / "registry"
+SEAVIEW = ("seaview-survey-imagery", "reef-support-seaview-labels")
+ROBOFLOW_FORK = "roboflow-coral-bleaching-final-v6i"
+
+
+def _seaview_copy_build(tmp_path, copy_split: str = "train", copy_source: str = SEAVIEW[1]):
+    """A Seaview frame (train) and a re-encoded copy of it: same pHash, other sha256."""
+    images = [
+        Img(0, "train", SEAVIEW[0], group="sv-imagery"),
+        Img(0, copy_split, copy_source, shift=6, group="sv-copy"),
+    ]
+    return make_build(tmp_path, images=images, masks=False)
+
+
+def test_seaview_copy_in_the_same_split_is_disclosed_through_the_registry_family(tmp_path):
+    build = _seaview_copy_build(tmp_path)
+    assert _has(run_dedup_gate(build), "near_dup_across_sources")  # no family declared: v1.0 rule
+    result = run_dedup_gate(build, families=licence_class.source_families(REGISTRY))
+    assert result.passed, result.failures
+    assert result.counts[IN_FAMILY] == 1
+    (line,) = result.to_dict()["counts"][f"{IN_FAMILY}_sample"]
+    assert "family seaview-survey" in line and all(source in line for source in SEAVIEW)
+
+
+def test_seaview_copy_across_splits_still_fails(tmp_path):
+    build = _seaview_copy_build(tmp_path, copy_split="test")
+    result = run_dedup_gate(build, families=licence_class.source_families(REGISTRY))
+    assert not result.passed and _has(result, "near_dup_across_splits"), result.failures
+    assert IN_FAMILY not in result.counts
+
+
+def test_a_seaview_source_shares_no_family_with_a_roboflow_fork(tmp_path):
+    build = _seaview_copy_build(tmp_path, copy_source=ROBOFLOW_FORK)
+    result = run_dedup_gate(build, families=licence_class.source_families(REGISTRY))
+    assert not result.passed and _has(result, "near_dup_across_sources"), result.failures
+    assert IN_FAMILY not in result.counts
