@@ -102,7 +102,7 @@ def wants_v11(args: argparse.Namespace, *, v10_selected: bool) -> bool:
         args.v11
         or args.only
         or args.hidden_test
-        or args.hidden_test_published_exception
+        or getattr(args, "hidden_test_published_exception", False)
         or args.benchmark
         or args.nc_id
         or args.privacy_review
@@ -123,7 +123,7 @@ def _options(args: argparse.Namespace) -> V11Options:
         release_dir=Path(args.release_dir) if args.release_dir else None,
         v1_dir=args.v1_dir,
         hidden_test=tuple(args.hidden_test),
-        hidden_test_published_exception=args.hidden_test_published_exception,
+        hidden_test_published_exception=getattr(args, "hidden_test_published_exception", False),
         benchmarks=tuple(args.benchmark),
         rehearsal=args.rehearsal,
         extra_nc_ids=frozenset(args.nc_id),
