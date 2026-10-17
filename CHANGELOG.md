@@ -10,6 +10,7 @@ Nothing below is in a release yet. It is on `main` or on the Phase A branches na
 
 ### On main
 
+- **gates:** `splits_v11` (G6) accepts the moves of benchmark pins off the v1.0 split (D-STRADDLE): a group the split map records in `pins.v1_continuity_overridden` and the build puts in the map's split counts in `pin_override_applied` (`_<source>`, `pin_override_mates`), a recorded group that stayed is a `pin_override_noop`; other v1.0 moves still fail `reassigned_v1`. See `docs/GATES.md`.
 - Frozen v1.1 build places the rows of a source whose loader sets no `split_group`. `marinedata release build --tasks
   v2 --v11` aborted in `benthic-l2` with `no split_group for source(s) suim (1598 sample(s))`. `release split-map`
   groups every row through `source_release_entries` (the staged column, else the registry pattern, else the
