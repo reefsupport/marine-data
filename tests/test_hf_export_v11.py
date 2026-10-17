@@ -15,6 +15,7 @@ import pytest
 from PIL import Image
 
 from marinedata.gates.join import run_join_gate
+from marinedata.gates.masks_palette import check_palette_row
 from marinedata.hf_export_v11 import (
     V11ExportError,
     assert_public_safe,
@@ -26,6 +27,7 @@ from marinedata.hf_export_v11 import (
     v1_sha256s,
 )
 from marinedata.registry import Registry
+from marinedata.task_layers.configs.common import ConfigResult
 from marinedata.task_layers.v11_tables import V11Inputs, build_v11_tables, load_v1_config_shas
 
 TAX = "3.0.0"
@@ -434,3 +436,55 @@ def test_a_new_image_of_a_v1_source_ships_its_bytes_and_the_join_resolves(regist
 
 def row_bytes(row) -> bytes:
     return Path(row.file).read_bytes()
+
+
+# PR-2b: mask_config follows the v1.0 tree too, so the mask of a new image of a v1.0 source ships
+
+
+def test_a_new_image_of_a_v1_source_embeds_its_mask_and_a_v1_image_does_not(registry, tmp_path):
+    root, shas = _own_tree(tmp_path)
+    (root / "labels").mkdir()  # outside CHECKSUMS: the export finds a mask by its mask_ref
+    for value, stem in enumerate(shas, start=1):
+        (root / "labels" / f"{stem}.png").write_bytes(_png(value))
+    v1 = tmp_path / "v1"
+    _shard(
+        v1, "coral-masks", [{"image_sha256": shas["w1"], "image": {"bytes": b"v1", "path": None}}]
+    )
+    inputs = V11Inputs(
+        taxonomy_version=TAX, roots={OWN: root}, split_of=dict.fromkeys(shas.values(), "train"),
+        v1_config_shas=load_v1_config_shas(v1, [OWN]),
+    )  # fmt: skip
+    classes = [{"id": i, "label_native": f"class-{i}"} for i in (1, 2)]
+    mask = {
+        "source_id": OWN, "label_origin": "human", "class_counts": "{}", "label_status": "ok",
+        "canonical_class_counts": "{}", "hf_class_map": json.dumps(classes),
+    }  # fmt: skip
+    labelled = tuple(
+        {**mask, "sha256": sha, "mask_key": f"labels/{stem}.png"} for stem, sha in shas.items()
+    )
+    semseg = ConfigResult("semseg", labelled, {})
+    tables = build_v11_tables(registry, {"semseg": semseg}, inputs)
+    rel = tmp_path / "rel"
+    for name in ("metadata", "semseg"):
+        _write(rel, name, [{**r, "licence_class": "open"} for r in tables[name].rows])
+    (rel / "task_layers" / "V11_TABLES.json").write_text(json.dumps({"taxonomy_version": TAX}))
+
+    layout, _ = build_v11_layout(
+        registry, rel, {OWN: root}, flavour="open", skip_sha256=v1_sha256s(v1)
+    )
+    export_v11(layout, tmp_path / "out")
+    rows = {r["image_sha256"]: r for r in _rows(tmp_path / "out", "semseg")}
+    old, new = rows[shas["w1"]], rows[shas["w2"]]
+    # w1 is in the frozen v1.0 coral-masks: its stamp is untouched and nothing is re-shipped
+    assert (old["mask_config"], old["bytes_config"]) == ("coral-masks", "coral-masks")
+    assert old["mask"] is None and old["mask_bytes_sha256"] is None
+    # w2 joined after v1.0: no v1.0 config holds it, so its pixels (images) and mask (here) ship
+    assert (new["mask_config"], new["bytes_config"]) == (None, "images")
+    png = new["mask"]["bytes"]
+    assert Image.open(io.BytesIO(png)).mode == "P"
+    assert new["mask_bytes_sha256"] == hashlib.sha256(png).hexdigest()
+    assert [r["image_sha256"] for r in _rows(tmp_path / "out", "images")] == [shas["w2"]]
+    for row in rows.values():  # every mask resolves: bytes here, or a v1.0 config that holds it
+        assert (row["mask"] is not None) != bool(row["mask_config"])
+        assert check_palette_row(row) == ([], False)
+    assert {r["image_sha256"] for r in rows.values() if r["mask_config"]} <= v1_sha256s(v1)

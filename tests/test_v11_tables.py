@@ -3,6 +3,10 @@
 ``bytes_config`` used to key on the source alone. A new image of a v1.0 source (benthic-own +24,
 seaview-labels +11, aquarium +1 in run 3) was stamped ``coral-masks`` / ``fish-boxes``, configs with
 no row for it, and the export shipped no bytes for it (G1 join: 36 unresolved).
+
+PR-2b: ``mask_config`` follows the same rule. The masks of those new images were stamped with the
+v1.0 mask config (``coral-masks``) that has no row for them, and the export, which embeds a mask
+only when ``mask_config`` is null, shipped them nowhere.
 """
 
 from __future__ import annotations
@@ -17,13 +21,16 @@ import pytest
 from marinedata.checksums import file_digest
 from marinedata.registry import Registry
 from marinedata.task_layers.configs.common import ConfigResult
+from marinedata.task_layers.configs.constants import MASK_CONFIG_BY_SOURCE
 from marinedata.task_layers.v11_tables import (
+    V1_EMBEDDING_CONFIGS,
     MissingV1TreeError,
     V11Inputs,
     build_v11_tables,
     bytes_config_of,
     inputs_from_build,
     load_v1_config_shas,
+    mask_config_of,
     source_bytes_config,
 )
 
@@ -73,6 +80,38 @@ def test_sources_are_ordered_by_the_config_the_v1_tree_gives_them() -> None:
     assert source_bytes_config(OWN, v1) == "coral-masks"
     assert source_bytes_config(AQUARIUM, v1) == "images"  # fish-boxes holds nothing in this tree
     assert source_bytes_config("noaa-pifsc-bleaching", v1) == "images"
+
+
+@pytest.mark.parametrize(
+    ("source_id", "sha", "want"),
+    [
+        (OWN, OLD, "coral-masks"),  # a v1.0 image keeps the frozen mask config
+        (OWN, NEW, None),  # a new image of a v1.0 source: no v1.0 config holds its mask
+        ("suim", OTHER, "scene-masks"),
+        ("suim", OLD, None),  # coral-masks holds the sha, but suim's masks live in scene-masks
+        (UIIS, BOTH, "instance-masks"),
+        (UIIS, FISH, None),  # fish-boxes holds the pixels of the image, not its mask
+        ("coralscop-masks-rs", NEW, "coral-masks-machine"),
+        ("coralscop-masks-rs", OLD, None),
+        ("noaa-pifsc-bleaching", OLD, None),  # a source with no mask config: unchanged
+        (OPT, NEW, None),
+        (OWN, None, None),
+        (None, OLD, None),
+    ],
+)
+def test_mask_config_follows_the_v1_tree_not_the_source(source_id, sha, want) -> None:
+    v1 = {
+        "coral-masks": {OLD}, "coral-masks-machine": {NEW}, "scene-masks": {OTHER},
+        "fish-boxes": {FISH, BOTH}, "instance-masks": {BOTH},
+    }  # fmt: skip
+    assert mask_config_of(source_id, sha, v1) == want
+    assert mask_config_of(source_id, sha, {}) is None  # no tree: nothing is a v1.0 mask
+
+
+def test_a_mask_is_decided_apart_from_the_pixels_of_its_image() -> None:
+    v1 = {"coral-masks-machine": {NEW}}  # CoralSCOP's machine masks cover an image benthic-own adds
+    assert bytes_config_of(OWN, NEW, v1) == "coral-masks-machine"  # the pixels are there
+    assert mask_config_of(OWN, NEW, v1) is None  # benthic-own's own mask is not
 
 
 def _stage(tmp_path: Path, staged: dict[str, list[tuple[str, str]]]) -> dict[str, Path]:
@@ -169,3 +208,69 @@ def test_no_v1_source_needs_no_v1_tree(tmp_path) -> None:
         taxonomy_version="3.0.0", roots={OPT: tmp_path}, manifests=[], split_map=SPLIT_MAP
     )  # fmt: skip
     assert dict(inputs.v1_config_shas) == {}
+
+
+def test_semseg_and_instances_rows_take_the_mask_config_per_image(registry, tmp_path) -> None:
+    staged = {
+        CORAL: [(OLD, "g1"), (NEW, "g2")],
+        UIIS: [(BOTH, "g3"), (FISH, "g4")],
+        OPT: [(OTHER, "g5")],
+    }
+    roots = _stage(tmp_path, staged)
+    v1 = {"coral-masks": {OLD}, "instance-masks": {BOTH}, "fish-boxes": {FISH, BOTH}}
+    inputs = V11Inputs(
+        taxonomy_version="3.0.0", roots=roots, v1_config_shas=v1,
+        split_of={sha: "train" for items in staged.values() for sha, _ in items},
+    )  # fmt: skip
+    mask = {
+        "label_origin": "human", "class_counts": "{}", "label_status": "ok",
+        "canonical_class_counts": "{}", "hf_class_map": "[]",
+    }  # fmt: skip
+    semseg = ConfigResult(
+        "semseg",
+        tuple(
+            {**mask, "source_id": sid, "sha256": sha, "mask_key": f"m/{sha[-1]}.png"}
+            for sid, sha in ((CORAL, OLD), (CORAL, NEW), (OPT, OTHER))
+        ),
+        {},
+    )  # fmt: skip
+    instances = ConfigResult(
+        "instances", tuple({"source_id": UIIS, "sha256": sha} for sha in (BOTH, FISH)), {}
+    )  # fmt: skip
+    out = build_v11_tables(registry, {"semseg": semseg, "instances": instances}, inputs)
+    got = {
+        (r["source_id"], r["image_sha256"]): (r["mask_config"], r["bytes_config"])
+        for table in ("semseg", "instances")
+        for r in out[table].rows
+    }  # fmt: skip
+    assert got == {
+        (CORAL, OLD): ("coral-masks", "coral-masks"),  # a v1.0 row keeps its stamp
+        (CORAL, NEW): (None, "images"),  # a new image: the export embeds its mask and its pixels
+        (OPT, OTHER): (None, "images"),  # a source with no mask config: unchanged
+        (UIIS, BOTH): ("instance-masks", "instance-masks"),
+        (UIIS, FISH): (None, "fish-boxes"),  # the pixels are in v1.0, the mask is not
+    }  # fmt: skip
+    old = V11Inputs(taxonomy_version="3.0.0", roots=roots, split_of=inputs.split_of)  # no v1.0 tree
+    rows = build_v11_tables(registry, {"semseg": semseg}, old)["semseg"].rows
+    assert {r["mask_config"] for r in rows} == {None}  # never a v1.0 config unasked
+
+
+def test_every_v1_mask_config_has_its_sha_set_loaded(tmp_path) -> None:
+    masks = set(MASK_CONFIG_BY_SOURCE.values())
+    assert masks <= V1_EMBEDDING_CONFIGS  # a mask config missing here would never match a sha
+    v1 = _v1_tree(tmp_path / "v1", {config: [OLD] for config in sorted(masks)})
+    found = load_v1_config_shas(v1, list(MASK_CONFIG_BY_SOURCE))
+    assert found == {config: frozenset({OLD}) for config in masks}
+    for source_id, config in MASK_CONFIG_BY_SOURCE.items():
+        assert mask_config_of(source_id, OLD, found) == config
+        assert mask_config_of(source_id, NEW, found) is None
+
+
+@pytest.mark.parametrize("source_id", sorted(MASK_CONFIG_BY_SOURCE))
+def test_a_v1_mask_source_without_a_v1_tree_fails_naming_the_flag(source_id, tmp_path) -> None:
+    with pytest.raises(MissingV1TreeError, match=rf"{source_id}.*--v1-dir DIR"):
+        load_v1_config_shas(None, [source_id])
+    with pytest.raises(MissingV1TreeError, match=rf"{source_id}.*--v1-dir DIR"):
+        inputs_from_build(
+            taxonomy_version="3.0.0", roots={source_id: tmp_path}, manifests=[], split_map=SPLIT_MAP
+        )  # fmt: skip
