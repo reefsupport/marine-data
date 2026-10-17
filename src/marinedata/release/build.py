@@ -354,6 +354,7 @@ def build_release(
     (release_root / "RELEASE.json").write_text(release_json_text)
 
     task_layer_configs: dict[str, int] = {}
+    staged_layers: tuple = ()
     if tasks_mode == "v2":
         from ..task_layers.configs import build_all_configs, resolve_tasklabels_root, write_configs
 
@@ -380,17 +381,23 @@ def build_release(
                 # The tasklabels root holds no points / boxes / instances annotations of the
                 # staged trees: build them from the admitted roots into an overlay of that root
                 # (same memoised digest as the spine, so the images are hashed once).
-                base_dir = scope.enter_context(
+                overlay = scope.enter_context(
                     staged_overlay(registry, base_dir, admitted_roots, digest=digest)
-                ).root
+                )
+                base_dir, staged_layers = overlay.root, overlay.layers
             results = build_all_configs(registry, base_dir, flavour, v11=v11_inputs)
         if v11_inputs is None:
             write_configs(results, release_root / "task_layers")
         else:
+            from ..task_layers.staged_annotations import layer_record
             from ..task_layers.v11_tables import v11_schemas, write_v11_report
 
             write_configs(results, release_root / "task_layers", v11_schemas(results))
-            write_v11_report(results, release_root / "task_layers")
+            write_v11_report(
+                results,
+                release_root / "task_layers",
+                staged_layers=[layer_record(layer) for layer in staged_layers],
+            )
         task_layer_configs = {config_id: result.n_images for config_id, result in results.items()}
 
     return ReleaseResult(
@@ -404,4 +411,5 @@ def build_release(
         never_eval_near_dup_excluded=tuple(near_dup_excluded),
         never_eval_near_dup_rows=near_dup_rows,
         task_layer_configs=task_layer_configs,
+        staged_layers=staged_layers,
     )

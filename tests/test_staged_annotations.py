@@ -202,7 +202,7 @@ def test_build_release_builds_the_overlay_only_with_v11(monkeypatch, tmp_path):
     @contextlib.contextmanager
     def fake_overlay(reg, base_dir, admitted, *, digest):
         seen["overlay"] = (Path(base_dir), dict(admitted), digest)
-        yield SimpleNamespace(root=tmp_path / "the-overlay")
+        yield SimpleNamespace(root=tmp_path / "the-overlay", layers=())
 
     class Stop(Exception):
         pass

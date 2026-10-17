@@ -21,15 +21,17 @@ files on disk (the cached trees carry none). The digest is the build's memoised 
 bytes the metadata spine already hashed are not hashed again and task rows key on the same sha256
 as the spine. No network, no image is ever read.
 
-Adding a producer (part B: ``boxes`` through ``staged_boxes``, ``instances`` through
-``staged_instance_rows``): write ``run(ctx) -> ProducedLayer`` that writes its table with the
-table's own writer (``write_boxes`` / ``write_masks``) into ``ctx.annotations_root``, and pass a
-:class:`LayerProducer` to :func:`register_producer`.
+Seaview ``points`` is registered here; the ``boxes`` and ``instances`` producers are in
+:mod:`staged_task_producers` (:func:`default_producers` loads it). Adding a producer: write
+``run(ctx) -> ProducedLayer`` that writes its table with the table's own writer (``write_boxes`` /
+``write_masks``) into ``ctx.annotations_root``, and pass a :class:`LayerProducer` to
+:func:`register_producer`.
 """
 
 from __future__ import annotations
 
 import contextlib
+import json
 import os
 import shutil
 import tempfile
@@ -164,6 +166,32 @@ def register_producer(producer: LayerProducer) -> LayerProducer:
     return producer
 
 
+def default_producers() -> tuple[LayerProducer, ...]:
+    """Every producer: seaview points, plus the boxes and instances ones that registering
+    :mod:`staged_task_producers` (imported here) adds."""
+    from . import staged_task_producers  # noqa: F401
+
+    return tuple(PRODUCERS.values())
+
+
+def layer_record(layer: StagedLayer) -> dict[str, Any]:
+    """The JSON-ready tally of one layer, for ``V11_TABLES.json`` (``staged_layers``)."""
+    detail = json.loads(json.dumps(layer.detail, default=str, sort_keys=True))
+    return {
+        "table": layer.table, "source_id": layer.source_id, "version": layer.version,
+        "rows": layer.rows, "images": layer.images, "reused": layer.reused, "detail": detail,
+    }  # fmt: skip
+
+
+def layer_line(layer: StagedLayer) -> str:
+    """One log line per layer (the build summary prints it)."""
+    origin = "reused from the tasklabels root" if layer.reused else "built from the staged tree"
+    return (
+        f"{layer.table}/{layer.source_id} {layer.version}: {layer.rows} rows, "
+        f"{layer.images} images ({origin})"
+    )
+
+
 def _head(path: Path, n: int) -> bytes:
     with path.open("rb") as handle:
         return handle.read(n)
@@ -282,7 +310,7 @@ def staged_overlay(
     """
     base = Path(base_dir)
     admitted = {source_id: Path(root) for source_id, root in roots.items()}
-    chosen = list(PRODUCERS.values()) if producers is None else list(producers)
+    chosen = list(default_producers()) if producers is None else list(producers)
     with tempfile.TemporaryDirectory(prefix="marinedata-staged-", dir=tmp_dir) as tmp:
         overlay = Path(tmp) / "root"
         _mirror(base, overlay)
@@ -306,6 +334,9 @@ __all__ = [  # noqa: RUF022
     "StagedLayer",
     "StagedLayerError",
     "StagedOverlay",
+    "default_producers",
+    "layer_line",
+    "layer_record",
     "register_producer",
     "staged_overlay",
 ]

@@ -111,6 +111,9 @@ class BoxSource:
     stream_parts: int = 0  # fathomnet: number of _stream part files
     licence_join: bool = False  # image licence = the matching FathomNet image's (FGVC sets)
     id_key: str | None = None  # registry-relative CSV (category_id,name): ids-only sets get names
+    names_key: str | None = (
+        None  # registry-relative data.yaml, for a YOLO set whose manifest lacks it
+    )
 
     @property
     def tree(self) -> str:
@@ -118,6 +121,9 @@ class BoxSource:
 
 
 FGVC23_KEY = "taxonomy/vocab/fathomnet-fgvc23-category-key.csv"  # category_id -> concept (U8a)
+# roboflow-aquarium's data.yaml sits at docs/aquarium_pretrain/ in the bucket, outside the
+# pinned manifest (a locked build cannot read it); vendored with its sha256 in the header.
+AQUARIUM_NAMES_KEY = "taxonomy/vocab/roboflow-aquarium-data.yaml"
 
 
 # Source classes: fathomnet = lic-A.tsv (restricted-nd, per-contributor); rf100-coral-lwptl and
@@ -142,7 +148,7 @@ BOX_SOURCES: dict[str, BoxSource] = {
                   names_rel="labels/files/data.yaml"),
         BoxSource("roboflow-aquarium", "zip-5d30fed3dd5a", "yolo", "human_crowd", "CC-BY-4.0",
                   OPEN, crosswalk_id="roboflow-aquarium", label_set="aquarium-combined",
-                  names_rel="docs/aquarium_pretrain/data.yaml"),
+                  names_key=AQUARIUM_NAMES_KEY),
         # HK-4c: instance-mask sets, one box per COCO instance (documents/stems: masks_instance)
         BoxSource("uiis", "rev-44ca5db46599", "coco-instances", "human", "Apache-2.0", OPEN,
                   crosswalk_id="usis-uiis", label_set="usis-uiis-categories"),
@@ -447,9 +453,16 @@ def _fgvc25(spec, registry, tree, limit, join) -> BoxResult:
     return out.result()
 
 
+def _yolo_names_text(spec, registry, tree) -> str:
+    """The set's ``data.yaml``: the registry copy (``names_key``) when the pinned tree lacks it."""
+    if spec.names_key:
+        return (Path(registry.root) / spec.names_key).read_text()
+    return tree.get(spec.names_rel).decode()
+
+
 def _yolo(spec, registry, tree, limit, workers=16) -> BoxResult:
     out = _Emit(spec, registry)
-    names = yolo_names(tree.get(spec.names_rel).decode())
+    names = yolo_names(_yolo_names_text(spec, registry, tree))
     meta = sorted(tree.table("metadata.parquet"), key=lambda m: m["stem"])
     meta = [m for m in _stride(meta, limit) if ("default", m["stem"]) in tree.shas]
 

@@ -228,7 +228,6 @@ class StubTree:
 def test_staged_yolo_source_writes_reads_back_and_feeds_the_config(reg, tmp_path):
     spec = bt.BOX_SOURCES["roboflow-aquarium"]
     files = {
-        spec.names_rel: "names: [fish, jellyfish]\n",
         "labels/a.txt": "0 0.5 0.5 0.2 0.2\n1 0.9 0.9 0.4 0.4\n",
         "labels/b.txt": "",
     }
@@ -244,6 +243,7 @@ def test_staged_yolo_source_writes_reads_back_and_feeds_the_config(reg, tmp_path
     assert len(res.rows) == 2 and res.images == 1 and res.unlabelled_images == 1
     assert res.counts.clipped == 1 and res.counts.orphan == 1 and res.pending == ()
     assert {r["upstream_split"] for r in res.rows} == {"val"}
+    assert {r["label_native"] for r in res.rows} == {"fish", "jellyfish"}  # the vendored data.yaml
     validate_rows("boxes", list(res.rows))
     path = bt.write_boxes(tmp_path, spec.source_id, spec.version, list(res.rows))
     assert path.is_file()
