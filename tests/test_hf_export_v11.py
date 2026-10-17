@@ -294,6 +294,25 @@ def test_table_crosswalks_agree_with_the_loaders_that_declare_one(registry):
         assert loader is None or loader.crosswalk_id in (None, cid), sid
 
 
+def test_taxonomy_carries_the_edges_of_box_sources_whose_loader_declares_no_crosswalk(
+    registry, build
+):
+    rel, roots, _ = build
+    rows = pq.read_table(rel / "task_layers" / "metadata.parquet").to_pylist()
+    boxes = (("e", "roboflow-aquarium"), ("d", "usis10k"))
+    rows += [_meta(h * 64, sid, config="boxes") for h, sid in boxes]
+    _write(rel, "metadata", rows)
+    layout, _ = build_v11_layout(registry, rel, roots, flavour="open", skip_sha256={SKIP_IMG})
+    edges = {
+        r.values["key"]: r.values
+        for rs in layout["taxonomy"][1].values()
+        for r in rs
+        if r.values["kind"] == "edge"
+    }
+    assert json.loads(edges["roboflow-aquarium:puffin"]["targets"]) == {"taxon": "A137039"}
+    assert json.loads(edges["usis-uiis:reefs"]["targets"]) == {"taxon": "NT_REEF"}
+
+
 def test_open_tables_never_name_a_private_resource(registry, build):
     layout, _ = _layout(registry, build)
     text = json.dumps(

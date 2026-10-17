@@ -381,6 +381,22 @@ def table_crosswalk_ids() -> dict[str, str]:
     return out
 
 
+def source_crosswalk_id(
+    registry, source_id: str, bound: Mapping[str, str] | None = None
+) -> str | None:
+    """The crosswalk ``source_id``'s labels resolve with: its loader's, else the one its table
+    builder binds (``bound``, :func:`table_crosswalk_ids` by default)."""
+    loader = registry.source(source_id).loader
+    cid = loader.crosswalk_id if loader is not None else None
+    return cid or (table_crosswalk_ids() if bound is None else bound).get(source_id)
+
+
+def export_crosswalk_ids(registry, source_ids: Iterable[str]) -> set[str]:
+    """The crosswalks of ``source_ids``: the edges the label map and the taxonomy table carry."""
+    bound = table_crosswalk_ids()
+    return {c for s in source_ids if (c := source_crosswalk_id(registry, s, bound))}
+
+
 def label_map_rows(
     registry, source_ids: Iterable[str], version: str, label_rows: Iterable[Mapping] = ()
 ) -> list[dict]:  # fmt: skip
@@ -408,8 +424,7 @@ def label_map_rows(
     out: list[dict] = []
     bound = table_crosswalk_ids()
     for sid in sorted(source_ids):
-        loader = registry.source(sid).loader
-        cid = (loader.crosswalk_id if loader is not None else None) or bound.get(sid)
+        cid = source_crosswalk_id(registry, sid, bound)
         edges = registry.crosswalk(cid).edges if cid else ()
         labels = set()
         for e in edges:
@@ -557,9 +572,7 @@ def build_v11_layout(
         if images and any(r.values["source_id"] == sid for _, r in images):
             counts[sid]["configs"].add(IMAGES)
     labels = [r for c in TABLE_CONFIGS if c != "metadata" for r in tables[c]]
-    crosswalks = {
-        registry.source(s).loader.crosswalk_id for s in source_ids if registry.source(s).loader
-    }
+    crosswalks = export_crosswalk_ids(registry, source_ids)
     extra: dict[str, list[dict]] = {
         LABEL_MAP: label_map_rows(registry, source_ids, version, labels),
         SOURCES: source_rows(registry, source_ids, version, lock=lock, counts=counts),
