@@ -364,12 +364,30 @@ def _axis(edge, name: str) -> str | None:
     return next((v for k, v in edge.targets.items() if getattr(k, "value", str(k)) == name), None)
 
 
+def table_crosswalk_ids() -> dict[str, str]:
+    """``source -> crosswalk`` the task-layer table builders resolve its labels with (boxes, image
+    labels, semantic and instance masks). Some of these sources (the box and instance sets) declare
+    no ``loader.crosswalk_id`` in the registry, and their tables still carry the nodes."""
+    from .task_layers.boxes_table import BOX_SOURCES
+    from .task_layers.image_labels_table import LABEL_SOURCES
+    from .task_layers.masks_table import MASK_SOURCES
+    from .task_layers.sources.masks_instance import INSTANCE_SOURCES
+
+    out: dict[str, str] = {}
+    for specs in (BOX_SOURCES, LABEL_SOURCES, MASK_SOURCES, INSTANCE_SOURCES):
+        for sid, spec in specs.items():
+            if spec.crosswalk_id:
+                out.setdefault(sid, spec.crosswalk_id)
+    return out
+
+
 def label_map_rows(
     registry, source_ids: Iterable[str], version: str, label_rows: Iterable[Mapping] = ()
 ) -> list[dict]:  # fmt: skip
     """One row per ``(source, native label)``: every crosswalk edge (unmappable ones included) plus
     every label seen in ``label_rows`` with no edge, carried as ``mapped = false``. A mask
-    ``class_map`` fills ``pixel_value``."""
+    ``class_map`` fills ``pixel_value``. A source's crosswalk is its loader's, else the one its
+    table builder binds (:func:`table_crosswalk_ids`)."""
     pixels: dict[tuple[str, str], int] = {}
     seen: dict[str, set[str]] = defaultdict(set)
     for r in label_rows:
@@ -388,9 +406,10 @@ def label_map_rows(
             ):
                 pixels.setdefault((sid, str(c["label_native"])), int(c["id"]))
     out: list[dict] = []
+    bound = table_crosswalk_ids()
     for sid in sorted(source_ids):
         loader = registry.source(sid).loader
-        cid = loader.crosswalk_id if loader is not None else None
+        cid = (loader.crosswalk_id if loader is not None else None) or bound.get(sid)
         edges = registry.crosswalk(cid).edges if cid else ()
         labels = set()
         for e in edges:

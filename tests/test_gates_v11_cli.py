@@ -7,6 +7,7 @@ are downloaded: the detector is a fake, and the YuNet loader is mocked."""
 
 from __future__ import annotations
 
+import csv
 import hashlib
 import io
 import json
@@ -31,6 +32,10 @@ from marinedata.gates.labelmap import load_release, run_labelmap_gate
 from marinedata.gates.privacy_detectors import Detection
 from marinedata.gates.v11_runner import RUNNERS, V11_ALL, V11Options, run_v11_gate
 from marinedata.gates.yunet_model import YuNetModelError
+from marinedata.hf_export_v11 import label_map_rows
+from marinedata.registry import Registry
+from marinedata.task_layers.boxes_table import BOX_SOURCES
+from marinedata.task_layers.image_labels_table import axes_resolver_for
 
 STUBBED = ("frozen", "bytes_once", "masks", "decon", "privacy", "labelmap")
 
@@ -182,6 +187,89 @@ def test_labelmap_fails_an_unresolved_id_or_a_bad_fidelity(tmp_path, table, fiel
 def test_labelmap_fails_without_a_label_map_config(tmp_path):
     write_shard(tmp_path / "b", "points", "train", [{"source_id": "srcA", "label_native": "x"}])
     assert run_labelmap_gate(tmp_path / "b").counts["failed_no_label_map"] == 1
+
+
+def an_edge_into(namespace):
+    """``(crosswalk id, native label, column, bare id)`` of an exact one-target edge of taxonomy
+    3.0.0 whose target is a node of ``namespace`` (node keys are ``<namespace>:<id>``)."""
+    release = load_release("3.0.0")
+    for key, edge in release["edges"].items():
+        targets = edge.get("targets") or {}
+        if edge["fidelity"] == "exact" and len(targets) == 1:
+            ((axis, ident),) = targets.items()
+            if f"{namespace}:{ident}" in release["nodes"] and ident not in release["nodes"]:
+                cid, native = key.split(":", 1)
+                return cid, native, f"{axis}_node_id", ident
+    raise AssertionError(f"no exact one-target edge into {namespace} in taxonomy 3.0.0")
+
+
+def bare_id_build(tmp_path, cid, native, column, ident, table="boxes"):
+    row = {"source_id": "srcA", "taxon_node_id": None, "form_node_id": None}
+    row |= {"condition_node_id": None, column: ident, "fidelity": "exact"}
+    row |= {"taxonomy_version": "3.0.0"}
+    build = tmp_path / "bare"
+    mapped = {**row, "crosswalk_id": cid, "native_label": native, "mapped": True}
+    write_shard(build, "label-map", "train", [mapped])
+    write_shard(build, table, "train", [{**row, "label_native": native}])
+    return build
+
+
+@pytest.mark.parametrize("namespace", ["rs-taxa-v1", "rs-fauna-v1"])
+def test_labelmap_resolves_a_bare_id_in_every_taxonomy_namespace(tmp_path, namespace):
+    cid, native, column, ident = an_edge_into(namespace)
+    result = run_labelmap_gate(bare_id_build(tmp_path, cid, native, column, ident))
+    assert result.passed, result.failures
+    assert result.counts["boxes_rows"] == 1 and result.counts["ambiguous_bare_ids"] == 0
+
+
+def test_labelmap_still_fails_a_bare_id_no_namespace_has(tmp_path):
+    result = run_labelmap_gate(label_build(tmp_path, "points", "taxon_node_id", "A0"))
+    assert not result.passed and result.counts["failed_unknown_node"] == 1, result.counts
+
+
+def test_labelmap_counts_an_ambiguous_bare_id_without_failing(tmp_path, monkeypatch):
+    release = {
+        "nodes": {"ns-a:X1": {}, "ns-b:X1": {}, "ns-a:X2": {}},
+        "edges": {"cw:lbl": {"fidelity": "exact", "targets": {"taxon": "X1"}}},
+    }
+    monkeypatch.setattr("marinedata.gates.labelmap.load_release", lambda *_: release)
+    build = bare_id_build(tmp_path, "cw", "lbl", "taxon_node_id", "X1")
+    result = run_labelmap_gate(build, version="3.0.0")
+    assert result.passed, result.failures
+    assert result.counts["ambiguous_bare_ids"] == 1
+
+
+def vocab_labels(source_id):
+    vocab = Path(__file__).resolve().parents[1] / "registry" / "taxonomy" / "vocab"
+    lines = [x for x in (vocab / f"{source_id}.tsv").read_text().splitlines() if x[:1] not in "#"]
+    return [r["label"] for r in csv.DictReader(lines, delimiter="\t")]
+
+
+def test_labelmap_passes_the_four_box_sources_run_4_failed_on(tmp_path):
+    """Run 4: 330 findings, all from roboflow-aquarium, uiis, uiis10k and usis10k (bare rs-taxa /
+    NT_* ids, and no label-map edge because their loaders declare no crosswalk)."""
+    registry = Registry.load()
+    sources = ("roboflow-aquarium", "uiis", "uiis10k", "usis10k")
+    seen = [{"source_id": s, "label_native": n} for s in sources for n in vocab_labels(s)]
+    assert len(seen) == 31
+    map_rows = label_map_rows(registry, sources, "3.0.0", seen)
+    mapped = {(r["source_id"], r["native_label"]): r["fidelity"] for r in map_rows if r["mapped"]}
+    assert {(r["source_id"], r["label_native"]) for r in seen} <= set(mapped)
+    boxes = []
+    for r in seen:
+        resolve = axes_resolver_for(registry, BOX_SOURCES[r["source_id"]].crosswalk_id)
+        got = resolve(r["label_native"])
+        fid = mapped[(r["source_id"], r["label_native"])]
+        boxes.append(
+            {**r, "taxon_node_id": got.taxon, "form_node_id": got.form, "fidelity": fid}
+            | {"condition_node_id": got.condition, "taxonomy_version": "3.0.0"}
+        )
+    write_shard(tmp_path / "b", "label-map", "train", map_rows)
+    write_shard(tmp_path / "b", "boxes", "train", boxes)
+    result = run_labelmap_gate(tmp_path / "b")
+    assert result.passed, result.failures
+    assert result.counts["boxes_rows"] == 31
+    assert {"A137039", "A146419", "NT_DIVER"} <= {r["taxon_node_id"] for r in boxes}
 
 
 # G8 privacy, images config only
