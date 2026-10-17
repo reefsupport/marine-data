@@ -34,6 +34,11 @@ Nothing below is in a release yet. It is on `main` or on the Phase A branches na
   families are separate: a Seaview source against a Roboflow fork still fails. A pair across splits, a same-split pair
   between sources that share no family and an exact duplicate still fail. The v1.1.0 card's "Build and gates"
   paragraph and `docs/GATES.md` say so.
+- G7 `decon` gets `--hidden-test-published-exception` (default off, so the gate behaves as before until it is
+  used). A hidden-test overlap whose `image_sha256` the frozen v1.0 tree (`--v1-dir`) already publishes is exempt
+  and reported as `counts.hidden_test_already_published` (plus a sample of 20); every other hidden-test overlap
+  still fails as `hidden_test_new` (`counts.hidden_test_new`). Benchmark overlaps are never exempt, and the flag
+  without a v1.0 sha256 set fails the gate. Docs: `docs/GATES.md`.
 - Frozen v1.1 build places the rows of a source whose loader sets no `split_group`. `marinedata release build --tasks
   v2 --v11` aborted in `benthic-l2` with `no split_group for source(s) suim (1598 sample(s))`. `release split-map`
   groups every row through `source_release_entries` (the staged column, else the registry pattern, else the
