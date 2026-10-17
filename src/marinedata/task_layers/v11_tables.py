@@ -40,7 +40,7 @@ import datetime as dt
 import json
 import logging
 from collections import Counter, defaultdict
-from collections.abc import Callable, Iterable, Mapping, Sequence
+from collections.abc import Callable, Collection, Iterable, Mapping, Sequence
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
@@ -59,6 +59,9 @@ IMAGES_CONFIG = "images"
 V1_BYTES_CONFIG: dict[str, str] = {**MASK_CONFIG_BY_SOURCE, "roboflow-aquarium": "fish-boxes"}
 """Source -> the frozen v1.0 config that embeds its images. The UIIS family sits in both
 ``instance-masks`` and ``fish-boxes`` (grandfathered double embed): the mask config wins."""
+V1_EMBEDDING_CONFIGS = frozenset(V1_BYTES_CONFIG.values())
+"""The frozen v1.0 configs that embed image pixels: the only configs a ``bytes_config`` can name."""
+_V1_CONFIG_ORDER = tuple(sorted(V1_EMBEDDING_CONFIGS))
 V11_CONFIG_IDS = ("metadata", "points", "bleaching", "boxes", "semseg", "instances")
 ANNOTATION_TABLE = {
     "points": "points", "bleaching": "image_labels", "boxes": "boxes", "semseg": "masks",
@@ -84,9 +87,71 @@ _EXTRA_CORE = {
 }  # fmt: skip
 
 
-def bytes_config_of(source_id: str | None) -> str:
-    """The config holding ``source_id``'s image bytes: its v1.0 config, else ``images``."""
-    return V1_BYTES_CONFIG.get(source_id or "", IMAGES_CONFIG)
+def bytes_config_of(
+    source_id: str | None, sha: str | None, v1_config_shas: Mapping[str, Collection[str]]
+) -> str:
+    """The config holding one image's bytes: the frozen v1.0 config whose sha set holds ``sha``,
+    else ``images``. v1.0 configs never gain a row, so an image the v1.0 tree does not hold (a new
+    image of a v1.0 source included) is exported into ``images``. ``source_id`` only ranks the
+    configs: its own v1.0 config first (the UIIS family sits in both ``instance-masks`` and
+    ``fish-boxes``: the mask config wins), then the others by name."""
+    own = V1_BYTES_CONFIG.get(source_id or "")
+    for config in (own, *_V1_CONFIG_ORDER):
+        if config is not None and sha in v1_config_shas.get(config, ()):
+            return config
+    return IMAGES_CONFIG
+
+
+def source_bytes_config(
+    source_id: str | None, v1_config_shas: Mapping[str, Collection[str]]
+) -> str:
+    """The v1.0 config the v1.0 tree embeds ``source_id``'s images in, else ``images``: the
+    source-level view of :func:`bytes_config_of`, used to order sources (a row is decided per
+    image)."""
+    config = V1_BYTES_CONFIG.get(source_id or "")
+    return config if config is not None and v1_config_shas.get(config) else IMAGES_CONFIG
+
+
+class MissingV1TreeError(ValueError):
+    """The build admits v1.0 sources but has no v1.0 tree (``--v1-dir``) to say which of their
+    images v1.0 already embeds; guessing would stamp a v1.0 config on images it does not hold."""
+
+
+def require_v1_tree(source_ids: Iterable[str]) -> None:
+    """Raise :class:`MissingV1TreeError`, naming ``--v1-dir``, when ``source_ids`` has a v1.0
+    source."""
+    held = sorted(s for s in source_ids if s in V1_BYTES_CONFIG)
+    if held:
+        raise MissingV1TreeError(
+            f"the lock admits v1.0 source(s) {', '.join(held)} but no v1.0 tree was given: pass "
+            "--v1-dir DIR (the frozen v1.0 release dir with data/<config>/*.parquet, as for "
+            "`release gate --v11 --v1-dir`) so their v1.0 images keep the v1.0 config and their "
+            "new images go to `images`"
+        )
+
+
+def load_v1_config_shas(
+    v1_dir: str | Path | None, source_ids: Iterable[str]
+) -> dict[str, frozenset[str]]:
+    """``{v1.0 config: {image_sha256}}`` for the configs that embed pixels, read from ``v1_dir``
+    with the gates' reader. No ``v1_dir`` is fine only when no v1.0 source is admitted; a tree with
+    no ``image_sha256`` in any embedding config (a wrong path) is as bad as no tree."""
+    sources = list(source_ids)
+    if v1_dir is None:
+        require_v1_tree(sources)
+        return {}
+    from ..gates.v11_common import v1_config_shas
+
+    found = {
+        config: frozenset(shas)
+        for config, shas in v1_config_shas(Path(v1_dir), V1_EMBEDDING_CONFIGS).items()
+    }
+    if not any(found.values()) and any(s in V1_BYTES_CONFIG for s in sources):
+        raise MissingV1TreeError(
+            f"--v1-dir {v1_dir}: no image_sha256 under data/<config>/*.parquet for "
+            f"{', '.join(sorted(V1_EMBEDDING_CONFIGS))}: this is not the frozen v1.0 release dir"
+        )
+    return found
 
 
 def fidelity_of(match_type: str | None) -> str | None:
@@ -123,14 +188,23 @@ class V11Inputs:
     privacy_withheld: frozenset[str] = frozenset()
     """``image_sha256`` of the images the privacy review list says to withhold: dropped from every
     table, whatever their split group."""
+    v1_config_shas: Mapping[str, Collection[str]] = field(default_factory=dict)
+    """``v1.0 config -> image_sha256`` of the frozen v1.0 tree (``--v1-dir``): an image keeps a v1.0
+    ``bytes_config`` only when its sha is here; every other image goes to ``images``."""
 
 
 def inputs_from_build(
     *, taxonomy_version: str | None, roots: Mapping[str, str | Path], manifests: Iterable[Any],
     split_map: Any, dedup_groups: str | Path | None = None, allow_unsplit: bool = False,
     digest: Callable[[Path], str] | None = None, privacy_withheld: Iterable[str] = (),
+    v1_config_shas: Mapping[str, Collection[str]] | None = None,
 ) -> V11Inputs:  # fmt: skip
-    """:class:`V11Inputs` from what ``build_release`` already holds."""
+    """:class:`V11Inputs` from what ``build_release`` already holds. ``v1_config_shas`` is the
+    v1.0 tree's ``{config: shas}`` (:func:`load_v1_config_shas`); ``None`` (no tree) is refused
+    when a v1.0 source is admitted (:func:`require_v1_tree`)."""
+    if v1_config_shas is None:
+        require_v1_tree(roots)
+        v1_config_shas = {}
     near: Mapping[str, str] = {}
     if dedup_groups is not None:
         from ..dedup.groups import load_groups
@@ -146,6 +220,7 @@ def inputs_from_build(
         near_dup_group_of=dict(near),
         allow_unsplit=allow_unsplit,
         digest=digest,
+        v1_config_shas={config: frozenset(shas) for config, shas in v1_config_shas.items()},
     )
 
 
@@ -236,8 +311,9 @@ def _spine_row(base: Mapping[str, Any], rec: Mapping[str, Any], source_id: str, 
         if row[n] is None and n not in _NOT_FROM_TREE and rec.get(n) is not None:
             row[n] = _plain(rec[n])
     row.update(
-        source_id=source_id, bytes_config=bytes_config_of(source_id), split=None,
-        taxonomy_version=inputs.taxonomy_version, bytes_sha256=None,
+        source_id=source_id,
+        bytes_config=bytes_config_of(source_id, row["image_sha256"], inputs.v1_config_shas),
+        split=None, taxonomy_version=inputs.taxonomy_version, bytes_sha256=None,
     )  # fmt: skip
     return row
 
@@ -249,8 +325,9 @@ def _sha_keyed_row(rec: Mapping[str, Any], source: Any, source_id: str, inputs) 
     row = {n: _plain(rec.get(n)) for n in names}
     row.update(
         image_sha256=rec["image_sha256"], source_id=source_id,
-        bytes_config=bytes_config_of(source_id), taxonomy_version=inputs.taxonomy_version,
-        bytes_sha256=None, location_generalized=bool(rec.get("location_generalized")),
+        bytes_config=bytes_config_of(source_id, rec["image_sha256"], inputs.v1_config_shas),
+        taxonomy_version=inputs.taxonomy_version, bytes_sha256=None,
+        location_generalized=bool(rec.get("location_generalized")),
         licence_class=resolve_row_class(
             coerce_class(source.access_class), rec.get("license"),
             per_row=bool(source.licence_per_row),
@@ -321,7 +398,8 @@ def _metadata_rows(
     seen: dict[str, dict] = {}
     walk: dict[str, str] = {}
     by_source: dict[str, dict[str, int]] = {}
-    order = sorted(inputs.roots, key=lambda s: (bytes_config_of(s) == IMAGES_CONFIG, s))
+    v1 = inputs.v1_config_shas
+    order = sorted(inputs.roots, key=lambda s: (source_bytes_config(s, v1) == IMAGES_CONFIG, s))
     for source_id in order:  # v1.0-embedded sources first: their config holds the bytes
         rows, groups, counts = _tree_rows(
             registry, source_id, Path(inputs.roots[source_id]), inputs
@@ -382,7 +460,7 @@ def _stamp_row(config_id: str, row: Mapping[str, Any], inputs: V11Inputs, split_
     out = {
         **row, "image_sha256": sha, "split": split_of.get(sha),
         "taxonomy_version": inputs.taxonomy_version, "fidelity": fidelity_of(row.get("match_type")),
-        "bytes_config": bytes_config_of(source_id),
+        "bytes_config": bytes_config_of(source_id, sha, inputs.v1_config_shas),
     }  # fmt: skip
     if config_id in ("boxes", "instances"):
         out["modality"] = _attrs(row).get("modality") or row.get("modality")

@@ -10,7 +10,7 @@ import marinedata.cli_release as cli_release
 from marinedata.cli import main
 from marinedata.release_lock import unlocked_for_tests
 from marinedata.splitmap import SplitMap, save_split_map
-from marinedata.task_layers.v11_tables import UnsplitImagesError
+from marinedata.task_layers.v11_tables import UnsplitImagesError, require_v1_tree
 
 
 def _argv(tmp_path: Path, *extra: str) -> list[str]:
@@ -61,3 +61,41 @@ def test_allow_unsplit_reaches_build_release_and_the_refusal_is_reported(
         assert main(_argv(tmp_path, *extra)) == 1
     assert seen == [(True, allow)]
     assert "release build: 2 admitted image(s) have no split" in capsys.readouterr().err
+
+
+def test_v1_dir_needs_v11(tmp_path: Path, capsys: pytest.CaptureFixture[str]) -> None:
+    assert main(_argv(tmp_path, "--v1-dir", str(tmp_path))) == 1
+    assert "--v1-dir needs --v11" in capsys.readouterr().err
+
+
+@pytest.mark.parametrize("given", [False, True])
+def test_v1_dir_reaches_build_release_and_a_missing_v1_tree_is_reported(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+    given: bool,
+) -> None:
+    now = "2026-10-15T00:00:00+00:00"
+    ratios = {"train": 0.70, "val": 0.15, "test": 0.15}
+    save_split_map(
+        tmp_path / "SPLIT_MAP.json",
+        SplitMap(
+            by="group", seed=0, ratios=ratios, assignments={"g": "train"}, generated_at=now,
+            release="t1", stratify="source",
+        ),
+    )  # fmt: skip
+    seen: list[object] = []
+
+    def fake_build(registry, **kwargs):  # type: ignore[no-untyped-def]
+        seen.append(kwargs["v1_dir"])
+        require_v1_tree(["coralscapes"])  # what build_release does for a lock with a v1.0 source
+
+    monkeypatch.setattr(cli_release, "build_release", fake_build)
+    v1 = str(tmp_path / "v1")
+    extra = ["--v11", "--local-only", *(["--v1-dir", v1] if given else [])]
+    with unlocked_for_tests():
+        assert main(_argv(tmp_path, *extra)) == 1
+    assert seen == [v1 if given else None]
+    err = capsys.readouterr().err
+    assert "release build: the lock admits v1.0 source(s) coralscapes" in err
+    assert "--v1-dir DIR" in err
