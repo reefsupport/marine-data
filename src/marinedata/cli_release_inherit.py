@@ -12,6 +12,7 @@ from pathlib import Path
 from .registry import Registry
 from .release_lock import load_lock
 from .splitmap_inherit import load_inherited
+from .splitmap_tree import load_v1_tree
 from .splitv2.release_ood import load_ood_metadata
 from .splitv2.rules import load_rules
 
@@ -32,6 +33,15 @@ def add_inherit_args(parser: argparse.ArgumentParser) -> None:
         metavar="PRIOR_SPLIT_MAP",
         help="the prior release's SPLIT_MAP.json (v1.0): embedded verbatim and never reassigned; "
         "only new groups are allocated, around it",
+    )
+    parser.add_argument(
+        "--inherit-tree",
+        dest="inherit_tree",
+        type=Path,
+        metavar="V1_TREE",
+        help="the published v1.0 Hub tree (data/<config>/<split>-*.parquet, image_sha256): every "
+        "v1.0 image keeps its v1.0 split, its near-copies follow it and the band keeps v1.0 train "
+        "neighbours out of eval; --inherit then applies only to groups the tree leaves untouched",
     )
     parser.add_argument(
         "--ood-rules",
@@ -71,16 +81,22 @@ def lock_scope(args: argparse.Namespace, registry: Registry) -> set[str] | None:
 
 
 def inherit_kwargs(args: argparse.Namespace, registry: Registry) -> dict[str, object]:
-    """``generate_split_map`` keyword arguments for ``--inherit`` and the OOD flags."""
+    """``generate_split_map`` keyword arguments for ``--inherit``, ``--inherit-tree`` and the OOD
+    flags (the OOD holdouts apply with either prior)."""
     inherit = getattr(args, "inherit", None)
+    tree = getattr(args, "inherit_tree", None)
     ood_rules = getattr(args, "ood_rules", None)
     ood_metadata = getattr(args, "ood_metadata", None)
-    if inherit is None:
+    if inherit is None and tree is None:
         if ood_rules is not None or ood_metadata is not None:
-            raise ValueError("--ood-rules and --ood-metadata need --inherit")
+            raise ValueError("--ood-rules and --ood-metadata need --inherit or --inherit-tree")
         return {}
-    prior, digest = load_inherited(inherit)
-    kwargs: dict[str, object] = {"inherit": prior, "inherit_sha256": digest}
+    kwargs: dict[str, object] = {}
+    if inherit is not None:
+        prior, digest = load_inherited(inherit)
+        kwargs.update(inherit=prior, inherit_sha256=digest)
+    if tree is not None:
+        kwargs["inherit_tree"] = load_v1_tree(tree)
     if getattr(args, "no_ood", False):
         return kwargs
     if ood_rules is None:

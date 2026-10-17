@@ -17,7 +17,9 @@ says; the manifest's ``image_sha256`` and ``bytes_sha256`` columns pin too (a re
 A pin wins over an inherited v1.0 assignment (design 3.1 rule 3: pinned first, then v1
 continuity): the whole component moves to the pinned split and the moved v1.0 groups are recorded in
 the ``pins.v1_continuity_overridden`` header block. Only an OOD claim and a never-eval-only
-component still win over a pin.
+component still win over a pin. A pinned component the prior-release band forces into train
+(near a v1.0 train image: never-eval) is withheld, since neither rule may give way; a band
+evaluation split the pin does not accept gives way to the pin (never-train still holds).
 """
 
 from __future__ import annotations
@@ -46,8 +48,14 @@ SPLIT_COLUMN = "upstream_split"
 MAX_OVERRIDE_IDS = 200
 PIN_RULE = (
     "route-to-our-test manifests: eval split -> test, second held-out split -> validation; "
-    "never-eval train and OOD claims win over a pin; a pin wins over an inherited v1.0 split "
-    "(recorded in v1_continuity_overridden); test beats validation"
+    "never-eval-only train and OOD claims win over a pin; a pin wins over an inherited v1.0 split "
+    "(recorded in v1_continuity_overridden) and over a band evaluation split it does not accept; "
+    "a pinned component the v1.0 band forces to train (never-eval) is withheld; "
+    "test beats validation"
+)
+BAND_WITHHELD = (
+    "benchmark image within the near-duplicate band of prior-release train images: the band "
+    "says never-eval and the pin says eval, so it is withheld and never shipped"
 )
 Row = tuple[str, str, str]  # image sha256, split group, source id
 _HEX64 = re.compile(r"[0-9a-f]{64}")
@@ -220,22 +228,26 @@ def apply_benchmark_pins(
     prior: Mapping[str, str] | None = None,
     ood: Collection[str] = (),
     train_only: Collection[str] = (),
-) -> tuple[dict[str, str], dict[str, Any], dict[str, str]]:
-    """``(forced plus the manifest pins, the SPLIT_MAP ``pins`` header block, the v1.0 overrides)``.
+) -> tuple[dict[str, str], dict[str, Any], dict[str, str], dict[str, str]]:
+    """``(forced plus the manifest pins, the SPLIT_MAP ``pins`` header block, the v1.0 overrides,
+    the withheld components)``.
 
     A pinned component yields to an OOD claim, to a never-eval-only component (``train_only``) and
-    to any earlier ``forced`` entry (band, upstream test); the header counts each. It wins over a
+    to an earlier ``forced`` evaluation split it accepts (upstream test); one it does not accept
+    gives way to the pin, and an earlier ``train`` (the prior-release band: never-eval) withholds
+    the component (fourth value, component -> reason); the header counts each. It wins over a
     v1.0 assignment (``prior``): such a component is returned in ``overrides`` (component -> map
     split) for :func:`~marinedata.splitmap_inherit.resolve_inherited_splits` to move whole, and the
     moved groups are recorded in the header's ``v1_continuity_overridden`` block (present whenever
-    ``prior`` is). ``(dict(forced), {}, {})`` when no release row is pinned, so an unpinned map is
-    unchanged."""
+    ``prior`` is). ``(dict(forced), {}, {}, {})`` when no release row is pinned, so an unpinned map
+    is unchanged."""
     targets = component_pins(rows, canonical, pins)
     if not targets:
-        return dict(forced), {}, {}
+        return dict(forced), {}, {}, {}
     priors = _component_priors(rows, canonical, prior, targets) if prior is not None else {}
     merged = dict(forced)
     overrides: dict[str, str] = {}
+    withheld: dict[str, str] = {}
     placed: Counter[str] = Counter()
     skipped: Counter[str] = Counter()
     for canon, target in sorted(targets.items()):
@@ -247,7 +259,11 @@ def apply_benchmark_pins(
         elif have and have != {want}:
             overrides[canon] = want
             placed[target] += 1
-        elif merged.get(canon, want) != want:
+        elif not have and merged.get(canon, want) == "train":  # the band: never-eval
+            withheld[canon] = BAND_WITHHELD
+            merged.pop(canon)
+            skipped["withheld"] += 1
+        elif merged.get(canon, want) != want and accepted(target, merged[canon]):
             skipped["earlier_rule"] += 1
         else:
             merged[canon] = want
@@ -264,13 +280,17 @@ def apply_benchmark_pins(
         },
         "manifest_rows": {k: dict(v) for k, v in sorted(pins.manifest_rows.items())},
         "components": {pin: placed[pin] for pin in (PIN_TEST, PIN_VAL)},
-        "skipped_components": {"ood": skipped["ood"], "earlier_rule": skipped["earlier_rule"]},
+        "skipped_components": {
+            "ood": skipped["ood"],
+            "earlier_rule": skipped["earlier_rule"],
+            "withheld": skipped["withheld"],
+        },
     }
     if prior is not None:
         header["v1_continuity_overridden"] = v1_overridden(
             rows, canonical, pins, overrides, priors, prior
         )
-    return merged, header, overrides
+    return merged, header, overrides, withheld
 
 
 def check_overridden(header: Mapping[str, Any], moved: Collection[str]) -> None:
