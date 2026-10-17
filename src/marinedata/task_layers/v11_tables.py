@@ -493,12 +493,21 @@ def build_v11_tables(
     return {**tables, "metadata": ConfigResult("metadata", tuple(meta_rows), {}, notes=notes)}
 
 
-def write_v11_report(results: Mapping[str, ConfigResult], out_dir: str | Path) -> Path:
+def write_v11_report(
+    results: Mapping[str, ConfigResult],
+    out_dir: str | Path,
+    *,
+    staged_layers: Sequence[Mapping[str, Any]] | None = None,
+) -> Path:
     """``V11_TABLES.json`` next to the tables: taxonomy version, rows / images / unsplit rows per
     table and the withheld counts: images (split-map and privacy), split-map groups and images by
-    source (the build's own accounting for release gate G6)."""
+    source (the build's own accounting for release gate G6). ``staged_layers`` (a ``--v11`` build:
+    :func:`~marinedata.task_layers.staged_annotations.layer_record` per overlay layer) adds the
+    rows / images / reused / detail of every task annotation built from the staged trees."""
     meta = results.get("metadata")
     report = dict(meta.notes.get("report", {})) if meta is not None else {}
+    if staged_layers is not None:
+        report["staged_layers"] = [dict(layer) for layer in staged_layers]
     path = Path(out_dir) / "V11_TABLES.json"
     path.write_text(json.dumps(report, indent=2, sort_keys=True) + "\n")
     return path

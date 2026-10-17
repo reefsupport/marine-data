@@ -47,6 +47,10 @@ class ReleaseResult:
     task_layer_configs: dict[str, int] = field(default_factory=dict)
     """``{config_id: n_images}`` for the 5 WP-8c v2 configs — empty unless ``tasks="v2"``
     was passed to :func:`build_release` (D-X: v1 default leaves this empty, always)."""
+    staged_layers: tuple[object, ...] = ()
+    """``--v11`` only: one ``task_layers.staged_annotations.StagedLayer`` tally per (table, source)
+    built from the staged trees (or reused from the tasklabels root); also in
+    ``V11_TABLES.json``."""
 
 
 @dataclass(frozen=True)

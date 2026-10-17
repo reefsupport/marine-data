@@ -1,0 +1,10 @@
+# source: s3://rs-storage-open/sources/roboflow-aquarium/zip-5d30fed3dd5a/docs/aquarium_pretrain/data.yaml
+# sha256: e2fee7cfd2c1af9d41095874b773b19f1382df7b61df2480d41b12938d8eb778  (of the raw GET body below)
+# retrieved: 2026-10-17, anonymous public GET (no credentials), 133 B
+# why vendored: this key is not in the pinned CHECKSUMS manifest (root_digest c9b4677f9e11..., 1279 entries), so a locked staged-tree build cannot read it; the YOLO label ids index its `names`
+# not a vocab: the .yaml extension keeps it out of the vocab/*.tsv gate
+train: ../train/images
+val: ../valid/images
+
+nc: 7
+names: ['fish', 'jellyfish', 'penguin', 'puffin', 'shark', 'starfish', 'stingray']

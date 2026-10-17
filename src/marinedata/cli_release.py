@@ -599,6 +599,11 @@ def _cmd_release_build(args: argparse.Namespace) -> int:
         print(f"  skipped {task_id}: {reason}", file=sys.stderr)
     for config_id, n_images in sorted(result.task_layer_configs.items()):
         print(f"  task_layer {config_id}: {n_images} images")
+    if result.staged_layers:
+        from .task_layers.staged_annotations import layer_line
+
+        for layer in result.staged_layers:
+            print(f"  staged_layer {layer_line(layer)}")
     for exclusion in result.partial_abstain_excluded:
         labels = ", ".join(exclusion.abstaining_labels)
         print(
