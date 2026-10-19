@@ -126,7 +126,10 @@ one); every card `configs:` entry is resolved against the build (a pattern that 
 falls back to `--v1-dir`) and loaded with `datasets.load_dataset("parquet", data_files=..., streaming=True)`,
 and the first `--sample-rows` (50) rows per split decode. `datasets` infers the builder of a folder from
 the card's FIRST config, so that config must resolve in the build or `--v1-dir` (`first_config_unresolved`);
-a pattern that matches in neither is `config_files_missing`. Without `--v1-dir` a frozen v1.0 config absent
+a pattern that matches in neither is `config_files_missing`, except an inherited v1.0 phantom: the config is a
+folder of the `--v1-dir` tree, its v1.0 card entry equals the build card's, and no v1.0 file matches the pattern
+either (the v1.0 card already listed a split its tree never held). That one is counted as
+`inherited_v1_phantom_patterns` and listed under `inherited_v1_phantom_patterns_list`, not failed. Without `--v1-dir` a frozen v1.0 config absent
 from the build (coral-masks, scene-masks, instance-masks, fish-boxes) is counted `skipped_frozen`; every
 v1.1 config must still load. Fix: re-export, correct the card, or pass `--v1-dir`.
 `images/train count_mismatch: 16 rows in the shards, RELEASE.json says 99`

@@ -14,7 +14,10 @@ nothing there falls back to ``--v1-dir``, see :mod:`.load_plan`) and loaded with
 * ``count_mismatch``   rows in the shards (parquet footers) != RELEASE.json ``configs[config][split]``;
 * ``schema_mismatch``  the feature schema of a shard or of the loaded dataset != the card's
   ``dataset_info.features`` for the config (the first shard's embedded schema until the card has one);
-* ``config_files_missing``  a pattern of a card ``configs:`` entry matches no file in the build or ``--v1-dir``;
+* ``config_files_missing``  a pattern of a card ``configs:`` entry matches no file in the build or ``--v1-dir``.
+  Exception, an inherited v1.0 phantom: the config is a folder of the v1.0 tree, its v1.0 card entry equals the
+  build's and no v1.0 file matches the pattern either. It is counted ``inherited_v1_phantom_patterns`` (listed
+  under ``inherited_v1_phantom_patterns_list``), not failed; see :func:`.load_plan.inherited_phantoms`;
 * ``first_config_unresolved``  the card's FIRST config resolves to no files there (the Hub infers the loader from it);
 * ``load_error`` / ``split_mismatch`` / ``iterate_error`` / ``empty_split``  ``datasets`` cannot load or read it,
   the card has no entry for a built config, or it lists other splits than the shards.
@@ -80,6 +83,7 @@ def run_load_gate(
     counts: Counter = Counter()
     failures: list[str] = []
     skipped: list[str] = []
+    inherited: list[str] = []
 
     def fail(kind: str, where: str, message: str) -> None:
         counts[f"failed_{kind}"] += 1
@@ -115,6 +119,9 @@ def run_load_gate(
     def check(item: ConfigFiles) -> None:
         config, files = item.config, shards.get(item.config) or []
         counts["configs"] += 1
+        for split, pattern in item.inherited:
+            counts["inherited_v1_phantom_patterns"] += 1
+            inherited.append(f"{config}/{split}: {pattern}")
         for split, pattern in item.missing:
             fail(
                 "config_files_missing",
@@ -196,5 +203,8 @@ def run_load_gate(
             skipped.append(item.config)
         else:
             check(item)
-    extra = {"skipped_frozen_configs": skipped} if skipped else {}
+    extra = {
+        **({"skipped_frozen_configs": skipped} if skipped else {}),
+        **({"inherited_v1_phantom_patterns_list": inherited} if inherited else {}),
+    }
     return finish(NAME, {**counts, "sample_rows": sample_rows, **extra}, failures)
