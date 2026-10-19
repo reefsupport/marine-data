@@ -164,7 +164,7 @@ can only skip, never pass.
 
 | Gate | Module | Fails when |
 |---|---|---|
-| G1 `join` | `gates/join.py` | a table row has no `metadata` row; an open row joins a non-open image |
+| G1 `join` | `gates/join.py` | a table row has no `metadata` row; a `metadata` row, or the image a table row joins, is not of the flavour's licence class (open: `open`, nc: `restricted-nc`; compared by class, never by flavour name) or, in the open flavour, is of an nc source |
 | G2 `frozen` | `gates/frozen.py` | a v1.0 file other than README.md differs by one byte; a v1.0 `configs:` entry changes |
 | G3 `leak` | `gates/leak.py` | an nc id, the nc repo name or a private bucket appears in the open set, or in the merged `GATES.json` (re-scanned at the end of the call; never echoed, only an `nc_id#` hash label) |
 | G4 `bytes_once` | `gates/bytes_once.py` | image bytes twice, a v1.0 image re-uploaded, a bytes column outside `images` |
