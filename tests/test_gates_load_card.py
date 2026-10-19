@@ -6,6 +6,7 @@ import pyarrow as pa
 import pytest
 from _gates_build import (
     IMAGE_COLS,
+    Img,
     card_text,
     edit_release,
     images_info,
@@ -182,6 +183,81 @@ def test_load_fails_when_a_pattern_matches_in_neither_tree(tmp_path, card_config
     build = make_build(tmp_path / "b", card_configs=card_configs)
     result = run_load_gate(build, v1_dir=tmp_path / "v1" if v1_dir_given else None)
     assert _has(result, "config_files_missing") and _has(result, "first_config_unresolved")
+
+
+LEGACY = {"legacy-masks": {"train": 1, "validation": 1, "test": 1}}
+IMG_CARD = {  # `images` lists validation, the build (and the v1.0 tree) holds no such shard
+    "images": {"train": 1, "validation": 1, "test": 1},
+    "metadata": {"train": 1, "test": 1},
+    "fixture-masks": {"train": 4},
+}
+
+
+def _v1_row() -> dict:
+    return {
+        "image_sha256": "b" * 64,
+        "image": {"bytes": smooth_png(90), "path": None},
+        "split_group": "g1",
+    }
+
+
+def _v1_phantom_tree(root, config="legacy-masks", listed=None, *, shards=True):
+    """A frozen v1.0 tree shaped like the nc one: its card lists a split no shard backs."""
+    root.mkdir(parents=True, exist_ok=True)
+    if shards:
+        write_config(root, config, {"train": [_v1_row()], "test": [_v1_row()]}, IMAGE_COLS)
+    (root / "README.md").write_text(card_text({config: listed or LEGACY["legacy-masks"]}))
+    return root
+
+
+def _phantom_images_build(root):
+    return make_build(root, images=[Img(0, "train"), Img(1, "test")], card_configs=IMG_CARD)
+
+
+def test_load_tolerates_a_card_pattern_the_v1_tree_never_had(tmp_path):
+    pytest.importorskip("datasets")
+    build = make_build(tmp_path / "b", card_configs={**LEGACY, **CONFIGS})
+    result = run_load_gate(build, v1_dir=_v1_phantom_tree(tmp_path / "v1"))
+    assert result.passed, result.failures
+    assert result.counts["inherited_v1_phantom_patterns"] == 1
+    assert result.counts["inherited_v1_phantom_patterns_list"] == [
+        "legacy-masks/validation: data/legacy-masks/validation-*.parquet"
+    ]
+    assert result.counts["configs"] == 4 and result.counts["rows_read"] >= 44
+
+
+def test_load_inherited_phantom_split_is_not_a_split_mismatch(tmp_path):
+    pytest.importorskip("datasets")
+    build = _phantom_images_build(tmp_path / "b")  # the build holds images/{train,test} shards
+    v1 = _v1_phantom_tree(tmp_path / "v1", "images", IMG_CARD["images"])
+    result = run_load_gate(build, v1_dir=v1)
+    assert result.passed, result.failures
+    assert result.counts["inherited_v1_phantom_patterns"] == 1 and not _has(
+        result, "split_mismatch"
+    )
+
+
+@pytest.mark.parametrize("case", ["config absent in v1.0", "v1.0 entry differs"])
+def test_load_still_fails_a_pattern_that_is_not_an_inherited_phantom(tmp_path, case):
+    pytest.importorskip("datasets")
+    listed = IMG_CARD["images"] if case == "config absent in v1.0" else {"train": 1, "test": 1}
+    v1 = _v1_phantom_tree(tmp_path / "v1", "images", listed, shards=case != "config absent in v1.0")
+    result = run_load_gate(_phantom_images_build(tmp_path / "b"), v1_dir=v1)
+    assert not result.passed and _has(result, "config_files_missing"), result.failures
+    assert [f.split()[0] for f in result.failures] == ["images/validation"]
+    assert "inherited_v1_phantom_patterns" not in result.counts
+
+
+@pytest.mark.parametrize(("config", "skipped"), [("legacy-masks", False), ("coral-masks", True)])
+def test_load_without_v1_dir_the_inherited_rule_never_applies(tmp_path, config, skipped):
+    pytest.importorskip("datasets")
+    build = make_build(tmp_path / "b", card_configs={config: LEGACY["legacy-masks"], **CONFIGS})
+    result = run_load_gate(build)
+    assert not any(k.startswith("inherited_") for k in result.counts)
+    if skipped:  # a frozen v1.0 config the build lacks is skipped, as before
+        assert result.passed and result.counts["skipped_frozen"] == 1
+    else:
+        assert _has(result, "config_files_missing") and _has(result, "first_config_unresolved")
 
 
 def test_card_counts_configs_under_v1_dir_as_present(tmp_path):
