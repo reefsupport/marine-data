@@ -4,8 +4,11 @@
   in ``images``; otherwise a v1.0 config that holds it (and, with ``--v1-dir``, the sha is there).
 * every ``images`` row has a metadata row; every row of ``points`` / ``bleaching`` / ``boxes`` /
   ``semseg`` / ``instances`` joins (100 %, no tolerance, a null key is a miss).
-* open rows join open images only: in the open flavour no row, and no image it joins, is of a
-  non-open licence class or of a source in ``nc_ids``."""
+* rows join images of their own flavour, compared by licence class and never by flavour name: a
+  ``metadata`` row's ``licence_class``, and that of the image a label row joins, is the flavour's
+  class (``FLAVOURS``: open -> ``open``, nc -> ``restricted-nc``), else ``not_flavour`` /
+  ``joins_non_open`` / ``joins_non_nc``; in the open flavour no row, and no image it joins, is of
+  a source in ``nc_ids`` either."""
 
 from __future__ import annotations
 
@@ -13,6 +16,7 @@ import sys
 from collections.abc import Collection
 from pathlib import Path
 
+from ..licence_class import FLAVOURS
 from . import GateResult
 from .v11_common import IMAGES, LABEL_TABLES, METADATA, Collector, column_values, shards, table_rows
 
@@ -28,6 +32,7 @@ def run_join_gate(
     v1_configs: Collection[str] = (),
 ) -> GateResult:
     build, out = Path(build_dir), Collector()
+    want = FLAVOURS[flavour]
     meta_files = shards(build, METADATA)
     if not meta_files:
         out.fail("no_metadata", "no metadata config: nothing to join to")
@@ -45,7 +50,7 @@ def run_join_gate(
         if sha in meta:
             out.fail("duplicate_metadata", f"metadata {sha[:12]} appears twice")
         meta[sha] = (sid, lic)
-        if (lic and lic != flavour) or (flavour == "open" and sid in nc_ids):
+        if (lic and lic != want) or (flavour == "open" and sid in nc_ids):
             out.fail("not_flavour", f"metadata {sha[:12]} ({lic}) is not an {flavour} image")
         config = row.get("bytes_config")
         if config == IMAGES:
@@ -69,6 +74,6 @@ def run_join_gate(
                 out.fail("orphan_row", f"{where} {str(sha)[:12] or 'null'} does not join metadata")
                 continue
             out.counts[f"{table}_joined"] += 1
-            if flavour == "open" and (sid in nc_ids or joined[0] in nc_ids or joined[1] != "open"):
-                out.fail("joins_non_open", f"{where} {sha[:12]} joins a non-open image")
+            if joined[1] != want or (flavour == "open" and (sid in nc_ids or joined[0] in nc_ids)):
+                out.fail(f"joins_non_{flavour}", f"{where} {sha[:12]} joins a non-{flavour} image")
     return out.result(NAME)

@@ -66,10 +66,16 @@ def write_v1(tmp_path: Path) -> Path:
 
 
 def build_release(
-    tmp_path: Path, *, split_of: dict | None = None, group_of: dict | None = None
+    tmp_path: Path,
+    *,
+    split_of: dict | None = None,
+    group_of: dict | None = None,
+    class_of: dict | None = None,
 ) -> Path:
-    """A small v1.1.0 build: img0 is a v1.0 image (bytes stay in coralseg), img1-3 are new."""
+    """A small v1.1.0 build: img0 is a v1.0 image (bytes stay in coralseg), img1-3 are new.
+    ``class_of`` maps an image index to its metadata ``licence_class`` (default ``open``)."""
     build, splits, groups = tmp_path / "build", {**SPLIT_OF, **(split_of or {})}, group_of or {}
+    classes = class_of or {}
     sha_split = {SHAS[i]: splits[i] for i in range(4)}
     digest = lambda i: hashlib.sha256(f"bytes{i}".encode()).hexdigest()  # noqa: E731
     new = [
@@ -79,7 +85,7 @@ def build_release(
         for i in (1, 2, 3)
     ]  # fmt: skip
     meta = [
-        {"image_sha256": SHAS[i], "source_id": "srcA", "licence_class": "open",
+        {"image_sha256": SHAS[i], "source_id": "srcA", "licence_class": classes.get(i, "open"),
          "split_group": groups.get(i, f"g{i}"), "bytes_config": "images" if i else "coralseg",
          "bytes_sha256": digest(i), "split": splits[i], "taxonomy_version": "1"}
         for i in range(4)
@@ -132,6 +138,45 @@ def test_join_fails_an_orphan_row_and_an_unresolved_v1_image(tmp_path):
 def test_join_fails_an_open_row_that_joins_an_nc_source(tmp_path):
     result = run_join_gate(build_release(tmp_path), nc_ids={"srcA"})
     assert failed(result, "not_flavour") == 4 and failed(result, "joins_non_open") == 4
+
+
+NC_CLASS = "restricted-nc"  # FLAVOURS["nc"]: the class the nc flavour ships; "nc" is its name
+
+
+def nc_build(tmp_path: Path, class_of: dict | None = None) -> Path:
+    """The small build as nc ships it: every image restricted-nc, one boxes row on img1."""
+    classes = {**dict.fromkeys(range(4), NC_CLASS), **(class_of or {})}
+    build = build_release(tmp_path, class_of=classes)
+    write_shard(build, "boxes", "train", [{"image_sha256": SHAS[1], "source_id": "srcA"}])
+    return build
+
+
+def join_gate(build: Path, flavour: str):
+    """The join gate on the small build, whose img0 is a v1.0 image."""
+    return run_join_gate(build, flavour=flavour, v1_sha256={SHAS[0]}, v1_configs={"coralseg"})
+
+
+def test_join_passes_an_nc_build_of_restricted_nc_images(tmp_path):
+    result = join_gate(nc_build(tmp_path), "nc")
+    assert result.passed, result.failures
+    assert result.counts["metadata_rows"] == 4 and result.counts["points_joined"] == 4
+    assert result.counts["boxes_rows"] == result.counts["boxes_joined"] == 1
+
+
+def test_join_fails_an_open_class_image_in_the_nc_flavour(tmp_path):
+    result = join_gate(nc_build(tmp_path, class_of={1: "open"}), "nc")
+    assert not result.passed
+    # img1 is open: its metadata row, and the points row and the boxes row that join it, fail
+    assert failed(result, "not_flavour") == 1 and failed(result, "joins_non_nc") == 2
+    boxes_line = f"boxes/train-00000-of-00001.parquet {SHAS[1][:12]} joins a non-nc image"
+    assert f"metadata {SHAS[1][:12]} (open) is not an nc image" in result.failures
+    assert boxes_line in result.failures
+
+
+def test_join_refuses_an_nc_build_in_the_open_flavour(tmp_path):
+    result = join_gate(nc_build(tmp_path), "open")
+    assert failed(result, "not_flavour") == 4 and failed(result, "joins_non_open") == 5
+    assert f"metadata {SHAS[1][:12]} ({NC_CLASS}) is not an open image" in result.failures
 
 
 # G2 frozen v1.0
