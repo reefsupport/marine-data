@@ -137,6 +137,25 @@ MASK_SOURCES: dict[str, MaskSource] = {
     )
 }
 
+# v1.1.1 `condition-masks`: label-only config, kept out of MASK_SOURCES / SEMSEG_SOURCES /
+# ROLLUP_MASK_SOURCES so the v1.1.0 rebuild output stays unchanged. Raster values: 0 unlabelled,
+# 1 bleached (-> condition BLEACHED), 2 non_bleached (-> condition HEALTHY).
+CONDITION_MASK_SOURCES: dict[str, MaskSource] = {
+    s.source_id: s
+    for s in (
+        MaskSource(
+            "reef-support-bleaching",
+            "2026-09-24",
+            "reef-support-bleaching-condition",
+            {1: "bleached", 2: "non_bleached"},
+            0,
+            "human_expert",
+            "CC-BY-4.0",
+            "open",
+        ),
+    )
+}
+
 SEAVIEW_LABELS_SOURCE = "reef-support-seaview-labels"
 SEAVIEW_LABELS_VERSION = "2026-10-06"
 SEAVIEW_LABELS_PREFIX = f"sources/{SEAVIEW_LABELS_SOURCE}/{SEAVIEW_LABELS_VERSION}/"
@@ -175,8 +194,12 @@ def semantic_row(
     mask_ref: str,
     counts: Mapping[int, int],
     split: str | None = None,
+    condition: Callable[[str], str | None] | None = None,
 ) -> dict:
-    """One semantic ``masks`` row from a mask's pixel histogram ``{pixel value: n}``."""
+    """One semantic ``masks`` row from a mask's pixel histogram ``{pixel value: n}``.
+
+    ``condition(label)`` (condition-axis sources only) adds ``condition_node_id`` to a class's
+    ``class_resolution`` when it is non-null; without it the attrs are byte-identical to v1.1.0."""
     class_map: dict[str, str] = {}
     native: dict[str, int] = {}
     canonical: dict[str, int] = {}
@@ -194,6 +217,9 @@ def semantic_row(
             "pixel": value, "taxon_node_id": taxon, "match_type": match,
             "worms_aphia_id": aphia, "rs_benthic_code": l2,
         }  # fmt: skip
+        node = condition(label) if condition is not None and value in spec.id_to_label else None
+        if node is not None:
+            resolution[label]["condition_node_id"] = node
         if taxon is not None and match != "unmapped":
             canonical[taxon] = canonical.get(taxon, 0) + n
     typ, detail = annotator_from_origin(spec.annotator)
@@ -272,6 +298,12 @@ def staged_mask_rows(
 ) -> Iterator[dict]:
     """Semantic rows for the staged masks of ``spec`` (first ``limit`` in key order)."""
     resolve = resolver_for(registry, spec.crosswalk_id)
+    condition = None
+    if spec.source_id in CONDITION_MASK_SOURCES:
+        from .image_labels_table import axes_resolver_for
+
+        axes = axes_resolver_for(registry, spec.crosswalk_id)
+        condition = lambda label: axes(label).condition  # noqa: E731
     items = [(k, rel) for k, rel in _mask_items(tree, spec) if k in tree.shas]
     if limit is not None:
         items = items[:limit]
@@ -290,6 +322,7 @@ def staged_mask_rows(
             yield semantic_row(
                 spec=spec, resolve=resolve, ordinal=ordinal, image_sha256=tree.shas[key],
                 mask_ref=tree.key(rel), counts=got, split=splits.get(key),
+                condition=condition,
             )  # fmt: skip
 
 

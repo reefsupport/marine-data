@@ -592,7 +592,22 @@ def main(argv: list[str] | None = None) -> int:
         help="v1.1.0 open flavour: a local copy of the v1.0 export; the hidden-test digests its "
         "shards hold stay in. Separate from --v1-dir, which only skips re-uploading bytes",
     )
+    patch = parser.add_argument_group("v1.1.1 patch (--patch condition-masks)")
+    patch.add_argument("--patch", choices=("condition-masks",), default=None,
+                       help="write only the new config plus card, lock, CITATION")  # fmt: skip
+    patch.add_argument("--staged-root", type=Path, default=None,
+                       help="local copy of sources/reef-support-bleaching/<version>/")  # fmt: skip
+    patch.add_argument("--split-map", type=Path, default=None, help="the v1.1.0 SPLIT_MAP.json")
+    for name in ("card", "croissant", "lock", "citation"):
+        patch.add_argument(f"--prior-{name}", type=Path, default=None,
+                           help=f"the v1.1.0 {name} file the patch starts from")  # fmt: skip
+    patch.add_argument("--release-date", default=None, help="YYYY-MM-DD (default: today, UTC)")
+    patch.add_argument("--code-sha", default=None, help="code_sha written into the lock")
     args = parser.parse_args(argv)
+    if args.patch:
+        from .condition_masks import run_patch
+
+        return run_patch(args)
     from . import hf_export_v11 as _v11
 
     if _v11.is_v11_release(args.release_dir):  # task_layers/V11_TABLES.json: the v1.1.0 export
