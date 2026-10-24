@@ -23,7 +23,11 @@ nothing there falls back to ``--v1-dir``, see :mod:`.load_plan`) and loaded with
   the card has no entry for a built config, or it lists other splits than the shards.
 
 A frozen v1.0 config (coral-masks, scene-masks, instance-masks, fish-boxes) that resolves nowhere while
-no ``--v1-dir`` was given is counted ``skipped_frozen`` and does not fail; every other config must load."""
+no ``--v1-dir`` was given is counted ``skipped_frozen`` and does not fail; every other config must load.
+
+A patch release (``prior``, ``release gate --patch-of``) loads only the configs it adds: every config of
+the prior release is frozen on the Hub (the ``frozen`` and ``card`` gates hold it byte- and entry-
+identical), so it is counted ``skipped_frozen_prior`` and not resolved against the build."""
 
 from __future__ import annotations
 
@@ -32,6 +36,7 @@ from pathlib import Path
 
 from . import GateResult, finish
 from .load_plan import ConfigFiles, plan_configs
+from .patch_base import PatchBase
 from .shards import CardError, config_shards, norm_split, read_card, read_release, split_counts
 
 NAME = "load"
@@ -72,6 +77,7 @@ def run_load_gate(
     release_dir: Path | None = None,
     sample_rows: int = SAMPLE_ROWS,
     v1_dir: Path | None = None,
+    prior: PatchBase | None = None,
 ) -> GateResult:
     from datasets import load_dataset
 
@@ -189,7 +195,13 @@ def run_load_gate(
             if not read and _footer_rows(item.splits[split]):
                 fail("empty_split", where, "datasets returned no rows")
 
-    if plan and not plan[0].splits and not (plan[0].frozen and v1_dir is None):
+    frozen_prior = prior.configs if prior is not None else frozenset()
+    if (
+        plan
+        and not plan[0].splits
+        and not (plan[0].frozen and v1_dir is None)
+        and plan[0].config not in frozen_prior
+    ):
         fail(
             "first_config_unresolved",
             plan[0].config,
@@ -198,7 +210,9 @@ def run_load_gate(
     for config in sorted(set(shards) - {item.config for item in plan}):
         fail("load_error", config, "the card's `configs:` has no entry for it")
     for item in plan:
-        if item.frozen and not item.splits and v1_dir is None:
+        if item.config in frozen_prior:
+            counts["skipped_frozen_prior"] += 1
+        elif item.frozen and not item.splits and v1_dir is None:
             counts["skipped_frozen"] += 1
             skipped.append(item.config)
         else:

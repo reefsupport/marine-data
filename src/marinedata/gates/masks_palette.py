@@ -75,3 +75,64 @@ def check_palette_row(row: dict) -> tuple[list[tuple[str, str]], bool]:
             ("palette_mismatch", f"PNG palette differs from the declared rgb at {wrong[:6]}")
         )
     return problems, not (values & (palette.keys() - {IGNORE}))
+
+
+def _condition_ids(cell: object) -> set[int] | None:
+    """Class ids of a ``condition-masks`` ``class_map`` cell (JSON ``{"1": "bleached", ...}``);
+    ``{}`` is valid (a raster with no labelled pixel), ``None`` is unparseable."""
+    try:
+        data = json.loads(cell) if isinstance(cell, str) else cell
+        ids = {int(k) for k in data}
+    except (TypeError, ValueError):
+        return None
+    return ids
+
+
+def check_condition_row(row: dict) -> tuple[list[tuple[str, str]], bool]:
+    """``([(failure kind, message)], mask_is_empty)`` for one v1.1.1 ``condition-masks`` row.
+
+    The row embeds a mode-``P`` PNG with no palette column: its pixel values are the ids of the
+    row's ``class_map`` (the source raster's values, here 1 and 2) plus the ignore index 255.
+    ``ignore_value`` is the source raster's own unlabelled value (an integer, never a class id);
+    the PNG writes it as 255. Problems: ``class_map`` (unparseable / lists 255),
+    ``ignore_value``, ``mask_sha256``, ``mask_mode``, ``unknown_class_id``, ``mask_unresolved``."""
+    import numpy as np
+    from PIL import Image
+
+    data = (row.get("mask") or {}).get("bytes")
+    if not data:
+        if row.get("mask_config"):
+            return [], False
+        return [("mask_unresolved", "no mask bytes and no mask_config")], False
+    ids = _condition_ids(row.get("class_map"))
+    if ids is None:
+        return [("class_map", "the row embeds a mask but declares no parseable class_map")], False
+    problems: list[tuple[str, str]] = []
+    if IGNORE in ids:
+        problems.append(("class_map", "class_map lists 255, the ignore index"))
+    try:
+        ignore = int(row.get("ignore_value"))
+    except (TypeError, ValueError):
+        problems.append(("ignore_value", f"ignore_value {row.get('ignore_value')!r} is not an int"))
+    else:
+        if ignore in ids:
+            problems.append(("ignore_value", f"ignore_value {ignore} is also a class id"))
+    if row.get("mask_bytes_sha256") != hashlib.sha256(data).hexdigest():
+        problems.append(("mask_sha256", "mask_bytes_sha256 is not the sha256 of the mask bytes"))
+    try:
+        mask = Image.open(io.BytesIO(data))
+        mask.load()
+    except (OSError, ValueError) as exc:
+        return [*problems, ("undecodable", str(exc)[:120])], False
+    if mask.mode != "P":
+        return [*problems, ("mask_mode", f"condition mask is {mask.mode}, want P (palette)")], False
+    values = {int(v) for v in np.unique(np.asarray(mask))}
+    unknown = sorted(values - ids - {IGNORE})
+    if unknown:
+        problems.append(
+            (
+                "unknown_class_id",
+                f"mask values {unknown[:6]} not in class_map {sorted(ids)[:6]} + 255",
+            )
+        )
+    return problems, not (values & ids)
