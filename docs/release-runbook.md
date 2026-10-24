@@ -148,6 +148,19 @@ near-duplicates. The privacy gate (G8) runs real YuNet on the pinned model the i
 `/opt/models/face_detection_yunet_2023mar.onnx`; pass that path as `MARINEDATA_YUNET_MODEL` (the VM
 wrapper does). The gates verify it by sha256 and never download it.
 
+### Patch releases (v1.1.1 `condition-masks`)
+
+A patch that adds one label-only config to a published release is gated with `--patch-of <release>`
+(`marinedata release gate "$B" --patch-of v1.1.0 --all ...`). The published configs are frozen from the Hub tree
+(anonymous `list_repo_tree`, LFS sha256s; never downloaded) and the patch's verdicts are written to `GATES.json` under
+the names `release publish` reads. Dedup and privacy are inherited from v1.1.0 only when the patch ships no image
+bytes. Full releases run the stock gates unchanged.
+
+**Hidden-test caveat (v1.1.1).** The 658 Tayrona bleaching images behind `condition-masks` appear in the hackathon
+hidden-test manifest: 635 have been public since v1.0 and 23 are withheld from the open flavour. A model trained on
+v1.1.x `condition-masks` must not be scored on that hidden test. Note also that the `ignore_value` in the column is
+`"0"` while the PNG palette index is 255; readers must take the ignore index from the card, not the column.
+
 ## What `release publish` uploads
 
 `--go` sends `UPLOAD_PATTERNS` (`src/marinedata/release_publish.py`) and nothing else; a test keeps this
