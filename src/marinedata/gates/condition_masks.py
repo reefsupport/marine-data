@@ -2,7 +2,8 @@
 
 * ``frozen``: every v1.1.0 file stays byte-identical. The baseline is the prior release's Hub tree
   (``list_repo_tree(expand=True)``, anonymous): LFS sha256 per file, no 20 GB download. Only
-  README.md, croissant.json, CITATION.cff, release.lock.yaml and provenance/* may differ; nothing
+  README.md, croissant.json, CITATION.cff, release.lock.yaml, the GATES.json that ``release gate``
+  writes and provenance/* may differ; nothing
   may land in a prior config folder.
 * ``join``: every row's image resolves in the v1.0 ``coral-masks`` tree (its bytes holder).
 * ``masks``: the new folder exists; each mask is a mode-P PNG with values in {1, 2, 255} and the
@@ -24,7 +25,9 @@ from . import GateResult
 from .v11_common import Collector, file_sha256, tree_files
 
 CONFIG = "condition-masks"
-ALLOW = ("README.md", "croissant.json", "CITATION.cff", "release.lock.yaml")
+ALLOW = ("README.md", "croissant.json", "CITATION.cff", "release.lock.yaml", "GATES.json")
+"""Files a patch may write at the root: the rewritten docs and the ``GATES.json`` that
+``marinedata release gate`` itself merges its verdicts into."""
 ALLOW_PREFIX = ("provenance/",)
 VALUES = frozenset({1, 2, 255})
 
@@ -33,7 +36,7 @@ def hub_tree(repo_id: str, revision: str | None = None) -> dict[str, str | None]
     """``{path: lfs sha256}`` (``None`` for a non-LFS file) of a public dataset repo."""
     from huggingface_hub import HfApi
 
-    tree = HfApi().list_repo_tree(
+    tree = HfApi(token=False).list_repo_tree(
         repo_id, repo_type="dataset", revision=revision, recursive=True, expand=True
     )
     return {

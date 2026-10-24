@@ -18,6 +18,9 @@ checks each row:
 
 * v1.1.0 ``semseg`` shards (``mask`` + ``palette``, no ``image``) are checked by
   :mod:`.masks_palette`: a mode-P PNG whose values and colours are the declared palette.
+* v1.1.1 ``condition-masks`` shards (``mask`` + ``class_map`` + ``ignore_value``, no ``image``, no
+  ``palette``) are checked by the same module: a mode-P PNG whose values are the class_map ids
+  plus 255.
 
 A build without mask rows fails: a gate that checked nothing must not pass. With ``v1_dir``
 (an additive release) the v1.0 tree's mask shards are scanned when the build has none."""
@@ -30,7 +33,7 @@ from collections.abc import Iterator
 from pathlib import Path
 
 from . import MAX_FAILURES, GateResult
-from .masks_palette import check_palette_row
+from .masks_palette import check_condition_row, check_palette_row
 
 NAME = "masks"
 IGNORE = 255
@@ -38,18 +41,20 @@ DEFAULT_EMPTY_THRESHOLD = 0.05
 EXIF_ORIENTATION = 0x0112
 _COLUMNS = (
     "image_sha256", "source", "source_id", "image", "mask", "class_map", "instances",
-    "exif_transposed", "palette", "mask_bytes_sha256", "mask_config",
+    "exif_transposed", "palette", "mask_bytes_sha256", "mask_config", "ignore_value",
 )  # fmt: skip
 
 
 def _shard_rows(path: Path) -> tuple[str | None, Iterator[dict]]:
-    """``(kind, rows)`` of a shard: semantic, instance, palette, or ``None`` (not a mask config)."""
+    """``(kind, rows)`` of a shard: semantic, instance, palette, condition, or ``None``."""
     import pyarrow.parquet as pq
 
     shard = pq.ParquetFile(path)
     names = set(shard.schema_arrow.names)
     if {"mask", "palette"} <= names and "image" not in names:
         kind = "palette"
+    elif {"mask", "class_map", "ignore_value"} <= names and not {"image", "palette"} & names:
+        kind = "condition"
     elif not {"image", "mask"} <= names:
         return None, iter(())
     elif "instances" in names:
@@ -82,6 +87,8 @@ def _check_row(kind: str, row: dict) -> tuple[list[tuple[str, str]], bool]:
     """``([(failure kind, message)], mask_is_empty)`` for one row."""
     if kind == "palette":
         return check_palette_row(row)
+    if kind == "condition":
+        return check_condition_row(row)
     import numpy as np
 
     try:

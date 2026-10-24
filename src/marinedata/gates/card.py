@@ -9,7 +9,12 @@ The card itself is generated (hf_card / P1.9); this gate only verifies it. Parse
   ``extra_config_section`` the reverse (a config under ``--v1-dir`` is not extra); ``split_mismatch`` the entry's splits differ from the build;
 * ``count_mismatch``        ``dataset_info[config].splits[].num_examples`` != the release rows;
 * ``size_mismatch``         ``dataset_info[config].download_size`` != the bytes of the config's shards;
-* ``size_category``         ``size_categories`` missing, or no listed band matches the row counts."""
+* ``size_category``         ``size_categories`` missing, or no listed band matches the row counts.
+
+A patch release (``prior``, ``release gate --patch-of``) adds configs to a published release: the
+prior release's configs are frozen, so they may be listed without shards, their ``configs:`` and
+``dataset_info`` entries must equal the prior card's (``frozen_card_entry``), and ``size_categories``
+must equal the prior's (the patch rows are checked against the release, not the band)."""
 
 from __future__ import annotations
 
@@ -17,6 +22,8 @@ from collections import Counter
 from pathlib import Path
 
 from . import GateResult, finish
+from .patch_base import PatchBase
+from .patch_checks import frozen_card_failures
 from .shards import CardError, config_shards, norm_split, read_card, read_release, split_counts
 
 NAME = "card"
@@ -51,7 +58,11 @@ def _listed_splits(config: dict) -> set[str]:
 
 
 def run_card_gate(
-    build_dir: Path, *, release_dir: Path | None = None, v1_dir: Path | None = None
+    build_dir: Path,
+    *,
+    release_dir: Path | None = None,
+    v1_dir: Path | None = None,
+    prior: PatchBase | None = None,
 ) -> GateResult:
     build_dir = Path(build_dir)
     try:
@@ -60,6 +71,7 @@ def run_card_gate(
         return finish(NAME, {"failed_unparseable_card": 1}, [f"README.md unparseable_card: {exc}"])
     shards = config_shards(build_dir)
     v1_configs = set(config_shards(Path(v1_dir))) if v1_dir else set()  # frozen v1.0 configs
+    v1_configs |= set(prior.configs) if prior is not None else set()  # frozen prior configs
     expected = (read_release(build_dir, release_dir) or {}).get("configs") or {}
     info = _info(front)
     counts: Counter = Counter(card_configs=len(card_configs))
@@ -112,7 +124,10 @@ def run_card_gate(
     listed_bands = [listed_bands] if isinstance(listed_bands, str) else list(listed_bands)
     accepted = {size_category(n) for n in totals} | {size_category(sum(totals))}
     stray = [b for b in listed_bands if b not in accepted]
-    if not listed_bands or stray:
+    if prior is not None:
+        for kind, where, message in frozen_card_failures(build_dir / "README.md", prior):
+            fail(kind, where, message)
+    elif not listed_bands or stray:
         fail(
             "size_category",
             "README.md",
