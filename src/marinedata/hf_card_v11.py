@@ -16,6 +16,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+import sys
 from collections import defaultdict
 from collections.abc import Iterable, Mapping
 from datetime import date
@@ -463,13 +464,52 @@ def render_v11_card(
 # ------------------------------------------------------------------------------ files
 
 
+def read_gates_json(path: str | Path) -> dict:
+    """The ``GATES.json`` at ``path``; the gates must have run before the card can quote them."""
+    target = Path(path)
+    if not target.is_file():
+        raise V11ExportError(f"--gates-json {target}: no such file; run the gates first")
+    data = json.loads(target.read_text())
+    if not isinstance(data, dict):
+        raise V11ExportError(f"--gates-json {target}: not a JSON object (expected GATES.json)")
+    return data
+
+
+def _warn(message: str) -> None:
+    print(f"WARNING: {message}", file=sys.stderr)
+
+
+def _with_gates(readme: str, gates: Mapping[str, object] | None) -> str:
+    """``readme`` with the v1.2.0 gate slots filled from a ``GATES.json`` dict. Slots that stay
+    (no ``gates`` yet) are listed in a WARNING, so a card with ``[[SLOT]]`` markers is not
+    published unseen."""
+    if gates is not None:
+        if v12.pending_slots(readme):
+            readme = v12.fill_from_gates(readme, gates)
+        else:
+            _warn(
+                "--gates-json ignored: this card has no gate slots "
+                "(only the open v1.2.0 card has them)"
+            )
+    slots = v12.pending_slots(readme)
+    if slots:
+        listing = ", ".join(f"[[{s}]]" for s in slots)
+        _warn(
+            f"the card still has unfilled gate slots: {listing}. Run the gates, then run the "
+            "card stage again with --gates-json <path to GATES.json>."
+        )
+    return readme
+
+
 def write_card_files(
     export: Path, registry, *, flavour: str, repo_id: str, pretty_name: str | None = None,
     cff: dict | None = None, takedown_url: str | None = None, lock_sha: str | None = None,
     released: str | None = None, hidden_test_withheld: int | None = None,
+    gates: Mapping[str, object] | None = None,
 ) -> list[str]:  # fmt: skip
     """Write ``README.md``, ``LICENSE``, ``NOTICE`` and ``CITATION.cff`` into ``export``; nothing is
-    written when any of them names a private resource."""
+    written when any of them names a private resource. ``gates`` (a ``GATES.json`` dict) fills the
+    v1.2.0 gate slots of the card; without it the slots stay and a WARNING lists them."""
     export = Path(export)
     name = pretty_name or (PRETTY_NAME if flavour == "open" else f"{PRETTY_NAME} (non-commercial)")
     facts, sources = facts_from_build(export), read_rows(export, "sources")
@@ -498,6 +538,7 @@ def write_card_files(
         "NOTICE": render_notice(sources, pretty_name=name),
         "CITATION.cff": citation,
     }
+    files["README.md"] = _with_gates(files["README.md"], gates)
     for fname, text in files.items():
         assert_public_safe(text, flavour, where=fname)
     for fname, text in files.items():
@@ -520,6 +561,7 @@ def run(args, summary: dict) -> int:
     if not cff_path.is_file():
         raise V11ExportError(f"no CITATION.cff at {cff_path}; pass --citation <file>")
     lock = release_dir / "release.lock.yaml"
+    gates_path = getattr(args, "gates_json", None)
     written = write_card_files(
         args.out, Registry.load(), flavour=flavour,
         repo_id=args.repo_id or release.get("repo_id") or summary.get("repo_id") or DEFAULT_REPO,
@@ -531,6 +573,7 @@ def run(args, summary: dict) -> int:
         hidden_test_withheld=(
             ((summary.get("v11") or {}).get("hidden_test_excluded") or {}).get("images")
         ),
+        gates=read_gates_json(gates_path) if gates_path else None,
     )  # fmt: skip
     print(json.dumps({"layout": "v1.1", "written": written}))
     return 0

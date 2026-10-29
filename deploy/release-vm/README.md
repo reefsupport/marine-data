@@ -178,6 +178,19 @@ Read `pvesm status` before and after.
 
 ## Steps on both: publish, copy back, tear down
 
+**Before step 6, for a v1.2.0 open card.** The card stage ran before the gates, so the card still holds the three
+`[[V120_*]]` gate slots (the stage log shows a `WARNING` that lists them). Fill them from the finished gates, in
+the same folder, before the `card` part goes up (`--gates-json` is optional; without it the slots stay):
+
+```bash
+marinedata-run --py -m marinedata.hf_card --release-dir /data/releases/ID/F \
+  --summary /data/export/ID/F.summary.json --out /data/export/ID/F --flavour F \
+  --citation /app/CITATION.cff --gates-json /data/export/ID/F/GATES.json
+```
+
+It reads the numbers from `GATES.json`, stops when the `dedup` or `splits` gate did not pass, and prints no
+`WARNING` once every slot is filled. Details: `docs/release-runbook.md`, "v1.2.0 card gate numbers".
+
 6. **Publish by hand**, after reading `/data/logs/plan.log` and `GATES.json`. The plan is a dry run; `--go` is yours to add,
    one part per call so a failure stops at a known part (`--list-parts` prints them: one `data:<config>` each, `provenance`,
    `card`, `tag`):
@@ -203,7 +216,7 @@ Read `pvesm status` before and after.
    `SPLIT_MAP.json`, `DEDUP_GATE.json`, `tasks/` and `PUBLISH_STATE.json` are not uploaded. Rollback: `docs/release-runbook.md`.
 7. **Copy back** before deleting anything (`scp -r root@$IP:<path> .` on Hetzner; on Proxmox
    `ssh -J root@<host> <ci-user>@<vm-ip> 'sudo tar -C / -cf - <paths without the leading />' > copy-back.tar`):
-   `/data/releases/ID/F/RELEASE.json`, `/data/export/ID/F/GATES.json`, `/data/export/ID/F/README.md` (the card),
+   `/data/releases/ID/F/RELEASE.json`, `/data/export/ID/F/GATES.json`, `/data/export/ID/F/README.md` (the card; a v1.2.0 card filled with `--gates-json`, see the note before step 6),
    `/data/export/ID/F/croissant.json`, `/data/export/ID/F.summary.json`, the lock and the split map
    (`/opt/marine-data/<LOCK_FILE>` and `/opt/marine-data/<SPLIT_MAP_FILE>`, the two paths in the settings), and
    `/data/logs/` (`plan.log`, `STATUS`, the stage logs). Mirroring them and the parquet to the bucket (plan

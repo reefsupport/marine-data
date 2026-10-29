@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import json
 from pathlib import Path
 
 import pytest
@@ -128,3 +129,78 @@ def test_the_v1_2_0_card_keeps_the_v1_1_1_history():
     assert v12.mask_note() == MASK_NOTE
     assert (v12.V110_DATE, v12.V111_DATE) == ("2026-10-17", "2026-10-24")
     assert v12.V111_CHANGELOG and "condition-masks" in " ".join(v12.V111_CHANGELOG)
+
+
+GATES = {
+    "dedup": {"passed": True, "counts": {"near_pairs_linked_twins": 2074}, "failures": []},
+    "splits": {
+        "passed": True,
+        "counts": {"stem_link_twins": 2074, "stem_link_pairs_apart": 0},
+        "failures": [],
+    },
+    "masks": {"passed": True, "counts": {}, "failures": []},
+    "privacy": {"passed": False, "counts": {}, "failures": [], "skipped": "no YuNet model"},
+    "summary": {"passed": 3, "failed": 0, "skipped": 1},
+}
+NUMBERS = {"V120_GATES_RUN": 3, "V120_DEDUP_LINKED": 2074, "V120_SPLIT_TWIN_GROUPS": 2074}
+
+
+def _stage(registry, build, tmp_path, monkeypatch, *extra: str) -> tuple[int, str]:
+    """The card stage CLI over the synthetic export, its one source posing as Coralscapes V2."""
+    from marinedata import hf_card
+
+    monkeypatch.setattr(v12, "SOURCE_ID", "seaview-survey-imagery")
+    layout, _ = _layout(registry, build, flavour="open", shard_target_bytes=2000)
+    out, summary, cff = tmp_path / "export", tmp_path / "summary.json", tmp_path / "CITATION.cff"
+    summary.write_text(json.dumps(export_v11(layout, out)))
+    cff.write_text(yaml.safe_dump(CFF))
+    argv = ["--release-dir", str(build[0]), "--summary", str(summary), "--out", str(out)]
+    code = hf_card.main([*argv, "--citation", str(cff), "--flavour", "open", *extra])
+    return code, (out / "README.md").read_text()
+
+
+def test_gate_numbers_come_from_gates_json_and_refuse_a_gate_that_did_not_pass():
+    assert v12.gate_numbers(GATES) == NUMBERS
+    skipped = {**GATES, "splits": {**GATES["splits"], "passed": False, "skipped": "no map"}}
+    with pytest.raises(ValueError, match="splits gate is skipped"):
+        v12.gate_numbers(skipped)
+    apart_counts = {"stem_link_twins": 5, "stem_link_pairs_apart": 2}
+    with pytest.raises(ValueError, match="2 twin pair"):
+        v12.gate_numbers({**GATES, "splits": {**GATES["splits"], "counts": apart_counts}})
+    with pytest.raises(ValueError, match="dedup gate is missing"):
+        v12.gate_numbers({k: v for k, v in GATES.items() if k != "dedup"})
+    with pytest.raises(ValueError, match="near_pairs_linked_twins"):
+        v12.gate_numbers({**GATES, "dedup": {"passed": True, "counts": {}}})
+
+
+def test_card_stage_fills_the_gate_slots_from_gates_json(
+    registry, build, tmp_path, monkeypatch, capsys
+):
+    gates = tmp_path / "GATES.json"
+    gates.write_text(json.dumps(GATES))
+    code, card = _stage(registry, build, tmp_path, monkeypatch, "--gates-json", str(gates))
+    assert code == 0 and "[[" not in card and "<<" not in card
+    assert "**v1.2.0 gates.** 3 gates ran" in card and "2074 V1/V2 twin pairs" in card
+    assert "WARNING" not in capsys.readouterr().err
+
+
+def test_card_stage_without_gates_json_keeps_the_slots_and_warns(
+    registry, build, tmp_path, monkeypatch, capsys
+):
+    code, card = _stage(registry, build, tmp_path, monkeypatch)
+    err = capsys.readouterr().err
+    assert code == 0 and v12.pending_slots(card) == v12.GATE_SLOTS
+    assert "WARNING" in err and all(f"[[{slot}]]" in err for slot in v12.GATE_SLOTS)
+
+
+def test_gates_json_for_a_card_without_slots_is_ignored_with_a_warning(
+    registry, build, tmp_path, capsys
+):
+    layout, _ = _layout(registry, build, flavour="open", shard_target_bytes=2000)
+    export_v11(layout, tmp_path)
+    write_card_files(
+        tmp_path, registry, flavour="open", repo_id="reefsupport/marine-data", cff=CFF,
+        released="2026-10-29", gates=GATES,
+    )  # fmt: skip
+    assert "--gates-json ignored" in capsys.readouterr().err
+    assert "[[" not in (tmp_path / "README.md").read_text()

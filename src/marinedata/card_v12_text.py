@@ -14,6 +14,7 @@ bucket, an image digest or a source that stays out of the open release
 
 from __future__ import annotations
 
+import re
 from collections.abc import Iterable, Mapping
 
 SOURCE_ID = "coralscapes-v2"
@@ -164,7 +165,8 @@ V111_CHANGELOG = (
 )
 
 # Named gate slots of the v1.2.0 "Build and gates" text. The build host fills them from
-# ``provenance/GATES.json`` with :func:`fill_gates` (release runbook, step 7).
+# ``provenance/GATES.json`` with :func:`fill_gates` (release runbook, step 7); the card stage does
+# it when it gets ``--gates-json`` (:func:`fill_from_gates`).
 GATE_SLOTS = ("V120_GATES_RUN", "V120_DEDUP_LINKED", "V120_SPLIT_TWIN_GROUPS")
 GATES_PARAGRAPH = (
     "**v1.2.0 gates.** [[V120_GATES_RUN]] gates ran on the build host. The dedup gate reports "
@@ -295,3 +297,52 @@ def fill_gates(readme: str, numbers: Mapping[str, object]) -> str:
             raise ValueError(f"the card has no {token} slot")
         out = out.replace(token, str(numbers[slot]))
     return out
+
+
+_SLOT = re.compile(r"\[\[(V120_[A-Z0-9_]+)\]\]")
+
+
+def pending_slots(readme: str) -> tuple[str, ...]:
+    """The ``[[V120_...]]`` gate markers still in ``readme``, each once, in card order."""
+    return tuple(dict.fromkeys(_SLOT.findall(readme)))
+
+
+def gate_numbers(gates: Mapping[str, object]) -> dict[str, int]:
+    """The slot numbers read from a ``GATES.json`` dict (shape: :mod:`marinedata.gates`).
+
+    ``V120_GATES_RUN`` counts the entries that did not skip, ``V120_DEDUP_LINKED`` is
+    ``dedup.counts.near_pairs_linked_twins`` and ``V120_SPLIT_TWIN_GROUPS`` is
+    ``splits.counts.stem_link_twins``. Raises ``ValueError`` instead of printing a number the
+    gates did not measure: a ``dedup`` or ``splits`` gate that did not pass, a missing counter, or
+    a twin pair the splits gate found in two splits."""
+    from .gates import SUMMARY_KEY, gate_status
+    from .gates.dedup import LINKED
+
+    status = {k: gate_status(v) for k, v in gates.items() if k != SUMMARY_KEY}
+
+    def counter(gate: str, key: str) -> int:
+        if status.get(gate) != "passed":
+            raise ValueError(
+                f"GATES.json: the {gate} gate is {status.get(gate, 'missing')}, not passed; "
+                "run the gates before the card is filled"
+            )
+        entry = gates[gate]
+        counts = entry.get("counts") if isinstance(entry, dict) else None
+        value = counts.get(key) if isinstance(counts, dict) else None
+        if isinstance(value, bool) or not isinstance(value, int):
+            raise ValueError(f"GATES.json: {gate}.counts.{key} is missing or not a count")
+        return value
+
+    apart = counter("splits", "stem_link_pairs_apart")
+    if apart:
+        raise ValueError(f"GATES.json: the splits gate found {apart} twin pair(s) in two splits")
+    return {
+        "V120_GATES_RUN": sum(s != "skipped" for s in status.values()),
+        "V120_DEDUP_LINKED": counter("dedup", LINKED),
+        "V120_SPLIT_TWIN_GROUPS": counter("splits", "stem_link_twins"),
+    }
+
+
+def fill_from_gates(readme: str, gates: Mapping[str, object]) -> str:
+    """:func:`fill_gates` with the numbers :func:`gate_numbers` reads from a ``GATES.json`` dict."""
+    return fill_gates(readme, gate_numbers(gates))
