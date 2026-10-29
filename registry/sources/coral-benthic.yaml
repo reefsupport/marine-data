@@ -150,6 +150,11 @@ sources:
     licence_evidence: "Upstream dataset card https://huggingface.co/datasets/josauder/coralscapesV2 (revision 8a4567b2, card dated 2026-09-15) declares license apache-2.0; checked 2026-10-29."
     legal_basis: licence
     provenance: public
+    checksums:
+      version: "2.0"
+      root_digest: 66f21bd53b05fa7183ff23d7eeace789705c1f747bc9c1741c85fcce72cc78f5
+      files: 7303
+      size_bytes: 6876103302
     verification:
       verified_on: 2026-10-29
       verified_by: >
@@ -160,29 +165,39 @@ sources:
         states in prose that the release is Apache 2.0 licensed. One cardData.license field
         covers all three configs (default, instances, sequences) of this single dataset
         repository, so the fish instance masks carry the same licence. Class table and counts
-        checked against the pinned upstream `instances` parquet, HF revision 8a4567b2; staging
-        + root_digest recorded at build time.
+        checked against the pinned upstream `instances` parquet, HF revision 8a4567b2;
+        root_digest recorded 2026-10-29 after the VM 900 staging run (checksums block).
       method: dataset-card
     access:
-      method: huggingface
-      uri: https://huggingface.co/datasets/josauder/coralscapesV2
+      method: s3
+      uri: s3://rs-storage-open/sources/coralscapes-v2/2.0/
+      size_bytes: 6877501577  # du -sb of the staged tree = the uploaded objects incl. CHECKSUMS.sha256, 2026-10-29
+      notes: >
+        Upstream pin: params.revision is the full dataset revision (card dated 2026-09-15).
+        Config default has columns image and label (1790/170/473 train/validation/test,
+        2,433 frames); config instances adds instance_ids, stem and site, carrying the fish
+        panoptic masks (uint16, cityscapes instance encoding, fish class 25, label divisor
+        2000); config sequences (206 GB, temporal context around the annotated frames) is
+        out of scope for this release. Our durable copy: staged on VM 900 on 2026-10-29 from
+        that pinned HF revision with scripts/stage_coralscapes_v2.py (never on a workstation)
+        and uploaded to rs-storage-open at sources/coralscapes-v2/2.0/ (rclone copy
+        --immutable --checksum; 7304 objects = the 7303 files of CHECKSUMS.sha256 plus
+        CHECKSUMS.sha256 itself). Same layout as the V1 tree at sources/coralscapes/1.0/, plus
+        labels/instances/default/<stem>_instanceIds.png (uint16 fish instance ids).
+        `loader.layout` is `staged-tree` and `checksums.root_digest` is pinned, so this is
+        `_is_pinned_staged_tree`-true like V1: a live `fetch`/`verify` reads CHECKSUMS.sha256
+        by its known key and then every file by key, and never lists the prefix.
       params:
+        bucket: rs-storage-open
+        endpoint: hel1.your-objectstorage.com
+        region: hel1
+        prefix: sources/coralscapes-v2/2.0/
         hf_id: josauder/coralscapesV2
         config: default
         split: train
         image_column: image
         mask_column: label
         revision: 8a4567b2fbec14882e09aebff63a7a1ca5e24dca
-      notes: >
-        Pinned to the full dataset revision in params.revision (card dated 2026-09-15).
-        Config default has columns image and label (1790/170/473 train/validation/test,
-        2,433 frames); config instances adds instance_ids, stem and site, carrying the fish
-        panoptic masks (uint16, cityscapes instance encoding, fish class 25, label divisor
-        2000); config sequences (206 GB, temporal context around the annotated frames) is
-        out of scope for this release. Staged tree, built on VM 900 and never on a
-        workstation: sources/coralscapes-v2/2.0/, same layout as the V1 tree at
-        sources/coralscapes/1.0/, plus labels/instances/default/<stem>_instanceIds.png
-        (uint16 fish instance ids).
     modalities: [image]
     capabilities:
       - benthic-segmentation
@@ -192,13 +207,18 @@ sources:
       - fish-detection
       - general-pretraining
     loader:
-      layout: image-mask-pairs
+      layout: staged-tree
       schema_id: coralscapes-95
       crosswalk_id: coralscapes-95
-      params: { images_dir: images, masks_dir: masks }
-      # verified_on / verified_note: to be filled after the VM 900 staging run; the layout is
-      # still declared by analogy to the V1 entry (image-mask-pairs, images/ and masks/).
-    # checksums: absent on purpose; filled after staging (root_digest).
+      verified_on: 2026-10-29
+      verified_note: >
+        Staged on VM 900 on 2026-10-29 by scripts/stage_coralscapes_v2.py from HF revision
+        8a4567b2. CHECKSUMS.sha256 lists 7303 files and `sha256sum -c CHECKSUMS.sha256`
+        passes. The tree holds 2433 images (images/default/*.png), 2433 semantic masks
+        (labels/masks/default/*.png) and 2433 fish instance masks
+        (labels/instances/default/*_instanceIds.png), plus ANNOTATIONS.json, CHECKSUMS.sha256,
+        LICENSE, SOURCE.json and metadata.parquet; metadata.parquet has 2433 rows (train 1790,
+        validation 170, test 473). checksums.root_digest is the sha256 of CHECKSUMS.sha256.
     links:
       - source_id: coralscapes
         key: stem                 # V2 stem == V1 file stem (strip _leftImg8bit)
@@ -211,12 +231,12 @@ sources:
       match_field: stem
       template: "coralscapes-v2/{group}"
     n_images: 2433
-    n_images_method: registry-prior
+    n_images_method: "metadata-parquet"
     n_images_note: >
-      1,790 train / 170 validation / 473 test (HF "default" config). 2,074 of V1's 2,075 images
-      keep their V1 split assignment inside this count (per the paper) — V1 and V2 item
-      counts are NOT additive when sizing a combined corpus; summing them double-counts
-      the shared images.
+      metadata.parquet of the staged tree has 2,433 rows: 1,790 train / 170 validation / 473
+      test. 2,074 of V1's 2,075 images keep their V1 split assignment inside this count —
+      V1 and V2 item counts are NOT additive when sizing a combined corpus; summing them
+      double-counts the shared images.
     annotations:
       - kind: dense-mask
         count: 270000
