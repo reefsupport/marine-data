@@ -150,11 +150,13 @@ sources:
     licence_evidence: "Upstream dataset card https://huggingface.co/datasets/josauder/coralscapesV2 (revision 8a4567b2, card dated 2026-09-15) declares license apache-2.0; checked 2026-10-29."
     legal_basis: licence
     provenance: public
+    # checksums.size_bytes = bucket object total: 7304 objects incl. CHECKSUMS.sha256 (rclone size 2026-10-29).
+    # The comment sits above the block because registry_sync_bucket.py rewrites the block and drops comments inside it.
     checksums:
       version: "2.0"
       root_digest: 66f21bd53b05fa7183ff23d7eeace789705c1f747bc9c1741c85fcce72cc78f5
       files: 7303
-      size_bytes: 6876103302
+      size_bytes: 6877001865
     verification:
       verified_on: 2026-10-29
       verified_by: >
@@ -171,7 +173,7 @@ sources:
     access:
       method: s3
       uri: s3://rs-storage-open/sources/coralscapes-v2/2.0/
-      size_bytes: 6877001865  # rclone size 2026-10-29 after the VM 900 upload: 7304 objects = 7303 manifest files + CHECKSUMS.sha256
+      size_bytes: 6876103302  # sum of the 7303 manifest files (what CHECKSUMS.sha256 covers; not CHECKSUMS.sha256 itself)
       notes: >
         Upstream pin: params.revision is the full dataset revision (card dated 2026-09-15).
         Config default has columns image and label (1790/170/473 train/validation/test,
