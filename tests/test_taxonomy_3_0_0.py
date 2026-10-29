@@ -51,9 +51,15 @@ def test_no_node_moved_and_only_the_five_bridges_were_added(manifests):
     assert not set(before["edges"]) - set(after["edges"])
 
 
-def test_the_working_tree_is_the_3_0_0_release(registry, manifests):
-    assert tx.load_meta(registry.root)["version"] == "3.0.0"
-    assert tx.manifest(registry, registry.root)["edges"] == manifests[1]["edges"]
+def test_the_working_tree_is_3_1_0_and_only_adds_to_the_3_0_0_release(registry, manifests):
+    """3.1.0 (v1.2.0, D3) is additive: every 3.0.0 node and edge is still there, unchanged."""
+    assert tx.load_meta(registry.root)["version"] == "3.1.0"
+    now = tx.manifest(registry, registry.root)
+    for key in ("nodes", "edges"):
+        old, new = manifests[1][key], now[key]
+        assert set(old) <= set(new), key  # nothing removed or renamed
+        if isinstance(old, dict):
+            assert all(new[k] == v for k, v in old.items()), key  # nothing changed
 
 
 @pytest.mark.parametrize("key", sorted(BRIDGES))
@@ -99,6 +105,11 @@ PUBLISHED = VOCAB["reefsupport/marine-data/coral-masks"]["coralscapes"]["labels"
 V1_0_RELEASE = "2.9.0"  # v1.0 was built after 2.9.0 (2026-10-05) and before 3.0.0
 D9_LABEL = "unknown hard substrate"
 AS_PUBLISHED = r"coarse 'ABIOTIC' for 'unknown hard substrate' disagrees with the registry"
+# a row stamped with a kept release (3.0.0 since 3.1.0 is live) is checked against that release
+STAMPED_3_0_0 = (
+    r"coarse 'ABIOTIC' for 'unknown hard substrate' disagrees with "
+    r"(the registry|taxonomy 3\.0\.0 \(None\))"
+)
 
 
 def _published_row(**extra):
@@ -141,11 +152,11 @@ def test_the_published_v1_0_row_passes_unchanged_under_its_release():
 
 def test_a_row_stamped_3_0_0_with_the_old_mapping_raises():
     stamped = _published_row(taxonomy_version="3.0.0")
-    with pytest.raises(ValueError, match=AS_PUBLISHED):
+    with pytest.raises(ValueError, match=STAMPED_3_0_0):
         labels.remap_row(stamped, "benthic-coarse")
-    with pytest.raises(ValueError, match=AS_PUBLISHED):  # the row's stamp wins over the argument
+    with pytest.raises(ValueError, match=STAMPED_3_0_0):  # the row's stamp wins over the argument
         labels.remap_row(stamped, "benthic-coarse", taxonomy_version=V1_0_RELEASE)
-    with pytest.raises(ValueError, match=AS_PUBLISHED):  # the argument 3.0.0 is no escape either
+    with pytest.raises(ValueError, match=STAMPED_3_0_0):  # the argument 3.0.0 is no escape either
         labels.remap_row(_published_row(), "benthic-coarse", taxonomy_version="3.0.0")
 
 
@@ -179,8 +190,10 @@ def test_a_stamp_that_names_no_usable_release_raises(stamp, message):
 
 
 def test_release_for_resolves_the_live_registry_and_the_kept_releases():
-    assert ls.current_taxonomy_version() == "3.0.0"
-    assert ls.release_for(None) is None and ls.release_for("3.0.0") is None
+    assert ls.current_taxonomy_version() == "3.1.0"
+    assert ls.release_for(None) is None and ls.release_for("3.1.0") is None
+    kept = ls.release_for("3.0.0")  # a kept release now that 3.1.0 is live
+    assert kept is not None and kept.version == "3.0.0"
     release = ls.release_for(V1_0_RELEASE)
     assert release is not None and release.version == V1_0_RELEASE
     assert release.taxon("coralscapes-39", D9_LABEL) == "RK"

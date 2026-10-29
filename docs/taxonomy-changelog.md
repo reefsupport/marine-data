@@ -1,5 +1,18 @@
 # Taxonomy changelog
 
+## 3.1.0 - 2026-10-29
+
+MINOR, additive (marine-data v1.2.0, Coralscapes V2): nothing moved, nothing was removed.
+
+- Nodes +3: `CN_ANTIPATHARIA`, `SC_ALCYONIIDAE`, `SC_NEPHTHEIDAE` (soft-coral and black-coral groups the
+  95 Coralscapes V2 classes name). `marinedata taxonomy diff 3.0.0 3.1.0`: nodes +3/-0/~0, edges +95/-0/~0.
+- Edges +95: the `coralscapes-95` crosswalk, one edge per V2 class; `coralscapes-v2` leaves `no_crosswalk_yet`.
+- Label scheme `coral-binary` (D11, not a taxonomy change): `CORAL` also holds `CN_ANTIPATHARIA`, so the V2
+  black-coral class counts as coral like the V1 twin label "other coral alive". No source before 3.1.0 reaches
+  the node, so no earlier output changes.
+- Frozen as `registry/taxonomy/releases/3.1.0.json`; `3.0.0.json` is untouched, so rows stamped 3.0.0 keep
+  resolving against their own release.
+
 ## 3.0.0 — 2026-10-15
 
 MAJOR: 0 nodes added, 5 edges added, 1 edge retargeted, nothing removed or re-parented

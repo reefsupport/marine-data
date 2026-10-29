@@ -34,11 +34,15 @@ from marinedata.gates.privacy_detectors import Detection
 from marinedata.gates.v11_runner import RUNNERS, V11_ALL, V11Options, run_v11_gate
 from marinedata.gates.yunet_model import YuNetModelError
 from marinedata.hf_export_v11 import label_map_rows
+from marinedata.label_schemes import current_taxonomy_version
 from marinedata.registry import Registry
 from marinedata.task_layers.boxes_table import BOX_SOURCES
 from marinedata.task_layers.image_labels_table import axes_resolver_for
 
 STUBBED = ("frozen", "bytes_once", "masks", "decon", "privacy", "labelmap")
+
+
+LIVE_TAXONOMY = current_taxonomy_version()  # the labelmap gate wants the live release's stamp
 
 
 def stub(name, how="pass"):
@@ -150,7 +154,7 @@ def an_exact_edge():
 def label_build(tmp_path, table=None, field=None, value=None):
     cid, native, taxon = an_exact_edge()
     common = {"source_id": "srcA", "taxon_node_id": taxon, "form_node_id": None}
-    common |= {"condition_node_id": None, "fidelity": "exact", "taxonomy_version": "3.0.0"}
+    common |= {"condition_node_id": None, "fidelity": "exact", "taxonomy_version": LIVE_TAXONOMY}
     rows = {
         "label-map": {**common, "crosswalk_id": cid, "native_label": native, "mapped": True},
         "points": {**common, "label_native": native},
@@ -207,7 +211,7 @@ def an_edge_into(namespace):
 def bare_id_build(tmp_path, cid, native, column, ident, table="boxes"):
     row = {"source_id": "srcA", "taxon_node_id": None, "form_node_id": None}
     row |= {"condition_node_id": None, column: ident, "fidelity": "exact"}
-    row |= {"taxonomy_version": "3.0.0"}
+    row |= {"taxonomy_version": LIVE_TAXONOMY}
     build = tmp_path / "bare"
     mapped = {**row, "crosswalk_id": cid, "native_label": native, "mapped": True}
     write_shard(build, "label-map", "train", [mapped])
@@ -235,7 +239,7 @@ def test_labelmap_counts_an_ambiguous_bare_id_without_failing(tmp_path, monkeypa
     }
     monkeypatch.setattr("marinedata.gates.labelmap.load_release", lambda *_: release)
     build = bare_id_build(tmp_path, "cw", "lbl", "taxon_node_id", "X1")
-    result = run_labelmap_gate(build, version="3.0.0")
+    result = run_labelmap_gate(build, version=LIVE_TAXONOMY)
     assert result.passed, result.failures
     assert result.counts["ambiguous_bare_ids"] == 1
 
@@ -253,7 +257,7 @@ def test_labelmap_passes_the_four_box_sources_run_4_failed_on(tmp_path):
     sources = ("roboflow-aquarium", "uiis", "uiis10k", "usis10k")
     seen = [{"source_id": s, "label_native": n} for s in sources for n in vocab_labels(s)]
     assert len(seen) == 31
-    map_rows = label_map_rows(registry, sources, "3.0.0", seen)
+    map_rows = label_map_rows(registry, sources, LIVE_TAXONOMY, seen)
     mapped = {(r["source_id"], r["native_label"]): r["fidelity"] for r in map_rows if r["mapped"]}
     assert {(r["source_id"], r["label_native"]) for r in seen} <= set(mapped)
     boxes = []
@@ -263,7 +267,7 @@ def test_labelmap_passes_the_four_box_sources_run_4_failed_on(tmp_path):
         fid = mapped[(r["source_id"], r["label_native"])]
         boxes.append(
             {**r, "taxon_node_id": got.taxon, "form_node_id": got.form, "fidelity": fid}
-            | {"condition_node_id": got.condition, "taxonomy_version": "3.0.0"}
+            | {"condition_node_id": got.condition, "taxonomy_version": LIVE_TAXONOMY}
         )
     write_shard(tmp_path / "b", "label-map", "train", map_rows)
     write_shard(tmp_path / "b", "boxes", "train", boxes)

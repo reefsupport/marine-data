@@ -10,12 +10,12 @@
 # notes for how that was caught).
 #
 # Like coralscapes-39, this is a FLAT vocabulary by design — the source has no hierarchy.
-# No crosswalk to coralscapes-39 exists here: the paper's Fig. 5a/5b shows the 95->39
-# remap as a graphic only, and no machine-readable version of it was found in the dataset
-# repo, the project homepage, the authors' training-code repos, or the production pipeline
-# repo (deepreefmap). See the coralscapes-v2 source entry's notes for the full list of
-# places checked. Hand-deriving that mapping from the figure would be exactly the fail-open
-# this registry exists to prevent, so it is not attempted here.
+# This schema stays a flat list of the V2 classes. Its crosswalk to the reference vocabulary is
+# registry/crosswalks/coralscapes-95.yaml (v1.2.0): every class maps into rs-benthic-v1, and
+# each edge note carries `[legacy: <name>]`, the 39-class name that the dataset card's class
+# table (column "Legacy (39-class)", revision 8a4567b2) gives for the class. The crosswalk
+# copies that column verbatim; nothing was hand-derived from the paper's Fig. 5 graphic, and
+# docs/label-matching.md ("Coralscapes V1 to V2") checks every pair against coralscapes-39.
 #
 # NOTE the gain over coralscapes-39: this schema DOES carry soft-coral classes absent from
 # V1 — "leather coral alive", "nephtheidae alive", "xeniidae alive", a
@@ -28,8 +28,8 @@ schemas:
     description: >
       The flat 95-class scheme from the CoralscapesV2 dataset (Red Sea), superseding
       Coralscapes-39's 39 classes with finer taxon/form/condition splits and, new in V2,
-      several soft-coral classes. Not a taxonomy — see the header comment for why no
-      crosswalk to coralscapes-39 ships with this file.
+      several soft-coral classes. Not a taxonomy — its crosswalk to rs-benthic-v1 is
+      registry/crosswalks/coralscapes-95.yaml (v1.2.0).
     axes: [taxon]
     nodes:
       - { id: CS95_ACANTHASTER_PLANCI, name: "acanthaster planci", axis: taxon, aliases: ["acanthaster planci"] }

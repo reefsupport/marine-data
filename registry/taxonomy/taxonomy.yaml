@@ -2,7 +2,7 @@
 # retargeted; MINOR = nodes/edges/vocabularies added; PATCH = notes and reasons only.
 # `marinedata taxonomy export` freezes releases/<version>.json;
 # `marinedata taxonomy diff <a> <b>` compares two of them (HEAD = working tree).
-version: 3.0.0
+version: 3.1.0
 snapshot: worms-2026-09-25.parquet
 
 # Sources under the 95% mapped floor. Each entry says what is lost and why.
@@ -62,8 +62,3 @@ no_crosswalk_yet:
   whoi-plankton-small: plankton class list not harvested in WP-7; crosswalk at ingest.
   underwater-image-enhancement: enhancement pairs; no class labels to cross-walk.
   satellite-coral-mapping: habitat-map classes (remote sensing), not organism labels; crosswalk at ingest.
-  coralscapes-v2: >-
-    95-class flat scheme (registry/schemas/coralscapes-95.yaml, from the dataset's own id2label.json) plus fish
-    instance masks. No 95-class crosswalk is written: the only published remap (95->39, paper Fig. 5a/5b) is a graphic
-    with no machine-readable version in the HF repo, the homepage, the authors' code or deepreefmap, and hand-deriving it
-    from the figure is the fail-open this registry exists to prevent; crosswalk at ingest from a machine-readable source.
