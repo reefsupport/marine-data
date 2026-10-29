@@ -9,6 +9,8 @@ hashed twice: sha256 of the bytes and a 64-bit DCT pHash (:mod:`.phash`, stored 
 * ``near_dup_across_splits`` / ``near_dup_across_sources``  pHash Hamming <= ``--phash-bits``
   (default 8); near copies inside one split and one source (burst frames) are only counted;
 * ``undecodable_image``          the bytes do not decode;
+* ``linked_twins_split``         two images the split map links by stem (a V1 frame and its V2
+  re-annotation, ``inherits.stem_links``) sit in different splits;
 * ``dedup_report``               ``DEDUP_GATE.json`` (the WP-10 split-leak report written by
   ``release build``) is present and not ok.
 
@@ -29,6 +31,11 @@ differ in more than 32 bits AND both carry at least 4.0 bits of grey entropy: th
 the split-map stage (:class:`marinedata.neardup.UnionConfirm`). A re-host or re-encode (pHash-256
 within 32), a flat frame (entropy below 4.0) and bytes that cannot be re-read all still fail.
 
+A near pair of two stem-linked twins in ONE split is one link group, not a leak: it is counted as
+``near_pairs_linked_twins`` with a capped sample and never fails. Every other near pair (a V2 frame
+and an unrelated V1 image in another group or split) is judged as before. ``stem_link_*`` counters
+expose the map's twins and its V1-wins conflicts.
+
 A build with no image bytes (tsv-only) is ``skipped`` with the reason, never passed."""
 
 from __future__ import annotations
@@ -48,6 +55,7 @@ NAME = "dedup"
 DEFAULT_PHASH_BITS = 8
 IN_FAMILY = "near_pairs_across_sources_in_family"
 UNCONFIRMED = "near_pairs_across_sources_unconfirmed"
+LINKED = "near_pairs_linked_twins"
 _REPORT = "DEDUP_GATE.json"
 _ROW = re.compile(r"^(?P<config>.+)/(?P<shard>[^/\[]+)\[(?P<row>\d+)\]$")  # ImageRecord.where
 _REPORT_LISTS = ("spanning", "upstream_test_in_train", "ungrouped")
@@ -152,9 +160,13 @@ def run_dedup_gate(
             {"dedup_gate_json": report},
         )
     write_table(build_dir, records)
+    from ..release.stem_links import gate_counts, load_link_table  # lazy: release imports the gates
+
+    links = load_link_table(build_dir, release_dir)
     counts: Counter = Counter(images=len(records))
     failures: list[str] = []
     in_family: list[str] = []
+    linked: list[str] = []
     candidates: list[tuple[ImageRecord, ImageRecord, int]] = []
 
     def fail(kind: str, where: str, message: str) -> None:
@@ -205,6 +217,19 @@ def run_dedup_gate(
         a, b = scored[i], scored[j]
         if a.config != b.config or a.digest == b.digest:
             continue
+        if links is not None and links.linked(a.image_sha256, b.image_sha256):
+            if a.split == b.split:  # stem-linked twins in one split: one link group, not a leak
+                counts[LINKED] += 1
+                linked.append(
+                    f"{_where(a)} twin_of {_where(b)}: hamming {dist} ({a.source} vs {b.source})"
+                )
+            else:
+                fail(
+                    "linked_twins_split",
+                    _where(a),
+                    f"stem-linked twin {_where(b)} sits in another split (hamming {dist})",
+                )
+            continue
         if a.split != b.split:
             kind = "near_dup_across_splits"
         elif a.source != b.source:
@@ -244,6 +269,10 @@ def run_dedup_gate(
                 f"hamming {dist} <= {phash_bits} to {_where(b)} ({sources}); {evidence}",
             )
     out = {**counts, "phash_bits": phash_bits, "dedup_gate_json": report}
+    if links is not None:
+        out.update(gate_counts(links))
+    if linked:
+        out[f"{LINKED}_sample"] = sorted(linked)[:MAX_FAILURES]
     if in_family:
         out[f"{IN_FAMILY}_sample"] = sorted(in_family)[:MAX_FAILURES]
     if unconfirmed:
