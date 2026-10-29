@@ -21,6 +21,8 @@ SOURCE_ID = "coralscapes-v2"
 VERSION = "1.2.0"
 GITHUB = "https://github.com/reefsupport/marine-data"
 LABEL_MATCHING_URL = f"{GITHUB}/blob/main/docs/label-matching.md"
+LABEL_MATCHING_JSON_URL = f"{GITHUB}/blob/main/results/label-matching-v1.2.0.json"
+TAXONOMY = "3.1.0"
 V2_REPO = "josauder/coralscapesV2"
 V2_REVISION = "8a4567b2fbec14882e09aebff63a7a1ca5e24dca"
 V2_CARD_DATE = "2026-09-15"
@@ -34,6 +36,9 @@ SUPERSEDES = (
 
 V2_FRAMES = 2_433
 V2_SPLITS = {"train": 1_790, "validation": 170, "test": 473}
+TEST_PAIR = ("site23_000097_017682", "site23_000152_017682")
+BENCHMARK = V2_SPLITS["test"] + V2_SPLITS["validation"]
+"""Rows of the ``coralscapes-v2`` benchmark manifest; it has one digest fewer than rows."""
 TWINS = 2_074
 V1_ONLY = 1
 V2_NEW = {"train": 273, "validation": 4, "test": 82}
@@ -43,10 +48,11 @@ LEGACY = {"same": 64, "refines": 22, "retarget": 8, "ignore-to-mapped": 1}
 NEW_NODES = {"CN_ANTIPATHARIA": 22549, "SC_ALCYONIIDAE": 125269, "SC_NEPHTHEIDAE": 146762}
 """The three ``rs-benthic-v1`` nodes of taxonomy 3.1.0 and their WoRMS AphiaIDs (read live)."""
 REGISTRY = {
-    "labels": 3_670, "edges": 3_258, "crosswalks": 44, "exact": 2_251, "coarsened": 777,
-    "approximate": 71, "unmappable": 159,
+    "units": 74, "with_crosswalk": 57, "no_crosswalk": 17, "labels": 3_670, "edges": 3_258,
+    "crosswalks": 44, "exact": 2_251, "coarsened": 777, "approximate": 71,
+    "unmappable": 159, "lossy_without_note": 66,
 }  # fmt: skip
-"""Registry-wide totals of ``results/label-matching-v1.2.0.json``."""
+"""Registry-wide totals of ``results/label-matching-v1.2.0.json``; a test asserts they match."""
 
 _ANCHOR = "Coralscapes has no soft-coral or octocoral class."
 
@@ -152,17 +158,30 @@ CITATION = (
 
 
 # History rows of the published v1.1.0 / v1.1.1 cards (the v1.2.0 card is a superset of them).
-V110_DATE = "2026-10-17"
+V110_DATE = "2026-10-17"  # build date printed in the published v1.1.0 card
 V110_NOTE = "Additive: 11 new configurations."
 V111_DATE = "2026-10-24"
 V111_NOTE = (
-    "Additive: one new configuration, `condition-masks` (635 Tayrona bleaching rasters, `train`). "
+    "Additive: one new configuration, `condition-masks` (634 Tayrona bleaching rasters, `train`). "
     "Every v1.1.0 file is unchanged."
 )
 V111_CHANGELOG = (
-    "Additive: one new configuration, `condition-masks` (635 Tayrona bleaching rasters, `train`). "
+    "Additive: one new configuration, `condition-masks` (634 Tayrona bleaching rasters, `train`). "
     "Every v1.1.0 file is unchanged.",
 )
+RELEASE_MONTH = "2026-10"
+"""The date cell of the v1.2.0 row when the renderer got no build date."""
+
+
+def version_rows(v1_date: str, v1_note: str, built: str | None) -> list[tuple[str, str, str]]:
+    """The four rows of the v1.2.0 card's version table: v1.0.0, v1.1.0, v1.1.1 and v1.2.0."""
+    return [
+        ("v1.0.0", v1_date, v1_note),
+        ("v1.1.0", V110_DATE, V110_NOTE),
+        ("v1.1.1", V111_DATE, V111_NOTE),
+        (f"v{VERSION}", built or RELEASE_MONTH, VERSION_NOTE),
+    ]
+
 
 # Named gate slots of the v1.2.0 "Build and gates" text. The build host fills them from
 # ``provenance/GATES.json`` with :func:`fill_gates` (release runbook, step 7); the card stage does
@@ -259,6 +278,18 @@ def _splits() -> str:
     )
 
 
+def _test_pair() -> str:
+    a, b = TEST_PAIR
+    return (
+        "### A byte-identical test pair\n\n"
+        f"Two V2 frames, `{a}` and `{b}`, have identical image bytes and different masks, and "
+        "both are in the upstream `test` split. That is how the upstream data are published, and "
+        "the release keeps them as published: neither frame is dropped, merged or moved. The "
+        f"benchmark manifest of the V2 test and validation frames therefore has {BENCHMARK} rows "
+        f"and {BENCHMARK - 1} unique image digests."
+    )
+
+
 def section(sources: Iterable[Mapping]) -> str:
     """The ``## Coralscapes V2`` card section; the V2 image count is read from ``sources``."""
     parts = (
@@ -268,10 +299,63 @@ def section(sources: Iterable[Mapping]) -> str:
         CLASSES,
         _matching(),
         _splits(),
+        _test_pair(),
         FROZEN,
         CITATION,
     )
     return "\n\n".join(parts)
+
+
+def labels_section() -> str:
+    """The ``## Using labels across sources`` card section; its figures are :data:`REGISTRY`."""
+    g = REGISTRY
+    first, second, third = NEW_NODES
+    nodes = f"`{first}`, `{second}` and `{third}`"
+    return (
+        "## Using labels across sources\n\n"
+        "Every source names its classes in its own way: a pixel value, a label from an "
+        "annotation platform, a species concept, a survey code. To use several sources "
+        "together, express every label in the ids of one reference vocabulary, the "
+        "`rs-benthic-v1` scheme of taxonomy release "
+        f"{TAXONOMY} (additive: it adds the three nodes {nodes}, and nothing in 3.0.0 changes). "
+        "Each source that has labels to map has one crosswalk: one edge per native label, naming "
+        "the node it resolves to and how closely. An edge is `exact` (both mean the same thing), "
+        "`coarsened` (the node is a strict ancestor: detail is lost, nothing is invented), "
+        "`approximate` (best effort: the concepts overlap imperfectly) or `unmappable` (no node "
+        "exists).\n\n"
+        "### Verified for every source\n\n"
+        "A check on the registry alone, which reads no image, resolves every native label of every "
+        f"source into `rs-benthic-v1`. It covers {g['units']} units (sources, and crosswalks that "
+        f"no source claims): {g['with_crosswalk']} have a crosswalk and pass, "
+        f"{g['no_crosswalk']} are label-less or have no crosswalk. The {g['crosswalks']} "
+        f"crosswalks hold {g['labels']:,} labels and {g['edges']:,} edges: {g['exact']:,} exact, "
+        f"{g['coarsened']} coarsened, {g['approximate']} approximate and {g['unmappable']} "
+        "unmappable, and every unmappable edge carries a note that says why. No label is "
+        "unresolved, ambiguous, missing or duplicated. Method, per-source tables and the "
+        f"unmappable labels: [docs/label-matching.md]({LABEL_MATCHING_URL}). The result as data: "
+        f"[results/label-matching-v1.2.0.json]({LABEL_MATCHING_JSON_URL}).\n\n"
+        "### How the training views apply it\n\n"
+        f"The `marinedata` package ([code]({GITHUB})) applies the crosswalks: "
+        "`labels.lut(source_id, scheme)` and `labels.remap_mask(mask, source_id, scheme)` turn the "
+        "native values of any source into the ids of one training view. `coral-binary` is coral "
+        "against everything else (`CN_ANTIPATHARIA` counts as coral), `benthic-coarse` has six "
+        "classes (hard coral, fire coral, soft coral, algae, abiotic, other fauna) and `scene` "
+        "has the eight SUIM classes. `255` is the ignore value in all of them: it carries no "
+        "gradient and is not counted in any metric, and it is what an unmappable label and every "
+        "pixel value that a source does not declare become, so a source cannot add a class by "
+        "accident. A head finer than a view reads the `rs-benthic-v1` node of each edge instead, "
+        "and supervises a `coarsened` label at its node and the ancestors of the node, never at "
+        "one finer class below it.\n\n"
+        "### What an edge cannot promise\n\n"
+        "A crosswalk makes labels comparable, not identical. A `coarsened` edge loses detail and "
+        "an `approximate` edge is the closest node, not the same thing: read the edge note before "
+        "you rely on a fine class. An unmappable label supervises nothing on the axis it cannot "
+        f"fill. {g['lossy_without_note']} lossy edges of older crosswalks have no note yet; the "
+        "check pins that number so that it can only fall. The two coarse views can also disagree "
+        "on a label: the V1 label `other coral alive` and its V2 twin `cirrhipathes` (black "
+        "coral) are both coral in `coral-binary`, but only the V1 label is hard coral in "
+        "`benthic-coarse`, where the V2 label is ignored."
+    )
 
 
 def mask_note() -> str:

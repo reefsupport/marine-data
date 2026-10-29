@@ -384,16 +384,15 @@ def render_v11_card(
         ("Version", f"v{version}" + (f", built {built}" if built else "")),
         ("Code", f"[{GITHUB.split('//')[1]}]({GITHUB})"),
     ]
-    latest = v12.VERSION_NOTE if has_v2 else f"Additive: {len(names)} new configurations."
-    history = (  # the v1.2.0 card keeps the version rows of the published v1.1.0 / v1.1.1 cards
-        [("v1.1.0", v12.V110_DATE, v12.V110_NOTE), ("v1.1.1", v12.V111_DATE, v12.V111_NOTE)]
+    version_rows = (  # the v1.2.0 card keeps the rows of the published v1.1.0 / v1.1.1 cards
+        v12.version_rows(txt.V1_DATE, txt.V1_NOTES[flavour], built)
         if has_v2
-        else []
+        else [
+            ("v1.0", txt.V1_DATE, txt.V1_NOTES[flavour]),
+            (f"v{version}", built, f"Additive: {len(names)} new configurations."),
+        ]
     )
-    versions = _table(
-        ("Version", "Date", "Notes"),
-        [("v1.0", txt.V1_DATE, txt.V1_NOTES[flavour]), *history, (f"v{version}", built, latest)],
-    )
+    versions = _table(("Version", "Date", "Notes"), version_rows)
     lock_line = (
         f"The release is pinned by `provenance/release.lock.yaml` (sha256 `{lock_sha}`)."
         if lock_sha
@@ -425,12 +424,13 @@ def render_v11_card(
         "`metadata.bytes_config` names the config that holds each image's pixels: a v1.0 config "
         "or `images`. The Hub splits are `train`, `validation`, `test` and `test_ood`.\n\n"
         + txt.MASKS,
-        v12.section(sources) if has_v2 else "",
         v12.mask_note() if has_v2 else "",
+        v12.section(sources) if has_v2 else "",
         "## Label space\n\n" + txt.LABEL_SPACE + "\n\n### Label overlap\n\n"
         "Taxonomy nodes that more than one source reaches. Cross-source training should use "
         "these, or the coarse training views.\n\n" + overlap_table(label_rows)
         + "\n\n### Mapped share per source\n\n" + mapped_table(sources),
+        v12.labels_section() if has_v2 else "",
         "## Splits\n\n" + txt.SPLITS_TEXT + open_only(txt.SPLITS_OPEN, "\n\n") + "\n\n"
         + splits_table(configs),
         "## Dataset creation\n\n### Sources\n\n" + sources_table(sources)

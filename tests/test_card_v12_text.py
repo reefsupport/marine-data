@@ -20,6 +20,10 @@ build, registry = _build, _registry  # the synthetic 12-table build of test_hf_e
 
 
 V2 = [{"source_id": "coralscapes-v2", "n_images": 2433}]
+ROOT = Path(__file__).resolve().parents[1]
+MATCHING_JSON = ROOT / "results" / "label-matching-v1.2.0.json"
+MANIFEST = ROOT / "registry" / "benchmarks" / "manifests" / "coralscapes-v2.parquet"
+D7 = "V2 supersedes V1 for Coralscapes tasks; V1 configs are kept frozen for reproducibility"
 CFF = {
     "cff-version": "1.2.0",
     "message": "If you use this dataset, please cite it as below.",
@@ -86,6 +90,7 @@ def test_limitations_replace_only_the_coralscapes_bullet():
 def test_card_without_v2_is_the_v110_card(registry, build, tmp_path):
     card, cff = _render(registry, build, tmp_path / "plain")
     assert "Coralscapes V2" not in card and 'revision="v1.1.0"' in card
+    assert "Using labels across sources" not in card and v12.TEST_PAIR[0] not in card
     assert txt.LIMITATIONS[0] in _limitations(card)
     assert cff["version"] == "1.1.0"
 
@@ -129,6 +134,102 @@ def test_the_v1_2_0_card_keeps_the_v1_1_1_history():
     assert v12.mask_note() == MASK_NOTE
     assert (v12.V110_DATE, v12.V111_DATE) == ("2026-10-17", "2026-10-24")
     assert v12.V111_CHANGELOG and "condition-masks" in " ".join(v12.V111_CHANGELOG)
+
+
+def _version_rows(card: str) -> list[list[str]]:
+    block = card.split("## Versions and changelog", 1)[1].split("\n## ", 1)[0]
+    return [
+        [cell.strip() for cell in line.strip("|").split("|")]
+        for line in block.splitlines()
+        if line.startswith("| v")
+    ]
+
+
+def test_the_v1_2_0_card_lists_four_versions_the_mask_note_and_the_label_section(
+    registry, build, tmp_path, monkeypatch
+):
+    monkeypatch.setattr(v12, "SOURCE_ID", "seaview-survey-imagery")
+    card, _ = _render(registry, build, tmp_path / "v2")
+    rows = _version_rows(card)
+    assert [r[0] for r in rows] == ["v1.0.0", "v1.1.0", "v1.1.1", "v1.2.0"]
+    assert [r[1] for r in rows] == [txt.V1_DATE, v12.V110_DATE, v12.V111_DATE, "2026-10-29"]
+    assert "`condition-masks`" in rows[2][2] and rows[3][2] == v12.VERSION_NOTE
+    note = v12.mask_note()
+    assert card.count(note) == 1 and note.startswith("**Condition masks (v1.1.1).**")
+    order = (
+        "\n## Dataset structure", note, "\n## Coralscapes V2",
+        "\n### A byte-identical test pair", "\n## Label space",
+        "\n## Using labels across sources", "\n## Splits",
+    )  # fmt: skip
+    positions = [card.index(h) for h in order]
+    assert positions == sorted(positions)
+    assert D7 in card and "<<" not in card and ">>" not in card
+    block = card.split("## Using labels across sources", 1)[1].split("\n## ", 1)[0]
+    g = v12.REGISTRY
+    for needle in (
+        f"taxonomy release {v12.TAXONOMY}", *v12.NEW_NODES, f"{g['units']} units",
+        f"{g['with_crosswalk']} have a crosswalk", f"{g['no_crosswalk']} are label-less",
+        f"{g['labels']:,} labels", f"{g['edges']:,} edges", f"{g['crosswalks']} crosswalks",
+        f"{g['exact']:,} exact", f"{g['coarsened']} coarsened", f"{g['approximate']} approximate",
+        f"{g['unmappable']} unmappable", "`coral-binary`", "`benthic-coarse`", "`scene`",
+        v12.LABEL_MATCHING_URL, v12.LABEL_MATCHING_JSON_URL,
+    ):  # fmt: skip
+        assert needle in block, needle
+    assert_public_safe(block, "open", where="label section")
+
+
+def test_the_v1_2_0_row_falls_back_to_the_month_without_a_build_date():
+    rows = v12.version_rows(txt.V1_DATE, "v1.0 note", None)
+    assert [r[0] for r in rows] == ["v1.0.0", "v1.1.0", "v1.1.1", "v1.2.0"]
+    assert rows[-1][1] == "2026-10" and not any("<<" in c for r in rows for c in r)
+
+
+def test_label_matching_figures_are_the_verifier_result():
+    data = json.loads(MATCHING_JSON.read_text())
+    s, fid = data["summary"], data["summary"]["edges_by_fidelity"]
+    assert (data["release"], data["taxonomy_version"]) == (v12.VERSION, v12.TAXONOMY)
+    expected = {
+        "units": s["units"], "with_crosswalk": s["by_status"]["pass"],
+        "no_crosswalk": s["by_status"]["no-crosswalk"], "labels": s["labels_verified"],
+        "edges": s["crosswalk_edges"], "crosswalks": s["crosswalks"], "exact": fid["exact"],
+        "coarsened": fid["coarsened"], "approximate": fid["approximate"],
+        "unmappable": fid["ignored"], "lossy_without_note": sum(s["lossy_without_note"].values()),
+    }  # fmt: skip
+    assert expected == v12.REGISTRY
+    assert fid["narrower"] == 0 and sum(fid.values()) == s["crosswalk_edges"]
+    assert [s[k] for k in ("unresolved", "ambiguous", "missing", "duplicate")] == [0, 0, 0, 0]
+    assert len(data["unmappable"]) == fid["ignored"]
+    assert all(u["note"].strip() for u in data["unmappable"])
+    assert set(v12.NEW_NODES) <= set(data["new_nodes"]["nodes"])
+
+
+def test_the_byte_identical_test_pair_is_stated_where_readers_look():
+    import pyarrow.parquet as pq
+
+    rows = pq.read_table(MANIFEST).to_pylist()
+    by_stem = {r["stem"]: r for r in rows}
+    first, second = (by_stem[s] for s in v12.TEST_PAIR)
+    assert first["sha256"] == second["sha256"]
+    assert first["upstream_split"] == second["upstream_split"] == "test"
+    assert len(rows) == v12.BENCHMARK == 643
+    assert len({r["sha256"] for r in rows}) == v12.BENCHMARK - 1 == 642
+    entry = (ROOT / "registry" / "sources" / "coral-benthic.yaml").read_text()
+    entry = entry.split("- id: coralscapes-v2", 1)[1].split("\n  - id: ", 1)[0]
+    texts = {
+        "card": v12.section(V2),
+        "registry note": entry,
+        "CHANGELOG": (ROOT / "CHANGELOG.md").read_text(),
+    }
+    for where, text in texts.items():
+        flat = " ".join(text.split())
+        assert all(stem in flat for stem in v12.TEST_PAIR), where
+        assert f"{v12.BENCHMARK} rows" in flat, where
+        assert f"{v12.BENCHMARK - 1} unique image digests" in flat, where
+
+
+def test_d7_wording_is_verbatim_in_the_card_and_the_changelog():
+    assert v12.SUPERSEDES == D7 + "."
+    assert D7 in v12.section(V2) and D7 in (ROOT / "CHANGELOG.md").read_text()
 
 
 GATES = {

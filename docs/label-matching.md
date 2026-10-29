@@ -273,6 +273,8 @@ state the same facts for readers of the release.
 
 ## Training jointly
 
+**How to use this.** Pick a training view and let the registry do the mapping: `labels.lut(source_id, scheme)` and `labels.remap_mask(mask, source_id, scheme)` turn the native values of any source into the ids of `coral-binary`, `benthic-coarse` or `scene`, with 255 as ignore, and a head finer than those views reads the `rs-benthic-v1` node of each label from the crosswalk of its source. Mix a source into a run only when its unit has a crosswalk and passes in the results above; `make labels-check` re-checks every unit. The Hugging Face card carries the same guidance under "Using labels across sources".
+
 To train on several sources at once, express every label in `rs-benthic-v1` ids and nothing else. Map
 each source through its crosswalk to the node ids of `rs-benthic-v1`; a source never contributes its
 own class numbers to the loss. Where an edge is `coarsened`, the source cannot say more than the
