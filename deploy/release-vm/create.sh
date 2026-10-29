@@ -280,7 +280,7 @@ printf '%b\n' "$(qm config @SSHKEYS_VMID@ | sed -n 's/^sshkeys: //p' | sed 's/%/
 ssh-keygen -lf @KEYS@                       # exactly @KEY_COUNT@: @KEY_COMMENTS@
 install -m 0644 @NAME@.yaml /var/lib/vz/snippets/@NAME@.yaml
 qm create @VMID@ --name @NAME@ \
-  --description 'Disposable marine-data v1.1.0 build. Raw qm, not in OpenTofu by design. Destroy after publish.' \
+  --description 'Disposable marine-data @RELEASE_ID@ build. Raw qm, not in OpenTofu by design. Destroy after publish.' \
   --ostype l26 --cpu host --sockets 1 --cores @CORES@ --memory @MEMORY@ --scsihw virtio-scsi-single \
   --agent enabled=1 --serial0 socket --vga serial0 --onboot 0 --net0 virtio,bridge=@BRIDGE@,firewall=0,mtu=1
 qm importdisk @VMID@ @IMG_PATH@ @STORAGE@
@@ -294,7 +294,7 @@ qm set @VMID@ --ciuser @CI_USER@ --sshkeys @KEYS@ \
 qm set @VMID@ --cicustom vendor=local:snippets/@NAME@.yaml
 qm cloudinit dump @VMID@ user | grep -c 'ssh-'               # @KEY_COUNT@
 qm start @VMID@
-timeout 900 sh -c 'until qm guest ping @VMID@ 2>/dev/null; do sleep 15; done'
+timeout 900 sh -c 'until qm guest cmd @VMID@ ping 2>/dev/null; do sleep 15; done'
 qm guest exec @VMID@ --timeout 600 -- cloud-init status --wait
 qm guest exec @VMID@ -- sh -c 'ip -br link; ls -l /dev/disk/by-id/; lsblk -o NAME,SIZE,TYPE,PTTYPE'
 EOF
@@ -335,6 +335,7 @@ pve_render_script() {
   t=${t//@NAMESERVER@/$PVE_NAMESERVER}
   t=${t//@SSHKEYS_VMID@/$PVE_SSHKEYS_FROM_VMID}
   t=${t//@KEY_COUNT@/$PVE_KEY_COUNT}
+  t=${t//@RELEASE_ID@/$RELEASE_ID}  # validated: letters, digits, . _ -
   t=${t//@KEY_COMMENTS@/$PVE_KEY_COMMENTS}  # last: a key comment holds an @
   printf '#!/usr/bin/env bash\n'
   printf '# Rendered by create.sh --target pve. Run as root on the Proxmox host, in the folder that holds\n'
