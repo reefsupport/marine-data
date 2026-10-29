@@ -262,7 +262,7 @@ VM_900_SCRIPT = [
     "qm set 900 --cicustom vendor=local:snippets/marinedata-build.yaml",
     "qm cloudinit dump 900 user | grep -c 'ssh-'               # 2",
     "qm start 900",
-    "timeout 900 sh -c 'until qm guest ping 900 2>/dev/null; do sleep 15; done'",
+    "timeout 900 sh -c 'until qm guest cmd 900 ping 2>/dev/null; do sleep 15; done'",
     "qm guest exec 900 --timeout 600 -- cloud-init status --wait",
     "qm guest exec 900 -- sh -c 'ip -br link; ls -l /dev/disk/by-id/; lsblk -o "
     "NAME,SIZE,TYPE,PTTYPE'",
@@ -396,6 +396,21 @@ def test_pve_flags_reach_the_script(sandbox, tmp_path):
     assert "ssh -J root@host.test ops@10.0.0.91 " in done.stdout
     assert "900" not in text.replace("timeout 900", "")
     assert (out / "md-nc.yaml").exists()
+
+
+def test_pve_description_follows_the_release_id_and_the_wait_loop_probes_with_guest_cmd(
+    sandbox, tmp_path
+):
+    env, _ = sandbox
+    out = tmp_path / "out"
+    done = pve(env, out, {"--release-id": "v1.2.0"})
+    assert done.returncode == 0, done.stderr
+    text = (out / "vm-900.sh").read_text()
+    assert "--description 'Disposable marine-data v1.2.0 build. " in text
+    assert "v1.1.0" not in text
+    # PVE 9.2 has no `qm guest ping`; the guest agent is probed with `qm guest cmd <vmid> ping`.
+    assert "qm guest ping" not in text
+    assert "until qm guest cmd 900 ping 2>/dev/null;" in text
 
 
 @pytest.mark.parametrize("ref", ["deadbeef", "main", SHA[:-1], SHA + "0", SHA.upper()])

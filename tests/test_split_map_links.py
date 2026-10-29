@@ -356,8 +356,12 @@ def test_generate_split_map_drops_the_pin_v1_refuses_and_counts_new_and_moved(
     assigned = got["assignments"]
     split_of = {g: assigned.get(g) or assigned.get(plan.canonical[g]) for _, g, _ in rows}
     assert split_of[f"{V1}/site1"] == split_of[f"{V2}/site1"] == "test"  # identical: nothing moved
-    moved = ((got.get("pins") or {}).get("v1_continuity_overridden") or {}).get("images", 0)
-    assert moved == 0
+    header = got.get("pins") or {}
+    assert "v1_continuity_overridden" in header  # the map inherits v1.0: the block is stamped
+    counted = header["benchmarks"][V2]["test"]
+    assert counted == 2  # S1 and S9 are the counted pins (the S2 pin was dropped): not vacuous
+    moved = header["v1_continuity_overridden"]
+    assert (moved["images"], moved["groups"], moved["group_ids"]) == (0, 0, [])  # v1.0 is frozen
     assert split_of[f"{V1}/site2"] == split_of[f"{V2}/site2"] == "train"  # changed twin: V1 wins
     assert [(c.kind, c.stem) for c in dropped] == [("pin_dropped", S2)]
     assert split_of[f"{V2}/site9"] == "test"  # new frame follows its pin

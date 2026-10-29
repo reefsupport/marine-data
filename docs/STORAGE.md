@@ -195,6 +195,7 @@ Regenerate with `python scripts/gen_storage_docs.py`; check offline with
 | `coral-bleaching-detection-v2i-multiclass` | `s3://<private-bucket>/coral_bleaching/others.tar.gz` | unversioned | unknown | 736 | — | — | unpinned |
 | `coral-health-classification` | `s3://<private-bucket>/coral_bleaching/others.tar.gz` | unversioned | unknown | 1,637 | — | — | unpinned |
 | `coralscapes` | `s3://<open-bucket>/sources/coralscapes/1.0/` | 1.0 | open | 2,075 | — | — | pinned |
+| `coralscapes-v2` | `s3://<open-bucket>/sources/coralscapes-v2/2.0/` | 2.0 | open | 2,433 | — | — | pinned |
 | `coralscop-masks-rs` | `s3://<open-bucket>/sources/coralscop-masks-rs/2026-09-23-3e8612678469/` | 2026-09-23-3e8612678469 | internal-only | 38,928 | — | — | pinned |
 | `coralseg-ucsd-mosaics` | `s3://<open-bucket>/sources/coralseg-ucsd-mosaics/unversioned/` | unversioned | internal-only | 4,922 | — | 9,845 | pinned |
 | `coralvqa` | `s3://<open-bucket>/sources/coralvqa/rev-3da50a4429e4/` | rev-3da50a4429e4 | restricted-nc | 11,804 | — | 11,809 | pinned |

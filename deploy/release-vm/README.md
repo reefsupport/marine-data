@@ -304,7 +304,7 @@ What only the first run on the Proxmox VM can show (the rehearsal checks these b
 - the guest MTU is 1400 like the bridge (`ip -br link`; `ping -c1 -M do -s 1372 1.1.1.1` from the VM);
 - `df -h / /data`: docker's layers fit the 32 GB root disk while `TMPDIR` and `TORCH_HOME` sit on `/data`;
 - build time and peak memory (`docker stats`) against the 14 GiB container limit;
-- `qm guest ping <VMID>` and `cloud-init status --wait` return on first boot;
+- `qm guest cmd <VMID> ping` and `cloud-init status --wait` return on first boot (PVE 9.2 has no `qm guest ping`);
 - inside the container `/app/<LOCK_FILE>` and `/app/<SPLIT_MAP_FILE>` exist, and a re-run with a new ref on the VM
   moves the checkout and rebuilds the image (the tests cover the logic with a local origin and a fake `docker`).
 

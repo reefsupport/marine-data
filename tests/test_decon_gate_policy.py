@@ -203,7 +203,7 @@ def test_every_shipped_manifest_resolves_to_a_registry_entry():
         for path in sorted((ROOT / "registry" / "benchmarks" / "manifests").glob("*.parquet"))
         for m in read_manifests(path, "benchmark")
     ]
-    assert len(manifests) == 17
+    assert len(manifests) == 18
     policy = {m.benchmark_id: REGISTRY.by_id(m.benchmark_id).policy for m in manifests}
     assert {i for i, p in policy.items() if p == "exclude"} == {"marineeval", "u45"}
     for in_scope in ("coralscapes", "suim", "uiis", "uiis10k", "usis10k"):
