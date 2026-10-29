@@ -171,7 +171,7 @@ sources:
     access:
       method: s3
       uri: s3://rs-storage-open/sources/coralscapes-v2/2.0/
-      size_bytes: 6877501577  # du -sb of the staged tree = the uploaded objects incl. CHECKSUMS.sha256, 2026-10-29
+      size_bytes: 6877001865  # rclone size 2026-10-29 after the VM 900 upload: 7304 objects = 7303 manifest files + CHECKSUMS.sha256
       notes: >
         Upstream pin: params.revision is the full dataset revision (card dated 2026-09-15).
         Config default has columns image and label (1790/170/473 train/validation/test,
@@ -217,8 +217,12 @@ sources:
         passes. The tree holds 2433 images (images/default/*.png), 2433 semantic masks
         (labels/masks/default/*.png) and 2433 fish instance masks
         (labels/instances/default/*_instanceIds.png), plus ANNOTATIONS.json, CHECKSUMS.sha256,
-        LICENSE, SOURCE.json and metadata.parquet; metadata.parquet has 2433 rows (train 1790,
-        validation 170, test 473). checksums.root_digest is the sha256 of CHECKSUMS.sha256.
+        LICENSE, SOURCE.json and metadata.parquet. metadata.parquet has 2433 rows with
+        upstream_split train 1790 / validation 170 / test 473 (no `split` column; split_group
+        is per stem). A sample of 80 frames on VM 900 (2026-10-29) shows masks as mode L PNGs
+        with values 0-95 and instance maps as uint16 PNGs in the cityscapes encoding (fish
+        instance id = 25*2000 + n, max id seen 50203). checksums.root_digest is the sha256 of
+        CHECKSUMS.sha256.
     links:
       - source_id: coralscapes
         key: stem                 # V2 stem == V1 file stem (strip _leftImg8bit)
