@@ -260,3 +260,11 @@ uv run --frozen marinedata release croissant "$B" --release-dir "$R" --out "$B/c
   `releases/marine-data/v1.1.0/SPLIT_MAP.json`; a rebuild that moves a gate count must edit the text. The open
   `GATES.json` decon entry keeps its counts and `by_split` but drops the `*_sample` lists that carry image digests.
 - Regenerate the test goldens with `UPDATE_GOLDEN=1 uv run --frozen pytest tests/test_release_card.py`.
+
+## v1.2.0 card gate numbers (step 7)
+
+The v1.2.0 card carries three named slots in its "Build and gates" text: `[[V120_GATES_RUN]]`,
+`[[V120_DEDUP_LINKED]]` and `[[V120_SPLIT_TWIN_GROUPS]]`. After the gates have run on the build host,
+fill them from `provenance/GATES.json` with `marinedata.card_v12_text.fill_gates(readme, numbers)`; it
+raises on a missing or unknown slot, so a card with a `[[...]]` marker is never published. The v1.1.0
+gate texts stay in the card as history.

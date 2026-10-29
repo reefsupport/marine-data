@@ -25,6 +25,7 @@ import yaml
 
 from . import card_body as cb
 from . import card_v11_text as txt
+from . import card_v12_text as v12
 from .hf_card_flavour import EXCLUDED_CLASSES, NC_CHECKBOX, NC_GATE_PROMPT, top_notice
 from .hf_export_v11 import V11ExportError, assert_public_safe
 from .release_card import (
@@ -328,6 +329,11 @@ def excluded_section(flavour: str) -> str:
     return "## Excluded sources\n\n" + txt.EXCLUDED_INTRO + "\n\n" + "\n".join(lines)
 
 
+def card_version(flavour: str, sources: Iterable[Mapping]) -> str:
+    """``1.2.0`` for an open export that carries Coralscapes V2, else the v1.1.0 version."""
+    return v12.VERSION if flavour == "open" and v12.applies(sources) else txt.VERSION
+
+
 def render_v11_card(
     facts: dict, infos: Mapping[str, dict], sources: list[dict], label_rows: list[dict], *,
     flavour: str, repo_id: str, pretty_name: str = PRETTY_NAME, cff: dict | None = None,
@@ -338,6 +344,8 @@ def render_v11_card(
         """The v1.1.0 open-run statements (chain-7 gates) belong to the open card only."""
         return sep + text if flavour == "open" else ""
 
+    version = card_version(flavour, sources)
+    has_v2 = version == v12.VERSION
     configs = facts["configs"]
     names = ordered_configs(configs)
     images = sum(e["num_examples"] for e in configs.get("metadata", {}).get("splits", {}).values())
@@ -347,18 +355,24 @@ def render_v11_card(
         for s in sorted(sources, key=lambda s: s["source_id"])
         if s.get("mapped_pct") is not None and s["mapped_pct"] < MAPPED_FLOOR
     ]
-    limits = [f"- {t}" for t in txt.LIMITATIONS]
+    base_limits = v12.limitations(txt.LIMITATIONS) if has_v2 else txt.LIMITATIONS
+    limits = [f"- {t}" for t in base_limits]
     if flavour == "open" and hidden_test_withheld is not None:
         limits.append("- " + txt.HIDDEN_TEST_WITHHELD.format(n=f"{hidden_test_withheld:,}"))
     if low:
         limits.append(f"- Sources below the {MAPPED_FLOOR:.0f} % mapped floor: {', '.join(low)}.")
+    adds = (
+        f"keeps the {len(names)} configurations that v1.1.0 added to"
+        if has_v2
+        else f"adds {len(names)} configurations to"
+    )
     summary = (
-        f"{pretty_name} v{txt.VERSION} adds {len(names)} configurations to the frozen v1.0 "
+        f"{pretty_name} v{version} {adds} the frozen v1.0 "
         "release, additively: image bytes once per `image_sha256`, per-image metadata, point, "
         "box, mask and bleaching labels, benthic cover and sites, and the tables that describe "
         "the label space (`taxonomy`, `label-map`) and the sources. Every row carries its "
         "`image_sha256`, so any label reaches its pixels in one join, and `licence` and "
-        "attribution stay attached to the pixels."
+        "attribution stay attached to the pixels." + (f" {v12.SUMMARY}" if has_v2 else "")
     )
     facts_rows = [
         ("Configurations", f"{len(names)}: " + ", ".join(f"`{n}`" for n in names)),
@@ -366,23 +380,36 @@ def render_v11_card(
         ("Sources", f"{len(sources)}"),
         ("Format", "Parquet shards, streamable; images and new masks embedded once"),
         ("Size of the new configs", f"{gb:.1f} GB"),
-        ("Version", f"v{txt.VERSION}" + (f", built {built}" if built else "")),
+        ("Version", f"v{version}" + (f", built {built}" if built else "")),
         ("Code", f"[{GITHUB.split('//')[1]}]({GITHUB})"),
     ]
+    latest = v12.VERSION_NOTE if has_v2 else f"Additive: {len(names)} new configurations."
+    history = (  # the v1.2.0 card keeps the version rows of the published v1.1.0 / v1.1.1 cards
+        [("v1.1.0", v12.V110_DATE, v12.V110_NOTE), ("v1.1.1", v12.V111_DATE, v12.V111_NOTE)]
+        if has_v2
+        else []
+    )
     versions = _table(
         ("Version", "Date", "Notes"),
-        [
-            ("v1.0", txt.V1_DATE, txt.V1_NOTES[flavour]),
-            (f"v{txt.VERSION}", built, f"Additive: {len(names)} new configurations."),
-        ],
+        [("v1.0", txt.V1_DATE, txt.V1_NOTES[flavour]), *history, (f"v{version}", built, latest)],
     )
     lock_line = (
         f"The release is pinned by `provenance/release.lock.yaml` (sha256 `{lock_sha}`)."
         if lock_sha
         else "The release is pinned by `provenance/release.lock.yaml`."
     )
+    changelog = "\n".join(f"- {c}" for c in txt.CHANGELOG)
+    if has_v2:
+        changelog = (
+            "**v1.2.0**\n\n"
+            + "\n".join(f"- {c}" for c in v12.CHANGELOG)
+            + "\n\n**v1.1.1**\n\n"
+            + "\n".join(f"- {c}" for c in v12.V111_CHANGELOG)
+            + "\n\n**v1.1.0**\n\n"
+            + changelog
+        )
     front = front_matter(facts, infos, flavour=flavour, repo_id=repo_id, pretty_name=pretty_name)
-    pin = f'load_dataset("{repo_id}", "metadata", split="train", revision="v{txt.VERSION}")'
+    pin = f'load_dataset("{repo_id}", "metadata", split="train", revision="v{version}")'
     sections = [
         f"---\n{front}\n---",
         f"# {pretty_name}\n\n{TAGLINE}",
@@ -397,6 +424,8 @@ def render_v11_card(
         "`metadata.bytes_config` names the config that holds each image's pixels: a v1.0 config "
         "or `images`. The Hub splits are `train`, `validation`, `test` and `test_ood`.\n\n"
         + txt.MASKS,
+        v12.section(sources) if has_v2 else "",
+        v12.mask_note() if has_v2 else "",
         "## Label space\n\n" + txt.LABEL_SPACE + "\n\n### Label overlap\n\n"
         "Taxonomy nodes that more than one source reaches. Cross-source training should use "
         "these, or the coarse training views.\n\n" + overlap_table(label_rows)
@@ -407,7 +436,8 @@ def render_v11_card(
         + "\n\n### Build and gates\n\nBuilt with the " + f"[marine-data]({GITHUB}) registry; "
         "every source is admitted only after its licence is recorded, and the licence gate "
         "raises, never warns. " + lock_line + " Gate results are published as "
-        "`provenance/GATES.json`. " + txt.DEDUP_FAMILY + open_only(txt.DEDUP_OPEN),
+        "`provenance/GATES.json`. " + txt.DEDUP_FAMILY + open_only(txt.DEDUP_OPEN)
+        + (f"\n\n{v12.GATES_PARAGRAPH}" if has_v2 else ""),
         "## Personal and sensitive information\n\n" + txt.PERSONAL
         + open_only(txt.PERSONAL_OPEN),
         "## Limitations and known defects\n\n" + "\n".join(limits),
@@ -421,7 +451,7 @@ def render_v11_card(
         "## Takedown\n\nRights holders and data subjects: open an issue at "
         f"{takedown_url or GITHUB + '/issues'}. Accepted requests are published as a new version.",
         "## Versions and changelog\n\n" + versions + "\n\n"
-        + "\n".join(f"- {c}" for c in txt.CHANGELOG)
+        + changelog
         + "\n\nFiles of a released version are not edited. Pin a version with `revision`:\n\n"
         f"```python\n{pin}\n```",
         "## Citation\n\n" + cb.citation_block(cff or {}, dict(infos), repo_id),
@@ -446,7 +476,9 @@ def write_card_files(
     if not facts["configs"] or not sources:
         raise V11ExportError(f"{export}: no v1.1.0 export (no data/ configs or no sources config)")
     infos = {s["source_id"]: source_info(registry, s["source_id"]) for s in sources}
-    citation = render_citation_cff(cff or {}, version=txt.VERSION, released=released)
+    citation = render_citation_cff(
+        cff or {}, version=card_version(flavour, sources), released=released
+    )
     files = {
         "README.md": render_v11_card(
             facts,

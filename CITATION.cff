@@ -3,8 +3,8 @@ message: "If you use this software or the published datasets, please cite them a
 title: "marine-data"
 abstract: "A licence-aware registry and dataloaders for marine and coral-reef datasets, and the open image datasets built from it."
 type: software
-version: "1.0.0"
-date-released: "2026-10-07"
+version: "1.2.0"
+date-released: "2026-10-29"
 license: Apache-2.0
 url: "https://huggingface.co/datasets/reefsupport/marine-data"
 repository-code: "https://github.com/reefsupport/marine-data"
