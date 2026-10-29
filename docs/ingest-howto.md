@@ -139,6 +139,44 @@ next time free disk is back above the floor.
 - Hand `work/registry-stub-<id>.yaml` to the integrator. It still needs `description`,
   `capabilities`, and coverage before it goes into `registry/sources/`.
 
+## 5. Coralscapes V2 (`coralscapes-v2` 2.0): staging on VM 900
+
+The V2 source is a set of HF parquet shards (`josauder/coralscapesV2`, config `instances`, pinned
+revision `8a4567b2fbec14882e09aebff63a7a1ca5e24dca`), so it has its own stager instead of the
+spec recipe above: `src/marinedata/ingest_coralscapes_v2.py`, CLI `scripts/stage_coralscapes_v2.py`.
+It runs on VM 900 only (D6), never on a laptop. Disk: about 6.9 GB for the HF cache plus about
+6.9 GB for the staged tree (image, label and instance bytes are written verbatim), so about
+14 GB peak and about 7 GB to upload. Check `df -h` first and delete the HF cache after the upload
+is verified.
+
+```bash
+cd <marine-data checkout> && uv sync --all-extras --frozen
+# 1. download: public GETs of instances/*, README.md, LICENSE*, extended_metadata.json
+uv run python scripts/stage_coralscapes_v2.py --download --hf-cache /data/hf/coralscapes-v2
+# 2. stage: reads the cache only, no network; run it under nohup
+nohup uv run python scripts/stage_coralscapes_v2.py --stage \
+  --hf-cache /data/hf/coralscapes-v2 --out /data/stage/coralscapes-v2 \
+  > /data/stage/coralscapes-v2.log 2>&1 &
+# 3. root_digest: the last log line, recomputable from the manifest
+tail -n 1 /data/stage/coralscapes-v2.log
+sha256sum /data/stage/coralscapes-v2/sources/coralscapes-v2/2.0/CHECKSUMS.sha256
+```
+
+- The tree is `<out>/sources/coralscapes-v2/2.0/`: `images/default/<stem>_leftImg8bit.png`,
+  `labels/masks/default/<stem>_leftImg8bit.png`, `labels/instances/default/<stem>_instanceIds.png`
+  (uint16, fish class 25, label divisor 2000), `metadata.parquet` (the 37 sample-schema v2 columns
+  plus `partition`), `ANNOTATIONS.json`, `SOURCE.json`, `LICENSE` and `CHECKSUMS.sha256`, which is
+  written last. The HF split (`train`, `validation`, `test`) goes to `upstream_split` and
+  `split_hint`; `partition` stays `default`, and the site goes to `split_group`.
+- Deterministic: the manifest is sorted by path, `metadata.parquet` by stem, and `--fetch-date`
+  defaults to the revision date, so two runs print the same `root_digest`.
+- Resumable: re-run the same `--stage` command. Files whose size and sha256 match are skipped, and
+  a tree without `CHECKSUMS.sha256` is an interrupted run. A finished tree is only re-verified.
+- Trial runs: `--limit 20 --out /data/stage/trial`. A limited tree is never reused by a full run.
+- V2 bytes and pixels differ from the V1 twins, so never dedupe against `sources/coralscapes/1.0/`
+  by sha256; the V1 <-> V2 link is the stem.
+- Upload only under `sources/coralscapes-v2/2.0/` (D6); the uploader is a separate step.
+
 ## Never
 
 - Delete bucket objects, even a half-run prefix: re-run instead (maintainers run deletions).
