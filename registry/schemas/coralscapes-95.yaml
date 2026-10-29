@@ -4,10 +4,10 @@
 #   https://huggingface.co/datasets/josauder/coralscapesV2/blob/main/id2label.json
 # fetched 2026-09-11. Every id below is `CS95_<UPPER_SNAKE(name)>`; every `name` and
 # `aliases` entry is copied verbatim from that file — nothing here was read off Fig. 5
-# of the paper or hand-typed from the class table in the dataset card prose (that prose
-# is stale, copy-pasted from the V1 card, and still says "39 benthic classes" — id2label.json
-# is the only trustworthy source for this enumeration; see the coralscapes-v2 source entry's
-# notes for how that was caught).
+# of the paper. The class table in the dataset card (revision 8a4567b2, card dated
+# 2026-09-15) lists the same 95 classes, with the same names, in the same id order
+# (checked in tests/test_crosswalk_coralscapes_95.py); id2label.json remains the source
+# of this enumeration.
 #
 # Like coralscapes-39, this is a FLAT vocabulary by design — the source has no hierarchy.
 # This schema stays a flat list of the V2 classes. Its crosswalk to the reference vocabulary is
