@@ -396,6 +396,7 @@ def source_rows(registry, release: dict, image_counts: dict[str, int]) -> list[d
 def main(argv: list[str] | None = None) -> int:
     """Write ``README.md`` + ``LICENSE`` into an exported folder from its summary."""
     import argparse
+    import sys
     from pathlib import Path
 
     import pyarrow.parquet as pq
@@ -415,6 +416,13 @@ def main(argv: list[str] | None = None) -> int:
         "--flavour", choices=("open", "nc"), default=None, help="default: RELEASE.json's flavour"
     )
     parser.add_argument(
+        "--gates-json",
+        type=Path,
+        default=None,
+        help="GATES.json of the finished gates: fills the v1.2.0 card's gate numbers "
+        "(default: the [[V120_*]] slots stay and a WARNING lists them)",
+    )
+    parser.add_argument(
         "--exclude-configs",
         default=",".join(DEFAULT_EXCLUDE_CONFIGS),
         help="comma-separated configs dropped from the export (D-A); '' for none",
@@ -426,6 +434,10 @@ def main(argv: list[str] | None = None) -> int:
         from . import hf_card_v11
 
         return hf_card_v11.run(args, summary)
+    if args.gates_json is not None:
+        print(
+            "WARNING: --gates-json ignored: only a v1.1/v1.2 export has gate slots", file=sys.stderr
+        )
     release = json.loads((args.release_dir / "RELEASE.json").read_text())
     flavour = args.flavour or release.get("flavour")
     if flavour and release.get("flavour") not in (None, flavour):

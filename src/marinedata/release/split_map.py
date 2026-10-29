@@ -53,6 +53,13 @@ from ..upstream_split import honoured_test_groups
 from .entries import _admitted_source_ids, _never_eval_source_ids, enumerate_release_rows
 from .records import SplitMapStats
 from .split_map_inherit import plan_inheritance
+from .stem_links import (
+    StemConflict,
+    build_stem_links,
+    declared_links,
+    linked_entries,
+    protect_v1_pins,
+)
 
 
 def dedup_group_links(
@@ -212,6 +219,17 @@ def generate_split_map(
             paths=paths if near_dup is not None else None,
         )
     )
+    # v1.2.0: a source that declares ``links`` (Coralscapes V2 re-annotates V1 frames) pairs its
+    # frames with the target source's by stem; the pairs join digest-less twins into one component.
+    # Only declarations whose both ends are staged here count, so older builds stay byte-identical.
+    link_decls = tuple(
+        d for d in declared_links(registry) if d.source_id in roots and d.target_id in roots
+    )
+    stem_links = (
+        build_stem_links(linked_entries(registry, roots, link_decls, file_digest), link_decls)
+        if link_decls
+        else None
+    )
     links: list[tuple[str, str]] = []
     phash_found: list[tuple[str, str, int]] = []
     phash_selection: PhashSelection | None = None
@@ -255,6 +273,8 @@ def generate_split_map(
     if near_dup_groups is not None:
         dedup_links = dedup_group_links(near_dup_groups, {sha for sha, _, _ in rows})
         links = [*links, *dedup_links]
+    if stem_links is not None:
+        links = [*links, *stem_links.pairs]
     counts, strata, merge_info = rows_to_counts(rows, stratified=True, links=links)
     near_dup_max_component = 0
     if near_dup is not None:
@@ -269,6 +289,12 @@ def generate_split_map(
         for group, sources in group_to_strata.items()
         if sources and sources <= never_eval_sources
     }
+    pin_dropped: tuple[StemConflict, ...] = ()
+    if stem_links is not None and benchmark_pins is not None and inherit_tree is not None:
+        # v1.0 is frozen: a V2 pin the twin's v1.0 component does not accept is dropped (counted)
+        benchmark_pins, pin_dropped = protect_v1_pins(
+            benchmark_pins, stem_links, rows, merge_info.canonical, inherit_tree.splits
+        )
     prefer = (  # a sha v1.0 published in several splits sits where its benchmark pin asks
         {
             canon: MAP_NAME[pin]
@@ -294,10 +320,13 @@ def generate_split_map(
             unconfirmed=union.rejected,
             ood_rules=ood_rules,
             ood_metadata=ood_metadata,
+            stem_links=stem_links,
         )
         if inherit is not None or inherit_tree is not None
         else None
     )
+    if plan is not None and pin_dropped:
+        plan = replace(plan, stem_conflicts=(*plan.stem_conflicts, *pin_dropped))
     train_only = frozenset(forced)  # never-eval-only components: a pin never moves them
     if plan is not None:  # a prior-release neighbour binds a component; never-eval-only wins
         forced = {**plan.forced, **forced}

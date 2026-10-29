@@ -93,6 +93,7 @@ def test_registry_keys_and_unknown_source():
         "reef-support-benthic-own",
         "reef-support-bleaching",
         "coralscapes",
+        "coralscapes-v2",
     }
     assert resolver_for("coralscapes") is coralscapes.resolve
     with pytest.raises(KeyError, match="no metadata resolver"):

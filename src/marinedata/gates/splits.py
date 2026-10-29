@@ -17,6 +17,9 @@
   ``ratio_pinned_sources``), an image with an ``upstream_split`` label (the upstream partition
   decided its split) and a stratum under ``ratio_min_images`` (100) images
   (``ratio_small_strata``);
+* ``linked_twins_split``    two images the split map links by stem (a V1 frame and its V2
+  re-annotation, ``inherits.stem_links`` of ``SPLIT_MAP.json``) sit in different splits of one
+  config; ``stem_link_*`` counters expose the twins and the V1-wins conflicts (never failed);
 * ``near_dup_leak``          a validation/test image within ``--phash-bits`` (pHash) of a train image;
 * ``no_split_group``         no config carries ``split_group`` (a vacuous check fails).
 
@@ -26,7 +29,7 @@ from __future__ import annotations
 
 import json
 from collections import Counter, defaultdict
-from collections.abc import Iterable, Mapping, Sequence
+from collections.abc import Callable, Iterable, Mapping, Sequence
 from pathlib import Path
 
 import yaml
@@ -94,6 +97,46 @@ def read_pinned_sources(
     pins = data.get("pins") if isinstance(data, dict) else None
     block = pins.get("benchmarks") if isinstance(pins, dict) else None
     return (frozenset(str(k) for k in block) if isinstance(block, dict) else frozenset()), where
+
+
+def _linked_twins(
+    build_dir: Path,
+    release_dir: Path | None,
+    shards: Mapping[str, Sequence[Path]],
+    fail: Callable[[str, str, str], None],
+) -> dict[str, object]:
+    """Fail every stem-linked twin pair that does not share its split(s) in a config; returns the
+    counters the gate prints (empty when the split map declares no links)."""
+    from ..release.stem_links import gate_counts, load_link_table  # lazy: release imports the gates
+
+    table = load_link_table(build_dir, release_dir)
+    if table is None:
+        return {}
+    wanted = {sha for pair in table.pairs for sha in pair}
+    seen: dict[str, dict[str, set[str]]] = defaultdict(lambda: defaultdict(set))
+    for config, files in shards.items():
+        if "image_sha256" not in shard_columns(files[0]):
+            continue
+        for _, _, split, row in iter_rows(files, ("image_sha256",)):
+            if row.get("image_sha256") in wanted:
+                seen[config][row["image_sha256"]].add(split)
+    checked = apart = 0
+    for config, by_sha in sorted(seen.items()):
+        for a, b in table.pairs:
+            if a in by_sha and b in by_sha:
+                checked += 1
+                if by_sha[a] != by_sha[b]:
+                    apart += 1
+                    fail(
+                        "linked_twins_split",
+                        f"{config} {a[:12]}~{b[:12]}",
+                        f"stem-linked twins in {sorted(by_sha[a])} vs {sorted(by_sha[b])}",
+                    )
+    return {
+        **gate_counts(table),
+        "stem_link_pairs_checked": checked,
+        "stem_link_pairs_apart": apart,
+    }
 
 
 def _shares(sizes: Mapping[str, int], splits: Iterable[str] = ()) -> dict:
@@ -196,6 +239,7 @@ def run_splits_gate(
             where = ", ".join(f"{s} ({c})" for s, c in sorted(seen.items()))
             fail("group_straddles_splits", group, f"in {where}")
 
+    link_counts = _linked_twins(build_dir, release_dir, shards, fail)
     pinned, pins_from = read_pinned_sources(build_dir, release_dir)
     used: dict[str, str] = {}
     target_of: dict[str, dict[str, float]] = {}
@@ -275,5 +319,6 @@ def run_splits_gate(
             "absent": len(pinned - present),
         },
         "ratio_pinned_sources": pinned_rows,
+        **link_counts,
     }
     return finish(NAME, counts, sorted(failures))

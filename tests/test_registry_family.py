@@ -52,7 +52,11 @@ def test_the_registry_has_exactly_the_roboflow_and_the_seaview_family():
     members: dict[str, set[str]] = {}
     for sid, family in lc.source_families(REGISTRY).items():
         members.setdefault(family, set()).add(sid)
-    assert members == {FAMILY: set(FORKS), SEAVIEW_FAMILY: set(SEAVIEW)}
+    assert members == {
+        FAMILY: set(FORKS),
+        SEAVIEW_FAMILY: set(SEAVIEW),
+        "coralscapes": {"coralscapes", "coralscapes-v2"},  # v1.2.0: the V1 and V2 twins
+    }
 
 
 def test_light_scan_and_validated_registry_declare_the_same_families(real_registry):

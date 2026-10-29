@@ -10,6 +10,7 @@ sources:
     expect_depth: none
     domain: coral
     access_class: open
+    family: coralscapes
     licence_evidence: "legacy verification record (dataset-card, 2026-08-18): RESOLVED against both distribution points directly. Zenodo REST API record 15061505 returns metadata.license = {\"id\": \"apache2.0\"}; the HuggingFace API for EPFL-ECEO/coralscapes returns cardData.license = \"apache-2.0\" and the tag \"license:apache-2.0\". The earlier CC-BY-SA-4.0 reading came from the ICCV paper text, which is not where the data is licensed.\n"
     name: Coralscapes
     # habitat inferred (WP-2b) from this source's own description/notes, not independently verified
@@ -131,36 +132,36 @@ sources:
 
   - id: coralscapes-v2
     domain: coral
+    access_class: open
+    family: coralscapes
     redistribution: ok
     name: Coralscapes V2
     version: "2.0"
     description: >
       Panoptic successor to Coralscapes: 95 fine-grained benthic classes (up from 39)
       plus 65,738 exhaustive per-individual fish instance masks — the first panoptic
-      coral-reef dataset. V1's 2,075 images are carried forward under their original
-      split assignment and joined by new frames; every image is Red Sea. Shares images
+      coral-reef dataset. 2,074 of V1's 2,075 images (the twins; one V1 test frame has no V2 twin) are carried forward under their original
+      split assignment and joined by 359 new frames; every image is Red Sea. Shares images
       and split assignment with `coralscapes` (V1) — see notes for the overlap.
+      V2 supersedes V1 for Coralscapes tasks; V1 configs kept frozen for reproducibility. V2
+      frames link to their V1 twins by stem (the V2 stem equals the V1 file stem without
+      _leftImg8bit); pixels differ, so sha256 keying does not apply.
     licence: Apache-2.0
+    licence_evidence: "Upstream dataset card https://huggingface.co/datasets/josauder/coralscapesV2 (revision 8a4567b2, card dated 2026-09-15) declares license apache-2.0; checked 2026-10-29."
     legal_basis: licence
     provenance: public
     verification:
-      verified_on: 2026-09-11
+      verified_on: 2026-10-29
       verified_by: >
-        RESOLVED against the dataset's own HuggingFace repo: the API record for
-        josauder/coralscapesV2 (https://huggingface.co/api/datasets/josauder/coralscapesV2)
-        returns cardData.license = "apache-2.0" and carries the tag "license:apache-2.0".
-        Independently corroborated by the project homepage
-        https://josauder.github.io/coralscapesv2/, which states the release is Apache
-        2.0 licensed in prose. The dataset card's own descriptive README body (below the
-        licence-bearing YAML frontmatter) is stale — copy-pasted from the V1 card, still
-        describing "39 benthic classes" and citing the V1 paper — so only the
-        machine-readable cardData/tags fields were trusted for the licence, and only
-        id2label.json was trusted for the class list; the README prose class table was
-        not used for either. The fish instance masks (HF config "instances", in the same
-        repo) carry the identical apache-2.0 licence: one cardData.license field covers
-        all three configs (default/instances/sequences) in this single dataset
-        repository — they are not a separate artifact, contrary to what the brief for
-        this entry speculated.
+        2026-10-29: the API record for josauder/coralscapesV2
+        (https://huggingface.co/api/datasets/josauder/coralscapesV2), read at revision 8a4567b2
+        (card dated 2026-09-15), returns cardData.license = "apache-2.0" and the tag
+        "license:apache-2.0"; the project homepage https://josauder.github.io/coralscapesv2/
+        states in prose that the release is Apache 2.0 licensed. One cardData.license field
+        covers all three configs (default, instances, sequences) of this single dataset
+        repository, so the fish instance masks carry the same licence. Class table and counts
+        checked against the pinned upstream `instances` parquet, HF revision 8a4567b2; staging
+        + root_digest recorded at build time.
       method: dataset-card
     access:
       method: huggingface
@@ -171,14 +172,17 @@ sources:
         split: train
         image_column: image
         mask_column: label
+        revision: 8a4567b2fbec14882e09aebff63a7a1ca5e24dca
       notes: >
-        Confirmed via the HF datasets-server info API (metadata only, no images
-        fetched): config "default" has columns [image, label] (1790/170/473
-        train/validation/test, matching the brief's 2,433 total); config "instances"
-        adds [instance_ids, stem, site] carrying the fish panoptic masks; config
-        "sequences" carries short frame sequences around the same annotated anchor
-        frames (temporal context, not a distinct label stream) and is not represented
-        as a separate `annotations` entry below for that reason.
+        Pinned to the full dataset revision in params.revision (card dated 2026-09-15).
+        Config default has columns image and label (1790/170/473 train/validation/test,
+        2,433 frames); config instances adds instance_ids, stem and site, carrying the fish
+        panoptic masks (uint16, cityscapes instance encoding, fish class 25, label divisor
+        2000); config sequences (206 GB, temporal context around the annotated frames) is
+        out of scope for this release. Staged tree, built on VM 900 and never on a
+        workstation: sources/coralscapes-v2/2.0/, same layout as the V1 tree at
+        sources/coralscapes/1.0/, plus labels/instances/default/<stem>_instanceIds.png
+        (uint16 fish instance ids).
     modalities: [image]
     capabilities:
       - benthic-segmentation
@@ -190,19 +194,26 @@ sources:
     loader:
       layout: image-mask-pairs
       schema_id: coralscapes-95
+      crosswalk_id: coralscapes-95
       params: { images_dir: images, masks_dir: masks }
-      # No crosswalk_id: the 95->39 crosswalk is BLOCKED — no machine-readable mapping
-      # was found. See notes below for the exact sources checked. Do not add one here
-      # without a machine-readable source; a guessed edge list is the failure this
-      # registry exists to prevent.
-      # No verified_on/verified_note: this layout is declared by analogy to the
-      # `coralscapes` (V1) entry's own tested image-mask-pairs convention (V1's HF
-      # parquet uses the identical image/label column pair), not run against a real
-      # fetched V2 sample — no dataset download was performed for this task.
+      # verified_on / verified_note: to be filled after the VM 900 staging run; the layout is
+      # still declared by analogy to the V1 entry (image-mask-pairs, images/ and masks/).
+    # checksums: absent on purpose; filled after staging (root_digest).
+    links:
+      - source_id: coralscapes
+        key: stem                 # V2 stem == V1 file stem (strip _leftImg8bit)
+        relation: re-annotation   # same frame, re-exported pixels; split group shared with V1
+    # One frame = one group: the V2 group id is coralscapes-v2/<stem>. The stem links above merge
+    # each twin's group with its V1 site group (identical split, nothing moves), while the
+    # V2-only frames keep the official V2 split instead of following a whole-site group.
+    split_group:
+      pattern: '(.+)'
+      match_field: stem
+      template: "coralscapes-v2/{group}"
     n_images: 2433
     n_images_method: registry-prior
     n_images_note: >
-      1,790 train / 170 validation / 473 test (HF "default" config). V1's 2,075 images
+      1,790 train / 170 validation / 473 test (HF "default" config). 2,074 of V1's 2,075 images
       keep their V1 split assignment inside this count (per the paper) — V1 and V2 item
       counts are NOT additive when sizing a combined corpus; summing them double-counts
       the shared images.
@@ -216,8 +227,7 @@ sources:
         notes: >
           ~270k polygons (paper-stated, approximate; V1 was 174k). Like coralscapes-39,
           this is a flattened taxon x form x condition cross-product with no shipped
-          decomposition — see registry/schemas/coralscapes-95.yaml's header for why no
-          crosswalk exists to decompose it.
+          decomposition — see registry/crosswalks/coralscapes-95.yaml for the 95 -> rs-benthic-v1 edges.
       - kind: instance-mask
         count: 65738
         schema_id: coralscapes-95
@@ -230,13 +240,13 @@ sources:
           encoding confirmed via the repo's own extended_metadata.json:
           class_id * label_divisor + instance_index, label_divisor=2000, fish
           class_id=25 (== node CS95_FISH in coralscapes-95, id2label "25": "fish").
-          First panoptic coral-reef dataset; best reported detection AP is 15.41 per
-          the brief's addendum — a dataset capability, not yet a validated production
+          First panoptic coral-reef dataset; best reported detection AP is 15.41
+          (upstream-reported) — a dataset capability, not yet a validated production
           model.
     coverage:
       regions: [red-sea]
       ecoregions: ["Northern and Central Red Sea", "Southern Red Sea"]
-      sites: 45
+      sites: 41
       years: [2021, 2025]
     domain_shift:
       trained_regions: [red-sea]
@@ -251,52 +261,36 @@ sources:
     citation: >
       Sauder, Ruckli, Strodomskytė, Tuia, Banc-Prandi et al., CoralscapesV2: Panoptic
       and Fine-Grained Visual Scene Understanding in Coral Reefs (dataset release,
-      2026). No distinct V2 arXiv id was found — the HF repo's own tags carry
-      arxiv:2503.20000, which is the V1 paper's id, not a V2-specific preprint.
+      2026), arXiv:2609.12826. Dataset card josauder/coralscapesV2 at revision
+      8a4567b2fbec14882e09aebff63a7a1ca5e24dca (card dated 2026-09-15). The card's own tags
+      and BibTeX still point at the V1 paper (arXiv:2503.20000); cite 2609.12826 for V2.
     homepage: https://josauder.github.io/coralscapesv2/
     tags: [dense-seg, panoptic-seg, transfer-base, red-sea, fish-instances]
     notes: >
-      OVERLAP WITH V1: this entry shares images and inherited split assignment with
-      `coralscapes` (V1, above) — a future build must never treat the two as
-      independent samples of the same population, or it will double-count the shared
-      2,075 images. The `Source` model (src/marinedata/models.py) has no structured
-      `supersedes`/`overlaps` field, so this relation is recorded here in prose rather
-      than as data; flagged as an `## Open` item in the MD-5 report for the manager to
-      consider adding one.
+      OVERLAP WITH V1. Per the dataset card, V2 carries 2,074 of the 2,075 annotated frames of
+      Coralscapes V1 forward under their original split and adds new frames (2,433 in
+      total); checked by stem against the pinned upstream `instances` parquet (HF revision 8a4567b2), 2,074 are twins, 1 V1 frame (a V1 test frame) has no V2 twin and stays in the frozen V1 configs, and 359 are V2-only. V1 and V2 twins are linked by STEM, not by hash: the V2 stem
+      (site<N>_<frame>_<ts>) equals the V1 file stem without the _leftImg8bit suffix, while
+      V2 image and mask bytes and pixels differ from their V1 twins, so sha256 keying finds
+      no match; relation: re-annotation, split group shared with V1. The links list of this
+      entry (source_id coralscapes, key stem, relation re-annotation) declares the pairing
+      for the split-map generator, and split_group is per stem (coralscapes-v2/<stem>), so
+      each twin pair merges into one split component. The V1 entry stays unchanged. V2
+      supersedes V1 for Coralscapes tasks; V1 configs kept frozen for reproducibility.
 
-      95->39 CROSSWALK: BLOCKED. The paper's Fig. 5a/5b shows the 95-class -> 39-class
-      remap as a graphic only. No machine-readable version was found after checking:
-      the HF dataset repo's full file listing (id2label.json, extended_metadata.json
-      and label2color.json exist; no crosswalk/remap file does); the project homepage
-      https://josauder.github.io/coralscapesv2/ (prose + a visual only, no linked data
-      file); the josauder/coralscapesv2 GitHub repo, which is that homepage's own
-      source and contains only the presumed Fig.-5-equivalent
-      static/images/legend_39.png (a PNG, not data — not OCR'd, per instruction); the
-      josauder/dinov3_lora_dpt_coralscapes GitHub repo (V2's own DINOv3 training code —
-      its example dataset_metadata/classes.json and colors.json are V1's 39 classes
-      verbatim, and dataset.py/hub.py/coralscapes_hub_model.py/viz_palette.py/model.py
-      contain no remap logic); the eceo-epfl/coralscapesScripts GitHub repo (V1-only
-      training/eval code, no V2 references); and eceo-epfl/deepreefmap, the production
-      pipeline this repo's own coralscapes-39 crosswalk cites — both
-      configs/classes_coralscapes.yaml and config/classes.py there are still the V1
-      39-class config, with no 95-class counterpart anywhere in that repo. Per brief
-      item 4, no crosswalk file was written and none was hand-derived from the figure.
-      registry/schemas/coralscapes-95.yaml also carries no per-node `roles` field, for
-      a distinct reason: LabelNode (src/marinedata/schema.py) has no `roles` concept at
-      all — coralscapes-39 doesn't carry one either. deepreefmap's own per-class
-      `roles` (e.g. ignore_in_point_cloud, transect_tools) is that external pipeline's
-      rendering hint, unconnected to this registry's schema model.
+      95->39 CROSSWALK: RESOLVED. The V2 dataset card class table carries a Legacy
+      (39-class) column for each of the 95 classes (id 0 = unlabelled is the ignore value,
+      not a label). registry/crosswalks/coralscapes-95.yaml maps all 95 classes into
+      rs-benthic-v1: 60 exact, 25 coarsened, 9 approximate, 1 unmappable (hard substrate, as
+      in coralscapes-39). Edges inherit the coralscapes-39 targets of the legacy class and
+      are refined only by name (genus nodes, alive/bleached/dead suffixes, soft-coral
+      families); every edge note starts with [legacy: <class>]. Three rs-benthic-v1 nodes
+      were added for classes V1 could not express: CN_ANTIPATHARIA (WoRMS 22549),
+      SC_ALCYONIIDAE (125269) and SC_NEPHTHEIDAE (146762).
 
-      SITE-COUNT NOTE: this entry's coverage.sites: 45 is the paper-stated figure. The
-      sibling `coralscapes` (V1) entry above records sites: 5 — apparently a coarser
-      dive-region grouping rather than individual reef sites (the paper states V1 = 35
-      individual sites). Not reconciled here; out of MD-5's lane to edit the V1 entry
-      beyond the overlap paragraph above.
-
-      PRODUCTION NOTE (from the brief's addendum, not re-derived here): V2's mIoU win
-      over V1 is real but small on V1's own test set (58.336 vs 57.800); there is no V2
-      "b2" checkpoint and production currently runs b2; the fish-instance capability is
-      a dataset, not yet a validated production model (best reported AP 15.41).
+      MODEL NOTE (upstream-reported figures, not re-derived here): V2's mIoU gain over
+      V1 is small on V1's own test set (58.336 vs 57.800); the fish-instance capability
+      is a dataset, not yet a validated production model (best reported AP 15.41).
 
   - id: benthicnet-1m
     domain: coral
@@ -749,7 +743,7 @@ sources:
       upstream's own split leaks at the parent-image level, so it is never honoured
       (matches the v3i/v6i finding). The rule above groups by the coarser *site* token
       instead (236 groups, max 923 images in one site, `LaehouShallow`), the leak-safe
-      choice named in the brief.
+      choice made for this source.
     tags: [bleaching, public-domain]
     other_versions:
       - version: "rev-8175d66ef034"
@@ -1665,7 +1659,7 @@ sources:
       sha256 the restage itself computes (D-Z2 override of the general "never the
       images" rule, for this source only, pending the licence question above). The
       restage was attempted for real and immediately hit the campaign's disk floor
-      (df at 33.8 GiB free < the brief's 34 GiB floor) before uploading a single pair —
+      (df at 33.8 GiB free < the 34 GiB floor) before uploading a single pair —
       `DiskFloorError` raised by `DiskGuard.check()` before any S3 write, exactly as
       designed. Still NOT flipped to `staged-tree`: no bytes were restaged this pass.
       Resume path: re-run `coralseg.py`'s `main()` once free disk is safely above the

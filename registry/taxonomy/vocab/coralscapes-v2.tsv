@@ -1,0 +1,101 @@
+# source: coralscapes-v2
+# crosswalk: coralscapes-95
+# counts: types
+# retrieved: 2026-10-29 from the V2 dataset card class table (josauder/coralscapesV2 at revision 8a4567b2fbec14882e09aebff63a7a1ca5e24dca)
+# note: 95 classes, ids 1-95; 0=unlabelled is not a label; counts stay blank until the VM 900 staging run counts them from the staged masks (then flip the counts header above to annotations)
+label	count	description
+acanthaster planci		
+acropora alive		
+acropora bleached		
+acropora dead		
+algae covered brain coral		
+algae covered branching coral		
+algae covered lobophylliidae		
+algae covered massive coral		
+algae covered pocillopora		
+algae covered porites		
+algae covered substrate		
+algae covered table acropora		
+anemone		
+background		
+brain coral alive		
+brain coral bleached		
+brain coral dead		
+branching coral alive		
+branching coral bleached		
+branching coral dead		
+cirrhipathes		
+dark		
+dead giant clam		
+feather worm		
+fish		
+fungiidae alive		
+fungiidae bleached		
+fungiidae dead		
+galaxea alive		
+galaxea bleached		
+galaxea dead		
+giant clam		
+goniopora alive		
+goniopora dead		
+hard coral alive		
+hard coral bleached		
+hard coral dead		
+hard substrate		
+human		
+human-made structure		
+leather coral alive		
+lobophylliidae alive		
+lobophylliidae bleached		
+lobophylliidae dead		
+massive alive		
+massive bleached		
+massive dead		
+meandering coral alive		
+meandering coral bleached		
+meandering coral dead		
+millepora		
+millepora bleached		
+millepora dead		
+nephtheidae alive		
+other animal		
+other coral alive		
+other coral bleached		
+other coral dead		
+pavona alive		
+pavona bleached		
+pavona dead		
+pocillopora alive		
+pocillopora bleached		
+pocillopora dead		
+porites alive		
+porites bleached		
+porites dead		
+rubble		
+sand		
+sea cucumber		
+sea urchin		
+seagrass		
+seriatopora alive		
+seriatopora bleached		
+seriatopora dead		
+soft coral (malacalcyonacea) alive		
+soft coral (malacalcyonacea) bleached		
+sponge		
+stylophora alive		
+stylophora bleached		
+stylophora dead		
+table acropora alive		
+table acropora bleached		
+table acropora dead		
+thin plate/encrusting coral alive		
+thin plate/encrusting coral bleached		
+thin plate/encrusting coral dead		
+transect line		
+transect tools		
+trash		
+turbinaria		
+turbinaria dead		
+water column		
+water surface		
+xeniidae alive		

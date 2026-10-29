@@ -100,7 +100,10 @@ def test_instance_config_is_registry_driven_and_disjoint_from_semseg(tmp_path, r
     assert {r["licence_class"] for r in out.rows} == {"open"}
     assert {r["modality"] for r in out.rows} == {"optical"}
     assert out.unmapped_by_source == {"usis10k": 0.0}
-    assert set(configs.INSTANCE_CONFIG_SOURCES) == set(mi.INSTANCE_SOURCES)
-    assert not set(configs.INSTANCE_CONFIG_SOURCES) & set(configs.SEMSEG_SOURCES)
+    assert set(configs.INSTANCE_CONFIG_SOURCES) == set(mi.INSTANCE_SOURCES) | {"coralscapes-v2"}
+    # only Coralscapes V2 feeds both configs; its rows are split by ``mask_kind`` (see
+    # tests/test_coralscapes_v2_configs.py)
+    both = set(configs.INSTANCE_CONFIG_SOURCES) & set(configs.SEMSEG_SOURCES)
+    assert both == {"coralscapes-v2"}
     assert "instances" in configs.CONFIG_IDS
     assert configs.build_instance_config(reg, tmp_path / "empty").rows == ()

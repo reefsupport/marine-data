@@ -112,7 +112,9 @@ def test_producers_are_exactly_the_locked_box_and_instance_sources(registry):
     producers = SA.default_producers()
     by_table = {t: [p for p in producers if p.table == t] for t in ("boxes", "masks", "points")}
     assert {p.source_id for p in by_table["boxes"]} == set(bt.BOX_SOURCES) & set(locked)
-    assert {p.source_id for p in by_table["masks"]} == set(INSTANCE_SOURCES) & set(locked)
+    # v1.2.0: the V2 producer exists before its lock entry does (the lock arrives with staging)
+    expected_masks = (set(INSTANCE_SOURCES) & set(locked)) | {"coralscapes-v2"}
+    assert {p.source_id for p in by_table["masks"]} == expected_masks
     assert {p.source_id for p in by_table["points"]} == {SA.SEAVIEW}
     for p in producers:  # the producer's pin is the locked version
         assert p.version(registry) == locked.get(p.source_id, p.version(registry))

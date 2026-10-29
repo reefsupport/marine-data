@@ -27,6 +27,7 @@ taxonomy-check:
 # a failing gate for those ids.
 labels-check:
 	uv run marinedata labels check
+	uv run python scripts/verify_label_matching.py --check
 
 # docs/sources.md and docs/configs.md are generated from registry/ and hf_export: never edit
 # them by hand. `docs-check` renders into a temp dir and fails when the committed files differ.

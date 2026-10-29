@@ -39,6 +39,7 @@ from ..licence_class import source_class
 from ..registry import Registry
 from .points_table import resolver_for
 from .producers.coralscapes_semseg import _ID_TO_LABEL as _CORALSCAPES_IDS
+from .producers.coralscapes_v2_semseg import ID_TO_LABEL as _CORALSCAPES_V2_IDS
 from .s3_keyed import StagedTree, _pixel_counts
 
 Resolver = Callable[[str], tuple[str | None, str, int | None, str | None]]
@@ -85,6 +86,18 @@ MASK_SOURCES: dict[str, MaskSource] = {
             "Apache-2.0",
             "open",
             label_set="coralscapes-39",
+        ),
+        # v1.2.0 (D2): V2 rows join the semseg / instances configs under their own source id.
+        MaskSource(
+            "coralscapes-v2",
+            "2.0",
+            "coralscapes-95",
+            _CORALSCAPES_V2_IDS,
+            0,
+            "human",
+            "Apache-2.0",
+            "open",
+            label_set="coralscapes-95",
         ),
         # D-AI3 / coralseg.py: red channel 0 Other, 1 Hard Coral, 2 Soft Coral.
         MaskSource(

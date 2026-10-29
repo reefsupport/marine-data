@@ -1,0 +1,133 @@
+# coralscapes-95 -> rs-benthic-v1: Coralscapes V2 (95 classes) into the canonical label space.
+#
+# Class list and the 'Legacy (39-class)' column come from the dataset card of josauder/coralscapesV2 at revision
+# 8a4567b2fbec14882e09aebff63a7a1ca5e24dca (card dated 2026-09-15). One edge per card id 1-95, in id order.
+# Id 0 is the unlabelled value of the masks: it has no edge and is the ignore value (255 in training views),
+# declared in registry/label-schemes/sources.yaml.
+#
+# Every note starts with [legacy: <name>], the card's Legacy (39-class) value: the coralscapes-39 class the pixels belonged to
+# in V1 (the card writes 'hard substrate' where coralscapes-39 says 'unknown hard substrate'). The registry models forbid
+# extra keys, so the legacy column lives in the note. tests/test_crosswalk_coralscapes_95.py pins the table, the fidelity
+# counts and the refinements below.
+#
+# Rules, in priority order:
+#   a  explicit nodes (soft corals, black coral, leather coral, Xeniidae, Nephtheidae, Acanthaster, dark, transect line,
+#      water column / surface / background, human-made structure, human)
+#   b  genus-named class with its own rs-benthic-v1 node -> that node, condition from the suffix (alive HEALTHY,
+#      bleached BLEACHED, dead OLD_DEAD); family-named class -> its node, or HC (coarsened) when there is none;
+#      a family never maps to a genus node
+#   c  algae covered ... -> DCA approximate (the coralscapes-39 convention)
+#   d  otherwise the coralscapes-39 edge of the legacy class, unchanged
+#
+# Refinements of the legacy edge, by card id:
+#   rule a (changed): 21, 40-41, 54, 76-77, 95
+#   rule b (own node): 3-4, 26-31, 33-34, 52-53, 59-61, 63-67, 80-81, 92
+#   rule b (sibling edge): 83
+#   rule b (HC, coarsened): 42-44, 73-75
+# Unchanged legacy edges: rule d 1-2, 13-20, 22-25, 32, 35-39, 45-51, 55-58, 62, 68-72, 78-79, 82, 84-91, 93-94; rule c 5-12.
+#
+crosswalks:
+  - id: coralscapes-95
+    source_schema: coralscapes-95
+    target_schema: rs-benthic-v1
+    description: >
+      Coralscapes V2 (95 classes, dataset card revision 8a4567b2) into rs-benthic-v1. One edge per card id 1-95 in id order;
+      id 0 (unlabelled) is the ignore value and has no edge. Explicit rs-benthic-v1 nodes where one exists, the health suffix sets
+      the condition, algae covered classes map to DCA, and every other class inherits the coralscapes-39 edge of its legacy class.
+      Each note starts with [legacy: <name>], the card's Legacy (39-class) value. A family-named class never maps to a genus node.
+    edges:
+      - { source_label: "acanthaster planci", targets: { taxon: COTS }, fidelity: exact, note: "[legacy: crown of thorn]" }
+      - { source_label: "acropora alive", targets: { taxon: HC_ACROPORA, condition: HEALTHY }, fidelity: exact, note: "[legacy: acropora alive]" }
+      - { source_label: "acropora bleached", targets: { taxon: HC_ACROPORA, condition: BLEACHED }, fidelity: exact, note: "[legacy: branching bleached] Own node HC_ACROPORA; condition from the name suffix, growth form not asserted." }
+      - { source_label: "acropora dead", targets: { taxon: HC_ACROPORA, condition: OLD_DEAD }, fidelity: exact, note: "[legacy: branching dead] Own node HC_ACROPORA; condition from the name suffix, growth form not asserted." }
+      - { source_label: "algae covered brain coral", targets: { taxon: DCA }, fidelity: approximate, note: "[legacy: algae covered substrate] DCA implies dead coral beneath; the source only asserts algal cover." }
+      - { source_label: "algae covered branching coral", targets: { taxon: DCA }, fidelity: approximate, note: "[legacy: algae covered substrate] DCA implies dead coral beneath; the source only asserts algal cover." }
+      - { source_label: "algae covered lobophylliidae", targets: { taxon: DCA }, fidelity: approximate, note: "[legacy: algae covered substrate] DCA implies dead coral beneath; the source only asserts algal cover." }
+      - { source_label: "algae covered massive coral", targets: { taxon: DCA }, fidelity: approximate, note: "[legacy: algae covered substrate] DCA implies dead coral beneath; the source only asserts algal cover." }
+      - { source_label: "algae covered pocillopora", targets: { taxon: DCA }, fidelity: approximate, note: "[legacy: algae covered substrate] DCA implies dead coral beneath; the source only asserts algal cover." }
+      - { source_label: "algae covered porites", targets: { taxon: DCA }, fidelity: approximate, note: "[legacy: algae covered substrate] DCA implies dead coral beneath; the source only asserts algal cover." }
+      - { source_label: "algae covered substrate", targets: { taxon: DCA }, fidelity: approximate, note: "[legacy: algae covered substrate] DCA implies dead coral beneath; the source only asserts algal cover." }
+      - { source_label: "algae covered table acropora", targets: { taxon: DCA }, fidelity: approximate, note: "[legacy: algae covered substrate] DCA implies dead coral beneath; the source only asserts algal cover." }
+      - { source_label: "anemone", targets: { taxon: ANEM }, fidelity: exact, note: "[legacy: anemone]" }
+      - { source_label: "background", targets: { taxon: WC }, fidelity: exact, note: "[legacy: background]" }
+      - { source_label: "brain coral alive", targets: { taxon: HC, form: CMD, condition: HEALTHY }, fidelity: exact, note: "[legacy: meandering alive]" }
+      - { source_label: "brain coral bleached", targets: { taxon: HC, form: CMD, condition: BLEACHED }, fidelity: exact, note: "[legacy: meandering bleached]" }
+      - { source_label: "brain coral dead", targets: { taxon: HC, form: CMD, condition: OLD_DEAD }, fidelity: exact, note: "[legacy: meandering dead]" }
+      - { source_label: "branching coral alive", targets: { taxon: HC, form: CB, condition: HEALTHY }, fidelity: exact, note: "[legacy: branching alive]" }
+      - { source_label: "branching coral bleached", targets: { taxon: HC, form: CB, condition: BLEACHED }, fidelity: exact, note: "[legacy: branching bleached]" }
+      - { source_label: "branching coral dead", targets: { taxon: HC, form: CB, condition: OLD_DEAD }, fidelity: exact, note: "[legacy: branching dead]" }
+      - { source_label: "cirrhipathes", targets: { taxon: CN_ANTIPATHARIA, condition: HEALTHY }, fidelity: coarsened, note: "[legacy: other coral alive] Genus of black coral (Antipatharia); rs-benthic-v1 holds the order only. HEALTHY: the legacy class is an alive class." }
+      - { source_label: "dark", targets: { taxon: DRK }, fidelity: exact, note: "[legacy: dark]" }
+      - { source_label: "dead giant clam", targets: { taxon: CLAM, condition: OLD_DEAD }, fidelity: approximate, note: "[legacy: dead clam] Our condition axis is defined for coral; applying it to a bivalve is a stretch retained only for round-tripping." }
+      - { source_label: "feather worm", targets: { taxon: OT }, fidelity: coarsened, note: "[legacy: other animal]" }
+      - { source_label: "fish", targets: { taxon: FISH }, fidelity: exact, note: "[legacy: fish]" }
+      - { source_label: "fungiidae alive", targets: { taxon: HC_FUNGIIDAE, condition: HEALTHY }, fidelity: exact, note: "[legacy: other coral alive] Own node HC_FUNGIIDAE; condition from the name suffix, growth form not asserted." }
+      - { source_label: "fungiidae bleached", targets: { taxon: HC_FUNGIIDAE, condition: BLEACHED }, fidelity: exact, note: "[legacy: other coral bleached] Own node HC_FUNGIIDAE; condition from the name suffix, growth form not asserted." }
+      - { source_label: "fungiidae dead", targets: { taxon: HC_FUNGIIDAE, condition: OLD_DEAD }, fidelity: exact, note: "[legacy: other coral dead] Own node HC_FUNGIIDAE; condition from the name suffix, growth form not asserted." }
+      - { source_label: "galaxea alive", targets: { taxon: HC_GALAXEA, condition: HEALTHY }, fidelity: exact, note: "[legacy: other coral alive] Own node HC_GALAXEA; condition from the name suffix, growth form not asserted." }
+      - { source_label: "galaxea bleached", targets: { taxon: HC_GALAXEA, condition: BLEACHED }, fidelity: exact, note: "[legacy: other coral bleached] Own node HC_GALAXEA; condition from the name suffix, growth form not asserted." }
+      - { source_label: "galaxea dead", targets: { taxon: HC_GALAXEA, condition: OLD_DEAD }, fidelity: exact, note: "[legacy: massive/meandering dead] Own node HC_GALAXEA; condition from the name suffix, growth form not asserted." }
+      - { source_label: "giant clam", targets: { taxon: CLAM }, fidelity: exact, note: "[legacy: clam]" }
+      - { source_label: "goniopora alive", targets: { taxon: HC_GONIOPORA, condition: HEALTHY }, fidelity: exact, note: "[legacy: other coral alive] Own node HC_GONIOPORA; condition from the name suffix, growth form not asserted." }
+      - { source_label: "goniopora dead", targets: { taxon: HC_GONIOPORA, condition: OLD_DEAD }, fidelity: exact, note: "[legacy: other coral dead] Own node HC_GONIOPORA; condition from the name suffix, growth form not asserted." }
+      - { source_label: "hard coral alive", targets: { taxon: HC, condition: HEALTHY }, fidelity: coarsened, note: "[legacy: other coral alive] Growth form not recorded." }
+      - { source_label: "hard coral bleached", targets: { taxon: HC, condition: BLEACHED }, fidelity: coarsened, note: "[legacy: other coral bleached]" }
+      - { source_label: "hard coral dead", targets: { taxon: HC, condition: OLD_DEAD }, fidelity: coarsened, note: "[legacy: other coral dead]" }
+      - { source_label: "hard substrate", targets: {}, fidelity: unmappable, note: "[legacy: hard substrate] Unmapped since taxonomy 3.0.0 (D9, was RK approximate). Coralscapes' dumping ground: on non-Red-Sea imagery it absorbs unmapped octocorals, so no single class is honest. Its pixels leave the class space (255 in training views)." }
+      - { source_label: "human", targets: { taxon: DIV }, fidelity: exact, note: "[legacy: human]" }
+      - { source_label: "human-made structure", targets: { taxon: HS }, fidelity: coarsened, note: "[legacy: hard substrate] Mapped to HS (rule a); the legacy class is unmappable." }
+      - { source_label: "leather coral alive", targets: { taxon: SC_ALCYONIIDAE, condition: HEALTHY }, fidelity: exact, note: "[legacy: other coral alive] Leather coral is the family Alcyoniidae (WoRMS 125269)." }
+      - { source_label: "lobophylliidae alive", targets: { taxon: HC, condition: HEALTHY }, fidelity: coarsened, note: "[legacy: meandering alive] Family-level class: no Lobophylliidae node, and a family never maps to a genus node (HC_LOBOPHYLLIA), so HC; growth form not recorded." }
+      - { source_label: "lobophylliidae bleached", targets: { taxon: HC, condition: BLEACHED }, fidelity: coarsened, note: "[legacy: meandering bleached] Family-level class: no Lobophylliidae node, and a family never maps to a genus node (HC_LOBOPHYLLIA), so HC; growth form not recorded." }
+      - { source_label: "lobophylliidae dead", targets: { taxon: HC, condition: OLD_DEAD }, fidelity: coarsened, note: "[legacy: meandering dead] Family-level class: no Lobophylliidae node, and a family never maps to a genus node (HC_LOBOPHYLLIA), so HC; growth form not recorded." }
+      - { source_label: "massive alive", targets: { taxon: HC, form: CMM, condition: HEALTHY }, fidelity: coarsened, note: "[legacy: massive/meandering alive] Source conflates massive and meandering." }
+      - { source_label: "massive bleached", targets: { taxon: HC, form: CMM, condition: BLEACHED }, fidelity: coarsened, note: "[legacy: massive/meandering bleached]" }
+      - { source_label: "massive dead", targets: { taxon: HC, form: CMM, condition: OLD_DEAD }, fidelity: coarsened, note: "[legacy: massive/meandering dead]" }
+      - { source_label: "meandering coral alive", targets: { taxon: HC, form: CMD, condition: HEALTHY }, fidelity: exact, note: "[legacy: meandering alive]" }
+      - { source_label: "meandering coral bleached", targets: { taxon: HC, form: CMD, condition: BLEACHED }, fidelity: exact, note: "[legacy: meandering bleached]" }
+      - { source_label: "meandering coral dead", targets: { taxon: HC, form: CMD, condition: OLD_DEAD }, fidelity: exact, note: "[legacy: meandering dead]" }
+      - { source_label: "millepora", targets: { taxon: MIL }, fidelity: coarsened, note: "[legacy: millepora]" }
+      - { source_label: "millepora bleached", targets: { taxon: MIL, condition: BLEACHED }, fidelity: exact, note: "[legacy: branching bleached] Fire coral (hydrozoan): own node MIL, outside HC; condition from the name suffix, growth form not asserted." }
+      - { source_label: "millepora dead", targets: { taxon: MIL, condition: OLD_DEAD }, fidelity: exact, note: "[legacy: branching dead] Fire coral (hydrozoan): own node MIL, outside HC; condition from the name suffix, growth form not asserted." }
+      - { source_label: "nephtheidae alive", targets: { taxon: SC_NEPHTHEIDAE, condition: HEALTHY }, fidelity: exact, note: "[legacy: other coral alive] Family node added in rs-benthic-v1 (WoRMS 146762)." }
+      - { source_label: "other animal", targets: { taxon: OT }, fidelity: coarsened, note: "[legacy: other animal]" }
+      - { source_label: "other coral alive", targets: { taxon: HC, condition: HEALTHY }, fidelity: coarsened, note: "[legacy: other coral alive] Growth form not recorded." }
+      - { source_label: "other coral bleached", targets: { taxon: HC, condition: BLEACHED }, fidelity: coarsened, note: "[legacy: other coral bleached]" }
+      - { source_label: "other coral dead", targets: { taxon: HC, condition: OLD_DEAD }, fidelity: coarsened, note: "[legacy: other coral dead]" }
+      - { source_label: "pavona alive", targets: { taxon: HC_PAVONA, condition: HEALTHY }, fidelity: exact, note: "[legacy: other coral alive] Own node HC_PAVONA; condition from the name suffix, growth form not asserted." }
+      - { source_label: "pavona bleached", targets: { taxon: HC_PAVONA, condition: BLEACHED }, fidelity: exact, note: "[legacy: other coral bleached] Own node HC_PAVONA; condition from the name suffix, growth form not asserted." }
+      - { source_label: "pavona dead", targets: { taxon: HC_PAVONA, condition: OLD_DEAD }, fidelity: exact, note: "[legacy: other coral dead] Own node HC_PAVONA; condition from the name suffix, growth form not asserted." }
+      - { source_label: "pocillopora alive", targets: { taxon: HC_POCILLOPORA, condition: HEALTHY }, fidelity: exact, note: "[legacy: pocillopora alive]" }
+      - { source_label: "pocillopora bleached", targets: { taxon: HC_POCILLOPORA, condition: BLEACHED }, fidelity: exact, note: "[legacy: branching bleached] Own node HC_POCILLOPORA; condition from the name suffix, growth form not asserted." }
+      - { source_label: "pocillopora dead", targets: { taxon: HC_POCILLOPORA, condition: OLD_DEAD }, fidelity: exact, note: "[legacy: branching dead] Own node HC_POCILLOPORA; condition from the name suffix, growth form not asserted." }
+      - { source_label: "porites alive", targets: { taxon: HC_PORITES, condition: HEALTHY }, fidelity: exact, note: "[legacy: massive/meandering alive] Own node HC_PORITES; condition from the name suffix, growth form not asserted." }
+      - { source_label: "porites bleached", targets: { taxon: HC_PORITES, condition: BLEACHED }, fidelity: exact, note: "[legacy: massive/meandering bleached] Own node HC_PORITES; condition from the name suffix, growth form not asserted." }
+      - { source_label: "porites dead", targets: { taxon: HC_PORITES, condition: OLD_DEAD }, fidelity: exact, note: "[legacy: massive/meandering dead] Own node HC_PORITES; condition from the name suffix, growth form not asserted." }
+      - { source_label: "rubble", targets: { taxon: RB }, fidelity: exact, note: "[legacy: rubble]" }
+      - { source_label: "sand", targets: { taxon: SD }, fidelity: exact, note: "[legacy: sand]" }
+      - { source_label: "sea cucumber", targets: { taxon: CUKE }, fidelity: exact, note: "[legacy: sea cucumber]" }
+      - { source_label: "sea urchin", targets: { taxon: URCH }, fidelity: exact, note: "[legacy: sea urchin]" }
+      - { source_label: "seagrass", targets: { taxon: SG }, fidelity: exact, note: "[legacy: seagrass]" }
+      - { source_label: "seriatopora alive", targets: { taxon: HC, form: CB, condition: HEALTHY }, fidelity: coarsened, note: "[legacy: branching alive] Genus without an rs-benthic-v1 node: HC with the branching form of the legacy class." }
+      - { source_label: "seriatopora bleached", targets: { taxon: HC, form: CB, condition: BLEACHED }, fidelity: coarsened, note: "[legacy: branching bleached] Genus without an rs-benthic-v1 node: HC with the branching form of the legacy class." }
+      - { source_label: "seriatopora dead", targets: { taxon: HC, form: CB, condition: OLD_DEAD }, fidelity: coarsened, note: "[legacy: branching dead] Genus without an rs-benthic-v1 node: HC with the branching form of the legacy class." }
+      - { source_label: "soft coral (malacalcyonacea) alive", targets: { taxon: SC, condition: HEALTHY }, fidelity: exact, note: "[legacy: other coral alive] Order Malacalcyonacea is the soft corals (SC)." }
+      - { source_label: "soft coral (malacalcyonacea) bleached", targets: { taxon: SC, condition: BLEACHED }, fidelity: exact, note: "[legacy: other coral bleached] Order Malacalcyonacea is the soft corals (SC)." }
+      - { source_label: "sponge", targets: { taxon: SP }, fidelity: exact, note: "[legacy: sponge]" }
+      - { source_label: "stylophora alive", targets: { taxon: HC_STYLOPHORA, condition: HEALTHY }, fidelity: exact, note: "[legacy: stylophora alive]" }
+      - { source_label: "stylophora bleached", targets: { taxon: HC_STYLOPHORA, condition: BLEACHED }, fidelity: exact, note: "[legacy: branching bleached] Own node HC_STYLOPHORA; condition from the name suffix, growth form not asserted." }
+      - { source_label: "stylophora dead", targets: { taxon: HC_STYLOPHORA, condition: OLD_DEAD }, fidelity: exact, note: "[legacy: branching dead] Own node HC_STYLOPHORA; condition from the name suffix, growth form not asserted." }
+      - { source_label: "table acropora alive", targets: { taxon: HC_ACROPORA, form: CT, condition: HEALTHY }, fidelity: exact, note: "[legacy: table acropora alive]" }
+      - { source_label: "table acropora bleached", targets: { taxon: HC_ACROPORA, form: CT, condition: BLEACHED }, fidelity: exact, note: "[legacy: branching bleached] Sibling of the coralscapes-39 edge 'table acropora alive' with the condition swapped; the legacy class would drop the table form." }
+      - { source_label: "table acropora dead", targets: { taxon: HC_ACROPORA, form: CT, condition: OLD_DEAD }, fidelity: exact, note: "[legacy: table acropora dead]" }
+      - { source_label: "thin plate/encrusting coral alive", targets: { taxon: HC, condition: HEALTHY }, fidelity: coarsened, note: "[legacy: other coral alive] Growth form not recorded." }
+      - { source_label: "thin plate/encrusting coral bleached", targets: { taxon: HC, condition: BLEACHED }, fidelity: coarsened, note: "[legacy: other coral bleached]" }
+      - { source_label: "thin plate/encrusting coral dead", targets: { taxon: HC, condition: OLD_DEAD }, fidelity: coarsened, note: "[legacy: other coral dead]" }
+      - { source_label: "transect line", targets: { taxon: TL }, fidelity: exact, note: "[legacy: transect line]" }
+      - { source_label: "transect tools", targets: { taxon: TWS }, fidelity: coarsened, note: "[legacy: transect tools] tools, no shadow; TWS is tape+wand+shadow" }
+      - { source_label: "trash", targets: { taxon: TRASH }, fidelity: exact, note: "[legacy: trash]" }
+      - { source_label: "turbinaria", targets: { taxon: HC_TURBINARIA }, fidelity: coarsened, note: "[legacy: turbinaria] Condition not recorded by the source." }
+      - { source_label: "turbinaria dead", targets: { taxon: HC_TURBINARIA, condition: OLD_DEAD }, fidelity: exact, note: "[legacy: other coral dead] Own node HC_TURBINARIA; condition from the name suffix, growth form not asserted." }
+      - { source_label: "water column", targets: { taxon: WC }, fidelity: exact, note: "[legacy: background]" }
+      - { source_label: "water surface", targets: { taxon: WC }, fidelity: exact, note: "[legacy: background]" }
+      - { source_label: "xeniidae alive", targets: { taxon: SC_XENIIDAE, condition: HEALTHY }, fidelity: exact, note: "[legacy: other coral alive] Family node SC_XENIIDAE." }

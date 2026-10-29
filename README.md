@@ -35,6 +35,8 @@ upstream splits dominate, no nominal ratio describes v1.0. The measured train/va
 
 Every config loads the same way; only the config name changes. Splits are `train`, `validation` and `test`.
 
+**Coralscapes V2 (v1.2.0, in preparation).** V2 supersedes V1 for Coralscapes tasks; V1 configs are kept frozen for reproducibility. The release adds Coralscapes V2 (`coralscapes-v2`: 2,433 frames, 95 classes including soft corals and black coral, Apache-2.0, [josauder/coralscapesV2](https://huggingface.co/datasets/josauder/coralscapesV2)) to the `semseg` and `instances` configs. It adds no config and changes nothing already published. V1 and V2 frames that are the same frame are linked by stem, and the label matching is verified for every source. See the [changelog](CHANGELOG.md), the [label matching](docs/label-matching.md) and the [sources](docs/sources.md).
+
 | Config | Call | Download |
 |---|---|---|
 | `coral-masks` | `load_dataset("reefsupport/marine-data", "coral-masks", split="train")` | 12.6 GB |

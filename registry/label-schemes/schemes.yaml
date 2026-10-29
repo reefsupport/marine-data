@@ -37,32 +37,43 @@ schemes:
         sponge: OTHER_FAUNA              # D3: crosswalk node SP (PORIFERA) is coarser than every class
         anemone: OTHER_FAUNA             # D3: crosswalk node ANEM (CNIDARIA) is coarser than every class
         algae covered substrate: ALGAE   # D3: crosswalk DCA is a transition node; turf on dead substrate
+      coralscapes-v2:                    # v1.2.0: the same four decisions, under V2's names
+        hard substrate: null             # D2: V2's name for V1 "unknown hard substrate" (unmappable)
+        sponge: OTHER_FAUNA              # D3
+        anemone: OTHER_FAUNA             # D3
+        algae covered substrate: ALGAE   # D3
     sources:
       - coralscapes
+      - coralscapes-v2
       - reef-support-benthic-own
       - reef-support-seaview-labels
       - coralseg-ucsd-mosaics
 
   coral-binary:
     description: >
-      CORAL vs NOT_CORAL. CORAL = the HC, SC and MIL subtrees; NOT_CORAL = every other mapped
+      CORAL vs NOT_CORAL. CORAL = the HC, SC and MIL subtrees plus the black-coral leaf
+      CN_ANTIPATHARIA (v1.2.0, D11: V2 "cirrhipathes" is the pixel class that V1 called "other coral
+      alive", so twin frames must agree); NOT_CORAL = every other mapped
       biotic, abiotic or transition node; non-benthic nodes (water, dark, gear, divers) are 255,
       as is any node coarser than a CORAL node (it could be either).
     classes: [NOT_CORAL, CORAL]
     rules:                      # class -> nodes; the nearest matching node (self, then ancestors) wins
-      CORAL: [HC, SC, MIL]
+      CORAL: [HC, SC, MIL, CN_ANTIPATHARIA]
       NOT_CORAL: [BIOTIC, ABIOTIC, TRANSITION]
     ignore_nodes: [NON_BENTHIC]
     default_exclude_conditions: [dead]   # D1: dead coral (and dead clam) -> 255; bleached stays CORAL
     source_overrides:           # source -> native label -> class (null = 255), see the header
       coralscapes:
         unknown hard substrate: null     # D2: rock mixed with octocorals: neither CORAL nor NOT_CORAL
+      coralscapes-v2:
+        hard substrate: null     # D2, as V1: V2's name for "unknown hard substrate"
       coralseg-ucsd-mosaics:
         Other: NOT_CORAL        # the source defines it as every non-coral pixel (crosswalk: unmappable)
       coralscop-masks-rs:
         coral: CORAL            # class-agnostic coral instance (crosswalk: CNIDARIA, coarsened)
     sources:
       - coralscapes
+      - coralscapes-v2
       - reef-support-benthic-own
       - reef-support-seaview-labels
       - coralseg-ucsd-mosaics

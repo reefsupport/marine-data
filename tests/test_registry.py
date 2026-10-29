@@ -325,11 +325,7 @@ def test_coralscapes_v2_loads_alongside_v1(registry: Registry) -> None:
     assert Region.RED_SEA in v2.coverage.regions
     assert v2.loader is not None
     assert v2.loader.schema_id == "coralscapes-95"
-    assert v2.loader.crosswalk_id is None, (
-        "no machine-readable 95->39 crosswalk exists; a set crosswalk_id here would "
-        "mean one got hand-derived from the paper's Fig. 5, which this registry must "
-        "never do"
-    )
+    assert v2.loader.crosswalk_id == "coralscapes-95"  # the 95-class crosswalk (taxonomy 3.1.0)
 
 
 def test_coralscapes_95_schema_loads(registry: Registry) -> None:

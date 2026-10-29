@@ -211,6 +211,12 @@ class Registry:
                         f"source '{src.id}' images_from references unknown source "
                         f"'{images_source_id}'"
                     )
+            for link in src.links:
+                if link.source_id == src.id or link.source_id not in sources:
+                    raise RegistryError(
+                        f"source '{src.id}' links references '{link.source_id}', which is "
+                        "itself or not a registered source"
+                    )
             spec = src.loader
             if spec is not None:
                 if spec.schema_id and spec.schema_id not in schemas:

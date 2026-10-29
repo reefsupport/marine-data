@@ -19,7 +19,7 @@ Every other component is assigned fresh under the seed.
 
 from __future__ import annotations
 
-from collections.abc import Collection, Iterable, Mapping, Sequence
+from collections.abc import Callable, Collection, Iterable, Mapping, Sequence
 from dataclasses import dataclass, field, replace
 
 from ..neardup import NearDupConfig, v1_band_pairs
@@ -29,6 +29,7 @@ from ..splitmap_inherit import band_constraints, inherit_header
 from ..splitmap_tree import TreePrior, V1Tree, straddle_block, tree_prior
 from ..splitv2.release_ood import plan_ood, release_samples
 from ..splitv2.rules import RulesConfig
+from .stem_links import StemConflict, StemLinks, Twin, link_block, train_forced, twin_conflicts
 
 Row = tuple[str, str, str]  # image sha256, split group, source id
 
@@ -50,6 +51,12 @@ class InheritPlan:
     tree: TreePrior | None = None
     tree_header: dict[str, object] = field(default_factory=dict)
     map_header: dict[str, object] = field(default_factory=dict)
+    stem_links: StemLinks | None = None
+    """The V1/V2 twin table merged into ``canonical`` (``None``: no source declares ``links:``)."""
+    stem_conflicts: tuple[StemConflict, ...] = ()
+    """Twins whose V2 upstream split differs from the one v1.0 published: counted, not applied."""
+    canonical: dict[str, str] = field(default_factory=dict)
+    """``canonical`` with the twins' components joined; every later step uses this map."""
 
     @property
     def straddles(self) -> dict[str, str]:
@@ -66,9 +73,12 @@ class InheritPlan:
         block = {
             **self.tree_header,
             "groups": len(self.tree.groups),
-            "straddles": straddle_block(self.tree, canonical, moved),
+            "straddles": straddle_block(self.tree, self.canonical or canonical, moved),
         }
-        return {**self.map_header, "v1_tree": block}
+        header: dict[str, object] = {**self.map_header, "v1_tree": block}
+        if self.stem_links is not None:
+            header["stem_links"] = link_block(self.stem_links, self.stem_conflicts)
+        return header
 
 
 def unconfirmed_band_pairs(
@@ -108,6 +118,21 @@ def _band(
     return forced, excluded, len(band)
 
 
+def _prior_splits(
+    v1_tree: V1Tree | None, inherit: SplitMap | None
+) -> Callable[[Twin], frozenset[str]]:
+    """``twin -> the splits the prior release gave the twin's target (v1.0) image``."""
+
+    def prior_of(twin: Twin) -> frozenset[str]:
+        if v1_tree is not None and twin.target_sha in v1_tree.splits:
+            return frozenset(v1_tree.splits[twin.target_sha])
+        if inherit is not None and twin.target_group in inherit.assignments:
+            return frozenset({inherit.assignments[twin.target_group]})
+        return frozenset()
+
+    return prior_of
+
+
 def plan_inheritance(
     rows: Sequence[Row],
     *,
@@ -125,6 +150,7 @@ def plan_inheritance(
     ratios: Mapping[SplitName, float] | None = None,
     seed: int = 0,
     now: str = "",
+    stem_links: StemLinks | None = None,
 ) -> InheritPlan:
     """``rows`` are ``(image_sha256, split_group, source_id)``; ``hashes`` the dHash of every
     eval-capable image (empty without ``near_dup``); ``canonical`` maps a group to its component.
@@ -132,9 +158,16 @@ def plan_inheritance(
     sha was published in; ``ratios``/``seed``/``now`` describe the map built from the tree alone.
 
     Raises ``SplitMapError`` when neither prior is given, or when a constructible OOD holdout
-    exceeds the size ceiling: a human narrows the yaml rule, nothing subsamples a holdout."""
+    exceeds the size ceiling: a human narrows the yaml rule, nothing subsamples a holdout.
+
+    ``stem_links`` (:func:`~marinedata.release.stem_links.build_stem_links`) joins every V1/V2 twin
+    pair into one component (idempotent when ``canonical`` already holds the twin pairs), so the
+    pair keeps the split v1.0 published; ``InheritPlan.canonical`` is the merged map and
+    ``stem_conflicts`` lists the twins whose V2 upstream split disagrees (V1 wins, not applied)."""
     if inherit is None and v1_tree is None:
         raise SplitMapError("an inheriting split map needs --inherit-tree or --inherit")
+    if stem_links is not None and stem_links.twins:
+        canonical = stem_links.merge(canonical)
     pairs = list(unconfirmed)
     band_args = {"hashes": hashes, "near_dup": near_dup, "unconfirmed": pairs}
     component_of = {sha: canonical.get(group, group) for sha, group, _ in rows}
@@ -182,6 +215,8 @@ def plan_inheritance(
             names = ood.setdefault(canonical.get(group, group), [])
             names.extend(tag for tag in tags if tag not in names)
         header = plan.header()
+    if stem_links is not None:  # V2-only train frames follow V2: their all-train components train
+        forced = {**train_forced(stem_links, rows, canonical), **forced}
     if tree is None:
         prior = inherit
     elif inherit is not None:
@@ -210,4 +245,11 @@ def plan_inheritance(
         tree=tree,
         tree_header=dict(v1_tree.header) if v1_tree is not None else {},
         map_header=map_header,
+        stem_links=stem_links,
+        stem_conflicts=(
+            twin_conflicts(stem_links, _prior_splits(v1_tree, inherit))
+            if stem_links is not None
+            else ()
+        ),
+        canonical=dict(canonical) if stem_links is not None else {},
     )

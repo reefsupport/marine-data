@@ -13,6 +13,7 @@ Published configs come from `registry/label-schemes/sources.yaml`; the layout, m
 | `fish-boxes` | reefsupport/marine-data | boxes | `roboflow-aquarium` |
 | `instance-masks` | reefsupport/marine-data | instances | `uiis`, `uiis10k`, `usis10k` |
 | `scene-masks` | reefsupport/marine-data | semantic | `suim` |
+| `semseg` | reefsupport/marine-data | semantic | `coralscapes-v2` |
 
 ## Mask export configs
 
@@ -43,7 +44,7 @@ Published configs come from `registry/label-schemes/sources.yaml`; the layout, m
 | --- | --- |
 | `points` | `mermaid-aws`, `reefolution`, `seaview-survey-imagery` |
 | `vqa` | `coralvqa`, `marineevt`, `uwbench` |
-| `semseg` | `coralscapes`, `coralscop-masks-rs`, `coralseg-ucsd-mosaics`, `reef-support-benthic-own`, `suim` |
+| `semseg` | `coralscapes`, `coralscapes-v2`, `coralscop-masks-rs`, `coralseg-ucsd-mosaics`, `reef-support-benthic-own`, `suim` |
 | `benthic-coarse` | `coralscapes`, `reef-support-benthic-own` |
 | `benthic-cover` | `coralscapes`, `reef-support-benthic-own` |
 | `bleaching` | `noaa-pifsc-bleaching`, `reef-support-bleaching`, `roboflow-coral-bleaching-final-v6i`, `roboflow-coral-bleaching-general-v1-yolov8s`, `roboflow-coral-classification-copy-changed-v13i`, `roboflow-coral-reef-bleach-detection-v2i`, `roboflow-coral-reef-classification-v3i` |
@@ -51,4 +52,4 @@ Published configs come from `registry/label-schemes/sources.yaml`; the layout, m
 | `captions` | — |
 | `depth` | `sonarsweep`, `usod10k`, `viame-public` |
 | `pairs` | `auv-flc-fls-sunboat`, `euvp`, `lsui`, `sonarsweep`, `viame-public` |
-| `instances` | `uiis`, `uiis10k`, `usis10k` |
+| `instances` | `coralscapes-v2`, `uiis`, `uiis10k`, `usis10k` |

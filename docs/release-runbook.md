@@ -260,3 +260,26 @@ uv run --frozen marinedata release croissant "$B" --release-dir "$R" --out "$B/c
   `releases/marine-data/v1.1.0/SPLIT_MAP.json`; a rebuild that moves a gate count must edit the text. The open
   `GATES.json` decon entry keeps its counts and `by_split` but drops the `*_sample` lists that carry image digests.
 - Regenerate the test goldens with `UPDATE_GOLDEN=1 uv run --frozen pytest tests/test_release_card.py`.
+
+## v1.2.0 card gate numbers (step 7)
+
+The v1.2.0 card carries three named slots in its "Build and gates" text: `[[V120_GATES_RUN]]`,
+`[[V120_DEDUP_LINKED]]` and `[[V120_SPLIT_TWIN_GROUPS]]`. After the gates have run on the build host,
+fill them from `provenance/GATES.json` with `marinedata.card_v12_text.fill_gates(readme, numbers)`; it
+raises on a missing or unknown slot, so a card with a `[[...]]` marker is never published. The v1.1.0
+gate texts stay in the card as history.
+
+`python -m marinedata.hf_card` fills the slots itself when it gets `--gates-json <GATES.json>` (optional).
+The gate stage writes that file into the export folder after the card stage, so run the card command a
+second time with the flag, after the gates and before `release publish` uploads the `card` part. The
+numbers are read, never typed: `V120_GATES_RUN` is the count of gates in the file that did not skip,
+`V120_DEDUP_LINKED` is `dedup.counts.near_pairs_linked_twins` and `V120_SPLIT_TWIN_GROUPS` is
+`splits.counts.stem_link_twins`. The command stops with an error when the `dedup` or `splits` gate did not
+pass, when a counter is missing, or when the splits gate found a twin pair apart. Without the flag the
+slots stay in the README and the command prints a `WARNING` on stderr that lists them (expected at the
+card stage, which runs before the gates); a card that still lists a slot must not be published.
+
+```bash
+python -m marinedata.hf_card --release-dir "$R" --summary <export summary> --out "$B" \
+  --flavour open --citation /app/CITATION.cff --gates-json "$B/GATES.json"
+```

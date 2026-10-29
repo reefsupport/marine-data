@@ -5,7 +5,7 @@ from __future__ import annotations
 from collections.abc import Mapping
 from types import MappingProxyType
 
-from . import coralscapes, noaa_pifsc, reef_support_own, seaview
+from . import coralscapes, coralscapes_v2, noaa_pifsc, reef_support_own, seaview
 from .common import Resolver
 
 RESOLVERS: Mapping[str, Resolver] = MappingProxyType(
@@ -15,6 +15,7 @@ RESOLVERS: Mapping[str, Resolver] = MappingProxyType(
         "reef-support-benthic-own": reef_support_own.resolve,
         "reef-support-bleaching": reef_support_own.resolve,
         "coralscapes": coralscapes.resolve,
+        "coralscapes-v2": coralscapes_v2.resolve,
     }
 )
 

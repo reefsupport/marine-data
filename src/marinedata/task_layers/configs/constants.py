@@ -61,9 +61,11 @@ PAIRS_CONFIG_SOURCES = tuple(s for s, v in DEPTH_PAIR_SOURCES.items() if "pairs"
 
 
 # WP-U10b: registry-driven like the U4 masks: every source with a unified *instance* ``masks``
-# producer (``sources.masks_instance.INSTANCE_SOURCES``: usis10k, uiis, uiis10k). Disjoint from
-# SEMSEG_SOURCES, so no mask row is counted by both configs.
-INSTANCE_CONFIG_SOURCES = tuple(INSTANCE_SOURCES)
+# producer (``sources.masks_instance.INSTANCE_SOURCES``: usis10k, uiis, uiis10k) plus Coralscapes V2
+# (v1.2.0, D2), whose semantic and fish-instance rows share one masks parquet. Disjoint from
+# SEMSEG_SOURCES except for ``coralscapes-v2``; ``mask_kind`` keeps each row in one config
+# (``build_semseg_config`` reads semantic rows, ``build_instance_config`` instance rows).
+INSTANCE_CONFIG_SOURCES = (*INSTANCE_SOURCES, "coralscapes-v2")
 
 
 # MV-1 (masks v1): self-contained HF mask configs (image + mask + class_map in one row); the

@@ -150,6 +150,30 @@ Sample ids are `<source_id>/<stem>`. Where a stem repeats across partitions (for
 an unlicensed source is written verbatim as `NO-LICENCE-STATED`; the schema's own null form is
 `NOASSERTION`.
 
+## Coralscapes V2 tree (`sources/coralscapes-v2/2.0/`)
+
+`scripts/stage_coralscapes_v2.py` (`src/marinedata/ingest_coralscapes_v2.py`) writes this tree on VM 900,
+only under this prefix. `<stem>` is the HF frame stem `site<N>_<frame>_<ts>`; the files keep the V1 naming
+(`_leftImg8bit`), so a V1 twin has the same file stem:
+
+```text
+sources/coralscapes-v2/2.0/
+  images/default/<stem>_leftImg8bit.png              image, bytes verbatim from the HF parquet shard
+  labels/masks/default/<stem>_leftImg8bit.png        semantic ids 1-95, 0 = unlabelled; uint8 (mode L)
+  labels/instances/default/<stem>_instanceIds.png    cityscapes instance ids; uint16 (mode I;16); fish class 25, divisor 2000
+  metadata.parquet                                   wide sample_schema v2 table: 37 columns + trailing `partition`
+  ANNOTATIONS.json  SOURCE.json  LICENSE
+  CHECKSUMS.sha256                                   written last; a tree without it is an interrupted run
+```
+
+- `partition` is `default` in every row, so `StagedTreeLoader` pairs `images/default/` with
+  `labels/masks/default/`. The `stem` column holds `<stem>_leftImg8bit`, the V1 file stem: it is what links
+  a V2 frame to its V1 twin (sha256 cannot, the bytes and pixels differ).
+- Instance PNGs sit under `labels/instances/`, not `labels/instance_masks/` as in older trees; the generated
+  map below lists the older names.
+- The tree holds 2,433 frames: the HF split (`train` 1,790, `validation` 170, `test` 473) goes to
+  `upstream_split`. Staging behaviour, flags and the resume rules: `docs/ingest-howto.md`, section 5.
+
 <!-- BEGIN GENERATED: storage-map -->
 ### Canonical storage map (generated from `registry/sources/*.yaml`)
 
