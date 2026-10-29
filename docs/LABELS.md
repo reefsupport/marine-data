@@ -99,6 +99,7 @@ Sources that are not part of the public release are listed by id only.
 | Source | Config | Annotation | Supervised classes | Mapped | Ignored |
 |---|---|---|---|---|---|
 | `coralscapes` | `coral-masks` | dense | `HC`, `MIL`, `ALGAE`, `ABIOTIC`, `OTHER_FAUNA` | 26 | 13 |
+| `coralscapes-v2` | `semseg` | dense | `HC`, `MIL`, `SC`, `ALGAE`, `ABIOTIC`, `OTHER_FAUNA` | 56 | 39 |
 | `reef-support-benthic-own` | `coral-masks` | partial | `HC`, `SC` | 2 | 0 |
 | `reef-support-seaview-labels` | `coral-masks` | partial | `HC`, `SC` | 2 | 0 |
 | `coralseg-ucsd-mosaics` | not public | dense | `HC`, `SC` | 2 | 1 |
@@ -108,6 +109,7 @@ Sources that are not part of the public release are listed by id only.
 | Source | Config | Annotation | Supervised classes | Mapped | Ignored |
 |---|---|---|---|---|---|
 | `coralscapes` | `coral-masks` | dense | `NOT_CORAL`, `CORAL` | 27 | 12 |
+| `coralscapes-v2` | `semseg` | dense | `NOT_CORAL`, `CORAL` | 65 | 30 |
 | `reef-support-benthic-own` | `coral-masks` | partial | `CORAL` | 2 | 0 |
 | `reef-support-seaview-labels` | `coral-masks` | partial | `CORAL` | 2 | 0 |
 | `coralseg-ucsd-mosaics` | not public | dense | `NOT_CORAL`, `CORAL` | 3 | 0 |
@@ -139,6 +141,13 @@ Sources that are not part of the public release are listed by id only.
 | `coralscapes` | `ABIOTIC` (4) | `trash`, `sand`, `rubble` |
 | `coralscapes` | `OTHER_FAUNA` (5) | `fish`, `other animal`, `clam`, `sea cucumber`, `sponge`, `anemone`, `sea urchin`, `crown of thorn` |
 | `coralscapes` | 255 (ignored) | `seagrass`, `other coral dead`, `human`, `transect tools`, `unknown hard substrate`, `background`, `dark`, `transect line`, `branching dead`, `massive/meandering dead`, `table acropora dead`, `meandering dead`, `dead clam` |
+| `coralscapes-v2` | `HC` (0) | `acropora alive`, `acropora bleached`, `brain coral alive`, `brain coral bleached`, `branching coral alive`, `branching coral bleached`, `fungiidae alive`, `fungiidae bleached`, `galaxea alive`, `galaxea bleached`, `goniopora alive`, `hard coral alive`, `hard coral bleached`, `lobophylliidae alive`, `lobophylliidae bleached`, `massive alive`, `massive bleached`, `meandering coral alive`, `meandering coral bleached`, `other coral alive`, `other coral bleached`, `pavona alive`, `pavona bleached`, `pocillopora alive`, `pocillopora bleached`, `porites alive`, `porites bleached`, `seriatopora alive`, `seriatopora bleached`, `stylophora alive`, `stylophora bleached`, `table acropora alive`, `table acropora bleached`, `thin plate/encrusting coral alive`, `thin plate/encrusting coral bleached`, `turbinaria` |
+| `coralscapes-v2` | `MIL` (1) | `millepora`, `millepora bleached` |
+| `coralscapes-v2` | `SC` (2) | `leather coral alive`, `nephtheidae alive`, `soft coral (malacalcyonacea) alive`, `soft coral (malacalcyonacea) bleached`, `xeniidae alive` |
+| `coralscapes-v2` | `ALGAE` (3) | `algae covered substrate` |
+| `coralscapes-v2` | `ABIOTIC` (4) | `rubble`, `sand`, `trash` |
+| `coralscapes-v2` | `OTHER_FAUNA` (5) | `acanthaster planci`, `anemone`, `feather worm`, `fish`, `giant clam`, `other animal`, `sea cucumber`, `sea urchin`, `sponge` |
+| `coralscapes-v2` | 255 (ignored) | `acropora dead`, `algae covered brain coral`, `algae covered branching coral`, `algae covered lobophylliidae`, `algae covered massive coral`, `algae covered pocillopora`, `algae covered porites`, `algae covered table acropora`, `background`, `brain coral dead`, `branching coral dead`, `cirrhipathes`, `dark`, `dead giant clam`, `fungiidae dead`, `galaxea dead`, `goniopora dead`, `hard coral dead`, `hard substrate`, `human`, `human-made structure`, `lobophylliidae dead`, `massive dead`, `meandering coral dead`, `millepora dead`, `other coral dead`, `pavona dead`, `pocillopora dead`, `porites dead`, `seagrass`, `seriatopora dead`, `stylophora dead`, `table acropora dead`, `thin plate/encrusting coral dead`, `transect line`, `transect tools`, `turbinaria dead`, `water column`, `water surface` |
 | `reef-support-benthic-own` | `HC` (0) | `Hard Coral` |
 | `reef-support-benthic-own` | `SC` (2) | `Soft Coral` |
 | `reef-support-seaview-labels` | `HC` (0) | `Hard Coral` |
@@ -154,6 +163,9 @@ Sources that are not part of the public release are listed by id only.
 | `coralscapes` | `NOT_CORAL` (0) | `seagrass`, `trash`, `sand`, `fish`, `algae covered substrate`, `other animal`, `rubble`, `clam`, `sea cucumber`, `sponge`, `anemone`, `sea urchin`, `crown of thorn` |
 | `coralscapes` | `CORAL` (1) | `other coral bleached`, `other coral alive`, `massive/meandering bleached`, `massive/meandering alive`, `branching bleached`, `millepora`, `branching alive`, `acropora alive`, `turbinaria`, `table acropora alive`, `pocillopora alive`, `meandering bleached`, `stylophora alive`, `meandering alive` |
 | `coralscapes` | 255 (ignored) | `other coral dead`, `human`, `transect tools`, `unknown hard substrate`, `background`, `dark`, `transect line`, `branching dead`, `massive/meandering dead`, `table acropora dead`, `meandering dead`, `dead clam` |
+| `coralscapes-v2` | `NOT_CORAL` (0) | `acanthaster planci`, `algae covered brain coral`, `algae covered branching coral`, `algae covered lobophylliidae`, `algae covered massive coral`, `algae covered pocillopora`, `algae covered porites`, `algae covered substrate`, `algae covered table acropora`, `anemone`, `feather worm`, `fish`, `giant clam`, `other animal`, `rubble`, `sand`, `sea cucumber`, `sea urchin`, `seagrass`, `sponge`, `trash` |
+| `coralscapes-v2` | `CORAL` (1) | `acropora alive`, `acropora bleached`, `brain coral alive`, `brain coral bleached`, `branching coral alive`, `branching coral bleached`, `cirrhipathes`, `fungiidae alive`, `fungiidae bleached`, `galaxea alive`, `galaxea bleached`, `goniopora alive`, `hard coral alive`, `hard coral bleached`, `leather coral alive`, `lobophylliidae alive`, `lobophylliidae bleached`, `massive alive`, `massive bleached`, `meandering coral alive`, `meandering coral bleached`, `millepora`, `millepora bleached`, `nephtheidae alive`, `other coral alive`, `other coral bleached`, `pavona alive`, `pavona bleached`, `pocillopora alive`, `pocillopora bleached`, `porites alive`, `porites bleached`, `seriatopora alive`, `seriatopora bleached`, `soft coral (malacalcyonacea) alive`, `soft coral (malacalcyonacea) bleached`, `stylophora alive`, `stylophora bleached`, `table acropora alive`, `table acropora bleached`, `thin plate/encrusting coral alive`, `thin plate/encrusting coral bleached`, `turbinaria`, `xeniidae alive` |
+| `coralscapes-v2` | 255 (ignored) | `acropora dead`, `background`, `brain coral dead`, `branching coral dead`, `dark`, `dead giant clam`, `fungiidae dead`, `galaxea dead`, `goniopora dead`, `hard coral dead`, `hard substrate`, `human`, `human-made structure`, `lobophylliidae dead`, `massive dead`, `meandering coral dead`, `millepora dead`, `other coral dead`, `pavona dead`, `pocillopora dead`, `porites dead`, `seriatopora dead`, `stylophora dead`, `table acropora dead`, `thin plate/encrusting coral dead`, `transect line`, `transect tools`, `turbinaria dead`, `water column`, `water surface` |
 | `reef-support-benthic-own` | `CORAL` (1) | `Hard Coral`, `Soft Coral` |
 | `reef-support-seaview-labels` | `CORAL` (1) | `Hard Coral`, `Soft Coral` |
 | `coralseg-ucsd-mosaics` | `NOT_CORAL` (0) | `Other` |
@@ -232,7 +244,12 @@ still follows the crosswalks. `Crosswalk alone` below is what the registry gives
 | `benthic-coarse` | `coralscapes` | `sponge` | ignored (255) | `OTHER_FAUNA` |
 | `benthic-coarse` | `coralscapes` | `anemone` | ignored (255) | `OTHER_FAUNA` |
 | `benthic-coarse` | `coralscapes` | `algae covered substrate` | ignored (255) | `ALGAE` |
+| `benthic-coarse` | `coralscapes-v2` | `hard substrate` | ignored (255) | ignored (255) |
+| `benthic-coarse` | `coralscapes-v2` | `sponge` | ignored (255) | `OTHER_FAUNA` |
+| `benthic-coarse` | `coralscapes-v2` | `anemone` | ignored (255) | `OTHER_FAUNA` |
+| `benthic-coarse` | `coralscapes-v2` | `algae covered substrate` | ignored (255) | `ALGAE` |
 | `coral-binary` | `coralscapes` | `unknown hard substrate` | ignored (255) | ignored (255) |
+| `coral-binary` | `coralscapes-v2` | `hard substrate` | ignored (255) | ignored (255) |
 | `coral-binary` | `coralseg-ucsd-mosaics` | `Other` | ignored (255) | `NOT_CORAL` |
 | `coral-binary` | `coralscop-masks-rs` | `coral` | ignored (255) | `CORAL` |
 
@@ -247,8 +264,12 @@ opt-in. Only Coralscapes carries a coral condition today.
 |---|---|---|---|---|
 | `benthic-coarse` | `coralscapes` | `dead` | yes | `other coral dead`, `branching dead`, `massive/meandering dead`, `table acropora dead`, `meandering dead`, `dead clam` |
 | `benthic-coarse` | `coralscapes` | `bleached` | no | `other coral bleached`, `massive/meandering bleached`, `branching bleached`, `meandering bleached` |
+| `benthic-coarse` | `coralscapes-v2` | `dead` | yes | `acropora dead`, `brain coral dead`, `branching coral dead`, `dead giant clam`, `fungiidae dead`, `galaxea dead`, `goniopora dead`, `hard coral dead`, `lobophylliidae dead`, `massive dead`, `meandering coral dead`, `millepora dead`, `other coral dead`, `pavona dead`, `pocillopora dead`, `porites dead`, `seriatopora dead`, `stylophora dead`, `table acropora dead`, `thin plate/encrusting coral dead`, `turbinaria dead` |
+| `benthic-coarse` | `coralscapes-v2` | `bleached` | no | `acropora bleached`, `brain coral bleached`, `branching coral bleached`, `fungiidae bleached`, `galaxea bleached`, `hard coral bleached`, `lobophylliidae bleached`, `massive bleached`, `meandering coral bleached`, `millepora bleached`, `other coral bleached`, `pavona bleached`, `pocillopora bleached`, `porites bleached`, `seriatopora bleached`, `soft coral (malacalcyonacea) bleached`, `stylophora bleached`, `table acropora bleached`, `thin plate/encrusting coral bleached` |
 | `coral-binary` | `coralscapes` | `dead` | yes | `other coral dead`, `branching dead`, `massive/meandering dead`, `table acropora dead`, `meandering dead`, `dead clam` |
 | `coral-binary` | `coralscapes` | `bleached` | no | `other coral bleached`, `massive/meandering bleached`, `branching bleached`, `meandering bleached` |
+| `coral-binary` | `coralscapes-v2` | `dead` | yes | `acropora dead`, `brain coral dead`, `branching coral dead`, `dead giant clam`, `fungiidae dead`, `galaxea dead`, `goniopora dead`, `hard coral dead`, `lobophylliidae dead`, `massive dead`, `meandering coral dead`, `millepora dead`, `other coral dead`, `pavona dead`, `pocillopora dead`, `porites dead`, `seriatopora dead`, `stylophora dead`, `table acropora dead`, `thin plate/encrusting coral dead`, `turbinaria dead` |
+| `coral-binary` | `coralscapes-v2` | `bleached` | no | `acropora bleached`, `brain coral bleached`, `branching coral bleached`, `fungiidae bleached`, `galaxea bleached`, `hard coral bleached`, `lobophylliidae bleached`, `massive bleached`, `meandering coral bleached`, `millepora bleached`, `other coral bleached`, `pavona bleached`, `pocillopora bleached`, `porites bleached`, `seriatopora bleached`, `soft coral (malacalcyonacea) bleached`, `stylophora bleached`, `table acropora bleached`, `thin plate/encrusting coral bleached` |
 
 <!-- END GENERATED: label-conditions -->
 

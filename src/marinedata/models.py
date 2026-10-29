@@ -357,6 +357,21 @@ class OtherVersion(_Frozen):
     size_bytes: int | None = None
 
 
+class SourceLink(_Frozen):
+    """A declared stem-keyed link from the declaring source to another source's frames.
+
+    ``Source.links`` says "my frame ``<stem>`` is the same frame as the ``<stem>`` of
+    ``source_id``, re-exported": Coralscapes V2 re-annotates the V1 frames (the V2 stem equals
+    the V1 file stem without ``_leftImg8bit``) while image bytes and mask pixels differ, so
+    sha256 keying cannot pair them. Consumed by ``marinedata.release.stem_links``
+    (``declared_links`` / ``parse_link_decls``); ``Literal`` keeps the vocabulary closed.
+    """
+
+    source_id: str
+    key: Literal["stem"]
+    relation: Literal["re-annotation"]
+
+
 ExpectLevel = Literal["required", "expected", "none"]
 """PA-P2.4 metadata-gate expectation for one field: ``required`` (coverage floor 0.99),
 ``expected`` (floor 0.90) or ``none`` (not checked)."""
@@ -426,6 +441,11 @@ class Source(_Frozen):
     pixel copy of its own — a second label layer over an image pool it does not own.
     Referenced ids are validated to exist at registry load (see
     ``Registry._check_references``)."""
+
+    links: tuple[SourceLink, ...] = ()
+    """Stem-keyed links to other sources' frames (see :class:`SourceLink`): this source's
+    ``<stem>`` frames are re-exports of the named source's, paired by stem rather than by
+    digest. Empty for every source except the ones that declare a twin relation."""
 
     n_images: int | None = Field(
         default=None, description="Image (or still-frame) count; ``None`` when unknown"

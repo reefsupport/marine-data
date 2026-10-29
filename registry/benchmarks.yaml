@@ -137,3 +137,7 @@ benchmarks:
      upstream_split: {rule: "train/valid/test.txt frame lists (video-level)", eval_split: test, heldout_val: valid, counts: {frames: 14500}, definition_url: "https://vap.aau.dk/the-brackish-dataset/"},
      split_verified: false, verified_by: "HF mirror dronefreak/Brackish viewer errors; original not fetched", obtain: {status: registry-only, via: "original (never also the HF mirror)"},
      policy: route-to-our-test, policy_reason: "video frames; BrackishMOT shares the videos", chain: [c6, c9], decon_exempt_reason: "not staged: no sources/brackish/ in rs-storage-open (obtain.status=registry-only); no eval images to hash"}
+  - {id: coralscapes-v2, name: Coralscapes V2, task: sem-seg, catalog_id: coralscapes-v2, registry_id: coralscapes-v2,
+     upstream_split: {rule: "HF splits train/validation/test; V1 frames keep their V1 split (stem-linked twins)", eval_split: test, heldout_val: validation, counts: {train: 1790, validation: 170, test: 473}, definition_url: "https://huggingface.co/datasets/josauder/coralscapesV2"},
+     split_verified: true, verified_by: "HF card + datasets-server 1790/170/473 (2026-10-29, revision 8a4567b2)", obtain: {status: registry-only, via: "sources/coralscapes-v2/2.0 (staged on the build host; flipped to staged with the manifest)"},
+     policy: route-to-our-test, policy_reason: "we carry sem-seg; test must stay comparable; V2-only frames pin to the V2 test/validation split, V1 twins keep their V1 split (stem links)", chain: []}

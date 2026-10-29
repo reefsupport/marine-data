@@ -213,7 +213,7 @@ def test_gap_fills_sponge_anemone_and_algae_covered_substrate():
         s for s in ls.scheme_spec("benthic-coarse").sources
         if "ALGAE" in labels.supervised_classes(s, "benthic-coarse")
     ]  # fmt: skip
-    assert reaching_algae == ["coralscapes"]  # ALGAE has at least one mapped label
+    assert reaching_algae == ["coralscapes", "coralscapes-v2"]  # both map a label to ALGAE
 
 
 def test_reef_support_sources_are_unaffected_by_the_defaults():
@@ -269,7 +269,9 @@ def test_every_published_label_is_mapped_or_explicitly_ignored():
                     xw = ls._registry().crosswalk(spec.crosswalk)
                     assert xw.edge(label) is not None, (source, label)  # crosswalk decides
                 ls.resolve_class(source, label, scheme)  # never raises
-    assert seen == set(ls.sources())
+    # published-vocab snapshot predates v1.2.0;
+    # drop after scripts/dump_label_vocab.py is re-run post-publish
+    assert seen == set(ls.sources()) - {"coralscapes-v2"}
 
 
 def test_pixel_ids_match_the_published_class_maps():
@@ -307,7 +309,7 @@ def test_benthic_coarse_lut_equals_the_published_coarse_column_except_the_docume
 
 
 def test_dead_covers_exactly_the_documented_labels():
-    """``dead`` = RECENTLY_DEAD + OLD_DEAD; only Coralscapes carries such a condition today."""
+    """``dead`` = RECENTLY_DEAD + OLD_DEAD; only the two Coralscapes sources carry it."""
     assert ls.condition_aliases()["dead"] == ("RECENTLY_DEAD", "OLD_DEAD")
     dead_nodes = set(ls.condition_aliases()["dead"])
     carrying: set[tuple[str, str]] = set()
@@ -321,7 +323,8 @@ def test_dead_covers_exactly_the_documented_labels():
                 condition = edge.targets.get(Axis.CONDITION) if edge is not None else None
                 if condition and dead_nodes.intersection(ls._walk(condition)):
                     carrying.add((source, label))
-    assert carrying == {("coralscapes", label) for label in POLICY_DEAD}
+    assert {label for source, label in carrying if source == "coralscapes"} == set(POLICY_DEAD)
+    assert {source for source, _ in carrying} == {"coralscapes", "coralscapes-v2"}  # v1.2.0: V2 too
     assert ls.scheme_spec("scene").default_exclude_conditions == ()
 
 
@@ -560,3 +563,10 @@ def test_streamed_rows_remap_into_scheme_ids(capsys):
                     assert ids <= allowed | {None}, (source, scheme)
                     checked += 1
     assert checked >= 20
+
+
+def test_d11_black_coral_is_coral_in_the_binary_view_like_the_v1_twin_label():
+    """D11: V1 "other coral alive" -> HC and V2 "cirrhipathes" -> CN_ANTIPATHARIA must agree."""
+    coral = labels.map_label("coralscapes", "other coral alive", "coral-binary")
+    assert labels.map_label("coralscapes-v2", "cirrhipathes", "coral-binary") == coral
+    assert labels.map_label("coralscapes", "sponge", "coral-binary") != coral
