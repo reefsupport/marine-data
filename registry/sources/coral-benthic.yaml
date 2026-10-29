@@ -151,27 +151,17 @@ sources:
     legal_basis: licence
     provenance: public
     verification:
-      verified_on: 2026-09-11
+      verified_on: 2026-10-29
       verified_by: >
-        RESOLVED against the dataset's own HuggingFace repo: the API record for
-        josauder/coralscapesV2 (https://huggingface.co/api/datasets/josauder/coralscapesV2)
-        returns cardData.license = "apache-2.0" and carries the tag "license:apache-2.0".
-        Independently corroborated by the project homepage
-        https://josauder.github.io/coralscapesv2/, which states the release is Apache
-        2.0 licensed in prose. The dataset card's own descriptive README body (below the
-        licence-bearing YAML frontmatter) is stale — copy-pasted from the V1 card, still
-        describing "39 benthic classes" and citing the V1 paper — so only the
-        machine-readable cardData/tags fields were trusted for the licence, and only
-        id2label.json was trusted for the class list; the README prose class table was
-        not used for either. The fish instance masks (HF config "instances", in the same
-        repo) carry the identical apache-2.0 licence: one cardData.license field covers
-        all three configs (default/instances/sequences) in this single dataset
-        repository — they are not a separate artifact.
-        Addendum 2026-10-29: re-read at revision 8a4567b2 (card dated 2026-09-15, after the
-        check above). The README now carries the 95-row class table (Id, Name, Color, RGB,
-        Legacy 39-class) that matches id2label.json, and registry/crosswalks/coralscapes-95.yaml
-        is built from it, so the stale-body remark above no longer holds for the class table.
-        The licence reading is unchanged.
+        2026-10-29: the API record for josauder/coralscapesV2
+        (https://huggingface.co/api/datasets/josauder/coralscapesV2), read at revision 8a4567b2
+        (card dated 2026-09-15), returns cardData.license = "apache-2.0" and the tag
+        "license:apache-2.0"; the project homepage https://josauder.github.io/coralscapesv2/
+        states in prose that the release is Apache 2.0 licensed. One cardData.license field
+        covers all three configs (default, instances, sequences) of this single dataset
+        repository, so the fish instance masks carry the same licence. Class table and counts
+        checked against the pinned upstream `instances` parquet, HF revision 8a4567b2; staging
+        + root_digest recorded at build time.
       method: dataset-card
     access:
       method: huggingface
@@ -753,7 +743,7 @@ sources:
       upstream's own split leaks at the parent-image level, so it is never honoured
       (matches the v3i/v6i finding). The rule above groups by the coarser *site* token
       instead (236 groups, max 923 images in one site, `LaehouShallow`), the leak-safe
-      choice named in the brief.
+      choice made for this source.
     tags: [bleaching, public-domain]
     other_versions:
       - version: "rev-8175d66ef034"
@@ -1669,7 +1659,7 @@ sources:
       sha256 the restage itself computes (D-Z2 override of the general "never the
       images" rule, for this source only, pending the licence question above). The
       restage was attempted for real and immediately hit the campaign's disk floor
-      (df at 33.8 GiB free < the brief's 34 GiB floor) before uploading a single pair —
+      (df at 33.8 GiB free < the 34 GiB floor) before uploading a single pair —
       `DiskFloorError` raised by `DiskGuard.check()` before any S3 write, exactly as
       designed. Still NOT flipped to `staged-tree`: no bytes were restaged this pass.
       Resume path: re-run `coralseg.py`'s `main()` once free disk is safely above the
