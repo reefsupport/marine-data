@@ -42,10 +42,10 @@ def _row(reg, sid, counts):
     )  # fmt: skip
 
 
-def test_five_sources_are_registered_and_wired_into_the_semseg_config():
+def test_six_sources_are_registered_and_wired_into_the_semseg_config():
     assert set(mt.MASK_SOURCES) == {
         "coralscapes", "coralseg-ucsd-mosaics", "coralscop-masks-rs",
-        "reef-support-benthic-own", "suim",
+        "reef-support-benthic-own", "suim", "coralscapes-v2",
     }  # fmt: skip
     assert set(SEMSEG_SOURCES) == set(mt.MASK_SOURCES)
 

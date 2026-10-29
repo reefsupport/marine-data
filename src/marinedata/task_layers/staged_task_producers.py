@@ -28,7 +28,8 @@ from dataclasses import asdict
 
 from ..registry import Registry
 from .boxes_table import BOX_SOURCES, licence_split, staged_boxes, write_boxes
-from .masks_table import write_masks
+from .masks_table import MASK_SOURCES, write_masks
+from .producers.coralscapes_v2_instances import staged_masks_rows
 from .s3_keyed import StagedTree
 from .sources.masks_instance import INSTANCE_SOURCES, mapped_pct, staged_instance_rows
 from .staged_annotations import LayerProducer, ProducedLayer, ProducerContext, register_producer
@@ -87,6 +88,30 @@ def _run_instances(ctx: ProducerContext) -> ProducedLayer:
     return ProducedLayer(len(rows), len({r["image_sha256"] for r in rows}), detail)
 
 
+CORALSCAPES_V2 = "coralscapes-v2"
+
+
+def _run_coralscapes_v2(ctx: ProducerContext) -> ProducedLayer:
+    """One masks parquet for V2: the semantic rows (read by ``semseg``) then the fish instance rows
+    (read by ``instances``); ``mask_kind`` keeps each row in one config."""
+    spec = MASK_SOURCES[CORALSCAPES_V2]
+    tree = StagedTree(spec.tree, ctx.fetch)
+    rows = list(staged_masks_rows(tree, ctx.registry))
+    kinds: dict[str, int] = {}
+    for row in rows:
+        kinds[row["mask_kind"]] = kinds.get(row["mask_kind"], 0) + 1
+    detail = {"config": "semseg+instances", "mask_kinds": kinds, "missing": len(tree.missing)}
+    if not kinds.get("semantic"):
+        raise ValueError(f"no coralscapes-v2 semantic mask was read: {_diagnosis(detail)}")
+    write_masks(ctx.annotations_root, spec.source_id, spec.version, rows)
+    return ProducedLayer(len(rows), len({r["image_sha256"] for r in rows}), detail)
+
+
+register_producer(
+    LayerProducer(
+        "masks", CORALSCAPES_V2, _pinned(MASK_SOURCES[CORALSCAPES_V2].version), _run_coralscapes_v2
+    )
+)
 for _source in BOX_LAYER_SOURCES:
     register_producer(
         LayerProducer("boxes", _source, _pinned(BOX_SOURCES[_source].version), _run_boxes)

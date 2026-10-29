@@ -16,7 +16,8 @@ from .tasklabels import _load_label_status, _read_tasklabels
 def _mask_records(base_dir: Path, source_id: str) -> list[dict]:
     """Semantic mask rows of one source in the legacy semseg shape (``sha256``, ``label_origin``,
     ``mask_key``, ``class_counts``) plus the unified columns. The unified table wins; else the
-    legacy ``_tasklabels/<source>/semseg.parquet`` is read as before."""
+    legacy ``_tasklabels/<source>/semseg.parquet`` is read as before. Only semantic rows count: a
+    source whose masks parquet also holds instance rows (Coralscapes V2) must not leak them here."""
     unified = _annotation_masks(base_dir, source_id)
     if not unified:
         return _read_tasklabels(base_dir, source_id, "semseg")
@@ -43,6 +44,7 @@ def _mask_records(base_dir: Path, source_id: str) -> list[dict]:
             "mask_parts": _attrs(r).get("mask_parts"),
         }
         for r in unified
+        if r.get("mask_kind") in (None, "semantic")
     ]
 
 
