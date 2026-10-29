@@ -316,3 +316,51 @@ def test_generate_split_map_wires_the_stem_links(tmp_path, monkeypatch):
     assert block["twins"] == 2
     assert block == ref["inherits"]["stem_links"]
     assert got["assignments"] == ref["assignments"]
+
+
+def test_generate_split_map_drops_the_pin_v1_refuses_and_counts_new_and_moved(
+    tmp_path, monkeypatch
+):
+    """INT-2: end to end through the real generator with a frozen v1.0 map and three V2 pins.
+
+    Counter names: "new" is ``declaring_only`` (a V2 frame without a V1 twin), "moved" is the
+    ``upstream_vs_v1`` conflict (a twin whose V2 split differs from v1.0; V1 wins) and the
+    ``pins.v1_continuity_overridden`` image count (v1.0 images a pin moved: 0 while v1.0 is
+    frozen)."""
+    from marinedata.registry import Registry
+    from marinedata.release import split_map as sm
+
+    rows, entries, tree = world(
+        twins=[(S1, "test", "test"), (S2, "train", "test")],
+        v1_only=[(S4, "train")],
+        v2_only=[(S9, "test")],
+    )
+    pins = BenchmarkPins(
+        by_sha={
+            f"{V2[-2:]}-{S1}": ("test", V2),  # identical splits: v1.0 accepts it
+            f"{V2[-2:]}-{S2}": ("test", V2),  # v1.0 published train: refused, dropped
+            f"{V2[-2:]}-{S9}": ("test", V2),  # no V1 twin: follows its pin
+        }
+    )
+    monkeypatch.setattr(sm, "enumerate_release_rows", lambda *a, **k: iter(rows))
+    monkeypatch.setattr(sm, "linked_entries", lambda *a, **k: entries)
+    out = tmp_path / "gen" / "SPLIT_MAP.json"
+    out.parent.mkdir()
+    sm.generate_split_map(
+        Registry.load(), out=out, roots={V1: tmp_path, V2: tmp_path}, ratios=RATIOS, seed=1,
+        now=NOW, release="v1.2.0", min_groups=1, inherit_tree=V1Tree(splits=tree),
+        benchmark_pins=pins,
+    )  # fmt: skip
+    got = json.loads(out.read_text())
+    plan, _, dropped, _, _ = pipeline(tmp_path, rows, entries, tree, pins)
+    assigned = got["assignments"]
+    split_of = {g: assigned.get(g) or assigned.get(plan.canonical[g]) for _, g, _ in rows}
+    assert split_of[f"{V1}/site1"] == split_of[f"{V2}/site1"] == "test"  # identical: nothing moved
+    moved = ((got.get("pins") or {}).get("v1_continuity_overridden") or {}).get("images", 0)
+    assert moved == 0
+    assert split_of[f"{V1}/site2"] == split_of[f"{V2}/site2"] == "train"  # changed twin: V1 wins
+    assert [(c.kind, c.stem) for c in dropped] == [("pin_dropped", S2)]
+    assert split_of[f"{V2}/site9"] == "test"  # new frame follows its pin
+    block = got["inherits"]["stem_links"]
+    assert (block["twins"], block["declaring_only"], block["target_only"]) == (2, 1, 1)
+    assert block["conflicts"]["by_kind"] == {"pin_dropped": 1, "upstream_vs_v1": 1}
