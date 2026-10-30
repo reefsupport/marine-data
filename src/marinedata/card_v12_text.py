@@ -269,7 +269,11 @@ def _changed(sources: Iterable[Mapping]) -> str:
         "- `instances` holds the V2 instance masks as `uint16` PNGs, unchanged from upstream: a "
         "pixel below 2000 is the class id of a stuff class, a pixel of 2000 or more is "
         "`class_id * 2000 + instance_index`, and fish is class 25. The upstream card reports "
-        f"{V2_FISH_MASKS:,} fish instance masks."
+        f"{V2_FISH_MASKS:,} fish instance masks.\n"
+        "- `mask_ref` is the object key in the public bucket for the sources built by the unified "
+        "masks table (in v1.2.0: Coralscapes V2, `sources/<source_id>/<version>/labels/...`), and "
+        "the path relative to the source's staged tree `sources/<source_id>/<version>/` for the "
+        "earlier sources."
     )
 
 

@@ -77,6 +77,10 @@ def test_section_states_the_release_facts():
         v12.V2_REVISION, "Apache-2.0", "taxonomy 3.1.0", "CN_ANTIPATHARIA", "22549", "125269",
         "146762", "docs/label-matching.md", "2,074", "site30", "uint16", "1,790",
         "Downstream model pins are unchanged", "josauder", "@inproceedings{sauder2026",
+        "- `mask_ref` is the object key in the public bucket",
+        "(in v1.2.0: Coralscapes V2, `sources/<source_id>/<version>/labels/...`)",
+        "the path relative to the source's staged tree `sources/<source_id>/<version>/`",
+        "for the earlier sources.",
     ):  # fmt: skip
         assert needle in text, needle
     assert "<<" not in text and ">>" not in text

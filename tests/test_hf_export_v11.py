@@ -232,6 +232,30 @@ def test_semseg_palette_png_only_for_masks_no_v1_config_holds(registry, build, t
     assert old["mask"] is None and old["mask_bytes_sha256"] is None
 
 
+def test_a_bucket_key_mask_ref_embeds_the_same_png_as_a_tree_relative_one(
+    registry, build, tmp_path
+):
+    """The unified masks table writes ``sources/<sid>/<ver>/<path>``, legacy tables ``<path>``."""
+    sid, table = "reef-support-bleaching", build[0] / "task_layers" / "semseg.parquet"
+
+    def semseg_row(mask_ref: str, out: str) -> dict:
+        rows = [{**r, "mask_ref": mask_ref} if r["source_id"] == sid else r
+                for r in pq.read_table(table).to_pylist()]  # fmt: skip
+        _write(build[0], "semseg", rows)
+        export_v11(_layout(registry, build)[0], tmp_path / out)
+        return next(r for r in _rows(tmp_path / out, "semseg") if r["source_id"] == sid)
+
+    relative = semseg_row("labels/m.png", "relative")
+    keyed = semseg_row(f"sources/{sid}/2.0/labels/m.png", "keyed")
+    assert relative["mask_config"] is keyed["mask_config"] is None
+    assert keyed["mask_ref"] == f"sources/{sid}/2.0/labels/m.png"
+    assert keyed["mask"]["bytes"] == relative["mask"]["bytes"]
+    assert keyed["mask_bytes_sha256"] == relative["mask_bytes_sha256"]
+    # only the row's own source prefix is stripped: another source's key is still not found
+    with pytest.raises(V11ExportError, match=rf"{sid}: mask sources/suim/2\.0/labels/m\.png not"):
+        semseg_row("sources/suim/2.0/labels/m.png", "other")
+
+
 def test_nc_rows_never_reach_the_open_export(registry, build, tmp_path):
     layout, report = _layout(registry, build)
     export_v11(layout, tmp_path / "out")
