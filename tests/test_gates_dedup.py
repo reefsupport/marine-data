@@ -49,6 +49,15 @@ def test_failure_modes(tmp_path, kind, extra):
     assert not result.passed and _has(result, kind), result.failures
 
 
+def test_the_linked_twins_count_is_always_reported_and_is_zero_without_a_linked_pair(tmp_path):
+    result = run_dedup_gate(_build(tmp_path))  # no link table: nothing can be a linked twin
+    assert result.passed, result.failures
+    assert type(result.counts["near_pairs_linked_twins"]) is int
+    assert result.counts["near_pairs_linked_twins"] == 0
+    failing = run_dedup_gate(_build(tmp_path / "dup", Img(0, "test", group="gx")))
+    assert not failing.passed and failing.counts["near_pairs_linked_twins"] == 0
+
+
 def test_near_pair_inside_one_split_and_source_is_counted_not_failed(tmp_path):
     result = run_dedup_gate(_build(tmp_path, Img(0, shift=6, group="gk")))
     assert result.passed, result.failures

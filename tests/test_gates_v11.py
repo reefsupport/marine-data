@@ -179,6 +179,51 @@ def test_join_refuses_an_nc_build_in_the_open_flavour(tmp_path):
     assert f"metadata {SHAS[1][:12]} ({NC_CLASS}) is not an open image" in result.failures
 
 
+IMG3_SHARD = Path("data") / "images" / "train-00000-of-00001.parquet"  # img3 is its only row
+V1_SETS = {"v1_sha256": {SHAS[0]}, "v1_configs": {"coralseg"}}
+
+
+def additive_build(tmp_path: Path) -> tuple[Path, Path]:
+    """The small build as an additive export ships it: img3's pixels moved to the prior release's
+    ``images`` shards, and its metadata row keeps ``bytes_config = images``. ``(build, v1)``."""
+    build, v1 = build_release(tmp_path), write_v1(tmp_path)
+    (v1 / IMG3_SHARD).parent.mkdir(parents=True)
+    shutil.move(build / IMG3_SHARD, v1 / IMG3_SHARD)
+    return build, v1
+
+
+def test_join_resolves_images_bytes_against_the_prior_releases_images_shards(tmp_path):
+    build, v1 = additive_build(tmp_path / "additive")
+    result = run_join_gate(build, v1_dir=v1, **V1_SETS)
+    assert result.passed, result.failures
+    whole = run_join_gate(build_release(tmp_path / "whole"), **V1_SETS)
+    assert dict(result.counts) == dict(whole.counts)  # the same rows join; no count moved
+    assert result.counts["metadata_rows"] == 4 and result.counts["points_joined"] == 4
+
+
+def test_join_still_fails_an_images_row_that_no_images_shard_holds(tmp_path):
+    build, v1 = additive_build(tmp_path)
+    (v1 / IMG3_SHARD).unlink()
+    write_shard(v1, "images", "train", [{"image_sha256": "e" * 64}])  # another prior-release image
+    line = f"metadata {SHAS[3][:12]}: bytes_config=images, not in images"
+    for options in ({"v1_dir": v1}, {}):  # a prior release without the pixels, and no --v1-dir
+        result = run_join_gate(build, **V1_SETS, **options)
+        assert not result.passed and failed(result, "unresolved") == 1
+        assert line in result.failures
+
+
+def test_join_with_a_v1_0_shaped_v1_dir_behaves_as_before(tmp_path):
+    build, v1 = build_release(tmp_path), write_v1(tmp_path)
+    assert not (v1 / "data" / "images").exists()  # v1.0 ships coralseg and no images config
+    before = run_join_gate(build, **V1_SETS)
+    after = run_join_gate(build, v1_dir=v1, **V1_SETS)
+    assert after.passed and dict(after.counts) == dict(before.counts)
+    (build / IMG3_SHARD).unlink()  # img3's pixels are nowhere: both runs fail the same way
+    before, after = run_join_gate(build, **V1_SETS), run_join_gate(build, v1_dir=v1, **V1_SETS)
+    assert failed(before, "unresolved") == failed(after, "unresolved") == 1
+    assert before.failures == after.failures
+
+
 # G2 frozen v1.0
 
 

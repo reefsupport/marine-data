@@ -15,7 +15,14 @@ from pathlib import Path
 
 import pytest
 from PIL import Image
-from test_gates_v11 import SHAS, build_release, write_report, write_shard, write_v1
+from test_gates_v11 import (
+    SHAS,
+    additive_build,
+    build_release,
+    write_report,
+    write_shard,
+    write_v1,
+)
 
 from marinedata.cli import main
 from marinedata.gates import (
@@ -103,6 +110,12 @@ def test_e2e_real_join_leak_splits_pass_then_a_join_failure_blocks(tmp_path, mon
     assert main(["release", "gate", str(build), "--v1-dir", str(v1)]) == 1
     assert entries(build)["join"]["passed"] is False
     assert any(p.startswith("gate join: failed") for p in publish_verdict(build)[1])
+
+
+def test_join_gate_reads_the_prior_release_images_through_v1_dir(tmp_path):
+    build, v1 = additive_build(tmp_path)  # img3's pixels live in the prior release's images shard
+    assert run_v11_gate("join", build, V11Options(v1_dir=v1)).passed
+    assert not run_v11_gate("join", build, V11Options()).passed  # without --v1-dir they are nowhere
 
 
 @pytest.mark.parametrize("how", ["fail", "skip"])

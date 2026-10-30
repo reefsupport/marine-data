@@ -32,9 +32,11 @@ the split-map stage (:class:`marinedata.neardup.UnionConfirm`). A re-host or re-
 within 32), a flat frame (entropy below 4.0) and bytes that cannot be re-read all still fail.
 
 A near pair of two stem-linked twins in ONE split is one link group, not a leak: it is counted as
-``near_pairs_linked_twins`` with a capped sample and never fails. Every other near pair (a V2 frame
-and an unrelated V1 image in another group or split) is judged as before. ``stem_link_*`` counters
-expose the map's twins and its V1-wins conflicts.
+``near_pairs_linked_twins`` with a capped sample and never fails. The counter is always an int, 0
+when no linked pair is among the scanned images (an additive export keeps the V1 twins' pixels in
+the prior release's shards, so it scans none of them). Every other near pair (a V2 frame and an
+unrelated V1 image in another group or split) is judged as before. ``stem_link_*`` counters expose
+the map's twins and its V1-wins conflicts.
 
 A build with no image bytes (tsv-only) is ``skipped`` with the reason, never passed."""
 
@@ -164,6 +166,7 @@ def run_dedup_gate(
 
     links = load_link_table(build_dir, release_dir)
     counts: Counter = Counter(images=len(records))
+    counts[LINKED] = 0  # always an int: the card reads it, and an additive export never increments
     failures: list[str] = []
     in_family: list[str] = []
     linked: list[str] = []

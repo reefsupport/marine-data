@@ -126,13 +126,26 @@ def test_the_gate_slots_are_filled_by_the_runbook_step():
     numbers = {"V120_GATES_RUN": 12, "V120_DEDUP_LINKED": 2074, "V120_SPLIT_TWIN_GROUPS": 2074}
     assert all(f"[[{slot}]]" in v12.GATES_PARAGRAPH for slot in v12.GATE_SLOTS)
     filled = v12.fill_gates(f"a {v12.GATES_PARAGRAPH} b", numbers)
-    assert "[[" not in filled and "2074 V1/V2 twin pairs" in filled
+    assert "[[" not in filled and "checks the 2074 V1/V2 stem-linked twin pairs" in filled
+    assert "reports 2074 such pairs among the images stored in this release" in filled
     with pytest.raises(ValueError, match="missing"):
         v12.fill_gates(v12.GATES_PARAGRAPH, {"V120_GATES_RUN": 12})
     with pytest.raises(ValueError, match="unknown"):
         v12.fill_gates(v12.GATES_PARAGRAPH, {**numbers, "OTHER": 1})
     with pytest.raises(ValueError, match="no \\[\\[V120_GATES_RUN\\]\\] slot"):
         v12.fill_gates("no slots here", numbers)
+
+
+def test_a_zero_linked_twin_count_fills_and_reads_honestly():
+    numbers = {"V120_GATES_RUN": 12, "V120_DEDUP_LINKED": 0, "V120_SPLIT_TWIN_GROUPS": 2074}
+    filled = v12.fill_gates(v12.GATES_PARAGRAPH, numbers)
+    assert (
+        "[[" not in filled
+        and "reports 0 such pairs among the images stored in this release" in filled
+    )
+    assert "V1 pixels stay in the earlier shards and are not re-scanned" in filled
+    assert "checks the 2074 V1/V2 stem-linked twin pairs and finds none split apart" in filled
+    assert "`provenance/GATES.json`" in filled
 
 
 def test_the_v1_2_0_card_keeps_the_v1_1_1_history():
@@ -282,6 +295,15 @@ def _stage(registry, build, tmp_path, monkeypatch, *extra: str) -> tuple[int, st
     return code, (out / "README.md").read_text()
 
 
+def test_gate_numbers_accept_a_zero_linked_twin_count():
+    zero = {"passed": True, "counts": {"near_pairs_linked_twins": 0}, "failures": []}
+    assert v12.gate_numbers({**GATES, "dedup": zero}) == {**NUMBERS, "V120_DEDUP_LINKED": 0}
+    for bad in (True, None, "0", 0.0):  # present but not a count
+        gates = {**GATES, "dedup": {**zero, "counts": {"near_pairs_linked_twins": bad}}}
+        with pytest.raises(ValueError, match="missing or not a count"):
+            v12.gate_numbers(gates)
+
+
 def test_gate_numbers_come_from_gates_json_and_refuse_a_gate_that_did_not_pass():
     assert v12.gate_numbers(GATES) == NUMBERS
     skipped = {**GATES, "splits": {**GATES["splits"], "passed": False, "skipped": "no map"}}
@@ -296,14 +318,18 @@ def test_gate_numbers_come_from_gates_json_and_refuse_a_gate_that_did_not_pass()
         v12.gate_numbers({**GATES, "dedup": {"passed": True, "counts": {}}})
 
 
+@pytest.mark.parametrize("linked", [2074, 0])  # 0: an additive export scans no linked pair
 def test_card_stage_fills_the_gate_slots_from_gates_json(
-    registry, build, tmp_path, monkeypatch, capsys
+    registry, build, tmp_path, monkeypatch, capsys, linked
 ):
+    dedup = {"passed": True, "counts": {"near_pairs_linked_twins": linked}, "failures": []}
     gates = tmp_path / "GATES.json"
-    gates.write_text(json.dumps(GATES))
+    gates.write_text(json.dumps({**GATES, "dedup": dedup}))
     code, card = _stage(registry, build, tmp_path, monkeypatch, "--gates-json", str(gates))
     assert code == 0 and "[[" not in card and "<<" not in card
-    assert "**v1.2.0 gates.** 3 gates ran" in card and "2074 V1/V2 twin pairs" in card
+    assert "**v1.2.0 gates.** 3 gates ran" in card
+    assert "checks the 2074 V1/V2 stem-linked twin pairs" in card
+    assert f"reports {linked} such pairs among the images stored in this release" in card
     assert "WARNING" not in capsys.readouterr().err
 
 

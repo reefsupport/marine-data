@@ -1,9 +1,12 @@
 """G1 join coverage: every row of every v1.1.0 table joins to ``metadata`` on ``image_sha256``.
 
-* ``metadata`` is one row per image; its bytes resolve: ``bytes_config = images`` -> the image is
-  in ``images``; otherwise a v1.0 config that holds it (and, with ``--v1-dir``, the sha is there).
-* every ``images`` row has a metadata row; every row of ``points`` / ``bleaching`` / ``boxes`` /
-  ``semseg`` / ``instances`` joins (100 %, no tolerance, a null key is a miss).
+* ``metadata`` is one row per image; its bytes resolve: ``bytes_config = images`` -> the sha is in
+  the build's ``images`` or, with ``--v1-dir``, in the prior release's ``images`` shards (an
+  additive export ships only its new pixels); otherwise a v1.0 config that holds it (and, with
+  ``--v1-dir``, the sha is there).
+* every ``images`` row of the build has a metadata row (prior-release images are not re-checked);
+  every row of ``points`` / ``bleaching`` / ``boxes`` / ``semseg`` / ``instances`` joins (100 %, no
+  tolerance, a null key is a miss).
 * rows join images of their own flavour, compared by licence class and never by flavour name: a
   ``metadata`` row's ``licence_class``, and that of the image a label row joins, is the flavour's
   class (``FLAVOURS``: open -> ``open``, nc -> ``restricted-nc``), else ``not_flavour`` /
@@ -30,6 +33,7 @@ def run_join_gate(
     nc_ids: Collection[str] = frozenset(),
     v1_sha256: Collection[str] | None = None,
     v1_configs: Collection[str] = (),
+    v1_dir: Path | None = None,
 ) -> GateResult:
     build, out = Path(build_dir), Collector()
     want = FLAVOURS[flavour]
@@ -38,6 +42,11 @@ def run_join_gate(
         out.fail("no_metadata", "no metadata config: nothing to join to")
         return out.result(NAME)
     images = set(column_values(shards(build, IMAGES), "image_sha256"))
+    prior_images = (  # an additive export keeps the prior release's pixels in its images shards
+        {s for s in column_values(shards(Path(v1_dir), IMAGES), "image_sha256") if s}
+        if v1_dir is not None
+        else set()
+    )
     meta: dict[str, tuple[str | None, str | None]] = {}
     cols = ("image_sha256", "source_id", "licence_class", "bytes_config")
     for row in table_rows(meta_files, cols):
@@ -54,7 +63,7 @@ def run_join_gate(
             out.fail("not_flavour", f"metadata {sha[:12]} ({lic}) is not an {flavour} image")
         config = row.get("bytes_config")
         if config == IMAGES:
-            if sha not in images:
+            if sha not in images and sha not in prior_images:
                 out.fail("unresolved", f"metadata {sha[:12]}: bytes_config=images, not in images")
         elif not config:
             out.fail("unresolved", f"metadata {sha[:12]}: no bytes_config")

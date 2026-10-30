@@ -274,7 +274,8 @@ The gate stage writes that file into the export folder after the card stage, so 
 second time with the flag, after the gates and before `release publish` uploads the `card` part. The
 numbers are read, never typed: `V120_GATES_RUN` is the count of gates in the file that did not skip,
 `V120_DEDUP_LINKED` is `dedup.counts.near_pairs_linked_twins` and `V120_SPLIT_TWIN_GROUPS` is
-`splits.counts.stem_link_twins`. The command stops with an error when the `dedup` or `splits` gate did not
+`splits.counts.stem_link_twins`. `near_pairs_linked_twins` is 0 whenever the twins' pixels live in a
+prior release (an additive export), and the card says so. The command stops with an error when the `dedup` or `splits` gate did not
 pass, when a counter is missing, or when the splits gate found a twin pair apart. Without the flag the
 slots stay in the README and the command prints a `WARNING` on stderr that lists them (expected at the
 card stage, which runs before the gates); a card that still lists a slot must not be published.
@@ -283,3 +284,5 @@ card stage, which runs before the gates); a card that still lists a slot must no
 python -m marinedata.hf_card --release-dir "$R" --summary <export summary> --out "$B" \
   --flavour open --citation /app/CITATION.cff --gates-json "$B/GATES.json"
 ```
+
+The `join` gate resolves `bytes_config = images` against the `images` shards of `--v1-dir` as well as the build's own (an additive export ships only new pixels), while `frozen` must be run with `--v1-dir` pointing at the v1.0 snapshot, because only v1.0 files are frozen: `marinedata release gate <EXPORT> --v11 --only frozen --flavour open --release-dir <REL> --v1-dir <v1.0 snapshot>`.

@@ -226,12 +226,14 @@ def version_rows(v1_date: str, v1_note: str, built: str | None) -> list[tuple[st
 # Named gate slots of the v1.2.0 "Build and gates" text. The build host fills them from
 # ``provenance/GATES.json`` with :func:`fill_gates` (release runbook, step 7); the card stage does
 # it when it gets ``--gates-json`` (:func:`fill_from_gates`).
-GATE_SLOTS = ("V120_GATES_RUN", "V120_DEDUP_LINKED", "V120_SPLIT_TWIN_GROUPS")
+GATE_SLOTS = ("V120_GATES_RUN", "V120_SPLIT_TWIN_GROUPS", "V120_DEDUP_LINKED")  # card order
 GATES_PARAGRAPH = (
-    "**v1.2.0 gates.** [[V120_GATES_RUN]] gates ran on the build host. The dedup gate reports "
-    "[[V120_DEDUP_LINKED]] V1/V2 twin pairs as one link group (`LINKED`), not as a cross-split "
-    "leak, and the splits gate finds [[V120_SPLIT_TWIN_GROUPS]] twin groups on one side of the "
-    "split. The numbers are in `provenance/GATES.json`."
+    "**v1.2.0 gates.** [[V120_GATES_RUN]] gates ran on the build host. The splits gate checks the "
+    "[[V120_SPLIT_TWIN_GROUPS]] V1/V2 stem-linked twin pairs and finds none split apart. The dedup "
+    "gate treats a near-duplicate pair of linked twins as one group rather than a leak and reports "
+    "[[V120_DEDUP_LINKED]] such pairs among the images stored in this release; V1 pixels stay in "
+    "the earlier shards and are not re-scanned, so that count covers only pairs shipped here. The "
+    "numbers are in `provenance/GATES.json`."
 )
 
 
@@ -447,7 +449,9 @@ def gate_numbers(gates: Mapping[str, object]) -> dict[str, int]:
     ``dedup.counts.near_pairs_linked_twins`` and ``V120_SPLIT_TWIN_GROUPS`` is
     ``splits.counts.stem_link_twins``. Raises ``ValueError`` instead of printing a number the
     gates did not measure: a ``dedup`` or ``splits`` gate that did not pass, a missing counter, or
-    a twin pair the splits gate found in two splits."""
+    a twin pair the splits gate found in two splits. A counter of 0 is a measurement, not a gap
+    (an additive export keeps the V1 twins' pixels in the prior release, so dedup scans no linked
+    pair): the check is on the type, never on truthiness."""
     from .gates import SUMMARY_KEY, gate_status
     from .gates.dedup import LINKED
 
