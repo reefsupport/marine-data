@@ -1,0 +1,107 @@
+release_id: v1.2.0
+created: '2026-10-29T23:54:41+00:00'
+code_sha: a0b85891de7f61454f5fef90e6a1aec873af0cb7
+flavour: open
+configs:
+- coral-masks
+- scene-masks
+- instance-masks
+- fish-boxes
+- images
+- metadata
+- points
+- bleaching
+- boxes
+- semseg
+- instances
+- condition-masks
+sources:
+- id: coralscapes
+  version: '1.0'
+  root_digest: da0ed5b386664e73176cbde0654771509f5f208f22d63c26d2d1d42963826a3e
+  n_images: 2075
+  access_class: open
+- id: coralscapes-v2
+  version: '2.0'
+  root_digest: 66f21bd53b05fa7183ff23d7eeace789705c1f747bc9c1741c85fcce72cc78f5
+  n_images: 2433
+  access_class: open
+- id: noaa-pifsc-bleaching
+  version: 1-image-labels
+  root_digest: 655165d2409fd038df530e68b5132cb509c1d0dbb350ad380b50065539ae8ddc
+  n_images: 10419
+  access_class: open
+- id: reef-support-benthic-own
+  version: '2026-10-06'
+  root_digest: 70f0b4516510f565320910477204faadf44bce68251b66d070821db1864e7a74
+  n_images: 1250
+  access_class: open
+- id: reef-support-bleaching
+  version: '2026-09-24'
+  root_digest: 2d22bbe938f4a69d9cd2ca13ef123b88195dc7722cad39a4a940b147717ae04a
+  n_images: 658
+  access_class: open
+- id: reef-support-seaview-labels
+  version: '2026-10-06'
+  root_digest: 7c97e309ae21b913d920606e461e9a663c97c9b660c45accd8c13a3ab4d2d011
+  n_images: 2707
+  access_class: open
+- id: roboflow-aquarium
+  version: zip-5d30fed3dd5a
+  root_digest: c9b4677f9e11329321c1f381e72bac08c1ec27e3b23a93858d83554efe8e28d1
+  n_images: 638
+  access_class: open
+- id: roboflow-coral-bleaching-final-v6i
+  version: v6i-image-labels-r2
+  root_digest: da617d411c97fd28b3663d21455cc79e0ff7180726be4708311817946d56c473
+  n_images: 2551
+  access_class: open
+- id: roboflow-coral-bleaching-general-v1-yolov8s
+  version: v1-yolov8s-image-labels-r2
+  root_digest: dae37098cfc58536cbbacc23bcd765d47925cb5fe2ea556910c16d4880560d28
+  n_images: 2543
+  access_class: open
+- id: roboflow-coral-classification-copy-changed-v13i
+  version: v13i-image-labels
+  root_digest: 86da47568aa97a8326169fc173573b63987c16a08c32a1f4e315c6d516a5bdfb
+  n_images: 2789
+  access_class: open
+- id: roboflow-coral-reef-classification-v3i
+  version: v3i-image-labels
+  root_digest: 17e31b15399c46dfd9816e7ab5ad7dded9599f464db9258e83f96e16402f9655
+  n_images: 4556
+  access_class: open
+- id: seaview-survey-imagery
+  version: '2026-10-06'
+  root_digest: 62cd8f47cae32a420c79954d72f8c2a2bfcd5019eb23fb996670fc8ad2e7ac86
+  n_images: 11870
+  access_class: open
+- id: suim
+  version: '2020'
+  root_digest: f7a9ea260f37ead52c20990bfc88b11c10b20dce96faa84a8f477e6f259aba95
+  n_images: 1598
+  access_class: open
+- id: uiis
+  version: rev-44ca5db46599
+  root_digest: 665f217331362fb3f04f386e92ef9d764abad0b721d6c7c6c8f199d94feec119
+  n_images: 4628
+  access_class: open
+- id: uiis10k
+  version: rev-5c4316368a8e
+  root_digest: db2b3b8ad13723fdf32f57d7c9b9205de2ff151af95c97e15ae613662412e71d
+  n_images: 10048
+  access_class: open
+- id: usis10k
+  version: rev-b10f41ab819b
+  root_digest: b09022870191d59a08a260c2bbadd15f396f12dc9ff114fd13814f147708c513
+  n_images: 10632
+  access_class: open
+excluded:
+  noaa-pifsc-esa-coral-icra: 'deferred to v1.2: not in the v1.1.0 fetch list (vm-build-plan
+    4.3, md-design 2)'
+  marineevt: 'deferred to v1.2: not in the v1.1.0 fetch list (vm-build-plan 4.3, md-design
+    2); staged tree 33.8 GiB'
+  salmon-cage: 'deferred to v1.2: not in the v1.1.0 fetch list (vm-build-plan 4.3,
+    md-design 2)'
+  oceaninstruct: 'non-image-modality: instruction text; 10000 label keys staged, 0
+    images'
