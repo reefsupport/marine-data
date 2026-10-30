@@ -364,14 +364,19 @@ def _attrs(row: Mapping) -> dict:
 
 def palette_mask(row: Mapping, roots: Mapping[str, Path]) -> bytes | None:
     """The palette PNG (mode ``P``, declared palette) of a semseg row no v1.0 config holds, else
-    ``None`` (the mask lives in its ``mask_config``, or the row has no mask)."""
+    ``None`` (the mask lives in its ``mask_config``, or the row has no mask).
+
+    A ``mask_ref`` may be a bucket key (unified masks table) or tree-relative (legacy tables)."""
     ref = row.get("mask_ref") or row.get("mask_key")
     if row.get("mask_config") or not ref:
         return None
     from .task_layers.mask_encode import encoding_for, semantic_png
 
     sid, root = row["source_id"], Path(roots[row["source_id"]])
-    found = next((p for p in (root / ref, root / "labels" / ref) if p.is_file()), None)
+    # a bucket key, sources/<sid>/<version>/<path>, names the file by its path in the staged tree
+    parts = ref.split("/", 3)
+    rel = parts[3] if len(parts) == 4 and parts[:2] == ["sources", sid] else ref
+    found = next((p for p in (root / rel, root / "labels" / rel) if p.is_file()), None)
     if found is None:
         raise V11ExportError(f"{sid}: mask {ref} not found under its staged tree")
     encoding = encoding_for(sid, row.get("mask_encoding") or _attrs(row).get("mask_encoding"))
