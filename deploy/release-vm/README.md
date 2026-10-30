@@ -15,10 +15,10 @@ passes `--go`.
 |---|---|---|
 | lock | host check: the lock and the split map are in the checkout; prints their sha256 | `/data/logs/lock.log` |
 | build | `marinedata release build --release ID --flavour F --lock ... --split-map ... --out /data` | `/data/releases/ID/F/` (`RELEASE.json`, `tasks/`) |
-| export | `python -m marinedata.hf_export` writes the shards and the summary only; `python -m marinedata.hf_card ... --citation /app/CITATION.cff` then renders the card and writes `LICENSE`, `NOTICE` and `CITATION.cff` (the repo's file, the same input as the croissant stage) | `/data/export/ID/F/` (`data/`, `README.md`, `LICENSE`, `NOTICE`, `CITATION.cff`) and `/data/export/ID/F.summary.json` |
+| export | `python -m marinedata.hf_export` writes the shards and the summary only; `python -m marinedata.hf_card ... --citation /app/CITATION.cff` then renders the card and writes `LICENSE`, `NOTICE` and `CITATION.cff` (the repo's file, the same input as the croissant stage) For an additive release `CARD_ARGS` adds flags to the card stage, e.g. `CARD_ARGS="--v1-dir /data/v1-repo"` (the Hub repo before the publish): the card then declares every prior config the build does not ship (`condition-masks` among them). | `/data/export/ID/F/` (`data/`, `README.md`, `LICENSE`, `NOTICE`, `CITATION.cff`) and `/data/export/ID/F.summary.json` |
 | croissant | `marinedata release croissant DIR --release-dir ... --citation /app/CITATION.cff --repo-id R` (R is read from `registry/flavours.yaml`) | `croissant.json` in the export folder |
-| gate | `marinedata release gate DIR --all --require-all [--v1-dir V]`, then `marinedata release gate DIR --v11` (G1..G9; `GATE_V11_ARGS` carries `--v1-dir V` and the manifests, and the `--v1-dir V` in it also goes to the `--all` call so its card, load and masks gates count the frozen v1.0 configs; the wrapper passes the pinned YuNet model path) | `GATES.json` in the export folder |
-| plan | `marinedata release publish ...` without `--go` (`PLAN_ARGS`, e.g. `--v1-dir`, adds the v1.0 delta) | `/data/logs/plan.log` |
+| gate | `marinedata release gate DIR --all --require-all [--v1-dir V]`, then `marinedata release gate DIR --v11` (G1..G10; `GATE_V11_ARGS` carries `--v1-dir V` and the manifests, and the `--v1-dir V` in it also goes to the `--all` call so its card, load and masks gates count the frozen v1.0 configs; the wrapper passes the pinned YuNet model path) `publish_tree` (G10) compares the export with the Hub repo as it is before the publish: after the full run, re-run `marinedata release gate DIR --v11 --only publish_tree --v1-dir <Hub snapshot>` (`GATE_V11_ARGS` carries the frozen v1.0 repo as `--v1-dir`). `release publish --go` refuses without a passed `publish_tree`. | `GATES.json` in the export folder |
+| plan | `marinedata release publish ...` without `--go` (`PLAN_ARGS`, e.g. `--v1-dir`, adds the delta against the prior tree) | `/data/logs/plan.log` |
 
 `STAGES` defaults to `lock build export croissant gate plan`. Without `croissant` there is no
 `croissant.json`, the croissant gate skips and `--require-all` cannot pass. An **empty** `STAGES=""` is
@@ -318,3 +318,11 @@ Also open:
   `release build` flags with `create.sh --build-args`, and expect the `dedup` and `splits` gates from
   `gate --all`. Step 7 is skipped. Export and card have not run on a real corpus.
 - The image is built on the VM (x86_64). A local arm64 `make image` is only a smoke test.
+
+## Additive releases: `CARD_ARGS`, `publish_tree` and the `--go` guard
+
+The upload never deletes, so the Hub repo after a publish is the export folder plus every prior file the export does not overwrite. Three things keep that tree consistent:
+
+- `CARD_ARGS` (read by `bootstrap.sh` like `EXPORT_ARGS` and `PLAN_ARGS`) adds flags to the card stage. Set `CARD_ARGS="--v1-dir /data/v1-repo"`, a checkout of the Hub repo as it is before this publish, so that the card declares every config folder the Hub keeps and not only the four v1.0 ones.
+- `publish_tree` (G10) checks the tree the Hub will hold. The full `--v11` run takes its `--v1-dir` from `GATE_V11_ARGS`, the frozen v1.0 repo, so run the gate again against the Hub snapshot: `marinedata release gate DIR --v11 --only publish_tree --v1-dir /data/v1-repo`. The new entry replaces the earlier one in `GATES.json`.
+- `marinedata release publish ... --go` refuses unless `GATES.json` shows `publish_tree` passed; the message names the gate and the command above. No flag overrides it, and the dry run does not need it.

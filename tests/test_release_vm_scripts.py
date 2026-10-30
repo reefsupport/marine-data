@@ -846,6 +846,12 @@ def test_card_stage_cites_the_repo_citation_file(tmp_path):
     assert "stage_card\n}" in (DEPLOY / "bootstrap.sh").read_text()  # stage_export ends with it
 
 
+def test_card_stage_passes_card_args_after_the_citation(tmp_path):
+    done = run_stage(tmp_path, "stage_card", {"CARD_ARGS": "--v1-dir /data/v1-repo"})
+    assert done.returncode == 0, done.stderr
+    assert done.stdout.strip().endswith("--citation /app/CITATION.cff --v1-dir /data/v1-repo")
+
+
 def test_gate_stage_runs_all_then_v11_on_the_same_release_dir(tmp_path):
     done = run_stage(tmp_path, "stage_gate", {"GATE_V11_ARGS": "--v1-dir /data/v1.0"})
     assert done.returncode == 0, done.stderr

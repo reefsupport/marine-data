@@ -29,6 +29,7 @@ def _gate(passed=True, **extra):
 
 def _gates(names=DEFAULT_GATES, **override):
     out = {name: _gate() for name in names}
+    out["publish_tree"] = _gate()  # the --go guard; not a required gate, so off the summary
     out.update(override)
     out["summary"] = {"required_for_publish": list(names)}
     return out
@@ -369,3 +370,27 @@ def test_publish_is_listed_under_release(capsys):
     assert exc.value.code == 0
     out = capsys.readouterr().out
     assert "--go" in out and "--allow-frozen" in out
+
+
+def test_go_refuses_unless_publish_tree_passed(tmp_path, capsys, hub, monkeypatch):
+    monkeypatch.setenv("HF_TOKEN", TOKEN)
+    entries = {"missing": None, "failed": _gate(False), "skipped": {"skipped": "no prior tree"}}
+    for state, entry in entries.items():
+        gates = _gates()
+        if entry is None:
+            del gates["publish_tree"]
+        else:
+            gates["publish_tree"] = entry
+        d = make_release(tmp_path / state, gates=gates)
+        assert publish("--dir", str(d), "--go") == 1, state
+        err = capsys.readouterr().err
+        assert f"gate publish_tree: {state}" in err, state
+        assert "--only publish_tree" in err, state
+    assert hub.made == []
+
+
+def test_the_dry_run_does_not_need_publish_tree(tmp_path, capsys, hub):
+    gates = _gates()
+    del gates["publish_tree"]
+    d = make_release(tmp_path, gates=gates)
+    assert publish("--dir", str(d)) == 0

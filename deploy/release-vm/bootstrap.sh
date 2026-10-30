@@ -36,7 +36,8 @@
 # Settings (environment). Required: MARINEDATA_REF (a full commit sha; a tag can move),
 # RELEASE_ID, FLAVOUR (open|nc). Optional: REPO_URL, LOCK_FILE, SPLIT_MAP_FILE, DATA_DEV,
 # RELEASE_BUILD_ARGS (extra `release build` flags), EXPORT_ARGS (extra hf_export flags),
-# SECRETS_FILE, SECRETS_WAIT_SECONDS, STAGES.
+# CARD_ARGS (extra hf_card flags, e.g. "--v1-dir /data/v1-repo"), SECRETS_FILE,
+# SECRETS_WAIT_SECONDS, STAGES.
 # BOOTSTRAP_DRY_RUN=1 prints the stage list and what would happen to the data disk, then exits
 # without changing anything (exit 1 if the disk would be refused). It needs no root.
 
@@ -48,6 +49,10 @@ LOCK_FILE=${LOCK_FILE:-release.lock.yaml}
 SPLIT_MAP_FILE=${SPLIT_MAP_FILE:-registry/SPLIT_MAP.json}
 RELEASE_BUILD_ARGS=${RELEASE_BUILD_ARGS:-}
 EXPORT_ARGS=${EXPORT_ARGS:-}
+# Extra hf_card flags for the card stage, e.g. "--v1-dir /data/v1-repo": a checkout of the Hub repo as
+# it is before this publish, so that the card declares every config folder the Hub keeps (not only
+# the four v1.0 ones) and the publish_tree gate can pass.
+CARD_ARGS=${CARD_ARGS:-}
 # 'release gate --v11' options (docs/GATES.md), a plain word list: --v1-dir DIR (the frozen v1.0
 # release dir, G2), --hidden-test MANIFEST, --benchmark MANIFEST, --nc-id ID. stage_gate also hands
 # --v1-dir DIR (and only that flag) to the --all call: see the comment above stage_gate.
@@ -384,8 +389,12 @@ stage_export() {
 # the card cannot cite one. It cites the repo's CITATION.cff inside the image, the same input as
 # stage_croissant. --citation is absolute: the wrapper's workdir is /data, not /app.
 stage_card() {
+  local flags=()
+  # shellcheck disable=SC2206  # the extra flags are a deliberate word list
+  flags=($CARD_ARGS)
   "$RUN_WRAPPER" --py -m marinedata.hf_card --release-dir "$REL_DIR" --summary "$SUMMARY" \
-    --out "$EXPORT_DIR" --flavour "$FLAVOUR" --citation /app/CITATION.cff
+    --out "$EXPORT_DIR" --flavour "$FLAVOUR" --citation /app/CITATION.cff \
+    ${flags[@]+"${flags[@]}"}
 }
 
 # The Hub repo id of $FLAVOUR, read from the checkout's registry/flavours.yaml (the host has no yaml tool).
@@ -409,7 +418,7 @@ stage_croissant() {
 }
 
 # Both gate sets, against the same release dir: --all (the v1.0 gates, --require-all) and then
-# --v11 (G1..G9). --v11 does not chain the v1.0 gates: it merges its entries into GATES.json, so
+# --v11 (G1..G10). --v11 does not chain the v1.0 gates: it merges its entries into GATES.json, so
 # 'release publish' stays BLOCKED until both ran. Both run even when the first fails, so GATES.json
 # lists every failure. The privacy gate (G8, and the v1.0 one) loads the pinned YuNet model that
 # the wrapper passes in MARINEDATA_YUNET_MODEL; the gates never download it.
@@ -440,7 +449,7 @@ stage_gate() {
     "$RUN_WRAPPER" release gate "$EXPORT_DIR" --v11 --flavour "$FLAVOUR" \
       --release-dir "$REL_DIR" ${v11[@]+"${v11[@]}"} || rc=1
   else
-    say "WARNING: this ref's 'release gate' has no --v11: G1..G9 are not written, a v1.1.0 publish stays BLOCKED"
+    say "WARNING: this ref's 'release gate' has no --v11: G1..G10 are not written, a v1.1.0 publish stays BLOCKED"
   fi
   return "$rc"
 }

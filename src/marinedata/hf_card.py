@@ -413,6 +413,16 @@ def main(argv: list[str] | None = None) -> int:
     )
     parser.add_argument("--repo-id", default=None, help="default: the flavour's repo id")
     parser.add_argument(
+        "--v1-dir",
+        type=Path,
+        default=None,
+        metavar="DIR",
+        help="v1.1/v1.2 export: a checkout of the prior tree (the Hub repo as it is before this "
+        "publish). Every config folder in it that the export does not ship (the frozen v1.0 "
+        "configs, a v1.1.1-only one) gets a `configs:` entry and a row in the card. Default: "
+        "the four v1.0 configs of the flavour",
+    )
+    parser.add_argument(
         "--flavour", choices=("open", "nc"), default=None, help="default: RELEASE.json's flavour"
     )
     parser.add_argument(
@@ -437,6 +447,10 @@ def main(argv: list[str] | None = None) -> int:
     if args.gates_json is not None:
         print(
             "WARNING: --gates-json ignored: only a v1.1/v1.2 export has gate slots", file=sys.stderr
+        )
+    if args.v1_dir is not None:
+        print(
+            "WARNING: --v1-dir ignored: only a v1.1/v1.2 export has prior configs", file=sys.stderr
         )
     release = json.loads((args.release_dir / "RELEASE.json").read_text())
     flavour = args.flavour or release.get("flavour")

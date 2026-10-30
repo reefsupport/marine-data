@@ -116,7 +116,7 @@ Fix: strip the GPS tags before export (for example `exiftool -gps:all=`), or all
 `registry/gates.yaml` (`privacy: {allow_exif_gps: {<source_id>: true}}`) after its licence and privacy
 review; exclude or blur a detected face or plate. This v1.0 gate cannot record a human review of a
 false positive; the v1.1.0 gate G8 (`--v11`) reads one, see "v1.1.0 gates" below.
-`images/train-00000-of-00001.parquet[1] image_sha256=<64 hex> source=src-b exif_gps_present: GPSInfo (tag 34853)`
+`images/train-src-b-v1.2.0-00000-of-00001.parquet[1] image_sha256=<64 hex> source=src-b exif_gps_present: GPSInfo (tag 34853)`
 `images/test 92d07e13ade4 face_detected: score 0.90 >= 0.85 (fake 1)`
 
 ## load (required)
@@ -216,9 +216,9 @@ Not wired yet: the `release gate` CLI entry for these, G9 `labelmap`, and the G8
 to `images`. The pinned YuNet model (`gates/yunet_model.py`) is baked into the image by the Dockerfile.
 
 
-## v1.1.0 gates (G1-G9)
+## v1.1.0 gates (G1-G10)
 
-`marinedata release gate BUILD_DIR --v11` runs the nine gates below and merges each into
+`marinedata release gate BUILD_DIR --v11` runs the ten gates below and merges each into
 `BUILD_DIR/GATES.json`; `release publish` reads that file (staged as `provenance/GATES.json`).
 `--v11` is implied by `--only`, `--rehearsal`, `--hidden-test`, `--benchmark`, `--nc-id`,
 `--hidden-test-published-exception`, `--privacy-review`, `--taxonomy-version` and, when no v1.0 gate flag is given, `--v1-dir` (with one,
@@ -290,3 +290,16 @@ more than one namespace does not fail; the gate counts the distinct ones under
 ids on both sides), and a label table row with a node must name a `(source_id, label_native)` that a
 mapped `label-map` row carries (`unresolved_label`); the export takes a source's crosswalk from its
 registry loader, else from the table builder that wrote its rows.
+
+### G10 `publish_tree`
+
+An upload never deletes, so after a publish the Hub holds the export folder plus every prior file the export did not overwrite. `publish_tree` checks that tree offline. It needs the prior tree, the Hub repo as it is before this publish, as `--v1-dir DIR` (this is not the frozen v1.0 tree that G2 reads) and the export's `README.md`; without `--v1-dir` it fails with a reason. Run it alone with `marinedata release gate BUILD_DIR --v11 --only publish_tree --v1-dir DIR`. `release publish --go` refuses unless `GATES.json` shows it passed. The result holds config names, shard paths and counts, never an image id.
+
+| Check | Counts | Fails when |
+|---|---|---|
+| shard paths, per config in both trees | `collisions`, `leftovers`, `images_collisions`, `images_leftovers` | an `images` shard of the export takes the path of a prior shard; for other configs the counts are reported only |
+| `image_sha256` (only this column is read), per config that has it | `lost`, `double` | an id of a prior shard the export replaces is in neither the export nor a kept shard (`lost`), or an id is in the export and in a kept prior shard (`double`) |
+| shard series of the post-publish tree, per config, split, source and release id | `series`, `incomplete_series` | an index of `0..M-1` is missing, two totals `M` coexist (a stale `-of-00002` next to a new `-of-00001`), or a name does not parse |
+| prior configs | `prior_configs`, `export_configs`, `configs_in_both`, `undeclared_prior_configs` | a config folder of the prior tree is not declared under `configs:` in the export's `README.md` (render the card with `hf_card --v1-dir DIR`) |
+
+A full `--v11` run hands its `--v1-dir` to every gate. When that is the frozen v1.0 repo (`GATE_V11_ARGS` on the release VM), `publish_tree` compares against the wrong tree: re-run `--only publish_tree --v1-dir DIR` with the Hub snapshot, which replaces the entry in `GATES.json`.
