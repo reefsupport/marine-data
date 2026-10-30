@@ -14,6 +14,17 @@ configs only, under ``data/<config>/<split>-<source>-NNNNN-of-MMMMM.parquet``:
   release, the crosswalks and the registry. A label with no mapping is carried as
   ``mapped = false``.
 
+Shard names are ``<split>-<source>-NNNNN-of-MMMMM.parquet`` (MMMMM is this export's count). An
+additive run (``--v1-dir``) ships only the pixels the prior tree lacks, so an ``images`` shard of a
+prior name would be a smaller file that ``release publish`` (upload by path, no delete) writes over
+the prior one. Every ``images`` shard of such a run is named
+``<split>-<source>-<release-id>-NNNNN-of-MMMMM.parquet``, e.g.
+``train-noaa-pifsc-bleaching-v1.2.0-00000-of-00001.parquet``. ``--release-id vX.Y.Z`` is required
+with ``--v1-dir`` and ``bootstrap.sh`` passes it. The infix sits before the index, so the split
+stays the first token and ``data/images/<split>-*.parquet`` still matches. No other config is
+renamed: each is a full re-export that replaces its prior shards by name, and a run without
+``--v1-dir`` changes nothing. ``gates.shards.parse_shard`` reads both shapes.
+
 A row whose licence class is not the flavour's is dropped and counted; a row whose class can never
 ship (internal-only, unknown, nd) raises. The key everywhere is ``image_sha256``.
 """
@@ -29,6 +40,7 @@ from pathlib import Path
 from typing import Any
 
 from .checksums import CHECKSUM_FILE, file_digest
+from .gates.shards import RELEASE_ID
 from .hf_parquet import (
     SHARD_TARGET_BYTES,
     ConfigSpec,
@@ -258,13 +270,18 @@ def _as_row(spec: ConfigSpec, values: Mapping, **extra: Any) -> ExportRow:
     return ExportRow(values={**cells, **extra})
 
 
-def _group(rows: list[tuple[str, ExportRow]], by_source: bool) -> dict[str, list[ExportRow]]:
-    """``{<split>[-<source>]: rows}`` in a stable order; the key is the shard-name stem."""
+def _group(
+    rows: list[tuple[str, ExportRow]], by_source: bool, release: str | None = None
+) -> dict[str, list[ExportRow]]:
+    """``{<split>[-<source>][-<release>]: rows}`` in a stable order; the key is the shard-name
+    stem. ``release`` (an additive ``images`` export) ends every stem, after the order is set, so
+    the order is the one the plain stems have."""
     groups: dict[str, list[ExportRow]] = defaultdict(list)
     for split, row in rows:
         source = row.values.get("source_id") if by_source else None
         groups[f"{split}-{source}" if source else split].append(row)
-    return {k: groups[k] for k in sorted(groups, key=lambda s: (_split_rank(s), s))}
+    ordered = sorted(groups, key=lambda s: (_split_rank(s), s))
+    return {f"{k}-{release}" if release else k: groups[k] for k in ordered}
 
 
 def _split_of(row: Mapping, split_by_sha: Mapping[str, str | None]) -> str:
@@ -547,11 +564,13 @@ def build_v11_layout(
     registry, release_dir: str | Path, roots: Mapping[str, Path], *, flavour: str,
     skip_sha256: Collection[str] = frozenset(), lock: Mapping[str, Mapping] | None = None,
     shard_target_bytes: int = SHARD_TARGET_BYTES, registry_root: str | Path | None = None,
-    hidden_test_drop: Collection[str] | None = None,
+    hidden_test_drop: Collection[str] | None = None, release_id: str | None = None,
 ) -> tuple[Layout, dict]:  # fmt: skip
     """``({config: (spec, {<split>[-<source>]: rows})}, report)`` for ``flavour``'s new configs.
     ``hidden_test_drop`` (open flavour only): digests whose rows in every table are removed before
-    anything is counted or embedded; ``report["hidden_test_excluded"]`` records the counts."""
+    anything is counted or embedded; ``report["hidden_test_excluded"]`` records the counts.
+    ``release_id`` (an additive export, ``--v1-dir``): ends the stem of every ``images`` shard, so
+    none of them takes the path of a prior release's shard; no other config is renamed."""
     if flavour not in FLAVOURS:
         raise V11ExportError(f"unknown flavour {flavour!r}")
     report = json.loads((Path(release_dir) / "task_layers" / V11_TABLES_FILE).read_text())
@@ -581,7 +600,7 @@ def build_v11_layout(
     spec = ConfigSpec(
         IMAGES, IMAGE_COLUMNS, "Image bytes, once per image_sha256.", shard_target_bytes
     )
-    layout[IMAGES] = (spec, _group(images, True)) if images else (spec, {})
+    layout[IMAGES] = (spec, _group(images, True, release_id)) if images else (spec, {})
     counts: dict[str, dict] = defaultdict(
         lambda: {"configs": set(), "images": 0, "labels": 0, "mapped": 0}
     )
@@ -707,6 +726,20 @@ def _hidden_test_drop(args, flavour: str | None) -> frozenset[str] | None:
     return hidden_test_drop(manifest, exempt)
 
 
+def additive_release_id(args) -> str | None:
+    """The release id an additive export (``--v1-dir``) puts in its ``images`` shard names, ``None``
+    for a plain export (``--release-id`` is then not read). It is required and must be
+    ``vX.Y.Z``: a missing or free-form id would let two releases name a shard alike."""
+    if not getattr(args, "v1_dir", None):
+        return None
+    release_id = getattr(args, "release_id", None)
+    if not release_id or not RELEASE_ID.fullmatch(release_id):
+        raise V11ExportError(
+            f"--v1-dir needs --release-id vX.Y.Z (the release being exported), got {release_id!r}"
+        )
+    return release_id
+
+
 def run(args) -> int:
     """``hf_export`` entry for a v1.1.0 build dir (``task_layers/V11_TABLES.json`` exists)."""
     import yaml
@@ -722,6 +755,7 @@ def run(args) -> int:
         raise V11ExportError(
             f"--flavour {flavour} but the release was built as {release.get('flavour')!r}"
         )
+    release_id = additive_release_id(args)
     skip: set[str] = set()
     if getattr(args, "v1_sha256", None):
         skip |= {s.strip().lower() for s in Path(args.v1_sha256).read_text().split() if s.strip()}
@@ -736,7 +770,7 @@ def run(args) -> int:
     drop = _hidden_test_drop(args, flavour)
     layout, report = build_v11_layout(
         Registry.load(), release_dir, _roots(release_dir, cache_root()), flavour=flavour,
-        skip_sha256=skip, lock=lock, hidden_test_drop=drop,
+        skip_sha256=skip, lock=lock, hidden_test_drop=drop, release_id=release_id,
     )  # fmt: skip
     if "hidden_test_excluded" in report:
         h = report["hidden_test_excluded"]

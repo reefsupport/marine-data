@@ -573,7 +573,16 @@ def main(argv: list[str] | None = None) -> int:
         type=Path,
         default=None,
         help="v1.1.0 builds: a local copy of the v1.0 export; its shards are scanned for the "
-        "image_sha256 they embed (same effect as --v1-sha256)",
+        "image_sha256 they embed (same effect as --v1-sha256). Needs --release-id",
+    )
+    parser.add_argument(
+        "--release-id",
+        default=None,
+        metavar="vX.Y.Z",
+        help="v1.1.0 builds with --v1-dir (required there): the release being exported. Every "
+        "`images` shard is named <split>-<source>-<release-id>-NNNNN-of-MMMMM.parquet, so a "
+        "publish never overwrites a shard of the same path in the prior tree. Ignored without "
+        "--v1-dir",
     )
     parser.add_argument(
         "--hidden-test",

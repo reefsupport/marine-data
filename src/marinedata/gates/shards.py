@@ -6,9 +6,18 @@ import json
 import re
 from collections import Counter
 from collections.abc import Iterator, Sequence
+from dataclasses import dataclass
 from pathlib import Path
 
-_SHARD = re.compile(r"^(?P<split>[A-Za-z]+)-\d{5}-of-\d{5}\.parquet$")
+_RELEASE = r"v\d+\.\d+\.\d+"
+RELEASE_ID = re.compile(_RELEASE)
+"""A release id as ``--release-id`` takes it and as an additive export puts it in a shard name."""
+_SHARD = re.compile(
+    r"^(?P<split>[A-Za-z][A-Za-z0-9_]*)"
+    rf"(?:-(?!{_RELEASE}-\d{{5}}-of-)(?P<source>.+?))?"  # a lone release is not a source
+    rf"(?:-(?P<release>{_RELEASE}))?"
+    r"-(?P<index>\d{5})-of-(?P<total>\d{5})\.parquet$"
+)
 SPLIT_ALIASES = {"val": "validation", "valid": "validation", "probe": "validation"}
 
 
@@ -21,9 +30,38 @@ def norm_split(name: str) -> str:
     return SPLIT_ALIASES.get(name, name)
 
 
+@dataclass(frozen=True)
+class ShardName:
+    """``<split>[-<source>][-<release>]-NNNNN-of-MMMMM.parquet`` taken apart.
+
+    ``split`` is the first token as written (``val`` stays ``val``: :func:`norm_split` renames it).
+    ``source`` is ``None`` for a per-split name (``train-00000-of-00004``). ``release`` is ``None``
+    unless an additive export named the shard after its release
+    (``train-<source>-v1.2.0-00000-of-00001``); it is never part of ``source``."""
+
+    split: str
+    source: str | None
+    release: str | None
+    index: int
+    total: int
+
+
+def parse_shard(path: Path | str) -> ShardName | None:
+    """The parts of a shard file name, ``None`` when it is not of the form above. The one reader
+    of that form: :func:`shard_split`, and with it every per-split count of the gates, uses it."""
+    match = _SHARD.match(Path(path).name)
+    if match is None:
+        return None
+    return ShardName(
+        match["split"], match["source"], match["release"], int(match["index"]), int(match["total"])
+    )
+
+
 def shard_split(path: Path) -> str:
-    match = _SHARD.match(path.name)
-    return norm_split(match["split"] if match else path.stem.split("-")[0])
+    """Hub split of a shard (first token of its name, aliases applied); a name that does not
+    parse still has its first token."""
+    shard = parse_shard(path)
+    return norm_split(shard.split if shard else Path(path).stem.split("-")[0])
 
 
 def config_shards(build_dir: Path) -> dict[str, list[Path]]:

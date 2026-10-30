@@ -374,7 +374,8 @@ stage_export() {
   fi
   install -d -o 10001 -g 10001 "$(dirname "$EXPORT_DIR")" || return 1
   "$RUN_WRAPPER" --py -m marinedata.hf_export --release-dir "$REL_DIR" --out "$EXPORT_DIR" \
-    --summary "$SUMMARY" --flavour "$FLAVOUR" ${flags[@]+"${flags[@]}"} || return 1
+    --summary "$SUMMARY" --flavour "$FLAVOUR" --release-id "$RELEASE_ID" \
+    ${flags[@]+"${flags[@]}"} || return 1
   stage_card
 }
 

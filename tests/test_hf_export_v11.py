@@ -757,3 +757,151 @@ def test_assert_public_safe_refuses_a_non_open_source_id_in_the_open_flavour(mon
     assert "ncsrc" not in str(exc.value).lower()  # only the label is echoed
     assert_public_safe("ncsrc2, my-ncsrc and ncsrc_v1 are other names", "open")
     assert_public_safe("the nc card names ncsrc", "nc")
+
+
+# ---- an additive export (--v1-dir) names its images shards after the release ------------------
+
+RELEASE = "v1.2.0"
+
+
+def _is_images(name: str) -> bool:
+    return name.startswith("data/images/")
+
+
+def _shard_keys(names) -> set[tuple]:
+    """``(split, source, index, total)`` of every shard name, the release left out."""
+    from marinedata.gates.shards import parse_shard
+
+    return {(s.split, s.source, s.index, s.total) for s in map(parse_shard, names) if s}
+
+
+def test_an_additive_export_names_every_images_shard_after_the_release(registry, build, tmp_path):
+    from fnmatch import fnmatch
+
+    from marinedata.gates.shards import parse_shard
+
+    plain, _ = _layout(registry, build)
+    additive, _ = _layout(registry, build, release_id=RELEASE)
+    prior = set(export_v11(plain, tmp_path / "prior")["files"])  # the paths a prior tree holds
+    now = set(export_v11(additive, tmp_path / "now")["files"])
+    images = {n for n in now if _is_images(n)}
+    assert images
+    assert not images & prior  # no images path of the prior tree is written again
+    for name in images:
+        shard = parse_shard(name)
+        assert shard and shard.release == RELEASE and shard.source
+        assert RELEASE not in shard.source and name.count(RELEASE) == 1
+    # the split stays the first token, so the card globs data/images/<split>-*.parquet still match
+    assert all(fnmatch(Path(n).name, f"{parse_shard(n).split}-*.parquet") for n in images)
+    # per source and split, the same shards as the plain run, only the release differs
+    assert _shard_keys(images) == _shard_keys(n for n in prior if _is_images(n))
+    assert _rows(tmp_path / "now", "images") == _rows(tmp_path / "prior", "images")
+
+
+def test_an_additive_export_renames_no_other_config(registry, build, tmp_path):
+    plain, _ = _layout(registry, build)
+    additive, _ = _layout(registry, build, release_id=RELEASE)
+    prior = set(export_v11(plain, tmp_path / "prior")["files"])
+    now = set(export_v11(additive, tmp_path / "now")["files"])
+    others = {n for n in prior if not _is_images(n)}
+    # every other config is a full re-export: it replaces its prior shards by name
+    assert others and others == {n for n in now if not _is_images(n)}
+    assert not any(RELEASE in n for n in others)
+
+
+def test_a_plain_export_keeps_its_names(registry, build, tmp_path):
+    from marinedata.gates.shards import parse_shard
+
+    layout, _ = _layout(registry, build)
+    names = list(export_v11(layout, tmp_path / "out")["files"])
+    assert any(_is_images(n) for n in names)
+    assert all((s := parse_shard(n)) and s.release is None for n in names)
+    assert all(SHARD.match(n) for n in names)
+
+
+def test_the_release_infix_does_not_reorder_the_groups(registry, build):
+    plain, _ = _layout(registry, build)
+    additive, _ = _layout(registry, build, release_id=RELEASE)
+    stems = [s.removesuffix(f"-{RELEASE}") for s in additive["images"][1]]
+    assert stems == list(plain["images"][1]) and len(stems) > 1
+
+
+@pytest.mark.parametrize(
+    "bad", [None, "", "v1.2", "1.2.0", "V1.2.0", "v1.2.0-rc1", "v1.2.0\n", "latest"]
+)
+def test_v1_dir_needs_a_well_formed_release_id(bad):
+    import argparse
+
+    from marinedata.hf_export_v11 import additive_release_id
+
+    args = argparse.Namespace(v1_dir=Path("/v1"), release_id=bad)
+    with pytest.raises(V11ExportError, match="--release-id"):
+        additive_release_id(args)
+
+
+def test_the_release_id_is_read_only_with_v1_dir():
+    import argparse
+
+    from marinedata.hf_export_v11 import additive_release_id
+
+    assert (
+        additive_release_id(argparse.Namespace(v1_dir=Path("/v1"), release_id=RELEASE)) == RELEASE
+    )
+    assert additive_release_id(argparse.Namespace(v1_dir=None, release_id="v1.1")) is None
+    assert additive_release_id(argparse.Namespace(v1_dir=None)) is None
+
+
+def test_run_with_v1_dir_names_the_images_shards_after_the_release(build, monkeypatch, tmp_path):
+    from marinedata import hf_export
+    from marinedata.gates.shards import parse_shard
+    from marinedata.hf_export_v11 import run
+
+    _, roots, sha = build
+    monkeypatch.setattr(hf_export, "_roots", lambda release_dir, cache: roots)
+    args = _run_args(build, tmp_path, v1_dir=_v1_tree(tmp_path, sha["b"]), release_id=RELEASE)
+    assert run(args) == 0
+    data = tmp_path / "out" / "data"
+    images = sorted((data / "images").glob("*.parquet"))
+    assert images and {parse_shard(p).release for p in images} == {RELEASE}
+    assert sha["b"] not in {r["image_sha256"] for r in _rows(tmp_path / "out", "images")}
+    metadata = sorted((data / "metadata").glob("*.parquet"))
+    assert metadata and {parse_shard(p).release for p in metadata} == {None}
+
+
+def test_run_refuses_v1_dir_without_a_release_id(build, tmp_path):
+    from marinedata.hf_export_v11 import run
+
+    args = _run_args(build, tmp_path, v1_dir=_v1_tree(tmp_path, "a" * 64))
+    with pytest.raises(V11ExportError, match="--release-id"):
+        run(args)
+    assert not (tmp_path / "out").exists()  # refused before anything was written
+
+
+def test_run_without_v1_dir_ignores_the_release_id(build, monkeypatch, tmp_path):
+    from marinedata import hf_export
+    from marinedata.gates.shards import parse_shard
+    from marinedata.hf_export_v11 import run
+
+    monkeypatch.setattr(hf_export, "_roots", lambda release_dir, cache: build[1])
+    assert run(_run_args(build, tmp_path, release_id="v1.1")) == 0  # bootstrap passes it always
+    images = sorted((tmp_path / "out" / "data" / "images").glob("*.parquet"))
+    assert images and {parse_shard(p).release for p in images} == {None}
+
+
+def test_hf_export_main_forwards_the_release_id_to_a_v11_release(build, monkeypatch, tmp_path):
+    from marinedata import hf_export
+    from marinedata import hf_export_v11 as v11
+
+    seen = {}
+
+    def fake_run(args):
+        seen["release_id"], seen["v1_dir"] = args.release_id, args.v1_dir
+        return 0
+
+    monkeypatch.setattr(v11, "run", fake_run)
+    argv = ["--release-dir", str(build[0]), "--out", str(tmp_path / "o")]
+    argv += ["--summary", str(tmp_path / "s.json"), "--v1-dir", str(tmp_path / "v1")]
+    assert hf_export.main([*argv, "--release-id", RELEASE]) == 0
+    assert seen == {"release_id": RELEASE, "v1_dir": tmp_path / "v1"}
+    assert hf_export.main(argv) == 0  # the flag is optional here: run() refuses it missing
+    assert seen["release_id"] is None

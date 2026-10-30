@@ -937,3 +937,22 @@ def test_next_steps_print_the_per_part_publish_loop():
     assert "for part in $(marinedata-run release publish --release-id v1.1" in out
     assert "--list-parts); do" in out and '--go --part "$part" || break' in out
     assert out.count("--go") == 1 and "done\n" in out
+
+
+def test_stage_export_tells_hf_export_the_release(tmp_path):
+    """An additive export (--v1-dir in EXPORT_ARGS) names its images shards after the release."""
+    calls = tmp_path / "calls"
+    wrapper = tmp_path / "wrapper"
+    wrapper.write_text(f'#!/bin/sh\nprintf "%s\\n" "$@" >> "{calls}"\n')
+    wrapper.chmod(0o755)
+    snippet = (
+        f"RUN_WRAPPER={wrapper}; REL_DIR={tmp_path}/rel; EXPORT_DIR={tmp_path}/export; "
+        f"SUMMARY={tmp_path}/s.json; FLAVOUR=open; RELEASE_ID=v1.2.0; "
+        'EXPORT_ARGS="--v1-dir /v1"; install() { :; }; stage_card() { :; }; stage_export'
+    )
+    done = bootstrap(snippet)
+    assert done.returncode == 0, done.stderr
+    words = calls.read_text().split()
+    assert words[words.index("--release-id") + 1] == "v1.2.0"
+    assert words[words.index("--flavour") + 1] == "open"
+    assert words[words.index("--v1-dir") + 1] == "/v1"  # the extra flags still follow
