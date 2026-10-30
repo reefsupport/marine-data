@@ -27,7 +27,7 @@ def add_v11_options(p: argparse.ArgumentParser) -> None:
     group.add_argument(
         "--v11",
         action="store_true",
-        help="run G1..G9 on a v1.1.0 build (implied by the options below, and by a v1.1.0 "
+        help="run G1..G10 on a v1.1.0 build (implied by the options below, and by a v1.1.0 "
         "build (task_layers/V11_TABLES.json) when no v1.0 gate flag is given)",
     )
     group.add_argument(
@@ -43,7 +43,8 @@ def add_v11_options(p: argparse.ArgumentParser) -> None:
         default=None,
         metavar="DIR",
         help="the frozen v1.0 release directory (join, frozen, bytes_once, splits_v11, "
-        "decon with --hidden-test-published-exception)",
+        "decon with --hidden-test-published-exception); for publish_tree the prior tree "
+        "instead: the Hub repo as it is before this publish",
     )
     group.add_argument(
         "--hidden-test",

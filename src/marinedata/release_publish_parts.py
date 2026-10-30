@@ -234,18 +234,18 @@ def render_parts_plan(plan: PublishPlan, selected: Sequence[str], *, delta: V1De
         lines.append("  visibility  : never changed by this command")
     if delta is None:
         lines.append(
-            "  v1.0 tree   : not given (--v1-dir DIR, a checkout of the v1.0 repo): no delta"
+            "  prior tree  : not given (--v1-dir DIR, a checkout of the prior repo): no delta"
         )
     else:
         lines.append(
-            f"  v1.0 tree   : {delta.tree} ({delta.v1_files} files): adds {len(delta.added)}, "
+            f"  prior tree  : {delta.tree} ({delta.v1_files} files): adds {len(delta.added)}, "
             f"replaces {len(delta.replaced)}, identical {delta.identical}"
         )
         lines += [f"    + {rel}" for rel in delta.added[:MAX_LISTED]]
         if len(delta.added) > MAX_LISTED:
             lines.append(f"    ... and {len(delta.added) - MAX_LISTED} more added paths")
         for rel in delta.replaced:
-            note = "  (a v1.0 data shard: frozen)" if rel in delta.shards_replaced else ""
+            note = "  (replaces a prior-release shard)" if rel in delta.shards_replaced else ""
             lines.append(f"    ~ {rel}{note}")
     return "\n".join([*lines, *gate_lines(plan.folder, only_if_run=True)])
 

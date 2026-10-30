@@ -1,10 +1,11 @@
 """Orchestrator for the v1.1.0 release gates (``marinedata release gate --v11``).
 
-Runs G1 join, G2 frozen, G3 leak, G4 bytes_once, G5 masks, G6 splits_v11, G7 decon, G8 privacy
-and G9 labelmap on a build directory. A gate that raises is a failed gate, never a crash and never
-a pass. ``rehearsal`` reaches only the gates that define it (``splits_v11``, ``decon``): it turns
-an unsplit-only or input-missing failure into ``skipped``, which ``publish_verdict`` still refuses.
-The v1.0 gates (licence, dedup, splits, load, card, croissant) stay with ``release gate --all``."""
+Runs G1 join, G2 frozen, G3 leak, G4 bytes_once, G5 masks, G6 splits_v11, G7 decon, G8 privacy, G9
+labelmap and G10 publish_tree on a build directory. A gate that raises is a failed gate, never a
+crash and never a pass. ``rehearsal`` reaches only the gates that define it (``splits_v11``,
+``decon``): it turns an unsplit-only or input-missing failure into ``skipped``, which
+``publish_verdict`` still refuses. The v1.0 gates (licence, dedup, splits, load, card, croissant)
+stay with ``release gate --all``."""
 
 from __future__ import annotations
 
@@ -25,8 +26,9 @@ V11_ALL = (
     "decon",
     "privacy",
     "labelmap",
+    "publish_tree",
 )
-"""G1 .. G9, in the order they run."""
+"""G1 .. G10, in the order they run."""
 
 
 @dataclass(frozen=True)
@@ -141,9 +143,16 @@ def _labelmap(b: Path, o: V11Options) -> GateResult:
     return run_labelmap_gate(b, version=o.taxonomy_version)
 
 
+def _publish_tree(b: Path, o: V11Options) -> GateResult:
+    from .publish_tree import run_publish_tree_gate
+
+    return run_publish_tree_gate(b, v1_dir=o.v1_dir)
+
+
 RUNNERS: dict[str, Callable[[Path, V11Options], GateResult]] = {
     "join": _join, "frozen": _frozen, "leak": _leak, "bytes_once": _bytes_once, "masks": _masks,
     "splits_v11": _splits, "decon": _decon, "privacy": _privacy, "labelmap": _labelmap,
+    "publish_tree": _publish_tree,
 }  # fmt: skip
 
 

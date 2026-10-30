@@ -184,7 +184,10 @@ def test_plan_lists_added_paths_the_v1_delta_and_g2_g3(tmp_path, capsys, hub):
     for added in (f"data/images/{IMAGES[0]}", "provenance/GATES.json", "LICENSE", "docs/GATES.md"):
         assert f"    + {added}\n" in out
     assert "    ~ README.md\n" in out
-    assert "    ~ data/coral-masks/validation-00000-of-00001.parquet  (a v1.0 data shard" in out
+    assert (
+        "    ~ data/coral-masks/validation-00000-of-00001.parquet  (replaces a prior-release shard"
+        in out
+    )
     assert ".gitattributes" not in out
     assert "G2 frozen v1.0: PASS" in out and "G3 leak       : PASS" in out
     assert hub.made == []

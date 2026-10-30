@@ -136,12 +136,12 @@ After the export run both gate sets against the same build and release dir (see 
 
 ```bash
 marinedata release gate "$B" --all --require-all --flavour "$F" --release-dir "$R"   # v1.0 gates
-marinedata release gate "$B" --v11 --flavour "$F" --release-dir "$R" --v1-dir <v1.0 release dir>  # G1..G9
+marinedata release gate "$B" --v11 --flavour "$F" --release-dir "$R" --v1-dir <v1.0 release dir>  # G1..G10
 ```
 
 `release gate` reads the merged `GATES.json` once more after the gates have written to it: a private name in it (an nc source id, the nc repo, a bucket) fails `leak` and exits 1, and in the open flavour `decon` shows a non-open benchmark as an `nc_id#` label (GATES.json is uploaded under `provenance/`).
 
-`--v11` does not chain the v1.0 gates: it merges G1..G9 into `GATES.json` and keeps the entries `--all`
+`--v11` does not chain the v1.0 gates: it merges G1..G10 into `GATES.json` and keeps the entries `--all`
 wrote, so `release publish` stays BLOCKED until both have run (`--v11` prints `publish verdict:
 OK|BLOCKED`). G6 does not recompute the dHash bands: the v1.0 dedup gate covers cross-split
 near-duplicates. The privacy gate (G8) runs real YuNet on the pinned model the image bakes at
@@ -160,6 +160,14 @@ bytes. Full releases run the stock gates unchanged.
 hidden-test manifest: 635 have been public since v1.0 and 23 are withheld from the open flavour. A model trained on
 v1.1.x `condition-masks` must not be scored on that hidden test. Note also that the `ignore_value` in the column is
 `"0"` while the PNG palette index is 255; readers must take the ignore index from the card, not the column.
+
+### Additive releases: `CARD_ARGS`, `publish_tree` and the `--go` guard
+
+The upload never deletes, so the Hub repo after a publish is the export folder plus every prior file the export does not overwrite. Three steps keep that tree consistent:
+
+1. Render the card with the prior tree, `python -m marinedata.hf_card ... --v1-dir <Hub snapshot>` (the Hub repo as it is before this publish; on the release VM `CARD_ARGS="--v1-dir /data/v1-repo"`, next to `EXPORT_ARGS` and `PLAN_ARGS`). The card then declares every config folder of that tree that the build does not ship: the four v1.0 configs and any later one such as `condition-masks`, each marked as a frozen prior-release config. Without `--v1-dir` only the four v1.0 configs are carried.
+2. Gate the tree against the same snapshot: `marinedata release gate "$B" --v11 --only publish_tree --v1-dir <Hub snapshot>`. A full `--v11` run hands its `--v1-dir` to every gate, and on the VM that is the frozen v1.0 repo (`GATE_V11_ARGS`), so this re-run replaces the `publish_tree` entry that run wrote. The gate fails on an `images` shard path taken twice, a lost or doubled `image_sha256`, an incomplete shard series and a prior config the card does not declare (`docs/GATES.md`, G10).
+3. `marinedata release publish ... --go` refuses unless `GATES.json` shows `publish_tree` passed, and the message names the gate and the command of step 2. No flag overrides it. The dry run (no `--go`) does not need it.
 
 ## What `release publish` uploads
 

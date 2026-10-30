@@ -5,13 +5,14 @@ RELEASE.json, the file count and bytes, the card, the lock sha and the tag. It r
 only the reasons are printed) when RELEASE.json, its lock sha, the card or GATES.json is missing,
 when the build is not the flavour asked for, or when a gate required for publishing did not pass.
 
-``--go`` adds three guards before anything leaves the machine: ``HF_TOKEN`` in the environment,
-the frozen v1.0 release stays untouched unless ``--allow-frozen``, and the tag must not exist on
-the repo yet. It then uploads :data:`UPLOAD_PATTERNS` only, as the parts of
-:mod:`marinedata.release_publish_parts` (one per ``data/<config>``, then ``provenance``, then the
-card; ``--part`` runs one per call), and tags the commit the card upload made, never the head of
-the branch. It never creates a repo or changes its visibility: both exist already and their
-visibility is set by hand.
+``--go`` adds four guards before anything leaves the machine: ``HF_TOKEN`` in the environment, the
+frozen v1.0 release stays untouched unless ``--allow-frozen``, ``GATES.json`` must show a passed
+``publish_tree`` gate (an upload never deletes: the Hub keeps every file it does not overwrite; no
+flag overrides this), and the tag must not exist on the repo yet. It then uploads
+:data:`UPLOAD_PATTERNS` only, as the parts of :mod:`marinedata.release_publish_parts` (one per
+``data/<config>``, then ``provenance``, then the card; ``--part`` runs one per call), and tags the
+commit the card upload made, never the head of the branch. It never creates a repo or changes its
+visibility: both exist already and their visibility is set by hand.
 
 The gate verdict mirrors ``gates.verdict`` (P1.6): a gate counts as required when
 ``summary.required_for_publish`` lists it, or when its entry says ``required: true``; with no
@@ -31,7 +32,7 @@ from dataclasses import dataclass
 from pathlib import Path
 
 from .flavours import flavour_spec
-from .gates import GATES_FILE, REQUIRED, publish_verdict
+from .gates import GATES_FILE, REQUIRED, gate_status, publish_verdict, read_gates
 from .release_lock import LOCK_FILE, lock_sha256
 from .release_provenance import stage_provenance
 
@@ -166,8 +167,31 @@ def upload_files(folder: Path) -> list[tuple[str, int]]:
     return out
 
 
-def go_problems(release_id: str, *, allow_frozen: bool, token: str) -> list[str]:
-    """Guards that only apply to ``--go`` and need nothing from the disk."""
+PUBLISH_TREE_GATE = "publish_tree"
+"""The gate that must have passed before ``--go``: the upload never deletes, so the tree the Hub
+holds afterwards (this folder plus every file it keeps) must be the one the card declares."""
+
+
+def publish_tree_problem(folder: Path) -> str | None:
+    """Why ``folder/GATES.json`` does not show a passed ``publish_tree`` gate, or ``None``."""
+    try:
+        gates = read_gates(folder)
+    except (OSError, ValueError):
+        gates = {}
+    entry = gates.get(PUBLISH_TREE_GATE) if isinstance(gates, dict) else None
+    status = "missing" if entry is None else gate_status(entry)
+    if status == "passed":
+        return None
+    return (
+        f"gate {PUBLISH_TREE_GATE}: {status} in {GATES_FILE}. The upload never deletes, so the "
+        "Hub keeps every file it does not overwrite: check the tree it would hold with "
+        f"`marinedata release gate {folder} --v11 --only {PUBLISH_TREE_GATE} --v1-dir <the Hub "
+        "repo as it is now>`, fix what it names, then publish again"
+    )
+
+
+def go_problems(release_id: str, *, allow_frozen: bool, token: str, folder: Path) -> list[str]:
+    """Guards that only apply to ``--go``: the frozen v1.0 release, the token, the publish tree."""
     problems = []
     if is_frozen(release_id) and not allow_frozen:
         problems.append(
@@ -175,6 +199,9 @@ def go_problems(release_id: str, *, allow_frozen: bool, token: str) -> list[str]
         )
     if not token:
         problems.append(f"{TOKEN_ENV} is not set: export it on the build VM, never in the repo")
+    tree = publish_tree_problem(folder)
+    if tree:
+        problems.append(tree)
     return problems
 
 
@@ -314,7 +341,9 @@ def cmd_release_publish(args: argparse.Namespace) -> int:
         print("\n".join(parts.all_parts(folder)))
         return 0
     if args.go:
-        guards = go_problems(args.release_id, allow_frozen=args.allow_frozen, token=token)
+        guards = go_problems(
+            args.release_id, allow_frozen=args.allow_frozen, token=token, folder=folder
+        )
         if guards:
             return _refuse(guards)
     try:

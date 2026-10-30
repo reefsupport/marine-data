@@ -8,6 +8,8 @@ licensing, excluded sources, takedown, versions and changelog, citation, contact
 Front matter: the v1.0 ``configs:`` entries are carried verbatim (:func:`v1_entries`), the new
 configs follow with ``metadata`` as the default, and ``dataset_info`` is written for the new configs
 only (a ``features`` block on a frozen v1.0 config would change how ``datasets`` casts its rows).
+With ``--v1-dir`` (the prior tree) every config folder of it that the build does not ship gets an
+entry as well (:mod:`marinedata.hf_card_prior`).
 Every text goes through :func:`hf_export_v11.assert_public_safe` before it is written: the open
 files never name the private repo or a bucket, the nc files never name a bucket.
 """
@@ -18,7 +20,7 @@ import hashlib
 import json
 import sys
 from collections import defaultdict
-from collections.abc import Iterable, Mapping
+from collections.abc import Iterable, Mapping, Sequence
 from datetime import date
 from pathlib import Path
 
@@ -27,6 +29,7 @@ import yaml
 from . import card_body as cb
 from . import card_v11_text as txt
 from . import card_v12_text as v12
+from . import hf_card_prior as prior_cfg
 from .hf_card_flavour import EXCLUDED_CLASSES, NC_CHECKBOX, NC_GATE_PROMPT, top_notice
 from .hf_export_v11 import V11ExportError, assert_public_safe
 from .release_card import (
@@ -83,6 +86,18 @@ def v1_entries(flavour: str) -> list[dict]:
     ]
 
 
+def carried_entries(
+    flavour: str, prior: Sequence[prior_cfg.PriorConfig] | None = None
+) -> list[dict]:
+    """The ``configs:`` entries of the configs the build does not ship: the v1.0 ones of ``flavour``
+    without a prior tree, else every folder of the prior tree (``--v1-dir``), the v1.0 entries
+    byte for byte."""
+    v1 = v1_entries(flavour)
+    if prior is None:
+        return v1
+    return prior_cfg.entries(prior, {e["config_name"]: e for e in v1})
+
+
 def ordered_configs(configs: Iterable[str]) -> list[str]:
     names = list(configs)
     known = [c for c in txt.V11_ORDER if c in names]
@@ -104,8 +119,9 @@ def new_entries(configs: Mapping[str, dict]) -> list[dict]:
 
 
 def front_matter_dict(
-    facts: dict, infos: Mapping[str, dict], *, flavour: str, repo_id: str, pretty_name: str
-) -> dict:
+    facts: dict, infos: Mapping[str, dict], *, flavour: str, repo_id: str, pretty_name: str,
+    prior: Sequence[prior_cfg.PriorConfig] | None = None,
+) -> dict:  # fmt: skip
     configs = facts["configs"]
     images = sum(e["num_examples"] for e in configs.get("metadata", {}).get("splits", {}).values())
     hub = list(dict.fromkeys(filter(None, (hf_dataset_id(infos[sid]) for sid in sorted(infos)))))
@@ -128,7 +144,7 @@ def front_matter_dict(
         "source_datasets": ["original", *(f"extended|{h}" for h in hub)],
         "size_categories": [size_category(images)],
         "tags": list(TAGS),
-        "configs": [*v1_entries(flavour), *new_entries(configs)],
+        "configs": [*carried_entries(flavour, prior), *new_entries(configs)],
         "dataset_info": [
             {
                 "config_name": name,
@@ -174,7 +190,7 @@ def read_rows(export: Path, config: str) -> list[dict]:
     return [r for f in files for r in pq.read_table(f).to_pylist()]
 
 
-def tasks_table(configs: Mapping[str, dict]) -> str:
+def tasks_table(configs: Mapping[str, dict], prior: Sequence[prior_cfg.PriorConfig] = ()) -> str:
     rows = []
     for name in ordered_configs(configs):
         task, note = txt.CONFIG_TASKS.get(name, (name, ""))
@@ -188,6 +204,7 @@ def tasks_table(configs: Mapping[str, dict]) -> str:
                 note,
             )
         )
+    rows += prior_cfg.table_rows(prior)
     return _table(("Config", "Task", "Rows", "Sources", "Notes"), rows)
 
 
@@ -339,7 +356,7 @@ def render_v11_card(
     facts: dict, infos: Mapping[str, dict], sources: list[dict], label_rows: list[dict], *,
     flavour: str, repo_id: str, pretty_name: str = PRETTY_NAME, cff: dict | None = None,
     takedown_url: str | None = None, lock_sha: str | None = None, built: str | None = None,
-    hidden_test_withheld: int | None = None,
+    hidden_test_withheld: int | None = None, prior: Sequence[prior_cfg.PriorConfig] | None = None,
 ) -> str:  # fmt: skip
     def open_only(text: str, sep: str = " ") -> str:
         """The v1.1.0 open-run statements (chain-7 gates) belong to the open card only."""
@@ -408,16 +425,19 @@ def render_v11_card(
             + "\n\n**v1.1.0**\n\n"
             + changelog
         )
-    front = front_matter(facts, infos, flavour=flavour, repo_id=repo_id, pretty_name=pretty_name)
+    front = front_matter(
+        facts, infos, flavour=flavour, repo_id=repo_id, pretty_name=pretty_name, prior=prior
+    )
+    structure = structure_lines(configs) + prior_cfg.structure_note(prior or ())
     pin = f'load_dataset("{repo_id}", "metadata", split="train", revision="v{version}")'
     sections = [
         f"---\n{front}\n---",
         f"# {pretty_name}\n\n{TAGLINE}",
         "\n".join(top_notice(flavour, repo_id)).strip(),
         "## Dataset summary\n\n" + summary + "\n\n" + _table(("Field", "Value"), facts_rows),
-        "## Supported tasks\n\n" + tasks_table(configs),
+        "## Supported tasks\n\n" + tasks_table(configs, prior or ()),
         "## Quick start\n\n" + quick_start(repo_id, configs),
-        "## Dataset structure\n\n" + structure_lines(configs) + "\n\n"
+        "## Dataset structure\n\n" + structure + "\n\n"
         "Keys: the image key is `image_sha256` (64 lowercase hex, the staged checksum, never "
         "recomputed from re-encoded bytes); `metadata.bytes_sha256` is the hash of the embedded "
         "bytes. The annotation key is `image_sha256` + `source_id` + `source_version` + `ann_id`. "
@@ -505,16 +525,21 @@ def write_card_files(
     export: Path, registry, *, flavour: str, repo_id: str, pretty_name: str | None = None,
     cff: dict | None = None, takedown_url: str | None = None, lock_sha: str | None = None,
     released: str | None = None, hidden_test_withheld: int | None = None,
-    gates: Mapping[str, object] | None = None,
+    gates: Mapping[str, object] | None = None, v1_dir: Path | None = None,
 ) -> list[str]:  # fmt: skip
     """Write ``README.md``, ``LICENSE``, ``NOTICE`` and ``CITATION.cff`` into ``export``; nothing is
     written when any of them names a private resource. ``gates`` (a ``GATES.json`` dict) fills the
-    v1.2.0 gate slots of the card; without it the slots stay and a WARNING lists them."""
+    v1.2.0 gate slots of the card; without it the slots stay and a WARNING lists them. ``v1_dir``
+    (the prior tree: the Hub repo as it is before the publish) makes the card declare every config
+    folder the build does not ship, not only the four v1.0 ones."""
     export = Path(export)
     name = pretty_name or (PRETTY_NAME if flavour == "open" else f"{PRETTY_NAME} (non-commercial)")
     facts, sources = facts_from_build(export), read_rows(export, "sources")
     if not facts["configs"] or not sources:
         raise V11ExportError(f"{export}: no v1.1.0 export (no data/ configs or no sources config)")
+    prior = (
+        prior_cfg.prior_configs(v1_dir, facts["configs"], V1_CONFIGS[flavour]) if v1_dir else None
+    )
     infos = {s["source_id"]: source_info(registry, s["source_id"]) for s in sources}
     citation = render_citation_cff(
         cff or {}, version=card_version(flavour, sources), released=released
@@ -533,6 +558,7 @@ def write_card_files(
             lock_sha=lock_sha,
             built=released,
             hidden_test_withheld=hidden_test_withheld,
+            prior=prior,
         ),
         "LICENSE": render_license(sources, pretty_name=name, flavour=flavour),
         "NOTICE": render_notice(sources, pretty_name=name),
@@ -574,6 +600,7 @@ def run(args, summary: dict) -> int:
             ((summary.get("v11") or {}).get("hidden_test_excluded") or {}).get("images")
         ),
         gates=read_gates_json(gates_path) if gates_path else None,
+        v1_dir=getattr(args, "v1_dir", None),
     )  # fmt: skip
     print(json.dumps({"layout": "v1.1", "written": written}))
     return 0

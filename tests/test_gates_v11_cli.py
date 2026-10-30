@@ -46,7 +46,7 @@ from marinedata.registry import Registry
 from marinedata.task_layers.boxes_table import BOX_SOURCES
 from marinedata.task_layers.image_labels_table import axes_resolver_for
 
-STUBBED = ("frozen", "bytes_once", "masks", "decon", "privacy", "labelmap")
+STUBBED = ("frozen", "bytes_once", "masks", "decon", "privacy", "labelmap", "publish_tree")
 
 
 LIVE_TAXONOMY = current_taxonomy_version()  # the labelmap gate wants the live release's stamp
@@ -81,9 +81,9 @@ def entries(build):
 # CLI / orchestrator
 
 
-def test_labelmap_is_a_v11_required_gate_and_all_nine_run():
-    assert "labelmap" in V11_REQUIRED and len(V11_ALL) == 9
-    assert {*V11_REQUIRED, "masks", "privacy"} == set(V11_ALL)
+def test_labelmap_is_a_v11_required_gate_and_all_ten_run():
+    assert "labelmap" in V11_REQUIRED and len(V11_ALL) == 10
+    assert {*V11_REQUIRED, "masks", "privacy", "publish_tree"} == set(V11_ALL)
 
 
 def test_cli_autodetects_a_v11_build_and_all_pass_allows_publish(tmp_path, monkeypatch, capsys):
