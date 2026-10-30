@@ -118,6 +118,46 @@ FROZEN = (
     "reproduce exactly. Pin a tag with `revision` to read an earlier release. Downstream model "
     "pins are unchanged."
 )
+# Open flavour only: the v1.2.0 section is rendered for the open card alone. The numbers are those
+# of the frozen release map; tests/test_card_v12_text.py pins every one of them to
+# releases/marine-data/v1.2.0/SPLIT_MAP.json (the moved groups also to v1.1.0's). Id-free: no
+# digest, group id or frame name.
+SPLIT_MAP = (
+    "### Split map of v1.2.0\n\n"
+    "**Inherited.** The split map inherits the v1.1.0 map (`inherits` in `SPLIT_MAP.json`): its "
+    "35,825 groups carry over, 4,382 of them kept verbatim, and the splits that v1.1.1 published "
+    "per image are the prior for the rest. Re-resolving them changed the split of 9 inherited "
+    "groups and of no other: 8 are near-duplicate groups from the Roboflow bleaching exports "
+    "that no published v1.1.x table references, and 1 is a UIIS10K image that v1.1.1 published "
+    "in two splits (train in `fish-boxes` and `instance-masks`, validation in `metadata`); "
+    "v1.2.0 puts it in train in every table. No benchmark pin overrides an inherited split "
+    "(`pins.v1_continuity_overridden`: 0 images, 0 groups).\n\n"
+    "**Coralscapes V2.** 2,432 of the 2,433 V2 frames are assigned: 1,790 to train, 170 to "
+    "validation and 472 to test (the official V2 split has 473 test frames; the one missing is "
+    "withheld, below). The V2 benchmark pins hold 472 test and 170 validation images, counted by "
+    "digest, so the byte-identical test pair counts once; the V1 pins are unchanged at 391 test "
+    "and 166 validation images. Stem links join the V1 and V2 twins: 2,074 twins, 359 V2-only "
+    "frames, 1 V1-only frame, 0 ambiguous stems and 0 conflicts (a conflict is a twin whose "
+    "upstream V2 split differs from the split v1.0 published).\n\n"
+    "**Withheld and left out.** One group is withheld: a V2 benchmark frame inside the "
+    "near-duplicate band of train images of a prior release. The band says never-eval and the "
+    "pin says eval, so the frame ships in no table of any config. The split map also leaves out "
+    "18 images that sit in the prior-release near-duplicate band (dHash distance 8 or less) of "
+    "prior-release train and evaluation images, on the side their near-duplicate group did not "
+    "keep, and 34 images that each collide on the DCT pHash-64 with an image of another split "
+    "(one image of the pair goes, never an image that an earlier release published); these 52 "
+    "images ship in no split of any config.\n\n"
+    "**Near-duplicate unions; no dedup run.** A dHash candidate pair (distance 4 or less) is "
+    "unioned only when its pHash-256 confirms it (at most 32 of 256 bits apart, both images "
+    "carrying at least 4 bits of grey entropy); a pair that fails the confirm links nothing, and "
+    "a new image paired with a prior-release image then joins the prior-release band "
+    "(`near_dup.union_confirm`). No near-duplicate groups file was supplied for v1.2.0 "
+    "(`near_dup.dedup_groups` reads `disabled by --no-near-dup`): the v1.1.0 groups file cannot "
+    "be regenerated from the repository, so v1.2.0 ships without a dedup run rather than with "
+    "one that cannot be reproduced. The dHash and pHash unions above still ran inside the "
+    "split-map inheritance. The build-time split-leak gate is off unless a groups file is "
+    "supplied."
+)
 _BIB_AUTHORS = (
     "Sauder, Jonathan", "Ruckli, Thomas", r"Strodomskyt{\.e}, Gabriel{\.e}",
     "Abdallah, Ibrahim Souleiman", "Abdi, Rahma Hassan", "Awaleh, Djama Goumaneh",
@@ -299,6 +339,7 @@ def section(sources: Iterable[Mapping]) -> str:
         CLASSES,
         _matching(),
         _splits(),
+        SPLIT_MAP,
         _test_pair(),
         FROZEN,
         CITATION,

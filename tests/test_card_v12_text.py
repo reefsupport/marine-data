@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import json
 import re
+from collections import Counter
 from pathlib import Path
 
 import pytest
@@ -37,12 +38,14 @@ CFF = {
 }
 
 
-def _render(registry, build, root: Path) -> tuple[str, dict]:
-    layout, _ = _layout(registry, build, flavour="open", shard_target_bytes=2000)
+REPO = {"open": "reefsupport/marine-data", "nc": "reefsupport/marine-data-nc"}
+
+
+def _render(registry, build, root: Path, flavour: str = "open") -> tuple[str, dict]:
+    layout, _ = _layout(registry, build, flavour=flavour, shard_target_bytes=2000)
     export_v11(layout, root)
     write_card_files(
-        root, registry, flavour="open", repo_id="reefsupport/marine-data", cff=CFF,
-        released="2026-10-29",
+        root, registry, flavour=flavour, repo_id=REPO[flavour], cff=CFF, released="2026-10-29",
     )  # fmt: skip
     return (root / "README.md").read_text(), yaml.safe_load((root / "CITATION.cff").read_text())
 
@@ -320,3 +323,141 @@ def test_gates_json_for_a_card_without_slots_is_ignored_with_a_warning(
     )  # fmt: skip
     assert "--gates-json ignored" in capsys.readouterr().err
     assert "[[" not in (tmp_path / "README.md").read_text()
+
+
+# The frozen v1.2.0 split map: every number of the SPLIT_MAP paragraph is read from the maps.
+
+MAP_V120 = ROOT / "releases" / "marine-data" / "v1.2.0" / "SPLIT_MAP.json"
+MAP_V110 = ROOT / "releases" / "marine-data" / "v1.1.0" / "SPLIT_MAP.json"
+HUB_SPLIT = {"train": "train", "val": "validation", "test": "test"}  # map name -> Hub and pin name
+
+
+@pytest.fixture(scope="module")
+def maps() -> tuple[dict, dict]:
+    """``(v1.2.0 map, v1.1.0 map)`` as committed."""
+    return json.loads(MAP_V120.read_text()), json.loads(MAP_V110.read_text())
+
+
+def _flat(text: str) -> str:
+    return " ".join(text.split())
+
+
+def _moved(new: dict, old: dict) -> dict[str, tuple[str, str]]:
+    """Inherited groups in both maps with a different split: ``group -> (v1.1.0, v1.2.0)``."""
+    a, b = new["assignments"], old["assignments"]
+    return {g: (b[g], a[g]) for g in b if g in a and a[g] != b[g]}
+
+
+def test_split_map_text_states_the_inheritance_and_the_moved_groups(maps):
+    new, old = maps
+    inherits, moved = new["inherits"], _moved(new, old)
+    by_source = Counter(g.split("/", 1)[0] for g in moved)
+    overridden = new["pins"]["v1_continuity_overridden"]
+    assert inherits["release"] == old["release"] == "v1.1.0"
+    assert inherits["groups"] == len(old["assignments"])
+    assert set(old["assignments"]) <= set(new["assignments"])  # every inherited group carries over
+    assert set(by_source) == {"roboflow-bleaching", "uiis10k"}  # a third source needs new words
+    (uiis,) = (g for g in moved if g.startswith("uiis10k/"))
+    assert moved[uiis] == ("val", "train")  # validation in `metadata`; train in every table now
+    assert (overridden["images"], overridden["groups"]) == (0, 0)
+    flat = _flat(v12.SPLIT_MAP)
+    for needle in (
+        f"inherits the {inherits['release']} map",
+        f"its {inherits['groups']:,} groups carry over, {inherits['groups_kept']:,} of them kept "
+        "verbatim",
+        f"changed the split of {len(moved)} inherited groups and of no other: "
+        f"{by_source['roboflow-bleaching']} are near-duplicate groups from the Roboflow "
+        "bleaching exports",
+        f"and {by_source['uiis10k']} is a UIIS10K image",
+        "v1.2.0 puts it in train in every table",
+        f"(`pins.v1_continuity_overridden`: {overridden['images']} images, "
+        f"{overridden['groups']} groups)",
+    ):
+        assert needle in flat
+
+
+def test_split_map_text_states_the_v2_assignments_the_pins_and_the_stem_links(maps):
+    import pyarrow.parquet as pq
+
+    new, old = maps
+    v2 = Counter(
+        HUB_SPLIT[s] for g, s in new["assignments"].items() if g.startswith("coralscapes-v2/")
+    )
+    assigned, withheld = sum(v2.values()), len(new["withheld"])
+    pins, links = new["pins"]["benchmarks"], new["inherits"]["stem_links"]
+    manifest = pq.read_table(MANIFEST).to_pylist()
+    digests = {
+        s: len({r["sha256"] for r in manifest if r["upstream_split"] == s})
+        for s in ("test", "validation")
+    }
+    assert assigned + withheld == v12.V2_FRAMES
+    assert (v2["train"], v2["validation"]) == (v12.V2_SPLITS["train"], v12.V2_SPLITS["validation"])
+    assert v2["test"] + withheld == v12.V2_SPLITS["test"]  # the official test split less the one
+    assert pins["coralscapes-v2"] == digests  # counted by digest: the byte-identical pair is one
+    assert pins["coralscapes"] == old["pins"]["benchmarks"]["coralscapes"]  # V1 pins did not move
+    assert (links["twins"], links["target_only"]) == (v12.TWINS, v12.V1_ONLY)
+    assert links["declaring_only"] == sum(v12.V2_NEW.values())
+    v2_pins, v1_pins = pins["coralscapes-v2"], pins["coralscapes"]
+    flat = _flat(v12.SPLIT_MAP)
+    for needle in (
+        f"{assigned:,} of the {v12.V2_FRAMES:,} V2 frames are assigned: {v2['train']:,} to "
+        f"train, {v2['validation']} to validation and {v2['test']} to test",
+        f"the official V2 split has {v12.V2_SPLITS['test']} test frames",
+        f"hold {v2_pins['test']} test and {v2_pins['validation']} validation images, counted "
+        "by digest",
+        f"the V1 pins are unchanged at {v1_pins['test']} test and {v1_pins['validation']} "
+        "validation images",
+        f"{links['twins']:,} twins, {links['declaring_only']} V2-only frames, "
+        f"{links['target_only']} V1-only frame, {links['ambiguous_stems']} ambiguous stems and "
+        f"{links['conflicts']['count']} conflicts",
+    ):
+        assert needle in flat
+
+
+def test_split_map_text_states_the_withheld_group_the_exclusions_and_the_missing_dedup_run(maps):
+    new, _ = maps
+    band, phash, near = new["band_excluded"], new["phash_excluded"], new["near_dup"]
+    confirm = near["union_confirm"]
+    high = near["never_eval_exclude_max_hamming"]
+    distances = {hit[0] for hit in band.values()}
+    assert len(new["withheld"]) == 1 and not set(band) & set(phash)
+    # "8 or less", not "5 to 8": a pair at 4 or less that fails the confirm joins the band too
+    assert max(distances) <= high and min(distances) <= near["union_max_hamming"]
+    assert near["dedup_groups"] == "disabled by --no-near-dup"
+    assert "phash_union" in near and "union_confirm" in near  # the unions ran without a dedup run
+    flat = _flat(v12.SPLIT_MAP)
+    for needle in (
+        "One group is withheld",
+        f"{len(band)} images that sit in the prior-release near-duplicate band (dHash distance "
+        f"{high} or less)",
+        f"{len(phash)} images that each collide on the DCT pHash-64 with an image of another split",
+        f"these {len(band) + len(phash)} images ship in no split of any config",
+        f"A dHash candidate pair (distance {near['union_max_hamming']} or less)",
+        f"at most {confirm['phash256_max']} of 256 bits apart",
+        f"at least {confirm['min_entropy_bits']:.0f} bits of grey entropy",
+        "joins the prior-release band",
+        f"(`near_dup.dedup_groups` reads `{near['dedup_groups']}`)",
+    ):
+        assert needle in flat
+
+
+def test_split_map_text_names_no_digest_group_or_frame(maps):
+    new, old = maps
+    flat = _flat(v12.SPLIT_MAP)
+    names = [g.split("/", 1)[1] for g in (*new["withheld"], *_moved(new, old))]
+    names += [n.removesuffix("_leftImg8bit") for n in names]
+    assert not re.search(r"[0-9a-f]{64}", flat) and "sha:" not in flat
+    assert names and all(n not in flat for n in names)
+
+
+def test_the_open_card_renders_the_split_map_after_the_split_text_and_the_nc_card_does_not(
+    registry, build, tmp_path, monkeypatch
+):
+    monkeypatch.setattr(v12, "SOURCE_ID", "seaview-survey-imagery")
+    card, _ = _render(registry, build, tmp_path / "open")
+    nc_card, _ = _render(registry, build, tmp_path / "nc", "nc")
+    heads = ("### Splits: V1 and V2 twins", v12.SPLIT_MAP, "### A byte-identical test pair")
+    first, mid, last = (card.index(h) for h in heads)
+    assert first < mid < last and card.count(v12.SPLIT_MAP) == 1
+    assert not any(part in nc_card for part in v12.SPLIT_MAP.split("\n\n"))
+    assert "disabled by --no-near-dup" not in nc_card
