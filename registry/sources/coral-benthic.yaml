@@ -314,6 +314,12 @@ sources:
       were added for classes V1 could not express: CN_ANTIPATHARIA (WoRMS 22549),
       SC_ALCYONIIDAE (125269) and SC_NEPHTHEIDAE (146762).
 
+      BYTE-IDENTICAL TEST PAIR (upstream data, kept as published). The V2 frames
+      site23_000097_017682 and site23_000152_017682 have identical image bytes and different
+      masks, and both are in the upstream test split. Neither is dropped, merged or moved. The
+      benchmark manifest (registry/benchmarks/manifests/coralscapes-v2.parquet) has 643 rows
+      (473 test, 170 validation) and 642 unique image digests.
+
       MODEL NOTE (upstream-reported figures, not re-derived here): V2's mIoU gain over
       V1 is small on V1's own test set (58.336 vs 57.800); the fish-instance capability
       is a dataset, not yet a validated production model (best reported AP 15.41).
