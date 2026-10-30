@@ -76,7 +76,9 @@ def _join(b: Path, o: V11Options) -> GateResult:
     from .join import run_join_gate
 
     shas, configs = _v1_sets(o)
-    return run_join_gate(b, flavour=o.flavour, nc_ids=_nc(o), v1_sha256=shas, v1_configs=configs)
+    return run_join_gate(
+        b, flavour=o.flavour, nc_ids=_nc(o), v1_sha256=shas, v1_configs=configs, v1_dir=o.v1_dir
+    )
 
 
 def _frozen(b: Path, o: V11Options) -> GateResult:

@@ -216,6 +216,16 @@ def test_dedup_twins_in_one_group_are_not_a_leak(tmp_path):
     assert result.counts[LINKED] == 1 and result.counts["stem_link_conflicts"] == 1
 
 
+def test_dedup_reports_zero_linked_twins_when_only_the_v2_twin_ships_its_pixels(tmp_path):
+    """An additive export: the link table lists the pair, the V1 twin's pixels stay in the prior
+    release, so no scanned pair is linked and the gate still reports the count, as 0."""
+    build = make_build(tmp_path, images=[*default_images(), V2_TWIN], masks=False)
+    _link_map(build, [(_sha(V1_FRAME), _sha(V2_TWIN))])
+    result = run_dedup_gate(build)
+    assert result.passed, result.failures
+    assert result.counts[LINKED] == 0 and result.counts["stem_link_twins"] == 1
+
+
 def test_dedup_still_reports_a_v2_frame_near_an_unrelated_v1_train_image(tmp_path):
     v2_test = Img(0, "test", "src-b", group="gv2", shift=1)  # near a default train image of src-a
     build = make_build(
