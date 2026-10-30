@@ -21,7 +21,7 @@ Nothing below is in a release yet. It is on `main` or on the Phase A branches na
 
 ### On main
 
-- **v1.1.1 `condition-masks` (patch, not yet published).** `hf_export --patch condition-masks` writes one new label-only config, the 634 Tayrona bleaching rasters (`reef-support-bleaching`, palette PNG; 255 ignore, 1 bleached, 2 non_bleached), plus the v1.1.0 card, Croissant, CITATION and lock with the config added. Every v1.1.0 file is unchanged; the frozen gate compares against the v1.1.0 Hub tree. Gates: `python -m marinedata.gates.condition_masks`. Hidden-test caveat: the 658 Tayrona images are in the hackathon hidden-test manifest (635 public since v1.0, 23 withheld), so models trained on v1.1.x must not be scored on it.
+- **v1.1.1 `condition-masks` (patch, published 2026-10-24).** `hf_export --patch condition-masks` writes one new label-only config, the 634 Tayrona bleaching rasters (`reef-support-bleaching`, palette PNG; 255 ignore, 1 bleached, 2 non_bleached), plus the v1.1.0 card, Croissant, CITATION and lock with the config added. Every v1.1.0 file is unchanged; the frozen gate compares against the v1.1.0 Hub tree. Gates: `python -m marinedata.gates.condition_masks`. Hidden-test caveat: the 658 Tayrona images are in the hackathon hidden-test manifest (635 public since v1.0, 23 withheld), so models trained on v1.1.x must not be scored on it.
 
 - Hidden-test drop at export and an id-free open card (#50). `hf_export --hidden-test <manifest> --hidden-test-exempt-v1
   <v1.0 export>` (open flavour only; `--flavour nc` refuses) removes every image the manifest lists that v1.0 does not

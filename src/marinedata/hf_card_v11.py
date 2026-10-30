@@ -363,7 +363,7 @@ def render_v11_card(
     if low:
         limits.append(f"- Sources below the {MAPPED_FLOOR:.0f} % mapped floor: {', '.join(low)}.")
     adds = (
-        f"keeps the {len(names)} configurations that v1.1.0 added to"
+        f"keeps the {len(names)} configurations that v1.1.0 and v1.1.1 added to"
         if has_v2
         else f"adds {len(names)} configurations to"
     )

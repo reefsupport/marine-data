@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import re
 from pathlib import Path
 
 import pytest
@@ -176,6 +177,20 @@ def test_the_v1_2_0_card_lists_four_versions_the_mask_note_and_the_label_section
     ):  # fmt: skip
         assert needle in block, needle
     assert_public_safe(block, "open", where="label section")
+
+
+def test_the_v1_2_0_summary_counts_the_configs_of_v1_1_0_and_v1_1_1(
+    registry, build, tmp_path, monkeypatch
+):
+    monkeypatch.setattr(v12, "SOURCE_ID", "seaview-survey-imagery")
+    card, _ = _render(registry, build, tmp_path / "v2")
+    keeps = re.search(
+        r"keeps the (\d+) configurations that (.+?) added to the frozen v1\.0 release", card
+    )
+    row = re.search(r"\| Configurations \| (\d+): ", card)
+    assert keeps and row and keeps.group(1) == row.group(1)  # the count is the export's own
+    assert keeps.group(2) == "v1.1.0 and v1.1.1"
+    assert "v1.1.0 added" not in card
 
 
 def test_the_v1_2_0_row_falls_back_to_the_month_without_a_build_date():
