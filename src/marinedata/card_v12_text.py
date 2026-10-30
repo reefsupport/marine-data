@@ -307,9 +307,13 @@ def _splits() -> str:
         "a pair in one split as one link group and fail a pair that sits in two splits. For all "
         f"{TWINS:,} twins the release split of the V1 frame equals the official V2 split, so no "
         f"frame moves. V2 adds {sum(n.values())} frames ({n['train']} train, {n['validation']} "
-        f"validation, {n['test']} test) that keep their official V2 split; the V2 test "
-        f"({V2_SPLITS['test']}) and validation ({V2_SPLITS['validation']}) frames are pinned as "
-        f"benchmark splits. {V1_ONLY} V1 frame, a V1 test frame, has no V2 twin and exists only in "
+        f"validation, {n['test']} test) that keep their official V2 split; the V2 test and "
+        "validation frames are pinned as benchmark splits "
+        # 472: tests/test_card_v12_text.py pins it to releases/marine-data/v1.2.0/SPLIT_MAP.json
+        # (`pins.benchmarks`, coralscapes-v2 test count).
+        f"(472 of the {V2_SPLITS['test']} test frames and all {V2_SPLITS['validation']} "
+        "validation frames; the remaining test frame is withheld, see the split map below). "
+        f"{V1_ONLY} V1 frame, a V1 test frame, has no V2 twin and exists only in "
         f"the frozen V1 configs. V2 covers {SITES['V2']} dive sites (V1: {SITES['V1']}; the six "
         "new ones are site36 to site41). The 55 V2-only frames of site30 are V2 train frames while "
         "the frames of site30 shared with V1 are validation frames; the official split is kept "

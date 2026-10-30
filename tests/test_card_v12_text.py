@@ -451,7 +451,7 @@ def test_split_map_text_names_no_digest_group_or_frame(maps):
 
 
 def test_the_open_card_renders_the_split_map_after_the_split_text_and_the_nc_card_does_not(
-    registry, build, tmp_path, monkeypatch
+    registry, build, tmp_path, monkeypatch, maps
 ):
     monkeypatch.setattr(v12, "SOURCE_ID", "seaview-survey-imagery")
     card, _ = _render(registry, build, tmp_path / "open")
@@ -461,3 +461,5 @@ def test_the_open_card_renders_the_split_map_after_the_split_text_and_the_nc_car
     assert first < mid < last and card.count(v12.SPLIT_MAP) == 1
     assert not any(part in nc_card for part in v12.SPLIT_MAP.split("\n\n"))
     assert "disabled by --no-near-dup" not in nc_card
+    pinned = maps[0]["pins"]["benchmarks"]["coralscapes-v2"]["test"]  # `_splits` spells it 472
+    assert f"{pinned} of the 473 test frames" in card and "test (473)" not in card
