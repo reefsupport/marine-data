@@ -1,0 +1,189 @@
+{
+  "class_counts": {
+    "registry_sources": {
+      "internal-only": 51,
+      "open": 118,
+      "restricted-nc": 24,
+      "restricted-nd": 10,
+      "unknown": 50
+    },
+    "release_sources": {
+      "open": 16
+    }
+  },
+  "code_sha": "a0b85891de7f61454f5fef90e6a1aec873af0cb7",
+  "configs": {
+    "benthic-cover": {
+      "train": 3298
+    },
+    "bleaching": {
+      "test": 3911,
+      "train": 19766,
+      "validation": 3865
+    },
+    "boxes": {
+      "test": 36503,
+      "train": 49039,
+      "validation": 8416
+    },
+    "images": {
+      "test": 487,
+      "train": 1911,
+      "validation": 196
+    },
+    "instances": {
+      "test": 48622,
+      "train": 93990,
+      "validation": 10526
+    },
+    "label-map": {
+      "train": 401
+    },
+    "metadata": {
+      "test": 17564,
+      "train": 42095,
+      "validation": 8291
+    },
+    "points": {
+      "test": 190100,
+      "train": 559540,
+      "validation": 108730
+    },
+    "semseg": {
+      "test": 1031,
+      "train": 4231,
+      "validation": 465
+    },
+    "sources": {
+      "train": 15
+    },
+    "taxonomy": {
+      "train": 3035
+    }
+  },
+  "created": "2026-10-29T23:54:41+00:00",
+  "flavour": "open",
+  "lock_sha256": "6d5fe896593b815500a93da7fafbd6ba36c081c66b151a9cab6a7ff1eb6bd631",
+  "near_dup": {
+    "algorithm": "dhash-64: grayscale L, LANCZOS resize 9x8, right>left, row-major, MSB first",
+    "chain_guard_fraction": 0.01,
+    "never_eval_exclude_max_hamming": 8,
+    "phash_algorithm": "dct-phash-64",
+    "phash_max_hamming": 8,
+    "phash_union": "union_confirm or single-image groups; never prior-prior; rest phash_excluded",
+    "pil_version": "12.3.0",
+    "union_confirm": {
+      "entropy": "shannon entropy of the 8-bit grayscale (L) histogram of the whole image",
+      "min_entropy_bits": 4.0,
+      "phash": "phash-256 of marinedata.dedup.features dedup-v2.1",
+      "phash256_max": 32,
+      "rejected": "links nothing; a new/prior-release pair joins the prior-release band",
+      "rule": "dhash <= union_max_hamming AND phash256 <= phash256_max AND min(grey entropy) >= min_entropy_bits"
+    },
+    "union_max_hamming": 4
+  },
+  "profile": "ship-open",
+  "release": "v1.2.0",
+  "release_id": "v1.2.0",
+  "repo_id": "reefsupport/marine-data",
+  "sources": [
+    {
+      "id": "coralscapes",
+      "root_digest": "da0ed5b386664e73176cbde0654771509f5f208f22d63c26d2d1d42963826a3e",
+      "version": "1.0"
+    },
+    {
+      "id": "coralscapes-v2",
+      "root_digest": "66f21bd53b05fa7183ff23d7eeace789705c1f747bc9c1741c85fcce72cc78f5",
+      "version": "2.0"
+    },
+    {
+      "id": "noaa-pifsc-bleaching",
+      "root_digest": "655165d2409fd038df530e68b5132cb509c1d0dbb350ad380b50065539ae8ddc",
+      "version": "1-image-labels"
+    },
+    {
+      "id": "reef-support-benthic-own",
+      "root_digest": "70f0b4516510f565320910477204faadf44bce68251b66d070821db1864e7a74",
+      "version": "2026-10-06"
+    },
+    {
+      "id": "reef-support-bleaching",
+      "root_digest": "2d22bbe938f4a69d9cd2ca13ef123b88195dc7722cad39a4a940b147717ae04a",
+      "version": "2026-09-24"
+    },
+    {
+      "id": "reef-support-seaview-labels",
+      "root_digest": "7c97e309ae21b913d920606e461e9a663c97c9b660c45accd8c13a3ab4d2d011",
+      "version": "2026-10-06"
+    },
+    {
+      "id": "roboflow-aquarium",
+      "root_digest": "c9b4677f9e11329321c1f381e72bac08c1ec27e3b23a93858d83554efe8e28d1",
+      "version": "zip-5d30fed3dd5a"
+    },
+    {
+      "id": "roboflow-coral-bleaching-final-v6i",
+      "root_digest": "da617d411c97fd28b3663d21455cc79e0ff7180726be4708311817946d56c473",
+      "version": "v6i-image-labels-r2"
+    },
+    {
+      "id": "roboflow-coral-bleaching-general-v1-yolov8s",
+      "root_digest": "dae37098cfc58536cbbacc23bcd765d47925cb5fe2ea556910c16d4880560d28",
+      "version": "v1-yolov8s-image-labels-r2"
+    },
+    {
+      "id": "roboflow-coral-classification-copy-changed-v13i",
+      "root_digest": "86da47568aa97a8326169fc173573b63987c16a08c32a1f4e315c6d516a5bdfb",
+      "version": "v13i-image-labels"
+    },
+    {
+      "id": "roboflow-coral-reef-classification-v3i",
+      "root_digest": "17e31b15399c46dfd9816e7ab5ad7dded9599f464db9258e83f96e16402f9655",
+      "version": "v3i-image-labels"
+    },
+    {
+      "id": "seaview-survey-imagery",
+      "root_digest": "62cd8f47cae32a420c79954d72f8c2a2bfcd5019eb23fb996670fc8ad2e7ac86",
+      "version": "2026-10-06"
+    },
+    {
+      "id": "suim",
+      "root_digest": "f7a9ea260f37ead52c20990bfc88b11c10b20dce96faa84a8f477e6f259aba95",
+      "version": "2020"
+    },
+    {
+      "id": "uiis",
+      "root_digest": "665f217331362fb3f04f386e92ef9d764abad0b721d6c7c6c8f199d94feec119",
+      "version": "rev-44ca5db46599"
+    },
+    {
+      "id": "uiis10k",
+      "root_digest": "db2b3b8ad13723fdf32f57d7c9b9205de2ff151af95c97e15ae613662412e71d",
+      "version": "rev-5c4316368a8e"
+    },
+    {
+      "id": "usis10k",
+      "root_digest": "b09022870191d59a08a260c2bbadd15f396f12dc9ff114fd13814f147708c513",
+      "version": "rev-b10f41ab819b"
+    }
+  ],
+  "split_map_sha256": "b3463879e8267095b13457373a88a28323001c215c5dc8b1f61fe014c2f36b76",
+  "split_ratio": {
+    "source": "split_map",
+    "target_pct": {
+      "test": 15.0,
+      "train": 70.0,
+      "val": 15.0
+    }
+  },
+  "takedown_url": "https://github.com/reefsupport/marine-data/issues",
+  "tasks": [
+    "benthic-coarse",
+    "benthic-l2",
+    "bleaching-condition",
+    "coral-genus-caribbean",
+    "coral-health-binary",
+    "general-pretraining"
+  ]
+}

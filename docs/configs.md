@@ -8,8 +8,8 @@ Published configs come from `registry/label-schemes/sources.yaml`; the layout, m
 
 | config | repo | kind | sources |
 | --- | --- | --- | --- |
-| `coral-masks` | reefsupport/marine-data, reefsupport/marine-data-nc | semantic | `coralscapes`, `coralseg-ucsd-mosaics`, `reef-support-benthic-own`, `reef-support-seaview-labels` |
-| `coral-masks-machine` | reefsupport/marine-data-nc | semantic | `coralscop-masks-rs` |
+| `coral-masks` | reefsupport/marine-data; private, not published on the Hub | semantic | `coralscapes`, `coralseg-ucsd-mosaics`, `reef-support-benthic-own`, `reef-support-seaview-labels` |
+| `coral-masks-machine` | private, not published on the Hub | semantic | `coralscop-masks-rs` |
 | `fish-boxes` | reefsupport/marine-data | boxes | `roboflow-aquarium` |
 | `instance-masks` | reefsupport/marine-data | instances | `uiis`, `uiis10k`, `usis10k` |
 | `scene-masks` | reefsupport/marine-data | semantic | `suim` |

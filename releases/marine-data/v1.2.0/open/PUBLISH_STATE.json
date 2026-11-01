@@ -1,0 +1,62 @@
+{
+ "flavour": "open",
+ "lock_sha256": "6d5fe896593b815500a93da7fafbd6ba36c081c66b151a9cab6a7ff1eb6bd631",
+ "release": "v1.2.0",
+ "repo_id": "reefsupport/marine-data",
+ "tag": "v1.2.0",
+ "tagged": "17b9aa1a3aca0cdeab53f536f6e361e78b4fbe29",
+ "uploads": [
+  {
+   "part": "data:benthic-cover",
+   "sha": null
+  },
+  {
+   "part": "data:bleaching",
+   "sha": null
+  },
+  {
+   "part": "data:boxes",
+   "sha": null
+  },
+  {
+   "part": "data:images",
+   "sha": null
+  },
+  {
+   "part": "data:instances",
+   "sha": null
+  },
+  {
+   "part": "data:label-map",
+   "sha": null
+  },
+  {
+   "part": "data:metadata",
+   "sha": null
+  },
+  {
+   "part": "data:points",
+   "sha": null
+  },
+  {
+   "part": "data:semseg",
+   "sha": null
+  },
+  {
+   "part": "data:sources",
+   "sha": null
+  },
+  {
+   "part": "data:taxonomy",
+   "sha": null
+  },
+  {
+   "part": "provenance",
+   "sha": "fcefb8b1724eb189c672a714a677e3fd432d4832"
+  },
+  {
+   "part": "card",
+   "sha": "17b9aa1a3aca0cdeab53f536f6e361e78b4fbe29"
+  }
+ ]
+}

@@ -9,6 +9,7 @@ passes `--go`.
 |---|---|
 | `create.sh` | `--target hetzner` (the default): writes the cloud-init user-data and prints the `hcloud` commands (`--print-only`, the default: no token, no network); `--run` executes the same commands after a typed confirmation. `--target pve`: writes `out/<name>.yaml` and `out/vm-<VMID>.sh` for the Proxmox host and never runs anything. The host, the cloud-init user, the VM id, the address and the key names are yours to give (flags, `PVE_*` variables or `--env-file`); none is built in. |
 | `bootstrap.sh` | Run as root inside the VM, once or again for another ref (see Re-run with a new REF): docker, the data disk at `/data`, a clone of `MARINEDATA_REF`, the image, then the stages below. On Hetzner it is the user-data body; on Proxmox you start it by hand. |
+| `publish.sh` | Run by you in the VM, step 6: `release publish --go`, one part per call in the order of `--list-parts`, stopping at the first failure. `HF_TOKEN` comes from your environment only; the VM never stores it. Log: `/data/logs/publish-ID-F.out`. |
 | `fetch-pinned.py` | Run by the `Dockerfile`, not by you: downloads the pinned YuNet model, checks its sha256 and fails the image build on a mismatch. It replaces `ADD --checksum`, which only BuildKit has; the VM builds with the classic builder, and `tests/test_dockerfile_classic_builder.py` keeps both Dockerfiles free of BuildKit-only syntax. |
 
 | Stage | What runs | Lands in |
@@ -17,8 +18,8 @@ passes `--go`.
 | build | `marinedata release build --release ID --flavour F --lock ... --split-map ... --out /data` | `/data/releases/ID/F/` (`RELEASE.json`, `tasks/`) |
 | export | `python -m marinedata.hf_export` writes the shards and the summary only; `python -m marinedata.hf_card ... --citation /app/CITATION.cff` then renders the card and writes `LICENSE`, `NOTICE` and `CITATION.cff` (the repo's file, the same input as the croissant stage) For an additive release `CARD_ARGS` adds flags to the card stage, e.g. `CARD_ARGS="--v1-dir /data/v1-repo"` (the Hub repo before the publish): the card then declares every prior config the build does not ship (`condition-masks` among them). | `/data/export/ID/F/` (`data/`, `README.md`, `LICENSE`, `NOTICE`, `CITATION.cff`) and `/data/export/ID/F.summary.json` |
 | croissant | `marinedata release croissant DIR --release-dir ... --citation /app/CITATION.cff --repo-id R` (R is read from `registry/flavours.yaml`) | `croissant.json` in the export folder |
-| gate | `marinedata release gate DIR --all --require-all [--v1-dir V]`, then `marinedata release gate DIR --v11` (G1..G10; `GATE_V11_ARGS` carries `--v1-dir V` and the manifests, and the `--v1-dir V` in it also goes to the `--all` call so its card, load and masks gates count the frozen v1.0 configs; the wrapper passes the pinned YuNet model path) `publish_tree` (G10) compares the export with the Hub repo as it is before the publish: after the full run, re-run `marinedata release gate DIR --v11 --only publish_tree --v1-dir <Hub snapshot>` (`GATE_V11_ARGS` carries the frozen v1.0 repo as `--v1-dir`). `release publish --go` refuses without a passed `publish_tree`. | `GATES.json` in the export folder |
-| plan | `marinedata release publish ...` without `--go` (`PLAN_ARGS`, e.g. `--v1-dir`, adds the delta against the prior tree) | `/data/logs/plan.log` |
+| gate | `marinedata release gate DIR --all --require-all [--v1-dir V]`, then `marinedata release gate DIR --v11` (G1..G10; `GATE_V11_ARGS` carries `--v1-dir V` and the manifests, and the `--v1-dir V` in it also goes to the `--all` call so its card, load and masks gates count the frozen v1.0 configs; the wrapper passes the pinned YuNet model path) `publish_tree` (G10) compares the export with the Hub repo as it is before the publish and `frozen` (G2) with the v1.0 tree, and a gate run takes one `--v1-dir`: an additive release sets `--v1-dir /data/v1-repo` (the Hub snapshot) in `GATE_V11_ARGS`, the chain then stops at `frozen` (STATUS `gate FAILED(1)`, then `plan ok`: expected) and `frozen` is re-run on its own against `/data/v1.0-repo` (see the last section). `release publish --go` refuses without a passed `publish_tree`. | `GATES.json` in the export folder |
+| plan | `marinedata release publish ...` without `--go` (`PLAN_ARGS`, e.g. `--v1-dir /data/v1-repo`, adds the delta against the prior tree) | `/data/logs/plan.log` |
 
 `STAGES` defaults to `lock build export croissant gate plan`. Without `croissant` there is no
 `croissant.json`, the croissant gate skips and `--require-all` cannot pass. An **empty** `STAGES=""` is
@@ -191,21 +192,29 @@ marinedata-run --py -m marinedata.hf_card --release-dir /data/releases/ID/F \
 It reads the numbers from `GATES.json`, stops when the `dedup` or `splits` gate did not pass, and prints no
 `WARNING` once every slot is filled. Details: `docs/release-runbook.md`, "v1.2.0 card gate numbers".
 
-6. **Publish by hand**, after reading `/data/logs/plan.log` and `GATES.json`. The plan is a dry run; `--go` is yours to add,
-   one part per call so a failure stops at a known part (`--list-parts` prints them: one `data:<config>` each, `provenance`,
-   `card`, `tag`):
+6. **Publish by hand**, after reading `/data/logs/plan.log` and `GATES.json`. The plan is a dry run; `--go` is yours to add.
+   `deploy/release-vm/publish.sh` adds it one part per call and stops at the first failure, so a failure leaves a known part
+   (`--list-parts` prints them: one `data:<config>` each, `provenance`, `card`, `tag`). It takes `RELEASE_ID`, `FLAVOUR` and
+   `LOCK_FILE` from `/etc/marinedata/settings.env`, the export from `/data/export/ID/F`, the release dir from
+   `/data/releases/ID/F` and the lock from `/app/<LOCK_FILE>`, and writes `/data/logs/publish-<id>-<flavour>.out`.
+   The VM never holds the token: `HF_TOKEN` must be in the environment of the script, which exits 2 and launches nothing
+   without it. There is no file fallback. In the root shell on the VM:
    ```bash
    rm -f /root/marinedata.env             # the upload needs no S3 secrets
-   read -rs HF_TOKEN && export HF_TOKEN
-   for part in $(marinedata-run release publish --release-id v1.1 --flavour open \
-       --dir /data/export/v1.1/open --release-dir /data/releases/v1.1/open --lock /app/release.lock.yaml --list-parts); do
-     marinedata-run release publish --release-id v1.1 --flavour open \
-       --dir /data/export/v1.1/open --release-dir /data/releases/v1.1/open --lock /app/release.lock.yaml \
-       --go --part "$part" || break
-   done
-   unset HF_TOKEN
+   read -rs HF_TOKEN
+   export HF_TOKEN; nohup setsid bash /opt/marine-data/deploy/release-vm/publish.sh >/dev/null 2>&1 </dev/null & unset HF_TOKEN
    ```
-   It refuses unless every required gate passed (`--all` and `--v11` both ran), refuses an existing tag, and refuses `v1.0`
+   Keep `read -rs HF_TOKEN` on a line of its own. Written as `read -rs HF_TOKEN && ... &`, the `&` puts the read itself in the
+   background: the shell stops that job (SIGTTIN) and no token is ever read. This happened on 2026-11-01. `nohup setsid` and the
+   three redirections detach the script from the terminal, so a dropped ssh does not stop it. Follow it with bounded reads; the
+   log holds progress bars that end in `\r`, hence the `tr`:
+   ```bash
+   tr '\r' '\n' < /data/logs/publish-<id>-<flavour>.out | grep '^===' | tail
+   ```
+   The markers are `=== PUBLISH START|DONE|FAILED rc=<n> at <step>` and `=== PART <part> start|ok`. A wait such as
+   `timeout 900 sh -c 'until grep -qE "=== PUBLISH (DONE|FAILED)" <log>; do sleep 10; done'` that returns 124 means "still
+   running", not "failed": read the markers again.
+   `release publish --go` refuses unless every required gate passed (`--all` and `--v11` both ran), refuses an existing tag, and refuses `v1.0`
    without `--allow-frozen` (v1.0 is frozen while the hackathon runs). Data parts are `upload_large_folder` (resumable, batched
    commits) over `data/<config>/*.parquet`; `provenance` and `card` are one commit each. The allow-list is `UPLOAD_PATTERNS`
    (listed in `docs/release-runbook.md`): `data/**/*.parquet`, `README.md`, `croissant.json`, `provenance/*`, `LICENSE`, `NOTICE`,
@@ -324,5 +333,48 @@ Also open:
 The upload never deletes, so the Hub repo after a publish is the export folder plus every prior file the export does not overwrite. Three things keep that tree consistent:
 
 - `CARD_ARGS` (read by `bootstrap.sh` like `EXPORT_ARGS` and `PLAN_ARGS`) adds flags to the card stage. Set `CARD_ARGS="--v1-dir /data/v1-repo"`, a checkout of the Hub repo as it is before this publish, so that the card declares every config folder the Hub keeps and not only the four v1.0 ones.
-- `publish_tree` (G10) checks the tree the Hub will hold. The full `--v11` run takes its `--v1-dir` from `GATE_V11_ARGS`, the frozen v1.0 repo, so run the gate again against the Hub snapshot: `marinedata release gate DIR --v11 --only publish_tree --v1-dir /data/v1-repo`. The new entry replaces the earlier one in `GATES.json`.
+- `publish_tree` (G10) checks the tree the Hub will hold. The full `--v11` run takes its `--v1-dir` from `GATE_V11_ARGS`. With the Hub snapshot there (`--v1-dir /data/v1-repo`, as run for v1.2.0) `publish_tree` is right in the chain and `frozen` is the gate to re-run (next section). With the frozen v1.0 repo there (v1.1.x), run `publish_tree` again against the Hub snapshot: `marinedata release gate DIR --v11 --only publish_tree --v1-dir /data/v1-repo`. The new entry replaces the earlier one in `GATES.json`.
 - `marinedata release publish ... --go` refuses unless `GATES.json` shows `publish_tree` passed; the message names the gate and the command above. No flag overrides it, and the dry run does not need it.
+
+### `settings.env` and the two snapshots (v1.2.0 open, as run)
+
+`/etc/marinedata/settings.env` holds `KEY=VALUE` lines and no secret. The additive v1.2.0 open release ran with the lines
+below; `CARD_ARGS`, `GATE_V11_ARGS`, `PLAN_ARGS` and `EXPORT_ARGS` carry `--v1-dir /data/v1-repo` (`RELEASE_BUILD_ARGS` too, with
+one `--local <source-id>=/data/cache/<source-id>` per source):
+
+```bash
+MARINEDATA_REF=<40-hex sha of the release ref>
+RELEASE_ID=v1.2.0
+FLAVOUR=open
+LOCK_FILE=releases/marine-data/v1.2.0/open/release.lock.yaml
+SPLIT_MAP_FILE=releases/marine-data/v1.2.0/SPLIT_MAP.json
+DATA_DEV=/dev/disk/by-id/scsi-0QEMU_QEMU_HARDDISK_drive-scsi1
+RELEASE_BUILD_ARGS="--tasks v2 --v11 --v1-dir /data/v1-repo --local-only --local <source-id>=/data/cache/<source-id> ..."
+EXPORT_ARGS="--v1-dir /data/v1-repo --hidden-test /data/checks/hidden-test-manifest.parquet --hidden-test-exempt-v1 /data/v1-repo"
+GATE_V11_ARGS="--v1-dir /data/v1-repo --privacy-review /app/registry/privacy/review.yaml --hidden-test /data/checks/hidden-test-manifest.parquet --hidden-test-published-exception --benchmark /app/registry/benchmarks/manifests"
+PLAN_ARGS="--v1-dir /data/v1-repo"
+CARD_ARGS="--v1-dir /data/v1-repo"
+```
+
+Two snapshots of the Hub repo sit on the data disk, each fetched with `huggingface_hub.snapshot_download(repo, repo_type="dataset",
+revision=REV, local_dir=DIR)` (the sha of `/data/v1-repo` is kept in `/data/logs/V1_REPO_SHA.txt`):
+
+| Directory | What | Used by |
+|---|---|---|
+| `/data/v1-repo` | the Hub repo as published before this release (for v1.2.0: `main` at `936be184cf025dc479a7a2ff9ec88dddfe5c466f`, the tag `v1.1.1`, 226 files) | `publish_tree`, `card`, `load`, the plan, the build and the export |
+| `/data/v1.0-repo` | the frozen v1.0 tree (the tag `v1.0`, 69 files) | the `frozen` gate only |
+
+A gate invocation takes one `--v1-dir`, so the gates run as two invocations. The chain's gate stage uses the snapshot of
+`GATE_V11_ARGS`; with `/data/v1-repo` the `frozen` gate treats every file of that newer snapshot as frozen, flags the files this
+release replaces on purpose (`LICENSE`, `NOTICE`, `CITATION.cff`, `croissant.json`, shards: `changed_v1_file`) and fails. The chain
+therefore ends with STATUS `gate FAILED(1)` and then `plan ok`, and that is expected. Re-run
+`frozen` against the v1.0 tree and `publish_tree` against the Hub snapshot (each replaces its entry in `GATES.json`), as run for v1.2.0:
+
+```bash
+marinedata-run release gate /data/export/v1.2.0/open --v11 --only frozen --flavour open \
+  --release-dir /data/releases/v1.2.0/open --v1-dir /data/v1.0-repo
+marinedata-run release gate /data/export/v1.2.0/open --v11 --only publish_tree --flavour open \
+  --release-dir /data/releases/v1.2.0/open --v1-dir /data/v1-repo
+```
+
+Read `GATES.json` before step 6: every gate must show passed.
