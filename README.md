@@ -13,13 +13,19 @@ The project has two parts:
   crosswalks, dataloaders, a dataset builder and a release pipeline. The registry lists 253 sources and defines 26
   capabilities.
 - **The published datasets** on Hugging Face: [`reefsupport/marine-data`](https://huggingface.co/datasets/reefsupport/marine-data),
-  images with masks, boxes or labels in 16 configs (58,803 rows in the four v1.0 configs; the unified `images` config
-  holds 34,794 images), each row carrying its own `licence` and `attribution` fields.
+  67,950 underwater images from 16 sources with masks, boxes, points and bleaching labels in 16 Parquet configs, one
+  shared taxonomy, current release v1.2.0 (2026-11-01), each row carrying its own `licence` and `attribution` fields.
 
 This is metadata, not legal advice. Tier assignments record Reef Support's reading of primary sources, cited per entry,
 and are a starting point for your own review. See [`docs/LEGAL.md`](docs/LEGAL.md).
 
 ## Published datasets
+
+Reef Support Marine Data is a collection of 67,950 underwater images from 16 openly licensed sources, labelled for coral-reef and marine computer vision: semantic masks, instance masks, bounding boxes, point annotations and image-level bleaching labels, plus derived benthic cover. Labels are mapped to one taxonomy (3,035 nodes), so labels from different sources can be trained and evaluated together, and every row carries the `image_sha256` of its pixels and the licence and attribution of its source.
+
+The data ships as 16 streamable Parquet configurations. Image bytes are stored once per `image_sha256`, in `images` or in the frozen v1.0 config that `metadata.bytes_config` names; every label config joins to them on that key. Use it for benthic and coral segmentation (including the 95-class Coralscapes V2), instance segmentation, object detection, bleaching classification, point-based cover estimation, retrieval and pretraining. The current release is v1.2.0 (published 2026-11-01). Release history below.
+
+### Release history
 
 Release v1.0 (October 2026) is a set of four Parquet configs with images and masks embedded. Splits follow the
 upstream splits where a source defines them, and a deterministic group hash (70/15/15 target) otherwise. Because the
@@ -37,6 +43,8 @@ upstream splits dominate, no nominal ratio describes v1.0. The measured train/va
 Every config loads the same way; only the config name changes. Splits are `train`, `validation` and `test`.
 
 **Coralscapes V2 (v1.2.0, published 2026-11-01).** V2 supersedes V1 for Coralscapes tasks; V1 configs are kept frozen for reproducibility. The release adds Coralscapes V2 (`coralscapes-v2`: 2,433 frames, 95 classes including soft corals and black coral, Apache-2.0, [josauder/coralscapesV2](https://huggingface.co/datasets/josauder/coralscapesV2)) to the `semseg` and `instances` configs and its frames and labels to `images`, `metadata`, `label-map`, `sources` and `taxonomy`. The upstream split is 1,790 / 170 / 473; v1.2.0 assigns 1,790 / 170 / 472 (one test frame withheld) and ships 1,786 / 170 / 472 `semseg` rows (four assigned train frames are not shipped), and V2 adds 2,427 images. It adds no config and removes or renames none. The four v1.0 configs, `condition-masks`, `benthic-cover` and every earlier `images` shard are byte-identical to v1.1.1. v1.2.0 rewrites 91 Parquet files of the other configs in place (new rows, the 9 moved split groups, `taxonomy_version` 3.1.0); no split loses rows except the one UIIS10K image moved to train. V1 and V2 frames that are the same frame are linked by stem, and the label matching is verified for every source: every native label of a source with a crosswalk resolves into the reference vocabulary `rs-benthic-v1` or is an unmappable edge that trains as ignore, so sources can be used together in one training run. See the [changelog](CHANGELOG.md), the [label matching and how to use it](docs/label-matching.md) and the [sources](docs/sources.md).
+
+### Configs and how to load them
 
 All 16 configs of the current release (v1.2.0). Row counts are over all splits. The columns of each config are in
 [`docs/configs.md`](docs/configs.md) and on the dataset card.
