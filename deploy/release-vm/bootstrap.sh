@@ -2,7 +2,7 @@
 # marine-data release VM: build one release flavour, gate it, print the publish plan (dry run).
 #
 # Runs once, as root, from cloud-init user-data (create.sh prepends the non-secret settings as
-# `export` lines) or by hand: RELEASE_ID=v1.1 FLAVOUR=open MARINEDATA_REF=<sha> bash bootstrap.sh
+# `export` lines) or by hand: RELEASE_ID=v1.2.0 FLAVOUR=open MARINEDATA_REF=<sha> bash bootstrap.sh
 # (run it as a file, not piped into bash). On the Proxmox VM the settings are in
 # /etc/marinedata/settings.env: `set -a; . /etc/marinedata/settings.env; set +a` first.
 #
@@ -57,7 +57,8 @@ CARD_ARGS=${CARD_ARGS:-}
 # release dir, G2), --hidden-test MANIFEST, --benchmark MANIFEST, --nc-id ID. stage_gate also hands
 # --v1-dir DIR (and only that flag) to the --all call: see the comment above stage_gate.
 GATE_V11_ARGS=${GATE_V11_ARGS:-}
-# Extra 'release publish' options for the plan, e.g. "--v1-dir /data/v1.0-repo" (the delta against v1.0).
+# Extra 'release publish' options for the plan, e.g. "--v1-dir /data/v1-repo": the v1.1.1 Hub snapshot for publish_tree and the card;
+# the v1.0 snapshot is what the `frozen` gate reads.
 PLAN_ARGS=${PLAN_ARGS:-}
 # The privacy gates (G8) run real YuNet: the pinned, sha256-verified model baked into the image.
 # The wrapper passes this path; the gates never download a model.

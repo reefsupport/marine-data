@@ -1,5 +1,9 @@
 # Datasheet: Reef Support Marine Data (v1.0, October 2026)
 
+> **Versions.** This datasheet describes release v1.0: the four configs `coral-masks`, `scene-masks`, `instance-masks` and `fish-boxes`.
+> Later releases (v1.1.0, v1.1.1 and v1.2.0, 16 configs in total) are described in [`CHANGELOG.md`](../CHANGELOG.md)
+> and on the dataset card on Hugging Face.
+
 This datasheet follows the seven sections of Gebru et al., *Datasheets for Datasets* (Communications of the ACM, 2021).
 It describes the four configurations published as
 [`reefsupport/marine-data`](https://huggingface.co/datasets/reefsupport/marine-data). The dataset card on Hugging Face

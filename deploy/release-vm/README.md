@@ -289,9 +289,9 @@ What it does and what it never does:
 
 ## Verification status
 
-Nothing here has run on a VM, on Hetzner or Proxmox, against the bucket or the Hub. So far only
+Run end to end for v1.2.0 (published 2026-11-01). The regression checks for these scripts stay offline:
 `tests/test_release_vm_scripts.py` (no root, no network; a recorder stands in for `hcloud` and for `docker`, and the
-re-run tests use a local git repository as origin), `bash -n` and `shellcheck` have run:
+re-run tests use a local git repository as origin), `bash -n` and `shellcheck`:
 
 - `create.sh --target pve` renders a `vm-<VMID>.sh` with the `qm`, `pct`, `ping` and `install` lines of the plan in
   order (`pve.env.example` reproduces the plan's numbers and addresses), a snippet with the 40-hex ref and without
@@ -306,7 +306,7 @@ re-run tests use a local git repository as origin), `bash -n` and `shellcheck` h
 - A re-run with a new ref (local git origin, fake `docker`): the checkout moves and keeps its untracked files, local
   changes to tracked files stop the move and stay as they were, and the image tag differs per commit.
 
-What only the first run on the Proxmox VM can show (the rehearsal checks these before a real build):
+What only a run on the VM can show (the rehearsal checks these before a real build; v1.2.0 ran end to end):
 
 - the image builds with Debian 12's `docker.io` (classic builder) and stays at or under 1.5 GB (`docker image ls marinedata`);
 - the data disk appears under the by-id name above, and `tune2fs -l` reports 0 reserved blocks after `mkfs.ext4 -m 0`;
@@ -317,15 +317,13 @@ What only the first run on the Proxmox VM can show (the rehearsal checks these b
 - inside the container `/app/<LOCK_FILE>` and `/app/<SPLIT_MAP_FILE>` exist, and a re-run with a new ref on the VM
   moves the checkout and rebuilds the image (the tests cover the logic with a local origin and a fake `docker`).
 
-Also open:
+Runbook coverage and image platform:
 
-- `release gate --all --require-all` and the `configs` block in `RELEASE.json` come with the gates branch. Until it
-  is merged, the gate stage runs only `--masks` and `release publish` refuses.
 - Runbook coverage (`docs/release-runbook.md`): the VM runs step 3 (build), step 6 (export), the card part of
   step 8, the gates and the step 9 dry run. Steps 1-2 are replaced by the frozen split map at the
   release ref; steps 4-5 (dedup gate, decon check) are not separate stages: pass `--decon` and the other
   `release build` flags with `create.sh --build-args`, and expect the `dedup` and `splits` gates from
-  `gate --all`. Step 7 is skipped. Export and card have not run on a real corpus.
+  `gate --all`. Step 7 is skipped.
 - The image is built on the VM (x86_64). A local arm64 `make image` is only a smoke test.
 
 ## Additive releases: `CARD_ARGS`, `publish_tree` and the `--go` guard

@@ -133,7 +133,6 @@ def build(tmp_path):
         "benthic-cover",
         [{"survey_id": "s1", "source_id": "seaview-survey-imagery", "cover": 0.4}],
     )
-    _write(rel, "sites", [{"site_id": "x", "source_id": "seaview-survey-imagery", "n": 2}])
     (rel / "task_layers" / "V11_TABLES.json").write_text(json.dumps({"taxonomy_version": TAX}))
     roots = {p.name: p for p in cache.iterdir()}
     return rel, roots, sha
@@ -154,7 +153,7 @@ def test_is_v11_release(build):
     assert not is_v11_release(build[0] / "task_layers")
 
 
-def test_twelve_configs_with_viewer_friendly_shards(registry, build, tmp_path):
+def test_eleven_configs_with_viewer_friendly_shards(registry, build, tmp_path):
     layout, _ = _layout(registry, build, shard_target_bytes=2000)
     out = tmp_path / "out"
     summary = export_v11(layout, out)
@@ -168,7 +167,6 @@ def test_twelve_configs_with_viewer_friendly_shards(registry, build, tmp_path):
             "semseg",
             "instances",
             "benthic-cover",
-            "sites",
             "taxonomy",
             "label-map",
             "sources",
@@ -593,15 +591,14 @@ def test_drop_hidden_test_matches_either_key_in_any_case_and_records_counts_only
             {"image_sha256": "5" * 64, "bytes_sha256": "5" * 64},
         ],
         "points": [{"image_sha256": "1" * 64}, {"image_sha256": "5" * 64}],
-        "sites": [{"site_id": "x"}],
     }
     drop = {"1" * 64, "3" * 64, "4" * 64, "9" * 64}
     kept, counts = drop_hidden_test(tables, drop)
     assert [r["image_sha256"] for r in kept["metadata"]] == [
         "5" * 64
     ]  # image_sha256 or bytes_sha256
-    assert kept["points"] == [{"image_sha256": "5" * 64}] and kept["sites"] == tables["sites"]
-    assert counts == {"requested": 4, "images": 3, "rows": {"metadata": 3, "points": 1, "sites": 0}}
+    assert kept["points"] == [{"image_sha256": "5" * 64}]
+    assert counts == {"requested": 4, "images": 3, "rows": {"metadata": 3, "points": 1}}
     assert len(tables["metadata"]) == 4 and len(tables["points"]) == 2  # the input is not mutated
     assert not [d for d in drop if d in json.dumps(counts)]
 

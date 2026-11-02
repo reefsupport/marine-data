@@ -10,10 +10,11 @@ this training set was permitted for this purpose" can be checked by code instead
 The project has two parts:
 
 - **The registry and tooling** (`src/marinedata`, `registry/`): per-source licence tiers, access rules, label
-  crosswalks, dataloaders, a dataset builder and a release pipeline. The registry lists 143 sources and defines 26
+  crosswalks, dataloaders, a dataset builder and a release pipeline. The registry lists 253 sources and defines 26
   capabilities.
 - **The published datasets** on Hugging Face: [`reefsupport/marine-data`](https://huggingface.co/datasets/reefsupport/marine-data),
-  58,803 images with masks or bounding boxes, each row carrying its own `licence` and `attribution` fields.
+  images with masks, boxes or labels in 16 configs (58,803 rows in the four v1.0 configs; the unified `images` config
+  holds 34,794 images), each row carrying its own `licence` and `attribution` fields.
 
 This is metadata, not legal advice. Tier assignments record Reef Support's reading of primary sources, cited per entry,
 and are a starting point for your own review. See [`docs/LEGAL.md`](docs/LEGAL.md).
@@ -35,7 +36,29 @@ upstream splits dominate, no nominal ratio describes v1.0. The measured train/va
 
 Every config loads the same way; only the config name changes. Splits are `train`, `validation` and `test`.
 
-**Coralscapes V2 (v1.2.0, in preparation).** V2 supersedes V1 for Coralscapes tasks; V1 configs are kept frozen for reproducibility. The release adds Coralscapes V2 (`coralscapes-v2`: 2,433 frames, 95 classes including soft corals and black coral, Apache-2.0, [josauder/coralscapesV2](https://huggingface.co/datasets/josauder/coralscapesV2)) to the `semseg` and `instances` configs. It adds no config and changes nothing already published. V1 and V2 frames that are the same frame are linked by stem, and the label matching is verified for every source: every native label of a source with a crosswalk resolves into the reference vocabulary `rs-benthic-v1` or is an unmappable edge that trains as ignore, so sources can be used together in one training run. See the [changelog](CHANGELOG.md), the [label matching and how to use it](docs/label-matching.md) and the [sources](docs/sources.md).
+**Coralscapes V2 (v1.2.0, published 2026-11-01).** V2 supersedes V1 for Coralscapes tasks; V1 configs are kept frozen for reproducibility. The release adds Coralscapes V2 (`coralscapes-v2`: 2,433 frames, 95 classes including soft corals and black coral, Apache-2.0, [josauder/coralscapesV2](https://huggingface.co/datasets/josauder/coralscapesV2)) to the `semseg` and `instances` configs and its frames and labels to `images`, `metadata`, `label-map`, `sources` and `taxonomy`. The upstream split is 1,790 / 170 / 473; v1.2.0 assigns 1,790 / 170 / 472 (one test frame withheld) and ships 1,786 / 170 / 472 `semseg` rows (four assigned train frames are not shipped), and V2 adds 2,427 images. It adds no config and removes or renames none. The four v1.0 configs, `condition-masks`, `benthic-cover` and every earlier `images` shard are byte-identical to v1.1.1. v1.2.0 rewrites 91 Parquet files of the other configs in place (new rows, the 9 moved split groups, `taxonomy_version` 3.1.0); no split loses rows except the one UIIS10K image moved to train. V1 and V2 frames that are the same frame are linked by stem, and the label matching is verified for every source: every native label of a source with a crosswalk resolves into the reference vocabulary `rs-benthic-v1` or is an unmappable edge that trains as ignore, so sources can be used together in one training run. See the [changelog](CHANGELOG.md), the [label matching and how to use it](docs/label-matching.md) and the [sources](docs/sources.md).
+
+All 16 configs of the current release (v1.2.0). Row counts are over all splits. The columns of each config are in
+[`docs/configs.md`](docs/configs.md) and on the dataset card.
+
+| Config | Rows | Since |
+|---|---|---|
+| `coral-masks` | 5,997 | v1.0 |
+| `scene-masks` | 1,598 | v1.0 |
+| `instance-masks` | 25,296 | v1.0 |
+| `fish-boxes` | 25,912 | v1.0 |
+| `images` | 34,794 | v1.1.0 |
+| `metadata` | 67,950 | v1.1.0 |
+| `points` | 858,370 | v1.1.0 |
+| `bleaching` | 27,542 | v1.1.0 |
+| `boxes` | 93,958 | v1.1.0 |
+| `semseg` | 5,727 | v1.1.0 |
+| `instances` | 153,138 | v1.1.0 |
+| `benthic-cover` | 3,298 | v1.1.0 |
+| `label-map` | 401 | v1.1.0 |
+| `sources` | 15 | v1.1.0 |
+| `taxonomy` | 3,035 | v1.1.0 |
+| `condition-masks` | 635 | v1.1.1 |
 
 | Config | Call | Download |
 |---|---|---|
@@ -91,16 +114,16 @@ Licences differ per source. Keep the `attribution` column when you share or publ
 
 ## Install
 
-Requires Python 3.10 or newer and git. The package is not on PyPI; install the v1.0.0 release from GitHub:
+Requires Python 3.10 or newer and git. The package is not on PyPI; install the v1.2.0 release from GitHub:
 
 ```bash
-pip install "marinedata[hf] @ git+https://github.com/reefsupport/marine-data@v1.0.0"
+pip install "marinedata[hf] @ git+https://github.com/reefsupport/marine-data@v1.2.0"
 ```
 
 To work on the code, clone the release and install it in editable mode:
 
 ```bash
-git clone --branch v1.0.0 https://github.com/reefsupport/marine-data
+git clone --branch v1.2.0 https://github.com/reefsupport/marine-data
 cd marine-data
 uv venv && uv pip install -e ".[dev]"
 ```
@@ -403,7 +426,7 @@ Registry maintenance (run from the repo root):
 **Code.** The code in this repository is released under the Apache License 2.0 ([`LICENSE`](LICENSE)).
 
 **Data.** The code licence does not apply to data. Each source keeps its own licence, recorded in `registry/` and in
-the `licence` and `attribution` columns of every published row. The sources in the published release are:
+the `licence` and `attribution` columns of every published row. The sources of v1.0 are listed first, then `reef-support-bleaching` (v1.1.0) and `coralscapes-v2` (v1.2.0). The dataset card lists all 16 sources of the current release with their image and annotation licences:
 
 | Source | What is included | Licence | Required attribution |
 |---|---|---|---|
@@ -413,6 +436,8 @@ the `licence` and `attribution` columns of every published row. The sources in t
 | [SUIM](https://github.com/IRVLab/SUIM) | `scene-masks`: 1,598 images | [MIT](https://opensource.org/license/mit) | Islam et al. 2020; Copyright (c) 2020 Md Jahidul Islam |
 | UIIS, UIIS10K, USIS10K | `instance-masks`: 25,296 images; part of `fish-boxes` | [Apache-2.0](https://www.apache.org/licenses/LICENSE-2.0), as distributed by the authors | Lian et al. 2023; Li et al. 2025; Lian et al. 2024 |
 | [Roboflow Aquarium Dataset](https://public.roboflow.com/object-detection/aquarium) | `fish-boxes`: 637 images | [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/) | Roboflow, Aquarium Dataset, 2020 |
+| Reef Support bleaching masks (Tayrona) | `bleaching`, `condition-masks` (635 rasters) | [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/) | Reef Support, https://reef.support |
+| [Coralscapes V2](https://huggingface.co/datasets/josauder/coralscapesV2) | `semseg`, `instances`, `images`, `metadata`: 2,427 images | [Apache-2.0](https://www.apache.org/licenses/LICENSE-2.0) | Sauder et al. 2026 (arXiv:2609.12826); keep the licence text and note changes (Parquet re-encoding, class map) |
 
 Images in the UIIS, UIIS10K and USIS10K configurations originate from datasets distributed by their authors under the
 Apache License 2.0. The original publications state that the images were gathered from public sources and earlier
@@ -442,16 +467,16 @@ Machine-readable metadata is in [`CITATION.cff`](CITATION.cff). To cite the rele
   title        = {Reef Support Marine Data},
   author       = {{Reef Support}},
   year         = {2026},
-  version      = {1.0},
+  version      = {1.2.0},
   howpublished = {\url{https://huggingface.co/datasets/reefsupport/marine-data}},
-  note         = {v1.0 (October 2026). Licences are set per source; see the dataset card.}
+  note         = {v1.2.0 (November 2026). Licences are set per source; see the dataset card.}
 }
 
 @software{reefsupport2026marinedatacode,
   title   = {marine-data: a licence-aware registry and dataloaders for marine datasets},
   author  = {{Reef Support}},
   year    = {2026},
-  version = {1.0},
+  version = {1.2.0},
   url     = {https://github.com/reefsupport/marine-data},
   license = {Apache-2.0}
 }
@@ -465,6 +490,13 @@ Please also cite the upstream sources you use.
   author    = {Sauder, Jonathan and Domazetoski, Viktor and Banc-Prandi, Guilhem and Perna, Gabriela and Meibom, Anders and Tuia, Devis},
   booktitle = {Proceedings of the International Conference on Computer Vision Joint Workshop on Marine Vision},
   year      = {2025}
+}
+
+@inproceedings{sauder2026coralscapesv2,
+  title={CoralscapesV2: Panoptic and Fine-Grained Visual Scene Understanding in Coral Reefs},
+  author={Sauder, Jonathan and Ruckli, Thomas and Strodomskyt{\.e}, Gabriel{\.e} and Abdallah, Ibrahim Souleiman and Abdi, Rahma Hassan and Awaleh, Djama Goumaneh and Farah, Mohamed Houssein and Nour, Moustapha and Saad, Osama Sharhubil and Altaib, Mustafa Mohammed Khalafallah and Kteifan, Maysoon and Alsoqi, Farah and Zgool, Eyad and Al-Omari, Jafar and Gebreluel, Temesgen Gebremeskel and Abdulkerim, Zekaria Zekeria and Ghirmay, Meron and Beraki, Teklehaimanot and Tuia, Devis and Banc-Prandi, Guilhem},
+  booktitle={Proceedings of the European Conference on Computer Vision (ECCV) Workshop on Marine Vision},
+  year={2026}
 }
 
 @misc{gonzalezrivero2019seaview,

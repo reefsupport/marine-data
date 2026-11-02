@@ -15,7 +15,7 @@ from test_hf_export_v11 import registry as _registry
 
 from marinedata import card_v11_text as txt
 from marinedata import card_v12_text as v12
-from marinedata.hf_card_v11 import card_version, write_card_files
+from marinedata.hf_card_v11 import V1_CONFIGS, card_version, write_card_files
 from marinedata.hf_export_v11 import assert_public_safe, export_v11
 
 build, registry = _build, _registry  # the synthetic 12-table build of test_hf_export_v11
@@ -90,7 +90,11 @@ def test_section_states_the_release_facts():
 
 def test_limitations_replace_only_the_coralscapes_bullet():
     out = v12.limitations(txt.LIMITATIONS)
-    assert out[0] == v12.LIMITATION and out[1:] == txt.LIMITATIONS[1:]
+    assert out[0] == v12.LIMITATION
+    shortened = [
+        b.replace("sources table with its share.", "sources table.") for b in txt.LIMITATIONS[1:]
+    ]
+    assert list(out[1:]) == shortened  # the other bullets only lose the share clause
     with pytest.raises(ValueError, match="anchor"):
         v12.limitations(("something else", *txt.LIMITATIONS))
 
@@ -153,7 +157,9 @@ def test_the_v1_2_0_card_keeps_the_v1_1_1_history():
     from marinedata.condition_masks_docs import MASK_NOTE
 
     assert v12.mask_note() == MASK_NOTE
-    assert (v12.V110_DATE, v12.V111_DATE) == ("2026-10-17", "2026-10-24")
+    log = (ROOT / "CHANGELOG.md").read_text(encoding="utf-8")
+    heads = dict(re.findall(r"^## \[(1\.1\.[01])\] - (\d{4}-\d{2}-\d{2})$", log, re.M))
+    assert (heads["1.1.0"], heads["1.1.1"]) == (v12.V110_DATE, v12.V111_DATE)  # publication dates
     assert v12.V111_CHANGELOG and "condition-masks" in " ".join(v12.V111_CHANGELOG)
 
 
@@ -172,8 +178,8 @@ def test_the_v1_2_0_card_lists_four_versions_the_mask_note_and_the_label_section
     monkeypatch.setattr(v12, "SOURCE_ID", "seaview-survey-imagery")
     card, _ = _render(registry, build, tmp_path / "v2")
     rows = _version_rows(card)
-    assert [r[0] for r in rows] == ["v1.0.0", "v1.1.0", "v1.1.1", "v1.2.0"]
-    assert [r[1] for r in rows] == [txt.V1_DATE, v12.V110_DATE, v12.V111_DATE, "2026-10-29"]
+    assert [r[0] for r in rows] == ["v1.0", "v1.1.0", "v1.1.1", "v1.2.0"]
+    assert [r[1] for r in rows] == [txt.V1_DATE, v12.V110_DATE, v12.V111_DATE, v12.PUBLISHED]
     assert "`condition-masks`" in rows[2][2] and rows[3][2] == v12.VERSION_NOTE
     note = v12.mask_note()
     assert card.count(note) == 1 and note.startswith("**Condition masks (v1.1.1).**")
@@ -205,18 +211,28 @@ def test_the_v1_2_0_summary_counts_the_configs_of_v1_1_0_and_v1_1_1(
     monkeypatch.setattr(v12, "SOURCE_ID", "seaview-survey-imagery")
     card, _ = _render(registry, build, tmp_path / "v2")
     keeps = re.search(
-        r"keeps the (\d+) configurations that (.+?) added to the frozen v1\.0 release", card
+        r"keeps the (\d+) configurations that v1\.1\.0 "
+        r"(?:\((\d+)\) and v1\.1\.1 \(`condition-masks`\) )?added to the frozen v1\.0 release",
+        card,
     )
-    row = re.search(r"\| Configurations \| (\d+): ", card)
-    assert keeps and row and keeps.group(1) == row.group(1)  # the count is the export's own
-    assert keeps.group(2) == "v1.1.0 and v1.1.1"
-    assert "v1.1.0 added" not in card
+    row = re.search(
+        r"\| Configurations \| (\d+) \((\d+) from v1\.0, (\d+) added in v1\.1\.0"
+        r"(, `condition-masks` in v1\.1\.1)?\) \|",
+        card,
+    )
+    shown = [ln[:300] for ln in card.splitlines() if "Configurations |" in ln or "keeps the" in ln]
+    assert keeps and row, shown
+    n_v110, n_v111 = int(row.group(3)), (1 if row.group(4) else 0)  # `condition-masks` is v1.1.1
+    assert int(keeps.group(1)) == n_v110 + n_v111 and keeps.group(2) in (None, str(n_v110))
+    assert int(row.group(2)) == len(V1_CONFIGS["open"])
+    assert int(row.group(1)) == int(row.group(2)) + n_v110 + n_v111  # the whole release
+    assert n_v111 == 0 or "v1.1.0 added" not in card
 
 
-def test_the_v1_2_0_row_falls_back_to_the_month_without_a_build_date():
+def test_the_v1_2_0_row_shows_the_publish_date_without_a_build_date():
     rows = v12.version_rows(txt.V1_DATE, "v1.0 note", None)
-    assert [r[0] for r in rows] == ["v1.0.0", "v1.1.0", "v1.1.1", "v1.2.0"]
-    assert rows[-1][1] == "2026-10" and not any("<<" in c for r in rows for c in r)
+    assert [r[0] for r in rows] == ["v1.0", "v1.1.0", "v1.1.1", "v1.2.0"]
+    assert rows[-1][1] == v12.PUBLISHED and not any("<<" in c for r in rows for c in r)
 
 
 def test_label_matching_figures_are_the_verifier_result():
@@ -493,3 +509,128 @@ def test_the_open_card_renders_the_split_map_after_the_split_text_and_the_nc_car
     assert "disabled by --no-near-dup" not in nc_card
     pinned = maps[0]["pins"]["benchmarks"]["coralscapes-v2"]["test"]  # `_splits` spells it 472
     assert f"{pinned} of the 473 test frames" in card and "test (473)" not in card
+
+
+def _ints(node) -> set[int]:
+    """Every integer anywhere in a parsed JSON document."""
+    if isinstance(node, bool):
+        return set()
+    if isinstance(node, int):
+        return {node}
+    children = node.values() if isinstance(node, dict) else node if isinstance(node, list) else []
+    return {i for child in children for i in _ints(child)}
+
+
+def test_v2_split_sentence_is_pinned_to_the_frozen_split_map_and_gates():
+    release = ROOT / "releases" / "marine-data" / "v1.2.0"
+    split_map = json.loads((release / "SPLIT_MAP.json").read_text(encoding="utf-8"))
+    gates = json.loads((release / "open" / "GATES.json").read_text(encoding="utf-8"))
+    counts = gates["splits"]["counts"]
+    assigned = Counter(
+        {"val": "validation"}.get(s, s)
+        for g, s in split_map["assignments"].items()
+        if g.startswith("coralscapes-v2/")
+    )
+    assert dict(assigned) == v12.V2_ASSIGNED
+    assert v12.V2_ASSIGNED["test"] + len(split_map["withheld"]) == v12.V2_SPLITS["test"]
+    shipped = counts["ratio_pinned_sources"]["semseg"]["coralscapes-v2"]
+    assert shipped["train"] == v12.V2_SHIPPED["train"]
+    assert v12.V2_ASSIGNED["train"] - shipped["train"] == v12.NOT_SHIPPED
+    assert v12.V2_SHIPPED["validation"] == v12.V2_ASSIGNED["validation"]
+    assert v12.V2_SHIPPED["test"] == v12.V2_ASSIGNED["test"]
+    assert counts["ratio_left_out_images"]["pinned"] == v12.V2_IMAGES
+    for split in (v12.V2_SPLITS, v12.V2_ASSIGNED, v12.V2_SHIPPED):
+        triple = f"{split['train']:,} / {split['validation']} / {split['test']}"
+        assert triple in v12.V2_SPLIT_SENTENCE
+    assert f"{v12.V2_IMAGES:,} images" in v12.V2_SPLIT_SENTENCE
+
+
+def test_card_states_release_wide_counts_and_the_scope_of_the_gates(
+    registry, build, tmp_path, monkeypatch
+):
+    monkeypatch.setattr(v12, "SOURCE_ID", "seaview-survey-imagery")
+    card, _ = _render(registry, build, tmp_path / "v2")
+    assert v12.V2_SPLIT_SENTENCE in card
+    assert card.count(v12.GATES_SCOPE) == 2  # after the dedup and after the privacy sentence
+    row = re.search(r"\| Sources \| (\d+) \(the `sources` config has (\d+) rows\)", card)
+    assert row and int(row.group(1)) - int(row.group(2)) == len(v12.SOURCES_WITHOUT_ROW)
+    release = ROOT / "releases" / "marine-data" / "v1.2.0"
+    lock = json.loads((release / "open" / "RELEASE.json").read_text(encoding="utf-8"))
+    assert set(v12.SOURCES_WITHOUT_ROW) <= {s["id"] for s in lock["sources"]}
+    gates = json.loads((release / "open" / "GATES.json").read_text(encoding="utf-8"))
+    assert v12.IMAGES_ADDED in _ints(gates)
+    assert f"{v12.IMAGES_EARLIER:,} images" in txt.PERSONAL_OPEN
+    gone = (
+        "benthic cover and sites",
+        "`sites`, `label-map` and `sources`",
+        "`benthic-cover` and `sites`",
+    )
+    assert not [p for p in gone if p in card]  # no mention of a `sites` config in the text
+
+
+def test_row_shares_come_from_the_cards_own_split_counts():
+    def config(train: int, validation: int, test: int) -> dict:
+        counts = {"train": train, "validation": validation, "test": test}
+        return {"splits": {s: {"num_examples": n} for s, n in counts.items()}}
+
+    text = txt.splits_open_for({"semseg": config(3, 1, 1), "points": config(2, 1, 1)})
+    assert (
+        "`points` rows are 50.0 / 25.0 / 25.0 % (its 11,356 distinct images 67.1 / 12.8 / 20.2 %) "
+        "and `semseg` rows 60.0 / 20.0 / 20.0 %. " in text
+    )
+    assert txt.SPLITS_ROW_SHARES in txt.SPLITS_OPEN and txt.SPLITS_ROW_SHARES not in text
+    assert "74.1" not in text and "65.2" not in text
+
+
+def test_the_v1_2_0_card_pins_the_corrected_statements(registry, build, tmp_path, monkeypatch):
+    monkeypatch.setattr(v12, "SOURCE_ID", "seaview-survey-imagery")
+    card, _ = _render(registry, build, tmp_path / "v2")
+    pinned = (
+        v12.SOURCES_TASK_NOTE,
+        v12.SOURCES_NOTE,
+        v12.SHIPPED_SENTENCE,
+        v12.UNCHANGED_CLAUSE,
+        v12.VERSION_NOTE,
+        v12.GATES_SCOPE.strip(),
+        v12.SPLIT_MAP_PATH,
+        "No other non-commercial source is part of v1.2.0",
+        'the v1.2.0 figures are under "Split map of v1.2.0" above',
+        "is listed in the sources table.",
+    )
+    problems = [text for text in pinned if text not in card]
+    problems += [p for p in ("node(s)", "with its share", "{version}") if p in card]
+    if card.count(v12.GATES_SCOPE.strip()) < 2:  # the gates section and the personal-data section
+        problems.append("the gates sentence is not in both sections")
+    if not re.search(r"\d+ nodes? (?:is|are) reached by a single source\.", card):
+        problems.append("single-source note")
+    assert not problems, [p[:80] for p in problems]
+
+
+def test_licence_rows_name_the_citation_pointer_and_the_seaview_licences() -> None:
+    base = "Reef Support annotations on XL Catlin Seaview imagery"
+    sources = [
+        {"source_id": "coralscapes-v2", "attribution": "Coralscapes V2 (Apache-2.0)"},
+        {
+            "source_id": v12.SEAVIEW_LABELS,
+            "attribution": base,
+            "licence": "CC-BY-3.0",
+            "ann_licence": "CC-BY-3.0",
+        },
+    ]
+    extra = [
+        {"source_id": "reef-support-bleaching", "ann_licence": "CC-BY-4.0", "attribution": "x"}
+    ]
+    out = {r["source_id"]: r for r in v12.licence_rows(sources, extra)}
+    assert (
+        out["coralscapes-v2"]["attribution"]
+        == 'Coralscapes V2 (Apache-2.0); see "Citing Coralscapes V2"'
+    )
+    assert out[v12.SEAVIEW_LABELS]["ann_licence"] == "CC-BY-4.0"
+    assert (
+        out[v12.SEAVIEW_LABELS]["attribution"]
+        == base + ": CC-BY-3.0 (images); CC-BY-4.0 (masks, labels)"
+    )
+    assert out["reef-support-bleaching"] == extra[0]
+    assert (
+        sources[0]["attribution"] == "Coralscapes V2 (Apache-2.0)"
+    )  # the input rows are not mutated

@@ -16,7 +16,7 @@ V1_NOTES = {
 }
 V11_ORDER = (
     "images", "metadata", "points", "bleaching", "boxes", "semseg", "instances", "benthic-cover",
-    "sites", "taxonomy", "label-map", "sources",
+    "taxonomy", "label-map", "sources",
 )  # fmt: skip
 """The design 2.1 order of the v1.1.0 configs."""
 CONFIG_TASKS: dict[str, tuple[str, str]] = {
@@ -44,7 +44,6 @@ CONFIG_TASKS: dict[str, tuple[str, str]] = {
         "v1.0 `instance-masks` config.",
     ),
     "benthic-cover": ("Benthic cover", "Derived per image or survey from points and masks."),
-    "sites": ("Site analytics", "One row per (source, site), derived from `metadata`."),
     "taxonomy": ("Label space", "Taxonomy nodes and the edges of the crosswalks in this repo."),
     "label-map": (
         "Label harmonisation",
@@ -224,7 +223,7 @@ NOT_INCLUDED_OPEN = (
         "One non-commercial source",
         "licensed for non-commercial use only; it ships in the separate non-commercial flavour "
         "of the release, not in this repository. No other non-commercial source is part of "
-        "v1.1.0",
+        "v{version}",
     ),
 )
 """Open flavour only: the one source of the non-commercial flavour (the open card never names
@@ -232,6 +231,14 @@ the other repository)."""
 # Open flavour only, behind the flavour switch of ``render_v11_card``: numbers of the v1.1.0 open
 # run. The card is written before the gates run, so these cannot be read from ``GATES.json``;
 # tests/test_hf_card_v11.py pins the SPLIT_MAP ones to releases/marine-data/v1.1.0/SPLIT_MAP.json.
+SPLITS_ROW_SHARES_FMT = (
+    "`points` rows are {points} % (its 11,356 distinct images 67.1 / 12.8 / 20.2 %) "
+    "and `semseg` rows {semseg} %. "
+)
+SPLITS_ROW_SHARES = SPLITS_ROW_SHARES_FMT.format(
+    points="65.2 / 12.7 / 22.1", semseg="74.1 / 8.9 / 16.9"
+)
+"""The v1.1.0 row shares; a later card computes its own with `splits_open_for`."""
 SPLITS_OPEN = (
     "**Left out and overridden (v1.1.0).** No group was withheld. The split map also leaves "
     "out 215 images that sit in the prior-release near-duplicate band (dHash distance 5 to 8) "
@@ -247,11 +254,34 @@ SPLITS_OPEN = (
     "sources measure 70.8 / 14.6 / 14.6 %, 68.5 / 15.7 / 15.8 % and 67.6 / 12.6 / 19.8 % "
     "(train / validation / test); pinned benchmark sources and strata under 100 images "
     "(`roboflow-aquarium`) are left out of the check. Row shares of a config therefore "
-    "deviate, as the table shows: `points` rows are 65.2 / 12.7 / 22.1 % (its 11,356 distinct "
-    "images 67.1 / 12.8 / 20.2 %) and `semseg` rows 74.1 / 8.9 / 16.9 %. "
-    "`noaa-pifsc-bleaching` is assigned by whole site: its 236 sites went 42 to train, 97 to "
+    "deviate, as the table shows: "
+    + SPLITS_ROW_SHARES
+    + "`noaa-pifsc-bleaching` is assigned by whole site: its 236 sites went 42 to train, 97 to "
     "validation and 97 to test, so its image shares are not its site shares."
 )
+
+
+def row_shares(splits: dict) -> str:
+    """Percent of train / validation / test rows, one decimal, from `dataset_info` split counts."""
+    counts = [splits.get(s, {}).get("num_examples", 0) for s in ("train", "validation", "test")]
+    return " / ".join(f"{100 * n / sum(counts):.1f}" for n in counts)
+
+
+def splits_open_for(configs: dict) -> str:
+    """`SPLITS_OPEN` with the `points` and `semseg` row shares computed from the card's own counts.
+
+    The distinct-image shares of `points` (its 11,356 images) cannot be computed from split row
+    counts: the card keeps them as the v1.1.0 card states them.
+    """
+    shares = {}
+    for name in ("points", "semseg"):
+        splits = configs.get(name, {}).get("splits", {})
+        if sum(e["num_examples"] for e in splits.values()):
+            shares[name] = row_shares(splits)
+    sentence = SPLITS_ROW_SHARES_FMT.format(**shares) if len(shares) == 2 else "see the table. "
+    return SPLITS_OPEN.replace(SPLITS_ROW_SHARES, sentence)
+
+
 DEDUP_OPEN = (
     "In v1.1.0, 5,201 such pairs are disclosed. A further 6 pairs from different sources fall "
     "within the pHash-64 threshold (8 bits) but are kept: the pHash-256 of the two images "
@@ -293,11 +323,11 @@ RAI = {
 CHANGELOG = (
     "**Added (additive; no v1.0 file, row, path or `configs:` entry changed):** the configs "
     "`images`, `metadata`, `points`, `bleaching`, `boxes`, `semseg`, `instances`, "
-    "`benthic-cover`, `sites`, `label-map` and `sources`, and `taxonomy` in the open repo; "
+    "`benthic-cover`, `label-map` and `sources`, and `taxonomy` in the open repo; "
     "`LICENSE`, `NOTICE`, `CITATION.cff`, `croissant.json` and `provenance/`.",
     "**Unchanged:** every v1.0 config, with its files, rows and paths; the release is additive.",
     "**Task layers:** the v2 task layers are new tables on the `image_sha256` key: `metadata`, "
-    "`points`, `bleaching`, `boxes`, `semseg` and `instances` (`benthic-cover` and `sites` are "
+    "`points`, `bleaching`, `boxes`, `semseg` and `instances` (`benthic-cover` is "
     "derived from them).",
     "**Changed:** this card (text only; the v1.0 `configs:` entries are carried verbatim). "
     "`dataset_info` is written for the new configs only.",

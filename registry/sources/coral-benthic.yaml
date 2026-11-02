@@ -288,8 +288,7 @@ sources:
       Sauder, Ruckli, Strodomskytė, Tuia, Banc-Prandi et al., CoralscapesV2: Panoptic
       and Fine-Grained Visual Scene Understanding in Coral Reefs (dataset release,
       2026), arXiv:2609.12826. Dataset card josauder/coralscapesV2 at revision
-      8a4567b2fbec14882e09aebff63a7a1ca5e24dca (card dated 2026-09-15). The card's own tags
-      and BibTeX still point at the V1 paper (arXiv:2503.20000); cite 2609.12826 for V2.
+      8a4567b2fbec14882e09aebff63a7a1ca5e24dca (card dated 2026-09-15). Cite Coralscapes V2 with the BibTeX from the upstream dataset card (arXiv:2609.12826) and Coralscapes V1 with arXiv:2503.20000.
     homepage: https://josauder.github.io/coralscapesv2/
     tags: [dense-seg, panoptic-seg, transfer-base, red-sea, fish-instances]
     notes: >

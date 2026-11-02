@@ -187,7 +187,7 @@ The registry holds 159 unmappable edges in 12 crosswalks. Coralscapes-95 has 1: 
 | `coralnet-noaa-pifsc` | `GC` | NO RULE for 'Giant clam' |
 | `coralnet-noaa-pifsc` | `UI` | NO RULE for 'Unclassified sessile invertebrate' |
 | `coralscapes-39` | `unknown hard substrate` | Unmapped since taxonomy 3.0.0 (D9, was RK approximate). Coralscapes' dumping ground: on non-Red-Sea imagery it absorbs unmapped octocorals, so no single class is honest. Its pixels leave the class space (255 in training views). |
-| `coralscapes-95` | `hard substrate` | [legacy: hard substrate] Unmapped since taxonomy 3.0.0 (D9, was RK approximate). Coralscapes' dumping ground: on non-Red-Sea imagery it absorbs unmapped octocorals, so no single class is honest. Its pixels leave the class space (255 in training views). |
+| `coralscapes-95` | `hard substrate` | [legacy: hard substrate] Unmappable in taxonomy 3.1.0: no node holds exactly this class, so its pixels leave the class space (255 in training views); it is the only unmappable edge of the 95 in this table (60 exact, 25 coarsened, 9 approximate). |
 | `coralseg-ucsd-mosaics` | `Other` | residual bucket for every non-coral pixel (substrate, algae, other fauna, water): biotic or abiotic, no taxonomic content |
 | `fathomnet-concepts` | 139 edges | listed in `results/label-matching-v1.2.0.json` |
 | `ibf-cpce-codes` | `OT` | OT = other biota; no canonical node |

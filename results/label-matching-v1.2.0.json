@@ -2153,7 +2153,7 @@
    "unmappable": [
     {
      "label": "hard substrate",
-     "note": "[legacy: hard substrate] Unmapped since taxonomy 3.0.0 (D9, was RK approximate). Coralscapes' dumping ground: on non-Red-Sea imagery it absorbs unmapped octocorals, so no single class is honest. Its pixels leave the class space (255 in training views)."
+     "note": "[legacy: hard substrate] Unmappable in taxonomy 3.1.0: no node holds exactly this class, so its pixels leave the class space (255 in training views); it is the only unmappable edge of the 95 in this table (60 exact, 25 coarsened, 9 approximate)."
     }
    ],
    "unresolved": 0
@@ -4439,7 +4439,7 @@
    "unmappable": [
     {
      "label": "hard substrate",
-     "note": "[legacy: hard substrate] Unmapped since taxonomy 3.0.0 (D9, was RK approximate). Coralscapes' dumping ground: on non-Red-Sea imagery it absorbs unmapped octocorals, so no single class is honest. Its pixels leave the class space (255 in training views)."
+     "note": "[legacy: hard substrate] Unmappable in taxonomy 3.1.0: no node holds exactly this class, so its pixels leave the class space (255 in training views); it is the only unmappable edge of the 95 in this table (60 exact, 25 coarsened, 9 approximate)."
     }
    ]
   },
@@ -8189,7 +8189,7 @@
   {
    "crosswalk": "coralscapes-95",
    "label": "hard substrate",
-   "note": "[legacy: hard substrate] Unmapped since taxonomy 3.0.0 (D9, was RK approximate). Coralscapes' dumping ground: on non-Red-Sea imagery it absorbs unmapped octocorals, so no single class is honest. Its pixels leave the class space (255 in training views).",
+   "note": "[legacy: hard substrate] Unmappable in taxonomy 3.1.0: no node holds exactly this class, so its pixels leave the class space (255 in training views); it is the only unmappable edge of the 95 in this table (60 exact, 25 coarsened, 9 approximate).",
    "sources": [
     "coralscapes-v2"
    ]

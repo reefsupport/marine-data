@@ -129,3 +129,76 @@ def structure_note(prior: Sequence[PriorConfig]) -> str:
         f"{listed}. Their files stay as published; this card declares them in its `configs:` "
         "header so that `load_dataset` finds them."
     )
+
+
+# ------------------------------------------------------------------ additive configs
+
+
+def prior_dataset_info(v1_dir: Path | str) -> dict[str, dict]:
+    """The ``dataset_info`` entries of the prior tree's ``README.md`` front matter, by config."""
+    import yaml
+
+    readme = Path(v1_dir) / "README.md"
+    if not readme.is_file():
+        return {}
+    text = readme.read_text()
+    if not text.startswith("---\n") or "\n---" not in text[4:]:
+        return {}
+    front = yaml.safe_load(text[4 : text.index("\n---", 4)]) or {}
+    return {
+        e["config_name"]: e
+        for e in front.get("dataset_info") or ()
+        if isinstance(e, dict) and "config_name" in e
+    }
+
+
+def _shard_names(root: Path | str, config: str) -> set[str]:
+    return {f.name for f in (Path(root) / "data" / config).glob("*.parquet")}
+
+
+def _merged(cfg: Mapping, old: Mapping) -> dict:
+    """``cfg`` (the rows this release adds) plus the prior ``dataset_info`` entry ``old``: rows
+    and bytes per split and the download size. ``added_download_size`` keeps what is new."""
+    before = {s["name"]: s for s in old.get("splits") or ()}
+    splits = {
+        s: {
+            **e,
+            "num_examples": e["num_examples"] + int(before.get(s, {}).get("num_examples", 0)),
+            "num_bytes": e["num_bytes"] + int(before.get(s, {}).get("num_bytes", 0)),
+        }
+        for s, e in cfg["splits"].items()
+    }
+    for s, e in before.items():  # a split that only the prior tree has
+        splits.setdefault(
+            s,
+            {"num_examples": int(e["num_examples"]), "num_bytes": int(e["num_bytes"]), "prefix": s},
+        )
+    return {
+        **cfg,
+        "splits": splits,
+        "download_size": cfg["download_size"] + int(old.get("download_size", 0)),
+        "added_download_size": cfg["download_size"],
+        "cumulative": True,
+    }
+
+
+def cumulative_facts(facts: dict, v1_dir: Path | str | None, export: Path | str) -> dict:
+    """``facts`` with every additive config counted over the prior tree and the export together.
+
+    A config is additive when the prior tree and the export both hold shards of it under
+    different file names: the export then ships only the new shards. Its rows and bytes per split
+    and its download size are added to the entry in the prior ``README.md`` (the Parquet footers
+    do not carry ``num_bytes``). A config that the export rewrites in place (the same file
+    names) is complete in the export and stays as it is.
+    """
+    if not v1_dir:
+        return facts
+    info = prior_dataset_info(v1_dir)
+    configs = {}
+    for name, cfg in facts["configs"].items():
+        before, added = _shard_names(v1_dir, name), _shard_names(export, name)
+        if name in info and before and added and not before & added:
+            configs[name] = _merged(cfg, info[name])
+        else:
+            configs[name] = cfg
+    return {**facts, "configs": configs}

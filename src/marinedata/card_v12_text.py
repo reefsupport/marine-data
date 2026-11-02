@@ -35,9 +35,24 @@ SUPERSEDES = (
 )
 
 V2_FRAMES = 2_433
-V2_SPLITS = {"train": 1_790, "validation": 170, "test": 473}
+V2_SPLITS = {"train": 1_790, "validation": 170, "test": 473}  # the upstream (official) split
 TEST_PAIR = ("site23_000097_017682", "site23_000152_017682")
 BENCHMARK = V2_SPLITS["test"] + V2_SPLITS["validation"]
+V2_ASSIGNED = {"train": 1_790, "validation": 170, "test": 472}
+"""What v1.2.0 assigns: the upstream split less the one withheld test frame."""
+V2_SHIPPED = {"train": 1_786, "validation": 170, "test": 472}
+"""The `semseg` rows shipped: some assigned train frames are not shipped."""
+NOT_SHIPPED = V2_ASSIGNED["train"] - V2_SHIPPED["train"]
+V2_IMAGES = sum(V2_SHIPPED.values()) - 1  # the byte-identical TEST_PAIR shares one image row
+_NOT_SHIPPED_WORD = {4: "four"}.get(NOT_SHIPPED, str(NOT_SHIPPED))
+V2_SPLIT_SENTENCE = (
+    f"Upstream split {V2_SPLITS['train']:,} / {V2_SPLITS['validation']} / {V2_SPLITS['test']}. "
+    f"v{VERSION} assigns {V2_ASSIGNED['train']:,} / {V2_ASSIGNED['validation']} / "
+    f"{V2_ASSIGNED['test']} (one test frame withheld) and ships {V2_SHIPPED['train']:,} / "
+    f"{V2_SHIPPED['validation']} / {V2_SHIPPED['test']} `semseg` rows: "
+    f"{_NOT_SHIPPED_WORD} assigned train frames are not shipped; the byte-identical upstream "
+    f"test pair shares one image row, so V2 adds {V2_IMAGES:,} images."
+)
 """Rows of the ``coralscapes-v2`` benchmark manifest; it has one digest fewer than rows."""
 TWINS = 2_074
 V1_ONLY = 1
@@ -60,9 +75,34 @@ SUMMARY = (
     "v1.2.0 adds Coralscapes V2 (source id `coralscapes-v2`) to `semseg` and `instances` and adds "
     "no config. " + SUPERSEDES
 )
+IMAGES_ADDED = 2_594
+REWRITTEN_FILES = 91
+MOVED_GROUPS = 9
+SPLIT_MAP_PATH = "releases/marine-data/v1.2.0/SPLIT_MAP.json"
+ROWS_ADDED = {  # rows added to the files rewritten in place; tests/test_card_v12_text.py pins them
+    "metadata": IMAGES_ADDED, "bleaching": 199, "points": 50, "semseg": sum(V2_SHIPPED.values()),
+    "instances": 63_993, "label-map": 95, "sources": 1, "taxonomy": 98,
+}  # fmt: skip
+BOXES_ROWS = 93_958
+IMAGES_SHARDS_ADDED = 28
+SHIPPED_SENTENCE = (
+    f"v1.2.0 ships {V2_SHIPPED['train']:,} / {V2_SHIPPED['validation']:,} / "
+    f"{V2_SHIPPED['test']:,} `semseg` rows: {_NOT_SHIPPED_WORD} assigned train frames are not "
+    "shipped; the byte-identical upstream test pair shares one image row, so V2 adds "
+    f"{V2_IMAGES:,} images."
+)
+REWRITE_CLAUSE = (
+    f"v1.2.0 rewrites {REWRITTEN_FILES} Parquet files of the other configs in place (new rows, "
+    f"the {MOVED_GROUPS} moved split groups, `taxonomy_version` 3.1.0); no split loses rows "
+    "except the one UIIS10K image moved to `train`."
+)
+UNCHANGED_CLAUSE = (
+    "No config is removed or renamed. The four v1.0 configs, `condition-masks`, `benthic-cover` "
+    "and every earlier `images` shard are byte-identical to v1.1.1. " + REWRITE_CLAUSE
+)
 VERSION_NOTE = (
-    "Additive: Coralscapes V2 added to `semseg` and `instances`; every v1.0, v1.1.0 and v1.1.1 "
-    "file, row, id and path is unchanged."
+    "Coralscapes V2 added to `semseg` and `instances`, with new rows in `images`, `metadata`, "
+    "`bleaching`, `points`, `label-map`, `sources` and `taxonomy`. " + UNCHANGED_CLAUSE
 )
 LIMITATION = (
     "Coralscapes V1 (`coralscapes`) has no soft-coral or octocoral class. Coralscapes V2 "
@@ -71,19 +111,29 @@ LIMITATION = (
     "cannot predict them and cover for them is undercounted. A V1 frame and its V2 twin are the "
     f"same frame: the counts of the two sources are not additive ({TWINS:,} frames are in both)."
 )
+_ADDED_TEXT = ", ".join(
+    f"`{name}` (+{n:,} rows)" if name == "metadata" else f"`{name}` (+{n:,})"
+    for name, n in ROWS_ADDED.items()
+)
 CHANGELOG = (
-    "**Added (additive; no v1.0, v1.1.0 or v1.1.1 file, row, id or path changed):** Coralscapes "
-    f"V2 (source id `coralscapes-v2`, {V2_FRAMES:,} frames, 95 classes) in `semseg` and "
-    "`instances`. No config is added or renamed.",
+    f"**Added:** Coralscapes V2 (source id `coralscapes-v2`, 95 classes; {V2_FRAMES:,} upstream "
+    f"frames, {V2_IMAGES:,} images in this release) in `semseg` and `instances`. No config is "
+    "removed or renamed. The four v1.0 configs, `condition-masks`, `benthic-cover` and every "
+    "earlier `images` shard are byte-identical to v1.1.1.",
     "**Superseded, not removed:** " + SUPERSEDES,
     "**Label space:** taxonomy 3.1.0 adds three `rs-benthic-v1` nodes (`CN_ANTIPATHARIA`, "
     "`SC_ALCYONIIDAE`, `SC_NEPHTHEIDAE`) and the 95 `coralscapes-95` edges; nothing in 3.0.0 "
     "changes. The `coral-binary` view counts black coral (`CN_ANTIPATHARIA`) as coral.",
     f"**Splits:** the {TWINS:,} frames V1 and V2 share are linked by stem, so a twin pair is one "
-    "group; the official V2 split is kept (train "
-    f"{V2_SPLITS['train']:,} / validation {V2_SPLITS['validation']} / test {V2_SPLITS['test']}) "
-    "and no frame moves.",
-    "**Changed:** this card (text only).",
+    "group; no twin changes split. " + V2_SPLIT_SENTENCE,
+    f"**Changed:** {REWRITTEN_FILES} existing Parquet files are rewritten in place (new rows, "
+    f"the {MOVED_GROUPS} moved split groups, `taxonomy_version` 3.1.0), in {_ADDED_TEXT} and "
+    "`boxes` (one UIIS10K image moves from `validation` to `train`; "
+    f"{BOXES_ROWS:,} rows before and after). `images` gains {IMAGES_SHARDS_ADDED} shards and "
+    f"{IMAGES_ADDED:,} images ({V2_IMAGES:,} from Coralscapes V2, {IMAGES_ADDED - V2_IMAGES} from "
+    "six earlier sources not shipped before); its earlier shards are untouched. No split loses "
+    "rows except the one UIIS10K image moved to `train`. `LICENSE`, `NOTICE`, `CITATION.cff`, "
+    "`croissant.json`, `provenance/` and this card are rewritten as well.",
 )
 
 INTRO = (
@@ -91,9 +141,8 @@ INTRO = (
     f"(Apache-2.0, [arXiv:2609.12826]({V2_PAPER})) re-annotates and extends the Coralscapes V1 "
     f"reef scenes: {V2_FRAMES:,} frames of 1024 x 2048 pixels from {SITES['V2']} Red Sea dive "
     "sites, labelled with 95 classes instead of 39, including soft corals and black coral. This "
-    f"release pins the upstream revision `{V2_REVISION}` (card dated {V2_CARD_DATE}) and keeps "
-    f"the official split: {V2_SPLITS['train']:,} train, {V2_SPLITS['validation']} validation and "
-    f"{V2_SPLITS['test']} test frames."
+    f"release pins the upstream revision `{V2_REVISION}` (card dated {V2_CARD_DATE}). "
+    + V2_SPLIT_SENTENCE
 )
 CLASSES = (
     "### New classes and taxonomy 3.1.0\n\n"
@@ -112,11 +161,11 @@ CLASSES = (
 )
 FROZEN = (
     "### What stays frozen\n\n"
-    "The four v1.0 configs (`coral-masks`, `scene-masks`, `instance-masks`, `fish-boxes`) and "
-    "every v1.1.0 and v1.1.1 config keep their files, rows, ids and paths; v1.2.0 only adds "
-    "files. Coralscapes V1 (`coralscapes`) stays where it is, with its V1 splits, so earlier tags "
-    "reproduce exactly. Pin a tag with `revision` to read an earlier release. Downstream model "
-    "pins are unchanged."
+    "No config is removed or renamed. The four v1.0 configs (`coral-masks`, `scene-masks`, "
+    "`instance-masks`, `fish-boxes`), `condition-masks`, `benthic-cover` and every earlier "
+    "`images` shard are byte-identical to v1.1.1. " + REWRITE_CLAUSE + " Coralscapes V1 "
+    "(`coralscapes`) stays where it is, with its V1 splits, so earlier tags reproduce exactly. "
+    "Pin a tag with `revision` to read an earlier release. Downstream model pins are unchanged."
 )
 # Open flavour only: the v1.2.0 section is rendered for the open card alone. The numbers are those
 # of the frozen release map; tests/test_card_v12_text.py pins every one of them to
@@ -124,7 +173,9 @@ FROZEN = (
 # digest, group id or frame name.
 SPLIT_MAP = (
     "### Split map of v1.2.0\n\n"
-    "**Inherited.** The split map inherits the v1.1.0 map (`inherits` in `SPLIT_MAP.json`): its "
+    "**Inherited.** The split map inherits the v1.1.0 map (`inherits` in `SPLIT_MAP.json`, which "
+    "is not on the Hub: it is frozen in the GitHub repo at "
+    f"`{SPLIT_MAP_PATH}`): its "
     "35,825 groups carry over, 4,382 of them kept verbatim, and the splits that v1.1.1 published "
     "per image are the prior for the rest. Re-resolving them changed the split of 9 inherited "
     "groups and of no other: 8 are near-duplicate groups from the Roboflow bleaching exports "
@@ -134,7 +185,8 @@ SPLIT_MAP = (
     "(`pins.v1_continuity_overridden`: 0 images, 0 groups).\n\n"
     "**Coralscapes V2.** 2,432 of the 2,433 V2 frames are assigned: 1,790 to train, 170 to "
     "validation and 472 to test (the official V2 split has 473 test frames; the one missing is "
-    "withheld, below). The V2 benchmark pins hold 472 test and 170 validation images, counted by "
+    "withheld, below). " + SHIPPED_SENTENCE + " The V2 benchmark pins hold 472 test and 170 "
+    "validation images, counted by "
     "digest, so the byte-identical test pair counts once; the V1 pins are unchanged at 391 test "
     "and 166 validation images. Stem links join the V1 and V2 twins: 2,074 twins, 359 V2-only "
     "frames, 1 V1-only frame, 0 ambiguous stems and 0 conflicts (a conflict is a twin whose "
@@ -198,28 +250,54 @@ CITATION = (
 
 
 # History rows of the published v1.1.0 / v1.1.1 cards (the v1.2.0 card is a superset of them).
-V110_DATE = "2026-10-17"  # build date printed in the published v1.1.0 card
+V110_DATE = "2026-10-18"  # publication date, the CHANGELOG.md heading
 V110_NOTE = "Additive: 11 new configurations."
 V111_DATE = "2026-10-24"
 V111_NOTE = (
-    "Additive: one new configuration, `condition-masks` (634 Tayrona bleaching rasters, `train`). "
+    "Additive: one new configuration, `condition-masks` (635 Tayrona bleaching rasters, `train`). "
     "Every v1.1.0 file is unchanged."
 )
 V111_CHANGELOG = (
-    "Additive: one new configuration, `condition-masks` (634 Tayrona bleaching rasters, `train`). "
+    "Additive: one new configuration, `condition-masks` (635 Tayrona bleaching rasters, `train`). "
     "Every v1.1.0 file is unchanged.",
 )
-RELEASE_MONTH = "2026-10"
-"""The date cell of the v1.2.0 row when the renderer got no build date."""
+PUBLISHED = "2026-11-01"
+"""The day the v1.2.0 files went to the Hub (CHANGELOG.md heading, CITATION.cff)."""
+V111_CONFIG = "condition-masks"
+SOURCES_WITHOUT_ROW = ("reef-support-bleaching",)
+"""Release sources with no row in the `sources` config; tests pin them to RELEASE.json."""
+BLEACHING_IMAGES = 635
+BLEACHING_ALSO_LABELLED = 634
+SOURCES_TASK_NOTE = (
+    "One row per listed source: licence, attribution, rights holder, verification, counts. "
+    f"`{SOURCES_WITHOUT_ROW[0]}` has no row here (see Sources below)."
+)
+SOURCES_NOTE = (
+    f"`{SOURCE_ID}` counts {V2_IMAGES:,} images because the byte-identical upstream test pair "
+    f"shares one image row (its `semseg` rows number {sum(V2_SHIPPED.values()):,}). "
+    f"`{SOURCES_WITHOUT_ROW[0]}` has no row in the `sources` config; its {BLEACHING_IMAGES} "
+    f"images are the Tayrona images of `{V111_CONFIG}`, and {BLEACHING_ALSO_LABELLED} of them "
+    "also carry `bleaching` rows."
+)
+IMAGES_EARLIER = 32_200
+GATES_SCOPE = (
+    f"In v{VERSION} the gates ran on the {IMAGES_ADDED:,} images added in this release; the "
+    f"earlier {IMAGES_EARLIER:,} were gated in v1.1.x."
+)
 
 
-def version_rows(v1_date: str, v1_note: str, built: str | None) -> list[tuple[str, str, str]]:
-    """The four rows of the v1.2.0 card's version table: v1.0.0, v1.1.0, v1.1.1 and v1.2.0."""
+def version_rows(
+    v1_date: str, v1_note: str, built: str | None = None
+) -> list[tuple[str, str, str]]:
+    """The four rows of the v1.2.0 card's version table: v1.0, v1.1.0, v1.1.1 and v1.2.0.
+
+    The v1.2.0 row carries the publish date; the build date is in the facts table (`built`).
+    """
     return [
-        ("v1.0.0", v1_date, v1_note),
+        ("v1.0", v1_date, v1_note),
         ("v1.1.0", V110_DATE, V110_NOTE),
         ("v1.1.1", V111_DATE, V111_NOTE),
-        (f"v{VERSION}", built or RELEASE_MONTH, VERSION_NOTE),
+        (f"v{VERSION}", PUBLISHED, VERSION_NOTE),
     ]
 
 
@@ -250,11 +328,86 @@ def images(sources: Iterable[Mapping]) -> int | None:
     return None
 
 
+def _swap(text: str, old: str, new: str, *, where: str) -> str:
+    """``text`` with its one ``old`` replaced; raises when ``old`` is not there exactly once."""
+    if text.count(old) != 1:
+        raise ValueError(f"v1.2.0 card: anchor {old!r} is not in {where} exactly once")
+    return text.replace(old, new)
+
+
+_SHARE = (" is listed in the sources table with its share.", " is listed in the sources table.")
+
+
 def limitations(base: tuple[str, ...]) -> tuple[str, ...]:
-    """``base`` with its Coralscapes bullet replaced; raises when the bullet is not first."""
+    """``base`` with its Coralscapes bullet replaced and the sources-table clause shortened;
+    raises when the bullet is not first or the clause is not in exactly one bullet."""
     if not base or not base[0].startswith(_ANCHOR):
         raise ValueError(f"v1.2.0 card: limitation anchor {_ANCHOR!r} is not the first bullet")
-    return (LIMITATION, *base[1:])
+    out = (LIMITATION, *base[1:])
+    hits = [i for i, t in enumerate(out) if _SHARE[0] in t]
+    if len(hits) != 1:
+        raise ValueError(f"v1.2.0 card: anchor {_SHARE[0]!r} is not in one limitation")
+    return tuple(t.replace(*_SHARE) if i == hits[0] else t for i, t in enumerate(out))
+
+
+def splits_text(base: str) -> str:
+    """The v1.1.0 Splits text with the split map pointed at GitHub and the caveat made general."""
+    base = _swap(
+        base,
+        "Group keys in `SPLIT_MAP.json` are namespaced",
+        f"Group keys in `SPLIT_MAP.json` (GitHub repo, `{SPLIT_MAP_PATH}`) are namespaced",
+        where="the Splits text",
+    )
+    return _swap(
+        base,
+        "the v1.1.0 `validation` or `test` splits",
+        "the v1.1.0 and later `validation` or `test` splits",
+        where="the Splits text",
+    )
+
+
+def splits_open(base: str) -> str:
+    """The v1.1.0 left-out paragraph, headed as the v1.1.0 figures it still states."""
+    return _swap(
+        base,
+        "**Left out and overridden (v1.1.0).**",
+        '**Left out and overridden (v1.1.0; the v1.2.0 figures are under "Split map of v1.2.0" '
+        "above).**",
+        where="the Splits text",
+    )
+
+
+def personal_open(base: str) -> str:
+    """The v1.1.0 privacy-gate text with the v1.2.0 scope sentence before the divers sentence."""
+    return _swap(
+        base,
+        "Divers are an annotated class",
+        f"{GATES_SCOPE} Divers are an annotated class",
+        where="the privacy text",
+    )
+
+
+SEAVIEW_LABELS = "reef-support-seaview-labels"
+SEAVIEW_ANNOTATION_LICENCE = "CC-BY-4.0"  # images CC-BY-3.0; the registry has no combined value
+
+
+def licence_rows(sources: Iterable[Mapping], extra: Iterable[Mapping] = ()) -> list[dict]:
+    """Rows of the licence matrix: the `sources` rows plus the sources that have none, with the
+    licence split of the Seaview labels and the pointer to the V2 citation stated."""
+    out = []
+    for source in (*sources, *extra):
+        row = dict(source)
+        if row.get("source_id") == SOURCE_ID and row.get("attribution"):
+            row["attribution"] += '; see "Citing Coralscapes V2"'
+        elif row.get("source_id") == SEAVIEW_LABELS:
+            image = row.get("licence")
+            base = str(row.get("attribution") or "").removesuffix(f" ({image})")
+            row["ann_licence"] = SEAVIEW_ANNOTATION_LICENCE
+            row["attribution"] = (
+                f"{base}: {image} (images); {SEAVIEW_ANNOTATION_LICENCE} (masks, labels)"
+            )
+        out.append(row)
+    return out
 
 
 def _changed(sources: Iterable[Mapping]) -> str:
@@ -263,8 +416,9 @@ def _changed(sources: Iterable[Mapping]) -> str:
     return (
         "### What changed in `semseg` and `instances`\n\n"
         f"- Both configs gain rows under the new source id `coralscapes-v2`{count}; the `sources` "
-        "config and the Splits table carry the counts per source, config and split. No config is "
-        "added or renamed, and no existing file, row, id or path changes.\n"
+        "config and the Splits table carry the counts per source, config and split. "
+        + UNCHANGED_CLAUSE
+        + "\n"
         "- `semseg` holds the V2 semantic masks as `uint8` PNGs with the upstream class ids 1 to "
         '95. Pixel `0` is the upstream "unlabelled" value and is not counted as a class; '
         "`label-map` records the ignore semantics per source.\n"
@@ -312,8 +466,9 @@ def _splits() -> str:
         "links twins by stem and treats each pair as one group. The dedup and splits gates count "
         "a pair in one split as one link group and fail a pair that sits in two splits. For all "
         f"{TWINS:,} twins the release split of the V1 frame equals the official V2 split, so no "
-        f"frame moves. V2 adds {sum(n.values())} frames ({n['train']} train, {n['validation']} "
-        f"validation, {n['test']} test) that keep their official V2 split; the V2 test and "
+        f"twin changes split. V2 adds {sum(n.values())} frames ({n['train']} train, "
+        f"{n['validation']} validation, {n['test']} test) that keep their official V2 split; "
+        "the V2 test and "
         "validation frames are pinned as benchmark splits "
         # 472: tests/test_card_v12_text.py pins it to releases/marine-data/v1.2.0/SPLIT_MAP.json
         # (`pins.benchmarks`, coralscapes-v2 test count).
@@ -483,3 +638,6 @@ def gate_numbers(gates: Mapping[str, object]) -> dict[str, int]:
 def fill_from_gates(readme: str, gates: Mapping[str, object]) -> str:
     """:func:`fill_gates` with the numbers :func:`gate_numbers` reads from a ``GATES.json`` dict."""
     return fill_gates(readme, gate_numbers(gates))
+
+
+SOURCES_WITHOUT_ROW_CONFIGS = "bleaching,condition-masks"

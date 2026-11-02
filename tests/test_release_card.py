@@ -228,3 +228,22 @@ def test_validate_does_not_mutate_the_document_or_the_shared_context(e2e) -> Non
     release_croissant.validate(doc)
     assert doc == before
     assert "@base" not in release_croissant.CONTEXT
+
+
+def test_the_repo_cites_the_published_v1_2_0_release() -> None:
+    from pathlib import Path
+
+    import yaml
+
+    root = Path(__file__).resolve().parents[1]
+    cff = yaml.safe_load((root / "CITATION.cff").read_text())
+    assert str(cff["version"]) == "1.2.0" and str(cff["date-released"]) == "2026-11-01"
+    readme = (root / "README.md").read_text()
+    assert "version = {1.2.0}" in readme and "version      = {1.2.0}" in readme
+    assert "{1.0}" not in readme and "{v1.0 (October 2026)" not in readme
+    assert "{v1.2.0 (November 2026)" in readme
+    registry = " ".join((root / "registry/sources/coral-benthic.yaml").read_text().split())
+    assert (
+        "Cite Coralscapes V2 with the BibTeX from the upstream dataset card (arXiv:2609.12826) "
+        "and Coralscapes V1 with arXiv:2503.20000." in registry
+    )
