@@ -467,16 +467,16 @@ Machine-readable metadata is in [`CITATION.cff`](CITATION.cff). To cite the rele
   title        = {Reef Support Marine Data},
   author       = {{Reef Support}},
   year         = {2026},
-  version      = {1.0},
+  version      = {1.2.0},
   howpublished = {\url{https://huggingface.co/datasets/reefsupport/marine-data}},
-  note         = {v1.0 (October 2026). Licences are set per source; see the dataset card.}
+  note         = {v1.2.0 (November 2026). Licences are set per source; see the dataset card.}
 }
 
 @software{reefsupport2026marinedatacode,
   title   = {marine-data: a licence-aware registry and dataloaders for marine datasets},
   author  = {{Reef Support}},
   year    = {2026},
-  version = {1.0},
+  version = {1.2.0},
   url     = {https://github.com/reefsupport/marine-data},
   license = {Apache-2.0}
 }

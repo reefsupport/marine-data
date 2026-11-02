@@ -32,7 +32,6 @@ ANNOTATIONS = ("points", "bleaching", "boxes", "semseg", "instances")
 KEYS: dict[str, tuple[str, ...]] = {
     "images": ("image_sha256",),
     "metadata": ("image_sha256",),
-    "sites": ("source_id", "site_id"),
     "taxonomy": ("kind", "key"),
     "label-map": ("source_id", "native_label"),
     "sources": ("source_id", "version"),

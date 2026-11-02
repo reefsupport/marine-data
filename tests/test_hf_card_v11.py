@@ -14,8 +14,9 @@ from test_hf_export_v11 import registry as _registry
 
 from marinedata import card_v11_text as txt
 from marinedata import hf_card
+from marinedata import hf_card_prior as prior_cfg
 from marinedata.cli import main as cli_main
-from marinedata.hf_card_v11 import write_card_files
+from marinedata.hf_card_v11 import splits_table, tasks_table, write_card_files
 from marinedata.hf_export_v11 import PRIVATE_NAMES, V11ExportError, export_v11
 from marinedata.release_card import load_context
 from marinedata.release_croissant import build_croissant, validate
@@ -428,3 +429,93 @@ def test_the_sixth_fork_the_seaview_images_and_the_namespaces_are_stated(registr
         seaview = "The images of `seaview-survey-imagery` are in `images` and `metadata`"
         assert seaview in _limitations(text)
         assert "namespaced `<source>/<id>`" in _section(text, "Splits")
+
+
+# v1.2.0 adds 28 `images` shards next to the prior tree's: PRIOR is the v1.1.1 card YAML, NEW the
+# export, and their sum the figures of the corrected Hub card.
+_IMAGES_PRIOR = {
+    "train": (22_193, 12_657_378_303),
+    "validation": (4_562, 2_500_373_334),
+    "test": (5_445, 3_822_054_346),
+}
+_IMAGES_NEW = {
+    "train": (1_911, 4_880_778_432),
+    "validation": (196, 407_315_591),
+    "test": (487, 1_364_538_389),
+}
+
+
+def _images_facts() -> dict:
+    splits = {
+        s: {"num_examples": n, "num_bytes": b, "prefix": s} for s, (n, b) in _IMAGES_NEW.items()
+    }
+    new_bytes = sum(b for _, b in _IMAGES_NEW.values())
+    semseg = {
+        "splits": {"train": {"num_examples": 3, "num_bytes": 30, "prefix": "train"}},
+        "download_size": 30,
+    }
+    return {
+        "configs": {
+            "images": {
+                "splits": splits,
+                "download_size": new_bytes,
+                "sources": {"seaview-survey-imagery": 2594},
+            },
+            "semseg": {**semseg, "sources": {}},
+        }
+    }
+
+
+def _additive_trees(tmp_path: Path) -> tuple[Path, Path]:
+    v1, export = tmp_path / "v1", tmp_path / "export"
+    for root, config, names in (
+        (v1, "images", ("old-0.parquet", "old-1.parquet")),
+        (export, "images", ("new-0.parquet", "new-1.parquet")),
+        (v1, "semseg", ("shard-0.parquet",)),  # rewritten in place: the same name in both trees
+        (export, "semseg", ("shard-0.parquet",)),
+    ):
+        (root / "data" / config).mkdir(parents=True)
+        for name in names:
+            (root / "data" / config / name).write_bytes(b"")
+    size = sum(b for _, b in _IMAGES_PRIOR.values())
+    entry = {
+        "config_name": "images",
+        "splits": [
+            {"name": s, "num_bytes": b, "num_examples": n} for s, (n, b) in _IMAGES_PRIOR.items()
+        ],
+        "download_size": size,
+        "dataset_size": size,
+    }
+    (v1 / "README.md").write_text(
+        "---\n" + yaml.safe_dump({"dataset_info": [entry]}) + "---\n\n# prior card\n"
+    )
+    return v1, export
+
+
+def test_additive_configs_count_the_prior_tree_and_the_new_shards(tmp_path: Path) -> None:
+    v1, export = _additive_trees(tmp_path)
+    facts = _images_facts()
+    out = prior_cfg.cumulative_facts(facts, v1, export)
+    images = out["configs"]["images"]
+    rows = {s: e["num_examples"] for s, e in images["splits"].items()}
+    assert (
+        rows == {"train": 24_104, "validation": 4_758, "test": 5_932}
+        and sum(rows.values()) == 34_794
+    )
+    nbytes = {s: e["num_bytes"] for s, e in images["splits"].items()}
+    assert nbytes == {"train": 17_538_156_735, "validation": 2_907_688_925, "test": 5_186_592_735}
+    assert images["download_size"] == sum(nbytes.values()) == 25_632_438_395
+    assert images["added_download_size"] == 6_652_632_412 and images["cumulative"] is True
+    assert out["configs"]["semseg"] == facts["configs"]["semseg"]  # complete in the export
+    assert facts["configs"]["images"]["splits"]["train"]["num_examples"] == 1_911  # input untouched
+    assert prior_cfg.cumulative_facts(facts, None, export) is facts
+
+
+def test_the_tables_show_the_cumulative_images(tmp_path: Path) -> None:
+    v1, export = _additive_trees(tmp_path)
+    images = prior_cfg.cumulative_facts(_images_facts(), v1, export)["configs"]["images"]
+    assert "34,794 (train 24,104 / validation 4,758 / test 5,932)" in tasks_table(
+        {"images": images}
+    )
+    row = "| `images` | 24,104 (69.3 %) | 4,758 (13.7 %) | 5,932 (17.0 %) | – | 34,794 |"
+    assert row in splits_table({"images": images})

@@ -73,7 +73,7 @@ crosswalks:
       - { source_label: "hard coral alive", targets: { taxon: HC, condition: HEALTHY }, fidelity: coarsened, note: "[legacy: other coral alive] Growth form not recorded." }
       - { source_label: "hard coral bleached", targets: { taxon: HC, condition: BLEACHED }, fidelity: coarsened, note: "[legacy: other coral bleached]" }
       - { source_label: "hard coral dead", targets: { taxon: HC, condition: OLD_DEAD }, fidelity: coarsened, note: "[legacy: other coral dead]" }
-      - { source_label: "hard substrate", targets: {}, fidelity: unmappable, note: "[legacy: hard substrate] Unmapped since taxonomy 3.0.0 (D9, was RK approximate). Coralscapes' dumping ground: on non-Red-Sea imagery it absorbs unmapped octocorals, so no single class is honest. Its pixels leave the class space (255 in training views)." }
+      - { source_label: "hard substrate", targets: {}, fidelity: unmappable, note: "[legacy: hard substrate] Unmappable in taxonomy 3.1.0: no node holds exactly this class, so its pixels leave the class space (255 in training views); it is the only unmappable edge of the 95 in this table (60 exact, 25 coarsened, 9 approximate)." }
       - { source_label: "human", targets: { taxon: DIV }, fidelity: exact, note: "[legacy: human]" }
       - { source_label: "human-made structure", targets: { taxon: HS }, fidelity: coarsened, note: "[legacy: hard substrate] Mapped to HS (rule a); the legacy class is unmappable." }
       - { source_label: "leather coral alive", targets: { taxon: SC_ALCYONIIDAE, condition: HEALTHY }, fidelity: exact, note: "[legacy: other coral alive] Leather coral is the family Alcyoniidae (WoRMS 125269)." }

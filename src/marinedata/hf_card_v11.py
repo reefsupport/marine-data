@@ -190,7 +190,21 @@ def read_rows(export: Path, config: str) -> list[dict]:
     return [r for f in files for r in pq.read_table(f).to_pylist()]
 
 
-def tasks_table(configs: Mapping[str, dict], prior: Sequence[prior_cfg.PriorConfig] = ()) -> str:
+def _rows_cell(cfg: Mapping) -> str:
+    """The row count of a config. An additive config, counted over the prior tree and this
+    export together, also names its rows per split."""
+    total = f"{sum(e['num_examples'] for e in cfg['splits'].values()):,}"
+    if not cfg.get("cumulative"):
+        return total
+    per_split = " / ".join(f"{s} {e['num_examples']:,}" for s, e in cfg["splits"].items())
+    return f"{total} ({per_split})"
+
+
+def tasks_table(
+    configs: Mapping[str, dict], prior: Sequence[prior_cfg.PriorConfig] = (),
+    notes: Mapping[str, str] | None = None,
+) -> str:  # fmt: skip
+    """The tasks table; ``notes`` replaces the note of a config (the v1.2.0 `sources` row)."""
     rows = []
     for name in ordered_configs(configs):
         task, note = txt.CONFIG_TASKS.get(name, (name, ""))
@@ -199,9 +213,9 @@ def tasks_table(configs: Mapping[str, dict], prior: Sequence[prior_cfg.PriorConf
             (
                 f"`{name}`",
                 task,
-                f"{sum(e['num_examples'] for e in cfg['splits'].values()):,}",
+                _rows_cell(cfg),
                 ", ".join(f"`{s}`" for s in cfg.get("sources", {})),
-                note,
+                (notes or {}).get(name, note),
             )
         )
     rows += prior_cfg.table_rows(prior)
@@ -237,7 +251,9 @@ def overlap_table(label_rows: Iterable[Mapping]) -> str:
         (f"`{n}`", len(s), ", ".join(f"`{x}`" for x in sorted(s)))
         for n, s in multi[:MAX_OVERLAP_ROWS]
     ] or [(DASH, 0, "no taxonomy node is reached by more than one source")]
-    note = f"{len(by_node) - len(multi):,} node(s) are reached by a single source."
+    single = len(by_node) - len(multi)
+    verb = "node is" if single == 1 else "nodes are"
+    note = f"{single:,} {verb} reached by a single source."
     return _table(("Taxonomy node", "Sources", "Reached by"), rows) + "\n\n" + note
 
 
@@ -339,11 +355,15 @@ def quick_start(repo_id: str, configs: Mapping[str, dict]) -> str:
 # ------------------------------------------------------------------------------ the card
 
 
-def excluded_section(flavour: str) -> str:
+def excluded_section(flavour: str, version: str = txt.VERSION) -> str:
     """Every registered source that is not in the release, by reason: the licence classes, the
-    named exclusions and, in the open flavour, the source of the non-commercial flavour."""
+    named exclusions and, in the open flavour, the source of the non-commercial flavour.
+    ``version`` fills the release that the last statement speaks about."""
     named = txt.NOT_INCLUDED + (txt.NOT_INCLUDED_OPEN if flavour == "open" else ())
-    lines = [f"- **{name}**: {why}" for name, why in (*EXCLUDED_CLASSES, *named)]
+    lines = [
+        "- **" + name + "**: " + why.replace("{version}", version)
+        for name, why in (*EXCLUDED_CLASSES, *named)
+    ]
     return "## Excluded sources\n\n" + txt.EXCLUDED_INTRO + "\n\n" + "\n".join(lines)
 
 
@@ -357,6 +377,7 @@ def render_v11_card(
     flavour: str, repo_id: str, pretty_name: str = PRETTY_NAME, cff: dict | None = None,
     takedown_url: str | None = None, lock_sha: str | None = None, built: str | None = None,
     hidden_test_withheld: int | None = None, prior: Sequence[prior_cfg.PriorConfig] | None = None,
+    extra_sources: Sequence[dict] | None = None,
 ) -> str:  # fmt: skip
     def open_only(text: str, sep: str = " ") -> str:
         """The v1.1.0 open-run statements (chain-7 gates) belong to the open card only."""
@@ -367,9 +388,15 @@ def render_v11_card(
     gates_scope = f" {v12.GATES_SCOPE}" if has_v2 else ""
     configs = facts["configs"]
     names = ordered_configs(configs)
-    splits_open = txt.splits_open_for(configs) if has_v2 else txt.SPLITS_OPEN
+    splits_open = v12.splits_open(txt.splits_open_for(configs)) if has_v2 else txt.SPLITS_OPEN
+    splits_text = v12.splits_text(txt.SPLITS_TEXT) if has_v2 else txt.SPLITS_TEXT
+    personal_open = v12.personal_open(txt.PERSONAL_OPEN) if has_v2 else txt.PERSONAL_OPEN
+    extra = list(extra_sources or ())
+    with_bleaching_row = has_v2 and flavour == "open"  # the source that has no `sources` row
+    task_notes = {"sources": v12.SOURCES_TASK_NOTE} if with_bleaching_row else {}
+    sources_note = f"\n\n{v12.SOURCES_NOTE}" if with_bleaching_row else ""
     images = sum(e["num_examples"] for e in configs.get("metadata", {}).get("splits", {}).values())
-    gb = sum(c["download_size"] for c in configs.values()) / 1e9
+    gb = sum(c.get("added_download_size", c["download_size"]) for c in configs.values()) / 1e9
     low = [
         f"`{s['source_id']}` ({s['mapped_pct']:.1f} %)"
         for s in sorted(sources, key=lambda s: s["source_id"])
@@ -381,11 +408,19 @@ def render_v11_card(
         limits.append("- " + txt.HIDDEN_TEST_WITHHELD.format(n=f"{hidden_test_withheld:,}"))
     if low:
         limits.append(f"- Sources below the {MAPPED_FLOOR:.0f} % mapped floor: {', '.join(low)}.")
-    adds = (
-        f"keeps the {len(names)} configurations that v1.1.0 and v1.1.1 added to"
-        if has_v2
-        else f"adds {len(names)} configurations to"
-    )
+    v1_names = V1_CONFIGS[flavour]
+    held = {*names, *(p.name for p in prior or ())}  # every config the release carries
+    in_v111 = v12.V111_CONFIG in held
+    n_v110 = len(held - set(v1_names) - {v12.V111_CONFIG})
+    if not has_v2:
+        adds = f"adds {len(names)} configurations to"
+    elif in_v111:
+        adds = (
+            f"keeps the {n_v110 + 1} configurations that v1.1.0 ({n_v110}) and "
+            f"v1.1.1 (`{v12.V111_CONFIG}`) added to"
+        )
+    else:
+        adds = f"keeps the {n_v110} configurations that v1.1.0 added to"
     summary = (
         f"{pretty_name} v{version} {adds} the frozen v1.0 "
         "release, additively: image bytes once per `image_sha256`, per-image metadata, point, "
@@ -394,17 +429,13 @@ def render_v11_card(
         "`image_sha256`, so any label reaches its pixels in one join, and `licence` and "
         "attribution stay attached to the pixels." + (f" {v12.SUMMARY}" if has_v2 else "")
     )
-    v1_names = V1_CONFIGS[flavour]
     configs_fact = f"{len(names)}: " + ", ".join(f"`{n}`" for n in names)
     sources_fact = f"{len(sources)}"
     if has_v2:  # the v1.2.0 card counts the whole release, not only what was added since v1.0
-        in_v111 = [n for n in names if n == v12.V111_CONFIG]
         configs_fact = (
-            f"{len(v1_names) + len(names)} ({len(v1_names)} from v1.0, "
-            f"{len(names) - len(in_v111)} added in v1.1.0"
+            f"{len(held | set(v1_names))} ({len(v1_names)} from v1.0, {n_v110} added in v1.1.0"
             + (f", `{v12.V111_CONFIG}` in v1.1.1" if in_v111 else "")
-            + "): "
-            + ", ".join(f"`{n}`" for n in (*v1_names, *names))
+            + ")"
         )
         if flavour == "open":
             sources_fact = (
@@ -417,7 +448,12 @@ def render_v11_card(
         ("Sources", sources_fact),
         ("Format", "Parquet shards, streamable; images and new masks embedded once"),
         ("Size of the new configs", f"{gb:.1f} GB"),
-        ("Version", f"v{version}" + (f", built {built}" if built else "")),
+        (
+            "Version",
+            f"v{version}"
+            + (f", built {built}" if built else "")
+            + (f", published {v12.PUBLISHED}" if has_v2 else ""),
+        ),
         ("Code", f"[{GITHUB.split('//')[1]}]({GITHUB})"),
     ]
     version_rows = (  # the v1.2.0 card keeps the rows of the published v1.1.0 / v1.1.1 cards
@@ -454,7 +490,7 @@ def render_v11_card(
         f"# {pretty_name}\n\n{TAGLINE}",
         "\n".join(top_notice(flavour, repo_id)).strip(),
         "## Dataset summary\n\n" + summary + "\n\n" + _table(("Field", "Value"), facts_rows),
-        "## Supported tasks\n\n" + tasks_table(configs, prior or ()),
+        "## Supported tasks\n\n" + tasks_table(configs, prior or (), task_notes),
         "## Quick start\n\n" + quick_start(repo_id, configs),
         "## Dataset structure\n\n" + structure + "\n\n"
         "Keys: the image key is `image_sha256` (64 lowercase hex, the staged checksum, never "
@@ -470,24 +506,26 @@ def render_v11_card(
         "these, or the coarse training views.\n\n" + overlap_table(label_rows)
         + "\n\n### Mapped share per source\n\n" + mapped_table(sources),
         v12.labels_section() if has_v2 else "",
-        "## Splits\n\n" + txt.SPLITS_TEXT + open_only(splits_open, "\n\n") + "\n\n"
+        "## Splits\n\n" + splits_text + open_only(splits_open, "\n\n") + "\n\n"
         + splits_table(configs),
-        "## Dataset creation\n\n### Sources\n\n" + sources_table(sources)
+        "## Dataset creation\n\n### Sources\n\n" + sources_table([*sources, *extra])
+        + sources_note
         + "\n\n### Build and gates\n\nBuilt with the " + f"[marine-data]({GITHUB}) registry; "
         "every source is admitted only after its licence is recorded, and the licence gate "
         "raises, never warns. " + lock_line + " Gate results are published as "
         "`provenance/GATES.json`. " + txt.DEDUP_FAMILY + open_only(txt.DEDUP_OPEN + gates_scope)
         + (f"\n\n{v12.GATES_PARAGRAPH}" if has_v2 else ""),
         "## Personal and sensitive information\n\n" + txt.PERSONAL
-        + open_only(txt.PERSONAL_OPEN + gates_scope),
+        + open_only(personal_open),
         "## Limitations and known defects\n\n" + "\n".join(limits),
         "## Licensing\n\nThe data are not under one licence. Every row records its `licence`, "
         "`annotation_licence` and `attribution`; the matrix lists each source. Combine sources "
         "only in ways each licence allows. `LICENSE` and `NOTICE` list the same notices. The "
         "table records the licences as Reef Support read them from the primary sources and is "
-        "not legal advice.\n\n" + licence_matrix(sources)
+        "not legal advice.\n\n"
+        + licence_matrix(v12.licence_rows(sources, extra) if has_v2 else sources)
         + f"\n\nCredits: {txt.MEOW} {txt.WORMS}",
-        excluded_section(flavour),
+        excluded_section(flavour, version),
         "## Takedown\n\nRights holders and data subjects: open an issue at "
         f"{takedown_url or GITHUB + '/issues'}. Accepted requests are published as a new version.",
         "## Versions and changelog\n\n" + versions + "\n\n"
@@ -540,17 +578,43 @@ def _with_gates(readme: str, gates: Mapping[str, object] | None) -> str:
     return readme
 
 
+def _rows_without_a_sources_row(registry, flavour: str, sources: Sequence[dict]) -> list[dict]:
+    """Rows for the sources that the v1.2.0 open card lists but the `sources` config has no row for.
+
+    Licence, attribution and verification come from the registry, the image count and the
+    configs from the release (``v12``). A source the registry does not know is left out.
+    """
+    from .hf_export_v11 import source_rows
+
+    if card_version(flavour, sources) != v12.VERSION:
+        return []
+    known = []
+    for sid in v12.SOURCES_WITHOUT_ROW:
+        try:
+            registry.source(sid)
+        except Exception:
+            continue
+        known.append(sid)
+    rows = source_rows(registry, known, v12.TAXONOMY) if known else []
+    return [
+        {**r, "n_images": v12.BLEACHING_IMAGES, "configs": v12.SOURCES_WITHOUT_ROW_CONFIGS}
+        for r in rows
+    ]
+
+
 def write_card_files(
     export: Path, registry, *, flavour: str, repo_id: str, pretty_name: str | None = None,
     cff: dict | None = None, takedown_url: str | None = None, lock_sha: str | None = None,
     released: str | None = None, hidden_test_withheld: int | None = None,
     gates: Mapping[str, object] | None = None, v1_dir: Path | None = None,
+    extra_sources: Sequence[dict] | None = None,
 ) -> list[str]:  # fmt: skip
     """Write ``README.md``, ``LICENSE``, ``NOTICE`` and ``CITATION.cff`` into ``export``; nothing is
     written when any of them names a private resource. ``gates`` (a ``GATES.json`` dict) fills the
     v1.2.0 gate slots of the card; without it the slots stay and a WARNING lists them. ``v1_dir``
     (the prior tree: the Hub repo as it is before the publish) makes the card declare every config
-    folder the build does not ship, not only the four v1.0 ones."""
+    folder the build does not ship, not only the four v1.0 ones. An additive config (its new
+    shards sit next to the prior ones) is counted over both."""
     export = Path(export)
     name = pretty_name or (PRETTY_NAME if flavour == "open" else f"{PRETTY_NAME} (non-commercial)")
     facts, sources = facts_from_build(export), read_rows(export, "sources")
@@ -559,6 +623,9 @@ def write_card_files(
     prior = (
         prior_cfg.prior_configs(v1_dir, facts["configs"], V1_CONFIGS[flavour]) if v1_dir else None
     )
+    facts = prior_cfg.cumulative_facts(facts, v1_dir, export)  # additive configs count in full
+    if extra_sources is None:
+        extra_sources = _rows_without_a_sources_row(registry, flavour, sources)
     infos = {s["source_id"]: source_info(registry, s["source_id"]) for s in sources}
     citation = render_citation_cff(
         cff or {}, version=card_version(flavour, sources), released=released
@@ -578,6 +645,7 @@ def write_card_files(
             built=released,
             hidden_test_withheld=hidden_test_withheld,
             prior=prior,
+            extra_sources=extra_sources,
         ),
         "LICENSE": render_license(sources, pretty_name=name, flavour=flavour),
         "NOTICE": render_notice(sources, pretty_name=name),

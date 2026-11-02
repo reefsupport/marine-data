@@ -16,7 +16,7 @@ V1_NOTES = {
 }
 V11_ORDER = (
     "images", "metadata", "points", "bleaching", "boxes", "semseg", "instances", "benthic-cover",
-    "sites", "taxonomy", "label-map", "sources",
+    "taxonomy", "label-map", "sources",
 )  # fmt: skip
 """The design 2.1 order of the v1.1.0 configs."""
 CONFIG_TASKS: dict[str, tuple[str, str]] = {
@@ -44,7 +44,6 @@ CONFIG_TASKS: dict[str, tuple[str, str]] = {
         "v1.0 `instance-masks` config.",
     ),
     "benthic-cover": ("Benthic cover", "Derived per image or survey from points and masks."),
-    "sites": ("Site analytics", "One row per (source, site), derived from `metadata`."),
     "taxonomy": ("Label space", "Taxonomy nodes and the edges of the crosswalks in this repo."),
     "label-map": (
         "Label harmonisation",
@@ -224,7 +223,7 @@ NOT_INCLUDED_OPEN = (
         "One non-commercial source",
         "licensed for non-commercial use only; it ships in the separate non-commercial flavour "
         "of the release, not in this repository. No other non-commercial source is part of "
-        "this release",
+        "v{version}",
     ),
 )
 """Open flavour only: the one source of the non-commercial flavour (the open card never names
@@ -232,9 +231,12 @@ the other repository)."""
 # Open flavour only, behind the flavour switch of ``render_v11_card``: numbers of the v1.1.0 open
 # run. The card is written before the gates run, so these cannot be read from ``GATES.json``;
 # tests/test_hf_card_v11.py pins the SPLIT_MAP ones to releases/marine-data/v1.1.0/SPLIT_MAP.json.
-SPLITS_ROW_SHARES = (
-    "`points` rows are 65.2 / 12.7 / 22.1 % (its 11,356 distinct images 67.1 / 12.8 / 20.2 %) "
-    "and `semseg` rows 74.1 / 8.9 / 16.9 %. "
+SPLITS_ROW_SHARES_FMT = (
+    "`points` rows are {points} % (its 11,356 distinct images 67.1 / 12.8 / 20.2 %) "
+    "and `semseg` rows {semseg} %. "
+)
+SPLITS_ROW_SHARES = SPLITS_ROW_SHARES_FMT.format(
+    points="65.2 / 12.7 / 22.1", semseg="74.1 / 8.9 / 16.9"
 )
 """The v1.1.0 row shares; a later card computes its own with `splits_open_for`."""
 SPLITS_OPEN = (
@@ -268,15 +270,15 @@ def row_shares(splits: dict) -> str:
 def splits_open_for(configs: dict) -> str:
     """`SPLITS_OPEN` with the `points` and `semseg` row shares computed from the card's own counts.
 
-    The distinct-image shares of `points` cannot be computed from split row counts, so a card
-    that computes its shares leaves them out.
+    The distinct-image shares of `points` (its 11,356 images) cannot be computed from split row
+    counts: the card keeps them as the v1.1.0 card states them.
     """
-    shares = []
+    shares = {}
     for name in ("points", "semseg"):
         splits = configs.get(name, {}).get("splits", {})
         if sum(e["num_examples"] for e in splits.values()):
-            shares.append(f"`{name}` rows are {row_shares(splits)} %")
-    sentence = (" and ".join(shares) + ". ") if shares else "see the table. "
+            shares[name] = row_shares(splits)
+    sentence = SPLITS_ROW_SHARES_FMT.format(**shares) if len(shares) == 2 else "see the table. "
     return SPLITS_OPEN.replace(SPLITS_ROW_SHARES, sentence)
 
 

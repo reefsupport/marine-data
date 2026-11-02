@@ -6,7 +6,7 @@ configs only, under ``data/<config>/<split>-<source>-NNNNN-of-MMMMM.parquet``:
 * ``images`` (E1): the bytes of every image whose ``metadata.bytes_config`` is ``images``, once
   per ``image_sha256``. An image a v1.0 config already embeds (``bytes_config`` names that config,
   or its sha256 is in ``skip_sha256``) is never re-uploaded.
-* the six build tables (``metadata`` ... ``instances``, plus ``benthic-cover`` / ``sites`` when the
+* the six build tables (``metadata`` ... ``instances``, plus ``benthic-cover`` when the
   build wrote them), label-only, typed from their parquet schema. ``semseg`` embeds the palette
   PNG of every mask no v1.0 config holds, and every embedded bytes column gets its sha256
   (``images.bytes_sha256``, ``semseg.mask_bytes_sha256``, ``metadata.bytes_sha256``).
@@ -54,7 +54,7 @@ from .licence_class import FLAVOURS, coerce_class, release_excluded
 
 IMAGES, TAXONOMY, LABEL_MAP, SOURCES = "images", "taxonomy", "label-map", "sources"
 TABLE_CONFIGS = (
-    "metadata", "points", "bleaching", "boxes", "semseg", "instances", "benthic-cover", "sites",
+    "metadata", "points", "bleaching", "boxes", "semseg", "instances", "benthic-cover",
 )  # fmt: skip
 V11_TABLES_FILE = "V11_TABLES.json"
 SPLIT_NAME = {
@@ -286,7 +286,7 @@ def _group(
 
 def _split_of(row: Mapping, split_by_sha: Mapping[str, str | None]) -> str:
     """The Hub split of a table row: its own ``split``, else its image's; a row with no image key
-    (``sites``, ``benthic-cover`` by survey) is ``train``. An image with no split raises."""
+    (``benthic-cover`` by survey) is ``train``. An image with no split raises."""
     sha = row.get("image_sha256")
     if not sha:
         return "train"
