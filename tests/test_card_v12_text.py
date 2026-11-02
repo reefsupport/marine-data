@@ -216,7 +216,8 @@ def test_the_v1_2_0_summary_counts_the_configs_of_v1_1_0_and_v1_1_1(
         card,
     )
     row = re.search(
-        r"\| Configurations \| (\d+) Parquet configs, streamable; image bytes stored once \|", card
+        r"\| Configurations \| (\d+) \(listed under \[Supported tasks\]\(#supported-tasks\)\) \|",
+        card,
     )
     shown = [ln[:300] for ln in card.splitlines() if "Configurations |" in ln or "keeps the" in ln]
     assert keeps and row, shown
@@ -263,6 +264,65 @@ def test_the_v1_2_0_summary_describes_the_dataset_and_leaves_the_history_to_the_
     assert "## Supported tasks" in card.split(summary, 1)[1][:30]
 
 
+def _label_map_rows(root: Path) -> list[dict]:
+    import pyarrow.parquet as pq
+
+    files = sorted((root / "data" / "label-map").glob("*.parquet"))
+    return [r for f in files for r in pq.read_table(f).to_pylist()]
+
+
+def test_the_v1_2_0_summary_counts_the_mapped_labels_of_the_label_map(
+    registry, build, tmp_path, monkeypatch
+):
+    monkeypatch.setattr(v12, "SOURCE_ID", "seaview-survey-imagery")
+    card, _ = _render(registry, build, tmp_path / "v2")
+    summary = _section(card, "Dataset summary")
+    rows = _label_map_rows(tmp_path / "v2")  # counted here, from the exported shards
+    unmapped = [r for r in rows if r["match_type"] == "unmapped"]
+    mapped = len(rows) - len(unmapped)
+    assert unmapped and mapped, "the fixture must carry both kinds of label"
+    assert all((r["match_type"] != "unmapped") == r["mapped"] for r in rows)
+    taxonomy = _section(card, "Splits").split("| `taxonomy` |", 1)[1].splitlines()[0]
+    nodes = taxonomy.rsplit("|", 2)[1].strip()
+    assert (
+        f"| Label space | one taxonomy of {nodes} nodes; {mapped} of {len(rows)} source labels"
+        in (summary)
+    )
+    assert (
+        f" benthic cover. Labels are mapped to one taxonomy ({nodes} nodes), so labels" in summary
+    )
+    assert "All labels are mapped" not in card
+    assert "Parquet configs, streamable; image bytes stored once" not in card
+    assert "\n## Supported tasks\n" in card  # the anchor that the Configurations row names
+
+
+def test_labels_mapped_counts_every_row_but_the_unmapped_ones():
+    from marinedata import card_v12_top as top
+
+    kinds = ("exact", "broader", "related", "unmapped", "unmapped")
+    assert top.labels_mapped([{"match_type": m} for m in kinds]) == (3, 5)
+    assert top.labels_mapped(iter([])) == (0, 0)
+
+
+def test_the_opening_derives_the_label_and_config_counts_and_refuses_a_partial_label_map():
+    from marinedata.hf_card_v11 import v12_opening
+    from marinedata.hf_export_v11 import V11ExportError
+
+    def cfg(n: int) -> dict:
+        return {"splits": {"train": {"num_examples": n}}}
+
+    configs = {"taxonomy": cfg(3035), "label-map": cfg(401), "metadata": cfg(7)}
+    rows = [{"match_type": "exact"}] * 392 + [{"match_type": "unmapped"}] * 9
+    kw = {"name": PRETTY, "n_sources": 16, "version": v12.VERSION, "built": "2026-10-30"}
+    facts = dict(v12_opening(configs, [], rows, n_configs=16, **kw)[1])
+    assert facts["Label space"] == "one taxonomy of 3,035 nodes; 392 of 401 source labels mapped"
+    assert facts["Configurations"] == "16 (listed under [Supported tasks](#supported-tasks))"
+    other = dict(v12_opening(configs, [], rows, n_configs=17, **kw)[1])
+    assert other["Configurations"].startswith("17 (listed under ")
+    with pytest.raises(V11ExportError, match="label-map: 400 rows read, 401 in the facts"):
+        v12_opening(configs, [], rows[:400], n_configs=16, **kw)
+
+
 def test_the_licence_families_are_read_from_the_licence_rows():
     from marinedata import card_v12_top as top
 
@@ -295,6 +355,7 @@ def test_the_readme_opens_its_published_datasets_with_the_card_summary():
     assert section.startswith(f"{opening}\n\n### Release history\n\nRelease v1.0 (October 2026) is")
     assert f"{n['metadata']:,} underwater images from {len(release['sources'])} sources" in readme
     assert "58,803 rows in the four v1.0 configs" not in readme
+    assert "All labels are mapped" not in readme and "benthic cover. Labels are mapped" in readme
 
 
 def test_the_v1_2_0_row_shows_the_publish_date_without_a_build_date():

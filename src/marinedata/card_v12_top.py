@@ -23,6 +23,8 @@ LICENCE_NAMES = {"US-GOV-PD": "US Government public domain"}
 """The licence ids that :func:`~.release_card.display_licence` would leave as an id."""
 CLOSING_CARD = "; the full history is under [Versions and changelog](#versions-and-changelog)."
 CLOSING_README = ". Release history below."
+UNMAPPED = "unmapped"
+"""The `match_type` of a source label that no taxonomy node reaches (the row is kept)."""
 
 
 def licence_families(rows: Iterable[Mapping]) -> list[str]:
@@ -44,6 +46,13 @@ def sources_fact(rows: Sequence[Mapping], n_sources: int) -> str:
     )
 
 
+def labels_mapped(rows: Iterable[Mapping]) -> tuple[int, int]:
+    """``(mapped, all)`` over the rows of the `label-map` config: one row per source label, the
+    ones whose ``match_type`` is ``unmapped`` being the labels that no taxonomy node reaches."""
+    rows = list(rows)
+    return sum(1 for r in rows if r.get("match_type") != UNMAPPED), len(rows)
+
+
 def summary_paragraphs(
     *, name: str, images: int, sources: int, nodes: int, configs: int, version: str,
     published: str, closing: str = CLOSING_CARD,
@@ -53,7 +62,7 @@ def summary_paragraphs(
         f"{name} is a collection of {images:,} underwater images from {sources} openly licensed "
         "sources, labelled for coral-reef and marine computer vision: semantic masks, instance "
         "masks, bounding boxes, point annotations and image-level bleaching labels, plus derived "
-        f"benthic cover. All labels are mapped to one taxonomy ({nodes:,} nodes), so labels from "
+        f"benthic cover. Labels are mapped to one taxonomy ({nodes:,} nodes), so labels from "
         "different sources can be trained and evaluated together, and every row carries the "
         "`image_sha256` of its pixels and the licence and attribution of its source."
     )

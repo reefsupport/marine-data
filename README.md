@@ -21,7 +21,7 @@ and are a starting point for your own review. See [`docs/LEGAL.md`](docs/LEGAL.m
 
 ## Published datasets
 
-Reef Support Marine Data is a collection of 67,950 underwater images from 16 openly licensed sources, labelled for coral-reef and marine computer vision: semantic masks, instance masks, bounding boxes, point annotations and image-level bleaching labels, plus derived benthic cover. All labels are mapped to one taxonomy (3,035 nodes), so labels from different sources can be trained and evaluated together, and every row carries the `image_sha256` of its pixels and the licence and attribution of its source.
+Reef Support Marine Data is a collection of 67,950 underwater images from 16 openly licensed sources, labelled for coral-reef and marine computer vision: semantic masks, instance masks, bounding boxes, point annotations and image-level bleaching labels, plus derived benthic cover. Labels are mapped to one taxonomy (3,035 nodes), so labels from different sources can be trained and evaluated together, and every row carries the `image_sha256` of its pixels and the licence and attribution of its source.
 
 The data ships as 16 streamable Parquet configurations. Image bytes are stored once per `image_sha256`, in `images` or in the frozen v1.0 config that `metadata.bytes_config` names; every label config joins to them on that key. Use it for benthic and coral segmentation (including the 95-class Coralscapes V2), instance segmentation, object detection, bleaching classification, point-based cover estimation, retrieval and pretraining. The current release is v1.2.0 (published 2026-11-01). Release history below.
 

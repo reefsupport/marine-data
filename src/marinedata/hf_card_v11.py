@@ -386,17 +386,25 @@ def _split_counts(cfg: Mapping) -> str:
 
 
 def v12_opening(
-    configs: Mapping[str, dict], licences: Sequence[Mapping], *, name: str, n_sources: int,
-    n_configs: int, version: str, built: str | None, closing: str = top.CLOSING_CARD,
+    configs: Mapping[str, dict], licences: Sequence[Mapping], label_rows: Sequence[Mapping], *,
+    name: str, n_sources: int, n_configs: int, version: str, built: str | None,
+    closing: str = top.CLOSING_CARD,
 ) -> tuple[str, list[tuple[str, str]]]:  # fmt: skip
     """The body of the v1.2.0 card's ``## Dataset summary``: ``(paragraphs, facts rows)``.
 
     The images of the release are the `metadata` rows (one per image; the pixels sit in `images`
     or in the v1.0 config that `bytes_config` names). ``licences`` are the rows of the Licensing
-    matrix; ``n_sources`` counts the sources of the release, including the one that has no
-    `sources` row."""
+    matrix; ``label_rows`` are the rows of the `label-map` config, of which the Label space fact
+    counts the mapped ones; ``n_sources`` counts the sources of the release, including the one
+    that has no `sources` row."""
     rows = {c: _rows_total(configs, c) for c in configs}
     images = rows.get("metadata", 0)
+    mapped, labels = top.labels_mapped(label_rows)
+    if labels != rows.get("label-map", 0):  # e.g. an additive config, counted over two trees
+        raise V11ExportError(
+            f"label-map: {labels:,} rows read, {rows.get('label-map', 0):,} in the facts; the "
+            "Label space fact needs every row it counts"
+        )
     mid = " · ".join(
         f"{rows.get(c, 0):,} {what}"
         for c, what in (
@@ -411,9 +419,9 @@ def v12_opening(
         (
             "Label space",
             f"one taxonomy of {rows.get('taxonomy', 0):,} nodes; "
-            f"{rows.get('label-map', 0):,} source labels mapped",
+            f"{mapped:,} of {labels:,} source labels mapped",
         ),
-        ("Configurations", f"{n_configs} Parquet configs, streamable; image bytes stored once"),
+        ("Configurations", f"{n_configs} (listed under [Supported tasks](#supported-tasks))"),
         ("Format", FORMAT_FACT),
         (
             "Current version",
@@ -515,7 +523,8 @@ def render_v11_card(
     summary = history
     if has_v2:  # the v1.2.0 card opens with what the dataset is; its history opens the versions
         summary, facts_rows = v12_opening(
-            configs, [*sources, *extra], name=pretty_name, version=version, built=built,
+            configs, [*sources, *extra], label_rows, name=pretty_name, version=version,
+            built=built,
             n_sources=len(sources) + (len(v12.SOURCES_WITHOUT_ROW) if with_bleaching_row else 0),
             n_configs=len(held | set(v1_names)),
         )  # fmt: skip
