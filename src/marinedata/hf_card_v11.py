@@ -29,6 +29,7 @@ import yaml
 from . import card_body as cb
 from . import card_v11_text as txt
 from . import card_v12_text as v12
+from . import card_v12_top as top
 from . import hf_card_prior as prior_cfg
 from .hf_card_flavour import EXCLUDED_CLASSES, NC_CHECKBOX, NC_GATE_PROMPT, top_notice
 from .hf_export_v11 import V11ExportError, assert_public_safe
@@ -70,6 +71,7 @@ TAGLINE = (
 MAPPED_FLOOR = 95.0
 MAX_OVERLAP_ROWS = 40
 MAX_COLUMNS_SHOWN = 14
+FORMAT_FACT = "Parquet shards, streamable; images and new masks embedded once"
 
 
 # ------------------------------------------------------------------------------ front matter
@@ -372,6 +374,60 @@ def card_version(flavour: str, sources: Iterable[Mapping]) -> str:
     return v12.VERSION if flavour == "open" and v12.applies(sources) else txt.VERSION
 
 
+def _rows_total(configs: Mapping[str, dict], name: str) -> int:
+    return sum(e["num_examples"] for e in configs.get(name, {}).get("splits", {}).values())
+
+
+def _split_counts(cfg: Mapping) -> str:
+    """``train 24,104 / validation 4,758 / test 5,932``: the rows of a config per split."""
+    splits = cfg.get("splits", {})
+    order = [s for s in SPLIT_COLUMNS if s in splits] + sorted(set(splits) - set(SPLIT_COLUMNS))
+    return " / ".join(f"{s} {splits[s]['num_examples']:,}" for s in order)
+
+
+def v12_opening(
+    configs: Mapping[str, dict], licences: Sequence[Mapping], *, name: str, n_sources: int,
+    n_configs: int, version: str, built: str | None, closing: str = top.CLOSING_CARD,
+) -> tuple[str, list[tuple[str, str]]]:  # fmt: skip
+    """The body of the v1.2.0 card's ``## Dataset summary``: ``(paragraphs, facts rows)``.
+
+    The images of the release are the `metadata` rows (one per image; the pixels sit in `images`
+    or in the v1.0 config that `bytes_config` names). ``licences`` are the rows of the Licensing
+    matrix; ``n_sources`` counts the sources of the release, including the one that has no
+    `sources` row."""
+    rows = {c: _rows_total(configs, c) for c in configs}
+    images = rows.get("metadata", 0)
+    mid = " · ".join(
+        f"{rows.get(c, 0):,} {what}"
+        for c, what in (
+            ("semseg", "semantic masks"), ("instances", "instances"), ("boxes", "boxes"),
+            ("points", "points"), ("bleaching", "bleaching labels"),
+        )
+    )  # fmt: skip
+    facts = [
+        ("Images", f"{images:,} ({_split_counts(configs.get('metadata', {}))})"),
+        ("Labels", mid),
+        ("Sources", top.sources_fact(licences, n_sources)),
+        (
+            "Label space",
+            f"one taxonomy of {rows.get('taxonomy', 0):,} nodes; "
+            f"{rows.get('label-map', 0):,} source labels mapped",
+        ),
+        ("Configurations", f"{n_configs} Parquet configs, streamable; image bytes stored once"),
+        ("Format", FORMAT_FACT),
+        (
+            "Current version",
+            f"v{version}" + (f", built {built}" if built else "") + f", published {v12.PUBLISHED}",
+        ),
+        ("Code", f"[{GITHUB.split('//')[1]}]({GITHUB})"),
+    ]
+    paragraphs = top.summary_paragraphs(
+        name=name, images=images, sources=n_sources, nodes=rows.get("taxonomy", 0),
+        configs=n_configs, version=version, published=v12.PUBLISHED, closing=closing,
+    )  # fmt: skip
+    return paragraphs, facts
+
+
 def render_v11_card(
     facts: dict, infos: Mapping[str, dict], sources: list[dict], label_rows: list[dict], *,
     flavour: str, repo_id: str, pretty_name: str = PRETTY_NAME, cff: dict | None = None,
@@ -421,7 +477,7 @@ def render_v11_card(
         )
     else:
         adds = f"keeps the {n_v110} configurations that v1.1.0 added to"
-    summary = (
+    history = (  # the summary of the v1.1.x cards; in the v1.2.0 card it opens the versions
         f"{pretty_name} v{version} {adds} the frozen v1.0 "
         "release, additively: image bytes once per `image_sha256`, per-image metadata, point, "
         "box, mask and bleaching labels, benthic cover, and the tables that describe "
@@ -446,7 +502,7 @@ def render_v11_card(
         ("Configurations", configs_fact),
         ("Images (`metadata` rows)", f"{images:,}"),
         ("Sources", sources_fact),
-        ("Format", "Parquet shards, streamable; images and new masks embedded once"),
+        ("Format", FORMAT_FACT),
         ("Size of the new configs", f"{gb:.1f} GB"),
         (
             "Version",
@@ -456,6 +512,13 @@ def render_v11_card(
         ),
         ("Code", f"[{GITHUB.split('//')[1]}]({GITHUB})"),
     ]
+    summary = history
+    if has_v2:  # the v1.2.0 card opens with what the dataset is; its history opens the versions
+        summary, facts_rows = v12_opening(
+            configs, [*sources, *extra], name=pretty_name, version=version, built=built,
+            n_sources=len(sources) + (len(v12.SOURCES_WITHOUT_ROW) if with_bleaching_row else 0),
+            n_configs=len(held | set(v1_names)),
+        )  # fmt: skip
     version_rows = (  # the v1.2.0 card keeps the rows of the published v1.1.0 / v1.1.1 cards
         v12.version_rows(txt.V1_DATE, txt.V1_NOTES[flavour], built)
         if has_v2
@@ -528,7 +591,7 @@ def render_v11_card(
         excluded_section(flavour, version),
         "## Takedown\n\nRights holders and data subjects: open an issue at "
         f"{takedown_url or GITHUB + '/issues'}. Accepted requests are published as a new version.",
-        "## Versions and changelog\n\n" + versions + "\n\n"
+        "## Versions and changelog\n\n" + (f"{history}\n\n" if has_v2 else "") + versions + "\n\n"
         + changelog
         + "\n\nFiles of a released version are not edited. Pin a version with `revision`:\n\n"
         f"```python\n{pin}\n```",
