@@ -2,7 +2,9 @@
 
 > Produced 2026-08-17 from authority and standards research and benthic and fish
 > vocabulary extraction, then two independent critiques (taxonomist and engineer).
-> **Status: specification, not yet implemented.** The DAG design originally proposed was
+> **Status: specification (2026-08-17).** The taxonomy backbone and label index it describes are implemented since
+> (`registry/taxonomy/`, `src/marinedata/taxonomy.py`, `labels.py`, `labelindex.py`); where the code and this text differ,
+> the code and the registry are authoritative. The DAG design originally proposed was
 > REJECTED by both critiques; see §1.1. Four validation holes it identified in
 > `schema.py` were verified as live bugs and are already fixed.
 

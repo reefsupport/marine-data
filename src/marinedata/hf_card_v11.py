@@ -364,8 +364,10 @@ def render_v11_card(
 
     version = card_version(flavour, sources)
     has_v2 = version == v12.VERSION
+    gates_scope = f" {v12.GATES_SCOPE}" if has_v2 else ""
     configs = facts["configs"]
     names = ordered_configs(configs)
+    splits_open = txt.splits_open_for(configs) if has_v2 else txt.SPLITS_OPEN
     images = sum(e["num_examples"] for e in configs.get("metadata", {}).get("splits", {}).values())
     gb = sum(c["download_size"] for c in configs.values()) / 1e9
     low = [
@@ -387,15 +389,32 @@ def render_v11_card(
     summary = (
         f"{pretty_name} v{version} {adds} the frozen v1.0 "
         "release, additively: image bytes once per `image_sha256`, per-image metadata, point, "
-        "box, mask and bleaching labels, benthic cover and sites, and the tables that describe "
+        "box, mask and bleaching labels, benthic cover, and the tables that describe "
         "the label space (`taxonomy`, `label-map`) and the sources. Every row carries its "
         "`image_sha256`, so any label reaches its pixels in one join, and `licence` and "
         "attribution stay attached to the pixels." + (f" {v12.SUMMARY}" if has_v2 else "")
     )
+    v1_names = V1_CONFIGS[flavour]
+    configs_fact = f"{len(names)}: " + ", ".join(f"`{n}`" for n in names)
+    sources_fact = f"{len(sources)}"
+    if has_v2:  # the v1.2.0 card counts the whole release, not only what was added since v1.0
+        in_v111 = [n for n in names if n == v12.V111_CONFIG]
+        configs_fact = (
+            f"{len(v1_names) + len(names)} ({len(v1_names)} from v1.0, "
+            f"{len(names) - len(in_v111)} added in v1.1.0"
+            + (f", `{v12.V111_CONFIG}` in v1.1.1" if in_v111 else "")
+            + "): "
+            + ", ".join(f"`{n}`" for n in (*v1_names, *names))
+        )
+        if flavour == "open":
+            sources_fact = (
+                f"{len(sources) + len(v12.SOURCES_WITHOUT_ROW)} "
+                f"(the `sources` config has {len(sources)} rows)"
+            )
     facts_rows = [
-        ("Configurations", f"{len(names)}: " + ", ".join(f"`{n}`" for n in names)),
+        ("Configurations", configs_fact),
         ("Images (`metadata` rows)", f"{images:,}"),
-        ("Sources", f"{len(sources)}"),
+        ("Sources", sources_fact),
         ("Format", "Parquet shards, streamable; images and new masks embedded once"),
         ("Size of the new configs", f"{gb:.1f} GB"),
         ("Version", f"v{version}" + (f", built {built}" if built else "")),
@@ -451,16 +470,16 @@ def render_v11_card(
         "these, or the coarse training views.\n\n" + overlap_table(label_rows)
         + "\n\n### Mapped share per source\n\n" + mapped_table(sources),
         v12.labels_section() if has_v2 else "",
-        "## Splits\n\n" + txt.SPLITS_TEXT + open_only(txt.SPLITS_OPEN, "\n\n") + "\n\n"
+        "## Splits\n\n" + txt.SPLITS_TEXT + open_only(splits_open, "\n\n") + "\n\n"
         + splits_table(configs),
         "## Dataset creation\n\n### Sources\n\n" + sources_table(sources)
         + "\n\n### Build and gates\n\nBuilt with the " + f"[marine-data]({GITHUB}) registry; "
         "every source is admitted only after its licence is recorded, and the licence gate "
         "raises, never warns. " + lock_line + " Gate results are published as "
-        "`provenance/GATES.json`. " + txt.DEDUP_FAMILY + open_only(txt.DEDUP_OPEN)
+        "`provenance/GATES.json`. " + txt.DEDUP_FAMILY + open_only(txt.DEDUP_OPEN + gates_scope)
         + (f"\n\n{v12.GATES_PARAGRAPH}" if has_v2 else ""),
         "## Personal and sensitive information\n\n" + txt.PERSONAL
-        + open_only(txt.PERSONAL_OPEN),
+        + open_only(txt.PERSONAL_OPEN + gates_scope),
         "## Limitations and known defects\n\n" + "\n".join(limits),
         "## Licensing\n\nThe data are not under one licence. Every row records its `licence`, "
         "`annotation_licence` and `attribution`; the matrix lists each source. Combine sources "
